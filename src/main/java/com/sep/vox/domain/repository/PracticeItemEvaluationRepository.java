@@ -1,4 +1,4 @@
-package com.sep.vox.domain.repository.personalization;
+package com.sep.vox.domain.repository;
 
 import java.math.BigDecimal;
 import java.time.Instant;

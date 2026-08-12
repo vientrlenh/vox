@@ -8,7 +8,7 @@ import com.sep.vox.application.port.input.command.DismissTopicOfferCommand;
 import com.sep.vox.application.port.input.service.InterestVectorService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
+import com.sep.vox.domain.repository.PracticeTopicRepository;
 
 
 @Service

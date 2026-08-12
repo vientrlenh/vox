@@ -9,11 +9,11 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
@@ -93,7 +93,7 @@ public class ZeroScoreExamResultService {
             .orElse(null);
 
         for (var candidate : examCandidateRepository.findByExamId(examId)) {
-            if (ExamCandidateStatusSupport.isNonScorable(candidate.getStatus())) {
+            if (ExamCandidateStatus.isNonScorable(candidate.getStatus())) {
                 continue;
             }
             var sessions = examSessionRepository.findAllByCandidateId(candidate.getId()).stream()

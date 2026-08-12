@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.CacheManagerPort;
-import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
+import com.sep.vox.domain.repository.PracticeTopicRepository;
 
 /**
  * Bổ sung kho chủ đề luyện tập khi danh sách đề xuất còn thưa -- chạy NỀN.

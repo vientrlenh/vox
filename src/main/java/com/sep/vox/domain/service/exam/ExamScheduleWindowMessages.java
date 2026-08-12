@@ -1,4 +1,4 @@
-package com.sep.vox.application.common;
+package com.sep.vox.domain.service.exam;
 
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;

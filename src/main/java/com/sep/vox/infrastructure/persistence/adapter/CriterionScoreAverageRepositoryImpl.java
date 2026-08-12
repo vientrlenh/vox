@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.repository.personalization.CriterionScoreAverageRepository;
+import com.sep.vox.domain.repository.CriterionScoreAverageRepository;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataCriterionScoreAverageRepository;
 
 @Repository

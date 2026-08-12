@@ -18,8 +18,8 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeSession;
-import com.sep.vox.domain.repository.personalization.PracticeItemEvaluationRepository;
-import com.sep.vox.domain.repository.personalization.PracticeSessionRepository;
+import com.sep.vox.domain.repository.PracticeItemEvaluationRepository;
+import com.sep.vox.domain.repository.PracticeSessionRepository;
 import com.sep.vox.domain.service.personalization.SessionDiagnosisPolicy;
 
 @Service

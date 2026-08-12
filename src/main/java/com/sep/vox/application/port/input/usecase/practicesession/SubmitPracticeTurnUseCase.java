@@ -25,11 +25,11 @@ import com.sep.vox.domain.dto.personalization.TurnCorrectionDto;
 import com.sep.vox.domain.model.personalization.SubmitPracticeTurn;
 import com.sep.vox.domain.model.personalization.TurnCorrectionSubmission;
 import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.domain.repository.PracticeItemResponseRepository;
+import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
+import com.sep.vox.domain.repository.PracticeSessionRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
-import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
-import com.sep.vox.domain.repository.personalization.PracticeResponseTurnRepository;
-import com.sep.vox.domain.repository.personalization.PracticeSessionRepository;
-import com.sep.vox.domain.repository.personalization.TurnCorrectionRepository;
+import com.sep.vox.domain.repository.TurnCorrectionRepository;
 
 @Service
 public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCommand, SubmitTurnResult> {

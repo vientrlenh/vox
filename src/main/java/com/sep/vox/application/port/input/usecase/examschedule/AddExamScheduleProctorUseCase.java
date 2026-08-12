@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.examschedule;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamEditingGuard;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AddExamScheduleProctorCommand;
@@ -19,6 +18,7 @@ import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.service.exam.ExamEditingGuard;
 
 @Service
 public class AddExamScheduleProctorUseCase implements IUseCase<AddExamScheduleProctorCommand, ExamScheduleProctorDto> {

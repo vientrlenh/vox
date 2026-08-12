@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.personalization.TopicInterestEvent;
-import com.sep.vox.domain.repository.personalization.TopicInterestEventRepository;
+import com.sep.vox.domain.repository.TopicInterestEventRepository;
 import com.sep.vox.infrastructure.persistence.entity.TopicInterestEventJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataTopicInterestEventRepository;
 

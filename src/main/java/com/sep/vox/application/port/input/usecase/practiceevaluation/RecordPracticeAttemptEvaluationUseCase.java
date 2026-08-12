@@ -9,10 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.command.practiceevaluation.RecordPracticeAttemptEvaluationCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.repository.personalization.PracticeCriterionScoreRepository;
-import com.sep.vox.domain.repository.personalization.PracticeItemEvaluationRepository;
-import com.sep.vox.domain.repository.personalization.PracticeItemResponseRepository;
-import com.sep.vox.domain.repository.personalization.PracticeSessionRepository;
+import com.sep.vox.domain.repository.PracticeCriterionScoreRepository;
+import com.sep.vox.domain.repository.PracticeItemEvaluationRepository;
+import com.sep.vox.domain.repository.PracticeItemResponseRepository;
+import com.sep.vox.domain.repository.PracticeSessionRepository;
 
 @Service
 public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPracticeAttemptEvaluationCommand, Void> {

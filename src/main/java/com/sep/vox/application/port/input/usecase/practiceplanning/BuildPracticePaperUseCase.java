@@ -17,9 +17,9 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
 import com.sep.vox.domain.mapper.PracticePaperDtoMapper;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
+import com.sep.vox.domain.repository.PracticePaperRepository;
+import com.sep.vox.domain.repository.PracticeTopicRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
-import com.sep.vox.domain.repository.personalization.PracticePaperRepository;
-import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
 
 /**
  * Dựng đề luyện -- CHỈ câu MAIN đầu tiên (đúng README mục 4.1: vào phiên khi có 1 câu phù hợp

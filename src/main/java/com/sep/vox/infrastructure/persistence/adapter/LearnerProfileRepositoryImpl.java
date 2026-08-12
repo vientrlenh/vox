@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.personalization.LearnerProfile;
-import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
+import com.sep.vox.domain.repository.LearnerProfileRepository;
 import com.sep.vox.infrastructure.persistence.mapper.FrameworkResultBandMapper;
 import com.sep.vox.infrastructure.persistence.mapper.personalization.LearnerProfileMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataLearnerProfileRepository;

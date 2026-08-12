@@ -8,10 +8,10 @@ import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamResultVisibilityPolicy;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.examsession.StudentExamResultSummaryResponse;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -83,7 +83,7 @@ public class ViewMyExamResultsUseCase implements IUseCase<Void, List<StudentExam
                     : rubricResultBandRepository.findById(result.getRubricResultBandId()).orElse(null);
                 // Query này gác hasRole('STUDENT') và chỉ quét candidate của chính người
                 // gọi, nên mọi dòng ở đây đều là bài của họ — không cần kiểm chính chủ.
-                var scoreVisible = ExamResultVisibilityPolicy.isVisibleToCandidate(result.getStatus());
+                var scoreVisible = ExamCandidateResultStatus.isVisibleToCandidate(result.getStatus());
                 var rubricVersion = !scoreVisible || result.getRubricVersionId() == null
                     ? null
                     : rubricVersionCache.computeIfAbsent(

@@ -11,10 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.personalization.PracticePaperItem;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
-import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
-import com.sep.vox.domain.repository.personalization.PracticePaperItemRepository;
-import com.sep.vox.domain.repository.personalization.PracticePaperRepository;
-import com.sep.vox.domain.repository.personalization.StudentQuestionExposureRepository;
+import com.sep.vox.domain.repository.LearnerProfileRepository;
+import com.sep.vox.domain.repository.PracticePaperItemRepository;
+import com.sep.vox.domain.repository.PracticePaperRepository;
+import com.sep.vox.domain.repository.StudentQuestionExposureRepository;
 
 /**
  * Ghi PracticePaper + PracticePaperItem + exposure -- tách riêng khỏi

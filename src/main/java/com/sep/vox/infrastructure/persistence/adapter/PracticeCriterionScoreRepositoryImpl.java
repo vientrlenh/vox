@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.dto.personalization.PracticeCriterionScoreDto;
-import com.sep.vox.domain.repository.personalization.PracticeCriterionScoreRepository;
+import com.sep.vox.domain.repository.PracticeCriterionScoreRepository;
 import com.sep.vox.infrastructure.persistence.entity.PracticeCriterionScoreJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeCriterionScoreRepository;
 

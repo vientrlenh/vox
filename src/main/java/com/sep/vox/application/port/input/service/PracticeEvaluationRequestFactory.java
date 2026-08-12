@@ -12,9 +12,9 @@ import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent
 import com.sep.vox.application.event.PracticeAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.query.dto.CriterionFrameworkInfo;
+import com.sep.vox.application.query.repository.PracticeQuestionQueryRepository;
 import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
-import com.sep.vox.domain.repository.personalization.PracticeQuestionRepository;
-import com.sep.vox.domain.repository.personalization.PracticeResponseTurnRepository;
+import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
 import com.sep.vox.application.exception.NotFoundException;
 
 /**
@@ -31,17 +31,17 @@ public class PracticeEvaluationRequestFactory {
 
     private final PracticeSessionQueryRepository practiceSessionQueryRepository;
     private final PracticeResponseTurnRepository practiceResponseTurnRepository;
-    private final PracticeQuestionRepository practiceQuestionRepository;
+    private final PracticeQuestionQueryRepository practiceQuestionQueryRepository;
     private final JsonSerializationPort jsonSerializationPort;
 
     public PracticeEvaluationRequestFactory(
             PracticeSessionQueryRepository practiceSessionQueryRepository,
             PracticeResponseTurnRepository practiceResponseTurnRepository,
-            PracticeQuestionRepository practiceQuestionRepository,
+            PracticeQuestionQueryRepository practiceQuestionQueryRepository,
             JsonSerializationPort jsonSerializationPort) {
         this.practiceSessionQueryRepository = practiceSessionQueryRepository;
         this.practiceResponseTurnRepository = practiceResponseTurnRepository;
-        this.practiceQuestionRepository = practiceQuestionRepository;
+        this.practiceQuestionQueryRepository = practiceQuestionQueryRepository;
         this.jsonSerializationPort = jsonSerializationPort;
     }
 
@@ -49,7 +49,7 @@ public class PracticeEvaluationRequestFactory {
             UUID sessionId,
             UUID responseId,
             UUID questionId) {
-        var question = practiceQuestionRepository.findQuestionWithTopic(questionId)
+        var question = practiceQuestionQueryRepository.findQuestionWithTopic(questionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi luyện."));
         var turns = practiceResponseTurnRepository
             .findByPracticeResponseIdOrderByTurnOrder(responseId).stream()

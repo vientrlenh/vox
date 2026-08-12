@@ -9,8 +9,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamCandidateStatusSupport;
-import com.sep.vox.application.common.ExamScheduleWindowMessages;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -30,6 +28,7 @@ import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
@@ -49,6 +48,7 @@ import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
+import com.sep.vox.domain.service.exam.ExamScheduleWindowMessages;
 
 @Service
 public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand, ExamDto> {
@@ -409,7 +409,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
      */
     private void requirePublishReadiness(UUID examId) {
         var missingResultCount = examCandidateRepository.findByExamId(examId).stream()
-            .filter(candidate -> !ExamCandidateStatusSupport.isNonScorable(candidate.getStatus()))
+            .filter(candidate -> !ExamCandidateStatus.isNonScorable(candidate.getStatus()))
             .flatMap(candidate -> examSessionRepository.findAllByCandidateId(candidate.getId()).stream())
             .filter(session -> examId.equals(session.getExamId()))
             .filter(session -> session.getStatus() != ExamSessionStatus.IN_PROGRESS

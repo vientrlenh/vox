@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.repository.personalization.PracticeResponseTurnRepository;
+import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
 import com.sep.vox.infrastructure.persistence.entity.PracticeResponseTurnJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeResponseTurnRepository;
 

@@ -1,4 +1,4 @@
-package com.sep.vox.domain.repository.personalization;
+package com.sep.vox.domain.repository;
 
 import java.util.Optional;
 import java.util.UUID;

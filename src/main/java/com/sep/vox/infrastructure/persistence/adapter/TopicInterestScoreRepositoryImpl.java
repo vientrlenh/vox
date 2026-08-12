@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.personalization.TopicInterestScoreEntry;
-import com.sep.vox.domain.repository.personalization.TopicInterestScoreRepository;
+import com.sep.vox.domain.repository.TopicInterestScoreRepository;
 import com.sep.vox.infrastructure.persistence.entity.TopicInterestScoreJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataTopicInterestScoreRepository;
 

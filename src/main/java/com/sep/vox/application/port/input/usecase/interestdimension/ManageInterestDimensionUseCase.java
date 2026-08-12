@@ -13,7 +13,7 @@ import com.sep.vox.application.port.input.command.UpsertInterestDimensionCommand
 import com.sep.vox.application.port.input.service.InterestQuizBankTopUpService;
 import com.sep.vox.application.response.input.interestdimension.InterestDimensionResponses.InterestDimensionResponse;
 import com.sep.vox.domain.model.personalization.InterestDimension;
-import com.sep.vox.domain.repository.personalization.InterestDimensionRepository;
+import com.sep.vox.domain.repository.InterestDimensionRepository;
 
 /**
  * Quản lý danh mục chiều sở thích (SYSTEM_ADMIN). Xem V15__personalize.sql, mục

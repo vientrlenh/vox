@@ -7,8 +7,8 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.SaveTopicCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
-import com.sep.vox.domain.repository.personalization.SavedTopicRepository;
+import com.sep.vox.domain.repository.PracticeTopicRepository;
+import com.sep.vox.domain.repository.SavedTopicRepository;
 
 @Service
 public class SaveTopicUseCase implements IUseCase<SaveTopicCommand, Boolean> {

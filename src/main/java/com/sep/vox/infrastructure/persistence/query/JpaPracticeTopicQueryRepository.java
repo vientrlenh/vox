@@ -6,7 +6,9 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.application.query.dto.QuestionTopicInfo;
 import com.sep.vox.application.query.dto.RankedTopicInfo;
+import com.sep.vox.application.query.dto.TopicNameCardInfo;
 import com.sep.vox.application.query.dto.TopicSearchRowInfo;
 import com.sep.vox.application.query.repository.PracticeTopicQueryRepository;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeTopicRepository;
@@ -44,5 +46,15 @@ public class JpaPracticeTopicQueryRepository implements PracticeTopicQueryReposi
     @Override
     public List<TopicSearchRowInfo> findSavedTopics(UUID studentId) {
         return repository.findSavedTopics(studentId);
+    }
+
+    @Override
+    public List<TopicNameCardInfo> findActiveNameCards() {
+        return repository.findActiveNameCards();
+    }
+
+    @Override
+    public List<QuestionTopicInfo> findPublishedExamTopics(UUID schoolId, UUID gradeId) {
+        return repository.findPublishedExamTopics(schoolId, gradeId);
     }
 }

@@ -186,7 +186,7 @@ public class ExamSessionResultCalculator {
             sectionPlainSums.compute(paperItem.getSectionId(), (ignored, current) ->
                 (current == null ? BigDecimal.ZERO : current).add(itemScore)
             );
-            sectionItemCounts.merge(paperItem.getSectionId(), 1, Integer::sum);
+            sectionItemCounts.merge(paperItem.getSectionId(), 1, (a, b) -> Integer.sum(a, b));
             itemScores.add(new ItemScore(
                 paperItem.getId(),
                 response.getId(),

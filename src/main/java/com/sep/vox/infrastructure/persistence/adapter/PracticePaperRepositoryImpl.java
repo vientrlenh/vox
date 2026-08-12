@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.personalization.PracticePaper;
-import com.sep.vox.domain.repository.personalization.PracticePaperRepository;
+import com.sep.vox.domain.repository.PracticePaperRepository;
 import com.sep.vox.infrastructure.persistence.mapper.personalization.PracticePaperMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticePaperRepository;
 

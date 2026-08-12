@@ -1,4 +1,4 @@
-package com.sep.vox.domain.repository.personalization;
+package com.sep.vox.domain.repository;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,17 +32,4 @@ public interface PracticeQuestionRepository {
 
     /** Trả lại lượt dùng khi câu được chọn nhưng học sinh chưa bao giờ trả lời. */
     void decrementUsageCount(UUID id);
-
-    record QuestionEvaluationInfo(
-        String questionText,
-        String evaluationGuideJson,
-        String questionType,
-        Integer minResponseSeconds,
-        Integer maxResponseSeconds,
-        String topicName,
-        String topicDescription
-    ) {
-    }
-
-    Optional<QuestionEvaluationInfo> findQuestionWithTopic(UUID questionId);
 }

@@ -14,11 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.personalization.TopicInterestEvent;
 import com.sep.vox.domain.model.personalization.TopicInterestScoreEntry;
-import com.sep.vox.domain.repository.personalization.DimensionInterestScoreRepository;
-import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
-import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
-import com.sep.vox.domain.repository.personalization.TopicInterestEventRepository;
-import com.sep.vox.domain.repository.personalization.TopicInterestScoreRepository;
+import com.sep.vox.domain.repository.DimensionInterestScoreRepository;
+import com.sep.vox.domain.repository.LearnerProfileRepository;
+import com.sep.vox.domain.repository.PracticeTopicRepository;
+import com.sep.vox.domain.repository.TopicInterestEventRepository;
+import com.sep.vox.domain.repository.TopicInterestScoreRepository;
 
 /**
  * Tính vector sở thích chủ đề (EMA theo topic) và vector sở thích theo dimension.
@@ -198,7 +198,7 @@ public class InterestVectorService {
         // vào nhánh `continue` ngay dưới, đúng như trước.
         var dimensions = topicRepository.findDimensionsByIds(
             events.stream()
-                .map(TopicInterestEvent::getTopicId)
+                .map(event -> event.getTopicId())
                 .filter(java.util.Objects::nonNull)
                 .collect(java.util.stream.Collectors.toSet())
         );

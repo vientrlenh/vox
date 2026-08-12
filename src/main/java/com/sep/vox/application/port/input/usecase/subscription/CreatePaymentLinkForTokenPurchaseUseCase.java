@@ -140,7 +140,7 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
         var savedInvoice = invoiceRepository.save(invoice);
 
         return new PaymentLinkDto(
-            savedInvoice.getId(), orderRef, result.action(), result.actionUrl(), result.paymentLinkId(), result.fields());
+            savedInvoice.getId(), orderRef, result.action().name(), result.actionUrl(), result.paymentLinkId(), result.fields());
     }
 
     private PlanQuota findPlanQuota(List<PlanQuota> planQuotas, QuotaType quotaType) {

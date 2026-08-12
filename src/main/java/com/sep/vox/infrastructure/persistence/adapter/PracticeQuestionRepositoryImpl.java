@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
-import com.sep.vox.domain.repository.personalization.PracticeQuestionRepository;
+import com.sep.vox.domain.repository.PracticeQuestionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.personalization.PracticeQuestionMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeQuestionRepository;
 
@@ -112,19 +112,5 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
     @Transactional
     public void decrementUsageCount(UUID id) {
         repository.decrementUsageCount(id);
-    }
-
-    @Override
-    public Optional<QuestionEvaluationInfo> findQuestionWithTopic(UUID questionId) {
-        return repository.findQuestionWithTopic(questionId)
-            .map(row -> new QuestionEvaluationInfo(
-                row.getQuestionText(),
-                row.getEvaluationGuideJson(),
-                row.getQuestionType(),
-                row.getMinResponseSeconds(),
-                row.getMaxResponseSeconds(),
-                row.getTopicName(),
-                row.getTopicDescription()
-            ));
     }
 }

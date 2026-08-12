@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.examsession;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamResultVisibilityPolicy;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewExamSessionResultQuery;
 import com.sep.vox.application.port.input.service.ExamResultAccessService;
@@ -54,7 +53,7 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
         // Trang vẫn trả về bản ghi kèm status — che field chứ không chặn, để học sinh còn
         // biết bài mình đang ở đâu thay vì gặp màn "không tìm thấy".
         var scoreVisible = !access.candidateOwner()
-            || ExamResultVisibilityPolicy.isVisibleToCandidate(result.getStatus());
+            || ExamCandidateResultStatus.isVisibleToCandidate(result.getStatus());
         var includeBreakdown = scoreVisible && shouldIncludeBreakdown(result.getStatus());
         var calculated = includeBreakdown ? examSessionResultCalculator.calculate(session.getId()) : null;
         var targetBand = result.getTargetFrameworkBandId() == null

@@ -149,12 +149,12 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
         }
 
         if (version.getTotalScoreMethod() == RubricTotalScoreMethod.SUM) {
-            var minSum = criteria.stream().map(RubricCriterion::getMinScore)
+            var minSum = criteria.stream().map(c -> c.getMinScore())
                     .filter(java.util.Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            var maxSum = criteria.stream().map(RubricCriterion::getMaxScore)
+                    .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+            var maxSum = criteria.stream().map(c -> c.getMaxScore())
                     .filter(java.util.Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
             if (maxSum.compareTo(version.getScoringScaleMax()) != 0
                     || minSum.compareTo(version.getScoringScaleMin()) != 0) {
                 throw new IllegalStateException(String.format(
@@ -169,9 +169,9 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
             return;
         }
 
-        var weightSum = criteria.stream().map(RubricCriterion::getWeight)
+        var weightSum = criteria.stream().map(c -> c.getWeight())
                 .filter(java.util.Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (weightSum.compareTo(BigDecimal.ONE) != 0) {
             throw new IllegalStateException(String.format(
                     "Không thể ban hành: phương pháp WEIGHTED_AVERAGE yêu cầu tổng trọng số của"

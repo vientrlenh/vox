@@ -22,7 +22,7 @@ import com.sep.vox.application.response.input.examturn.TurnUploadUrlResponse;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.SubmitTurnResult;
 import com.sep.vox.domain.model.personalization.SubmitPracticeTurn;
 import com.sep.vox.domain.model.personalization.TurnCorrectionSubmission;
-import com.sep.vox.domain.repository.personalization.PracticeSessionRepository;
+import com.sep.vox.domain.repository.PracticeSessionRepository;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 
 /**

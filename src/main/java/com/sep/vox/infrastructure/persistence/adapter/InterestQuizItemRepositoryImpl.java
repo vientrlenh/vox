@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
-import com.sep.vox.domain.repository.personalization.InterestQuizItemRepository;
+import com.sep.vox.domain.repository.InterestQuizItemRepository;
 import com.sep.vox.infrastructure.persistence.entity.InterestQuizItemJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataInterestQuizItemRepository;
 

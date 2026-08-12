@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
-import com.sep.vox.domain.repository.personalization.InterestQuizItemRepository;
+import com.sep.vox.domain.repository.InterestQuizItemRepository;
 
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;

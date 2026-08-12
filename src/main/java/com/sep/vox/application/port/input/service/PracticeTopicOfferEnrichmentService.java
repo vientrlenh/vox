@@ -8,9 +8,9 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
+import com.sep.vox.domain.repository.LearnerProfileRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
-import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
 
 /**
  * Minutes và trần thời lượng cho topic offer -- gộp 1 chỗ vì có nhiều caller

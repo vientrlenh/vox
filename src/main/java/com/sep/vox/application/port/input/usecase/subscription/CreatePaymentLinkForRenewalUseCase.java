@@ -116,11 +116,11 @@ public class CreatePaymentLinkForRenewalUseCase implements IUseCase<CreatePaymen
             orderRef, plan.getPricePerYear(), "VOX-" + orderRef));
 
         invoice.setPaymentLinkId(result.paymentLinkId());
-        invoice.setCheckoutUrl(result.actionUrl());
+        invoice.setCheckoutUrl(result.actionUrl()); 
         var savedInvoice = invoiceRepository.save(invoice);
 
         return new PaymentLinkDto(
-            savedInvoice.getId(), orderRef, result.action(), result.actionUrl(), result.paymentLinkId(), result.fields());
+            savedInvoice.getId(), orderRef, result.action().name(), result.actionUrl(), result.paymentLinkId(), result.fields());
     }
     
     private CreatePaymentLinkForRenewalCommand normalize(CreatePaymentLinkForRenewalCommand input) {

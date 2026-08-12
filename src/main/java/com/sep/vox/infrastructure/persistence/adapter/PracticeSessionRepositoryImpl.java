@@ -8,7 +8,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.personalization.PracticeSession;
-import com.sep.vox.domain.repository.personalization.PracticeSessionRepository;
+import com.sep.vox.domain.repository.PracticeSessionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.personalization.PracticeSessionMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeSessionRepository;
 

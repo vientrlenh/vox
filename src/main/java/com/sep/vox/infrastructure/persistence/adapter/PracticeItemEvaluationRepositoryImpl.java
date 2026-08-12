@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.domain.repository.personalization.PracticeItemEvaluationRepository;
+import com.sep.vox.domain.repository.PracticeItemEvaluationRepository;
 import com.sep.vox.infrastructure.persistence.entity.PracticeItemEvaluationJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeItemEvaluationRepository;
 

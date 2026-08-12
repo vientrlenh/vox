@@ -13,14 +13,15 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.query.repository.PracticeTopicQueryRepository;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
 import com.sep.vox.application.response.input.topicsuggestion.TopicSuggestionResponses.TopicFromKeywordResult;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.model.personalization.TopicSuggestion;
-import com.sep.vox.domain.repository.personalization.InterestDimensionRepository;
-import com.sep.vox.domain.repository.personalization.LearnerProfileRepository;
-import com.sep.vox.domain.repository.personalization.PracticeTopicRepository;
-import com.sep.vox.domain.repository.personalization.TopicSuggestionRepository;
+import com.sep.vox.domain.repository.InterestDimensionRepository;
+import com.sep.vox.domain.repository.LearnerProfileRepository;
+import com.sep.vox.domain.repository.PracticeTopicRepository;
+import com.sep.vox.domain.repository.TopicSuggestionRepository;
 import com.sep.vox.domain.service.personalization.TensePolicy;
 import com.sep.vox.infrastructure.service.TopicGenerationClient;
 import com.sep.vox.infrastructure.service.TopicGenerationClient.KeywordEvidence;
@@ -42,6 +43,7 @@ public class TopicSuggestionService {
 
     private final TopicSuggestionRepository topicSuggestionRepository;
     private final PracticeTopicRepository practiceTopicRepository;
+    private final PracticeTopicQueryRepository practiceTopicQueryRepository;
     private final LearnerProfileRepository learnerProfileRepository;
     private final TopicGenerationClient generationClient;
     private final PracticeTopicOfferEnrichmentService enrichmentService;
@@ -51,6 +53,7 @@ public class TopicSuggestionService {
     public TopicSuggestionService(
             TopicSuggestionRepository topicSuggestionRepository,
             PracticeTopicRepository practiceTopicRepository,
+            PracticeTopicQueryRepository practiceTopicQueryRepository,
             LearnerProfileRepository learnerProfileRepository,
             TopicGenerationClient generationClient,
             PracticeTopicOfferEnrichmentService enrichmentService,
@@ -59,6 +62,7 @@ public class TopicSuggestionService {
         this.interestDimensionRepository = interestDimensionRepository;
         this.topicSuggestionRepository = topicSuggestionRepository;
         this.practiceTopicRepository = practiceTopicRepository;
+        this.practiceTopicQueryRepository = practiceTopicQueryRepository;
         this.learnerProfileRepository = learnerProfileRepository;
         this.generationClient = generationClient;
         this.enrichmentService = enrichmentService;
@@ -331,7 +335,7 @@ public class TopicSuggestionService {
     }
 
     private List<TopicNameCard> activeNameCards() {
-        return practiceTopicRepository.findActiveNameCards().stream()
+        return practiceTopicQueryRepository.findActiveNameCards().stream()
             .map(card -> new TopicNameCard(card.getId(), card.getName(), card.getInterestDimension()))
             .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
     }

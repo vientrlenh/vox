@@ -6,7 +6,6 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamEditingGuard;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AssignExamCandidateScheduleCommand;
 import com.sep.vox.application.port.input.service.ClassTestPaperAutoAssigner;
@@ -18,6 +17,7 @@ import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.service.exam.ExamEditingGuard;
 
 @Service
 public class AssignExamCandidateScheduleUseCase

@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.domain.repository.personalization.InterestDimensionRepository;
+import com.sep.vox.domain.repository.InterestDimensionRepository;
 
 /**
  * Chuẩn hoá điểm thô của quiz sở thích thành vector [0,1] theo từng chiều.

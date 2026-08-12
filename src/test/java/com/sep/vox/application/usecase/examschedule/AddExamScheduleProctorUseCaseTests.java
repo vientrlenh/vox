@@ -18,6 +18,8 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.AddExamScheduleProctorCommand;
+import com.sep.vox.application.port.input.service.ExamScheduleManageAccessService;
+import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.usecase.examschedule.AddExamScheduleProctorUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
@@ -49,6 +51,8 @@ class AddExamScheduleProctorUseCaseTests {
     private final UUID schoolId = UUID.randomUUID();
     private final UUID scheduleId = UUID.randomUUID();
     private final UUID teacherId = UUID.randomUUID();
+    private final Instant start = Instant.parse("2026-07-10T08:00:00+07:00");
+    private final Instant end = Instant.parse("2026-07-10T10:00:00+07:00");
 
     @BeforeEach
     void setUp() {
@@ -59,9 +63,14 @@ class AddExamScheduleProctorUseCaseTests {
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
+        // Validator thật chạy trên proctor repository đã mock: luật "không gác hai ca trùng giờ"
+        // được test qua chính use case thay vì phải tin một mock trả sẵn.
         useCase = new AddExamScheduleProctorUseCase(
-            examRepository, examScheduleRepository, examScheduleProctorRepository, examMemberRepository,
-            schoolUserRepository, userRoleQueryRepository, userContextPort);
+            examRepository, examScheduleRepository, examScheduleProctorRepository,
+            new ExamScheduleProctorConflictValidator(examScheduleProctorRepository),
+            new ExamScheduleManageAccessService(
+                examMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort),
+            schoolUserRepository, userRoleQueryRepository);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
@@ -121,6 +130,63 @@ class AddExamScheduleProctorUseCaseTests {
         verify(examScheduleProctorRepository, never()).save(any());
     }
 
+    @Test
+    void should_reject_when_teacher_already_proctors_an_overlapping_schedule() {
+        givenTeacherIsEligible();
+        // Ca thi khác (kỳ thi nào cũng được) đè lên khung giờ của ca đang xếp.
+        when(examScheduleProctorRepository.existsOverlappingAssignment(teacherId, start, end, scheduleId))
+            .thenReturn(true);
+
+        assertThatThrownBy(() -> useCase.execute(new AddExamScheduleProctorCommand(examId, scheduleId, teacherId)))
+            .isInstanceOf(DuplicatedException.class)
+            .hasMessageContaining("khoảng thời gian này");
+        verify(examScheduleProctorRepository, never()).save(any());
+    }
+
+    /**
+     * Hai ca kề nhau đúng mốc (ca trước kết thúc lúc ca sau bắt đầu) không phải là trùng — điều kiện
+     * giao khoảng là nửa mở, giống hệt luật kiểm tra phòng.
+     */
+    @Test
+    void should_accept_when_teacher_has_no_overlapping_schedule() {
+        givenTeacherIsEligible();
+        when(examScheduleProctorRepository.existsOverlappingAssignment(teacherId, start, end, scheduleId))
+            .thenReturn(false);
+        when(examScheduleProctorRepository.save(any(ExamScheduleProctor.class)))
+            .thenAnswer(inv -> {
+                ExamScheduleProctor p = inv.getArgument(0);
+                p.setId(UUID.randomUUID());
+                return p;
+            });
+
+        var result = useCase.execute(new AddExamScheduleProctorCommand(examId, scheduleId, teacherId));
+
+        assertThat(result.teacherId()).isEqualTo(teacherId);
+        verify(examScheduleProctorRepository).save(any(ExamScheduleProctor.class));
+    }
+
+    /** Luật quét toàn trường nên phép kiểm tra không được kèm ràng buộc kỳ thi nào cả. */
+    @Test
+    void should_check_conflicts_across_all_exams_of_the_teacher() {
+        givenTeacherIsEligible();
+        when(examScheduleProctorRepository.save(any(ExamScheduleProctor.class)))
+            .thenAnswer(inv -> {
+                ExamScheduleProctor p = inv.getArgument(0);
+                p.setId(UUID.randomUUID());
+                return p;
+            });
+
+        useCase.execute(new AddExamScheduleProctorCommand(examId, scheduleId, teacherId));
+
+        verify(examScheduleProctorRepository).existsOverlappingAssignment(teacherId, start, end, scheduleId);
+    }
+
+    private void givenTeacherIsEligible() {
+        when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, teacherId)).thenReturn(true);
+        when(userRoleQueryRepository.findByUserIdWithRoleInfo(teacherId)).thenReturn(List.of(teacherRole()));
+        when(examScheduleProctorRepository.existsByScheduleIdAndTeacherId(scheduleId, teacherId)).thenReturn(false);
+    }
+
     private UserRoleInfo teacherRole() {
         return new UserRoleInfo(UUID.randomUUID(), teacherId, UUID.randomUUID(), Instant.now(),
             "TEACHER", "Teacher");
@@ -138,6 +204,8 @@ class AddExamScheduleProctorUseCaseTests {
         schedule.setId(scheduleId);
         schedule.setExamId(examId);
         schedule.setSchoolRoomId(UUID.randomUUID());
+        schedule.setStartDate(start);
+        schedule.setEndDate(end);
         schedule.setStatus(ExamScheduleStatus.DRAFT);
         return schedule;
     }

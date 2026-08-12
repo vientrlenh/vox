@@ -3,10 +3,12 @@ package com.sep.vox.infrastructure.event.internal.consumer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -14,6 +16,7 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +35,7 @@ import com.sep.vox.application.response.output.PushMessage;
 import com.sep.vox.application.event.ExamAppealApprovedPayloadV1;
 import com.sep.vox.application.event.ExamAppealPublishedPayloadV1;
 import com.sep.vox.application.event.ExamAppealRejectedPayloadV1;
+import com.sep.vox.application.event.ExamBlueprintVersionPublishedEvent;
 import com.sep.vox.application.event.ExamResultInvalidClearedPayloadV1;
 import com.sep.vox.application.event.ExamResultInvalidatedPayloadV1;
 import com.sep.vox.application.event.ExamResultOutcomeDecidedPayloadV1;
@@ -39,7 +43,9 @@ import com.sep.vox.application.event.ExamResultRegradedPayloadV1;
 import com.sep.vox.application.event.ExamResultReleasedPayloadV1;
 import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
 import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
+import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.port.output.PushNotificationPort;
+import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.notification.Notification;
 import com.sep.vox.domain.model.notification.NotificationCategory;
@@ -143,6 +149,74 @@ class NotificationPushedEventConsumerTests {
     void should_cover_exactly_the_mapped_event_types() {
         var covered = allEventTypes().stream().map(c -> c.eventType()).toList();
         assertThat(covered).containsExactlyInAnyOrderElementsOf(NotificationCategory.mappedEventTypes());
+    }
+
+    /** Một event, mỗi school admin trong payload một dòng notification riêng. */
+    @Test
+    void should_create_one_notification_per_recipient_when_event_fans_out() {
+        var admin1 = UUID.randomUUID();
+        var admin2 = UUID.randomUUID();
+        var admin3 = UUID.randomUUID();
+
+        consumer.consume(record(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
+            new ExamBlueprintVersionPublishedEvent(List.of(admin1, admin2, admin3), "BP-01", "Blueprint Toán 12")), ack);
+
+        var captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository, times(3)).saveIfAbsent(captor.capture());
+        assertThat(captor.getAllValues()).extracting(n -> n.getUserId())
+            .containsExactlyInAnyOrder(admin1, admin2, admin3);
+        verify(ack).acknowledge();
+    }
+
+    /**
+     * Id trùng trong payload chỉ tốn một lượt ghi bị uk_notifications_user_event chặn. Payload
+     * đã đi qua Kafka nên consumer không kiểm soát được nó, phải tự lọc.
+     */
+    @Test
+    void should_ignore_duplicate_and_null_recipients_in_fan_out_payload() {
+        var admin = UUID.randomUUID();
+
+        consumer.consume(record(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
+            new ExamBlueprintVersionPublishedEvent(Arrays.asList(admin, admin, null), "BP-01", "Blueprint Toán 12")), ack);
+
+        verify(notificationRepository, times(1)).saveIfAbsent(any());
+        verify(ack).acknowledge();
+    }
+
+    /**
+     * Crash giữa chừng ở lần trước có thể đã tạo xong một phần. Lần chạy lại chỉ được push
+     * cho những người thực sự vừa có dòng mới -- push lại cho người cũ là làm phiền hai lần.
+     */
+    @Test
+    void should_push_only_to_recipients_whose_notification_was_newly_created() {
+        var existing = UUID.randomUUID();
+        var fresh = UUID.randomUUID();
+
+        // doAnswer chứ không phải when(...): when() sẽ gọi thật saveIfAbsent(any()) trên mock
+        // đã stub ở setUp, và answer cũ nhận null làm đối số rồi ném NPE trước khi kịp re-stub.
+        doAnswer(invocation -> {
+            Notification notification = invocation.getArgument(0);
+            return existing.equals(notification.getUserId()) ? Optional.empty() : Optional.of(notification);
+        }).when(notificationRepository).saveIfAbsent(any());
+
+        consumer.consume(record(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
+            new ExamBlueprintVersionPublishedEvent(List.of(existing, fresh), "BP-01", "Blueprint Toán 12")), ack);
+
+        verify(notificationDeviceRepository, times(1)).findByUserId(fresh);
+        verify(notificationDeviceRepository, never()).findByUserId(existing);
+        verify(ack).acknowledge();
+    }
+
+    /** Trường không còn admin nào đang hoạt động: bỏ qua, không đẩy vào vòng retry. */
+    @Test
+    void should_skip_event_without_recipients_instead_of_failing() {
+        consumer.consume(record(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
+            new ExamBlueprintVersionPublishedEvent(List.of(), "BP-01", "Blueprint Toán 12")), ack);
+
+        verify(notificationRepository, never()).saveIfAbsent(any());
+        verifyNoInteractions(pushNotificationPort);
+        verify(processedEventRepository).save(any());
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -326,7 +400,15 @@ class NotificationPushedEventConsumerTests {
                 id, userId, examName, "FIRST", Instant.parse("2026-09-01T03:00:00Z"))),
             // Người nhận là assignedBy (admin đã giao việc), không phải teacherId.
             new TestCase(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, new GradingAssignmentDeclinedPayloadV1(
-                id, id, UUID.randomUUID(), userId, examName, "Bận lịch coi thi"))
+                id, id, UUID.randomUUID(), userId, examName, "Bận lịch coi thi")),
+
+            // Hai event fan-out: ở đây cố tình chỉ một người nhận để dùng chung được vòng
+            // lặp assertion phía trên. Hành vi nhiều người nhận có test riêng bên dưới.
+            new TestCase(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
+                new ExamBlueprintVersionPublishedEvent(List.of(userId), "BP-01", "Blueprint Toán 12")),
+            new TestCase(EventTypeConstant.INVOICE_PAID, new InvoicePaidPayloadV1(
+                List.of(userId), id, id, id, "INV-001", new BigDecimal("500000"),
+                Instant.parse("2026-09-01T03:00:00Z"), InvoiceSourceType.SUBSCRIPTION))
         );
     }
 

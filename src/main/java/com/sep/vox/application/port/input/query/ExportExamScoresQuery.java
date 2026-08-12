@@ -12,7 +12,7 @@ import java.util.UUID;
  * cái họ đang nhìn, nên hai bên buộc phải cùng một bộ trường.
  *
  * @param examKind {@code CENTRALIZED} / {@code CLASS_TEST}; null được hiểu là
- *                 {@code CENTRALIZED} qua {@link com.sep.vox.application.common.GradingScopeKind}
+ *                 {@code CENTRALIZED} qua {@link com.sep.vox.domain.service.exam.GradingScopeKind}
  */
 public record ExportExamScoresQuery(
     UUID examId,

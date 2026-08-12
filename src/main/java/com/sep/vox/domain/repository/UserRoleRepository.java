@@ -16,4 +16,5 @@ public interface UserRoleRepository {
 
     List<UserRole> findByUserIdIn(Collection<UUID> userIds);
     List<UserRole> findByRoleIdIn(Collection<UUID> roleIds, int pageNumber, int size);
+    long countByRoleId(UUID roleId);
 }

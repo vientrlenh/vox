@@ -1,0 +1,58 @@
+extend type Query {
+    myLearnerProfile: LearnerProfile
+    interestQuizItems: [InterestQuizItem!]!
+    "Thang bậc của khung đang áp cho học sinh -- nguồn cho ô chọn độ khó trước mỗi phiên."
+    myPracticeBandOptions: [PracticeBandOption!]!
+}
+
+extend type Mutation {
+    submitInterestQuiz(input: SubmitInterestQuizInput!): LearnerProfile!
+    setPracticeGoal(goalType: PracticeGoalType!): LearnerProfile!
+}
+
+enum PracticeGoalType {
+    EXAM_PREP
+    ABILITY_IMPROVEMENT
+}
+
+input InterestQuizAnswerInput {
+    itemId: ID!
+    mostStatementIndex: Int!
+    leastStatementIndex: Int!
+}
+
+input SubmitInterestQuizInput {
+    answers: [InterestQuizAnswerInput!]!
+}
+
+type InterestQuizItem {
+    id: ID!
+    statements: [String!]!
+}
+
+type LearnerProfile {
+    goalType: PracticeGoalType!
+    """
+    Bậc mục tiêu của chính sách chấm -- dùng làm bậc chọn sẵn ở màn hình chọn độ khó.
+
+    NULL khi trường chưa có chính sách nào phủ tới lớp của học sinh. Trước đây trường hợp này
+    ném lỗi, làm hỏng cả những thao tác GHI trả về kiểu này (nộp quiz, đặt mục tiêu) -- xem chú
+    thích ở JpaLearnerProfileQueryRepository.findCurrent. Client tự chọn bậc mặc định khi thiếu.
+    """
+    targetFrameworkBandCode: String
+    targetFrameworkBandLabel: String
+    quizCompletedAt: String
+}
+
+"""
+Một bậc trên thang của khung đang áp, để học sinh chọn độ khó trước khi vào phiên.
+Không có bậc nào được đánh dấu là "bậc của em" -- hệ thống không xếp bậc năng lực,
+chỉ ghi lại độ khó em chọn cho từng phiên.
+"""
+type PracticeBandOption {
+    id: ID!
+    code: String!
+    label: String!
+    description: String
+    order: Int!
+}

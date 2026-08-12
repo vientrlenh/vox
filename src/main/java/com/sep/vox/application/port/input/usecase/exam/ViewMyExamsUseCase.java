@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.port.input.query.ViewMyExamsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.dto.ExamAttemptSummary;
@@ -20,6 +19,7 @@ import com.sep.vox.application.response.input.exam.StudentExamSessionSummaryResp
 import com.sep.vox.application.response.input.exam.StudentExamSummaryResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamPaper;
@@ -220,7 +220,7 @@ public class ViewMyExamsUseCase implements IUseCase<ViewMyExamsQuery, PageResult
             return new EntryAvailability(false, "Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
         }
 
-        if (ExamCandidateStatusSupport.isBlockedForEntry(candidate.getStatus())) {
+        if (ExamCandidateStatus.isBlockedForEntry(candidate.getStatus())) {
             return new EntryAvailability(false, "Bạn không đủ điều kiện tham gia kỳ thi này");
         }
 
@@ -234,7 +234,7 @@ public class ViewMyExamsUseCase implements IUseCase<ViewMyExamsQuery, PageResult
 
         // Không còn nhánh tắt riêng cho bài trên lớp: bài trên lớp giờ cũng thi trong phòng có
         // giám khảo và ca thi thật, nên đi chung đường kiểm tra với kỳ thi tập trung.
-        if (!ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
+        if (!ExamCandidateStatus.isAttended(candidate.getStatus())) {
             return new EntryAvailability(false, "Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị.");
         }
 

@@ -68,4 +68,6 @@ public interface SpringDataRubricCriterionRepository extends JpaRepository<Rubri
     List<RubricCriterionJpaEntity> findByRubricVersionId(UUID rubricVersionId);
 
     Optional<RubricCriterionJpaEntity> findByRubricVersionIdAndCode(UUID rubricVersionId, String code);
+
+    Optional<RubricCriterionJpaEntity> findByRubricVersionIdAndCodeIgnoreCase(UUID rubricVersionId, String code);
 }

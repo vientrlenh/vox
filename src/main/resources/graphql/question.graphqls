@@ -183,6 +183,7 @@ type Question {
     updatedAt: String
     createdBy: ID
     updatedBy: ID
+    createdByUser: User
     topic: QuestionTopic!
     bank: QuestionBank!
     assets: [QuestionAsset!]!

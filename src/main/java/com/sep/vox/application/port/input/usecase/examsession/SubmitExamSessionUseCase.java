@@ -12,15 +12,16 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
+import com.sep.vox.application.port.input.service.MissingResponseBackfillService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -47,6 +48,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamCandidateResultRepository examCandidateResultRepository;
     private final ExamItemResponseRepository examItemResponseRepository;
+    private final MissingResponseBackfillService missingResponseBackfillService;
     private final ExamItemResponseTurnRepository examItemResponseTurnRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
@@ -67,6 +69,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             ExamCandidateRepository examCandidateRepository,
             ExamCandidateResultRepository examCandidateResultRepository,
             ExamItemResponseRepository examItemResponseRepository,
+            MissingResponseBackfillService missingResponseBackfillService,
             ExamItemResponseTurnRepository examItemResponseTurnRepository,
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
@@ -85,6 +88,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         this.examCandidateRepository = examCandidateRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examItemResponseRepository = examItemResponseRepository;
+        this.missingResponseBackfillService = missingResponseBackfillService;
         this.examItemResponseTurnRepository = examItemResponseTurnRepository;
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
@@ -134,7 +138,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             return null;
         }
         // Áp dụng cho mọi loại bài: cổng vào thi đã chặn người chưa điểm danh, đây là lớp chốt thứ hai.
-        if (!ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
+        if (!ExamCandidateStatus.isAttended(candidate.getStatus())) {
             zeroScoreExamResultService.releaseZeroForEmptySession(session.getId());
             session.setStatus(ExamSessionStatus.GRADED);
             examSessionRepository.save(session);
@@ -147,12 +151,37 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             return null;
         }
 
+        // Lấp câu KHÔNG có bản ghi (hết giờ, mất kết nối, buộc kết thúc) bằng cặp response rỗng
+        // + bản chấm 0 điểm. Đặt SAU hai nhánh thoát sớm ở trên vì cả hai đã tự xử trọn bài
+        // (releaseZeroForEmptySession), và TRƯỚC vòng bắn sự kiện AI bên dưới -- vòng đó chạy
+        // trên `responses` đọc lúc nãy nên các dòng vừa tạo không lọt vào, đúng ý: không đẩy
+        // transcript rỗng sang LLM. Xem MissingResponseBackfillService.
+        missingResponseBackfillService.backfill(session.getId(), session.getPaperId());
+
         var criteriaFrameworks = buildCriteriaFrameworks(exam.getAssessmentPolicyId());
 
         for (var response : responses) {
+            if (MissingResponseBackfillService.NO_RECORDING.equals(response.getTerminationReason())) {
+                continue;
+            }
             var paperItemId = response.getPaperItemId();
             if (paperItemId == null) {
                 throw new NotFoundException("không thể tìm thấy paperItemId cho câu trả lời " + response.getId());
+            }
+
+            // Thí sinh ĐƯỢC hỏi nhưng KHÔNG NÓI GÌ: ghi thẳng 0 điểm, không gửi sang LLM.
+            //
+            // Đây là kết cục của chuỗi im lặng -- AI hỏi lại tới trần (3 lượt liên tiếp) rồi cắt
+            // câu, nhưng dòng response vẫn tồn tại với transcript rỗng. Đẩy nó sang LLM là mời
+            // model chấm một bài không có nội dung: nó nhận đề bài đầy đủ, phần trả lời trống,
+            // và vẫn trả về một con điểm suy ra từ hư không -- nhìn không phân biệt được với
+            // điểm thật.
+            //
+            // Xét cả transcript của TỪNG LƯỢT chứ không chỉ ô tổng: có đường ghi chỉ điền
+            // transcript ở mức lượt, nên chỉ nhìn response sẽ kết luận nhầm là rỗng.
+            if (isSilentAnswer(response)) {
+                missingResponseBackfillService.recordSilentAnswer(response.getId(), paperItemId);
+                continue;
             }
 
             var paperItem = examPaperItemRepository.findById(paperItemId)
@@ -224,6 +253,24 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         }
 
         return null;
+    }
+
+    /**
+     * Câu này có nội dung trả lời nào không.
+     *
+     * <p>Xét CẢ HAI nơi transcript có thể nằm: ô tổng của response, và transcript của từng lượt
+     * nói. Hai đường ghi khác nhau điền hai chỗ khác nhau, nên chỉ nhìn một chỗ sẽ kết luận nhầm
+     * là rỗng và ghi 0 cho một bài thí sinh đã làm -- sai theo hướng nguy hiểm nhất.
+     *
+     * <p>KHÔNG xét thời lượng: mic mở nhưng thí sinh im lặng vẫn cho ra vài chục giây audio mà
+     * không có chữ nào. Chỉ có chữ mới chấm được.
+     */
+    private boolean isSilentAnswer(com.sep.vox.domain.model.exam.ExamItemResponse response) {
+        if (response.getTranscript() != null && !response.getTranscript().isBlank()) {
+            return false;
+        }
+        return examItemResponseTurnRepository.findByExamItemResponseId(response.getId()).stream()
+            .noneMatch(turn -> turn.getTranscript() != null && !turn.getTranscript().isBlank());
     }
 
     private void persistInvalidBlockedResult(com.sep.vox.domain.model.exam.ExamSession session) {

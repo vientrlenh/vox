@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
+import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExamGradingAssignmentMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataExamGradingAssignmentRepository;
@@ -68,6 +69,12 @@ public class ExamGradingAssignmentRepositoryImpl implements ExamGradingAssignmen
         return springDataExamGradingAssignmentRepository.findByCandidateResultIdIn(candidateResultIds).stream()
             .map(ExamGradingAssignmentMapper::toDomain)
             .toList();
+    }
+
+    @Override
+    public boolean existsByCandidateResultIdAndTeacherId(UUID candidateResultId, UUID teacherId) {
+        return springDataExamGradingAssignmentRepository
+            .existsByCandidateResultIdAndTeacherId(candidateResultId, teacherId);
     }
 
     @Override
@@ -134,5 +141,10 @@ public class ExamGradingAssignmentRepositoryImpl implements ExamGradingAssignmen
             return;
         }
         springDataExamGradingAssignmentRepository.deleteByCandidateResultIdIn(candidateResultIds);
+    }
+
+    @Override
+    public long countByTeacherIdAndStatus(UUID teacherId, GradingAssignmentStatus status) {
+        return springDataExamGradingAssignmentRepository.countByTeacherIdAndStatus(teacherId, status.name());
     }
 }

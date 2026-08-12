@@ -19,6 +19,12 @@ public interface ExamScheduleRepository {
     /** Danh sách ca thi của một bài kiểm tra (đã loại các ca DELETED). */
     List<ExamSchedule> findByExamId(UUID examId);
 
+    /**
+     * Ca thi của nhiều kỳ thi cùng lúc (đã loại các ca DELETED) — dùng cho DataLoader
+     * {@code examSchedulesByExamId} để trang danh sách kỳ thi dựng được thanh tiến độ mà không N+1.
+     */
+    List<ExamSchedule> findByExamIdIn(Collection<UUID> examIds);
+
     /** Danh sách ca thi của toàn trường (đã loại các ca DELETED). */
     List<ExamSchedule> findBySchoolId(UUID schoolId);
 
@@ -49,6 +55,13 @@ public interface ExamScheduleRepository {
      */
     int updateAtomic(UUID id, UUID schoolRoomId, Instant start, Instant end,
             Instant now, UUID updatedBy);
+    /**
+     * Ca đã công bố nhưng đã qua giờ kết thúc, cũ nhất trước, tối đa {@code limit} dòng — dùng cho
+     * job tự chuyển ca sang COMPLETED. Có trần vì lần chạy đầu sau khi triển khai phải quét cả tồn
+     * đọng lịch sử.
+     */
+    List<ExamSchedule> findPublishedEndedBefore(Instant now, int limit);
+
     List<ExamSchedule> findByExamIdAndInSchedule(UUID examId, Instant now);
     List<ExamSchedule> findByIdInAndInSchedule(Collection<UUID> ids, Instant now);
     Optional<ExamSchedule> findByIdAndInSchedule(UUID id, Instant now);

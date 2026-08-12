@@ -69,7 +69,7 @@ public interface SpringDataExamMemberRepository extends JpaRepository<ExamMember
             )
             OR EXISTS (
                 SELECT 1 FROM ExamMemberJpaEntity em
-                WHERE em.examId = :examId AND em.userId = :userId AND em.role = 'AUTHOR'
+                WHERE em.examId = :examId AND em.userId = :userId AND em.role IN ('AUTHOR', 'CHAIR')
             )
         ) THEN true ELSE false END
         FROM ExamJpaEntity e

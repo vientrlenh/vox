@@ -30,4 +30,7 @@ public interface SchoolClassUserRepository {
 
     /** Vô hiệu hóa (deactivate) mọi thành viên đang active của một lớp học. Trả về số dòng bị ảnh hưởng. */
     int deactivateBySchoolClassId(UUID schoolClassId, Instant leftAt);
+
+    /** Khối (school_grade_id) của lớp học sinh đang là thành viên active gần nhất. */
+    Optional<UUID> findCurrentSchoolGradeId(UUID studentId);
 }

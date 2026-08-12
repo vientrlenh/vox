@@ -44,6 +44,9 @@ public interface SpringDataExamGradingAssignmentRepository
 
     List<ExamGradingAssignmentJpaEntity> findByCandidateResultIdIn(Collection<UUID> candidateResultIds);
 
+    /** Đi thẳng vào {@code idx_grading_assignments_result} rồi lọc teacher trên vài dòng của bài. */
+    boolean existsByCandidateResultIdAndTeacherId(UUID candidateResultId, UUID teacherId);
+
     List<ExamGradingAssignmentJpaEntity> findByAppealId(UUID appealId);
 
     @Query("""
@@ -98,4 +101,6 @@ public interface SpringDataExamGradingAssignmentRepository
     List<ExamGradingAssignmentJpaEntity> findDueForReminder(@Param("threshold") Instant threshold);
 
     void deleteByCandidateResultIdIn(Collection<UUID> candidateResultIds);
+
+    long countByTeacherIdAndStatus(UUID teacherId, String status);
 }

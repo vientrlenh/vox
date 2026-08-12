@@ -74,11 +74,13 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
             throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra tập trung");
         }
 
-        boolean isAuthor = examMemberRepository.canAttachBlueprint(exam.getId(), currentUserId);
+        // Gắn/đổi khung đề: quản trị trường, người ra đề, hoặc chủ tịch hội đồng (chủ tịch chạy trọn
+        // quy trình nên phải tự chọn được khung đề). Chốt version thì vẫn chỉ quản trị trường/chủ tịch.
+        boolean canAttach = examMemberRepository.canAttachBlueprint(exam.getId(), currentUserId);
         boolean isChair = examMemberRepository.canApproveBlueprintVersion(exam.getId(), currentUserId);
 
         if (input.blueprintId() != null) {
-            if (!isAuthor) {
+            if (!canAttach) {
                 throw new ForbiddenException("Quyền truy cập bị từ chối");
             }
 
@@ -96,7 +98,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
         }
 
         if (input.newBlueprint() != null) {
-            if (!isAuthor) {
+            if (!canAttach) {
                 throw new ForbiddenException("Quyền truy cập bị từ chối");
             }
             requireNoExistingPapers(exam.getId());

@@ -5,8 +5,6 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamEditingGuard;
-import com.sep.vox.application.common.ExamScheduleWindowMessages;
 import com.sep.vox.application.common.InstantParser;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
@@ -28,6 +26,8 @@ import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.service.exam.ExamEditingGuard;
+import com.sep.vox.domain.service.exam.ExamScheduleWindowMessages;
 
 @Service
 public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
@@ -194,6 +194,11 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             boolean schoolAdmin) {
         if (kind == ExamKind.CENTRALIZED) {
             if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(examSchoolId)) {
+                return;
+            }
+            // Chủ tịch hội đồng chạy trọn quy trình kỳ thi tập trung trên trang chi tiết (lập hội đồng →
+            // chốt khung đề → ra đề → xếp lịch), nên phải sửa được thông tin kỳ thi như quản trị trường.
+            if (examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.CHAIR)) {
                 return;
             }
             throw new ForbiddenException("Quyền truy cập bị từ chối");

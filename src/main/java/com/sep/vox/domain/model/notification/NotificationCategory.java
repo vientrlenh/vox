@@ -10,15 +10,18 @@ public enum NotificationCategory {
     EXAM_APPEAL,
     GRADING,
     EXAM_SCHEDULE,
+    EXAM_BLUEPRINT,
+    BILLING,
     SYSTEM;
 
     /**
      * Cầu nối giữa {@code eventType} của outbox và nhóm tuỳ chọn nhận thông báo.
      *
-     * <p>Chỉ chứa những eventType thực sự sinh notification. Hai loại vắng mặt là có chủ
+     * <p>Chỉ chứa những eventType thực sự sinh notification. Các loại vắng mặt đều có chủ
      * ý: {@code UserCreated} và {@code RegisterFormRejected} gửi tới người chưa từng đăng
-     * nhập, nên chưa có thiết bị nào để đẩy -- xem consumer-groups.notification.topic
-     * trong application.yaml, nơi hai topic đó cũng không được đăng ký.
+     * nhập, còn hai event OTP thì gửi tới người đang đứng ngoài phiên đăng nhập. Cả bốn
+     * đều chưa có thiết bị nào để đẩy -- xem consumer-groups.notification.topic trong
+     * application.yaml, nơi các topic đó cũng không được đăng ký.
      */
     private static final Map<String, NotificationCategory> BY_EVENT_TYPE = Map.ofEntries(
         Map.entry(EventTypeConstant.EXAM_APPEAL_PUBLISHED, EXAM_APPEAL),
@@ -32,7 +35,10 @@ public enum NotificationCategory {
         Map.entry(EventTypeConstant.EXAM_RESULT_OUTCOME_DECIDED, EXAM_RESULT),
 
         Map.entry(EventTypeConstant.GRADING_DEADLINE_REMINDER, GRADING),
-        Map.entry(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, GRADING)
+        Map.entry(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, GRADING), 
+        Map.entry(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED, EXAM_BLUEPRINT),
+
+        Map.entry(EventTypeConstant.INVOICE_PAID, BILLING)
     );
 
     /**

@@ -70,6 +70,11 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     }
 
     @Override
+    public long countActiveByExamId(UUID examId) {
+        return springDataExamSessionRepository.countActiveByExamId(examId);
+    }
+
+    @Override
     public List<ExamSession> findDeferredGradingCandidates(Instant now) {
         return springDataExamSessionRepository.findDeferredGradingCandidates(now).stream()
             .map(ExamSessionMapper::toDomain)
@@ -86,6 +91,11 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     @Override
     public boolean existsById(UUID id) {
         return springDataExamSessionRepository.existsById(id);
+    }
+
+    @Override
+    public boolean existsByPaperId(UUID paperId) {
+        return springDataExamSessionRepository.existsByPaperId(paperId);
     }
 
     @Override

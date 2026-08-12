@@ -164,6 +164,15 @@ public class QuestionController {
             .orElse(false));
     }
 
+    @SchemaMapping(typeName = "Question", field = "createdByUser")
+    public CompletableFuture<UserDto> createdByUser(QuestionDto source, DataFetchingEnvironment env) {
+        if (source.createdBy() == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(source.createdBy());
+    }
+
     @SchemaMapping(typeName = "QuestionCollaborator", field = "user")
     public CompletableFuture<UserDto> collaboratorUser(QuestionCollaboratorDto source, DataFetchingEnvironment env) {
         DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");

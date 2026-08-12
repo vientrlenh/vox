@@ -15,20 +15,24 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamBlueprintVersionStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -43,7 +47,8 @@ public class UpdateExamBlueprintVersionStatusUseCase
     private final QuestionRepository questionRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-    private final EventPublisherPort eventPublisherPort;
+    private final OutboxRepository outboxRepository;
+    private final JsonSerializationPort jsonSerializationPort;
     private final UserRoleQueryRepository userRoleQueryRepository;
 
     public UpdateExamBlueprintVersionStatusUseCase(
@@ -54,7 +59,8 @@ public class UpdateExamBlueprintVersionStatusUseCase
             QuestionRepository questionRepository,
             SchoolUserRepository schoolUserRepository,
             UserContextPort userContextPort,
-            EventPublisherPort eventPublisherPort,
+            OutboxRepository outboxRepository, 
+            JsonSerializationPort jsonSerializationPort, 
             UserRoleQueryRepository userRoleQueryRepository) {
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examBlueprintRepository = examBlueprintRepository;
@@ -63,7 +69,8 @@ public class UpdateExamBlueprintVersionStatusUseCase
         this.questionRepository = questionRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userContextPort = userContextPort;
-        this.eventPublisherPort = eventPublisherPort;
+        this.outboxRepository = outboxRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
         this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
@@ -86,6 +93,7 @@ public class UpdateExamBlueprintVersionStatusUseCase
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
 
         requireStatusActor(version, blueprint, currentUserId, currentSchoolId);
+        var now = Instant.now();
 
         switch (command.action()) {
             case "PUBLISH" -> {
@@ -109,11 +117,18 @@ public class UpdateExamBlueprintVersionStatusUseCase
         var saved = examBlueprintVersionRepository.save(version);
 
         if (command.action().equals("PUBLISH")) {
-            eventPublisherPort.publish(new ExamBlueprintVersionPublishedEvent(
-                blueprint.getSchoolId(),
+            var schoolAdminIds = schoolUserRepository.findBySchoolIdWithRole(blueprint.getSchoolId(), "SCHOOL_ADMIN")
+                .stream()
+                .map(su -> su.getUserId())
+                .toList();
+            var event = new ExamBlueprintVersionPublishedEvent(
+                schoolAdminIds,
                 blueprint.getCode(),
                 blueprint.getName()
-            ));
+            );
+            var payload = jsonSerializationPort.toJson(event);
+            var outbox = Outbox.create(AggregateTypeConstant.EXAM_BLUEPRINT_VERSION, version.getId(), EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED, payload, now);
+            outboxRepository.save(outbox);
         }
 
         return ExamBlueprintVersionDtoMapper.toDto(saved);

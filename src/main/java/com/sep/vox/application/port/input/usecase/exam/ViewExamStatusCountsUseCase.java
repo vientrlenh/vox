@@ -52,7 +52,9 @@ public class ViewExamStatusCountsUseCase implements IUseCase<ViewExamStatusCount
             systemAdmin,
             schoolAdmin,
             input.schoolId(),
-            input.kind() == null ? null : input.kind().name()
+            input.kind() == null ? null : input.kind().name(),
+            input.createdFrom(),
+            input.createdTo()
         );
     }
 }

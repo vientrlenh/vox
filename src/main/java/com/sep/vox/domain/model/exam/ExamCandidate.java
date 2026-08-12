@@ -83,6 +83,16 @@ public class ExamCandidate {
         this.updatedBy = updatedBy;
     }
 
+    /**
+     * Bỏ gán mã đề khỏi thí sinh. Dùng khi mã đề bị xoá: thí sinh quay về "chưa phân đề" thay vì
+     * giữ con trỏ tới một dòng không còn tồn tại.
+     */
+    public void unassignPaper(Instant now, UUID updatedBy) {
+        this.assignedPaperId = null;
+        this.updatedAt = now;
+        this.updatedBy = updatedBy;
+    }
+
     public UUID getId() {
         return id;
     }

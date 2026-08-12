@@ -38,10 +38,16 @@ class ConfidenceReviewCalculatorTests {
 
         assertThat(decision.reviewSeverity()).isEqualTo("mandatory");
         assertThat(decision.reviewReasons()).containsExactly("ASR_LOW_CONF");
+        // "mandatory" là mức DUY NHẤT còn tự đẩy bài sang người chấm -- chốt lại ở đây để lần
+        // sau ai đổi ngưỡng cũng thấy ngay ranh giới đó.
+        assertThat(decision.requiresHumanReview()).isTrue();
     }
 
     @Test
-    void oneBranchSoftFailureRequiresSoftReview() {
+    void oneBranchSoftFailureIsReportedAsSoftWithoutForcingReview() {
+        // Một nhánh soft vẫn được ghi nhận severity "soft" để hiển thị cho người chấm, nhưng
+        // KHÔNG tự đẩy bài vào hàng chấm tay: reviewSoftSignals = false ở cả ba profile
+        // (PRACTICE/MOCK_TEST/HIGH_STAKES), nên requiresHumanReview chỉ bật ở "mandatory".
         var decision = calculator.compute(
             signals(decimal("0.70"), null, null, null, null, null, null, null, null, null),
             ExamKind.CLASS_TEST,
@@ -50,7 +56,7 @@ class ConfidenceReviewCalculatorTests {
         );
 
         assertThat(decision.reviewSeverity()).isEqualTo("soft");
-        assertThat(decision.requiresHumanReview()).isTrue();
+        assertThat(decision.requiresHumanReview()).isFalse();
     }
 
     @Test
@@ -84,68 +90,81 @@ class ConfidenceReviewCalculatorTests {
 
         assertThat(classTest.reviewSeverity()).isEqualTo("none");
         assertThat(centralized.reviewSeverity()).isEqualTo("recommended");
+        // Kỳ thi tập trung siết NGƯỠNG severity, nhưng "recommended" vẫn không tự đẩy sang
+        // người chấm -- chỉ "mandatory" mới đẩy.
+        assertThat(centralized.requiresHumanReview()).isFalse();
     }
 
-    @Test
-    void alignmentAccuracyUsesItsOwnVietnamAdjustedThreshold_notCompositeThreshold() {
-        // accuracy=0.75 (m=0.25): dưới ngưỡng composite cũ 0.90, nhưng NẰM TRONG khoảng nới
-        // Vietnam-adjusted đúng (soft 0.80/hard 0.70) -- đây là caseg soft-fail thật (0.75<0.80),
-        // không phải hard-fail. coverage/timing đều tốt (không tự trigger group D).
-        var decision = calculator.compute(
-            alignmentSignals(null, null, null, null, null, null,
-                decimal("0.75"), decimal("0.95"), decimal("0.90"), null, null, null, null),
-            ExamKind.CLASS_TEST,
-            null,
-            false
-        );
-
-        assertThat(decision.reviewSeverity()).isEqualTo("soft");
-        assertThat(decision.reviewReasons()).containsExactly("ALIGNMENT_MISCUE_HIGH");
-    }
-
-    @Test
-    void alignmentAccuracyBelowVietnamAdjustedFloorDoesNotFalsePositive() {
-        // accuracy=0.85 (m=0.15): dưới ngưỡng composite cũ 0.90 (sẽ SAI bị flag ở bản trước khi
-        // sửa), nhưng ĐẠT ngưỡng soft Vietnam-adjusted thật (0.80) -- không được trigger gì cả.
-        var decision = calculator.compute(
-            alignmentSignals(null, null, null, null, null, null,
-                decimal("0.85"), decimal("0.95"), decimal("0.90"), null, null, null, null),
-            ExamKind.CLASS_TEST,
-            null,
-            false
-        );
-
-        assertThat(decision.reviewSeverity()).isEqualTo("none");
-        assertThat(decision.requiresHumanReview()).isFalse();
-    }
-
-    @Test
-    void codeSwitchSkipsAlignmentReasonsWhenItExplainsObservedGap() {
-        var decision = calculator.compute(
-            alignmentSignals(null, null, null, null, null, null,
-                decimal("0.75"), decimal("0.80"), decimal("0.90"), null, null, null, null),
-            ExamKind.CLASS_TEST,
-            decimal("0.25"),
-            false
-        );
-
-        assertThat(decision.reviewReasons())
-            .doesNotContain("ALIGNMENT_MISCUE_HIGH", "ALIGNMENT_COVERAGE_LOW");
-    }
-
-    @Test
-    void codeSwitchKeepsAlignmentReasonsWhenItDoesNotExplainObservedGap() {
-        var decision = calculator.compute(
-            alignmentSignals(null, null, null, null, null, null,
-                decimal("0.60"), decimal("0.70"), decimal("0.90"), null, null, null, null),
-            ExamKind.CLASS_TEST,
-            decimal("0.10"),
-            false
-        );
-
-        assertThat(decision.reviewReasons())
-            .contains("ALIGNMENT_MISCUE_HIGH", "ALIGNMENT_COVERAGE_LOW");
-    }
+    // ==============================================================================================
+    // TẮT 2026-08-11 cùng Group D (case 4) -- xem ConfidenceReviewCalculator.compute().
+    //
+    // Bốn test dưới đây khẳng định ĐÚNG hành vi vừa bị tắt, nên để nguyên là chúng sẽ đỏ. Không
+    // xoá mà chú thích lại: chúng ghi lại phần khó nhất của case (4) -- vì sao ngưỡng accuracy
+    // được nới riêng (0.80/0.70) thay vì dùng chung ngưỡng của coverage, và vì sao code-switching
+    // phải MIỄN cho alignment đúng bằng tỉ lệ chuyển mã quan sát được. Bật lại Group D mà không có
+    // bốn test này là bật lại kèm nguyên chùm lỗi cũ.
+    //
+    // @Test
+    // void alignmentAccuracyUsesItsOwnVietnamAdjustedThreshold_notCompositeThreshold() {
+    //     // accuracy=0.75 (m=0.25): dưới ngưỡng composite cũ 0.90, nhưng NẰM TRONG khoảng nới
+    //     // Vietnam-adjusted đúng (soft 0.80/hard 0.70) -- đây là caseg soft-fail thật (0.75<0.80),
+    //     // không phải hard-fail. coverage/timing đều tốt (không tự trigger group D).
+    //     var decision = calculator.compute(
+    //         alignmentSignals(null, null, null, null, null, null,
+    //             decimal("0.75"), decimal("0.95"), decimal("0.90"), null, null, null, null),
+    //         ExamKind.CLASS_TEST,
+    //         null,
+    //         false
+    //     );
+    //
+    //     assertThat(decision.reviewSeverity()).isEqualTo("soft");
+    //     assertThat(decision.reviewReasons()).containsExactly("ALIGNMENT_MISCUE_HIGH");
+    // }
+    //
+    // @Test
+    // void alignmentAccuracyBelowVietnamAdjustedFloorDoesNotFalsePositive() {
+    //     // accuracy=0.85 (m=0.15): dưới ngưỡng composite cũ 0.90 (sẽ SAI bị flag ở bản trước khi
+    //     // sửa), nhưng ĐẠT ngưỡng soft Vietnam-adjusted thật (0.80) -- không được trigger gì cả.
+    //     var decision = calculator.compute(
+    //         alignmentSignals(null, null, null, null, null, null,
+    //             decimal("0.85"), decimal("0.95"), decimal("0.90"), null, null, null, null),
+    //         ExamKind.CLASS_TEST,
+    //         null,
+    //         false
+    //     );
+    //
+    //     assertThat(decision.reviewSeverity()).isEqualTo("none");
+    //     assertThat(decision.requiresHumanReview()).isFalse();
+    // }
+    //
+    // @Test
+    // void codeSwitchSkipsAlignmentReasonsWhenItExplainsObservedGap() {
+    //     var decision = calculator.compute(
+    //         alignmentSignals(null, null, null, null, null, null,
+    //             decimal("0.75"), decimal("0.80"), decimal("0.90"), null, null, null, null),
+    //         ExamKind.CLASS_TEST,
+    //         decimal("0.25"),
+    //         false
+    //     );
+    //
+    //     assertThat(decision.reviewReasons())
+    //         .doesNotContain("ALIGNMENT_MISCUE_HIGH", "ALIGNMENT_COVERAGE_LOW");
+    // }
+    //
+    // @Test
+    // void codeSwitchKeepsAlignmentReasonsWhenItDoesNotExplainObservedGap() {
+    //     var decision = calculator.compute(
+    //         alignmentSignals(null, null, null, null, null, null,
+    //             decimal("0.60"), decimal("0.70"), decimal("0.90"), null, null, null, null),
+    //         ExamKind.CLASS_TEST,
+    //         decimal("0.10"),
+    //         false
+    //     );
+    //
+    //     assertThat(decision.reviewReasons())
+    //         .contains("ALIGNMENT_MISCUE_HIGH", "ALIGNMENT_COVERAGE_LOW");
+    // }
+    // ==============================================================================================
 
     @Test
     void moderateAudioDoesNotTriggerHardGate() {

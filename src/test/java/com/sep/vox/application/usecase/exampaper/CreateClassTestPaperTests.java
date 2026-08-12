@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,6 +27,10 @@ import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.application.port.input.usecase.exampaper.CreateExamPaperUseCase;
+import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessService;
+import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.model.exam.ExamMember;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamBlueprintSection;
@@ -89,7 +94,8 @@ class CreateClassTestPaperTests {
 
         useCase = new CreateExamPaperUseCase(
             examRepository,
-            examMemberRepository,
+            new ExamPaperAuthoringAccessService(
+                examMemberRepository, mock(SchoolUserRepository.class), mock(UserRoleQueryRepository.class)),
             examBlueprintVersionRepository,
             examBlueprintSectionRepository,
             examBlueprintSlotRepository,
@@ -106,8 +112,8 @@ class CreateClassTestPaperTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(TEACHER_ID);
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(classTest(null)));
-        when(examMemberRepository.existsByExamIdAndUserIdAndRole(EXAM_ID, TEACHER_ID, ExamMemberRole.CHAIR))
-            .thenReturn(true);
+        when(examMemberRepository.findByExamIdAndUserId(EXAM_ID, TEACHER_ID)).thenReturn(Optional.of(
+            new ExamMember(EXAM_ID, TEACHER_ID, ExamMemberRole.CHAIR, Instant.now(), TEACHER_ID)));
         when(questionRepository.findAccessibleById(any(UUID.class), any(UUID.class), any(UUID.class), anyBoolean(), anyBoolean()))
             .thenReturn(Optional.of(question()));
         when(examPaperRepository.nextVariant(EXAM_ID)).thenReturn(1);
@@ -163,8 +169,8 @@ class CreateClassTestPaperTests {
         centralized.setKind(ExamKind.CENTRALIZED);
         centralized.setSchoolId(SCHOOL_ID);
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(centralized));
-        when(examMemberRepository.existsByExamIdAndUserIdAndRole(EXAM_ID, TEACHER_ID, ExamMemberRole.AUTHOR))
-            .thenReturn(true);
+        when(examMemberRepository.findByExamIdAndUserId(EXAM_ID, TEACHER_ID)).thenReturn(Optional.of(
+            new ExamMember(EXAM_ID, TEACHER_ID, ExamMemberRole.AUTHOR, Instant.now(), TEACHER_ID)));
 
         assertThatThrownBy(() -> useCase.execute(questionsCommand()))
             .isInstanceOf(ForbiddenException.class)
@@ -195,8 +201,7 @@ class CreateClassTestPaperTests {
 
     @Test
     void should_reject_when_caller_is_not_the_class_test_chair() {
-        when(examMemberRepository.existsByExamIdAndUserIdAndRole(EXAM_ID, TEACHER_ID, ExamMemberRole.CHAIR))
-            .thenReturn(false);
+        when(examMemberRepository.findByExamIdAndUserId(EXAM_ID, TEACHER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(questionsCommand()))
             .isInstanceOf(ForbiddenException.class)

@@ -1,7 +1,5 @@
 package com.sep.vox.application.usecase.schoolroom;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
-
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.any;
@@ -132,7 +130,6 @@ class AcceptSchoolRoomImportUseCaseTests {
     private User activeUser(UUID id, UUID userSchoolId) {
         var user = new User();
         user.setId(id);
-        TestSchoolUserRepository.remember(id, userSchoolId);
         user.setStatus(UserStatus.ACTIVE);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
             Optional.of(new SchoolUser(userSchoolId, id, Instant.now(), Instant.now().plus(36500, ChronoUnit.DAYS)))

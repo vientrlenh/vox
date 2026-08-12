@@ -12,4 +12,5 @@ public interface CacheManagerPort {
     <T> T get(String key, Class<T> type);
     Long getRemainingTtl(String key);
     String saveIfAbsentAndGet(String key, String value, Duration ttl);
+    boolean deleteIfValueMatches(String key, String expectedValue);
 }

@@ -13,5 +13,15 @@ public enum ExamCandidateResultStatus {
     INVALID,
     RETAKE_REQUIRED,
     PASSED, // chốt sau khi kỳ thi RESULTS_PUBLISHED, điểm >= passingScore (hoặc nhà trường tự chọn từ FINAL)
-    FAILED // chốt sau khi kỳ thi RESULTS_PUBLISHED, điểm < passingScore hoặc INVALID (hoặc nhà trường tự chọn từ FINAL)
+    FAILED; // chốt sau khi kỳ thi RESULTS_PUBLISHED, điểm < passingScore hoặc INVALID (hoặc nhà trường tự chọn từ FINAL)
+
+    public static boolean isVisibleToCandidate(ExamCandidateResultStatus status) {
+        if (status == null) {
+            return false;
+        }
+        return switch (status) {
+            case RELEASED, FINAL, PASSED, FAILED, INVALID -> true;
+            case PENDING_REVIEW, APPEALED, RE_GRADING, RETAKE_REQUIRED -> false;
+        };
+    }
 }

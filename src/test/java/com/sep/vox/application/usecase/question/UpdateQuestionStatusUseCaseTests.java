@@ -21,7 +21,6 @@ import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.question.UpdateQuestionStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
@@ -33,6 +32,7 @@ import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
  * Endpoint cập nhật trạng thái một câu hỏi.
@@ -46,11 +46,11 @@ class UpdateQuestionStatusUseCaseTests {
     private QuestionRepository questionRepository;
     private QuestionBankRepository questionBankRepository;
     private QuestionCollaboratorRepository questionCollaboratorRepository;
+    private SchoolUserRepository schoolUserRepository;
     private UserContextPort userContextPort;
     private UpdateQuestionStatusUseCase useCase;
 
     private final UUID currentUserId = UUID.randomUUID();
-    private final UUID schoolId = UUID.randomUUID();
     private final UUID bankId = UUID.randomUUID();
 
     @BeforeEach
@@ -58,11 +58,10 @@ class UpdateQuestionStatusUseCaseTests {
         questionRepository = mock(QuestionRepository.class);
         questionBankRepository = mock(QuestionBankRepository.class);
         questionCollaboratorRepository = mock(QuestionCollaboratorRepository.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         userContextPort = mock(UserContextPort.class);
         var userRoleQueryRepository = mock(UserRoleQueryRepository.class);
 
-        var schoolUserRepository = TestSchoolUserRepository.create();
-        TestSchoolUserRepository.remember(currentUserId, schoolId);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userContextPort.isSystemAdmin()).thenReturn(false);
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(any())).thenReturn(List.of());
@@ -125,7 +124,7 @@ class UpdateQuestionStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "SUBMIT", null)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessage("Quyền truy cập bị từ chối");
+            .hasMessage("Không thể gửi duyệt: bạn không phải người tạo hoặc người cộng tác có quyền sửa câu hỏi này");
     }
 
     @Test
@@ -135,7 +134,8 @@ class UpdateQuestionStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "SUBMIT", null)))
             .isInstanceOf(IllegalStateException.class)
-            .hasMessage("Chỉ được submit khi câu hỏi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
+            .hasMessage("Không thể gửi duyệt: câu hỏi đang ở trạng thái \"Chờ duyệt\", "
+                + "thao tác này chỉ áp dụng cho câu hỏi ở trạng thái \"Bản nháp\" hoặc \"Yêu cầu sửa\"");
     }
 
     @Test

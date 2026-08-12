@@ -7,7 +7,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.CacheKey;
-import com.sep.vox.application.common.ExamCandidateStatusSupport;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
@@ -22,6 +21,7 @@ import com.sep.vox.application.port.output.HealthCheckPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.exam.ExamEntryTicketResponse;
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
@@ -92,10 +92,10 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
         if (candidate.getBlockedAt() != null) {
             throw new IllegalStateException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
         }
-        if (ExamCandidateStatusSupport.isBlockedForEntry(candidate.getStatus())) {
+        if (ExamCandidateStatus.isBlockedForEntry(candidate.getStatus())) {
             throw new IllegalStateException("Bạn không đủ điều kiện tham gia kỳ thi này");
         }
-        if (!ExamCandidateStatusSupport.isAttended(candidate.getStatus())) {
+        if (!ExamCandidateStatus.isAttended(candidate.getStatus())) {
             throw new IllegalStateException("Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị");
         }
         if (isExamClosedForEntry(exam, now)) {

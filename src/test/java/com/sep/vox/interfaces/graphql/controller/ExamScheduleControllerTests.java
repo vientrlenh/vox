@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleUseCase;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewExamSchedulesUseCase;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewMyExamSchedulesUseCase;
+import com.sep.vox.application.port.input.usecase.examschedule.ViewProctorBusySlotsUseCase;
 import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -47,7 +48,8 @@ class ExamScheduleControllerTests {
         examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
         controller = new ExamScheduleController(viewExamSchedulesUseCase, viewMyExamSchedulesUseCase,
-            updateExamScheduleUseCase, examScheduleProctorRepository, examCandidateRepository);
+            updateExamScheduleUseCase, mock(ViewProctorBusySlotsUseCase.class),
+            examScheduleProctorRepository, examCandidateRepository);
     }
 
     private ExamScheduleDto schedule(UUID schoolRoomId) {

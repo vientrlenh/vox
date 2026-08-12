@@ -1,6 +1,5 @@
 package com.sep.vox.application.usecase.importfile;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -49,13 +48,6 @@ class RejectImportSessionUseCaseTests {
         userRepository = mock(UserRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userContextPort = mock(UserContextPort.class);
-        useCase = new RejectImportSessionUseCase(
-            importSessionRepository,
-            userRepository,
-            schoolRepository,
-            userContextPort,
-            TestSchoolUserRepository.create()
-        );
         schoolUserRepository = mock(SchoolUserRepository.class);
         useCase = new RejectImportSessionUseCase(importSessionRepository, userRepository, schoolRepository, userContextPort, schoolUserRepository);
     }
@@ -233,7 +225,6 @@ class RejectImportSessionUseCaseTests {
     private User user(UUID id, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(id);
-        TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
             schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS))) : Optional.empty()

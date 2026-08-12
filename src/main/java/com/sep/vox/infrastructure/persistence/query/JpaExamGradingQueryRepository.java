@@ -24,6 +24,7 @@ import com.sep.vox.application.query.dto.GradingAssignmentFilter;
 import com.sep.vox.application.query.dto.GradingAssignmentRowInfo;
 import com.sep.vox.application.query.dto.GradingCriterionMetaInfo;
 import com.sep.vox.application.query.dto.GradingCriterionScoreInfo;
+import com.sep.vox.application.query.dto.GradingExamOptionInfo;
 import com.sep.vox.application.query.dto.GradingRiskInfo;
 import com.sep.vox.application.query.dto.GradingStatsInfo;
 import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
@@ -74,6 +75,13 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
      * làm nghẽn connection pool, kèm theo các query phụ với mệnh đề IN khổng lồ.
      */
     private static final int MAX_PAGE_SIZE = 100;
+
+    /**
+     * Trần số kỳ thi trả về cho dropdown lọc của giáo viên. Cùng tinh thần với
+     * {@link #MAX_PAGE_SIZE}: danh sách này không phân trang nên phải có chặn trên ở
+     * đâu đó, dù một người bình thường không bao giờ chạm tới.
+     */
+    private static final int MAX_EXAM_OPTIONS = 200;
 
     /** So khớp với {@code ExamKind.CLASS_TEST}; JPQL trả enum về dạng String. */
     private static final String CLASS_TEST_KIND = "CLASS_TEST";
@@ -635,6 +643,57 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
 
         var totalPages = (int) Math.ceil((double) total / normalizedSize);
         return new PageResult<>(content, normalizedPage, normalizedSize, total, totalPages);
+    }
+
+    /**
+     * Suy phạm vi kỳ thi TỪ tập phân công, không từ bảng kỳ thi: giáo viên chấm không
+     * phải thành viên kỳ thi tập trung nên mọi lối đọc exams thông thường đều đóng với
+     * họ, hỏi ở đó chỉ nhận về danh sách rỗng.
+     *
+     * <p>Đếm cả phân công đã COMPLETED — bộ lọc phải còn chọn được kỳ thi vừa chấm xong,
+     * nếu không thì nộp bài cuối cùng là cả kỳ thi biến mất khỏi dropdown ngay dưới tay.
+     *
+     * <p>Join qua {@code ga.candidateResultId} chứ KHÔNG phải {@code ga.activeResultId}:
+     * cột sau là null ở mọi dòng đã đóng, dùng nó thì mất sạch nửa "đã từng chấm".
+     */
+    @Override
+    public List<GradingExamOptionInfo> findExamsWithTasksByTeacherId(UUID teacherId, String examKind) {
+        // GROUP BY thay cho SELECT DISTINCT: cùng ra tập kỳ thi phân biệt, nhưng lấy luôn
+        // được hai con số đếm trong một lượt. Với DISTINCT thì mỗi dòng phải một truy vấn
+        // đếm riêng — đúng nghĩa N+1 cho một cái dropdown.
+        var rows = em.createQuery("""
+            SELECT e.id, e.code, e.name, COUNT(ga),
+                   SUM(CASE WHEN ga.status = :assignedStatus THEN 1 ELSE 0 END)
+            FROM ExamGradingAssignmentJpaEntity ga
+            JOIN ExamCandidateResultJpaEntity cr ON cr.id = ga.candidateResultId
+            JOIN ExamJpaEntity e ON e.id = cr.examId
+            WHERE ga.teacherId = :teacherId
+            AND (:examKind IS NULL OR e.kind = :examKind)
+            GROUP BY e.id, e.code, e.name
+            ORDER BY MAX(ga.assignedAt) DESC, e.name ASC
+        """, Tuple.class)
+            .setParameter("teacherId", teacherId)
+            .setParameter("examKind", examKind)
+            .setParameter("assignedStatus", GradingAssignmentStatus.ASSIGNED.name())
+            .setMaxResults(MAX_EXAM_OPTIONS)
+            .getResultList();
+
+        var options = new ArrayList<GradingExamOptionInfo>();
+        for (var row : rows) {
+            options.add(new GradingExamOptionInfo(
+                row.get(0, UUID.class),
+                row.get(1, String.class),
+                row.get(2, String.class),
+                longOf(row.get(3, Long.class)),
+                longOf(row.get(4, Long.class))
+            ));
+        }
+        return options;
+    }
+
+    /** {@code SUM(CASE …)} trả null cho nhóm rỗng — cùng lý do với {@code intOf}. */
+    private long longOf(Long value) {
+        return value == null ? 0L : value;
     }
 
     private boolean isOverdue(String assignmentStatus, Instant deadlineAt, Instant now) {

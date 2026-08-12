@@ -16,6 +16,7 @@ public interface SpringDataUserRoleRepository extends JpaRepository<UserRoleJpaE
     List<UserRoleJpaEntity> findByUserId(UUID userId);
     List<UserRoleJpaEntity> findByRoleId(UUID roleId);
     boolean existsByRoleId(UUID roleId);
+    long countByRoleId(UUID roleId);
     Optional<UserRoleJpaEntity> findByUserIdAndRoleId(UUID userId, UUID roleId);
 
     List<UserRoleJpaEntity> findByUserIdIn(Collection<UUID> userIds);

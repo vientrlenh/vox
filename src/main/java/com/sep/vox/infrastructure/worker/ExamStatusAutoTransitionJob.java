@@ -8,6 +8,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
+import com.sep.vox.application.port.input.service.ExamScheduleClosureService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -26,18 +27,21 @@ public class ExamStatusAutoTransitionJob {
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final ZeroScoreExamResultService zeroScoreExamResultService;
     private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
+    private final ExamScheduleClosureService examScheduleClosureService;
 
     public ExamStatusAutoTransitionJob(
             ExamRepository examRepository,
             ExamPaperRepository examPaperRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
             ZeroScoreExamResultService zeroScoreExamResultService,
-            ClassTestGradingAssignmentService classTestGradingAssignmentService) {
+            ClassTestGradingAssignmentService classTestGradingAssignmentService,
+            ExamScheduleClosureService examScheduleClosureService) {
         this.examRepository = examRepository;
         this.examPaperRepository = examPaperRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
         this.zeroScoreExamResultService = zeroScoreExamResultService;
         this.classTestGradingAssignmentService = classTestGradingAssignmentService;
+        this.examScheduleClosureService = examScheduleClosureService;
     }
 
     @Scheduled(fixedDelay = 60000)
@@ -67,9 +71,21 @@ public class ExamStatusAutoTransitionJob {
             if (exam.getKind() != ExamKind.CLASS_TEST) {
                 continue;
             }
+            // Bình thường guard không bao giờ chặn ở đây: closeAt luôn ở sau endDate của mọi ca
+            // (requireClassTestScheduleWindow bảo đảm). Nhánh này phòng dữ liệu lệch, và continue
+            // khiến nó tự lành ở tick sau thay vì cắt ngang buổi thi đang chạy.
+            try {
+                examScheduleClosureService.requireNoActiveSessionInOngoingSchedule(exam.getId(), now);
+            } catch (IllegalStateException ex) {
+                log.info("Hoãn tự đóng bài kiểm tra {}: {}", exam.getId(), ex.getMessage());
+                continue;
+            }
             exam.setStatus(ExamStatus.CLOSED);
             exam.setUpdatedAt(now);
             examRepository.save(exam);
+            // Khớp đúng side-effect của UpdateExamStatusUseCase.CLOSE: đa số bài trên lớp đóng bằng
+            // đường này, bỏ sót ở đây là ca thi ở lại PUBLISHED vĩnh viễn.
+            examScheduleClosureService.closeSchedulesForExam(exam.getId(), null, now);
             examQuestionSecureLockService.releaseIfAutoAfterClose(exam.getId());
             zeroScoreExamResultService.ensureZeroResultsForMissingOrEmptyAttempts(exam.getId());
             // Đa số bài trên lớp đóng bằng đường này chứ không phải CHAIR bấm tay — bỏ sót

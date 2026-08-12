@@ -93,6 +93,15 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
             .toList()
         );
     }
-    
-    
+
+    @Override
+    public long countByStatus(RegisterFormStatus status) {
+        return springDataRegisterFormRepository.countByStatus(status.name());
+    }
+
+    @Override
+    public long countByCreatedAtAfter(Instant after) {
+        return springDataRegisterFormRepository.countByCreatedAtAfter(after);
+    }
+
 }

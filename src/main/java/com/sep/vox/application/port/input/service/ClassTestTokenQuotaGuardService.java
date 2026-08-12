@@ -42,7 +42,11 @@ public class ClassTestTokenQuotaGuardService {
     }
 
     public void requireWithinTokenQuota(Exam exam) {
-        if (exam.getExamTimeDurationSecond() == null) {
+        // Chưa tính được thời gian làm bài (chưa có mã đề/câu hỏi) thì ước tính ra 0 token, không có
+        // gì để soi. Chấp cả null lẫn 0 vì hai giá trị này cùng một nghĩa -- cùng idiom với
+        // Exam.isScheduleWindowShorterThanExamTime và ExamTimeQuotaGuardService. Bỏ nhánh 0 thì kỳ
+        // thi chưa có mã đề bị chặn lên lịch chỉ vì trường chưa cấu hình hạn mức, cho một con số 0.
+        if (exam.getExamTimeDurationSecond() == null || exam.getExamTimeDurationSecond() <= 0) {
             return;
         }
         var candidateCount = examCandidateRepository.countByExamId(exam.getId());

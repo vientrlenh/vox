@@ -28,8 +28,6 @@ import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
-import com.sep.vox.domain.model.exam.ExamGradingAssignment;
-import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
@@ -94,8 +92,6 @@ class ViewResultStatusHistoryUseCaseTests {
         exam.setSchoolId(schoolId);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
-        when(examGradingAssignmentRepository.findOpenByCandidateResultId(candidateResultId))
-            .thenReturn(Optional.empty());
         when(examResultAuditQueryRepository.findHistory(candidateResultId)).thenReturn(List.of(
             new ResultStatusHistoryInfo(UUID.randomUUID(), candidateResultId,
                 "PENDING_REVIEW", "RELEASED", null, null,
@@ -106,12 +102,14 @@ class ViewResultStatusHistoryUseCaseTests {
         when(examGradingAccessService.requireActiveUserId()).thenReturn(userId);
     }
 
-    private void givenOpenAssignmentFor(UUID assignedTeacherId) {
-        var assignment = ExamGradingAssignment.open(candidateResultId, assignedTeacherId,
-            GradingRoundType.APPEAL, null, null, Instant.now(), UUID.randomUUID(), null);
-        assignment.setId(UUID.randomUUID());
-        when(examGradingAssignmentRepository.findOpenByCandidateResultId(candidateResultId))
-            .thenReturn(Optional.of(assignment));
+    /**
+     * "Từng được giao", không phải "đang cầm": phân công đã COMPLETED cũng tính. Mock trả
+     * {@code false} mặc định nên các ca phủ định không cần khai gì thêm.
+     */
+    private void givenEverAssignedTo(UUID assignedTeacherId) {
+        when(examGradingAssignmentRepository
+            .existsByCandidateResultIdAndTeacherId(candidateResultId, assignedTeacherId))
+            .thenReturn(true);
     }
 
     private void schoolAdminIsRefused() {
@@ -145,7 +143,7 @@ class ViewResultStatusHistoryUseCaseTests {
     void should_still_show_the_timeline_to_the_assigned_teacher_while_pending_review() {
         result.setStatus(ExamCandidateResultStatus.PENDING_REVIEW);
         loggedInAs(teacherId);
-        givenOpenAssignmentFor(teacherId);
+        givenEverAssignedTo(teacherId);
         schoolAdminIsRefused();
 
         assertThat(useCase.execute(candidateResultId)).hasSize(1);
@@ -154,31 +152,51 @@ class ViewResultStatusHistoryUseCaseTests {
     @Test
     void should_let_the_teacher_currently_holding_the_paper_see_it() {
         loggedInAs(teacherId);
-        givenOpenAssignmentFor(teacherId);
+        givenEverAssignedTo(teacherId);
         schoolAdminIsRefused();
 
         // Lịch sử điểm chính là ngữ cảnh giáo viên cần khi chấm phúc khảo.
         assertThat(useCase.execute(candidateResultId)).hasSize(1);
     }
 
+    /**
+     * Nộp điểm xong là phân công đóng lại — nhưng hàng đợi của giáo viên vẫn liệt kê bài
+     * đó ở tab "Đã chấm xong", và nút Lịch sử điểm ở đấy phải bấm được. Cùng luật với
+     * nghe lại bản ghi ({@code ExamRecordingAccessService}).
+     */
     @Test
-    void should_refuse_a_teacher_who_is_not_assigned_to_this_paper() {
+    void should_let_a_teacher_who_was_ever_assigned_see_it_after_the_assignment_closed() {
         loggedInAs(teacherId);
-        givenOpenAssignmentFor(UUID.randomUUID());
+        givenEverAssignedTo(teacherId);
+        schoolAdminIsRefused();
+
+        assertThat(useCase.execute(candidateResultId)).hasSize(1);
+    }
+
+    @Test
+    void should_refuse_a_teacher_who_was_never_assigned_to_this_paper() {
+        loggedInAs(teacherId);
+        // Bài này có người khác cầm; người đăng nhập chưa từng được giao.
+        givenEverAssignedTo(UUID.randomUUID());
         schoolAdminIsRefused();
 
         assertThatThrownBy(() -> useCase.execute(candidateResultId))
             .isInstanceOf(ForbiddenException.class);
     }
 
+    /**
+     * Khoá lại chủ đích: quyền đọc suy từ "đã từng được giao", KHÔNG từ dòng phân công
+     * đang mở — quay lại lối cũ là giáo viên vừa nộp điểm xong mất quyền xem ngay.
+     */
     @Test
-    void should_refuse_a_teacher_once_the_assignment_is_closed() {
+    void should_not_look_at_the_open_assignment_row_to_authorize_a_teacher() {
         loggedInAs(teacherId);
+        givenEverAssignedTo(teacherId);
         schoolAdminIsRefused();
 
-        // findOpenByCandidateResultId rỗng = không còn phân công mở; hết việc là hết quyền.
-        assertThatThrownBy(() -> useCase.execute(candidateResultId))
-            .isInstanceOf(ForbiddenException.class);
+        useCase.execute(candidateResultId);
+
+        verify(examGradingAssignmentRepository, never()).findOpenByCandidateResultId(any());
     }
 
     @Test

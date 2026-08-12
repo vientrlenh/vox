@@ -105,7 +105,8 @@ class RegradeResultUseCaseTests {
         when(gradingItemScoreResolver.resolve(any(), any(), anyBoolean())).thenReturn(List.of(
             new ResolvedItem(paperItemId, responseId, new BigDecimal("7.50"), "Tốt hơn phần trước",
                 List.of(new SubmitGradingCommand.CriterionScoreItem(
-                    criterionId, new BigDecimal("8.00"), "Phát âm rõ")))));
+                    criterionId, new BigDecimal("8.00"), "Phát âm rõ")),
+                List.of())));
     }
 
     private ExamCandidateResult given(GradingRoundType roundType, ExamCandidateResultStatus status) {

@@ -143,6 +143,11 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
             context.candidateResult().getSessionId(),
             targetStatus == null ? context.candidateResult().getStatus() : targetStatus);
 
+        // KHÔNG còn phát HumanGradingSubmittedEvent để suy nhãn điểm yếu từ feedbackSummary
+        // giáo viên. Cả người nghe (GradingDiagnosticsInferenceJob) lẫn đích đến
+        // (weakness_observation) đã bị gỡ; giữ lại thì mỗi lần giáo viên nộp điểm vẫn phải
+        // dựng danh sách item và gọi một lượt LLM cho một cái hộp không đáy.
+
         gradingActionSupport.finish(prepared, recalculated);
 
         return new GradingActionResponse(

@@ -1,0 +1,118 @@
+type SystemAdminDashboardSummary {
+    totalSchools: Int!
+    activeSchools: Int!
+    inactiveSchools: Int!
+    pendingRegistrations: Int!
+    registrationsLast30Days: Int!
+    registrationsLast90Days: Int!
+    totalRevenue: Float!
+    "Doanh thu 24 tháng gần nhất, xếp từ cũ đến mới"
+    monthlyRevenue: [MonthlySpending!]!
+    studentCount: Int!
+    teacherCount: Int!
+    schoolAdminCount: Int!
+    activeFrameworkCount: Int!
+    systemRubricCount: Int!
+}
+
+type MonthlySpending {
+    "Định dạng YYYY-MM"
+    month: String!
+    amount: Float!
+}
+
+type SchoolMonthlySpending {
+    "Định dạng YYYY-MM"
+    month: String!
+    amount: Float!
+    "Phần chi cho đăng ký/gia hạn gói"
+    subscriptionAmount: Float!
+    "Phần chi mua thêm token"
+    tokenTopUpAmount: Float!
+}
+
+type SubscriptionRenewal {
+    planName: String
+    status: SubscriptionStatus!
+    "Ngày hết hạn / gia hạn gói, định dạng YYYY-MM-DD"
+    endDate: String!
+}
+
+type SchoolAdminDashboardSummary {
+    examStatusCounts: ExamStatusCounts!
+    appealStats: AppealStats!
+    revenue: Float!
+    "Chi tiêu 12 tháng gần nhất, xếp từ cũ đến mới"
+    monthlySpending: [SchoolMonthlySpending!]!
+    tokenAllocated: Float!
+    tokenUsed: Float!
+    "null nếu trường chưa từng có gói đăng ký nào đang hoạt động"
+    subscriptionRenewal: SubscriptionRenewal
+}
+
+type TeacherGradingStats {
+    pending: Int!
+    completed: Int!
+}
+
+type TeacherScoreStats {
+    averageScore: Float
+    gradedCount: Int!
+    totalCandidates: Int!
+}
+
+type ClassScoreStats {
+    examName: String!
+    className: String!
+    averageScore: Float
+    highestScore: Float
+    lowestScore: Float
+    gradedCount: Int!
+    totalCandidates: Int!
+}
+
+type TeacherDashboardSummary {
+    examStatusCounts: ExamStatusCounts!
+    gradingStats: TeacherGradingStats!
+    scoreStats: TeacherScoreStats!
+    classScoreStats: [ClassScoreStats!]!
+}
+
+type NearestCentralizedExam {
+    examId: ID!
+    code: String!
+    name: String!
+    status: ExamStatus!
+    "Mốc mở kỳ thi, định dạng ISO-8601"
+    openAt: String
+    "Mốc đóng kỳ thi, định dạng ISO-8601"
+    closeAt: String
+    totalCandidates: Int!
+    absentCandidates: Int!
+}
+
+type QuestionBankStats {
+    totalQuestions: Int!
+    totalQuestionBanks: Int!
+    draft: Int!
+    submittedForReview: Int!
+    revisionRequested: Int!
+    approved: Int!
+    rejected: Int!
+    published: Int!
+    archived: Int!
+    readAloud: Int!
+    shortAnswer: Int!
+    longAnswer: Int!
+    opinion: Int!
+    description: Int!
+}
+
+extend type Query {
+    systemAdminDashboard: SystemAdminDashboardSummary!
+    schoolAdminDashboard: SchoolAdminDashboardSummary!
+    teacherDashboard: TeacherDashboardSummary!
+    "Kỳ thi tập trung gần thời điểm hiện tại nhất của trường — null nếu chưa có kỳ thi tập trung nào"
+    nearestCentralizedExam: NearestCentralizedExam
+    questionBankStats: QuestionBankStats!
+}

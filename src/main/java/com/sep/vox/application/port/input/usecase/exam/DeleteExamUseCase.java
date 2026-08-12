@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteExamCommand;
+import com.sep.vox.application.port.input.service.ExamScheduleClosureService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -49,6 +50,7 @@ public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExam
     private final ExamPaperItemRepository examPaperItemRepository;
     private final ExamMemberRepository examMemberRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
+    private final ExamScheduleClosureService examScheduleClosureService;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
@@ -63,6 +65,7 @@ public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExam
             ExamPaperItemRepository examPaperItemRepository,
             ExamMemberRepository examMemberRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
+            ExamScheduleClosureService examScheduleClosureService,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
@@ -75,6 +78,7 @@ public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExam
         this.examPaperItemRepository = examPaperItemRepository;
         this.examMemberRepository = examMemberRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
+        this.examScheduleClosureService = examScheduleClosureService;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
@@ -112,10 +116,13 @@ public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExam
     }
 
     private void cancel(Exam exam, UUID currentUserId) {
+        var now = Instant.now();
         exam.setStatus(ExamStatus.CANCELLED);
-        exam.setUpdatedAt(Instant.now());
+        exam.setUpdatedAt(now);
         exam.setUpdatedBy(currentUserId);
         examRepository.save(exam);
+        // Huỷ kỳ thi phải kéo theo ca thi -- xem ExamScheduleClosureService để rõ vì sao.
+        examScheduleClosureService.cancelSchedulesForExam(exam.getId(), currentUserId, now);
     }
 
     /**

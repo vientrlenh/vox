@@ -128,4 +128,15 @@ public class SchoolRepositoryImpl implements SchoolRepository {
         return springDataSchoolRepository.existsByCode(code);
     }
 
+
+    @Override
+    public long countAll() {
+        return springDataSchoolRepository.count();
+    }
+
+    @Override
+    public long countByIsActiveTrue() {
+        return springDataSchoolRepository.countByIsActiveTrue();
+    }
+
 }

@@ -93,6 +93,15 @@ class GradingQueryRepositorySmokeTests extends ContainerTestConfig {
             .isEmpty();
     }
 
+    /** Cả hai nhánh của {@code (:examKind IS NULL OR …)} — null là đường đi khác hẳn. */
+    @Test
+    void should_run_the_teacher_exam_picker_query() {
+        assertThat(examGradingQueryRepository
+            .findExamsWithTasksByTeacherId(someId, "CENTRALIZED")).isEmpty();
+        assertThat(examGradingQueryRepository
+            .findExamsWithTasksByTeacherId(someId, null)).isEmpty();
+    }
+
     @Test
     void should_run_the_task_detail_query() {
         assertThat(examGradingQueryRepository.findTaskDetail(someId, someId)).isEmpty();

@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -19,4 +20,6 @@ public interface InvoiceRepository {
     // hoàn toàn có thể sinh ra cùng một chuỗi mã.
     Optional<Invoice> findByPaymentProviderAndProviderOrderRef(PaymentMethod paymentProvider, String providerOrderRef);
     List<Invoice> findAllByStatus(InvoiceStatus status);
+
+    BigDecimal sumAmountByStatus(InvoiceStatus status);
 }

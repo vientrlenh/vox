@@ -48,4 +48,7 @@ public interface SpringDataRegisterFormRepository extends JpaRepository<Register
     boolean existsByContactEmailAndStatus(String contactEmail, String status);
     boolean existsByContactPhoneAndStatus(String contactPhone, String status);
     boolean existsBySchoolDomainAndStatusIn(String schoolDomain, Collection<String> statuses);
+
+    long countByStatus(String status);
+    long countByCreatedAtAfter(Instant after);
 }

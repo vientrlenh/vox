@@ -1,0 +1,37 @@
+extend type Query {
+    "Danh mục chiều sở thích, kể cả đã tắt (SYSTEM_ADMIN)."
+    interestDimensions: [InterestDimension!]!
+}
+
+extend type Mutation {
+    createInterestDimension(input: UpsertInterestDimensionInput!): InterestDimension!
+    updateInterestDimension(input: UpsertInterestDimensionInput!): InterestDimension!
+    "Tắt mềm -- giữ nguyên điểm số/chủ đề lịch sử đã gán chiều này."
+    deactivateInterestDimension(code: String!): Boolean!
+}
+
+input UpsertInterestDimensionInput {
+    "UPPER_SNAKE, 3-32 ký tự. Không đổi được sau khi tạo (đã gán vào chủ đề/điểm số)."
+    code: String!
+    label: String
+    description: String
+    active: Boolean
+    """
+    Có đem ra hỏi trong quiz sở thích không. Đặt false cho chiều hệ thống tự gán
+    (ví dụ ACADEMIC_EXAM cho chủ đề lấy từ ngân hàng đề) -- vẫn dùng xếp hạng chủ đề
+    nhưng không phải sở thích nên không hỏi học sinh.
+    """
+    quizEligible: Boolean
+    displayOrder: Int
+}
+
+type InterestDimension {
+    code: String!
+    label: String!
+    description: String
+    active: Boolean!
+    quizEligible: Boolean!
+    displayOrder: Int!
+    createdAt: String
+    updatedAt: String
+}

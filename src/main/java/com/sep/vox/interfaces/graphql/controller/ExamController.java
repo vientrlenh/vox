@@ -12,6 +12,7 @@ import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
 
+import com.sep.vox.application.common.InstantParser;
 import com.sep.vox.application.port.input.query.CanViewExamBlueprintDataQuery;
 import com.sep.vox.application.port.input.query.ViewExamDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewExamPaperDetailsQuery;
@@ -35,6 +36,7 @@ import com.sep.vox.domain.dto.ExamMemberDto;
 import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.dto.ExamPaperItemDto;
 import com.sep.vox.domain.dto.ExamPaperSectionDto;
+import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.ExamSecurePoolDto;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.QuestionSelectionSpecDto;
@@ -114,8 +116,15 @@ public class ExamController {
     @QueryMapping(name = "examStatusCounts")
     public ExamStatusCountsDto examStatusCounts(
             @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "kind") ExamKind kind) {
-        return viewExamStatusCountsUseCase.execute(new ViewExamStatusCountsQuery(schoolId, kind));
+            @Argument(name = "kind") ExamKind kind,
+            @Argument(name = "dateFrom") String dateFrom,
+            @Argument(name = "dateTo") String dateTo) {
+        return viewExamStatusCountsUseCase.execute(new ViewExamStatusCountsQuery(
+            schoolId,
+            kind,
+            InstantParser.parseOrNull(dateFrom, "dateFrom"),
+            InstantParser.parseOrNull(dateTo, "dateTo")
+        ));
     }
 
     @SchemaMapping(typeName = "Exam", field = "blueprint")
@@ -184,6 +193,12 @@ public class ExamController {
     @SchemaMapping(typeName = "ExamPaperSection", field = "items")
     public CompletableFuture<List<ExamPaperItemDto>> items(ExamPaperSectionDto source, DataFetchingEnvironment env) {
         DataLoader<UUID, List<ExamPaperItemDto>> loader = env.getDataLoader("examPaperItemsBySectionId");
+        return loader.load(source.id());
+    }
+
+    @SchemaMapping(typeName = "Exam", field = "schedules")
+    public CompletableFuture<List<ExamScheduleDto>> schedules(ExamDto source, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<ExamScheduleDto>> loader = env.getDataLoader("examSchedulesByExamId");
         return loader.load(source.id());
     }
 

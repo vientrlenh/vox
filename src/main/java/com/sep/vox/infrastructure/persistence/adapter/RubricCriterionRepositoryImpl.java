@@ -119,4 +119,11 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
         return springDataRubricCriterionRepository.findByRubricVersionIdAndCode(rubricVersionId, code)
                 .map(RubricCriterionMapper::toDomain);
     }
+
+    @Override
+    public Optional<RubricCriterion> findByRubricVersionIdAndCodeIgnoreCase(UUID rubricVersionId, String code) {
+        return springDataRubricCriterionRepository
+                .findByRubricVersionIdAndCodeIgnoreCase(rubricVersionId, code)
+                .map(RubricCriterionMapper::toDomain);
+    }
 }

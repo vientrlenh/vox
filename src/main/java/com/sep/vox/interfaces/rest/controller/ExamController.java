@@ -177,8 +177,11 @@ public class ExamController {
         return ResponseEntity.ok(ApiResponse.success("Xóa bài kiểm tra thành công", data));
     }
 
+    // Ba endpoint hội đồng dưới đây mở cho TEACHER vì chủ tịch hội đồng tự gọi người ra đề / duyệt đề
+    // vào kỳ thi của mình. Luật thật (quản trị trường HOẶC chủ tịch, và chỉ quản trị trường mới đụng
+    // hàng CHAIR) nằm ở ExamMemberManageAccessService, không ở đây.
     @PostMapping("/{examId}/members")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamMemberDto>> createMember(
             @PathVariable("examId") UUID examId,
             @Valid @RequestBody CreateExamMemberRequest request) {
@@ -188,7 +191,7 @@ public class ExamController {
     }
 
     @PutMapping("/{examId}/members/{memberId}")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ExamMemberDto>> updateMember(
             @PathVariable("examId") UUID examId,
             @PathVariable("memberId") UUID memberId,
@@ -198,7 +201,7 @@ public class ExamController {
     }
 
     @DeleteMapping("/{examId}/members/{memberId}")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Void>> deleteMember(
             @PathVariable("examId") UUID examId,
             @PathVariable("memberId") UUID memberId) {

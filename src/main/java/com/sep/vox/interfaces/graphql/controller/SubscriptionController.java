@@ -14,6 +14,7 @@ import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
 
+import com.sep.vox.application.common.InstantParser;
 import com.sep.vox.application.port.input.query.ViewCurrentSubscriptionQuery;
 import com.sep.vox.application.port.input.query.ViewFinancialEventsQuery;
 import com.sep.vox.application.port.input.query.ViewInvoicesQuery;
@@ -23,6 +24,7 @@ import com.sep.vox.application.port.input.query.ViewRequestsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolSubscriptionsQuery;
 import com.sep.vox.application.port.input.query.ViewSubscriptionHistoryQuery;
 import com.sep.vox.application.port.input.query.ViewTokenPurchasesQuery;
+import com.sep.vox.application.port.input.query.ViewTokenUsageTimeseriesQuery;
 import com.sep.vox.application.port.input.query.ViewUsageQuery;
 import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.application.port.input.usecase.subscription.UpdatePlanUseCase;
@@ -37,6 +39,7 @@ import com.sep.vox.application.port.input.usecase.subscription.ViewRequestsUseCa
 import com.sep.vox.application.port.input.usecase.subscription.ViewSchoolSubscriptionsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSubscriptionHistoryUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewTokenPurchasesUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ViewTokenUsageTimeseriesUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewUsageUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.FinancialEventDto;
@@ -49,8 +52,10 @@ import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.dto.SubscriptionQuotaDto;
 import com.sep.vox.domain.dto.SubscriptionRequestDto;
 import com.sep.vox.domain.dto.TokenPurchaseDto;
+import com.sep.vox.domain.dto.TokenUsageTimeseriesDto;
 import com.sep.vox.domain.model.subscription.RequestStatus;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
+import com.sep.vox.domain.model.subscription.TokenUsageGranularity;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSubscriptionPlanInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSubscriptionPlanCommandMapper;
 
@@ -66,6 +71,7 @@ public class SubscriptionController {
     private final ViewRequestsUseCase viewRequestsUseCase;
     private final ViewTokenPurchasesUseCase viewTokenPurchasesUseCase;
     private final ViewUsageUseCase viewUsageUseCase;
+    private final ViewTokenUsageTimeseriesUseCase viewTokenUsageTimeseriesUseCase;
     private final ViewMyClassTestQuotaAllocationUseCase viewMyClassTestQuotaAllocationUseCase;
     private final ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase;
     private final ViewInvoicesUseCase viewInvoicesUseCase;
@@ -82,6 +88,7 @@ public class SubscriptionController {
             ViewRequestsUseCase viewRequestsUseCase,
             ViewTokenPurchasesUseCase viewTokenPurchasesUseCase,
             ViewUsageUseCase viewUsageUseCase,
+            ViewTokenUsageTimeseriesUseCase viewTokenUsageTimeseriesUseCase,
             ViewMyClassTestQuotaAllocationUseCase viewMyClassTestQuotaAllocationUseCase,
             ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase,
             ViewInvoicesUseCase viewInvoicesUseCase,
@@ -96,6 +103,7 @@ public class SubscriptionController {
         this.viewRequestsUseCase = viewRequestsUseCase;
         this.viewTokenPurchasesUseCase = viewTokenPurchasesUseCase;
         this.viewUsageUseCase = viewUsageUseCase;
+        this.viewTokenUsageTimeseriesUseCase = viewTokenUsageTimeseriesUseCase;
         this.viewMyClassTestQuotaAllocationUseCase = viewMyClassTestQuotaAllocationUseCase;
         this.viewMyPracticeQuotaAllocationUseCase = viewMyPracticeQuotaAllocationUseCase;
         this.viewInvoicesUseCase = viewInvoicesUseCase;
@@ -156,6 +164,20 @@ public class SubscriptionController {
     @QueryMapping(name = "subscriptionUsage")
     public List<SubscriptionQuotaDto> subscriptionUsage(@Argument(name = "schoolId") UUID schoolId) {
         return viewUsageUseCase.execute(new ViewUsageQuery(schoolId));
+    }
+
+    @QueryMapping(name = "schoolTokenUsageTimeseries")
+    public TokenUsageTimeseriesDto schoolTokenUsageTimeseries(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "dateFrom") String dateFrom,
+            @Argument(name = "dateTo") String dateTo,
+            @Argument(name = "granularity") TokenUsageGranularity granularity) {
+        return viewTokenUsageTimeseriesUseCase.execute(new ViewTokenUsageTimeseriesQuery(
+            schoolId,
+            InstantParser.parseOrNull(dateFrom, "dateFrom"),
+            InstantParser.parseOrNull(dateTo, "dateTo"),
+            granularity
+        ));
     }
 
     @QueryMapping(name = "myClassTestQuotaAllocation")

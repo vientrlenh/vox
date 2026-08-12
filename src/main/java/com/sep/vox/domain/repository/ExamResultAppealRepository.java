@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamResultAppeal;
 
 public interface ExamResultAppealRepository {
@@ -15,4 +16,5 @@ public interface ExamResultAppealRepository {
     long countPublishedByCandidateResultId(UUID candidateResultId);
     List<ExamResultAppeal> findByCandidateResultId(UUID candidateResultId);
     void deleteByIdIn(Collection<UUID> ids);
+    long countBySchoolIdAndStatusIn(UUID schoolId, Collection<ExamAppealStatus> statuses);
 }

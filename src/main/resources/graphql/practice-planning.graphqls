@@ -1,0 +1,121 @@
+extend type Query {
+    practiceTopicOffers(excludeTopicIds: [ID!], round: Int = 1, bucket: TopicOfferBucket = FOR_YOU): [PracticeTopicOffer!]!
+    searchPracticeTopics(keyword: String!): TopicSearchResult!
+
+    """
+    Tìm chủ đề theo NGỮ NGHĨA (vector). Bổ sung cho `searchPracticeTopics`, không thay thế.
+
+    Trả rỗng khi dịch vụ AI không sẵn sàng -- client phải chịu được điều đó và vẫn hiện kết quả
+    của `searchPracticeTopics`. `matchPercent` ở đây là độ tương đồng ngữ nghĩa, dùng để hiện
+    nhãn "gần nghĩa".
+    """
+    searchPracticeTopicsSemantic(keyword: String!): [PracticeTopicOffer!]!
+    mySavedTopics: [PracticeTopicOffer!]!
+    myPracticeDashboardStats: PracticeDashboardStats!
+    "Hỏi lại kết quả dựng đề đã khởi động bởi buildPracticePaper (xem PracticePaperDraft)."
+    practicePaperDraft(draftId: ID!): PracticePaperDraft!
+}
+
+extend type Mutation {
+    """
+    Khởi động dựng đề. Trả về NGAY: nếu kho câu hỏi đã có câu phù hợp thì
+    status=READY kèm luôn paper; nếu phải nhờ AI sinh câu mới (chậm) thì
+    status=PREPARING và client hỏi lại bằng practicePaperDraft(draftId).
+    """
+    buildPracticePaper(input: StartPracticeSessionInput!): PracticePaperDraft!
+    pickRandomTopic: PracticeTopicOffer!
+    saveTopic(topicId: ID!): Boolean!
+    unsaveTopic(topicId: ID!): Boolean!
+    """
+    Học sinh bấm loại một thẻ chủ đề đang được chào ("không thích cái này").
+
+    Ghi tín hiệu sở thích âm 0,15 -- bằng đúng mức "bỏ dở vì chán" -- rồi tính lại điểm quan
+    tâm ngay. Khác `excludeTopicIds` của practiceTopicOffers: cái đó chỉ giấu thẻ trong lượt
+    duyệt hiện tại, còn cái này DẠY hệ thống nên có hiệu lực ở mọi lần mở sau.
+    """
+    dismissTopicOffer(topicId: ID!): Boolean!
+}
+
+type PracticePaperDraft {
+    draftId: ID!
+    status: PracticePaperDraftStatus!
+    "Chỉ có khi status=FAILED -- thông báo đọc được để hiện thẳng cho học sinh."
+    reason: String
+    "Chỉ có khi status=READY."
+    paper: PracticePaper
+}
+
+enum PracticePaperDraftStatus {
+    PREPARING
+    READY
+    FAILED
+}
+
+input StartPracticeSessionInput {
+    topicId: ID!
+    """
+    Bậc học sinh CHỌN cho phiên này, lấy từ thang bậc của khung đang áp. Trước đây hệ thống
+    tự suy ra bậc từ bài chấm + hiệu năng gần đây; giờ đó là lựa chọn của người học, và bậc
+    chỉ còn nghĩa "độ khó tôi muốn hôm nay" chứ không phải một tuyên bố về trình độ.
+    """
+    targetFrameworkBandId: ID!
+    origin: String!
+    fromSubAttribute: String
+    offeredTopicIds: [ID!]
+    previousOfferedTopicIds: [ID!]
+}
+
+type PracticeTopicOffer {
+    topicId: ID!
+    name: String!
+    dimension: String!
+    savedByMe: Boolean!
+    matchPercent: Int
+    minutes: Int!
+    rationale: String
+    reasons: [String!]!
+}
+
+"""
+Chỉ còn một rổ. BY_GOAL và BY_WEAKNESS đã bỏ cùng hồ sơ điểm yếu: xếp hạng chủ đề giờ dựa
+hoàn toàn vào sở thích, kho câu còn lại và mức khớp chương trình.
+
+Giữ lại enum (thay vì bỏ hẳn tham số) để client cũ gửi `bucket: FOR_YOU` không bị lỗi schema.
+"""
+enum TopicOfferBucket {
+    FOR_YOU
+}
+
+type PracticeDashboardStats {
+    sessionsDone: Int!
+    averageScore: Float!
+    streakDays: Int!
+}
+
+type TopicSearchResult {
+    topics: [PracticeTopicOffer!]!
+    canGenerate: Boolean!
+}
+
+type PracticePaper {
+    id: ID!
+    topicId: ID!
+    origin: String!
+    plannedSeconds: Int!
+    reservedQuotaSeconds: Int!
+    "Trần nói của cả phiên (giây): chỗ hẹp hơn giữa hạn mức gói và trần bậc. Khác plannedSeconds ở trên -- cái kia là tổng dự trù của các câu trong ĐỀ này."
+    sessionBudgetSeconds: Int!
+    questions: [PracticePaperQuestion!]!
+}
+
+type PracticePaperQuestion {
+    questionId: ID!
+    slot: Int!
+    questionText: String!
+    criterionCode: String!
+    subAttribute: String
+    difficultyRank: Int!
+    maxResponseSeconds: Int!
+    minResponseSeconds: Int!
+    suggestedIdeas: [String!]!
+}

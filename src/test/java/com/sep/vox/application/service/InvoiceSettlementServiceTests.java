@@ -19,10 +19,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.event.InvoicePaidEvent;
 import com.sep.vox.application.port.input.service.InvoiceSettlementService;
 import com.sep.vox.application.port.input.service.SubscriptionPlanResolver;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.model.outbox.Outbox;
+import com.sep.vox.domain.repository.OutboxRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
 import com.sep.vox.domain.model.subscription.Invoice;
@@ -69,7 +72,9 @@ class InvoiceSettlementServiceTests {
     private TokenPurchaseRepository tokenPurchaseRepository;
     private TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private FinancialEventRepository financialEventRepository;
-    private EventPublisherPort eventPublisherPort;
+    private SchoolUserRepository schoolUserRepository;
+    private OutboxRepository outboxRepository;
+    private JsonSerializationPort jsonSerializationPort;
     private SubscriptionPlanResolver subscriptionPlanResolver;
     private InvoiceSettlementService service;
 
@@ -92,7 +97,11 @@ class InvoiceSettlementServiceTests {
         tokenPurchaseItemRepository = mock(TokenPurchaseItemRepository.class);
         financialEventRepository = mock(FinancialEventRepository.class);
         subscriptionPlanResolver = mock(SubscriptionPlanResolver.class);
-        eventPublisherPort = mock(EventPublisherPort.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
+        outboxRepository = mock(OutboxRepository.class);
+        jsonSerializationPort = mock(JsonSerializationPort.class);
+        when(schoolUserRepository.findBySchoolIdWithRole(any(), any())).thenReturn(List.of());
+        when(jsonSerializationPort.toJson(any())).thenReturn("{}");
 
         service = new InvoiceSettlementService(
             invoiceRepository,
@@ -104,8 +113,10 @@ class InvoiceSettlementServiceTests {
             tokenPurchaseRepository,
             tokenPurchaseItemRepository,
             financialEventRepository, 
-            subscriptionPlanResolver, 
-            eventPublisherPort
+            subscriptionPlanResolver,
+            schoolUserRepository,
+            outboxRepository,
+            jsonSerializationPort
         );
 
         when(invoiceRepository.save(any(Invoice.class))).thenAnswer(call -> call.getArgument(0));
@@ -201,7 +212,7 @@ class InvoiceSettlementServiceTests {
         assertThat(eventCaptor.getValue().getEventType()).isEqualTo(FinancialEventType.SUB_PURCHASED);
         assertThat(eventCaptor.getValue().getPaymentMethod()).isEqualTo(PaymentMethod.PAYOS);
 
-        verify(eventPublisherPort).publish(any(InvoicePaidEvent.class));
+        verifyInvoicePaidOutbox();
     }
 
     /**
@@ -250,7 +261,7 @@ class InvoiceSettlementServiceTests {
         verify(invoiceRepository, never()).save(any(Invoice.class));
         verify(schoolSubscriptionRepository, never()).save(any(SchoolSubscription.class));
         verify(subscriptionRequestRepository, never()).save(any(SubscriptionRequest.class));
-        verify(eventPublisherPort, never()).publish(any());
+        verify(outboxRepository, never()).save(any());
     }
 
     @Test
@@ -264,7 +275,7 @@ class InvoiceSettlementServiceTests {
 
         verify(schoolSubscriptionRepository).save(any(SchoolSubscription.class));
         verify(financialEventRepository).save(any(FinancialEvent.class));
-        verify(eventPublisherPort).publish(any(InvoicePaidEvent.class));
+        verifyInvoicePaidOutbox();
     }
 
     @Test
@@ -279,7 +290,7 @@ class InvoiceSettlementServiceTests {
         verify(invoiceRepository).save(pending);
         verify(schoolSubscriptionRepository, never()).save(any(SchoolSubscription.class));
         verify(subscriptionQuotaRepository, never()).save(any(SubscriptionQuota.class));
-        verify(eventPublisherPort, never()).publish(any());
+        verify(outboxRepository, never()).save(any());
     }
 
     @Test
@@ -291,7 +302,7 @@ class InvoiceSettlementServiceTests {
 
         assertThat(pending.getStatus()).isEqualTo(InvoiceStatus.CANCELLED);
         assertThat(pending.getPaidAt()).isNotNull();
-        verify(eventPublisherPort, never()).publish(any());
+        verify(outboxRepository, never()).save(any());
     }
 
     @Test
@@ -313,5 +324,13 @@ class InvoiceSettlementServiceTests {
         var eventCaptor = ArgumentCaptor.forClass(FinancialEvent.class);
         verify(financialEventRepository).save(eventCaptor.capture());
         assertThat(eventCaptor.getValue().getEventType()).isEqualTo(FinancialEventType.TOKEN_PURCHASED);
+    }
+
+    /** Sự kiện InvoicePaid nay đi qua outbox trong cùng transaction, không còn publish in-process. */
+    private void verifyInvoicePaidOutbox() {
+        var captor = ArgumentCaptor.forClass(Outbox.class);
+        verify(outboxRepository).save(captor.capture());
+        assertThat(captor.getValue().getEventType()).isEqualTo(EventTypeConstant.INVOICE_PAID);
+        assertThat(captor.getValue().getAggregateId()).isEqualTo(invoiceId);
     }
 }

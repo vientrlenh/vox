@@ -164,6 +164,24 @@ public final class DateMapper {
     }
 
     /**
+     * Đổi thời điểm tuyệt đối thành chuỗi trả ra API.
+     *
+     * <p>Dùng ISO-8601 ở UTC (hậu tố {@code Z}) — đúng thứ {@link Instant#toString()} vẫn cho ra,
+     * nên gọi hàm này không đổi dữ liệu client đang nhận. Điểm khác là <b>chỗ quyết định định
+     * dạng chỉ còn một</b>: trước đây mỗi mapper tự gọi {@code .toString()}, muốn đổi cách hiển
+     * thị là phải đi sửa từng nơi và rất dễ sót.
+     *
+     * <p>Cố ý KHÔNG đổi sang {@link #DEFAULT_INPUT_ZONE}: chuỗi trả ra API là dữ liệu máy đọc,
+     * client tự đổi sang giờ địa phương của người dùng. Chỉ đường hiển thị cho người (mail, CSV)
+     * mới cần gắn zone — xem javadoc của {@code DEFAULT_INPUT_ZONE}.
+     *
+     * @return {@code null} khi {@code instant} là null, để hàm gọi khỏi phải tự kiểm
+     */
+    public static String toIsoString(Instant instant) {
+        return instant == null ? null : instant.toString();
+    }
+
+    /**
      * Giải nghĩa input không mang offset theo {@code zone}: thử dạng có giờ trước, rồi đến dạng chỉ
      * có ngày.
      *

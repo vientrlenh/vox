@@ -29,6 +29,8 @@ import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaper;
+import com.sep.vox.domain.model.exam.ExamSchedule;
+import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
@@ -96,6 +98,10 @@ class DeleteExamUseCaseTests {
             examPaperItemRepository,
             examMemberRepository,
             examQuestionSecureLockService,
+            // Service thật (không mock) trên cùng repo giả: cascade huỷ ca vẫn được kiểm ở đây,
+            // bảng ánh xạ trạng thái đầy đủ nằm ở ExamScheduleClosureServiceTests.
+            new com.sep.vox.application.port.input.service.ExamScheduleClosureService(
+                examScheduleRepository, mock(com.sep.vox.domain.repository.ExamSessionRepository.class)),
             schoolUserRepository,
             userRoleQueryRepository,
             userContextPort);
@@ -221,6 +227,44 @@ class DeleteExamUseCaseTests {
         verifyNoInteractions(examScheduleRepository, examCandidateRepository, examQuestionSecureLockService);
     }
 
+    /**
+     * Ca đã COMPLETED/MOVED là trạng thái kết thúc: ghi đè CANCELLED sẽ xoá dấu vết ca đã thi xong
+     * và làm lệch con trỏ movedToScheduleId của ca đã dời.
+     */
+    @Test
+    void should_not_cancel_completed_or_moved_schedules() {
+        var exam = exam(ExamStatus.SCHEDULED);
+        var draft = schedule(ExamScheduleStatus.DRAFT);
+        var completed = schedule(ExamScheduleStatus.COMPLETED);
+        var moved = schedule(ExamScheduleStatus.MOVED);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examRepository.save(any(Exam.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(draft, completed, moved));
+
+        useCase.execute(new DeleteExamCommand(examId));
+
+        assertThat(draft.getStatus()).isEqualTo(ExamScheduleStatus.CANCELLED);
+        assertThat(completed.getStatus()).isEqualTo(ExamScheduleStatus.COMPLETED);
+        assertThat(moved.getStatus()).isEqualTo(ExamScheduleStatus.MOVED);
+        verify(examScheduleRepository).save(draft);
+        verify(examScheduleRepository, never()).save(completed);
+        verify(examScheduleRepository, never()).save(moved);
+    }
+
+    @Test
+    void should_stamp_updated_by_on_cancelled_schedules() {
+        var exam = exam(ExamStatus.IN_PROGRESS);
+        var schedule = schedule(ExamScheduleStatus.PUBLISHED);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examRepository.save(any(Exam.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
+
+        useCase.execute(new DeleteExamCommand(examId));
+
+        assertThat(schedule.getUpdatedBy()).isEqualTo(userId);
+        assertThat(schedule.getUpdatedAt()).isNotNull();
+    }
+
     @Test
     void should_reject_when_user_is_neither_school_admin_nor_chair() {
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
@@ -231,20 +275,40 @@ class DeleteExamUseCaseTests {
         verify(examRepository, never()).deleteById(any());
     }
 
+    /**
+     * Chốt hồi quy cho ranh giới quyền của chủ tịch hội đồng: họ chạy trọn quy trình kỳ thi tập trung
+     * (sửa thông tin, đổi trạng thái, ra đề, xếp lịch) nhưng xoá kỳ thi thì vẫn chỉ quản trị trường —
+     * đây là thao tác phá huỷ, không nằm trong quy trình đó.
+     */
+    @Test
+    void should_reject_delete_of_a_centralized_exam_by_its_chair() {
+        var exam = exam(ExamStatus.DRAFT);
+        exam.setKind(ExamKind.CENTRALIZED);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> useCase.execute(new DeleteExamCommand(examId)))
+            .isInstanceOf(com.sep.vox.application.exception.ForbiddenException.class);
+        verify(examRepository, never()).deleteById(any());
+    }
+
     private void assertCancelledInsteadOfDeleted(ExamStatus status) {
         var exam = exam(status);
+        var schedule = schedule(ExamScheduleStatus.PUBLISHED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examRepository.save(any(Exam.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
 
         var response = useCase.execute(new DeleteExamCommand(examId));
 
         assertThat(response.deleted()).isFalse();
         assertThat(response.cancelledInstead()).isTrue();
         assertThat(exam.getStatus()).isEqualTo(ExamStatus.CANCELLED);
+        // Huỷ kỳ thi mà bỏ ca thi lại PUBLISHED thì ca vẫn hiện trong lịch thi của học sinh.
+        assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.CANCELLED);
         verify(examRepository).save(exam);
         verify(examRepository, never()).deleteById(any());
-        verifyNoInteractions(examScheduleRepository, examCandidateRepository, examPaperRepository,
-            examQuestionSecureLockService);
+        verify(examScheduleRepository, never()).deleteByExamId(any());
+        verifyNoInteractions(examCandidateRepository, examPaperRepository, examQuestionSecureLockService);
     }
 
     private Exam exam(ExamStatus status) {
@@ -254,6 +318,14 @@ class DeleteExamUseCaseTests {
         exam.setKind(ExamKind.CLASS_TEST);
         exam.setStatus(status);
         return exam;
+    }
+
+    private ExamSchedule schedule(ExamScheduleStatus status) {
+        var schedule = new ExamSchedule();
+        schedule.setId(UUID.randomUUID());
+        schedule.setExamId(examId);
+        schedule.setStatus(status);
+        return schedule;
     }
 
     private ExamPaper paper() {

@@ -1,0 +1,82 @@
+package com.sep.vox.interfaces.kafka.mapper;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.practiceevaluation.PracticeCriterionScoreInput;
+import com.sep.vox.application.port.input.command.practiceevaluation.RecordPracticeAttemptEvaluationCommand;
+import com.sep.vox.domain.valueobject.ConfidenceCaseSignals;
+import com.sep.vox.interfaces.kafka.dto.ConfidenceCaseSignalsDto;
+import com.sep.vox.interfaces.kafka.dto.PracticeAttemptEvaluationCompletedEventDto;
+
+/**
+ * Chuyển {@code PracticeAttemptEvaluationCompletedEventDto} (wire format riêng của Kafka) sang
+ * {@code RecordPracticeAttemptEvaluationCommand} (application layer) -- application/domain không
+ * được biết tới định dạng Kafka DTO, mapping này PHẢI xảy ra ở interfaces layer trước khi gọi use case.
+ */
+public final class RecordPracticeAttemptEvaluationCommandMapper {
+
+    private RecordPracticeAttemptEvaluationCommandMapper() {
+    }
+
+    public static RecordPracticeAttemptEvaluationCommand toCommand(PracticeAttemptEvaluationCompletedEventDto dto) {
+        var payload = dto.payload();
+        var validity = payload == null ? null : payload.validity();
+        var signals = payload == null ? null : payload.signals();
+        var criteria = payload == null || payload.criteria() == null
+            ? List.<PracticeCriterionScoreInput>of()
+            : payload.criteria().entrySet().stream()
+                // Bỏ qua matchedBandCode dù Python có gửi: luyện tập chấm đối chiếu ĐÚNG
+                // một bậc học sinh đã chọn, chỉ cần điểm trong bậc đó, không xếp loại.
+                .map(entry -> new PracticeCriterionScoreInput(
+                    entry.getKey(),
+                    entry.getValue() == null ? null : entry.getValue().score()
+                ))
+                .toList();
+        return new RecordPracticeAttemptEvaluationCommand(
+            UUID.fromString(dto.practiceResponseId()),
+            validity == null || validity.validForScoring() == null || validity.validForScoring(),
+            toConfidenceCase(signals == null ? null : signals.confidenceCase()),
+            signals == null ? null : decimalOrNull(signals.audioQuality()),
+            signals == null ? null : decimalOrNull(signals.codeSwitchingRatio()),
+            signals == null || signals.wordCount() == null ? 0 : signals.wordCount(),
+            criteria,
+            payload == null ? null : payload.evaluatedAt()
+            // KHÔNG còn map rawCriteria/turns/signals sang command. Ba trường đó chỉ phục vụ
+            // việc suy quan sát điểm yếu (đã gỡ) -- use case không đọc chúng, nên giữ lại là
+            // dựng ba cấu trúc mỗi lần chấm cho không ai dùng.
+            //
+            // Wire DTO của Kafka GIỮ NGUYÊN: Python vẫn phát đủ trường như cũ, chỉ là Java bỏ
+            // qua. Không đụng vào hình dạng payload thì không phải đổi gì bên chấm.
+        );
+    }
+
+    private static ConfidenceCaseSignals toConfidenceCase(ConfidenceCaseSignalsDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        return new ConfidenceCaseSignals(
+            decimalOrNull(dto.cAsrLog()),
+            decimalOrNull(dto.qSnr()),
+            decimalOrNull(dto.qSpeech()),
+            decimalOrNull(dto.clippingRatio()),
+            decimalOrNull(dto.cRef()),
+            decimalOrNull(dto.cAlign()),
+            decimalOrNull(dto.cAlignAccuracy()),
+            decimalOrNull(dto.cAlignCoverage()),
+            decimalOrNull(dto.cAlignTiming()),
+            decimalOrNull(dto.cPfBranch()),
+            decimalOrNull(dto.cGrammar()),
+            decimalOrNull(dto.cVocabulary()),
+            decimalOrNull(dto.cCoherence()),
+            decimalOrNull(dto.grammarScoreDelta()),
+            decimalOrNull(dto.vocabularyScoreDelta()),
+            decimalOrNull(dto.coherenceScoreDelta())
+        );
+    }
+
+    private static BigDecimal decimalOrNull(Double value) {
+        return value == null ? null : BigDecimal.valueOf(value);
+    }
+}

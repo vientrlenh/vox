@@ -1,6 +1,5 @@
 package com.sep.vox.application.usecase.schoolclassuser;
 
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -28,11 +27,13 @@ import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
 
@@ -42,6 +43,7 @@ class DeleteSchoolClassUserUseCaseTests {
     private SchoolClassRepository schoolClassRepository;
     private SchoolRepository schoolRepository;
     private UserRepository userRepository;
+    private SchoolUserRepository schoolUserRepository;
     private UserContextPort userContextPort;
     private DeleteSchoolClassUserUseCase useCase;
 
@@ -51,6 +53,7 @@ class DeleteSchoolClassUserUseCaseTests {
         schoolClassRepository = mock(SchoolClassRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userRepository = mock(UserRepository.class);
+        schoolUserRepository = mock(SchoolUserRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new DeleteSchoolClassUserUseCase(
             schoolClassUserRepository,
@@ -58,7 +61,7 @@ class DeleteSchoolClassUserUseCaseTests {
             schoolRepository,
             userRepository,
             userContextPort,
-            TestSchoolUserRepository.create()
+            schoolUserRepository
         );
     }
 
@@ -125,6 +128,7 @@ class DeleteSchoolClassUserUseCaseTests {
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, UUID.randomUUID())));
+        mockUserSchool(currentUserId, schoolId);
 
         assertThrows(NotFoundException.class, () -> useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId)));
 
@@ -143,6 +147,7 @@ class DeleteSchoolClassUserUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user(targetUserId, schoolId, UserStatus.INACTIVE)));
+        mockUserSchool(currentUserId, schoolId);
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId)));
 
@@ -156,6 +161,7 @@ class DeleteSchoolClassUserUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, UUID.randomUUID())));
+        mockUserSchool(currentUserId, UUID.randomUUID());
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
 
@@ -168,6 +174,13 @@ class DeleteSchoolClassUserUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(activeUser(targetUserId, schoolId)));
+        mockUserSchool(currentUserId, schoolId);
+        mockUserSchool(targetUserId, schoolId);
+    }
+
+    private void mockUserSchool(UUID userId, UUID schoolId) {
+        when(schoolUserRepository.findByUserId(userId))
+            .thenReturn(Optional.of(new SchoolUser(schoolId, userId, Instant.now(), null)));
     }
 
     private static SchoolClassUser membership(UUID userId, UUID classId, boolean isActive, Instant leftAt, UUID assignedBy) {
@@ -183,7 +196,6 @@ class DeleteSchoolClassUserUseCaseTests {
     private static User user(UUID id, UUID schoolId, UserStatus status) {
         var user = new User();
         user.setId(id);
-        TestSchoolUserRepository.remember(id, schoolId);
         user.setStatus(status);
         return user;
     }

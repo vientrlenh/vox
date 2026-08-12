@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,6 +17,8 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.UpdateExamPaperStatusCommand;
 import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperStatusUseCase;
+import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessService;
+import com.sep.vox.domain.model.exam.ExamMember;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
@@ -59,17 +62,16 @@ class LockClassTestPaperTests {
             examPaperRepository,
             examPaperItemRepository,
             examRepository,
-            examMemberRepository,
-            mock(SchoolUserRepository.class),
-            mock(UserRoleQueryRepository.class),
+            new ExamPaperAuthoringAccessService(
+                examMemberRepository, mock(SchoolUserRepository.class), mock(UserRoleQueryRepository.class)),
             mock(ExamTimeQuotaGuardService.class),
             userContextPort
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(TEACHER_ID);
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(classTest()));
-        when(examMemberRepository.existsByExamIdAndUserIdAndRole(EXAM_ID, TEACHER_ID, ExamMemberRole.CHAIR))
-            .thenReturn(true);
+        when(examMemberRepository.findByExamIdAndUserId(EXAM_ID, TEACHER_ID)).thenReturn(Optional.of(
+            new ExamMember(EXAM_ID, TEACHER_ID, ExamMemberRole.CHAIR, Instant.now(), TEACHER_ID)));
         when(examPaperItemRepository.existsUnassignedItemByPaperId(PAPER_ID)).thenReturn(false);
         when(examPaperRepository.save(any(ExamPaper.class))).thenAnswer(inv -> inv.getArgument(0));
     }
@@ -97,8 +99,7 @@ class LockClassTestPaperTests {
     @Test
     void should_reject_locking_when_caller_is_not_the_chair() {
         when(examPaperRepository.findById(PAPER_ID)).thenReturn(Optional.of(paper(ExamPaperStatus.DRAFT)));
-        when(examMemberRepository.existsByExamIdAndUserIdAndRole(EXAM_ID, TEACHER_ID, ExamMemberRole.CHAIR))
-            .thenReturn(false);
+        when(examMemberRepository.findByExamIdAndUserId(EXAM_ID, TEACHER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "LOCK", null)))
             .isInstanceOf(ForbiddenException.class)

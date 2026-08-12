@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.AssignExamCandidateScheduleCommand;
 import com.sep.vox.application.port.input.service.ClassTestPaperAutoAssigner;
+import com.sep.vox.application.port.input.service.ExamScheduleManageAccessService;
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamCandidateScheduleUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -61,11 +62,13 @@ class AssignExamCandidateScheduleUseCaseTests {
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
+        // Access service thật trên các repository đã mock: luật phân quyền vẫn được test đúng như
+        // trước khi nó được tách ra khỏi use case.
         useCase = new AssignExamCandidateScheduleUseCase(
             examRepository, examCandidateRepository, examScheduleRepository,
-            examMemberRepository,
             new ClassTestPaperAutoAssigner(mock(ExamPaperRepository.class)),
-            schoolUserRepository, userRoleQueryRepository, userContextPort);
+            new ExamScheduleManageAccessService(
+                examMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());

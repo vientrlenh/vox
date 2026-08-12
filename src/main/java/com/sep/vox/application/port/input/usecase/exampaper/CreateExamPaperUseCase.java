@@ -17,6 +17,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
 import com.sep.vox.application.port.input.command.CreateExamPaperCommand;
+import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessService;
 import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
@@ -30,7 +31,6 @@ import com.sep.vox.domain.model.exam.ExamBlueprintSection;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
 import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamPaperItem;
 import com.sep.vox.domain.model.exam.ExamPaperSection;
@@ -43,7 +43,6 @@ import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamPaperSectionRepository;
@@ -55,7 +54,7 @@ import com.sep.vox.domain.repository.QuestionRepository;
 public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, ExamPaperDto> {
 
     private final ExamRepository examRepository;
-    private final ExamMemberRepository examMemberRepository;
+    private final ExamPaperAuthoringAccessService examPaperAuthoringAccessService;
     private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
     private final ExamBlueprintSectionRepository examBlueprintSectionRepository;
     private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
@@ -71,7 +70,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
 
     public CreateExamPaperUseCase(
             ExamRepository examRepository,
-            ExamMemberRepository examMemberRepository,
+            ExamPaperAuthoringAccessService examPaperAuthoringAccessService,
             ExamBlueprintVersionRepository examBlueprintVersionRepository,
             ExamBlueprintSectionRepository examBlueprintSectionRepository,
             ExamBlueprintSlotRepository examBlueprintSlotRepository,
@@ -85,7 +84,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             RecalculateExamTimeDurationService recalculateExamTimeDurationService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
-        this.examMemberRepository = examMemberRepository;
+        this.examPaperAuthoringAccessService = examPaperAuthoringAccessService;
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examBlueprintSectionRepository = examBlueprintSectionRepository;
         this.examBlueprintSlotRepository = examBlueprintSlotRepository;
@@ -107,11 +106,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
-        // Bài trên lớp không có luồng duyệt đề: giáo viên tạo bài chính là CHAIR và tự soạn mọi mã đề.
-        var requiredRole = exam.getKind() == ExamKind.CLASS_TEST ? ExamMemberRole.CHAIR : ExamMemberRole.AUTHOR;
-        if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, requiredRole)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
+        examPaperAuthoringAccessService.requireCanAuthor(exam, currentUserId);
 
         var source = input.source() == null ? "blueprint" : input.source();
         return switch (source) {

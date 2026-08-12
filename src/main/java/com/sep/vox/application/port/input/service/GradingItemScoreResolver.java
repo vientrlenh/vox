@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -18,6 +17,7 @@ import com.sep.vox.application.port.input.command.SubmitGradingCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
+import com.sep.vox.domain.service.exam.RubricItemScoreFormula;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
@@ -52,7 +52,10 @@ public class GradingItemScoreResolver {
         UUID responseId,
         BigDecimal itemScore,
         String feedbackSummary,
-        List<SubmitGradingCommand.CriterionScoreItem> criterionScores
+        List<SubmitGradingCommand.CriterionScoreItem> criterionScores,
+        // RubricCriterion tuong ung criterionScores -- dung de bao HumanGradingSubmittedEvent
+        // (suy nhan diem yeu tu feedbackSummary), khong tham gia tinh diem.
+        List<RubricCriterion> criteria
     ) {
     }
 
@@ -105,20 +108,28 @@ public class GradingItemScoreResolver {
                 itemScore(item.criterionScores(), criteria, rubricVersion.getTotalScoreMethod(),
                     rubricVersion.getScoringScaleMin(), rubricVersion.getScoringScaleMax()),
                 item.feedbackSummary(),
-                item.criterionScores()
+                item.criterionScores(),
+                item.criterionScores().stream()
+                    .map(score -> criteria.get(score.rubricCriterionId()))
+                    .filter(java.util.Objects::nonNull)
+                    .distinct()
+                    .toList()
             ));
         }
         return resolved;
     }
 
     /**
-     * Tính điểm phần thi theo phương pháp của rubric version. {@code SUM} cộng trực
-     * tiếp các điểm tiêu chí; {@code WEIGHTED_AVERAGE} dùng trọng số khai báo tại
-     * {@link RubricCriterion#getWeight()}.
+     * Kiểm tra điểm giáo viên nhập rồi giao phép tính cho {@link RubricItemScoreFormula} -- công
+     * thức DÙNG CHUNG với đường AI chấm ({@code RecordExamAttemptEvaluationUseCase}).
      *
-     * <p>Rubric weighted không khai trọng số (tổng bằng 0) thì lùi về trung bình
-     * cộng, giống fallback của luồng AI. Kết quả cuối cùng luôn bị chặn trong thang
-     * điểm của rubric version.
+     * <p>Trước 2026-08-11 đây là bản chép tay thứ hai của cùng công thức, và hai bản đã trôi lệch:
+     * nhánh dự phòng (rubric không khai trọng số) bên này chia cho số tiêu chí NỘP LÊN, bên kia
+     * chia cho số tiêu chí KHỚP được rubric. Nay cả hai cùng chia cho số tiêu chí đã phân giải.
+     *
+     * <p>Phần giữ riêng ở đây là KIỂM TRA đầu vào, và nó cố ý nghiêm hơn đường AI: người đang nhập
+     * tay thì phải bị chặn ngay khi thiếu tiêu chí bắt buộc, chấm trùng, hoặc điểm lọt ra ngoài
+     * khoảng của tiêu chí.
      */
     private BigDecimal itemScore(
             List<SubmitGradingCommand.CriterionScoreItem> scores,
@@ -147,9 +158,7 @@ public class GradingItemScoreResolver {
                 "Phải chấm đủ các tiêu chí bắt buộc: " + String.join(", ", missingRequired) + ".");
         }
 
-        var weightedSum = BigDecimal.ZERO;
-        var weightSum = BigDecimal.ZERO;
-        var plainSum = BigDecimal.ZERO;
+        var scored = new ArrayList<RubricItemScoreFormula.ScoredCriterion>();
         for (var item : scores) {
             var criterion = criteria.get(item.rubricCriterionId());
             if (criterion == null) {
@@ -163,27 +172,11 @@ public class GradingItemScoreResolver {
                 throw new IllegalArgumentException("Điểm tiêu chí " + criterion.getName()
                     + " phải nằm trong khoảng " + criterion.getMinScore() + " - " + criterion.getMaxScore() + ".");
             }
-            plainSum = plainSum.add(item.score());
-            if (criterion.getWeight() != null) {
-                weightedSum = weightedSum.add(item.score().multiply(criterion.getWeight()));
-                weightSum = weightSum.add(criterion.getWeight());
-            }
+            scored.add(new RubricItemScoreFormula.ScoredCriterion(item.score(), criterion.getWeight()));
         }
 
-        BigDecimal resolved;
-        if (totalScoreMethod == RubricTotalScoreMethod.SUM) {
-            resolved = plainSum;
-        } else if (weightSum.compareTo(BigDecimal.ZERO) > 0) {
-            resolved = weightedSum.divide(weightSum, 2, RoundingMode.HALF_UP);
-        } else {
-            resolved = plainSum.divide(BigDecimal.valueOf(scores.size()), 2, RoundingMode.HALF_UP);
-        }
-        if (scoringScaleMin != null && resolved.compareTo(scoringScaleMin) < 0) {
-            resolved = scoringScaleMin;
-        }
-        if (scoringScaleMax != null && resolved.compareTo(scoringScaleMax) > 0) {
-            resolved = scoringScaleMax;
-        }
-        return resolved.setScale(2, RoundingMode.HALF_UP);
+        return RubricItemScoreFormula.compute(
+            scored, totalScoreMethod, scoringScaleMin, scoringScaleMax
+        );
     }
 }

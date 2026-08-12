@@ -65,6 +65,29 @@ public class ExamSchedule {
         return this.status == ExamScheduleStatus.DRAFT;
     }
 
+    /** Đã tới giờ bắt đầu. Đúng khoảnh khắc {@code startDate} tính là đã bắt đầu. */
+    public boolean hasStartedAt(Instant now) {
+        return this.startDate != null && !this.startDate.isAfter(now);
+    }
+
+    /**
+     * Đã qua giờ kết thúc. Đúng khoảnh khắc {@code endDate} tính là đã hết giờ -- khớp với điều kiện
+     * {@code endDate > :now} của các truy vấn vào phòng thi ({@code findByIdAndInSchedule}...), nếu
+     * lệch biên thì có một giây mà ca vừa "chưa hết giờ" vừa "không vào thi được".
+     */
+    public boolean hasEndedAt(Instant now) {
+        return this.endDate != null && !this.endDate.isAfter(now);
+    }
+
+    /**
+     * Ca đang diễn ra: đã công bố, đã tới giờ và chưa hết giờ. Cùng vị từ với
+     * {@code findByExamIdAndInSchedule}, viết lại ở domain để service và worker khỏi phải chép biểu
+     * thức so sánh {@code Instant}.
+     */
+    public boolean isOngoingAt(Instant now) {
+        return this.status == ExamScheduleStatus.PUBLISHED && hasStartedAt(now) && !hasEndedAt(now);
+    }
+
     public UUID getId() {
         return this.id;
     }

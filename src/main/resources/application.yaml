@@ -29,8 +29,13 @@ spring:
           inbound: 
             message:
               max-size: 8MB
-        vox-streaming: 
-          target: 0.0.0.0:9096
+        # vox-streaming chạy trong docker với network_mode: host, còn vox-app ở bridge
+        # network riêng -- từ trong container vox, "0.0.0.0" trỏ về CHÍNH NÓ, không bao giờ
+        # tới được service kia. Chạy trong compose thì biến này được đặt thành
+        # host.docker.internal:9096 (xem docker-compose.yml); mặc định dưới đây dành cho lúc
+        # chạy vox thẳng trên máy.
+        vox-streaming:
+          target: ${VOX_STREAMING_GRPC_TARGET:0.0.0.0:9096}
           inbound: 
             message: 
               max-size: 10MB
@@ -207,7 +212,18 @@ server:
     certificate: ${SSL_CERT_PATH:}
     certificate-private-key: ${SSL_KEY_PATH:}
 
+practice:
+  internal:
+    secret: ${PRACTICE_INTERNAL_SECRET:}
+
 app:
+  grpc:
+    # Bí mật dùng chung gắn vào mọi lời gọi gRPC sang vox-streaming (xem
+    # StreamingServiceTokenInterceptor). Phải trùng GRPC_SERVICE_TOKEN bên vox-streaming.
+    # Rỗng thì interceptor KHÔNG gắn header, và vox-streaming trả UNAUTHENTICATED với lý do
+    # đọc được -- hơn là gắn "Bearer " cụt rồi nhận PERMISSION_DENIED, hai lỗi đó dẫn người
+    # đọc log đi hai hướng khác nhau.
+    streaming-token: ${GRPC_SERVICE_TOKEN:}
   cors:
     # Chỉ những origin liệt kê ở đây gọi được API. Mặc định là các cổng dev quen thuộc
     # để clone repo về là chạy được ngay; mỗi môi trường triển khai phải tự đặt
@@ -218,6 +234,18 @@ app:
   cookie:
     secure: ${COOKIE_SECURE:false} # Local dev use false
     same-site: ${COOKIE_SAME_SITE:Lax} # If using domain forward, make this as None
+  data-initializer:
+    enabled: ${DATA_INITIALIZER:true}
+  practice:
+    heartbeat-cleanup-ms: ${PRACTICE_HEARTBEAT_CLEANUP_MS:30000}
+  personalization:
+   
+    quiz:
+     item-count: ${PERSONALIZATION_QUIZ_ITEM_COUNT:7}
+    generation:
+      paper-target-question-count: ${PERSONALIZATION_PAPER_TARGET_QUESTION_COUNT:4}
+      online-candidate-count: ${PERSONALIZATION_ONLINE_CANDIDATE_COUNT:2}
+      online-budget: ${PERSONALIZATION_ONLINE_GENERATION_BUDGET:45s}
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-url: ${OAUTH2_URL}
@@ -236,6 +264,10 @@ app:
           topic:
             exam-attempt-evaluation-completed: ${KAFKA_EXAM_EVALUATION_COMPLETED_TOPIC:exam-attempt-evaluation-completed}
           group-id: ${KAFKA_EXAM_EVALUATION_GROUP_ID:vox-exam-evaluation}
+        practice-evaluation:
+          topic:
+            practice-attempt-evaluation-completed: ${KAFKA_PRACTICE_EVALUATION_COMPLETED_TOPIC:practice-attempt-evaluation-completed}
+          group-id: ${KAFKA_PRACTICE_EVALUATION_GROUP_ID:vox-practice-evaluation}
         question-asset-analysis:
           topic:
             question-asset-analysis-completed: ${KAFKA_QUESTION_ASSET_ANALYSIS_COMPLETED_TOPIC:question-asset-analysis-completed}
@@ -258,6 +290,11 @@ app:
             exam-appeal: ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
             exam-result-lifecycle: ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
+            invoice: ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
+            # Hai topic OTP chỉ email đọc. Payload của chúng KHÔNG chứa mã OTP -- mã được
+            # sinh tại consumer ngay trước lúc gửi mail, xem EventTypeConstant.
+            reset-password-otp: ${KAFKA_RESET_PASSWORD_OTP_TOPIC:vox.reset-password-otp.v1}
+            register-verification-otp: ${KAFKA_REGISTER_VERIFICATION_OTP_TOPIC:vox.register-verification-otp.v1}
           group-id: ${KAFKA_EMAIL_GROUP_ID:vox-email}
         # Cố tình dùng LẠI biến môi trường topic của email: hai nhóm phải luôn đọc cùng
         # một topic, tách biến ra là có ngày đổi một bên rồi lệch nhau trong im lặng.
@@ -268,6 +305,8 @@ app:
             exam-appeal: ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
             exam-result-lifecycle: ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
+            exam-blueprint-version: ${KAFKA_EXAM_BLUEPRINT_VERSION_TOPIC:vox.exam-blueprint-version.v1}
+            invoice: ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
           # Ngược lại, group-id BẮT BUỘC phải là biến riêng. Dùng chung KAFKA_EMAIL_GROUP_ID
           # thì khi biến đó được set, hai listener rơi vào cùng một consumer group và Kafka
           # chỉ giao mỗi message cho MỘT trong hai -- mail hoặc notification, ngẫu nhiên.
@@ -299,6 +338,14 @@ app:
 
       "[GradingDeadlineReminder]": ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
       "[GradingAssignmentDeclined]": ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
+
+      "[ExamBlueprintVersionPublished]": ${KAFKA_EXAM_BLUEPRINT_VERSION_TOPIC:vox.exam-blueprint-version.v1}
+
+      "[InvoicePaid]": ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
+
+      # Hai event OTP: payload chỉ mang địa chỉ nhận, mã sinh ở consumer.
+      "[ResetPasswordOtpRequested]": ${KAFKA_RESET_PASSWORD_OTP_TOPIC:vox.reset-password-otp.v1}
+      "[RegisterVerificationOtpRequested]": ${KAFKA_REGISTER_VERIFICATION_OTP_TOPIC:vox.register-verification-otp.v1}
     
 
 

@@ -25,6 +25,7 @@ import com.sep.vox.domain.model.exam.ExamPaperItem;
 import com.sep.vox.domain.model.exam.ExamPaperSection;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
+import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
@@ -34,6 +35,7 @@ import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 
 /**
  * Khoá lại công thức tổng sau khi tách {@code rollUp}: {@code calculate} phải giữ
@@ -51,6 +53,7 @@ public class ExamSessionResultCalculatorTests {
     private ExamPaperSectionRepository examPaperSectionRepository;
     private RubricResultBandRepository rubricResultBandRepository;
     private FrameworkResultBandRepository frameworkResultBandRepository;
+    private RubricVersionRepository rubricVersionRepository;
     private ExamSessionResultCalculator calculator;
 
     private final UUID sessionId = UUID.randomUUID();
@@ -77,10 +80,17 @@ public class ExamSessionResultCalculatorTests {
         examPaperSectionRepository = mock(ExamPaperSectionRepository.class);
         rubricResultBandRepository = mock(RubricResultBandRepository.class);
         frameworkResultBandRepository = mock(FrameworkResultBandRepository.class);
+        rubricVersionRepository = mock(RubricVersionRepository.class);
         calculator = new ExamSessionResultCalculator(
             examSessionRepository, examRepository, assessmentPolicyRepository, examItemResponseRepository,
             examItemEvaluationRepository, examPaperItemRepository, examPaperSectionRepository,
-            rubricResultBandRepository, frameworkResultBandRepository);
+            rubricResultBandRepository, frameworkResultBandRepository, rubricVersionRepository);
+
+        // Thang 0-9, khớp với dải xếp loại khai bên dưới. Sàn thang là điểm dành cho phần không có
+        // câu nào -- xem resolveScaleFloor.
+        var rubricVersion = mock(RubricVersion.class);
+        when(rubricVersion.getScoringScaleMin()).thenReturn(new BigDecimal("0.00"));
+        when(rubricVersionRepository.findById(rubricVersionId)).thenReturn(Optional.of(rubricVersion));
 
         var session = new ExamSession();
         session.setId(sessionId);
@@ -191,6 +201,52 @@ public class ExamSessionResultCalculatorTests {
             evaluation(listeningResponseId, "8.00", false)));
 
         assertThat(calculator.calculate(sessionId).anyRequiresHumanReview()).isTrue();
+    }
+
+    @Test
+    void should_normalize_item_weights_within_a_section() {
+        // Một phần có HAI câu, mỗi câu trọng số 1.00 -- tổng trọng số trong phần là 2.00 chứ không
+        // phải 1.00. Đây đúng hình dạng dữ liệu đề thi thật đang có, và là chỗ lỗi cũ nằm.
+        var secondItemId = UUID.randomUUID();
+        var secondResponseId = UUID.randomUUID();
+        when(examPaperItemRepository.findByPaperId(paperId)).thenReturn(List.of(
+            new ExamPaperItem(speakingItemId, null, speakingSectionId, paperId, null, 1, new BigDecimal("1.00")),
+            new ExamPaperItem(secondItemId, null, speakingSectionId, paperId, null, 2, new BigDecimal("1.00")),
+            new ExamPaperItem(listeningItemId, null, listeningSectionId, paperId, null, 1, new BigDecimal("1.00"))));
+        when(examItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of(
+            new ExamItemResponse(speakingResponseId, sessionId, speakingItemId, null, null, null, null, null),
+            new ExamItemResponse(secondResponseId, sessionId, secondItemId, null, null, null, null, null),
+            new ExamItemResponse(listeningResponseId, sessionId, listeningItemId, null, null, null, null, null)));
+        when(examItemEvaluationRepository.findLatestByResponseIdIn(anyCollection())).thenReturn(List.of(
+            evaluation(speakingResponseId, "6.00", false),
+            evaluation(secondResponseId, "8.00", false),
+            evaluation(listeningResponseId, "8.00", false)));
+
+        var result = calculator.calculate(sessionId);
+
+        // Speaking = (6.00*1.00 + 8.00*1.00) / 2.00 = 7.00. Bản cũ không chia, cho 14.00.
+        // Tổng = 7.00*0.60 + 8.00*0.40 = 7.40. Bản cũ cho 11.60 -- vượt trần thang 9.00, và khi đó
+        // KHÔNG dải xếp loại nào khớp.
+        assertThat(result.sections()).extracting(section -> section.score())
+            .containsExactly(new BigDecimal("7.00"), new BigDecimal("8.00"));
+        assertThat(result.totalScore()).isEqualByComparingTo("7.40");
+        assertThat(result.rubricResultBand().getCode()).isEqualTo("B2");
+    }
+
+    @Test
+    void should_fall_back_to_plain_mean_when_every_item_weight_in_a_section_is_zero() {
+        when(examPaperItemRepository.findByPaperId(paperId)).thenReturn(List.of(
+            new ExamPaperItem(speakingItemId, null, speakingSectionId, paperId, null, 1, new BigDecimal("0.00")),
+            new ExamPaperItem(listeningItemId, null, listeningSectionId, paperId, null, 1, new BigDecimal("1.00"))));
+        givenStoredScores("6.00", "8.00");
+
+        var result = calculator.calculate(sessionId);
+
+        // Không câu nào trong phần Speaking khai trọng số -> các câu ngang nhau, lấy trung bình
+        // cộng = 6.00. Bản cũ trả về tổng đã nhân, tức 0.00, kéo tổng xuống 3.20.
+        assertThat(result.sections()).extracting(section -> section.score())
+            .containsExactly(new BigDecimal("6.00"), new BigDecimal("8.00"));
+        assertThat(result.totalScore()).isEqualByComparingTo("6.80");
     }
 
     @Test

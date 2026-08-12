@@ -12,6 +12,7 @@ import com.sep.vox.application.query.dto.BulkFinalizePreviewInfo;
 import com.sep.vox.application.query.dto.ExamScoreRowInfo;
 import com.sep.vox.application.query.dto.GradingAssignmentFilter;
 import com.sep.vox.application.query.dto.GradingAssignmentRowInfo;
+import com.sep.vox.application.query.dto.GradingExamOptionInfo;
 import com.sep.vox.application.query.dto.GradingRiskInfo;
 import com.sep.vox.application.query.dto.GradingStatsInfo;
 import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
@@ -49,6 +50,20 @@ public interface ExamGradingQueryRepository {
 
     PageResult<GradingTaskInfo> findTasksByTeacherIdAndExamId(
         UUID teacherId, UUID examId, String examKind, String status, String roundType, int page, int size);
+
+    /**
+     * Những kỳ thi giáo viên này ĐANG hoặc ĐÃ có phân công chấm, kèm số bài mỗi kỳ.
+     * Nguồn của bộ lọc kỳ thi trên hàng đợi giáo viên.
+     *
+     * <p>Không dùng lại lối đọc kỳ thi của trường: điều kiện hiển thị ở đó là system
+     * admin / school admin / thành viên kỳ thi / kỳ thi đã đóng, mà giáo viên được giao
+     * chấm không rơi vào ô nào — quyền của họ đến từ chính dòng phân công, nên phạm vi
+     * dropdown cũng phải suy ra từ đó.
+     *
+     * <p>Không phân trang: tập này đóng theo số phân công của MỘT người, và dropdown
+     * phân trang thì không tự dựng được nhãn cho mục đang chọn nếu nó rơi sang trang sau.
+     */
+    List<GradingExamOptionInfo> findExamsWithTasksByTeacherId(UUID teacherId, String examKind);
 
     /** Màn chấm. Trả empty nếu người gọi không phải giáo viên được gán bài này. */
     Optional<GradingTaskDetailInfo> findTaskDetail(UUID assignmentId, UUID teacherId);

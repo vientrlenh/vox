@@ -31,6 +31,7 @@ import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 
 /**
  * Cửa duy nhất học sinh xem kết quả của mình, nên đây là chỗ khoá hai bất biến:
@@ -54,6 +55,7 @@ class ViewExamSessionResultUseCaseTests {
     private ExamSessionResultCalculator examSessionResultCalculator;
     private FrameworkResultBandRepository frameworkResultBandRepository;
     private RubricResultBandRepository rubricResultBandRepository;
+    private RubricVersionRepository rubricVersionRepository;
     private ExamResultAccessService examResultAccessService;
     private ViewExamSessionResultUseCase useCase;
 
@@ -63,12 +65,14 @@ class ViewExamSessionResultUseCaseTests {
         examSessionResultCalculator = mock(ExamSessionResultCalculator.class);
         frameworkResultBandRepository = mock(FrameworkResultBandRepository.class);
         rubricResultBandRepository = mock(RubricResultBandRepository.class);
+        rubricVersionRepository = mock(RubricVersionRepository.class);
         examResultAccessService = mock(ExamResultAccessService.class);
         useCase = new ViewExamSessionResultUseCase(
             examCandidateResultRepository,
             examSessionResultCalculator,
             frameworkResultBandRepository,
             rubricResultBandRepository,
+            rubricVersionRepository,
             examResultAccessService
         );
     }

@@ -20,14 +20,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
+import com.sep.vox.application.port.input.service.ExamScheduleClosureService;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamStatusUseCase;
+import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
@@ -37,6 +41,7 @@ import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -64,6 +69,7 @@ class UpdateExamStatusUseCaseTests {
     private ExamScheduleProctorRepository examScheduleProctorRepository;
     private ExamCandidateRepository examCandidateRepository;
     private ExamPaperRepository examPaperRepository;
+    private ExamSessionRepository examSessionRepository;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
@@ -89,6 +95,7 @@ class UpdateExamStatusUseCaseTests {
         examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
         examPaperRepository = mock(ExamPaperRepository.class);
+        examSessionRepository = mock(ExamSessionRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
@@ -103,7 +110,7 @@ class UpdateExamStatusUseCaseTests {
             examScheduleRepository,
             examScheduleProctorRepository,
             examCandidateRepository,
-            mock(ExamSessionRepository.class),
+            examSessionRepository,
             mock(ExamCandidateResultRepository.class),
             mock(AssessmentPolicyRepository.class),
             mock(ExamCandidateResultFinalizationService.class),
@@ -114,8 +121,12 @@ class UpdateExamStatusUseCaseTests {
             schoolSubscriptionRepository,
             subscriptionPlanRepository,
             userContextPort,
+            mock(EventPublisherPort.class),
             mock(ClassTestGradingAssignmentService.class),
-            classTestTokenQuotaGuardService);
+            classTestTokenQuotaGuardService,
+            // Service thật (không mock) trên cùng repo giả: guard và cascade ca thi được kiểm luôn
+            // ở đây; bảng ánh xạ trạng thái đầy đủ nằm ở ExamScheduleClosureServiceTests.
+            new ExamScheduleClosureService(examScheduleRepository, examSessionRepository));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
@@ -136,19 +147,40 @@ class UpdateExamStatusUseCaseTests {
         verify(examScheduleRepository, never()).save(any());
     }
 
+    /**
+     * Lên lịch bài trên lớp KHÔNG còn tự công bố ca thi: ca phải đã được công bố tay từ trước
+     * (UpdateExamScheduleStatusUseCase), và action này không ghi gì lên ca — giống kỳ thi tập trung.
+     */
     @Test
-    void should_publish_class_test_schedules_when_window_valid() {
+    void should_schedule_class_test_when_all_schedules_published() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
+        givenScheduleReady(schedule);
+
+        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+
+        assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
+        assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.PUBLISHED);
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    /** Bản song sinh của should_reject_schedule_when_centralized_exam_has_draft_schedule. */
+    @Test
+    void should_reject_schedule_when_class_test_has_draft_schedule() {
         var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         givenScheduleReady(schedule);
 
-        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
-
-        assertThat(result).isNotNull();
-        assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.PUBLISHED);
-        verify(examScheduleRepository).save(schedule);
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Còn 1 ca thi chưa được công bố");
+        assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.DRAFT);
+        verify(examScheduleRepository, never()).save(any());
+        verify(examRepository, never()).save(any());
     }
 
     @Test
@@ -263,10 +295,30 @@ class UpdateExamStatusUseCaseTests {
             .hasMessageContaining("chưa có mã đề");
     }
 
+    /**
+     * Ca thi còn DRAFT thì học sinh và giám thị chưa nhìn thấy — kỳ thi "đã lên lịch" mà có ca
+     * không ai vào được. Công bố từng ca là thao tác riêng nên phải làm xong trước khi lên lịch.
+     */
+    @Test
+    void should_reject_schedule_when_centralized_exam_has_draft_schedule() {
+        givenCentralizedExam();
+        var draft = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(draft, published));
+        when(examScheduleProctorRepository.countByScheduleId(draft.getId())).thenReturn(1L);
+        when(examScheduleProctorRepository.countByScheduleId(published.getId())).thenReturn(1L);
+        when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(new ExamPaper()));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Còn 1 ca thi chưa được công bố");
+        verify(examRepository, never()).save(any());
+    }
+
     @Test
     void should_schedule_centralized_exam_when_ready() {
         givenCentralizedExam();
-        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         when(examScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(1L);
         when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(new ExamPaper()));
@@ -274,6 +326,117 @@ class UpdateExamStatusUseCaseTests {
         var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
 
         assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
+    }
+
+    /**
+     * Chủ tịch hội đồng chạy trọn quy trình kỳ thi tập trung nên cũng là người bấm lên lịch. Trước
+     * đây nhánh CENTRALIZED chỉ nhận quản trị trường, khiến giáo viên chủ tịch làm xong mọi bước rồi
+     * đứng lại ở nút cuối cùng.
+     */
+    @Test
+    void should_schedule_centralized_exam_when_caller_is_the_chair() {
+        givenCentralizedExam();
+        givenCallerIsChairInsteadOfSchoolAdmin();
+        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
+        when(examScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(1L);
+        when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(new ExamPaper()));
+
+        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+
+        assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
+    }
+
+    @Test
+    void should_reject_status_change_when_caller_is_neither_school_admin_nor_chair() {
+        givenCentralizedExam();
+        givenCallerIsChairInsteadOfSchoolAdmin();
+        when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
+            .thenReturn(false);
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(ForbiddenException.class)
+            .hasMessageContaining("Quyền truy cập bị từ chối");
+        verify(examRepository, never()).save(any());
+    }
+
+    // --- Ca đã huỷ/dời không còn diễn ra, nên không được tham gia bất kỳ điều kiện lên lịch nào ---
+
+    /**
+     * Ca huỷ được ngay từ DRAFT, lúc chưa gán phòng lẫn giám thị. Nếu vẫn soi phòng/giám thị của nó
+     * thì kỳ thi bị chặn bởi một ca sẽ không bao giờ diễn ra, kèm thông báo không nói rõ ca nào — mà
+     * lối thoát duy nhất là đi gán phòng cho ca đã huỷ, hoặc gỡ hết giám thị rồi xoá ca.
+     */
+    @Test
+    void should_ignore_cancelled_schedule_when_checking_room_and_proctor() {
+        givenCentralizedExam();
+        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        var cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
+        cancelled.setSchoolRoomId(null);
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(published, cancelled));
+        when(examScheduleProctorRepository.countByScheduleId(published.getId())).thenReturn(1L);
+        when(examScheduleProctorRepository.countByScheduleId(cancelled.getId())).thenReturn(0L);
+
+        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+
+        assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
+    }
+
+    @Test
+    void should_ignore_moved_schedule_when_checking_room_and_proctor() {
+        givenCentralizedExam();
+        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        var moved = schedule(ExamScheduleStatus.MOVED, open, open.plus(2, ChronoUnit.HOURS));
+        moved.setSchoolRoomId(null);
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(published, moved));
+        when(examScheduleProctorRepository.countByScheduleId(published.getId())).thenReturn(1L);
+        when(examScheduleProctorRepository.countByScheduleId(moved.getId())).thenReturn(0L);
+
+        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+
+        assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
+    }
+
+    /** Bỏ ca huỷ ra rồi không còn ca nào thì kỳ thi rỗng, không phải "đã đủ điều kiện". */
+    @Test
+    void should_reject_schedule_when_every_centralized_schedule_is_cancelled() {
+        givenCentralizedExam();
+        var cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(cancelled));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("chưa có ca thi");
+        verify(examRepository, never()).save(any());
+    }
+
+    @Test
+    void should_ignore_cancelled_schedule_when_class_test_schedule_ready() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        var cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
+        cancelled.setSchoolRoomId(null);
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(published, cancelled));
+        when(examScheduleProctorRepository.countByScheduleId(cancelled.getId())).thenReturn(0L);
+        givenScheduleReady(published);
+
+        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+
+        assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
+    }
+
+    @Test
+    void should_reject_schedule_when_every_class_test_schedule_is_cancelled() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(cancelled));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("chưa có lịch");
+        verify(examRepository, never()).save(any());
     }
 
     /**
@@ -340,25 +503,144 @@ class UpdateExamStatusUseCaseTests {
     }
 
     /**
-     * Kỳ thi tập trung dựng ở DRAFT, người gọi là SCHOOL_ADMIN cùng trường (authorizeMutation của
-     * nhánh CENTRALIZED không xét exam member), và mặc định đã đủ thí sinh + mã đề — từng test tự làm
-     * hỏng đúng một điều kiện.
+     * Đóng bài mà bỏ ca lại là ca ở PUBLISHED vĩnh viễn — không đường nào chuyển nó sang COMPLETED
+     * trừ khi có người bấm tay từng ca.
+     */
+    @Test
+    void should_close_schedules_when_exam_is_closed() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.IN_PROGRESS);
+        // Ca đã kết thúc từ hôm qua và ca của tuần sau chưa tới giờ.
+        var ended = schedule(ExamScheduleStatus.PUBLISHED,
+            open.minus(1, ChronoUnit.DAYS), open.minus(22, ChronoUnit.HOURS));
+        var notStarted = schedule(ExamScheduleStatus.PUBLISHED,
+            Instant.now().plus(7, ChronoUnit.DAYS), Instant.now().plus(8, ChronoUnit.DAYS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(ended, notStarted));
+
+        useCase.execute(new UpdateExamStatusCommand(examId, "CLOSE", null));
+
+        assertThat(exam.getStatus()).isEqualTo(ExamStatus.CLOSED);
+        assertThat(ended.getStatus()).isEqualTo(ExamScheduleStatus.COMPLETED);
+        assertThat(notStarted.getStatus()).isEqualTo(ExamScheduleStatus.CANCELLED);
+        verify(examScheduleRepository).save(ended);
+        verify(examScheduleRepository).save(notStarted);
+    }
+
+    @Test
+    void should_reject_close_when_ongoing_schedule_still_has_active_session() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.IN_PROGRESS);
+        var ongoing = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findByExamIdAndInSchedule(any(), any())).thenReturn(List.of(ongoing));
+        when(examSessionRepository.countActiveByExamId(examId)).thenReturn(2L);
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "CLOSE", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("2 học sinh đang làm bài");
+        assertThat(ongoing.getStatus()).isEqualTo(ExamScheduleStatus.PUBLISHED);
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    /** Cả lớp nộp xong thì vẫn phải đóng sớm được — đây là lý do không chặn cứng theo khung giờ. */
+    @Test
+    void should_allow_close_while_schedule_is_ongoing_but_nobody_is_working() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.IN_PROGRESS);
+        var ongoing = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findByExamIdAndInSchedule(any(), any())).thenReturn(List.of(ongoing));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(ongoing));
+        when(examSessionRepository.countActiveByExamId(examId)).thenReturn(0L);
+
+        useCase.execute(new UpdateExamStatusCommand(examId, "CLOSE", null));
+
+        assertThat(exam.getStatus()).isEqualTo(ExamStatus.CLOSED);
+        assertThat(ongoing.getStatus()).isEqualTo(ExamScheduleStatus.COMPLETED);
+    }
+
+    /**
+     * Ca thi còn PUBLISHED thì vẫn lọt qua isVisibleToStudent()/allowsAttendance() và các truy vấn
+     * hard-code status = 'PUBLISHED' — huỷ kỳ thi mà không kéo theo ca là để lại ca "sẵn sàng".
+     */
+    @Test
+    void should_cancel_schedules_when_exam_is_cancelled() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.SCHEDULED);
+        var draft = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(draft, published));
+
+        useCase.execute(new UpdateExamStatusCommand(examId, "CANCEL", null));
+
+        assertThat(draft.getStatus()).isEqualTo(ExamScheduleStatus.CANCELLED);
+        assertThat(published.getStatus()).isEqualTo(ExamScheduleStatus.CANCELLED);
+        assertThat(published.getUpdatedBy()).isEqualTo(userId);
+        verify(examScheduleRepository).save(draft);
+        verify(examScheduleRepository).save(published);
+    }
+
+    @Test
+    void should_not_cancel_completed_or_moved_schedules() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.CLOSED);
+        var completed = schedule(ExamScheduleStatus.COMPLETED, open, open.plus(2, ChronoUnit.HOURS));
+        var moved = schedule(ExamScheduleStatus.MOVED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(completed, moved));
+
+        useCase.execute(new UpdateExamStatusCommand(examId, "CANCEL", null));
+
+        assertThat(completed.getStatus()).isEqualTo(ExamScheduleStatus.COMPLETED);
+        assertThat(moved.getStatus()).isEqualTo(ExamScheduleStatus.MOVED);
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    @Test
+    void should_not_change_schedules_when_cancel_transition_is_rejected() {
+        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        exam.setStatus(ExamStatus.RESULTS_PUBLISHED);
+        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(published));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "CANCEL", null)))
+            .isInstanceOf(IllegalStateException.class);
+        assertThat(published.getStatus()).isEqualTo(ExamScheduleStatus.PUBLISHED);
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    /**
+     * Kỳ thi tập trung dựng ở DRAFT, người gọi là SCHOOL_ADMIN cùng trường, và mặc định đã đủ thí
+     * sinh + mã đề — từng test tự làm hỏng đúng một điều kiện. Nhánh chủ tịch hội đồng xem
+     * {@link #givenCallerIsChairInsteadOfSchoolAdmin()}.
      */
     private void givenCentralizedExam() {
         var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         exam.setKind(ExamKind.CENTRALIZED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
-        var schoolUser = mock(com.sep.vox.domain.model.school.SchoolUser.class);
+        var schoolUser = mock(SchoolUser.class);
         when(schoolUser.getSchoolId()).thenReturn(schoolId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(schoolUser));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(
-            new com.sep.vox.application.query.dto.UserRoleInfo(
+            new UserRoleInfo(
                 UUID.randomUUID(), userId, UUID.randomUUID(), Instant.now(), "SCHOOL_ADMIN", "Quản trị trường")
         ));
 
         when(examCandidateRepository.countByExamId(examId)).thenReturn(1L);
         when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(new ExamPaper()));
+    }
+
+    /** Hạ người gọi từ quản trị trường xuống giáo viên chỉ giữ vai trò CHAIR của chính kỳ thi đó. */
+    private void givenCallerIsChairInsteadOfSchoolAdmin() {
+        when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(
+            new UserRoleInfo(UUID.randomUUID(), userId, UUID.randomUUID(), Instant.now(), "TEACHER", "Giáo viên")
+        ));
+        when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
+            .thenReturn(true);
     }
 
     private void givenGenerousPlan() {

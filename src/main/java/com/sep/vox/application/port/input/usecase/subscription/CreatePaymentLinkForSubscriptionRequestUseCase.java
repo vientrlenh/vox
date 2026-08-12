@@ -103,7 +103,7 @@ public class CreatePaymentLinkForSubscriptionRequestUseCase
         var savedInvoice = invoiceRepository.save(invoice);
 
         return new PaymentLinkDto(
-            savedInvoice.getId(), orderRef, result.action(), result.actionUrl(), result.paymentLinkId(), result.fields());
+            savedInvoice.getId(), orderRef, result.action().name(), result.actionUrl(), result.paymentLinkId(), result.fields());
     }
 
     private CreatePaymentLinkForSubscriptionRequestCommand normalize(CreatePaymentLinkForSubscriptionRequestCommand input) {

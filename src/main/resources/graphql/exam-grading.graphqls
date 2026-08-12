@@ -298,6 +298,22 @@ type AssignableTeacher {
     load: Int!
 }
 
+"""
+Một mục trong bộ lọc kỳ thi của hàng đợi giáo viên. Cố ý mỏng — đây là dropdown, không
+phải màn kỳ thi: mỗi field thêm vào đây là một field giáo viên đọc được về kỳ thi tập
+trung mà họ không phải thành viên.
+"""
+type GradingExamOption {
+    id: ID!
+    "Mã kỳ thi — tên kỳ thi trùng nhau giữa các đợt, mã thì không."
+    code: String
+    name: String
+    "Tổng số bài được giao ở kỳ thi này, gộp cả bốn vòng và cả phân công đã đóng"
+    taskCount: Int!
+    "Trong đó còn phải chấm (ASSIGNED)"
+    openTaskCount: Int!
+}
+
 "Ai/cái gì đã đổi trạng thái một bài."
 enum ResultStatusChangeSource {
     AI_EVALUATION
@@ -398,12 +414,33 @@ extend type Query {
     CHỈ kỳ thi tập trung — bài kiểm tra trên lớp đi `myClassTestGradingTasks`.
     """
     myGradingTasks(
+        """
+        Thu hẹp về MỘT kỳ thi. Bỏ trống = mọi kỳ thi giáo viên đang có bài. Đây thuần là
+        bộ lọc, không phải cổng phân quyền: phạm vi vẫn là phân công của chính người gọi,
+        nên id của kỳ thi mình không có bài chỉ cho ra danh sách rỗng.
+        Danh sách kỳ thi để đổ vào dropdown lấy ở `myGradingExams`.
+        """
+        examId: ID,
         status: GradingAssignmentStatus,
         roundType: GradingRoundType,
         page: Int = 0,
         "Tối đa 100 — giá trị lớn hơn bị kẹp xuống 100 chứ không báo lỗi."
         size: Int = 20
     ): GradingTaskPage!
+
+    """
+    Kỳ thi để dựng bộ lọc cho `myGradingTasks`: CHỈ những kỳ thi TẬP TRUNG mà giáo viên
+    đang đăng nhập đang hoặc ĐÃ có phân công chấm, mới nhận việc xếp trước. Không phân
+    trang — tập này đóng theo số phân công của MỘT người.
+
+    Phải có query riêng vì `exams` không phải đường đi ở đây: luật hiển thị bên đó đòi
+    người gọi là admin hoặc thành viên kỳ thi, mà giáo viên chấm kỳ thi tập trung không
+    phải thành viên — hỏi ở đó chỉ nhận về danh sách rỗng.
+
+    Kỳ thi đã chấm xong hết vẫn nằm trong danh sách: nộp bài cuối cùng mà mục đang chọn
+    biến mất khỏi dropdown ngay dưới tay là lỗi, không phải tính năng.
+    """
+    myGradingExams: [GradingExamOption!]!
 
     """
     MỌI bài của một bài kiểm tra trên lớp, cho chính giáo viên tạo bài — gồm cả bài
@@ -438,8 +475,9 @@ extend type Query {
 
     """
     Dòng thời gian điểm của một bài, cũ trước. Học sinh xem được của CHÍNH MÌNH,
-    school admin xem được của bài thuộc trường mình, giáo viên xem được bài mình
-    ĐANG được giao chấm (hết phân công là hết quyền).
+    school admin xem được của bài thuộc trường mình, giáo viên xem được bài mình ĐÃ
+    TỪNG được giao chấm — kể cả khi phân công đó đã đóng, vì ở vòng phúc khảo người
+    chấm vòng trước chính là người bị hỏi lại.
     """
     resultStatusHistory(candidateResultId: ID!): [ResultStatusHistoryEntry!]!
 

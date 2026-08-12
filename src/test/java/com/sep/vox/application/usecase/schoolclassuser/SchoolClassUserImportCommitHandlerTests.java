@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,7 +22,6 @@ import org.springframework.transaction.TransactionStatus;
 
 import com.sep.vox.application.port.input.service.SchoolClassUserImportCommitHandler;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
-import com.sep.vox.application.usecase.TestSchoolUserRepository;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -30,10 +30,12 @@ import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
 import com.sep.vox.domain.valueobject.Email;
@@ -43,7 +45,7 @@ class SchoolClassUserImportCommitHandlerTests {
     private UserRepository userRepository;
     private SchoolClassRepository schoolClassRepository;
     private SchoolClassUserRepository schoolClassUserRepository;
-    private TestSchoolUserRepository schoolUserRepository;
+    private SchoolUserRepository schoolUserRepository;
     private FakeJsonSerializationPort jsonSerializationPort;
     private PlatformTransactionManager txManager;
     private SchoolClassUserImportCommitHandler handler;
@@ -53,7 +55,7 @@ class SchoolClassUserImportCommitHandlerTests {
         userRepository = mock(UserRepository.class);
         schoolClassRepository = mock(SchoolClassRepository.class);
         schoolClassUserRepository = mock(SchoolClassUserRepository.class);
-        schoolUserRepository = TestSchoolUserRepository.create();
+        schoolUserRepository = mock(SchoolUserRepository.class);
         jsonSerializationPort = new FakeJsonSerializationPort();
         txManager = mock(PlatformTransactionManager.class);
         when(txManager.getTransaction(any())).thenReturn(mock(TransactionStatus.class));
@@ -81,6 +83,7 @@ class SchoolClassUserImportCommitHandlerTests {
         when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of(schoolClass));
         when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(any(), any())).thenReturn(List.of());
         when(schoolClassUserRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        mockUsersBelongToSchool(schoolId, student);
 
         var result = handler.commit(session(sessionId, schoolId, createdBy), rows);
 
@@ -109,6 +112,7 @@ class SchoolClassUserImportCommitHandlerTests {
         when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of(schoolClass));
         when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(any(), any())).thenReturn(List.of(inactiveMembership));
         when(schoolClassUserRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        mockUsersBelongToSchool(schoolId, student);
 
         var result = handler.commit(session(sessionId, schoolId, createdBy), rows);
 
@@ -141,6 +145,7 @@ class SchoolClassUserImportCommitHandlerTests {
         when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of(schoolClass));
         when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(any(), any())).thenReturn(List.of(activeMembership));
         when(schoolClassUserRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        mockUsersBelongToSchool(schoolId, student);
 
         var result = handler.commit(session(sessionId, schoolId, createdBy), rows);
 
@@ -182,6 +187,7 @@ class SchoolClassUserImportCommitHandlerTests {
         when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of(activeSchoolClass(UUID.randomUUID(), schoolId, "ENG-01")));
         when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(any(), any())).thenReturn(List.of());
         when(schoolClassUserRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        mockUsersBelongToSchool(schoolId, pendingUser);
 
         var result = handler.commit(session(sessionId, schoolId, createdBy), rows);
 
@@ -311,6 +317,7 @@ class SchoolClassUserImportCommitHandlerTests {
         when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of(schoolClass));
         when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(any(), any())).thenReturn(List.of());
         when(schoolClassUserRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        mockUsersBelongToSchool(schoolId, student);
 
         var result = handler.commit(session(sessionId, schoolId, createdBy), rows);
 
@@ -345,6 +352,7 @@ class SchoolClassUserImportCommitHandlerTests {
         when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("NEW-01", "EXT-01"))).thenReturn(List.of(newClass, existingClass));
         when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(any(), any())).thenReturn(List.of(existingMembership));
         when(schoolClassUserRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        mockUsersBelongToSchool(schoolId, newStudent, existingStudent);
 
         var result = handler.commit(session(sessionId, schoolId, createdBy), rows);
 
@@ -382,12 +390,18 @@ class SchoolClassUserImportCommitHandlerTests {
         u.setId(id);
         u.setEmail(new Email(email));
         u.setStatus(status);
-        TestSchoolUserRepository.remember(id, schoolId);
         return u;
     }
 
     private static SchoolClass activeSchoolClass(UUID id, UUID schoolId, String code) {
         return schoolClass(id, schoolId, code, SchoolClassStatus.ACTIVE);
+    }
+
+    private void mockUsersBelongToSchool(UUID schoolId, User... users) {
+        var schoolUsers = Arrays.stream(users)
+            .map(user -> new SchoolUser(schoolId, user.getId(), Instant.now(), null))
+            .toList();
+        when(schoolUserRepository.findByUserIdIn(any())).thenReturn(schoolUsers);
     }
 
     private static SchoolClass schoolClass(UUID id, UUID schoolId, String code, SchoolClassStatus status) {

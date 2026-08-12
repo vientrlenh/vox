@@ -7,7 +7,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.ExamDeliveryModeSupport;
 import com.sep.vox.application.common.InstantParser;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
@@ -28,6 +27,7 @@ import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.service.exam.ExamDeliveryModeSupport;
 
 @Service
 public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {

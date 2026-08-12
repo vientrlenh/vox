@@ -3,7 +3,6 @@ package com.sep.vox.domain.dto;
 import java.util.Map;
 import java.util.UUID;
 
-import com.sep.vox.application.response.output.CheckoutAction;
 
 /**
  * @param providerOrderRef mã đơn phía cổng, dạng chuỗi chứ không phải Long: orderCode dạng số là
@@ -15,7 +14,7 @@ import com.sep.vox.application.response.output.CheckoutAction;
 public record PaymentLinkDto(
     UUID invoiceId,
     String providerOrderRef,
-    CheckoutAction action,
+    String action,
     String actionUrl,
     String paymentLinkId,
     Map<String, String> fields

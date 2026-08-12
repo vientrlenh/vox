@@ -15,7 +15,8 @@ public final class ExamItemCriterionScoreMapper {
             jpa.getRubricCriterionId(),
             jpa.getRawScore(),
             jpa.getFinalScore(),
-            jpa.getRationale()
+            jpa.getRationale(),
+            jpa.getMatchedBandCode()
         );
     }
 
@@ -26,7 +27,8 @@ public final class ExamItemCriterionScoreMapper {
             domain.getRubricCriterionId(),
             domain.getRawScore(),
             domain.getFinalScore(),
-            domain.getRationale()
+            domain.getRationale(),
+            domain.getMatchedBandCode()
         );
     }
 }

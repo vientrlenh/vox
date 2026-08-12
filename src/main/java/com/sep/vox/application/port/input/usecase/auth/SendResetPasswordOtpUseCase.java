@@ -1,65 +1,71 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
-import java.time.Duration;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.CacheKey;
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.event.SendResetPasswordOtpEvent;
+import com.sep.vox.application.event.ResetPasswordOtpRequestedPayloadV1;
 import com.sep.vox.application.port.input.command.SendResetPasswordOtpCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.CacheManagerPort;
-import com.sep.vox.application.port.output.EventPublisherPort;
-import com.sep.vox.application.port.output.OneTimePasswordPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
 public class SendResetPasswordOtpUseCase implements IUseCase<SendResetPasswordOtpCommand, Void> {
 
     private final UserRepository userRepository;
-    private final CacheManagerPort cacheManagerPort;
-    private final OneTimePasswordPort oneTimePasswordPort;
-    private final EventPublisherPort eventPublisherPort;
+    private final OutboxRepository outboxRepository;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public SendResetPasswordOtpUseCase(
-        UserRepository userRepository,
-        CacheManagerPort cacheManagerPort, OneTimePasswordPort oneTimePasswordPort, EventPublisherPort eventPublisherPort) {
+            UserRepository userRepository,
+            OutboxRepository outboxRepository,
+            JsonSerializationPort jsonSerializationPort) {
         this.userRepository = userRepository;
-        this.cacheManagerPort = cacheManagerPort;
-        this.oneTimePasswordPort = oneTimePasswordPort;
-        this.eventPublisherPort = eventPublisherPort;
+        this.outboxRepository = outboxRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
-    private static final int OTP_SIZE = 7;
-    private static final Duration TTL = Duration.ofMinutes(5);
-
-
+    /**
+     * Use case này KHÔNG còn sinh OTP. Mã được sinh ở
+     * {@code ResetPasswordOtpEmailConsumer} ngay trước lúc gửi mail, để nó không bao giờ
+     * nằm trong outboxes.payload hay trong topic Kafka.
+     */
     @Override
+    @Transactional
     public Void execute(SendResetPasswordOtpCommand input) {
         var command = normalize(input);
 
-        if (!userRepository.existsByEmailAndStatus(command.email(), UserStatus.ACTIVE)) {
+        // Email lạ vẫn trả về như bình thường: khác biệt phản hồi ở đây là một kênh dò xem
+        // địa chỉ nào có tài khoản.
+        var user = userRepository.findByEmailAndStatus(command.email(), UserStatus.ACTIVE).orElse(null);
+        if (user == null) {
             return null;
         }
 
-        var otp = oneTimePasswordPort.generate(OTP_SIZE);
-        var otpHash = oneTimePasswordPort.hash(otp);
+        var payload = jsonSerializationPort.toJson(
+            new ResetPasswordOtpRequestedPayloadV1(command.email()));
 
-        var key = resetPasswordKey(command);
-        cacheManagerPort.save(key, otpHash, TTL);
-        eventPublisherPort.publish(new SendResetPasswordOtpEvent(command.email(), otp));
+        outboxRepository.save(Outbox.create(
+            AggregateTypeConstant.USER,
+            user.getId(),
+            EventTypeConstant.RESET_PASSWORD_OTP_REQUESTED,
+            payload,
+            Instant.now()
+        ));
         return null;
     }
-    
+
     private SendResetPasswordOtpCommand normalize(SendResetPasswordOtpCommand input) {
         return new SendResetPasswordOtpCommand(
             StringNormalization.normalizeEmail(input.email())
         );
-    }
-
-    private String resetPasswordKey(SendResetPasswordOtpCommand command) {
-        return CacheKey.RESET_PASSWORD_PREFIX + CacheKey.OTP_PREFIX + command.email();
     }
 }

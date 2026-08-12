@@ -12,9 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.DateMapper;
-import com.sep.vox.application.event.InvoicePaidEvent;
+import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.output.EventPublisherPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
 import com.sep.vox.domain.model.subscription.Invoice;
@@ -29,7 +32,9 @@ import com.sep.vox.domain.model.subscription.SubscriptionQuota;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.repository.FinancialEventRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
@@ -44,6 +49,8 @@ import com.sep.vox.domain.repository.TokenPurchaseRepository;
 @Service
 public class InvoiceSettlementService {
 
+    private static final String SCHOOL_ADMIN_ROLE_CODE = "SCHOOL_ADMIN";
+
     private final InvoiceRepository invoiceRepository;
     private final SubscriptionRequestRepository subscriptionRequestRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
@@ -54,7 +61,9 @@ public class InvoiceSettlementService {
     private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private final FinancialEventRepository financialEventRepository;
     private final SubscriptionPlanResolver subscriptionPlanResolver;
-    private final EventPublisherPort eventPublisherPort;
+    private final SchoolUserRepository schoolUserRepository;
+    private final OutboxRepository outboxRepository;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public InvoiceSettlementService(
             InvoiceRepository invoiceRepository,
@@ -65,9 +74,11 @@ public class InvoiceSettlementService {
             SubscriptionQuotaRepository subscriptionQuotaRepository,
             TokenPurchaseRepository tokenPurchaseRepository,
             TokenPurchaseItemRepository tokenPurchaseItemRepository,
-            FinancialEventRepository financialEventRepository, 
-            SubscriptionPlanResolver subscriptionPlanResolver, 
-            EventPublisherPort eventPublisherPort) {
+            FinancialEventRepository financialEventRepository,
+            SubscriptionPlanResolver subscriptionPlanResolver,
+            SchoolUserRepository schoolUserRepository,
+            OutboxRepository outboxRepository,
+            JsonSerializationPort jsonSerializationPort) {
         this.invoiceRepository = invoiceRepository;
         this.subscriptionRequestRepository = subscriptionRequestRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
@@ -76,9 +87,11 @@ public class InvoiceSettlementService {
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.tokenPurchaseRepository = tokenPurchaseRepository;
         this.tokenPurchaseItemRepository = tokenPurchaseItemRepository;
-        this.financialEventRepository = financialEventRepository; 
+        this.financialEventRepository = financialEventRepository;
         this.subscriptionPlanResolver = subscriptionPlanResolver;
-        this.eventPublisherPort = eventPublisherPort;
+        this.schoolUserRepository = schoolUserRepository;
+        this.outboxRepository = outboxRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     // Idempotent: nếu invoice không còn PENDING (đã được chốt trước đó, kể cả bởi lần gọi khác) thì bỏ qua.
@@ -135,9 +148,45 @@ public class InvoiceSettlementService {
 
         invoiceRepository.save(invoice);
 
-        eventPublisherPort.publish(new InvoicePaidEvent(
-            invoice.getSchoolId(), invoice.getSubscriptionId(), invoice.getSourceId(), invoice.getInvoiceNumber(),
-            invoice.getAmount(), invoice.getPaidAt(), invoice.getSourceType()
+        publishInvoicePaid(invoice);
+    }
+
+    /**
+     * Ghi outbox trong CÙNG transaction với việc chốt hóa đơn, thay cho một
+     * {@code @TransactionalEventListener} chạy sau commit như trước đây.
+     *
+     * <p>Đường cũ mất thông báo vĩnh viễn nếu tiến trình chết ngay sau commit, và tệ hơn:
+     * lỗi ném ra từ listener sau commit sẽ dội ngược thành 500 cho webhook cổng thanh toán,
+     * trong khi lần gọi lại lại thoát sớm ở guard {@code status != PENDING} nên không phát
+     * lại sự kiện. Outbox row nằm cùng transaction thì không có khe hở đó.
+     *
+     * <p>Danh sách người nhận được chốt tại đây -- xem javadoc của
+     * {@link InvoicePaidPayloadV1} về lý do không resolve ở consumer.
+     */
+    private void publishInvoicePaid(Invoice invoice) {
+        var schoolAdminIds = schoolUserRepository
+            .findBySchoolIdWithRole(invoice.getSchoolId(), SCHOOL_ADMIN_ROLE_CODE)
+            .stream()
+            .map(schoolUser -> schoolUser.getUserId())
+            .toList();
+
+        var payload = jsonSerializationPort.toJson(new InvoicePaidPayloadV1(
+            schoolAdminIds,
+            invoice.getSchoolId(),
+            invoice.getSubscriptionId(),
+            invoice.getSourceId(),
+            invoice.getInvoiceNumber(),
+            invoice.getAmount(),
+            invoice.getPaidAt(),
+            invoice.getSourceType()
+        ));
+
+        outboxRepository.save(Outbox.create(
+            AggregateTypeConstant.INVOICE,
+            invoice.getId(),
+            EventTypeConstant.INVOICE_PAID,
+            payload,
+            invoice.getPaidAt()
         ));
     }
 

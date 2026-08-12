@@ -110,4 +110,23 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
         @Param("excludeClassId") UUID excludeClassId,
         @Param("excludeAdminRoles") boolean excludeAdminRoles,
         Pageable pageable);
+
+
+    /**
+     * DISTINCT là bắt buộc: ba JOIN ở đây nhân dòng khi một người được gán cùng vai trò
+     * nhiều lần. Không có nó thì danh sách người nhận trong payload outbox chứa UUID trùng.
+     */
+    @Query("""
+        SELECT DISTINCT su FROM SchoolUserJpaEntity su
+        JOIN UserRoleJpaEntity ur
+            ON su.userId = ur.userId
+        JOIN UserJpaEntity u
+            ON su.userId = u.id
+        JOIN RoleJpaEntity r
+            ON ur.roleId = r.id
+        WHERE su.schoolId = :schoolId
+            AND r.code = :roleCode
+            AND u.status <> 'DISABLED'
+    """)
+    List<SchoolUserJpaEntity> findBySchoolIdWithRole(@Param("schoolId") UUID schoolId, @Param("roleCode") String roleCode);
 }

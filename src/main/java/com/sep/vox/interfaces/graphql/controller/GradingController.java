@@ -22,12 +22,14 @@ import com.sep.vox.application.port.input.usecase.examgrading.ViewAssignableTeac
 import com.sep.vox.application.port.input.usecase.examgrading.ViewGradingAssignmentsUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewGradingStatsUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewGradingTaskDetailUseCase;
+import com.sep.vox.application.port.input.usecase.examgrading.ViewMyGradingExamsUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewMyGradingTasksUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewMyClassTestGradingTasksUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewResultStatusHistoryUseCase;
 import com.sep.vox.application.query.dto.AiQualityReportInfo;
 import com.sep.vox.application.query.dto.AssignableTeacherInfo;
 import com.sep.vox.application.query.dto.GradingAssignmentRowInfo;
+import com.sep.vox.application.query.dto.GradingExamOptionInfo;
 import com.sep.vox.application.query.dto.GradingStatsInfo;
 import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
 import com.sep.vox.application.query.dto.GradingTaskInfo;
@@ -44,6 +46,7 @@ public class GradingController {
     private final ViewClassTestGradingStatsUseCase viewClassTestGradingStatsUseCase;
     private final ViewClassTestGradingResultsUseCase viewClassTestGradingResultsUseCase;
     private final ViewMyGradingTasksUseCase viewMyGradingTasksUseCase;
+    private final ViewMyGradingExamsUseCase viewMyGradingExamsUseCase;
     private final ViewMyClassTestGradingTasksUseCase viewMyClassTestGradingTasksUseCase;
     private final ViewGradingTaskDetailUseCase viewGradingTaskDetailUseCase;
     private final ViewAssignableTeachersUseCase viewAssignableTeachersUseCase;
@@ -56,6 +59,7 @@ public class GradingController {
             ViewClassTestGradingStatsUseCase viewClassTestGradingStatsUseCase,
             ViewClassTestGradingResultsUseCase viewClassTestGradingResultsUseCase,
             ViewMyGradingTasksUseCase viewMyGradingTasksUseCase,
+            ViewMyGradingExamsUseCase viewMyGradingExamsUseCase,
             ViewMyClassTestGradingTasksUseCase viewMyClassTestGradingTasksUseCase,
             ViewGradingTaskDetailUseCase viewGradingTaskDetailUseCase,
             ViewAssignableTeachersUseCase viewAssignableTeachersUseCase,
@@ -66,6 +70,7 @@ public class GradingController {
         this.viewClassTestGradingStatsUseCase = viewClassTestGradingStatsUseCase;
         this.viewClassTestGradingResultsUseCase = viewClassTestGradingResultsUseCase;
         this.viewMyGradingTasksUseCase = viewMyGradingTasksUseCase;
+        this.viewMyGradingExamsUseCase = viewMyGradingExamsUseCase;
         this.viewMyClassTestGradingTasksUseCase = viewMyClassTestGradingTasksUseCase;
         this.viewGradingTaskDetailUseCase = viewGradingTaskDetailUseCase;
         this.viewAssignableTeachersUseCase = viewAssignableTeachersUseCase;
@@ -127,12 +132,25 @@ public class GradingController {
     @QueryMapping(name = "myGradingTasks")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<GradingTaskInfo> myGradingTasks(
+            @Argument(name = "examId") UUID examId,
             @Argument(name = "status") String status,
             @Argument(name = "roundType") String roundType,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         return viewMyGradingTasksUseCase.execute(new ViewMyGradingTasksQuery(
-            status, roundType, page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
+            examId, status, roundType,
+            page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
+    }
+
+    /**
+     * Không cần chốt phạm vi ở đây: phạm vi CHÍNH LÀ tập phân công của người gọi, đọc
+     * từ token trong use case. Chỉ TEACHER — nhà trường đã có {@code gradingAssignments}
+     * và hỏi ở đây cũng chỉ nhận về danh sách rỗng.
+     */
+    @QueryMapping(name = "myGradingExams")
+    @PreAuthorize("hasRole('TEACHER')")
+    public List<GradingExamOptionInfo> myGradingExams() {
+        return viewMyGradingExamsUseCase.execute(null);
     }
 
     @QueryMapping(name = "myClassTestGradingTasks")

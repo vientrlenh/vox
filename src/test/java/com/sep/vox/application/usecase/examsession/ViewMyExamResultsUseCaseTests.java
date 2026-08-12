@@ -52,6 +52,8 @@ class ViewMyExamResultsUseCaseTests {
         examCandidateResultRepository = mock(ExamCandidateResultRepository.class);
         var examRepository = mock(ExamRepository.class);
         var rubricResultBandRepository = mock(RubricResultBandRepository.class);
+        var rubricVersionRepository =
+            mock(com.sep.vox.domain.repository.RubricVersionRepository.class);
         var userContextPort = mock(UserContextPort.class);
         useCase = new ViewMyExamResultsUseCase(
             examCandidateRepository,
@@ -59,6 +61,7 @@ class ViewMyExamResultsUseCaseTests {
             examCandidateResultRepository,
             examRepository,
             rubricResultBandRepository,
+            rubricVersionRepository,
             userContextPort
         );
 

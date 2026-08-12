@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamPaperItemCommand;
+import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessService;
 import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -18,7 +19,6 @@ import com.sep.vox.domain.mapper.ExamPaperItemDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
 import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
 import com.sep.vox.domain.model.exam.ExamStatus;
@@ -27,7 +27,6 @@ import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -42,7 +41,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
     private final ExamRepository examRepository;
     private final ExamPaperRepository examPaperRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
-    private final ExamMemberRepository examMemberRepository;
+    private final ExamPaperAuthoringAccessService examPaperAuthoringAccessService;
     private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
     private final QuestionRepository questionRepository;
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
@@ -56,7 +55,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             ExamRepository examRepository,
             ExamPaperRepository examPaperRepository,
             ExamPaperItemRepository examPaperItemRepository,
-            ExamMemberRepository examMemberRepository,
+            ExamPaperAuthoringAccessService examPaperAuthoringAccessService,
             ExamBlueprintSlotRepository examBlueprintSlotRepository,
             QuestionRepository questionRepository,
             QuestionCollaboratorRepository questionCollaboratorRepository,
@@ -68,7 +67,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
         this.examRepository = examRepository;
         this.examPaperRepository = examPaperRepository;
         this.examPaperItemRepository = examPaperItemRepository;
-        this.examMemberRepository = examMemberRepository;
+        this.examPaperAuthoringAccessService = examPaperAuthoringAccessService;
         this.examBlueprintSlotRepository = examBlueprintSlotRepository;
         this.questionRepository = questionRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
@@ -92,18 +91,15 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
         var exam = examRepository.findById(paper.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        // Bài trên lớp luôn tạo mã đề ở trạng thái LOCKED (không dùng luồng duyệt như kỳ thi tập trung),
-        // nên LOCKED ở đây chỉ có ý nghĩa "khoá sửa" đối với CENTRALIZED.
+        // Bài trên lớp khoá đề bằng một bước DRAFT → LOCKED và mở lại tự do, nên LOCKED ở đó là trạng
+        // thái làm việc bình thường; chỉ ở kỳ thi tập trung nó mới mang nghĩa "chốt, không sửa nữa".
         if (exam.getKind() == ExamKind.CENTRALIZED && paper.getStatus() == ExamPaperStatus.LOCKED) {
             throw new IllegalStateException("Đề thi đã bị khoá, không thể sửa câu hỏi");
         }
         if (exam.getStatus() == ExamStatus.IN_PROGRESS) {
             throw new IllegalStateException("Không thể sửa câu hỏi khi bài kiểm tra đang diễn ra");
         }
-        var requiredRole = exam.getKind() == ExamKind.CLASS_TEST ? ExamMemberRole.CHAIR : ExamMemberRole.AUTHOR;
-        if (!examMemberRepository.existsByExamIdAndUserIdAndRole(paper.getExamId(), currentUserId, requiredRole)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
+        examPaperAuthoringAccessService.requireCanAuthor(exam, currentUserId);
 
         // H.7: chỉ ô FIXED mới phải khớp y hệt blueprint - đổi câu ở đó bắt buộc qua đổi version.
         // Ô SELECTION thì blueprint chỉ mô tả tiêu chí, người ra đề mới là người chọn câu cụ thể,

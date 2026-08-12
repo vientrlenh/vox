@@ -94,10 +94,13 @@ public class UpdateSystemRubricVersionUseCase
                 "Tên phiên bản Rubric không được để trống."
         );
 
-        String safeDescription = normalizeRequiredText(
-                command.description(),
-                "Mô tả phiên bản Rubric không được để trống."
-        );
+        // Để trống (null hoặc rỗng) thì coi như không đổi -- giữ nguyên description cũ (SQL COALESCE),
+        // đồng nhất với UpdateSystemRubricCriterionUseCase/UpdateSystemRubricResultBandUseCase. Trước
+        // đây dùng normalizeRequiredText() bắt buộc description, mâu thuẫn với chính comment "cập nhật
+        // một phần" ngay bên dưới cho các field khác của version.
+        String safeDescription = (command.description() != null && !command.description().isBlank())
+                ? StringNormalization.trimAndCollapseSpaces(command.description())
+                : null;
 
         // Cập nhật một phần: field nào không được truyền (null) thì giữ nguyên giá trị hiện tại của version
         // (updateRubricVersionAtomic dùng COALESCE(:param, v.field) ở tầng SQL).

@@ -28,6 +28,7 @@ import com.sep.vox.application.port.input.usecase.rubricschool.CreateSchoolRubri
 import com.sep.vox.application.port.input.usecase.rubricschool.CreateSchoolRubricUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.DeleteSchoolRubricCriterionUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.DeleteSchoolRubricResultBandUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.DeleteSchoolRubricUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.DeleteSchoolRubricVersionUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.PreviewSchoolRubricCriterionImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.PreviewSchoolRubricResultBandImportFromFileUseCase;
@@ -99,6 +100,7 @@ public class RubricController {
     private final DeleteSchoolRubricVersionUseCase deleteSchoolRubricVersionUseCase;
     private final DeleteSchoolRubricCriterionUseCase deleteSchoolRubricCriterionUseCase;
     private final DeleteSchoolRubricResultBandUseCase deleteSchoolRubricResultBandUseCase;
+    private final DeleteSchoolRubricUseCase deleteSchoolRubricUseCase;
     private final DeleteSystemRubricUseCase deleteSystemRubricUseCase;
     private final DeleteSystemRubricVersionUseCase deleteSystemRubricVersionUseCase;
     private final DeleteSystemRubricCriterionUseCase deleteSystemRubricCriterionUseCase;
@@ -131,6 +133,7 @@ public class RubricController {
                             DeleteSchoolRubricVersionUseCase deleteSchoolRubricVersionUseCase,
                             DeleteSchoolRubricCriterionUseCase deleteSchoolRubricCriterionUseCase,
                             DeleteSchoolRubricResultBandUseCase deleteSchoolRubricResultBandUseCase,
+                            DeleteSchoolRubricUseCase deleteSchoolRubricUseCase,
                             DeleteSystemRubricUseCase deleteSystemRubricUseCase,
                             DeleteSystemRubricVersionUseCase deleteSystemRubricVersionUseCase,
                             DeleteSystemRubricCriterionUseCase deleteSystemRubricCriterionUseCase, DeleteSystemRubricResultBandUseCase deleteSystemRubricResultBandUseCase, ChangeSystemRubricVersionStatusUseCase changeSystemRubricVersionStatusUseCase,
@@ -144,6 +147,7 @@ public class RubricController {
         this.deleteSchoolRubricVersionUseCase = deleteSchoolRubricVersionUseCase;
         this.deleteSchoolRubricCriterionUseCase = deleteSchoolRubricCriterionUseCase;
         this.deleteSchoolRubricResultBandUseCase = deleteSchoolRubricResultBandUseCase;
+        this.deleteSchoolRubricUseCase = deleteSchoolRubricUseCase;
         this.deleteSystemRubricUseCase = deleteSystemRubricUseCase;
         this.deleteSystemRubricVersionUseCase = deleteSystemRubricVersionUseCase;
         this.deleteSystemRubricCriterionUseCase = deleteSystemRubricCriterionUseCase;
@@ -280,7 +284,7 @@ public class RubricController {
     }
 
 
-    //Xóa rubric version của trường -> ko cho xoa rubric gốc (đã tối ưu/chưa chạy lại) => check đợt 2
+    //Xóa rubric version của trường (xóa rubric gốc dùng endpoint deleteSchoolRubric bên dưới)
     @Operation(summary = "Xử lý phiên bản Rubric (Xóa nếu DRAFT, Lưu trữ nếu PUBLISHED)")
     @DeleteMapping("/schools/{schoolId}/rubric-versions/{versionId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
@@ -291,6 +295,20 @@ public class RubricController {
         var command = DeleteSchoolRubricCommandMapper.versionFromRequest(schoolId, versionId);
         deleteSchoolRubricVersionUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Xóa phiên bản Rubric thành công"));
+    }
+
+
+    // Xóa Rubric gốc của trường (chỉ cho phép khi chưa có version nào bên trong)
+    @Operation(summary = "Xóa toàn bộ Rubric của trường học (Chỉ cho phép khi chưa có version nào bên trong)")
+    @DeleteMapping("/schools/{schoolId}/rubrics/{rubricId}")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteSchoolRubric(
+            @PathVariable("schoolId") UUID schoolId,
+            @PathVariable("rubricId") UUID rubricId
+    ) {
+        var command = DeleteSchoolRubricCommandMapper.fromRequest(schoolId, rubricId);
+        deleteSchoolRubricUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Xóa bộ Rubric của trường thành công"));
     }
 
 

@@ -492,7 +492,6 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 new BigDecimal("5000"),
                 5,
                 100,
-                false,
                 new BigDecimal("30"),
                 new BigDecimal("10"),
                 new BigDecimal("60")
@@ -503,7 +502,6 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 new BigDecimal("10000"),
                 10,
                 500,
-                true,
                 new BigDecimal("120"),
                 new BigDecimal("40"),
                 new BigDecimal("250")
@@ -514,7 +512,6 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 new BigDecimal("20000"),
                 15,
                 2000,
-                false,
                 new BigDecimal("500"),
                 new BigDecimal("150"),
                 new BigDecimal("1000")
@@ -530,7 +527,6 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 365,
                 seed.maxTimePerAttemptMin(),
                 seed.maxStudentCount(),
-                seed.popular(),
                 PlanStatus.ACTIVE,
                 1,
                 now,
@@ -1857,7 +1853,6 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
         BigDecimal pricePerYear,
         int maxTimePerAttemptMin,
         int maxStudentCount,
-        boolean popular,
         BigDecimal gradingQuota,
         BigDecimal classTestQuota,
         BigDecimal practiceQuota

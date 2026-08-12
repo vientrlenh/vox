@@ -46,13 +46,10 @@ public class SubscriptionPlanJpaEntity {
     @Column(name = "max_student_count", nullable = false)
     private Integer maxStudentCount;
 
-    @Column(name = "is_popular", nullable = false)
-    private boolean popular;
-
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_subscription_plan_status_valid",
-            constraint = "status IN ('ACTIVE', 'ARCHIVED')"
+            constraint = "status IN ('DRAFT', 'ACTIVE', 'ARCHIVED')"
         )
     })
     private String status;
@@ -72,7 +69,7 @@ public class SubscriptionPlanJpaEntity {
     protected SubscriptionPlanJpaEntity() {}
 
     public SubscriptionPlanJpaEntity(UUID id, String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
-            Integer maxTimePerAttemptMin, Integer maxStudentCount, boolean popular, String status, Integer version,
+            Integer maxTimePerAttemptMin, Integer maxStudentCount, String status, Integer version,
             Instant createdAt, UUID createdBy, UUID replacedByPlanId) {
         this.id = id;
         this.name = name;
@@ -81,7 +78,6 @@ public class SubscriptionPlanJpaEntity {
         this.validityDays = validityDays;
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
         this.maxStudentCount = maxStudentCount;
-        this.popular = popular;
         this.status = status;
         this.version = version;
         this.createdAt = createdAt;
@@ -143,14 +139,6 @@ public class SubscriptionPlanJpaEntity {
 
     public void setMaxStudentCount(Integer maxStudentCount) {
         this.maxStudentCount = maxStudentCount;
-    }
-
-    public boolean isPopular() {
-        return popular;
-    }
-
-    public void setPopular(boolean popular) {
-        this.popular = popular;
     }
 
     public String getStatus() {

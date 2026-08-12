@@ -12,7 +12,6 @@ public record UpdatePlanCommand(
     Integer validityDays,
     Integer maxTimePerAttemptMin,
     Integer maxStudentCount,
-    Boolean popular,
     List<PlanQuotaInput> quotas
 ) {
 }

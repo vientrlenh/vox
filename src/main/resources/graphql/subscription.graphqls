@@ -1,4 +1,5 @@
 enum PlanStatus {
+    DRAFT
     ACTIVE
     ARCHIVED
 }
@@ -81,7 +82,6 @@ type SubscriptionPlan {
     createdAt: String
     createdBy: ID
     replacedByPlanId: ID
-    hasActiveSubscribers: Boolean!
     quotas: [PlanQuota!]!
 }
 
@@ -230,7 +230,6 @@ input UpdateSubscriptionPlanInput {
     validityDays: Int
     maxTimePerAttemptMin: Int
     maxStudentCount: Int
-    popular: Boolean
     quotas: [PlanQuotaItemInput!]
 }
 

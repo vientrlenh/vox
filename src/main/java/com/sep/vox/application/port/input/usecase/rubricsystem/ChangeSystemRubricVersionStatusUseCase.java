@@ -22,6 +22,8 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
 
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricRepository rubricRepository;
+    private final RubricCriterionRepository rubricCriterionRepository;
+    private final RubricResultBandRepository rubricResultBandRepository;
     private final FrameworkRepository frameworkRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UserRepository userRepository;
@@ -30,12 +32,16 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
     public ChangeSystemRubricVersionStatusUseCase(
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
+            RubricCriterionRepository rubricCriterionRepository,
+            RubricResultBandRepository rubricResultBandRepository,
             FrameworkRepository frameworkRepository,
             AssessmentPolicyRepository assessmentPolicyRepository,
             UserRepository userRepository,
             UserContextPort userContextPort) {
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
+        this.rubricCriterionRepository = rubricCriterionRepository;
+        this.rubricResultBandRepository = rubricResultBandRepository;
         this.frameworkRepository = frameworkRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.userRepository = userRepository;
@@ -73,6 +79,15 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
             // Nếu muốn đổi sang PUBLISHED thì phải đang là DRAFT
             if (version.getStatus() != RubricStatus.DRAFT) {
                 throw new IllegalStateException("Chỉ có thể ban hành (PUBLISH) phiên bản đang ở trạng thái Nháp (DRAFT).");
+            }
+
+            // KIỂM TRA VERSION KHÔNG ĐƯỢC RỖNG -- version không có tiêu chí/thang điểm thì không dùng
+            // để chấm bài được, publish xong sẽ vô dụng và không thể sửa nữa (ngoại trừ archive)
+            if (rubricCriterionRepository.findByRubricVersionId(version.getId()).isEmpty()) {
+                throw new IllegalStateException("Không thể ban hành phiên bản này vì chưa có tiêu chí (Criterion) nào.");
+            }
+            if (rubricResultBandRepository.findByRubricVersionId(version.getId()).isEmpty()) {
+                throw new IllegalStateException("Không thể ban hành phiên bản này vì chưa có thang điểm (Result Band) nào.");
             }
 
             // KIỂM TRA FRAMEWORK GỐC

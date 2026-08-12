@@ -12,7 +12,6 @@ public class SubscriptionPlan {
     private Integer validityDays;
     private Integer maxTimePerAttemptMin;
     private Integer maxStudentCount;
-    private boolean popular;
     private PlanStatus status;
     private Integer version;
     private Instant createdAt;
@@ -22,7 +21,7 @@ public class SubscriptionPlan {
     public SubscriptionPlan() {}
 
     public SubscriptionPlan(UUID id, String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
-            Integer maxTimePerAttemptMin, Integer maxStudentCount, boolean popular, PlanStatus status, Integer version,
+            Integer maxTimePerAttemptMin, Integer maxStudentCount, PlanStatus status, Integer version,
             Instant createdAt, UUID createdBy, UUID replacedByPlanId) {
         this.id = id;
         this.name = name;
@@ -31,7 +30,6 @@ public class SubscriptionPlan {
         this.validityDays = validityDays;
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
         this.maxStudentCount = maxStudentCount;
-        this.popular = popular;
         this.status = status;
         this.version = version;
         this.createdAt = createdAt;
@@ -40,7 +38,7 @@ public class SubscriptionPlan {
     }
 
     public SubscriptionPlan(String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
-            Integer maxTimePerAttemptMin, Integer maxStudentCount, boolean popular, PlanStatus status, Integer version,
+            Integer maxTimePerAttemptMin, Integer maxStudentCount, PlanStatus status, Integer version,
             Instant createdAt, UUID createdBy) {
         this.name = name;
         this.tagline = tagline;
@@ -48,7 +46,6 @@ public class SubscriptionPlan {
         this.validityDays = validityDays;
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
         this.maxStudentCount = maxStudentCount;
-        this.popular = popular;
         this.status = status;
         this.version = version;
         this.createdAt = createdAt;
@@ -109,14 +106,6 @@ public class SubscriptionPlan {
 
     public void setMaxStudentCount(Integer maxStudentCount) {
         this.maxStudentCount = maxStudentCount;
-    }
-
-    public boolean isPopular() {
-        return popular;
-    }
-
-    public void setPopular(boolean popular) {
-        this.popular = popular;
     }
 
     public PlanStatus getStatus() {

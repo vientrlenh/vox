@@ -13,4 +13,5 @@ public interface SubscriptionPlanRepository {
     SubscriptionPlan save(SubscriptionPlan plan);
     List<SubscriptionPlan> findAllByStatus(PlanStatus status);
     List<SubscriptionPlan> findByIdIn(Collection<UUID> ids);
+    void deleteById(UUID id);
 }

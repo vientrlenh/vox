@@ -1,16 +1,17 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.UpdateSchoolRubricCommand;
+import com.sep.vox.application.port.input.command.DeleteSchoolRubricCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -20,21 +21,24 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 @Service
-public class UpdateSchoolRubricUseCase implements IUseCase<UpdateSchoolRubricCommand, UUID> {
+public class DeleteSchoolRubricUseCase implements IUseCase<DeleteSchoolRubricCommand, Void> {
 
     private final RubricRepository rubricRepository;
+    private final RubricVersionRepository rubricVersionRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
 
-    public UpdateSchoolRubricUseCase(
+    public DeleteSchoolRubricUseCase(
             RubricRepository rubricRepository,
+            RubricVersionRepository rubricVersionRepository,
             UserRepository userRepository,
             UserContextPort userContextPort,
             SchoolRepository schoolRepository,
             SchoolUserRepository schoolUserRepository) {
         this.rubricRepository = rubricRepository;
+        this.rubricVersionRepository = rubricVersionRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
         this.schoolRepository = schoolRepository;
@@ -43,58 +47,46 @@ public class UpdateSchoolRubricUseCase implements IUseCase<UpdateSchoolRubricCom
 
     @Override
     @Transactional
-    public UUID execute(UpdateSchoolRubricCommand command) {
+    public Void execute(DeleteSchoolRubricCommand command) {
         // 1. Xác thực tài khoản
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
+            throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
 
-        // 2. Lấy Rubric gốc ra kiểm tra
+        // 2. Lấy Rubric gốc
         Rubric rubric = rubricRepository.findById(command.rubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric này."));
 
-        // 3. Chốt chặn an ninh: Bằng SchoolUser
+        // 3. Chốt chặn an ninh: bằng SchoolUser, cùng pattern UpdateSchoolRubricUseCase
         var schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
                 !rubric.getSchoolId().equals(command.schoolId()) ||
                 !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền chỉnh sửa Rubric của trường khác.");
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa Rubric của trường khác.");
         }
 
-        // 4. Chốt chặn an ninh: Kiểm tra trường học có đang hoạt động không
         var school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
 
-        String finalName = null;
-        if (command.name() != null) {
-            finalName = StringNormalization.trimAndCollapseSpaces(command.name());
-            if (finalName.isBlank()) {
-                throw new IllegalArgumentException("Tên Rubric không hợp lệ hoặc bị để trống.");
-            }
+        // 4. Chỉ cho xóa cứng khi Rubric chưa có version nào -- RubricCriterion/RubricResultBand luôn
+        // là con của RubricVersion (không gắn thẳng vào Rubric), nên rỗng version đã đủ suy ra rỗng
+        // cả criterion/result-band, không cần query thêm 2 bảng đó.
+        if (!rubricVersionRepository.findByRubricId(rubric.getId()).isEmpty()) {
+            throw new IllegalStateException(
+                "Không thể xóa Rubric này vì đang có phiên bản (version) bên trong. "
+                    + "Vui lòng xóa hết các phiên bản DRAFT hoặc Lưu trữ (Archive) các phiên bản đã PUBLISHED trước.");
         }
 
-        // Để trống (null hoặc rỗng) thì coi như không đổi -- giữ nguyên description cũ (SQL COALESCE),
-        // đồng nhất với UpdateSchoolRubricCriterionUseCase/UpdateSchoolRubricResultBandUseCase.
-        String finalDesc = (command.description() != null && !command.description().isBlank())
-                ? StringNormalization.trimAndCollapseSpaces(command.description())
-                : null;
-        // 6. Bắn SQL Atomic xuống DB
-        rubricRepository.updateRubricAtomic(
-                command.rubricId(),
-                finalName,
-                finalDesc
-        );
+        rubricRepository.deleteById(rubric.getId());
 
-        // 7. Trả về UUID
-        return command.rubricId();
+        return null;
     }
 }

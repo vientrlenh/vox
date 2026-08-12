@@ -10,7 +10,6 @@ public record CreatePlanCommand(
     Integer validityDays,
     Integer maxTimePerAttemptMin,
     Integer maxStudentCount,
-    boolean popular,
     List<PlanQuotaInput> quotas
 ) {
 }

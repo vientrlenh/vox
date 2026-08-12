@@ -14,15 +14,16 @@ public final class SubscriptionPlanDtoMapper {
     }
 
     /**
-     * hasActiveSubscribers luôn false ở overload này — dùng cho các use case trả về DUY NHẤT một
-     * plan (create/archive/preview/detail) mà không phải chỗ FE dựa vào field này để ẩn nút Sửa.
-     * Chỗ cần giá trị thật (danh sách gói cho system admin) phải gọi overload có tham số bên dưới.
+     * popular luôn false ở overload này — dùng cho các use case trả về DUY NHẤT một plan
+     * (create/archive/publish/delete-draft/detail). popular = "đang dẫn đầu số trường ACTIVE
+     * đăng ký" chỉ tính được khi biết toàn bộ danh sách gói, nên chỉ overload có tham số bên
+     * dưới (dùng cho danh sách gói cho system admin) mới trả giá trị thật.
      */
     public static SubscriptionPlanDto toDto(SubscriptionPlan domain, List<PlanQuota> quotas) {
         return toDto(domain, quotas, false);
     }
 
-    public static SubscriptionPlanDto toDto(SubscriptionPlan domain, List<PlanQuota> quotas, boolean hasActiveSubscribers) {
+    public static SubscriptionPlanDto toDto(SubscriptionPlan domain, List<PlanQuota> quotas, boolean popular) {
         return new SubscriptionPlanDto(
             domain.getId(),
             domain.getName(),
@@ -31,13 +32,12 @@ public final class SubscriptionPlanDtoMapper {
             domain.getValidityDays(),
             domain.getMaxTimePerAttemptMin(),
             domain.getMaxStudentCount(),
-            domain.isPopular(),
+            popular,
             domain.getStatus().name(),
             domain.getVersion(),
             valueOf(domain.getCreatedAt()),
             domain.getCreatedBy(),
             domain.getReplacedByPlanId(),
-            hasActiveSubscribers,
             toQuotaDtoList(quotas)
         );
     }

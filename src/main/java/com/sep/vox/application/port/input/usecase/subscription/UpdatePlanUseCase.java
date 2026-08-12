@@ -11,8 +11,8 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.mapper.SubscriptionPlanDtoMapper;
 import com.sep.vox.domain.model.subscription.PlanQuota;
+import com.sep.vox.domain.model.subscription.PlanStatus;
 import com.sep.vox.domain.repository.PlanQuotaRepository;
-import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 @Service
@@ -20,17 +20,14 @@ public class UpdatePlanUseCase implements IUseCase<UpdatePlanCommand, Subscripti
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final PlanQuotaRepository planQuotaRepository;
-    private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final UserContextPort userContextPort;
 
     public UpdatePlanUseCase(
             SubscriptionPlanRepository subscriptionPlanRepository,
             PlanQuotaRepository planQuotaRepository,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
             UserContextPort userContextPort) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.planQuotaRepository = planQuotaRepository;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -44,15 +41,15 @@ public class UpdatePlanUseCase implements IUseCase<UpdatePlanCommand, Subscripti
         var plan = subscriptionPlanRepository.findById(input.planId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
-        // Gói đang có trường ACTIVE thì bị khóa hoàn toàn, kể cả field không liên quan tiền/quota:
-        // renewal (CreatePaymentLinkForRenewalUseCase / InvoiceSettlementService) đọc giá và
-        // quota LIVE từ đúng plan này tại thời điểm gia hạn, không qua snapshot nào — sửa tại chỗ
-        // sẽ âm thầm đổi giá/quota cho trường đang gia hạn mà không qua bước xác nhận
-        // (chuỗi replacedByPlanId chỉ kích hoạt khi đổi SANG plan khác, tức đổi id, không phải sửa
-        // tại chỗ). Muốn đổi gì thì phải archive gói này và tạo gói mới (kèm replacedByPlanId).
-        if (schoolSubscriptionRepository.existsActiveByPlanId(plan.getId())) {
+        // Gói đã publish (ACTIVE/ARCHIVED) bị khóa sửa hoàn toàn, kể cả field không liên quan
+        // tiền/quota: renewal (CreatePaymentLinkForRenewalUseCase / InvoiceSettlementService) đọc
+        // giá và quota LIVE từ đúng plan này, không qua snapshot nào — sửa tại chỗ sẽ âm thầm đổi
+        // giá/quota cho trường đang dùng/gia hạn mà không qua bước xác nhận. Chỉ được sửa khi còn
+        // DRAFT (chưa publish nên chưa trường nào dùng); muốn đổi gói đã publish thì phải archive
+        // và tạo gói mới (kèm replacedByPlanId).
+        if (plan.getStatus() != PlanStatus.DRAFT) {
             throw new IllegalStateException(
-                "Gói đang được ít nhất một trường sử dụng nên không thể chỉnh sửa. Hãy lưu trữ gói này và tạo gói mới thay thế.");
+                "Chỉ có thể chỉnh sửa gói khi đang ở trạng thái nháp. Gói đã xuất bản thì phải lưu trữ và tạo gói mới thay thế.");
         }
 
         if (input.name() != null) {
@@ -72,9 +69,6 @@ public class UpdatePlanUseCase implements IUseCase<UpdatePlanCommand, Subscripti
         }
         if (input.maxStudentCount() != null) {
             plan.setMaxStudentCount(input.maxStudentCount());
-        }
-        if (input.popular() != null) {
-            plan.setPopular(input.popular());
         }
         plan.setVersion(plan.getVersion() + 1);
         var savedPlan = subscriptionPlanRepository.save(plan);

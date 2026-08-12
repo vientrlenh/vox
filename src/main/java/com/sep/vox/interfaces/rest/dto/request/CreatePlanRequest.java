@@ -14,7 +14,6 @@ public record CreatePlanRequest(
     @NotNull Integer validityDays,
     Integer maxTimePerAttemptMin,
     @NotNull Integer maxStudentCount,
-    boolean popular,
     @NotEmpty List<PlanQuotaItemRequest> quotas
 ) {
 }

@@ -134,7 +134,7 @@ class InvoiceSettlementServiceTests {
         );
         var plan = new SubscriptionPlan(
             planId, "Gói Trường", null, amount, 365,
-            60, 500, false, PlanStatus.ACTIVE, 1, Instant.now(), null, null
+            60, 500, PlanStatus.ACTIVE, 1, Instant.now(), null, null
         );
 
         when(subscriptionRequestRepository.findById(sourceId)).thenReturn(Optional.of(request));

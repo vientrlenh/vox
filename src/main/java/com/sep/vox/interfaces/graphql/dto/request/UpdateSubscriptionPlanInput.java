@@ -10,7 +10,6 @@ public record UpdateSubscriptionPlanInput(
     Integer validityDays,
     Integer maxTimePerAttemptMin,
     Integer maxStudentCount,
-    Boolean popular,
     List<PlanQuotaItemInput> quotas
 ) {
 }

@@ -50,8 +50,7 @@ public class CreatePlanUseCase implements IUseCase<CreatePlanCommand, Subscripti
             input.validityDays(),
             input.maxTimePerAttemptMin(),
             input.maxStudentCount(),
-            input.popular(),
-            PlanStatus.ACTIVE,
+            PlanStatus.DRAFT,
             1,
             Instant.now(),
             userContextPort.getCurrentAuthenticatedUserId()

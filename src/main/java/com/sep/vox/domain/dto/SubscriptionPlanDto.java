@@ -18,7 +18,6 @@ public record SubscriptionPlanDto(
     String createdAt,
     UUID createdBy,
     UUID replacedByPlanId,
-    boolean hasActiveSubscribers,
     List<PlanQuotaDto> quotas
 ) {
 }

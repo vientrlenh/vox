@@ -1,8 +1,8 @@
 package com.sep.vox.infrastructure.persistence.query;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -47,7 +47,6 @@ public class JpaSubscriptionPlanQueryRepository implements SubscriptionPlanQuery
                 p.validityDays,
                 p.maxTimePerAttemptMin,
                 p.maxStudentCount,
-                p.popular,
                 p.status,
                 p.version,
                 str(p.createdAt),
@@ -82,24 +81,45 @@ public class JpaSubscriptionPlanQueryRepository implements SubscriptionPlanQuery
 
         var quotasByPlanId = quotas.stream().collect(Collectors.groupingBy(q -> q.planId()));
 
-        // Gói nào đang có >=1 trường ACTIVE thì bị khóa sửa (xem UpdatePlanUseCase) — FE dùng cờ
-        // này để ẩn nút Sửa luôn thay vì để admin điền form xong mới bị BE từ chối.
-        Set<UUID> planIdsWithActiveSubscribers = plans.isEmpty() ? Set.of() : new HashSet<>(em.createQuery("""
-            SELECT DISTINCT s.planId FROM SchoolSubscriptionJpaEntity s
+        // popular được tính live: đếm số trường đang ACTIVE trên từng gói, rồi đánh dấu popular
+        // cho (các) gói ACTIVE có số trường cao nhất — không còn là cờ admin tự set (xem
+        // JpaSubscriptionPlanQueryRepository / kế hoạch "bỏ cờ phổ biến thủ công").
+        Map<UUID, Long> activeSchoolCountByPlanId = plans.isEmpty() ? Map.of() : em.createQuery("""
+            SELECT s.planId, COUNT(DISTINCT s.schoolId) FROM SchoolSubscriptionJpaEntity s
             WHERE s.planId IN :planIds AND s.status = 'ACTIVE'
-        """, UUID.class)
+            GROUP BY s.planId
+        """, Object[].class)
             .setParameter("planIds", plans.stream().map(p -> p.id()).toList())
-            .getResultList());
+            .getResultList()
+            .stream()
+            .collect(Collectors.toMap(
+                row -> (UUID) row[0],
+                row -> (Long) row[1],
+                Long::sum,
+                HashMap::new
+            ));
+
+        var maxActiveSchoolCountAmongActivePlans = plans.stream()
+            .filter(row -> PlanStatus.ACTIVE.name().equals(row.status()))
+            .mapToLong(row -> activeSchoolCountByPlanId.getOrDefault(row.id(), 0L))
+            .max()
+            .orElse(0L);
 
         var content = plans.stream()
-            .map(row -> new SubscriptionPlanDto(
-                row.id(), row.name(), row.tagline(), row.pricePerYear(), row.validityDays(),
-                row.maxTimePerAttemptMin(), row.maxStudentCount(), row.popular(), row.status(), row.version(),
-                row.createdAt(), row.createdBy(), row.replacedByPlanId(),
-                planIdsWithActiveSubscribers.contains(row.id()),
-                quotasByPlanId.getOrDefault(row.id(), List.of()).stream()
-                    .map(q -> new PlanQuotaDto(q.id(), q.quotaType(), q.includedQuantity(), q.tokenUnitPrice()))
-                    .toList()))
+            .map(row -> {
+                var activeSchoolCount = activeSchoolCountByPlanId.getOrDefault(row.id(), 0L);
+                var popular = PlanStatus.ACTIVE.name().equals(row.status())
+                    && maxActiveSchoolCountAmongActivePlans > 0
+                    && activeSchoolCount == maxActiveSchoolCountAmongActivePlans;
+
+                return new SubscriptionPlanDto(
+                    row.id(), row.name(), row.tagline(), row.pricePerYear(), row.validityDays(),
+                    row.maxTimePerAttemptMin(), row.maxStudentCount(), popular, row.status(), row.version(),
+                    row.createdAt(), row.createdBy(), row.replacedByPlanId(),
+                    quotasByPlanId.getOrDefault(row.id(), List.of()).stream()
+                        .map(q -> new PlanQuotaDto(q.id(), q.quotaType(), q.includedQuantity(), q.tokenUnitPrice()))
+                        .toList());
+            })
             .toList();
 
         return new PageImpl<>(content, pageable, total);

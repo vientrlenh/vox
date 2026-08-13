@@ -24,7 +24,8 @@ public final class CreateExamCommandMapper {
             request.requiresOtp(), 
             request.requiredStreamTypes(),
             request.streamTypePermission(),
-            request.deliveryMode()
+            request.deliveryMode(),
+            request.aiConfidenceThresholdPercent()
         );
     }
 }

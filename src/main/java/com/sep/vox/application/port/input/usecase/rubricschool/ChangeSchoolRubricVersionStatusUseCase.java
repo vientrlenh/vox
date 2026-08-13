@@ -132,14 +132,19 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
      * <p>Hai phương pháp là hai KIỂU KHAI BÁO khác nhau, mỗi kiểu có ràng buộc riêng:
      *
      * <ul>
-     *   <li>{@code WEIGHTED_AVERAGE} -- mỗi tiêu chí chấm trên cả thang, trọng số phân bổ tỉ lệ.
-     *       Tổng trọng số phải bằng 1.
-     *   <li>{@code SUM} -- mỗi tiêu chí là một lát điểm thành phần (thang 10 = 2+2+2+2+2), cộng
-     *       thẳng không qua trọng số. Tổng khoảng điểm các tiêu chí phải phủ đúng thang.
+     *   <li>{@code SUM} -- {@code Σ(điểm × trọng số)}. Trọng số quyết định tỉ trọng từng tiêu chí.
+     *   <li>{@code WEIGHTED_AVERAGE} -- {@code trung bình cộng các điểm}, KHÔNG nhân trọng số.
      * </ul>
      *
-     * <p>Lỗi đã gặp thật: chọn {@code SUM} nhưng để mỗi tiêu chí trong 5 tiêu chí tối đa 10 điểm
-     * trên thang 0-10. Điểm câu cộng ra 38.4, bị kẹp còn 10 -- mọi bài đều 10/10.
+     * <p>Từ 2026-08-13 hai phương pháp dùng CHUNG một bộ ràng buộc, vì cả hai đều đòi mỗi tiêu chí
+     * chấm trên cả thang: tổng trọng số bằng 1, và mọi tiêu chí phủ đúng thang.
+     *
+     * <p>Luật cũ của {@code SUM} ("tổng khoảng điểm các tiêu chí phải phủ thang") đã BỎ -- nó ép
+     * khai mỗi tiêu chí 0-2 trên thang 0-10, khiến giáo viên phải chấm theo thang lạ và làm cột
+     * trọng số thành vô nghĩa.
+     *
+     * <p>Lỗi đã gặp thật và vẫn được chặn: 5 tiêu chí cùng tối đa 10 trên thang 0-10 mà không khai
+     * trọng số -- điểm câu cộng ra 38.4 rồi bị kẹp còn 10, mọi bài đều 10/10.
      */
     private void validateCriteriaMatchScoringScale(RubricVersion version) {
         var criteria = rubricCriterionRepository.findByRubricVersionId(version.getId());
@@ -148,34 +153,14 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
                     "Không thể ban hành: phiên bản Rubric này chưa có tiêu chí nào.");
         }
 
-        if (version.getTotalScoreMethod() == RubricTotalScoreMethod.SUM) {
-            var minSum = criteria.stream().map(c -> c.getMinScore())
-                    .filter(java.util.Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
-            var maxSum = criteria.stream().map(c -> c.getMaxScore())
-                    .filter(java.util.Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
-            if (maxSum.compareTo(version.getScoringScaleMax()) != 0
-                    || minSum.compareTo(version.getScoringScaleMin()) != 0) {
-                throw new IllegalStateException(String.format(
-                        "Không thể ban hành: phương pháp SUM cộng thẳng điểm các tiêu chí, nên"
-                                + " khoảng điểm của %d tiêu chí phải cộng lại vừa đúng thang của phiên bản."
-                                + " Hiện tổng là %s - %s, trong khi thang là %s - %s."
-                                + " Hãy chia nhỏ điểm tối đa của từng tiêu chí, hoặc đổi sang WEIGHTED_AVERAGE.",
-                        criteria.size(), minSum.toPlainString(), maxSum.toPlainString(),
-                        version.getScoringScaleMin().toPlainString(),
-                        version.getScoringScaleMax().toPlainString()));
-            }
-            return;
-        }
-
-        var weightSum = criteria.stream().map(c -> c.getWeight())
-                .filter(java.util.Objects::nonNull)
-                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+        var weightSum = weightSum(criteria);
         if (weightSum.compareTo(BigDecimal.ONE) != 0) {
             throw new IllegalStateException(String.format(
-                    "Không thể ban hành: phương pháp WEIGHTED_AVERAGE yêu cầu tổng trọng số của"
-                            + " %d tiêu chí phải bằng 1, hiện đang là %s.",
+                    "Không thể ban hành: tổng trọng số của %d tiêu chí phải bằng 1, hiện đang là"
+                            + " %s. Ràng buộc này áp cho CẢ HAI phương pháp: SUM nhân trọng số nên"
+                            + " tổng khác 1 sẽ đẩy điểm ra ngoài thang, còn WEIGHTED_AVERAGE tuy"
+                            + " không dùng trọng số để tính nhưng vẫn hiển thị tỉ trọng cho người"
+                            + " chấm đọc -- để tổng lệch là rubric nói dối về chính nó.",
                     criteria.size(), weightSum.toPlainString()));
         }
 
@@ -207,5 +192,12 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
                     version.getScoringScaleMin().toPlainString(),
                     version.getScoringScaleMax().toPlainString()));
         }
+    }
+
+    /** Tổng trọng số các tiêu chí, bỏ qua tiêu chí chưa khai trọng số. */
+    private static BigDecimal weightSum(java.util.List<? extends com.sep.vox.domain.model.rubric.RubricCriterion> criteria) {
+        return criteria.stream().map(c -> c.getWeight())
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
     }
 }

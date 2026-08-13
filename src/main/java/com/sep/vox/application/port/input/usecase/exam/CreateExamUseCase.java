@@ -118,6 +118,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             currentUserId,
             currentUserId
         );
+        // Gán qua setter: constructor Exam không nhận trường này (xem ExamMapper).
+        exam.setAiConfidenceThresholdPercent(command.aiConfidenceThresholdPercent());
         return ExamDtoMapper.toDto(examRepository.save(exam));
     }
 
@@ -139,7 +141,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
                 .map(StringNormalization::normalizeCode)
                 .toList(),
             input.streamTypePermission() == null ? null : StringNormalization.normalizeCode(input.streamTypePermission()),
-            input.deliveryMode() == null ? null : StringNormalization.normalizeCode(input.deliveryMode())
+            input.deliveryMode() == null ? null : StringNormalization.normalizeCode(input.deliveryMode()),
+            input.aiConfidenceThresholdPercent()
         );
     }
 

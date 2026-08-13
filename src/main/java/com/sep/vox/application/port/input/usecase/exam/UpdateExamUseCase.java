@@ -125,6 +125,9 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         if (command.requiresOtp() != null) {
             exam.setRequiresOtp(command.requiresOtp());
         }
+        if (command.aiConfidenceThresholdPercent() != null) {
+            exam.setAiConfidenceThresholdPercent(command.aiConfidenceThresholdPercent());
+        }
         // null = giữ nguyên (patch semantics như mọi trường khác); danh sách RỖNG = tắt giám sát.
         // Phân biệt này là bắt buộc: lúc tạo, null nghĩa là "không giám sát", còn ở đây null phải
         // mang nghĩa "không đụng tới" thì sửa tên mới không vô tình xoá cấu hình giám sát.
@@ -182,6 +185,8 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
                 .map(StringNormalization::normalizeCode)
                 .toList(),
             input.streamTypePermission() == null ? null : StringNormalization.normalizeCode(input.streamTypePermission())
+,
+            input.aiConfidenceThresholdPercent()
         );
     }
 

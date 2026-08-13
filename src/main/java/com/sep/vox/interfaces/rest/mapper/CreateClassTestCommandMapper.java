@@ -24,6 +24,8 @@ public final class CreateClassTestCommandMapper {
             request.deliveryMode(),
             request.requiresOtp(),
             request.schoolRoomId()
+,
+            request.aiConfidenceThresholdPercent()
         );
     }
 }

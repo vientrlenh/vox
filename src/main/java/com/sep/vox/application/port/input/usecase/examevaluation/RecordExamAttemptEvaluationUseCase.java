@@ -51,6 +51,9 @@ import com.sep.vox.domain.repository.RubricVersionRepository;
 @Service
 public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAttemptEvaluationCommand, Void> {
 
+    /** Hệ số quy đổi tỉ lệ 0-1 (overall_confidence) sang phần trăm (ngưỡng nhà trường nhập). */
+    private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
+
     private final ExamItemResponseRepository examItemResponseRepository;
     private final ExamItemEvaluationRepository examItemEvaluationRepository;
     private final ExamItemCriterionScoreRepository examItemCriterionScoreRepository;
@@ -160,15 +163,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             var validity = input.payload() == null ? null : input.payload().validity();
             var signals = ExamEvaluationSignalMapper.toDomain(input.payload() == null ? null : input.payload().signals());
             var confidenceCase = signals.confidenceCase();
-            // overallConfidence: min() của mọi c-value trong confidenceCase (severity-aware,
-            // đúng tinh thần research -- không phải trung bình cộng). aiConfidence (trung bình
-            // cộng cũ, KHÔNG phải kết quả research) đã bị bỏ hẳn -- nó từng gộp cả giá trị
-            // sentinel "gọi LLM thất bại" (0.0) vào trung bình chung với giá trị thật, hiện sai
-            // thành "AI confidence 25%/33%" trên UI dù chỉ là lỗi hạ tầng, không phải chấm kém
-            // thật. Nếu confidenceCase chưa có (turn cũ trước khi case (1)-(5) được nối, hoặc
-            // graph lỗi 1 phần), asrConfidenceAvg là tín hiệu thật duy nhất còn lại, dùng làm
-            // fallback hiển thị -- vẫn null nếu không có, KHÔNG fabricate số.
-            var overallConfidence = minimumConfidence(confidenceCase);
+            var overallConfidence = averageConfidence(confidenceCase);
             if (overallConfidence == null) {
                 overallConfidence = clampUnit(
                     input.payload() == null || input.payload().signals() == null
@@ -185,13 +180,36 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                 isShortAnswer
             );
             var hasCriticalValidityFlag = hasCriticalValidityFlag(validity);
-            boolean requiresHumanReview = hasCriticalValidityFlag || confidenceDecision.requiresHumanReview();
+            // Nhà trường ĐẶT ngưỡng -> BỎ QUA toàn bộ luật cứng của ConfidenceReviewCalculator,
+            // chỉ so đúng một con số. Nhà trường đã nói rõ mức chấp nhận được của họ; chồng thêm
+            // hàng chục ngưỡng nội bộ lên trên nữa thì con số họ nhập không còn nghĩa gì -- bài
+            // vẫn bị đẩy sang duyệt vì một lý do họ không thấy và không chỉnh được.
+            //
+            // KHÔNG bỏ qua cờ validity: đó là "câu này có chấm được không" (audio hỏng, lạc đề),
+            // không phải "chấm tin được tới đâu". Hai câu hỏi khác nhau.
+            var thresholdPercent = evaluationContext.aiConfidenceThresholdPercent();
+            // QUY ĐỔI ĐƠN VỊ: overallConfidence là tỉ lệ 0-1, ngưỡng nhà trường nhập là phần trăm
+            // 0-100. So thẳng thì 0.82 luôn nhỏ hơn 75 và MỌI bài đổ sang duyệt -- hỏng im lặng,
+            // vì hệ thống vẫn chạy và chỉ có con người phải chấm tay tất cả.
+            var confidencePercent = overallConfidence == null
+                ? null
+                : overallConfidence.multiply(ONE_HUNDRED);
+            boolean belowThreshold = thresholdPercent != null
+                // Không có confidence mà lại có ngưỡng -> đưa sang duyệt. Thiếu bằng chứng không
+                // phải là bằng chứng đạt; nghiêng về phía con người xem lại.
+                && (confidencePercent == null || confidencePercent.compareTo(thresholdPercent) < 0);
+            boolean confidenceRequiresReview = thresholdPercent != null
+                ? belowThreshold
+                : confidenceDecision.requiresHumanReview();
+            boolean requiresHumanReview = hasCriticalValidityFlag || confidenceRequiresReview;
             String reviewReasonCode = hasCriticalValidityFlag
                 ? "VALIDITY_FLAGGED"
                 : (
-                    confidenceDecision.requiresHumanReview()
-                        ? String.join(",", confidenceDecision.reviewReasons())
-                        : null
+                    !confidenceRequiresReview
+                        ? null
+                        : thresholdPercent != null
+                            ? "CONFIDENCE_BELOW_THRESHOLD"
+                            : String.join(",", confidenceDecision.reviewReasons())
                 );
             var requiresRetake = requiresRetake(validity);
             boolean markedInvalid = hasCriticalValidityFlag
@@ -447,7 +465,8 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             exam.getKind(),
             rubricVersion.getTotalScoreMethod(),
             rubricVersion.getScoringScaleMin(),
-            rubricVersion.getScoringScaleMax()
+            rubricVersion.getScoringScaleMax(),
+            exam.getAiConfidenceThresholdPercent()
         );
     }
 
@@ -456,7 +475,9 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
         ExamKind examKind,
         RubricTotalScoreMethod totalScoreMethod,
         BigDecimal scoringScaleMin,
-        BigDecimal scoringScaleMax
+        BigDecimal scoringScaleMax,
+        /** Ngưỡng tin cậy nhà trường đặt cho bài này. NULL = không đặt, dùng luật cứng như cũ. */
+        BigDecimal aiConfidenceThresholdPercent
     ) {
     }
 
@@ -509,11 +530,10 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
     // dòng đó thay vì để nó nằm im -- giữ lại thì bản ghi CŨ (còn c_align) sẽ được tính min theo
     // một tín hiệu mà hệ thống đã ngừng tin dùng, tức hai bài giống nhau cho hai con số khác nhau
     // chỉ vì chấm ở hai thời điểm.
-    private BigDecimal minimumConfidence(ConfidenceCaseSignals signals) {
+    private BigDecimal averageConfidence(ConfidenceCaseSignals signals) {
         if (signals == null) {
             return null;
         }
-        BigDecimal minimum = null;
         BigDecimal[] values = {
             signals.cAsrLog(),
             signals.cRef(),
@@ -522,12 +542,21 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             signals.cVocabulary(),
             signals.cCoherence()
         };
+        BigDecimal total = BigDecimal.ZERO;
+        int count = 0;
         for (BigDecimal value : values) {
-            if (value != null && (minimum == null || value.compareTo(minimum) < 0)) {
-                minimum = value;
+            // BỎ QUA null chứ không coi là 0: null nghĩa là tín hiệu đó không được phát ra (case
+            // đã tắt, hoặc bản ghi cũ), không phải "chấm không tin được". Cộng 0 vào tử số mà vẫn
+            // chia cho toàn bộ 5 tiêu chí sẽ kéo mọi bài xuống chỉ vì hệ thống ngừng dùng một
+            // tín hiệu -- và với ngưỡng nhà trường đặt thì đó là đẩy bài sang duyệt vô cớ.
+            if (value != null) {
+                total = total.add(value);
+                count++;
             }
         }
-        return minimum == null ? null : minimum.setScale(2, RoundingMode.HALF_UP);
+        return count == 0
+            ? null
+            : total.divide(BigDecimal.valueOf(count), 2, RoundingMode.HALF_UP);
     }
 
     private boolean hasCriticalValidityFlag(ValidityResultInput validity) {

@@ -32,7 +32,8 @@ import com.sep.vox.domain.valueobject.framework.FrameworkCriterionCode;
 @Transactional
 class FrameworkInitializerTests extends ContainerTestConfig {
 
-    private static final String FRAMEWORK_CODE = "CEFR";
+    private static final String FRAMEWORK_CODE = "KNLNNVN";
+    private static final String FRAMEWORK_VERSION_CODE = "KNLNNVN_V1";
     private static final int EXPECTED_RESULT_BANDS = 6;
 
     @Autowired
@@ -75,7 +76,7 @@ class FrameworkInitializerTests extends ContainerTestConfig {
         assertThat(framework).isPresent();
         assertThat(framework.get().isActive()).isTrue();
 
-        var version = frameworkVersionRepository.findByCode("CEFR_V1");
+        var version = frameworkVersionRepository.findByCode(FRAMEWORK_VERSION_CODE);
         assertThat(version).isPresent();
         assertThat(version.get().getStatus()).isEqualTo(FrameworkVersionStatus.PUBLISHED);
         assertThat(version.get().getEffectiveFrom()).isNotNull();
@@ -90,7 +91,7 @@ class FrameworkInitializerTests extends ContainerTestConfig {
     void seeded_criteria_must_match_the_allowed_code_set_exactly() throws Exception {
         frameworkInitializer.run(null);
 
-        var versionId = frameworkVersionRepository.findByCode("CEFR_V1").orElseThrow().getId();
+        var versionId = frameworkVersionRepository.findByCode(FRAMEWORK_VERSION_CODE).orElseThrow().getId();
         var criteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
 
         assertThat(criteria).extracting(criterion -> criterion.getCode())
@@ -105,7 +106,7 @@ class FrameworkInitializerTests extends ContainerTestConfig {
     void every_criterion_must_have_all_bands_with_both_signal_directions() throws Exception {
         frameworkInitializer.run(null);
 
-        var versionId = frameworkVersionRepository.findByCode("CEFR_V1").orElseThrow().getId();
+        var versionId = frameworkVersionRepository.findByCode(FRAMEWORK_VERSION_CODE).orElseThrow().getId();
         var criteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
         var resultBands = frameworkResultBandRepository.findByFrameworkVersionId(versionId);
         assertThat(resultBands).hasSize(EXPECTED_RESULT_BANDS);
@@ -127,7 +128,7 @@ class FrameworkInitializerTests extends ContainerTestConfig {
         frameworkInitializer.run(null);
         frameworkInitializer.run(null);
 
-        var versionId = frameworkVersionRepository.findByCode("CEFR_V1").orElseThrow().getId();
+        var versionId = frameworkVersionRepository.findByCode(FRAMEWORK_VERSION_CODE).orElseThrow().getId();
         assertThat(frameworkCriterionRepository.findByFrameworkVersionId(versionId))
             .hasSize(FrameworkCriterionCode.ALLOWED_CODES.size());
         assertThat(frameworkResultBandRepository.findByFrameworkVersionId(versionId))

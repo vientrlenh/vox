@@ -51,11 +51,14 @@ public class QuotaPricingCalibrationJpaEntity {
     @Column(name = "note", updatable = false, columnDefinition = "TEXT")
     private String note;
 
+    @Column(name = "pricing_source", nullable = false, updatable = false, length = 16)
+    private String pricingSource;
+
     protected QuotaPricingCalibrationJpaEntity() {}
 
     public QuotaPricingCalibrationJpaEntity(UUID id, Instant computedAt, int windowDays, int sessionCount,
             BigDecimal totalCostUsd, long totalAnsweredSeconds, BigDecimal rawRateUsdPerSecond,
-            BigDecimal appliedRateUsdPerSecond, String note) {
+            BigDecimal appliedRateUsdPerSecond, String note, String pricingSource) {
         this.id = id;
         this.computedAt = computedAt;
         this.windowDays = windowDays;
@@ -65,6 +68,7 @@ public class QuotaPricingCalibrationJpaEntity {
         this.rawRateUsdPerSecond = rawRateUsdPerSecond;
         this.appliedRateUsdPerSecond = appliedRateUsdPerSecond;
         this.note = note;
+        this.pricingSource = pricingSource;
     }
 
     public UUID getId() {
@@ -137,5 +141,13 @@ public class QuotaPricingCalibrationJpaEntity {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public String getPricingSource() {
+        return pricingSource;
+    }
+
+    public void setPricingSource(String pricingSource) {
+        this.pricingSource = pricingSource;
     }
 }

@@ -2,10 +2,8 @@ package com.sep.vox.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
@@ -19,8 +17,7 @@ class QuotaPricingServiceTests {
     @Test
     void usdToVndRateReturnsConfiguredMarketRate() {
         var quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
-        when(quotaPricingCalibrationRepository.findLatest()).thenReturn(Optional.empty());
-        var quotaPricingProperties = new QuotaPricingProperties(null);
+        var quotaPricingProperties = new QuotaPricingProperties(null, null);
         var quotaSellingPriceProperties = new QuotaSellingPriceProperties(new BigDecimal("25500"));
 
         var service = new QuotaPricingService(
@@ -32,8 +29,7 @@ class QuotaPricingServiceTests {
     @Test
     void usdToVndRateFallsBackToPlaceholderDefaultWhenUnset() {
         var quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
-        when(quotaPricingCalibrationRepository.findLatest()).thenReturn(Optional.empty());
-        var quotaPricingProperties = new QuotaPricingProperties(null);
+        var quotaPricingProperties = new QuotaPricingProperties(null, null);
         var quotaSellingPriceProperties = new QuotaSellingPriceProperties(null);
 
         var service = new QuotaPricingService(

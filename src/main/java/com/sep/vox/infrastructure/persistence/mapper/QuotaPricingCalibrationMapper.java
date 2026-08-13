@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.subscription.QuotaPricingCalibration;
+import com.sep.vox.domain.model.subscription.QuotaPricingSource;
 import com.sep.vox.infrastructure.persistence.entity.QuotaPricingCalibrationJpaEntity;
 
 public final class QuotaPricingCalibrationMapper {
@@ -17,7 +18,8 @@ public final class QuotaPricingCalibrationMapper {
             jpa.getTotalAnsweredSeconds(),
             jpa.getRawRateUsdPerSecond(),
             jpa.getAppliedRateUsdPerSecond(),
-            jpa.getNote()
+            jpa.getNote(),
+            QuotaPricingSource.valueOf(jpa.getPricingSource())
         );
     }
 
@@ -31,7 +33,8 @@ public final class QuotaPricingCalibrationMapper {
             domain.getTotalAnsweredSeconds(),
             domain.getRawRateUsdPerSecond(),
             domain.getAppliedRateUsdPerSecond(),
-            domain.getNote()
+            domain.getNote(),
+            domain.getPricingSource().name()
         );
     }
 }

@@ -9,5 +9,5 @@ import com.sep.vox.infrastructure.persistence.entity.QuotaPricingCalibrationJpaE
 
 public interface SpringDataQuotaPricingCalibrationRepository
         extends JpaRepository<QuotaPricingCalibrationJpaEntity, UUID> {
-    Optional<QuotaPricingCalibrationJpaEntity> findFirstByOrderByComputedAtDesc();
+    Optional<QuotaPricingCalibrationJpaEntity> findFirstByPricingSourceOrderByComputedAtDesc(String pricingSource);
 }

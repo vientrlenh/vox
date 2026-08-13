@@ -28,12 +28,15 @@ public class QuotaPricingCalibration {
     // Lý do applied khác raw (bị làm mượt hoặc chặn biên) -- null nếu 2 số bằng nhau, không cần
     // điều chỉnh gì.
     private String note;
+    // Nguồn dữ liệu đã dùng để calibrate row này -- EXAM (join exam_item_responses) hay PRACTICE
+    // (join practice_response_turn), xem QuotaPricingSource.
+    private QuotaPricingSource pricingSource;
 
     public QuotaPricingCalibration() {}
 
     public QuotaPricingCalibration(UUID id, Instant computedAt, int windowDays, int sessionCount,
             BigDecimal totalCostUsd, long totalAnsweredSeconds, BigDecimal rawRateUsdPerSecond,
-            BigDecimal appliedRateUsdPerSecond, String note) {
+            BigDecimal appliedRateUsdPerSecond, String note, QuotaPricingSource pricingSource) {
         this.id = id;
         this.computedAt = computedAt;
         this.windowDays = windowDays;
@@ -43,11 +46,12 @@ public class QuotaPricingCalibration {
         this.rawRateUsdPerSecond = rawRateUsdPerSecond;
         this.appliedRateUsdPerSecond = appliedRateUsdPerSecond;
         this.note = note;
+        this.pricingSource = pricingSource;
     }
 
     public QuotaPricingCalibration(Instant computedAt, int windowDays, int sessionCount,
             BigDecimal totalCostUsd, long totalAnsweredSeconds, BigDecimal rawRateUsdPerSecond,
-            BigDecimal appliedRateUsdPerSecond, String note) {
+            BigDecimal appliedRateUsdPerSecond, String note, QuotaPricingSource pricingSource) {
         this.computedAt = computedAt;
         this.windowDays = windowDays;
         this.sessionCount = sessionCount;
@@ -56,6 +60,7 @@ public class QuotaPricingCalibration {
         this.rawRateUsdPerSecond = rawRateUsdPerSecond;
         this.appliedRateUsdPerSecond = appliedRateUsdPerSecond;
         this.note = note;
+        this.pricingSource = pricingSource;
     }
 
     public UUID getId() {
@@ -128,5 +133,13 @@ public class QuotaPricingCalibration {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public QuotaPricingSource getPricingSource() {
+        return pricingSource;
+    }
+
+    public void setPricingSource(QuotaPricingSource pricingSource) {
+        this.pricingSource = pricingSource;
     }
 }

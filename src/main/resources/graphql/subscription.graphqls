@@ -137,13 +137,13 @@ type TokenUsageTimeseriesPoint {
     "Mốc bắt đầu của bucket, ISO instant (đầu ngày/tuần/tháng theo granularity)"
     bucket: String!
     quotaType: QuotaType!
-    tokensConsumed: Int!
+    tokensConsumed: Float!
 }
 
 type TokenUsageTimeseries {
     granularity: TokenUsageGranularity!
-    "Tổng token đã dùng trong toàn khoảng dateFrom..dateTo, cộng cả 3 loại quota"
-    totalUsed: Int!
+    "Tổng token đã dùng (USD) trong toàn khoảng dateFrom..dateTo, cộng cả 3 loại quota"
+    totalUsed: Float!
     "Chuỗi điểm dữ liệu cho line chart — 1 điểm / bucket / quotaType"
     points: [TokenUsageTimeseriesPoint!]!
     "Snapshot hạn mức hiện tại (giống subscriptionUsage) — dùng để vẽ progress bar hạn mức"
@@ -295,6 +295,7 @@ input UpdateSubscriptionPlanInput {
 
 type QuotaPricing {
     estimatedCostPerExamSecondUsd: Float!
+    estimatedCostPerPracticeSecondUsd: Float!
     usdToVndRate: Float!
 }
 

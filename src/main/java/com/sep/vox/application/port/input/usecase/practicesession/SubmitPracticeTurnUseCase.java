@@ -113,15 +113,17 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         var quotaExhausted = false;
         if (turn.getDurationSeconds() > 0) {
             try {
-                // TODO: quota giờ tính bằng USD chi phí AI thật (SUM ai_usage_record.cost_usd), không
-                // phải giây trả lời trực tiếp -- xem AI_USAGE_QUOTA_USD_MIGRATION.md mục 5/7. Đang tạm
-                // quy đổi 1:1 (giây -> "USD") để không vỡ luồng PRACTICE cũ, cần rà lại khi phiên luyện
-                // tập cũng có pipeline ghi ai_usage_record giống exam.
+                // Chi phí AI thật (USD) của turn này, Python tính đồng bộ từ realtimeCorrectionGraph
+                // ngay trong request submit_turn (không đợi được ai_usage_record qua Kafka như exam,
+                // vì PRACTICE trừ quota NGAY trong request này) -- xem
+                // PracticeAttemptConnection._flush_turn_usage bên Agentic AI,
+                // AI_USAGE_QUOTA_USD_MIGRATION.md mục 5/7. Fallback ZERO cho client Python cũ chưa gửi.
+                var costUsd = turn.getTurnCostUsd() != null ? turn.getTurnCostUsd() : BigDecimal.ZERO;
                 consumeQuotaUseCase.execute(new ConsumeQuotaCommand(
                     activeSubscriptionId(studentId),
                     turn.getSessionId(),
                     QuotaType.PRACTICE,
-                    BigDecimal.valueOf(turn.getDurationSeconds()),
+                    costUsd,
                     studentId
                 ));
             } catch (QuotaExceededException exception) {

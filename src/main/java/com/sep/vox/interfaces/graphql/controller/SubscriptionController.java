@@ -133,6 +133,7 @@ public class SubscriptionController {
     public QuotaPricingDto quotaPricing() {
         return new QuotaPricingDto(
             quotaPricingService.currentEstimatedCostPerExamSecondUsd(),
+            quotaPricingService.currentEstimatedCostPerPracticeSecondUsd(),
             quotaPricingService.usdToVndRate()
         );
     }

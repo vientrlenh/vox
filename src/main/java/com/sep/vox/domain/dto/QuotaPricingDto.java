@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 public record QuotaPricingDto(
     BigDecimal estimatedCostPerExamSecondUsd,
+    BigDecimal estimatedCostPerPracticeSecondUsd,
     BigDecimal usdToVndRate
 ) {
 }

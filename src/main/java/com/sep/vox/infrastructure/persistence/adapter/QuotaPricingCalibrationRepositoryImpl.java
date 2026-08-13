@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.subscription.QuotaPricingCalibration;
+import com.sep.vox.domain.model.subscription.QuotaPricingSource;
 import com.sep.vox.domain.repository.QuotaPricingCalibrationRepository;
 import com.sep.vox.infrastructure.persistence.mapper.QuotaPricingCalibrationMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuotaPricingCalibrationRepository;
@@ -26,8 +27,9 @@ public class QuotaPricingCalibrationRepositoryImpl implements QuotaPricingCalibr
     }
 
     @Override
-    public Optional<QuotaPricingCalibration> findLatest() {
-        return springDataQuotaPricingCalibrationRepository.findFirstByOrderByComputedAtDesc()
+    public Optional<QuotaPricingCalibration> findLatest(QuotaPricingSource source) {
+        return springDataQuotaPricingCalibrationRepository
+            .findFirstByPricingSourceOrderByComputedAtDesc(source.name())
             .map(QuotaPricingCalibrationMapper::toDomain);
     }
 }

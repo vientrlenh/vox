@@ -15,14 +15,21 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @ConfigurationProperties(prefix = "vox.quota")
 public record QuotaPricingProperties(
-    BigDecimal estimatedCostPerExamSecondUsd
+    BigDecimal estimatedCostPerExamSecondUsd,
+    // Tách riêng khỏi estimatedCostPerExamSecondUsd -- PRACTICE dùng pipeline AI nhẹ hơn hẳn EXAM
+    // (realtimeCorrectionGraph vs evalGraph), xem QuotaPricingCalibrationService/QuotaPricingSource.
+    BigDecimal estimatedCostPerPracticeSecondUsd
 ) {
 
     private static final BigDecimal DEFAULT_ESTIMATED_COST_PER_EXAM_SECOND_USD = new BigDecimal("0.01");
+    private static final BigDecimal DEFAULT_ESTIMATED_COST_PER_PRACTICE_SECOND_USD = new BigDecimal("0.01");
 
     public QuotaPricingProperties {
         estimatedCostPerExamSecondUsd = estimatedCostPerExamSecondUsd == null
             ? DEFAULT_ESTIMATED_COST_PER_EXAM_SECOND_USD
             : estimatedCostPerExamSecondUsd;
+        estimatedCostPerPracticeSecondUsd = estimatedCostPerPracticeSecondUsd == null
+            ? DEFAULT_ESTIMATED_COST_PER_PRACTICE_SECOND_USD
+            : estimatedCostPerPracticeSecondUsd;
     }
 }

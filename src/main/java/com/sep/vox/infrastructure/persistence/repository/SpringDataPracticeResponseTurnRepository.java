@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -53,4 +54,17 @@ public interface SpringDataPracticeResponseTurnRepository
         @Param("sessionId") UUID sessionId,
         @Param("questionId") UUID questionId
     );
+
+    // Không viết được JPQL constructor-expression như ExamItemResponseRepository (PracticeResponseTurnJpaEntity
+    // không có association JPA tới PracticeItemResponseJpaEntity) -- native SQL + Object[], mirror cách
+    // JpaTokenUsageTimeseriesQueryRepository map row native query.
+    @Query(value = """
+        SELECT response.practice_session_id AS session_id, COALESCE(SUM(turn.duration_seconds), 0) AS total_seconds
+        FROM practice_response_turn turn
+        JOIN practice_item_response response
+          ON response.id = turn.practice_response_id
+        WHERE response.practice_session_id IN :sessionIds
+        GROUP BY response.practice_session_id
+        """, nativeQuery = true)
+    List<Object[]> sumDurationSecondsGroupedBySessionIds(@Param("sessionIds") Collection<UUID> sessionIds);
 }

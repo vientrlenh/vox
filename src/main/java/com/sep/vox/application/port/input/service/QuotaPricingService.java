@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.service;
 import java.math.BigDecimal;
 
 import com.sep.vox.domain.model.subscription.QuotaPricingCalibration;
+import com.sep.vox.domain.model.subscription.QuotaPricingSource;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.repository.QuotaPricingCalibrationRepository;
@@ -34,9 +35,15 @@ public class QuotaPricingService {
     }
 
     public BigDecimal currentEstimatedCostPerExamSecondUsd() {
-        return quotaPricingCalibrationRepository.findLatest()
+        return quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.EXAM)
             .map(QuotaPricingCalibration::getAppliedRateUsdPerSecond)
             .orElseGet(quotaPricingProperties::estimatedCostPerExamSecondUsd);
+    }
+
+    public BigDecimal currentEstimatedCostPerPracticeSecondUsd() {
+        return quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.PRACTICE)
+            .map(QuotaPricingCalibration::getAppliedRateUsdPerSecond)
+            .orElseGet(quotaPricingProperties::estimatedCostPerPracticeSecondUsd);
     }
 
     public BigDecimal usdToVndRate() {

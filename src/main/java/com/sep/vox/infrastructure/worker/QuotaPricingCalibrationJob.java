@@ -20,6 +20,14 @@ public class QuotaPricingCalibrationJob {
 
     @Scheduled(cron = "0 0 3 * * MON")
     public void run() {
-        quotaPricingCalibrationService.recalibrate();
+        quotaPricingCalibrationService.recalibrateExam();
+    }
+
+    // Tách @Scheduled riêng (không gộp vào run() gọi tuần tự) để lỗi ở nguồn này không chặn nguồn
+    // kia -- mỗi bucket rate xử lý độc lập, đúng tinh thần GRADING/CLASS_TEST tách riêng ở
+    // CompleteExamSessionGradingUseCase.
+    @Scheduled(cron = "0 0 3 * * MON")
+    public void runPractice() {
+        quotaPricingCalibrationService.recalibratePractice();
     }
 }

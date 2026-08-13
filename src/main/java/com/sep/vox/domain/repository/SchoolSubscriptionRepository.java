@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -23,8 +24,8 @@ public interface SchoolSubscriptionRepository {
     // Id gói đang hoạt động của trường mà 1 user đang trực thuộc (dùng để trừ quota)
     Optional<UUID> findActiveSubscriptionIdForUser(UUID userId);
 
-    // Hạn mức PRACTICE còn lại của user (0 nếu không có gói đang hoạt động)
-    int findPracticeQuotaRemaining(UUID userId);
+    // Hạn mức PRACTICE còn lại (USD) của user (ZERO nếu không có gói đang hoạt động)
+    BigDecimal findPracticeQuotaRemaining(UUID userId);
 
     // Số phút tối đa mỗi lượt luyện của gói đang hoạt động (null nếu không có gói)
     Integer findMaxTimePerAttemptMinForUser(UUID userId);

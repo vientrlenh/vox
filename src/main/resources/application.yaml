@@ -379,6 +379,9 @@ vox:
     # mức. Cần thay bằng số đo thực tế (trung bình cost_usd / audio_duration_seconds
     # trên một khoảng thời gian đủ dài) trước khi dùng ở production.
     estimated-cost-per-exam-second-usd: ${VOX_QUOTA_ESTIMATED_COST_PER_EXAM_SECOND_USD:}
+    # Cùng vai trò như dòng trên nhưng riêng cho PRACTICE -- tự tính lại độc lập qua
+    # QuotaPricingCalibrationJob.runPractice(), xem QuotaPricingCalibrationService/QuotaPricingSource.
+    estimated-cost-per-practice-second-usd: ${VOX_QUOTA_ESTIMATED_COST_PER_PRACTICE_SECOND_USD:}
     calibration:
       # QuotaPricingCalibrationJob dùng các số này để tự tính lại estimated-cost-per-exam-second-usd
       # ở trên từ dữ liệu ai_usage_record/exam_item_responses thật, thay vì phải tự sửa .env tay --

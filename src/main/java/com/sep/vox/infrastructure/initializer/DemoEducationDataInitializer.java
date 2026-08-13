@@ -48,6 +48,7 @@ import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
@@ -85,6 +86,7 @@ import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
+import com.sep.vox.domain.repository.SchoolRoomRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
@@ -138,6 +140,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
     private final SchoolGradeLevelRepository schoolGradeLevelRepository;
     private final SchoolGradeRepository schoolGradeRepository;
     private final SchoolClassRepository schoolClassRepository;
+    private final SchoolRoomRepository schoolRoomRepository;
     private final SchoolClassUserRepository schoolClassUserRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final PlanQuotaRepository planQuotaRepository;
@@ -175,6 +178,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
             SchoolGradeLevelRepository schoolGradeLevelRepository,
             SchoolGradeRepository schoolGradeRepository,
             SchoolClassRepository schoolClassRepository,
+            SchoolRoomRepository schoolRoomRepository,
             SchoolClassUserRepository schoolClassUserRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
             PlanQuotaRepository planQuotaRepository,
@@ -204,6 +208,7 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
         this.schoolGradeLevelRepository = schoolGradeLevelRepository;
         this.schoolGradeRepository = schoolGradeRepository;
         this.schoolClassRepository = schoolClassRepository;
+        this.schoolRoomRepository = schoolRoomRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.planQuotaRepository = planQuotaRepository;
@@ -486,38 +491,46 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
 
     private List<SubscriptionPlan> seedSubscriptionPlans(UUID createdBy, Instant now) {
         var planSeeds = List.of(
+            // Hạn mức tính bằng GIÂY NÓI, không phải số lượt.
+            //
+            // ConsumeQuotaUseCase nhận thẳng `turn.getDurationSeconds()` (luyện tập) và
+            // `sumDurationSecondsBySessionId` (thi). Bộ số cũ vì vậy nhỏ đến vô nghĩa: gói Khởi
+            // đầu có 300 đơn vị chấm = 300 GIÂY = 5 phút cho CẢ NĂM, hết ngay sau vài bài.
+            //
+            // Nhân 100 lần để con số phản ánh đúng đơn vị: 30.000 giây ≈ 8,3 giờ chấm mỗi năm cho
+            // gói thấp nhất, đủ cho một trường chạy thật chứ không chỉ bấm thử vài lượt.
             new SubscriptionPlanSeed(
                 "Khởi đầu",
                 "Đủ cho trường bắt đầu tổ chức luyện nói và kiểm tra định kỳ",
                 new BigDecimal("5000"),
-                5,
+                10,
                 100,
                 false,
-                300,
-                100,
-                600
+                30_000,
+                10_000,
+                60_000
             ),
             new SubscriptionPlanSeed(
                 "Chuyên nghiệp",
                 "Hạn mức cân bằng cho trường phổ thông triển khai thường xuyên",
                 new BigDecimal("10000"),
-                10,
+                15,
                 500,
                 true,
-                1200,
-                400,
-                2500
+                120_000,
+                40_000,
+                250_000
             ),
             new SubscriptionPlanSeed(
                 "Toàn diện",
                 "Hạn mức lớn cho nhiều khối lớp và các kỳ thi tập trung",
                 new BigDecimal("20000"),
-                15,
+                20,
                 2000,
                 false,
-                5000,
-                1500,
-                10000
+                500_000,
+                150_000,
+                1_000_000
             )
         );
 
@@ -581,12 +594,47 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
         );
     }
 
+    /**
+     * Phòng học của trường, để xếp lịch thi có sẵn chỗ chọn.
+     *
+     * <p>Trước đây seed demo không tạo phòng nào, nên tab Xếp lịch mở ra là một dropdown rỗng --
+     * người thử phải tự vào tạo phòng trước rồi mới xếp được lịch, và đó là bước dễ tưởng là hỏng
+     * hơn là thiếu dữ liệu.
+     *
+     * <p>Sáu phòng cho hai kiểu dùng khác nhau: bốn phòng thường (đủ cho 4 lớp hiện tại xếp cùng
+     * một ca) và hai phòng máy (kỳ thi tập trung cần thiết bị riêng).
+     */
+    private void seedSchoolRooms(School school, UUID schoolAdminId, Instant now) {
+        var roomSeeds = List.of(
+            new String[]{"P101", "Phòng 101", "Phòng học thường, 40 chỗ, có máy chiếu"},
+            new String[]{"P102", "Phòng 102", "Phòng học thường, 40 chỗ"},
+            new String[]{"P201", "Phòng 201", "Phòng học thường, 36 chỗ"},
+            new String[]{"P202", "Phòng 202", "Phòng học thường, 36 chỗ"},
+            new String[]{"LAB01", "Phòng máy 01", "Phòng máy 30 chỗ, có tai nghe cho thi nói"},
+            new String[]{"LAB02", "Phòng máy 02", "Phòng máy 30 chỗ, có tai nghe cho thi nói"}
+        );
+        for (var seed : roomSeeds) {
+            schoolRoomRepository.save(new SchoolRoom(
+                school.getId(),
+                seed[0],
+                seed[1],
+                seed[2],
+                true,
+                now,
+                now,
+                schoolAdminId,
+                schoolAdminId
+            ));
+        }
+    }
+
     private SchoolStructureSeed seedSchoolStructure(
             School school,
             SupportedLanguage language,
             MemberSeedResult members,
             Instant now) {
         var schoolAdminId = members.schoolAdminId();
+        seedSchoolRooms(school, schoolAdminId, now);
         var gradeLevels = new ArrayList<SchoolGradeLevel>();
         var schoolGrades = new ArrayList<SchoolGrade>();
         for (var gradeNumber = 10; gradeNumber <= 12; gradeNumber++) {
@@ -983,12 +1031,15 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                     criterionSignals(
                         criterionSeed.frameworkCode() + "_" + resultBand.getCode() + "_POS",
                         descriptor,
-                        "Tìm bằng chứng trực tiếp trong audio hoặc transcript"
+                        evidenceHintFor(criterionSeed.frameworkCode()),
+                        List.of()
                     ),
                     criterionSignals(
                         criterionSeed.frameworkCode() + "_" + resultBand.getCode() + "_NEG",
-                        "Biểu hiện không ổn định hoặc thấp hơn mô tả của band " + resultBand.getLabel(),
-                        "Không suy diễn khi không đủ bằng chứng"
+                        "Biểu hiện không ổn định hoặc thấp hơn mô tả của " + resultBand.getLabel()
+                            + ". Không suy diễn khi không đủ bằng chứng.",
+                        evidenceHintFor(criterionSeed.frameworkCode()),
+                        negativeSignalsFor(criterionSeed.frameworkCode())
                     ),
                     now,
                     now,
@@ -1005,13 +1056,86 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
         );
     }
 
-    private FrameworkCriterionSignals criterionSignals(String code, String description, String evidenceHint) {
-        return new FrameworkCriterionSignals(List.of(new FrameworkCriterionSignal(
-            code,
-            description,
-            FrameworkCriterionSignalImportance.HIGH,
-            evidenceHint
-        )));
+    /**
+     * Nhiều tín hiệu cho một bậc, thay vì một tín hiệu duy nhất.
+     *
+     * <p>Tín hiệu đầu (mô tả bậc) giữ mức {@code HIGH} vì nó định nghĩa bậc; các dấu hiệu quan sát
+     * đi kèm để {@code MEDIUM} -- chúng là bằng chứng hỗ trợ, không phải điều kiện đủ. Đánh tất cả
+     * là HIGH thì model coi thiếu một dấu hiệu phụ cũng nghiêm trọng ngang lệch cả bậc.
+     */
+    private FrameworkCriterionSignals criterionSignals(
+            String codePrefix, String headline, String evidenceHint, List<String> details) {
+        var signals = new ArrayList<FrameworkCriterionSignal>();
+        signals.add(new FrameworkCriterionSignal(
+            codePrefix, headline, FrameworkCriterionSignalImportance.HIGH, evidenceHint
+        ));
+        for (var index = 0; index < details.size(); index++) {
+            signals.add(new FrameworkCriterionSignal(
+                codePrefix + "_" + (index + 1),
+                details.get(index),
+                FrameworkCriterionSignalImportance.MEDIUM,
+                evidenceHint
+            ));
+        }
+        return new FrameworkCriterionSignals(List.copyOf(signals));
+    }
+
+    /**
+     * Dấu hiệu QUAN SÁT ĐƯỢC cho từng tiêu chí -- thứ giám khảo thật sự nghe/đọc thấy.
+     *
+     * <p>Trước đây mọi bậc của mọi tiêu chí dùng chung đúng một câu sinh máy ("Biểu hiện không ổn
+     * định hoặc thấp hơn mô tả của band X"). Câu đó đúng nhưng RỖNG: nó không cho model biết phải
+     * nghe cái gì, nên ba lần chấm độc lập dễ bám vào ba thứ khác nhau -- và đó chính là nguồn
+     * làm {@code scoreDelta} giãn ra, kéo confidence xuống rồi đẩy bài sang duyệt tay.
+     *
+     * <p>Danh sách dưới đây cố ý chỉ gồm thứ KIỂM CHỨNG ĐƯỢC từ audio/transcript, không có phán
+     * đoán về thái độ hay năng lực chung của người nói.
+     */
+    private List<String> negativeSignalsFor(String frameworkCode) {
+        return switch (frameworkCode) {
+            case "PRONUNCIATION" -> List.of(
+                "Rụng phụ âm cuối (-s, -ed, -t/-d) làm mất dấu số nhiều hoặc thì.",
+                "Đặt sai trọng âm từ khiến người nghe phải đoán lại nghĩa.",
+                "Ngữ điệu phẳng suốt câu, không phân biệt được câu hỏi với câu kể.",
+                "Nguyên âm dài/ngắn bị đồng nhất (ship–sheep, full–fool)."
+            );
+            case "FLUENCY" -> List.of(
+                "Ngập ngừng trên 3 giây giữa các mệnh đề, lặp lại nhiều lần.",
+                "Bỏ dở câu rồi bắt đầu lại từ đầu bằng cấu trúc khác.",
+                "Lạm dụng từ đệm (uhm, like, you know) thay cho nội dung.",
+                "Tốc độ giật cục: đang trôi chảy thì dừng hẳn để tìm từ."
+            );
+            case "GRAMMAR" -> List.of(
+                "Sai thì ở mệnh đề kể chuyện quá khứ, hoặc trộn lẫn thì không nhất quán.",
+                "Thiếu hoà hợp chủ ngữ – động từ ở ngôi thứ ba số ít.",
+                "Sai hoặc thiếu mạo từ, giới từ ở cụm cố định.",
+                "Chỉ dùng câu đơn nối bằng 'and'/'but', không có mệnh đề phụ."
+            );
+            case "VOCABULARY" -> List.of(
+                "Lặp lại một nhóm từ vựng cơ bản cho mọi ý.",
+                "Dùng từ sai sắc thái hoặc sai kết hợp (do a mistake, make homework).",
+                "Diễn đạt vòng vo vì thiếu từ chính xác.",
+                "Dịch trực tiếp từ tiếng Việt tạo cụm không tự nhiên."
+            );
+            case "COHERENCE" -> List.of(
+                "Ý nhảy cóc, không có câu chuyển giữa các đoạn.",
+                "Thiếu từ nối chỉ quan hệ nhân quả hoặc tương phản.",
+                "Trả lời lạc khỏi câu hỏi sau vài câu đầu.",
+                "Nêu quan điểm nhưng không có ví dụ hay lý do đỡ."
+            );
+            default -> List.of();
+        };
+    }
+
+    /** Nơi tìm bằng chứng cho từng tiêu chí -- nói rõ nguồn để ba lần chấm cùng nhìn một chỗ. */
+    private String evidenceHintFor(String frameworkCode) {
+        return switch (frameworkCode) {
+            case "PRONUNCIATION" -> "Nghe audio; đối chiếu điểm phát âm từng âm vị của Azure.";
+            case "FLUENCY" -> "Nghe audio; đo độ dài khoảng lặng và số lần tự sửa.";
+            case "GRAMMAR", "VOCABULARY" -> "Đọc transcript; trích đúng câu chứa lỗi làm bằng chứng.";
+            case "COHERENCE" -> "Đọc transcript theo trình tự; xét quan hệ giữa các ý, không xét từng câu lẻ.";
+            default -> "Tìm bằng chứng trực tiếp trong audio hoặc transcript.";
+        };
     }
 
     private void seedSchoolRubricsAndPolicies(
@@ -1564,10 +1688,16 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
         return new SchoolRubricVersionSeed(
             version,
             name,
-            "AI chấm mức độ đáp ứng bậc mục tiêu trên thang 0 - 100; trường quy đổi bằng dải xếp loại.",
+            "AI chấm mức độ đáp ứng bậc mục tiêu trên thang 0 - 10; trường quy đổi bằng dải xếp loại.",
             status,
-            new BigDecimal("100.00"),
-            new BigDecimal("100.00"),
+            // Thang 0-10 (đổi từ 0-100): đây là thang trường phổ thông Việt Nam dùng thật, nên
+            // giáo viên đọc điểm không phải quy đổi trong đầu.
+            //
+            // criterionScaleMax PHẢI bằng totalScaleMax với WEIGHTED_AVERAGE: mỗi tiêu chí chấm
+            // trên cả thang rồi mới nhân trọng số. Tiêu chí hẹp hơn thang thì học sinh làm tối đa
+            // mọi thứ vẫn không chạm được trần -- xem ràng buộc lúc ban hành rubric.
+            new BigDecimal("10.00"),
+            new BigDecimal("10.00"),
             RubricTotalScoreMethod.WEIGHTED_AVERAGE,
             weights,
             resultBands
@@ -1580,21 +1710,23 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
 
     private List<BandSeed> hoaBinhResultBandSeeds() {
         return List.of(
-            gradeBand("BAND_1", "Band 1", 1, "0.00", "20.99"),
-            gradeBand("BAND_2", "Band 2", 2, "21.00", "40.99"),
-            gradeBand("BAND_3", "Band 3", 3, "41.00", "60.99"),
-            gradeBand("BAND_4", "Band 4", 4, "61.00", "80.99"),
-            gradeBand("BAND_5", "Band 5", 5, "81.00", "100.00")
+            // Dải phải phủ KÍN thang 0-10 và không chồng lấn: điểm rơi vào khe hở thì không xếp
+            // được loại nào. Cận trên dùng .99 để mép trên của dải này sát ngay mép dưới dải kế.
+            gradeBand("BAND_1", "Band 1", 1, "0.00", "2.09"),
+            gradeBand("BAND_2", "Band 2", 2, "2.10", "4.09"),
+            gradeBand("BAND_3", "Band 3", 3, "4.10", "6.09"),
+            gradeBand("BAND_4", "Band 4", 4, "6.10", "8.09"),
+            gradeBand("BAND_5", "Band 5", 5, "8.10", "10.00")
         );
     }
 
     private List<BandSeed> nguyenTraiLetterGradeBandSeeds() {
         return List.of(
-            gradeBand("F", "Chưa đạt", 1, "0.00", "49.99"),
-            gradeBand("D", "D", 2, "50.00", "59.99"),
-            gradeBand("C", "C", 3, "60.00", "69.99"),
-            gradeBand("B", "B", 4, "70.00", "84.99"),
-            gradeBand("A", "A", 5, "85.00", "100.00")
+            gradeBand("F", "Chưa đạt", 1, "0.00", "4.99"),
+            gradeBand("D", "D", 2, "5.00", "5.99"),
+            gradeBand("C", "C", 3, "6.00", "6.99"),
+            gradeBand("B", "B", 4, "7.00", "8.49"),
+            gradeBand("A", "A", 5, "8.50", "10.00")
         );
     }
 
@@ -1671,12 +1803,27 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 "Độ rõ của âm, trọng âm, nhịp điệu và ngữ điệu; đánh giá mức độ người nghe hiểu được.",
                 1,
                 List.of(
-                    "Phát âm được một số từ và cụm từ rất quen thuộc; người nghe thường phải cố gắng mới hiểu.",
-                    "Phát âm các câu đơn giản tương đối hiểu được dù ảnh hưởng tiếng mẹ đẻ và lỗi âm còn rõ.",
-                    "Phát âm nhìn chung rõ và dễ hiểu; lỗi âm hoặc trọng âm đôi lúc xuất hiện nhưng hiếm khi cản trở ý nghĩa.",
-                    "Phát âm rõ, tự nhiên; trọng âm, nhịp điệu và ngữ điệu phần lớn phù hợp, chỉ còn lỗi nhỏ.",
-                    "Phát âm rõ ràng và linh hoạt; điều khiển trọng âm, nhịp điệu, ngữ điệu hiệu quả để truyền đạt sắc thái.",
-                    "Phát âm tự nhiên, chính xác và tinh tế; vận dụng linh hoạt các đặc điểm ngữ âm để biểu đạt hàm ý phức tạp."
+                    // Ranh giới giữa các bậc bám vào MỘT trục đo được: người nghe phải cố gắng tới
+                    // đâu. Bậc 1-2 lỗi làm SAI nghĩa, bậc 3 lỗi làm CHẬM việc hiểu, bậc 4 trở lên
+                    // lỗi không còn ảnh hưởng nghĩa. Có trục đó thì ba lần chấm độc lập mới hội tụ.
+                    "Chỉ phát âm được từ và cụm rất quen thuộc, rời rạc. Người nghe phải yêu cầu "
+                        + "nhắc lại nhiều lần và đoán nghĩa qua ngữ cảnh. Phụ âm cuối rụng gần như "
+                        + "hoàn toàn; trọng âm đặt sai ở hầu hết từ đa âm tiết.",
+                    "Câu đơn giản, chủ đề quen thuộc thì hiểu được nếu người nghe tập trung. Ảnh "
+                        + "hưởng tiếng mẹ đẻ rõ ở nguyên âm dài/ngắn và phụ âm cuối; ngữ điệu gần "
+                        + "như phẳng. Lỗi phát âm ĐÔI KHI làm hiểu SAI nghĩa, không chỉ gây khó nghe.",
+                    "Nhìn chung rõ và dễ hiểu, kể cả ở câu chưa quen. Vẫn còn lỗi âm lẻ tẻ và đôi "
+                        + "chỗ sai trọng âm, nhưng người nghe hiếm khi phải đoán -- lỗi làm CHẬM "
+                        + "việc hiểu chứ không chặn. Đã phân biệt được ngữ điệu câu hỏi với câu kể.",
+                    "Rõ và tự nhiên suốt bài nói. Trọng âm từ và trọng âm câu phần lớn đúng, nhịp "
+                        + "điệu tương đối gần người bản ngữ. Lỗi còn lại là lỗi nhỏ, lẻ tẻ, KHÔNG "
+                        + "lặp thành hệ thống và không ảnh hưởng nghĩa.",
+                    "Rõ ràng và linh hoạt. CHỦ ĐỘNG dùng trọng âm câu và ngữ điệu để nhấn ý, phân "
+                        + "biệt thông tin cũ với thông tin mới, thể hiện thái độ. Vẫn nhận ra được "
+                        + "accent nhưng không gây trở ngại nào cho người nghe.",
+                    "Tự nhiên, chính xác và tinh tế ở mọi chủ đề. Điều khiển được nối âm, nuốt âm, "
+                        + "nhịp và ngữ điệu như người dùng thành thạo; dùng ngữ âm để biểu đạt hàm "
+                        + "ý, tương phản hoặc mỉa mai mà vẫn giữ nguyên độ rõ."
                 ),
                 "I believe school clubs help students become more confident.",
                 "Phát âm nhìn chung rõ, có trọng âm câu hợp lý và vẫn còn một vài âm chịu ảnh hưởng tiếng mẹ đẻ."
@@ -1688,12 +1835,29 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 "Tốc độ, tính liên tục, độ dài mạch nói và khả năng kiểm soát ngập ngừng hoặc tự sửa.",
                 2,
                 List.of(
-                    "Chỉ tạo được các từ hoặc cụm rất ngắn, ngập ngừng dài và thường xuyên phải bắt đầu lại.",
-                    "Nói được chuỗi câu đơn giản ngắn; tốc độ chậm và có nhiều khoảng dừng để tìm từ.",
-                    "Duy trì được mạch nói về chủ đề quen thuộc; có ngập ngừng và tự sửa nhưng thông điệp vẫn liên tục.",
-                    "Nói khá trôi chảy với tốc độ phù hợp; khoảng dừng chủ yếu phục vụ lập kế hoạch ý phức tạp.",
-                    "Nói trôi chảy, tự nhiên và linh hoạt; rất ít ngập ngừng gây chú ý, tự sửa không làm đứt mạch.",
-                    "Duy trì mạch nói hoàn toàn tự nhiên và linh hoạt ngay cả với nội dung trừu tượng, phức tạp hoặc bất ngờ."
+                    // Trục phân biệt: khoảng dừng dùng để LÀM GÌ. Bậc 1-2 dừng để tìm từ, bậc 3
+                    // dừng để tìm từ nhưng mạch không đứt, bậc 4 trở lên dừng để TỔ CHỨC Ý -- một
+                    // khoảng dừng dài trước câu phức là dấu hiệu MẠNH, không phải yếu.
+                    //
+                    // Mốc giây là để neo phán đoán, không phải để đếm máy móc: prompt yêu cầu trích
+                    // bằng chứng, nên model cần biết "dài" nghĩa là bao nhiêu.
+                    "Chỉ nói được từ hoặc cụm rất ngắn, rời rạc. Ngập ngừng thường trên 5 giây và "
+                        + "phải bắt đầu lại câu nhiều lần; người nghe phải chờ hoặc gợi ý mới nói tiếp.",
+                    "Nói được chuỗi câu đơn giản ngắn nhưng tốc độ chậm rõ rệt. Khoảng dừng 3-5 "
+                        + "giây xuất hiện thường xuyên và hầu hết là để TÌM TỪ; mạch nói đứt quãng "
+                        + "khiến người nghe khó theo trọn ý.",
+                    "Duy trì được mạch nói về chủ đề quen thuộc. Vẫn ngập ngừng và tự sửa khá "
+                        + "nhiều, nhưng thông điệp KHÔNG bị đứt -- người nghe theo được liền mạch. "
+                        + "Chủ đề lạ thì tốc độ chậm hẳn lại.",
+                    "Khá trôi chảy ở tốc độ gần tự nhiên. Khoảng dừng chủ yếu phục vụ LẬP KẾ HOẠCH "
+                        + "cho ý phức tạp chứ không phải tìm từ, và thường rơi vào ranh giới mệnh "
+                        + "đề. Tự sửa nhanh, gọn.",
+                    "Trôi chảy, tự nhiên và linh hoạt. Rất ít ngập ngừng gây chú ý; khi tự sửa thì "
+                        + "sửa ngay trong mạch mà không phải dựng lại câu. Giữ được nhịp cả khi "
+                        + "chuyển sang chủ đề chưa chuẩn bị trước.",
+                    "Mạch nói hoàn toàn tự nhiên và linh hoạt, kể cả với nội dung trừu tượng, phức "
+                        + "tạp hoặc câu hỏi bất ngờ. Điều chỉnh tốc độ có chủ đích để nhấn ý; "
+                        + "khoảng dừng trở thành công cụ diễn đạt chứ không phải dấu hiệu bí từ."
                 ),
                 "In my opinion, online learning is useful because it saves time and gives students more resources.",
                 "Mạch nói liên tục ở tốc độ phù hợp, có một vài khoảng dừng ngắn để tổ chức ý."
@@ -1705,12 +1869,30 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 "Phạm vi và độ chính xác của cấu trúc ngữ pháp được sử dụng để diễn đạt ý.",
                 3,
                 List.of(
-                    "Chủ yếu dùng mẫu câu ghi nhớ rất đơn giản; lỗi thường xuyên khiến ý khó hiểu.",
-                    "Dùng được một số cấu trúc câu đơn giản; lỗi còn phổ biến nhưng ý cơ bản thường nhận ra được.",
-                    "Kiểm soát khá tốt cấu trúc quen thuộc và thử dùng câu phức; lỗi không gây hiểu nhầm đáng kể.",
-                    "Sử dụng đa dạng cấu trúc đơn và phức với độ chính xác cao; lỗi nhỏ không mang tính hệ thống.",
-                    "Sử dụng linh hoạt nhiều cấu trúc phức tạp với độ chính xác nhất quán và phù hợp sắc thái.",
-                    "Kiểm soát hoàn toàn cấu trúc ngữ pháp phức tạp, kể cả khi diễn đạt sắc thái tinh tế hoặc tái cấu trúc ý tức thời."
+                    // Trục phân biệt: HAI chiều đi cùng nhau -- PHẠM VI cấu trúc dùng được, và
+                    // HẬU QUẢ của lỗi. Bậc 1-2 lỗi cản trở hiểu, bậc 3 lỗi nhận ra được nhưng
+                    // không gây hiểu nhầm, bậc 4+ lỗi hiếm và tự sửa được.
+                    //
+                    // Nêu rõ cả hai chiều vì học sinh Việt thường chính xác cao trên câu đơn: chỉ
+                    // đếm lỗi thì bài toàn câu đơn không sai gì sẽ được chấm cao hơn thực chất.
+                    "Chủ yếu là mẫu câu ghi nhớ rất đơn giản, phần lớn ở thì hiện tại. Lỗi xuất "
+                        + "hiện ở hầu hết câu và THƯỜNG XUYÊN khiến người nghe không xác định được "
+                        + "ai làm gì, hoặc việc xảy ra khi nào.",
+                    "Dùng được một số cấu trúc câu đơn giản, chủ yếu nối bằng 'and'/'but'. Lỗi thì, "
+                        + "hoà hợp chủ ngữ - động từ và mạo từ còn PHỔ BIẾN, nhưng ý cơ bản thường "
+                        + "vẫn nhận ra được nhờ ngữ cảnh.",
+                    "Kiểm soát khá tốt cấu trúc quen thuộc và ĐÃ THỬ dùng câu phức (mệnh đề quan hệ, "
+                        + "mệnh đề chỉ lý do/thời gian). Lỗi vẫn nhận ra được, đặc biệt ở câu phức, "
+                        + "nhưng KHÔNG gây hiểu nhầm đáng kể.",
+                    "Dùng đa dạng cả câu đơn lẫn câu phức với độ chính xác cao. Lỗi còn lại là lỗi "
+                        + "nhỏ, KHÔNG lặp thành hệ thống, và người nói thường tự sửa được ngay. "
+                        + "Chọn được thì phù hợp khi kể chuyện quá khứ hoặc nêu giả định.",
+                    "Linh hoạt nhiều cấu trúc phức tạp với độ chính xác nhất quán. Chọn cấu trúc "
+                        + "theo SẮC THÁI muốn diễn đạt (bị động để nhấn đối tượng, đảo ngữ để nhấn "
+                        + "mạnh), không chỉ để đúng ngữ pháp.",
+                    "Kiểm soát hoàn toàn cấu trúc phức tạp, kể cả khi phải TÁI CẤU TRÚC câu tức "
+                        + "thời giữa lúc nói. Diễn đạt được sắc thái tinh tế (giả định lùi thì, hàm "
+                        + "ý nhượng bộ) mà vẫn giữ độ chính xác."
                 ),
                 "If schools offered more clubs, students would have more chances to develop social skills.",
                 "Sử dụng đúng câu điều kiện và mệnh đề mục đích; cấu trúc có độ phức tạp phù hợp Bậc 4."
@@ -1722,12 +1904,27 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 "Phạm vi, độ chính xác, tính phù hợp và khả năng diễn đạt lại khi thiếu từ.",
                 4,
                 List.of(
-                    "Chỉ dùng được vốn từ rời rạc rất cơ bản về bản thân và tình huống quen thuộc.",
-                    "Có đủ từ để xử lý nhu cầu giao tiếp đơn giản; lặp từ và chọn từ chưa chính xác còn thường xuyên.",
-                    "Có đủ vốn từ cho chủ đề quen thuộc, biết diễn đạt lại; đôi lúc chọn từ chưa chính xác nhưng ý vẫn rõ.",
-                    "Dùng vốn từ khá rộng và phù hợp chủ đề; có thể diễn đạt lại hiệu quả, chỉ đôi lúc chọn từ chưa tự nhiên.",
-                    "Dùng vốn từ rộng, chính xác và linh hoạt, gồm thành ngữ hoặc sắc thái phù hợp ngữ cảnh.",
-                    "Vận dụng vốn từ rất rộng và tinh tế, xử lý chính xác hàm ý, thành ngữ và khác biệt phong cách trong mọi ngữ cảnh."
+                    // Trục phân biệt: xử lý thế nào khi THIẾU TỪ. Bậc 1-2 tắc hẳn hoặc lặp lại,
+                    // bậc 3 biết diễn đạt vòng để cứu ý, bậc 4+ chọn được từ đúng ngay và đúng cả
+                    // sắc thái. Đây là chỗ tách người "học thuộc nhiều từ" khỏi người "dùng được từ".
+                    "Chỉ có vốn từ rời rạc rất cơ bản về bản thân và tình huống quen thuộc. Thiếu "
+                        + "từ là TẮC HẲN, không có cách nào diễn đạt thay thế; nhiều chỗ chèn tiếng "
+                        + "Việt hoặc bỏ dở ý.",
+                    "Đủ từ cho nhu cầu giao tiếp đơn giản. LẶP đi lặp lại một nhóm từ cơ bản cho "
+                        + "mọi ý, và chọn từ sai nghĩa còn thường xuyên; dịch trực tiếp từ tiếng "
+                        + "Việt tạo ra cụm không tự nhiên.",
+                    "Đủ vốn từ cho chủ đề quen thuộc và ĐÃ BIẾT diễn đạt vòng khi thiếu từ chính "
+                        + "xác -- ý vẫn tới được người nghe dù cách nói dài dòng. Đôi lúc sai kết "
+                        + "hợp từ (do a mistake, make homework).",
+                    "Vốn từ khá rộng và phù hợp chủ đề, gồm cả từ học thuật cơ bản. Diễn đạt lại "
+                        + "hiệu quả và gọn khi cần; chỉ đôi lúc chọn từ chưa thật tự nhiên chứ "
+                        + "không còn sai nghĩa.",
+                    "Vốn từ rộng, chính xác và linh hoạt. Dùng được thành ngữ, cụm cố định và chọn "
+                        + "từ theo SẮC THÁI (khác biệt giữa trang trọng và thân mật, giữa khẳng "
+                        + "định mạnh và dè dặt).",
+                    "Vốn từ rất rộng và tinh tế. Xử lý chính xác hàm ý, chơi chữ, khác biệt phong "
+                        + "cách trong mọi ngữ cảnh; chọn từ có chủ đích để đạt hiệu quả giao tiếp "
+                        + "chứ không chỉ để đúng nghĩa."
                 ),
                 "Participating in volunteer projects can broaden students' perspectives and strengthen their sense of responsibility.",
                 "Từ vựng đa dạng, đúng chủ đề giáo dục và có kết hợp từ tự nhiên."
@@ -1739,12 +1936,29 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 "Mức độ trả lời đúng nhiệm vụ, phát triển ý, tổ chức thông tin và liên kết diễn ngôn.",
                 5,
                 List.of(
-                    "Chỉ đưa ra được thông tin rời rạc, rất ít liên kết và thường chưa hoàn thành yêu cầu nhiệm vụ.",
-                    "Trả lời được phần chính bằng các ý đơn giản; tổ chức còn tuyến tính và chủ yếu dùng từ nối cơ bản.",
-                    "Trả lời đúng trọng tâm, phát triển được các ý chính với một số chi tiết và liên kết nhìn chung rõ.",
-                    "Phát triển ý đầy đủ, có cấu trúc rõ và dùng phương tiện liên kết đa dạng, phù hợp.",
-                    "Phát triển lập luận sâu, mạch lạc và linh hoạt; tổ chức, nhấn mạnh và liên kết ý rất hiệu quả.",
-                    "Tổ chức diễn ngôn phức tạp hoàn toàn mạch lạc, linh hoạt điều chỉnh cấu trúc và sắc thái theo mục đích giao tiếp."
+                    // Trục phân biệt: người nghe có phải TỰ NỐI ý hộ không. Bậc 1-2 phải tự nối,
+                    // bậc 3 nối sẵn bằng từ nối cơ bản, bậc 4+ ý tự dẫn nhau kể cả khi bỏ từ nối.
+                    //
+                    // Xét TOÀN BÀI theo trình tự, không xét từng câu lẻ -- một bài gồm năm câu đều
+                    // hay nhưng không liên quan nhau vẫn là mạch lạc kém.
+                    "Chỉ nêu được thông tin rời rạc, gần như không có liên kết. Người nghe phải TỰ "
+                        + "SUY ra quan hệ giữa các ý, và bài thường chưa trả lời đúng thứ câu hỏi "
+                        + "yêu cầu.",
+                    "Trả lời được phần chính bằng các ý đơn giản, sắp xếp tuyến tính theo thứ tự "
+                        + "nghĩ ra. Chỉ dùng từ nối cơ bản (and, but, so); các ý đứng cạnh nhau chứ "
+                        + "chưa đỡ lẫn nhau.",
+                    "Đúng trọng tâm câu hỏi và phát triển được ý chính kèm MỘT SỐ chi tiết đỡ (lý "
+                        + "do hoặc ví dụ). Liên kết nhìn chung rõ nhờ từ nối; đôi chỗ chuyển ý còn "
+                        + "đột ngột nhưng không làm mất mạch.",
+                    "Phát triển ý đầy đủ, có mở - thân - kết nhận ra được. Dùng đa dạng phương tiện "
+                        + "liên kết (từ nối, đại từ thay thế, lặp có chủ đích) và mỗi ý đều có bằng "
+                        + "chứng hoặc ví dụ đi kèm.",
+                    "Lập luận sâu và linh hoạt: biết nêu ý phản biện rồi bác lại, biết nhấn ý quan "
+                        + "trọng bằng vị trí và cách diễn đạt. Mạch chặt tới mức bỏ bớt từ nối vẫn "
+                        + "theo được.",
+                    "Tổ chức diễn ngôn phức tạp hoàn toàn mạch lạc. Điều chỉnh cấu trúc và sắc thái "
+                        + "theo MỤC ĐÍCH giao tiếp (thuyết phục, so sánh, nhượng bộ); chuyển chủ đề "
+                        + "và quay lại ý cũ mà người nghe không mất dấu."
                 ),
                 "I support school clubs for two reasons. First, they build teamwork. Second, they help students discover their strengths.",
                 "Câu trả lời có quan điểm, hai lý do tách biệt và phương tiện liên kết rõ ràng."

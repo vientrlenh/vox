@@ -14,7 +14,6 @@ import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -25,7 +24,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
     private final RubricRepository rubricRepository;
     private final FrameworkRepository frameworkRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
-    private final RubricCriterionRepository rubricCriterionRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
 
@@ -34,14 +32,12 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
             RubricRepository rubricRepository,
             FrameworkRepository frameworkRepository,
             AssessmentPolicyRepository assessmentPolicyRepository,
-            RubricCriterionRepository rubricCriterionRepository,
             UserRepository userRepository,
             UserContextPort userContextPort) {
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.frameworkRepository = frameworkRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
     }
@@ -96,8 +92,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
                 throw new IllegalStateException("Không thể ban hành Rubric này vì vẫn còn Assessment Policy liên kết chưa ở trạng thái PUBLISHED.");
             }
 
-            validateCriteriaMatchScoringScale(version);
-
             // ĐÃ BỎ LỆNH SAVE RUBRIC DƯ THỪA Ở ĐÂY VÌ MODEL KHÔNG CÒN CURRENTVERSIONID
 
         } else if (command.status() == RubricStatus.ARCHIVED) {
@@ -114,62 +108,5 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
 
         rubricVersionRepository.save(version);
         return version.getId();
-    }
-
-    /**
-     * Chặn ban hành rubric mà phép chấm không thể cho ra điểm có nghĩa.
-     *
-     * <p>Hai ràng buộc, áp cho CẢ HAI phương pháp tính điểm câu:
-     *
-     * <ul>
-     *   <li>Tổng trọng số bằng 1 -- {@code SUM} nhân trọng số ({@code Σ(điểm × trọng số)}) nên
-     *       tổng khác 1 đẩy điểm ra ngoài thang; {@code WEIGHTED_AVERAGE} không dùng trọng số để
-     *       tính nhưng vẫn hiển thị tỉ trọng cho người chấm đọc, để tổng lệch là rubric nói dối
-     *       về chính nó.
-     *   <li>Mỗi tiêu chí phủ ĐÚNG thang -- tiêu chí hẹp hơn thang thì học sinh làm tối đa vẫn
-     *       không chạm được trần; rộng hơn thang thì điểm vọt lên rồi bị kẹp.
-     * </ul>
-     *
-     * <p>Bản sao có chủ đích của {@code ChangeSchoolRubricVersionStatusUseCase}. Trước 2026-08-13
-     * chỉ đường của TRƯỜNG có cổng này, còn rubric HỆ THỐNG ban hành thẳng không kiểm gì -- mà
-     * rubric hệ thống là mẫu dùng chung cho mọi trường, nên một cấu hình sai ở đây lan rộng hơn
-     * hẳn. Hậu quả đo được: {@code Σweight = 1.5} trên thang 0-10 cho điểm câu 15, bị kẹp còn 10,
-     * mọi bài khá trở lên đều 10/10 mà không có lỗi nào được ném ra.
-     */
-    private void validateCriteriaMatchScoringScale(RubricVersion version) {
-        var criteria = rubricCriterionRepository.findByRubricVersionId(version.getId());
-        if (criteria.isEmpty()) {
-            throw new IllegalStateException(
-                    "Không thể ban hành: phiên bản Rubric này chưa có tiêu chí nào.");
-        }
-
-        var weightSum = criteria.stream()
-                .map(criterion -> criterion.getWeight())
-                .filter(java.util.Objects::nonNull)
-                .reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
-        if (weightSum.compareTo(BigDecimal.ONE) != 0) {
-            throw new IllegalStateException(String.format(
-                    "Không thể ban hành: tổng trọng số của %d tiêu chí phải bằng 1, hiện đang là %s.",
-                    criteria.size(), weightSum.toPlainString()));
-        }
-
-        var mismatched = criteria.stream()
-                .filter(criterion -> criterion.getMinScore() == null
-                        || criterion.getMaxScore() == null
-                        || criterion.getMinScore().compareTo(version.getScoringScaleMin()) != 0
-                        || criterion.getMaxScore().compareTo(version.getScoringScaleMax()) != 0)
-                .findFirst()
-                .orElse(null);
-        if (mismatched != null) {
-            throw new IllegalStateException(String.format(
-                    "Không thể ban hành: tiêu chí \"%s\" có khoảng điểm %s - %s, trong khi thang"
-                            + " của phiên bản là %s - %s. Mỗi tiêu chí phải chấm trên đúng thang;"
-                            + " muốn phân bổ tỉ trọng thì dùng cột trọng số.",
-                    mismatched.getName(),
-                    mismatched.getMinScore() == null ? "?" : mismatched.getMinScore().toPlainString(),
-                    mismatched.getMaxScore() == null ? "?" : mismatched.getMaxScore().toPlainString(),
-                    version.getScoringScaleMin().toPlainString(),
-                    version.getScoringScaleMax().toPlainString()));
-        }
     }
 }

@@ -65,31 +65,18 @@ public final class RubricItemScoreFormula {
         }
 
         BigDecimal resolved;
-        if (method == RubricTotalScoreMethod.SUM && weightSum.compareTo(BigDecimal.ZERO) > 0) {
-            // SUM = TỔNG CÓ TRỌNG SỐ (đổi 2026-08-13). Mỗi tiêu chí chấm trên CẢ THANG rồi nhân
-            // trọng số của nó: 5 tiêu chí thang 0-10 trọng số 0.2 -> 10x0.2x5 = 10, vừa đúng thang.
-            //
-            // Bản cũ cộng thẳng và BỎ QUA trọng số, nên muốn vừa thang phải khai mỗi tiêu chí
-            // 0-2. Cách đó có hai cái giá: giáo viên phải nghĩ "câu này mấy trên 2" thay vì trên
-            // thang quen thuộc, và cột trọng số vẫn bắt buộc nhập nhưng không ai đọc -- rubric
-            // hiện "20%" trong khi chấm theo tỉ lệ khác hẳn mà không gì phát hiện được.
-            //
-            // Điều kiện để không vượt thang là Σweight = 1, ép lúc PUBLISH rubric.
-            resolved = weightedSum;
-        } else if (method == RubricTotalScoreMethod.SUM) {
-            // SUM mà không tiêu chí nào khai trọng số -> lùi về tổng thẳng như bản cũ, để rubric
-            // cũ chấm lại vẫn ra đúng con số cũ thay vì đổi lặng lẽ.
+        if (method == RubricTotalScoreMethod.SUM) {
+            // SUM nghĩa là "cộng các phần điểm thành phần": mỗi tiêu chí chiếm một lát của thang
+            // (VD thang 10 = 2+2+2+2+2), nên trọng số KHÔNG tham gia -- lát điểm đã chính là
+            // trọng số rồi. Điều kiện để phép cộng này nằm trong thang là tổng max của các tiêu
+            // chí bằng đúng trần thang; ràng buộc đó được ép lúc PUBLISH rubric
+            // (ChangeSchoolRubricVersionStatusUseCase), không kiểm lại ở đây.
             resolved = plainSum;
+        } else if (weightSum.compareTo(BigDecimal.ZERO) > 0) {
+            resolved = weightedSum.divide(weightSum, 2, RoundingMode.HALF_UP);
         } else {
-            // WEIGHTED_AVERAGE = TRUNG BÌNH CỘNG các điểm tiêu chí, KHÔNG nhân trọng số.
-            //
-            // Tên gọi dễ gây hiểu nhầm, nhưng đây là ngữ nghĩa nhà trường dùng: mỗi tiêu chí chấm
-            // trên cả thang rồi lấy trung bình, ai cũng đọc ra ngay. Muốn phân bổ tỉ trọng khác
-            // nhau giữa các tiêu chí thì dùng SUM -- đó đúng là chỗ trọng số có tác dụng.
-            //
-            // Hai phương pháp TRÙNG kết quả khi mọi trọng số bằng nhau (0.2 x 5 = trung bình), và
-            // chỉ tách ra khi trọng số lệch: 0.5/0.2/0.1/0.1/0.1 với điểm 10/10/10/10/6 cho
-            // SUM = 9.6 còn WEIGHTED_AVERAGE = 9.2.
+            // Không tiêu chí nào khai trọng số -> trung bình cộng. Lưới an toàn cho dữ liệu cũ
+            // có trước khi có ràng buộc lúc publish; vẫn cho ra điểm nằm trong thang.
             resolved = plainSum.divide(BigDecimal.valueOf(scored.size()), 2, RoundingMode.HALF_UP);
         }
         return clampToScale(resolved, scaleMin, scaleMax);

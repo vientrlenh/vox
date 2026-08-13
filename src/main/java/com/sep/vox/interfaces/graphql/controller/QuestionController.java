@@ -13,11 +13,14 @@ import org.springframework.stereotype.Controller;
 import graphql.schema.DataFetchingEnvironment;
 
 import com.sep.vox.application.port.input.query.ViewQuestionDetailsQuery;
+import com.sep.vox.application.port.input.query.ViewQuestionStatusCountsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionsQuery;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.question.ViewQuestionStatusCountsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForExamPaperUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.dto.QuestionStatusCountInfo;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.dto.QuestionBankDto;
@@ -37,17 +40,40 @@ public class QuestionController {
     private final ViewQuestionsUseCase viewQuestionsUseCase;
     private final ViewQuestionsForExamPaperUseCase viewQuestionsForExamPaperUseCase;
     private final ViewQuestionDetailsUseCase viewQuestionDetailsUseCase;
+    private final ViewQuestionStatusCountsUseCase viewQuestionStatusCountsUseCase;
     private final UserContextPort userContextPort;
 
     public QuestionController(
             ViewQuestionsUseCase viewQuestionsUseCase,
             ViewQuestionsForExamPaperUseCase viewQuestionsForExamPaperUseCase,
             ViewQuestionDetailsUseCase viewQuestionDetailsUseCase,
+            ViewQuestionStatusCountsUseCase viewQuestionStatusCountsUseCase,
             UserContextPort userContextPort) {
         this.viewQuestionsUseCase = viewQuestionsUseCase;
         this.viewQuestionsForExamPaperUseCase = viewQuestionsForExamPaperUseCase;
         this.viewQuestionDetailsUseCase = viewQuestionDetailsUseCase;
+        this.viewQuestionStatusCountsUseCase = viewQuestionStatusCountsUseCase;
         this.userContextPort = userContextPort;
+    }
+
+    @QueryMapping(name = "questionStatusCounts")
+    public List<QuestionStatusCountInfo> questionStatusCounts(
+            @Argument(name = "questionBankId") UUID questionBankId,
+            @Argument(name = "questionTopicId") UUID questionTopicId,
+            @Argument(name = "topicName") String topicName,
+            @Argument(name = "type") QuestionType type,
+            @Argument(name = "sharing") QuestionSharing sharing,
+            @Argument(name = "scope") String scope,
+            @Argument(name = "keyword") String keyword) {
+        return viewQuestionStatusCountsUseCase.execute(new ViewQuestionStatusCountsQuery(
+            questionBankId,
+            questionTopicId,
+            topicName,
+            type,
+            sharing,
+            scope,
+            keyword
+        ));
     }
 
     @QueryMapping(name = "questions")

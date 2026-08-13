@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateSystemQuestionBankRequest(
-    
+
     @NotNull(message = "ID ngôn ngữ không được để trống")
     UUID languageId,
 

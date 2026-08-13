@@ -156,6 +156,10 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
                 result.responseId(),
                 turn.getQuestionId()
             ));
+            // Đóng dấu ở CẢ đường này, không riêng đường xả chấm: cột grading_requested_at phải
+            // đúng nghĩa "đã hỏi chấm lúc nào" cho mọi câu, nếu không nó nói dối về đa số dữ
+            // liệu -- phần lớn câu đi qua đây chứ không qua flush.
+            practiceItemResponseRepository.markGradingRequested(result.responseId(), Instant.now());
         }
         return PracticeSessionResponseMapper.toResponse(result);
     }

@@ -19,6 +19,7 @@ import com.sep.vox.domain.repository.LearnerProfileRepository;
 import com.sep.vox.domain.repository.PracticeTopicRepository;
 import com.sep.vox.domain.repository.TopicInterestEventRepository;
 import com.sep.vox.domain.repository.TopicInterestScoreRepository;
+import com.sep.vox.domain.service.personalization.SessionDiagnosisPolicy;
 
 /**
  * Tính vector sở thích chủ đề (EMA theo topic) và vector sở thích theo dimension.
@@ -66,36 +67,19 @@ public class InterestVectorService {
             String origin,
             String diagnosis,
             boolean completed,
+            int spokenSeconds,
             List<UUID> offeredTopicIds,
             List<UUID> previousOfferedTopicIds) {
         if (!completed && !"BORED".equals(diagnosis)) {
             return;
         }
-        // EPSILON xếp CÙNG NHÓM với EXPLORATION, không rơi vào default nữa (sửa 2026-08-06).
+        // MỘT đường thẳng nối "bỏ dở" (0 giây nói) tới "trọn buổi", thay cho hai mức rời
+        // nhau ngăn bởi vách đứng ở đúng 1 giây -- xem SessionDiagnosisPolicy.signal.
         //
-        // Trước đây EPSILON không có case nên nhận 0.95 -- y hệt học sinh tự chọn. Đúng cái
-        // "dương giả" mà chú thích ở BuildPracticePaperUseCase.resolveOrigin nói là đã tránh
-        // được; thực ra nhận diện xong rồi vẫn tính 0.95, nên vế đó của chú thích sai.
-        //
-        // Vì sao cùng nhóm: cả hai đều là HỆ THỐNG đưa chủ đề tới, không phải bằng chứng học
-        // sinh vốn thích nó. Và với ε-greedy thì đây là điều kiện để phép đo có nghĩa -- cả
-        // điểm của slot thăm dò bằng điểm của slot khai thác thì chính thứ mà thăm dò sinh ra
-        // để đo lại bị nhiễu bởi ưu thế của lựa chọn có sẵn.
-        //
-        // Chấp nhận đánh đổi: chủ đề chỉ từng vào phiên qua đường thăm dò thì lần đầu tối đa
-        // chỉ được 0.60, thấp hơn chủ đề tự chọn. Muốn lên cao hơn phải được học sinh CHỦ ĐỘNG
-        // chọn ở lần sau -- đúng thứ ta muốn coi là bằng chứng thật.
-        var signal = completed
-            ? switch (origin) {
-                case "KEYWORD" -> 1.00;
-                case "EXPLORATION", "RANDOM", "EPSILON" -> 0.60;
-                default -> 0.95;
-            }
-            : switch (origin) {
-                case "KEYWORD" -> 0.20;
-                case "EXPLORATION", "RANDOM", "EPSILON" -> 0.10;
-                default -> 0.15;
-            };
+        // Nhánh bỏ dở luôn có spokenSeconds == 0 (ABANDONED <=> gradedSeconds == 0) nên nó tự
+        // rơi vào đầu dưới của cùng công thức; không cần rẽ nhánh riêng, và nhờ vậy hai đầu
+        // không thể trôi lệch nhau khi sau này chỉnh bảng giá trị.
+        var signal = SessionDiagnosisPolicy.signal(origin, spokenSeconds);
         appendInterestEvent(studentId, topicId, sessionId, "SESSION_OUTCOME", signal);
         var alreadyRecorded = new HashSet<UUID>();
         alreadyRecorded.add(topicId);

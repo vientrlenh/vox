@@ -170,6 +170,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             input.deliveryMode() == null ? null : StringNormalization.normalizeCode(input.deliveryMode()),
             input.requiresOtp(),
             input.schoolRoomId()
+,
+            input.aiConfidenceThresholdPercent()
         );
     }
 
@@ -187,7 +189,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             command.requiredStreamTypes(), command.streamTypePermission());
         // Bài trên lớp không gắn blueprint lúc tạo: giáo viên chọn cách soạn từng mã đề ở trang chi
         // tiết. Nếu sau đó muốn dùng blueprint dùng chung thì gắn qua ChangeClassTestBlueprintUseCase.
-        return examRepository.save(new Exam(
+        var classTest = new Exam(
             null,
             null,
             code,
@@ -216,7 +218,11 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             now,
             currentUserId,
             currentUserId
-        ));
+        );
+        // Gán qua setter: constructor Exam đã rất dài và có nhiều biến thể, thêm tham số vào là
+        // phải sửa mọi nơi gọi chỉ để mang một trường tuỳ chọn.
+        classTest.setAiConfidenceThresholdPercent(command.aiConfidenceThresholdPercent());
+        return examRepository.save(classTest);
     }
 
     /**

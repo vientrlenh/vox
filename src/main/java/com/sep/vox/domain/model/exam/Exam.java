@@ -1,5 +1,6 @@
 package com.sep.vox.domain.model.exam;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
@@ -29,6 +30,15 @@ public class Exam {
     private Instant closeAt;
     private UUID assessmentPolicyId;
     private boolean requiresOtp;
+
+    /**
+     * Ngưỡng tin cậy AI do nhà trường đặt cho bài này (0.00-1.00).
+     *
+     * <p>Bản chấm có {@code overall_confidence} THẤP HƠN ngưỡng sẽ bị đưa sang PENDING_REVIEW
+     * thay vì tự công bố. NULL = nhà trường không đặt ngưỡng, chỉ luật cứng trong
+     * {@code ConfidenceReviewCalculator} quyết định như trước.
+     */
+    private BigDecimal aiConfidenceThresholdPercent;
     private Instant createdAt;
     private Instant updatedAt;
     private UUID createdBy;
@@ -328,5 +338,12 @@ public class Exam {
         }
 
 
+    
+    public java.math.BigDecimal getAiConfidenceThresholdPercent() {
+        return aiConfidenceThresholdPercent;
     }
 
+    public void setAiConfidenceThresholdPercent(java.math.BigDecimal aiConfidenceThresholdPercent) {
+        this.aiConfidenceThresholdPercent = aiConfidenceThresholdPercent;
+    }
+}

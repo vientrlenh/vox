@@ -13,6 +13,7 @@ public record PracticeSessionDto(
     Double overallScore,
     int gradedSeconds,
     String startedAt,
-    String endedAt
+    String endedAt,
+    int pendingEvaluations
 ) {
 }

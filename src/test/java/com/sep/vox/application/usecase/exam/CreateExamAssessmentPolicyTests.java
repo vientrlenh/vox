@@ -184,6 +184,7 @@ class CreateExamAssessmentPolicyTests {
             null,
             null,
             null,
+            null,
             null
         );
     }

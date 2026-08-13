@@ -1,7 +1,11 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
+import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.personalization.PracticeGradingStatus;
+
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -34,6 +38,41 @@ public class PracticeItemResponseJpaEntity {
     /** Chuỗi follow-up của câu này đã kết thúc chưa -- xem V14 để biết vì sao phải lưu. */
     @Column(name = "question_complete", nullable = false)
     private boolean questionComplete;
+
+    /**
+     * Vòng đời chấm -- giá trị theo {@link com.sep.vox.domain.model.personalization.PracticeGradingStatus}.
+     *
+     * <p>Để String kèm {@code @CheckConstraint} chứ không {@code @Enumerated}, bám đúng khuôn
+     * {@code ExamSessionJpaEntity.status}: ràng buộc nằm ở DB nên dữ liệu rác không vào được kể
+     * cả khi ai đó sửa tay, còn enum lo phần an toàn kiểu ở tầng ứng dụng.
+     */
+    @Column(name = "grading_status", nullable = false, length = 16, check = {
+        @CheckConstraint(
+            name = "chk_practice_item_response_grading_status",
+            constraint = "grading_status IN ('PENDING', 'GRADING', 'GRADED', 'GRADING_FAILED')"
+        )
+    })
+    // KHỞI TẠO NGAY TẠI ĐÂY, không dựa vào DEFAULT của Postgres.
+    //
+    // V21 khai cột là NOT NULL DEFAULT 'PENDING', nhưng DEFAULT chỉ áp dụng khi câu INSERT KHÔNG
+    // nhắc tới cột. Cột đã được ánh xạ lên entity thì Hibernate luôn đưa nó vào INSERT với giá trị
+    // Java -- constructor không gán thì đó là null, và Postgres từ chối.
+    //
+    // Đo trên production 2026-08-13: mọi POST /internal/practice-sessions/{id}/turns trả 500, ba
+    // lần thử đều hỏng, agents đóng kết nối -- học sinh đang luyện bị văng ra giữa chừng và phiên
+    // bị ghi ABANDONED/TOO_HARD dù em ấy có nói.
+    private String gradingStatus = PracticeGradingStatus.PENDING.name();
+
+    /**
+     * Lúc gửi yêu cầu chấm gần nhất. Đi CẶP với {@link #gradingStatus}: trạng thái nói đang ở
+     * đâu, mốc này nói đã ở đó bao lâu -- thiếu nó thì GRADING treo vĩnh viễn không ai cứu.
+     */
+    @Column(name = "grading_requested_at")
+    private Instant gradingRequestedAt;
+
+    /** Số lần đã gửi yêu cầu chấm. Trần ở {@code PracticeGradingFlushService.MAX_GRADING_ATTEMPTS}. */
+    @Column(name = "grading_attempts", nullable = false)
+    private int gradingAttempts;
 
     protected PracticeItemResponseJpaEntity() {
     }
@@ -87,5 +126,17 @@ public class PracticeItemResponseJpaEntity {
 
     public void setQuestionComplete(boolean questionComplete) {
         this.questionComplete = questionComplete;
+    }
+
+    public String getGradingStatus() {
+        return gradingStatus;
+    }
+
+    public Instant getGradingRequestedAt() {
+        return gradingRequestedAt;
+    }
+
+    public int getGradingAttempts() {
+        return gradingAttempts;
     }
 }

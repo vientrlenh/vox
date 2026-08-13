@@ -19,7 +19,8 @@ public final class PracticeSessionResponses {
             Double overallScore,
             int gradedSeconds,
             String startedAt,
-            String endedAt) {
+            String endedAt,
+            int pendingEvaluations) {
     }
 
     public record TurnCorrection(
@@ -80,6 +81,7 @@ public final class PracticeSessionResponses {
             List<CriterionScore> criterionScores,
             boolean completed,
             int pendingEvaluationCount,
+            int gradingGaveUpCount,
             Double difficultyRank,
             List<TeacherPracticeTurnView> turns,
             /** Thang chấm của CHÍNH phiên này -- 0-100 từ V13, thang rubric với phiên cũ. */

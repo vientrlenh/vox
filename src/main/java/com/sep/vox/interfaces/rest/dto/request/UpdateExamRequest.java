@@ -1,10 +1,15 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.math.BigDecimal;
+
 import java.util.List;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 
 public record UpdateExamRequest(
@@ -33,6 +38,15 @@ public record UpdateExamRequest(
      */
     List<String> requiredStreamTypes,
 
-    String streamTypePermission
+    String streamTypePermission,
+
+    /**
+     * Ngưỡng tin cậy AI theo PHẦN TRĂM (0-100). Bỏ trống = GIỮ NGUYÊN giá trị đang có, giống mọi
+     * trường khác của lệnh cập nhật -- nên hiện chưa có cách xoá ngưỡng đã đặt về lại "không đặt".
+     */
+    @DecimalMin(value = "0.0", message = "Ngưỡng tin cậy phải từ 0 đến 100")
+    @DecimalMax(value = "100.0", message = "Ngưỡng tin cậy phải từ 0 đến 100")
+    @Digits(integer = 3, fraction = 2, message = "Ngưỡng tin cậy tối đa 2 chữ số thập phân")
+    BigDecimal aiConfidenceThresholdPercent
 ) {
 }

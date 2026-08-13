@@ -1,6 +1,6 @@
 name: CD Test
 
-# Bản CD riêng cho nhánh test hiện tại (TestDeploy2) -- tách khỏi cd.yml (nhánh
+# Bản CD riêng cho nhánh test hiện tại (fixBugDeploy) -- tách khỏi cd.yml (nhánh
 # `default`) để không đụng tới pipeline chính. Trigger thẳng trên push, không
 # qua workflow_run như cd.yml -- workflow_run chỉ fire khi chính file workflow
 # đã tồn tại trên nhánh mặc định của repo (xem comment trong cd.yml), bất tiện
@@ -10,7 +10,7 @@ name: CD Test
 on:
   push:
     branches:
-      - TestDeploy2
+      - fixBugDeploy
 
 jobs:
   docker-build-push:

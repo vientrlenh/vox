@@ -198,6 +198,8 @@ type Exam {
     closeAt: String
     assessmentPolicyId: ID
     requiresOtp: Boolean!
+    """Ngưỡng tin cậy AI (phần trăm 0-100). null = không đặt, hệ thống dùng luật cứng."""
+    aiConfidenceThresholdPercent: Float
     requiredStreamType: ExamRequiredStreamType
     streamTypePermission: ExamStreamTypePermission
     papersLocked: Boolean

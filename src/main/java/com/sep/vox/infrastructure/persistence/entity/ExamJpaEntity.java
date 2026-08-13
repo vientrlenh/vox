@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.entity;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.math.BigDecimal;
 
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
@@ -135,6 +136,16 @@ public class ExamJpaEntity {
 
     @Column(name = "requires_otp", nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT true")
     private boolean requiresOtp;
+
+    /**
+     * Ngưỡng tin cậy AI do nhà trường đặt cho bài này, đơn vị PHẦN TRĂM (0-100).
+     *
+     * <p>{@code overall_confidence} là tỉ lệ 0-1 nên phải NHÂN 100 trước khi so. Bản chấm thấp hơn ngưỡng sẽ bị đưa sang PENDING_REVIEW
+     * thay vì tự công bố. NULL = nhà trường không đặt ngưỡng, chỉ luật cứng trong
+     * {@code ConfidenceReviewCalculator} quyết định như trước.
+     */
+    @Column(name = "ai_confidence_threshold_percent", precision = 5, scale = 2)
+    private BigDecimal aiConfidenceThresholdPercent;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -373,4 +384,12 @@ public class ExamJpaEntity {
     }
 
     
+
+    public java.math.BigDecimal getAiConfidenceThresholdPercent() {
+        return aiConfidenceThresholdPercent;
+    }
+
+    public void setAiConfidenceThresholdPercent(java.math.BigDecimal aiConfidenceThresholdPercent) {
+        this.aiConfidenceThresholdPercent = aiConfidenceThresholdPercent;
+    }
 }

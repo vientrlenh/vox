@@ -13,6 +13,7 @@ public record TeacherPracticeSessionDetailDto(
     List<PracticeCriterionScoreDto> criterionScores,
     boolean completed,
     int pendingEvaluationCount,
+    int gradingGaveUpCount,
     Double difficultyRank,
     List<TeacherPracticeTurnViewDto> turns,
     double scoreScaleMin,

@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.InstantParser;
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -170,6 +170,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             input.deliveryMode() == null ? null : StringNormalization.normalizeCode(input.deliveryMode()),
             input.requiresOtp(),
             input.schoolRoomId()
+,
+            input.aiConfidenceThresholdPercent()
         );
     }
 
@@ -179,15 +181,15 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             UUID currentUserId,
             Instant now) {
         var code = "CT-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
-        var openAt = parseOpenAt(command.openAt());
-        var closeAt = parseCloseAt(command.closeAt());
+        var openAt = DateMapper.toInstant(command.openAt());
+        var closeAt = DateMapper.toInstant(command.closeAt());
         Integer requestedMaxAttempt = command.maxAttempt();
         int maxAttempt = requestedMaxAttempt == null ? 1 : requestedMaxAttempt;
         var streamConfig = examStreamConfigResolver.resolve(
             command.requiredStreamTypes(), command.streamTypePermission());
         // Bài trên lớp không gắn blueprint lúc tạo: giáo viên chọn cách soạn từng mã đề ở trang chi
         // tiết. Nếu sau đó muốn dùng blueprint dùng chung thì gắn qua ChangeClassTestBlueprintUseCase.
-        return examRepository.save(new Exam(
+        var classTest = new Exam(
             null,
             null,
             code,
@@ -216,7 +218,11 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             now,
             currentUserId,
             currentUserId
-        ));
+        );
+        // Gán qua setter: constructor Exam đã rất dài và có nhiều biến thể, thêm tham số vào là
+        // phải sửa mọi nơi gọi chỉ để mang một trường tuỳ chọn.
+        classTest.setAiConfidenceThresholdPercent(command.aiConfidenceThresholdPercent());
+        return examRepository.save(classTest);
     }
 
     /**
@@ -278,21 +284,13 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     }
 
     private void validateOpenClose(String openAt, String closeAt) {
-        var open = parseOpenAt(openAt);
-        var close = parseCloseAt(closeAt);
+        var open = DateMapper.toInstant(openAt);
+        var close = DateMapper.toInstant(closeAt);
         if (open == null || close == null) {
             throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
         }
         if (!open.isBefore(close)) {
             throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
-    }
-
-    private Instant parseOpenAt(String value) {
-        return InstantParser.parseOrNull(value, "Thời gian mở bài");
-    }
-
-    private Instant parseCloseAt(String value) {
-        return InstantParser.parseOrNull(value, "Thời gian đóng bài");
     }
 }

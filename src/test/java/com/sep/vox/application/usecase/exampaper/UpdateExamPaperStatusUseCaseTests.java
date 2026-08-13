@@ -3,6 +3,7 @@ package com.sep.vox.application.usecase.exampaper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.UpdateExamPaperStatusCommand;
 import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessService;
+import com.sep.vox.application.port.input.service.ExamPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -31,6 +33,8 @@ import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
@@ -58,6 +62,8 @@ class UpdateExamPaperStatusUseCaseTests {
     private ExamMemberRepository examMemberRepository;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
+    private ExamCandidateRepository examCandidateRepository;
+    private ExamPaperAutoAssigner examPaperAutoAssigner;
     private UpdateExamPaperStatusUseCase useCase;
 
     @BeforeEach
@@ -70,13 +76,18 @@ class UpdateExamPaperStatusUseCaseTests {
         var examRepository = mock(ExamRepository.class);
         var userContextPort = mock(UserContextPort.class);
 
+        examCandidateRepository = mock(ExamCandidateRepository.class);
+        examPaperAutoAssigner = mock(ExamPaperAutoAssigner.class);
+
         useCase = new UpdateExamPaperStatusUseCase(
             examPaperRepository,
             examPaperItemRepository,
             examRepository,
+            examCandidateRepository,
             new ExamPaperAuthoringAccessService(
                 examMemberRepository, schoolUserRepository, userRoleQueryRepository),
             mock(ExamTimeQuotaGuardService.class),
+            examPaperAutoAssigner,
             userContextPort
         );
 
@@ -129,6 +140,58 @@ class UpdateExamPaperStatusUseCaseTests {
         var result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "REOPEN", null));
 
         assertThat(result.status()).isEqualTo(ExamPaperStatus.DRAFT.name());
+    }
+
+    // --- Khoá mã đề cuối cùng là lúc phân đề tự động chạy được ---
+
+    /**
+     * Xếp thí sinh vào ca thường làm trước khi mã đề được khoá, nên gán đề lúc đó không chạy. Khoá mã
+     * đề là thời điểm điều kiện vừa đủ -- gán bù ở đây, nếu không thí sinh kẹt "chưa có đề".
+     */
+    @Test
+    void should_backfill_papers_after_locking() {
+        givenPaper(ExamPaperStatus.DRAFT, CALLER_ID);
+
+        useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "LOCK", null));
+
+        verify(examPaperAutoAssigner).backfillExam(any(Exam.class), any(Instant.class), eq(CALLER_ID));
+    }
+
+    @Test
+    void should_not_backfill_papers_when_only_submitting_for_review() {
+        givenPaper(ExamPaperStatus.DRAFT, CALLER_ID);
+
+        useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "SUBMIT", null));
+
+        verify(examPaperAutoAssigner, never()).backfillExam(any(), any(), any());
+    }
+
+    /**
+     * Mở khoá là để sửa lại mã đề, mà thí sinh đang trỏ vào nó thì bài thi bị đổi dưới chân họ. Trả
+     * họ về "chưa phân đề" giống hệt lúc xoá mã đề (DeleteExamPaperUseCase); khoá lại thì được gán bù.
+     */
+    @Test
+    void should_unassign_candidates_when_reopening_a_locked_paper() {
+        givenPaper(ExamPaperStatus.LOCKED, CALLER_ID);
+        var candidate = new ExamCandidate();
+        candidate.setId(UUID.randomUUID());
+        candidate.setExamId(EXAM_ID);
+        candidate.setAssignedPaperId(PAPER_ID);
+        when(examCandidateRepository.findByAssignedPaperId(PAPER_ID)).thenReturn(List.of(candidate));
+
+        useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "REOPEN", null));
+
+        assertThat(candidate.getAssignedPaperId()).isNull();
+        verify(examCandidateRepository).saveAll(List.of(candidate));
+    }
+
+    @Test
+    void should_not_touch_candidates_when_reopen_is_rejected() {
+        givenPaper(ExamPaperStatus.DRAFT, CALLER_ID);
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "REOPEN", null)))
+            .isInstanceOf(IllegalStateException.class);
+        verify(examCandidateRepository, never()).saveAll(any());
     }
 
     // --- Đường đủ ba bước: mã đề do người khác soạn ---

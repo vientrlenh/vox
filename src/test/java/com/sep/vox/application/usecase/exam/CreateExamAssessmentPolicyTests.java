@@ -135,14 +135,15 @@ class CreateExamAssessmentPolicyTests {
     }
 
     /**
-     * {@code Instant.parse} ném DateTimeParseException — không phải IllegalArgumentException — nên
-     * trước đây lọt xuống handler chung và ra 500 thay vì 400.
+     * Các bộ parse của JDK ném DateTimeParseException — không phải IllegalArgumentException — nên nếu
+     * không đổi loại thì lọt xuống handler chung và ra 500 thay vì 400. {@code DateMapper.toInstant}
+     * chịu trách nhiệm đổi loại đó.
      */
     @Test
     void should_reject_malformed_open_at_with_bad_request() {
         assertThatThrownBy(() -> useCase.execute(command(null, "2026-08-10 08:00", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("không đúng định dạng thời gian");
+            .hasMessageContaining("Thời gian phải kèm múi giờ");
         verify(examRepository, never()).save(any());
     }
 
@@ -150,7 +151,7 @@ class CreateExamAssessmentPolicyTests {
     void should_reject_malformed_close_at_with_bad_request() {
         assertThatThrownBy(() -> useCase.execute(command(null, "2026-08-10T08:00:00Z", "hôm qua")))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("không đúng định dạng thời gian");
+            .hasMessageContaining("Thời gian phải kèm múi giờ");
         verify(examRepository, never()).save(any());
     }
 
@@ -179,6 +180,7 @@ class CreateExamAssessmentPolicyTests {
             assessmentPolicyId,
             1,
             600,
+            null,
             null,
             null,
             null,

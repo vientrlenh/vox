@@ -18,6 +18,12 @@ public record UpdateExamCommand(
     Boolean requiresOtp,
     /** null = giữ nguyên cấu hình giám sát; danh sách rỗng = tắt giám sát. */
     List<String> requiredStreamTypes,
-    String streamTypePermission
+    String streamTypePermission,
+
+    /**
+     * Ngưỡng tin cậy AI theo PHẦN TRĂM (0-100). null = giữ nguyên, đúng patch semantics như mọi
+     * trường khác trong lệnh này.
+     */
+    java.math.BigDecimal aiConfidenceThresholdPercent
 ) {
 }

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.port.input.service.PracticeGradingFlushService;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
 import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.TeacherPracticeSessionDetail;
@@ -85,6 +86,12 @@ public class PracticeSessionDetailAssemblyService {
             scores,
             "COMPLETED".equals(summary.getStatus()),
             practiceItemResponseRepository.countAwaitingEvaluation(sessionId),
+            // Số câu ĐÃ BỎ CUỘC. Tách khỏi "đang chờ" vì hai chuyện khác hẳn nhau: chờ thì rồi
+            // sẽ có, bỏ cuộc thì không bao giờ. Gộp làm một là bắt học sinh ngồi quay vòng chờ
+            // một kết quả sẽ không tới.
+            practiceItemResponseRepository.countGradingGaveUp(
+                sessionId, PracticeGradingFlushService.MAX_GRADING_ATTEMPTS
+            ),
             practiceItemResponseRepository.findAverageDifficultyRank(sessionId),
             turns,
             summary.getScoreScaleMin(),

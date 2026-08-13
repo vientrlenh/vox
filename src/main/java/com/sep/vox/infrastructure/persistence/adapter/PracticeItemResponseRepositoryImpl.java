@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.repository.PendingEvaluationResponse;
 import com.sep.vox.domain.repository.PracticeItemResponseRepository;
@@ -75,8 +76,32 @@ public class PracticeItemResponseRepositoryImpl implements PracticeItemResponseR
     }
 
     @Override
-    public List<PendingEvaluationResponse> findResponsesAwaitingFlush(UUID sessionId) {
-        return repository.findResponsesAwaitingFlush(sessionId);
+    public List<PendingEvaluationResponse> findResponsesAwaitingFlush(
+            UUID sessionId, Instant requestedBefore, int maxAttempts) {
+        return repository.findResponsesAwaitingFlush(sessionId, requestedBefore, maxAttempts);
+    }
+
+    @Override
+    @Transactional
+    public void markGradingRequested(UUID responseId, Instant requestedAt) {
+        repository.markGradingRequested(responseId, requestedAt);
+    }
+
+    @Override
+    @Transactional
+    public void markGraded(UUID responseId) {
+        repository.markGraded(responseId);
+    }
+
+    @Override
+    @Transactional
+    public void markGradingFailed(UUID responseId) {
+        repository.markGradingFailed(responseId);
+    }
+
+    @Override
+    public int countGradingGaveUp(UUID sessionId, int maxAttempts) {
+        return repository.countGradingGaveUp(sessionId, maxAttempts);
     }
 
     @Override

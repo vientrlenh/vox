@@ -24,7 +24,12 @@ public class PracticeInternalSecretFilter extends OncePerRequestFilter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PracticeInternalSecretFilter.class);
     private static final String SECRET_HEADER = "X-Internal-Secret";
-    private static final String PROTECTED_PREFIX = "/internal/practice-sessions/";
+    private static final String[] PROTECTED_PREFIXES = {
+        "/internal/practice-sessions/",
+        // Đường thi cũng chuyển sang cho Python tự upload audio của lượt, thay vì WPF upload rồi
+        // gọi POST /turns/archive. Cùng cơ chế bí mật dùng chung, vì bên gọi vẫn là Python.
+        "/internal/exam-turns/",
+    };
 
     private final String expectedSecret;
 
@@ -37,7 +42,15 @@ public class PracticeInternalSecretFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        if (!request.getRequestURI().startsWith(PROTECTED_PREFIX)) {
+        var uri = request.getRequestURI();
+        var protectedPath = false;
+        for (var prefix : PROTECTED_PREFIXES) {
+            if (uri.startsWith(prefix)) {
+                protectedPath = true;
+                break;
+            }
+        }
+        if (!protectedPath) {
             filterChain.doFilter(request, response);
             return;
         }

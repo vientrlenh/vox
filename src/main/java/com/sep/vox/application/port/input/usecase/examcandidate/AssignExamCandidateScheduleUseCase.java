@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
@@ -8,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AssignExamCandidateScheduleCommand;
-import com.sep.vox.application.port.input.service.ClassTestPaperAutoAssigner;
+import com.sep.vox.application.port.input.service.ExamPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.ExamScheduleManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.ExamCandidateDto;
@@ -29,16 +30,16 @@ public class AssignExamCandidateScheduleUseCase
     private final ExamRepository examRepository;
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamScheduleRepository examScheduleRepository;
-    private final ClassTestPaperAutoAssigner classTestPaperAutoAssigner;
+    private final ExamPaperAutoAssigner examPaperAutoAssigner;
     private final ExamScheduleManageAccessService examScheduleManageAccessService;
 
     public AssignExamCandidateScheduleUseCase(
             ExamRepository examRepository,
             ExamCandidateRepository examCandidateRepository,
             ExamScheduleRepository examScheduleRepository,
-            ClassTestPaperAutoAssigner classTestPaperAutoAssigner,
+            ExamPaperAutoAssigner examPaperAutoAssigner,
             ExamScheduleManageAccessService examScheduleManageAccessService) {
-        this.classTestPaperAutoAssigner = classTestPaperAutoAssigner;
+        this.examPaperAutoAssigner = examPaperAutoAssigner;
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examScheduleRepository = examScheduleRepository;
@@ -82,8 +83,9 @@ public class AssignExamCandidateScheduleUseCase
         }
 
         candidate.assignToSchedule(schedule.getId(), now, currentUserId);
-        // Bài kiểm tra trên lớp chỉ có một đề nên gán luôn, giáo viên không phải bấm thêm bước phân đề.
-        classTestPaperAutoAssigner.assignSinglePaperIfNeeded(exam, candidate, now, currentUserId);
+        // Gán đề mặc định luôn nếu mọi mã đề đã khoá, để không phải bấm thêm bước phân đề. Đề chưa
+        // khoá thì bỏ trống, ExamPaperAutoAssigner.backfillExam sẽ gán khi mã đề cuối cùng được khoá.
+        examPaperAutoAssigner.assignPapersIfNeeded(exam, List.of(candidate), now, currentUserId);
         return ExamCandidateDtoMapper.toDto(examCandidateRepository.save(candidate));
     }
 }

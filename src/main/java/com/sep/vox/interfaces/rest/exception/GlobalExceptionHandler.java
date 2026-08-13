@@ -68,8 +68,8 @@ public class GlobalExceptionHandler {
      * Lưới an toàn: {@code DateTimeParseException} kế thừa {@code DateTimeException}, KHÔNG phải
      * {@code IllegalArgumentException}, nên nếu không bắt riêng thì rơi xuống handler chung và client
      * nhận 500 dù lỗi hoàn toàn do dữ liệu gửi lên. Các use case nên parse qua
-     * {@code InstantParser} để có message tiếng Việt nói rõ trường nào sai; nhánh này chỉ đỡ những
-     * chỗ chưa chuyển.
+     * {@code DateMapper.toInstant} — hàm đó đã đổi sang {@code IllegalArgumentException} với message
+     * tiếng Việt; nhánh này chỉ đỡ những chỗ chưa chuyển.
      */
     @ExceptionHandler(DateTimeParseException.class)
     public ResponseEntity<ErrorResponse> handleDateTimeParse(DateTimeParseException e) {

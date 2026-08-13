@@ -75,7 +75,7 @@ class SchoolRoomImportCommitHandlerTests {
     }
 
     @Test
-    void should_create_room_inactive_by_default() {
+    void should_create_room_active_by_default() {
         var schoolId = UUID.randomUUID();
         var createdBy = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
@@ -88,7 +88,7 @@ class SchoolRoomImportCommitHandlerTests {
         handler.commit(session(sessionId, schoolId, createdBy), rows);
 
         verify(schoolRoomRepository).save(captor.capture());
-        assertThat(captor.getValue().isActive()).isFalse();
+        assertThat(captor.getValue().isActive()).isTrue();
         assertThat(captor.getValue().getName()).isEqualTo("Phòng 101");
     }
 
@@ -117,6 +117,31 @@ class SchoolRoomImportCommitHandlerTests {
         assertThat(existing.getDescription()).isEqualTo("Mô tả mới");
         assertThat(existing.getCreatedAt()).isEqualTo(createdAt);
         assertThat(existing.getUpdatedBy()).isEqualTo(createdBy);
+        verify(schoolRoomRepository).save(existing);
+    }
+
+    @Test
+    void should_reactivate_existing_inactive_room() {
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var createdAt = Instant.now().minus(5, ChronoUnit.DAYS);
+        var existing = new SchoolRoom(
+            UUID.randomUUID(), schoolId, "P101", "Phòng cũ", "Mô tả cũ", false,
+            createdAt, createdAt, createdBy, createdBy
+        );
+        var rows = List.of(row(sessionId, 1L, dataWithDescription("P101", "Phòng mới", "Mô tả mới")));
+
+        when(schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("P101"))).thenReturn(List.of(existing));
+        when(schoolRoomRepository.save(any(SchoolRoom.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ImportCommitResult result = handler.commit(sessionWithDescription(sessionId, schoolId, createdBy), rows);
+
+        assertThat(result.updated()).isEqualTo(1L);
+        assertThat(existing.isActive()).isTrue();
+        assertThat(existing.getName()).isEqualTo("Phòng mới");
+        assertThat(existing.getDescription()).isEqualTo("Mô tả mới");
+        assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
         verify(schoolRoomRepository).save(existing);
     }
 

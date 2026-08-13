@@ -12,6 +12,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamPaperStatusCommand;
 import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessService;
 import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessService.PaperActor;
+import com.sep.vox.application.port.input.service.ExamPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -21,6 +22,7 @@ import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
+import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -45,22 +47,28 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
     private final ExamPaperRepository examPaperRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final ExamRepository examRepository;
+    private final ExamCandidateRepository examCandidateRepository;
     private final ExamPaperAuthoringAccessService examPaperAuthoringAccessService;
     private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
+    private final ExamPaperAutoAssigner examPaperAutoAssigner;
     private final UserContextPort userContextPort;
 
     public UpdateExamPaperStatusUseCase(
             ExamPaperRepository examPaperRepository,
             ExamPaperItemRepository examPaperItemRepository,
             ExamRepository examRepository,
+            ExamCandidateRepository examCandidateRepository,
             ExamPaperAuthoringAccessService examPaperAuthoringAccessService,
             ExamTimeQuotaGuardService examTimeQuotaGuardService,
+            ExamPaperAutoAssigner examPaperAutoAssigner,
             UserContextPort userContextPort) {
         this.examPaperRepository = examPaperRepository;
         this.examPaperItemRepository = examPaperItemRepository;
         this.examRepository = examRepository;
+        this.examCandidateRepository = examCandidateRepository;
         this.examPaperAuthoringAccessService = examPaperAuthoringAccessService;
         this.examTimeQuotaGuardService = examTimeQuotaGuardService;
+        this.examPaperAutoAssigner = examPaperAutoAssigner;
         this.userContextPort = userContextPort;
     }
 
@@ -116,13 +124,37 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
                 // được chính mã đề của mình, nếu không họ tự khoá mình ra ngoài và mã đề kẹt vĩnh viễn.
                 requireCanDecide(actor);
                 requireTransition(paper, ExamPaperStatus.LOCKED, ExamPaperStatus.DRAFT);
+                unassignCandidatesOf(paper, currentUserId);
             }
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
 
-        paper.setUpdatedAt(Instant.now());
+        var now = Instant.now();
+        paper.setUpdatedAt(now);
         paper.setUpdatedBy(currentUserId);
-        return ExamPaperDtoMapper.toDto(examPaperRepository.save(paper));
+        var saved = examPaperRepository.save(paper);
+
+        // Gán bù SAU khi lưu: ExamPaperAutoAssigner đọc lại trạng thái mã đề để chốt "mọi mã đề đã
+        // LOCKED", nên trạng thái mới phải nằm trong DB trước đã.
+        if ("LOCK".equals(command.action())) {
+            examPaperAutoAssigner.backfillExam(exam, now, currentUserId);
+        }
+        return ExamPaperDtoMapper.toDto(saved);
+    }
+
+    /**
+     * Mở khoá là để sửa lại mã đề, mà thí sinh đang trỏ vào nó thì bài thi bị đổi dưới chân họ. Trả
+     * họ về "chưa phân đề" -- cùng cách xử lý với {@code DeleteExamPaperUseCase}. Khoá lại thì
+     * {@link ExamPaperAutoAssigner#backfillExam} gán bù, nên không ai kẹt vĩnh viễn.
+     */
+    private void unassignCandidatesOf(ExamPaper paper, UUID currentUserId) {
+        var affected = examCandidateRepository.findByAssignedPaperId(paper.getId());
+        if (affected.isEmpty()) {
+            return;
+        }
+        var now = Instant.now();
+        affected.forEach(candidate -> candidate.unassignPaper(now, currentUserId));
+        examCandidateRepository.saveAll(affected);
     }
 
     /**

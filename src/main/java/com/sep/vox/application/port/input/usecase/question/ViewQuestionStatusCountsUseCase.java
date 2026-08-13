@@ -89,7 +89,7 @@ public class ViewQuestionStatusCountsUseCase
      */
     private List<QuestionStatusCountInfo> fillMissingStatuses(List<QuestionStatusCountInfo> counted) {
         var countByStatus = counted.stream()
-            .collect(Collectors.toMap(QuestionStatusCountInfo::status, QuestionStatusCountInfo::count));
+            .collect(Collectors.toMap(info -> info.status(), info -> info.count()));
 
         return Arrays.stream(QuestionStatus.values())
             .map(status -> new QuestionStatusCountInfo(status, countByStatus.getOrDefault(status, 0L)))

@@ -93,6 +93,7 @@ public final class PracticeSessionResponseMapper {
             dto.criterionScores().stream().map(PracticeSessionResponseMapper::toResponse).toList(),
             dto.completed(),
             dto.pendingEvaluationCount(),
+            dto.gradingGaveUpCount(),
             dto.difficultyRank(),
             dto.turns().stream().map(PracticeSessionResponseMapper::toResponse).toList(),
             // Chuyển tiếp, KHÔNG tra gì: lớp này là static nên không tiêm repository được.

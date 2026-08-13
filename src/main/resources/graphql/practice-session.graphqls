@@ -65,6 +65,8 @@ type TeacherPracticeSessionDetail {
     completed: Boolean!
     "Số câu đã nói nhưng chưa có bản chấm. > 0 nghĩa là kết quả còn đang được tổng hợp -- màn tổng kết dựa vào đây để biết nên chờ hay nên hiện luôn."
     pendingEvaluationCount: Int!
+    """Số câu chấm hỏng và đã hết lượt thử -- sẽ KHÔNG BAO GIỜ có điểm, đừng chờ nữa."""
+    gradingGaveUpCount: Int!
     "Thang chấm của CHÍNH phiên này: 0-100 với phiên từ V13 (luyện tập không dùng rubric), hoặc thang của rubric đã áp với phiên cũ. Client phải đọc trường này thay vì viết cứng mẫu số -- hai loại phiên cùng tồn tại lâu dài."
     scoreScaleMin: Float!
     scoreScaleMax: Float!

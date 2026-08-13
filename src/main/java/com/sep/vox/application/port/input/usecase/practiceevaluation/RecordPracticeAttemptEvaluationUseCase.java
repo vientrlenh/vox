@@ -77,6 +77,10 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
             );
         }
 
+        // Cùng transaction với upsert bản chấm ở trên -- nên trạng thái và bản chấm KHÔNG THỂ
+        // lệch nhau. Nếu tách ra hai lượt ghi thì sẽ có lúc tồn tại dòng đã chấm mà vẫn mang
+        // nhãn GRADING, tức dữ liệu nói dối với bất kỳ ai đọc bảng.
+        responseRepository.markGraded(input.practiceResponseId());
         refreshSessionScore(input.practiceResponseId());
         return null;
     }

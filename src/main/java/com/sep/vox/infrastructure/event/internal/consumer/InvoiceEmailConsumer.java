@@ -203,7 +203,7 @@ public class InvoiceEmailConsumer {
             amountLabel, paidAtLabel, validUntilLabel);
     }
 
-    // Quota tính bằng USD chi phí AI (xem V15__quota_unit_to_usd.sql), hiển thị 2 chữ số thập phân.
+    // Quota tính bằng USD chi phí AI (xem V22__quota_unit_to_usd.sql), hiển thị 2 chữ số thập phân.
     private String buildItemsHtml(Map<QuotaType, BigDecimal> quantityByType) {
         var rows = new StringBuilder();
         for (var quotaType : QuotaType.values()) {

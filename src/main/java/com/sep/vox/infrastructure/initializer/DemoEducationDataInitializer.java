@@ -530,7 +530,8 @@ public class DemoEducationDataInitializer implements ApplicationRunner {
                 PlanStatus.ACTIVE,
                 1,
                 now,
-                createdBy
+                createdBy,
+                new BigDecimal("0.20")
             ));
             planQuotaRepository.save(new PlanQuota(
                 plan.getId(),

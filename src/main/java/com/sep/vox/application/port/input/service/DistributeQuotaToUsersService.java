@@ -37,7 +37,8 @@ public class DistributeQuotaToUsersService {
 
     private static final int MAX_ELIGIBLE_USERS_PAGE_SIZE = 10_000;
 
-    // Đơn vị nhỏ nhất theo đúng scale numeric(12,6) của cột quota (xem V15__quota_unit_to_usd.sql).
+    // Đơn vị nhỏ nhất theo đúng scale numeric(18,6) của cột quota (xem V22__quota_unit_to_usd.sql,
+    // precision nới lên ở V27__widen_quota_columns_precision.sql, scale 6 giữ nguyên).
     // Dùng để rải phần dư sau khi chia đều -- tương đương "1 giây" ở logic chia số nguyên cũ, giờ là
     // "1 phần triệu đô" để chia hết totalAllocated mà không làm tròn mất tiền.
     private static final BigDecimal SMALLEST_UNIT = new BigDecimal("0.000001");

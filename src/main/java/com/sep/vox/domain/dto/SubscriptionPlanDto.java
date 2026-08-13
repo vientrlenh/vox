@@ -18,6 +18,7 @@ public record SubscriptionPlanDto(
     String createdAt,
     UUID createdBy,
     UUID replacedByPlanId,
+    BigDecimal serviceFeeRatio,
     List<PlanQuotaDto> quotas
 ) {
 }

@@ -23,7 +23,7 @@ import com.sep.vox.domain.repository.AiUsageRecordRepository;
 /**
  * usageEventId là khoá idempotency do Agentic AI sinh cho từng usage-event -- Kafka có thể redeliver
  * cùng message khi retry/rebalance, nên use case phải bỏ qua thay vì ghi trùng (xem
- * uk_ai_usage_record_usage_event_id ở V14__ai_usage_record.sql).
+ * uk_ai_usage_record_usage_event_id ở V21__ai_usage_record.sql).
  */
 class RecordAiUsageUseCaseTests {
 

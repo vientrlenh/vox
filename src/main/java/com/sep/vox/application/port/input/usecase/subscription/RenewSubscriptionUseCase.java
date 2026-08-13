@@ -11,6 +11,8 @@ import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.RenewSubscriptionCommand;
+import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
@@ -18,6 +20,7 @@ import com.sep.vox.domain.mapper.SchoolSubscriptionDtoMapper;
 import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
 import com.sep.vox.domain.model.subscription.PaymentMethod;
+import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionQuota;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
@@ -36,6 +39,8 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
     private final SubscriptionQuotaRepository subscriptionQuotaRepository;
     private final FinancialEventRepository financialEventRepository;
     private final UserContextPort userContextPort;
+    private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
+    private final SchoolDebtNotificationService schoolDebtNotificationService;
 
     public RenewSubscriptionUseCase(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
@@ -43,13 +48,17 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
             PlanQuotaRepository planQuotaRepository,
             SubscriptionQuotaRepository subscriptionQuotaRepository,
             FinancialEventRepository financialEventRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService,
+            SchoolDebtNotificationService schoolDebtNotificationService) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.planQuotaRepository = planQuotaRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.financialEventRepository = financialEventRepository;
         this.userContextPort = userContextPort;
+        this.schoolSubscriptionDebtGuardService = schoolSubscriptionDebtGuardService;
+        this.schoolDebtNotificationService = schoolDebtNotificationService;
     }
 
     @Override
@@ -69,6 +78,12 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
         var now = Instant.now();
+
+        // Chụp bucket nào của gói CŨ đang vượt hạn mức trước khi expire nó -- gói mới tạo bên dưới
+        // luôn có SubscriptionQuota tinh khôi nên chắc chắn không khóa.
+        var wasOverGrading = schoolSubscriptionDebtGuardService.isQuotaOverLimit(current.getId(), QuotaType.GRADING);
+        var wasOverClassTest = schoolSubscriptionDebtGuardService.isQuotaOverLimit(current.getId(), QuotaType.CLASS_TEST);
+
         current.setStatus(SubscriptionStatus.EXPIRED);
         schoolSubscriptionRepository.save(current);
 
@@ -106,6 +121,20 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
             now
         ));
 
+        reportDebtClearedIfNeeded(wasOverGrading, savedSubscription, QuotaType.GRADING, now);
+        reportDebtClearedIfNeeded(wasOverClassTest, savedSubscription, QuotaType.CLASS_TEST, now);
+
         return SchoolSubscriptionDtoMapper.toDto(savedSubscription);
+    }
+
+    private void reportDebtClearedIfNeeded(boolean wasOver, SchoolSubscription newSubscription, QuotaType quotaType, Instant now) {
+        if (!wasOver) {
+            return;
+        }
+        subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(newSubscription.getId(), quotaType)
+            .ifPresent(quota -> schoolDebtNotificationService.publishSchoolDebtCleared(
+                newSubscription.getId(), newSubscription.getSchoolId(), quotaType,
+                quota.getTotalAllocated(), quota.getUsedQuantity(), now
+            ));
     }
 }

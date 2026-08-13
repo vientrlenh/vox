@@ -21,6 +21,7 @@ import com.sep.vox.application.port.input.query.ViewInvoicesQuery;
 import com.sep.vox.application.port.input.query.ViewPlanDetailQuery;
 import com.sep.vox.application.port.input.query.ViewPlansQuery;
 import com.sep.vox.application.port.input.query.ViewRequestsQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolDebtEventsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolSubscriptionsQuery;
 import com.sep.vox.application.port.input.query.ViewSubscriptionHistoryQuery;
 import com.sep.vox.application.port.input.query.ViewTokenPurchasesQuery;
@@ -36,6 +37,7 @@ import com.sep.vox.application.port.input.usecase.subscription.ViewMyPracticeQuo
 import com.sep.vox.application.port.input.usecase.subscription.ViewPlanDetailUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewPlansUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewRequestsUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ViewSchoolDebtEventsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSchoolSubscriptionsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSubscriptionHistoryUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewTokenPurchasesUseCase;
@@ -47,6 +49,7 @@ import com.sep.vox.domain.dto.InvoiceDto;
 import com.sep.vox.domain.dto.MyClassTestQuotaAllocationDto;
 import com.sep.vox.domain.dto.MyPracticeQuotaAllocationDto;
 import com.sep.vox.domain.dto.QuotaPricingDto;
+import com.sep.vox.domain.dto.SchoolDebtEventDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.dto.SubscriptionQuotaDto;
@@ -76,6 +79,7 @@ public class SubscriptionController {
     private final ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase;
     private final ViewInvoicesUseCase viewInvoicesUseCase;
     private final ViewFinancialEventsUseCase viewFinancialEventsUseCase;
+    private final ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase;
     private final QuotaPricingService quotaPricingService;
 
     public SubscriptionController(
@@ -93,6 +97,7 @@ public class SubscriptionController {
             ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase,
             ViewInvoicesUseCase viewInvoicesUseCase,
             ViewFinancialEventsUseCase viewFinancialEventsUseCase,
+            ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase,
             QuotaPricingService quotaPricingService) {
         this.viewPlansUseCase = viewPlansUseCase;
         this.viewPlanDetailUseCase = viewPlanDetailUseCase;
@@ -108,6 +113,7 @@ public class SubscriptionController {
         this.viewMyPracticeQuotaAllocationUseCase = viewMyPracticeQuotaAllocationUseCase;
         this.viewInvoicesUseCase = viewInvoicesUseCase;
         this.viewFinancialEventsUseCase = viewFinancialEventsUseCase;
+        this.viewSchoolDebtEventsUseCase = viewSchoolDebtEventsUseCase;
         this.quotaPricingService = quotaPricingService;
     }
 
@@ -125,7 +131,10 @@ public class SubscriptionController {
 
     @QueryMapping(name = "quotaPricing")
     public QuotaPricingDto quotaPricing() {
-        return new QuotaPricingDto(quotaPricingService.currentEstimatedCostPerExamSecondUsd());
+        return new QuotaPricingDto(
+            quotaPricingService.currentEstimatedCostPerExamSecondUsd(),
+            quotaPricingService.usdToVndRate()
+        );
     }
 
     @QueryMapping(name = "schoolSubscriptions")
@@ -204,6 +213,14 @@ public class SubscriptionController {
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         return viewFinancialEventsUseCase.execute(new ViewFinancialEventsQuery(schoolId, page, size));
+    }
+
+    @QueryMapping(name = "schoolDebtEvents")
+    public PageResult<SchoolDebtEventDto> schoolDebtEvents(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "page") int page,
+            @Argument(name = "size") int size) {
+        return viewSchoolDebtEventsUseCase.execute(new ViewSchoolDebtEventsQuery(schoolId, page, size));
     }
 
     @MutationMapping(name = "updateSubscriptionPlan")

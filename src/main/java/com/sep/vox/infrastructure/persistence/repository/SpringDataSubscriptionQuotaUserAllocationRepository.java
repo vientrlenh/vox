@@ -23,4 +23,10 @@ public interface SpringDataSubscriptionQuotaUserAllocationRepository extends Jpa
         WHERE a.id = :id AND a.usedQuantity + :amount <= a.allocatedQuantity
         """)
     int tryConsume(@Param("id") UUID id, @Param("amount") BigDecimal amount);
+
+    // clearAutomatically=true -- cùng lý do với SpringDataSubscriptionQuotaRepository.addUsage:
+    // tránh Hibernate trả về entity cache cũ nếu có chỗ nào sau này đọc lại trong cùng transaction.
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE SubscriptionQuotaUserAllocationJpaEntity a SET a.usedQuantity = a.usedQuantity + :amount WHERE a.id = :id")
+    void addUsage(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 }

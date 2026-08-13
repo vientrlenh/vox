@@ -42,7 +42,7 @@ public class TokenUsageEventJpaEntity {
     })
     private String quotaType;
 
-    @Column(name = "tokens_consumed", nullable = false, updatable = false, precision = 12, scale = 6)
+    @Column(name = "tokens_consumed", nullable = false, updatable = false, precision = 18, scale = 6)
     private BigDecimal tokensConsumed;
 
     @Column(name = "occurred_at", nullable = false, updatable = false)

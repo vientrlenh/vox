@@ -21,7 +21,8 @@ public final class SubscriptionPlanMapper {
             jpa.getVersion(),
             jpa.getCreatedAt(),
             jpa.getCreatedBy(),
-            jpa.getReplacedByPlanId()
+            jpa.getReplacedByPlanId(),
+            jpa.getServiceFeeRatio()
         );
     }
 
@@ -38,7 +39,8 @@ public final class SubscriptionPlanMapper {
             domain.getVersion(),
             domain.getCreatedAt(),
             domain.getCreatedBy(),
-            domain.getReplacedByPlanId()
+            domain.getReplacedByPlanId(),
+            domain.getServiceFeeRatio()
         );
     }
 }

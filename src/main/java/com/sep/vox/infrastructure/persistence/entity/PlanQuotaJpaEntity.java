@@ -38,7 +38,7 @@ public class PlanQuotaJpaEntity {
     })
     private String quotaType;
 
-    @Column(name = "included_quantity", nullable = false, precision = 12, scale = 6)
+    @Column(name = "included_quantity", nullable = false, precision = 18, scale = 6)
     private BigDecimal includedQuantity;
 
     @Column(name = "token_unit_price", nullable = false, precision = 15, scale = 0)

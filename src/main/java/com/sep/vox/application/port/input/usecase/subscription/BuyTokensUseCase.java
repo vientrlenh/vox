@@ -15,6 +15,8 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.BuyTokensCommand;
+import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.TokenPurchaseDto;
@@ -26,6 +28,7 @@ import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
 import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.model.subscription.PurchaseStatus;
+import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.model.subscription.TokenPurchase;
 import com.sep.vox.domain.model.subscription.TokenPurchaseItem;
@@ -48,6 +51,8 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
     private final InvoiceRepository invoiceRepository;
     private final FinancialEventRepository financialEventRepository;
     private final UserContextPort userContextPort;
+    private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
+    private final SchoolDebtNotificationService schoolDebtNotificationService;
 
     public BuyTokensUseCase(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
@@ -57,7 +62,9 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
             TokenPurchaseItemRepository tokenPurchaseItemRepository,
             InvoiceRepository invoiceRepository,
             FinancialEventRepository financialEventRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService,
+            SchoolDebtNotificationService schoolDebtNotificationService) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.planQuotaRepository = planQuotaRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
@@ -66,6 +73,8 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
         this.invoiceRepository = invoiceRepository;
         this.financialEventRepository = financialEventRepository;
         this.userContextPort = userContextPort;
+        this.schoolSubscriptionDebtGuardService = schoolSubscriptionDebtGuardService;
+        this.schoolDebtNotificationService = schoolDebtNotificationService;
     }
 
     @Override
@@ -103,6 +112,11 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
         var total = BigDecimal.ZERO;
 
         var purchase = tokenPurchaseRepository.save(new TokenPurchase(subscription.getId(), BigDecimal.ZERO, PurchaseStatus.PAID, now));
+
+        // Chụp bucket nào đang vượt hạn mức TRƯỚC khi top-up -- báo SchoolDebtCleared riêng cho từng
+        // bucket vừa hết nợ (mua thêm có thể chỉ chọn 1 trong 2 loại quota).
+        var wasOverGrading = schoolSubscriptionDebtGuardService.isQuotaOverLimit(subscription.getId(), QuotaType.GRADING);
+        var wasOverClassTest = schoolSubscriptionDebtGuardService.isQuotaOverLimit(subscription.getId(), QuotaType.CLASS_TEST);
 
         for (var item : command.items()) {
             var planQuota = planQuotas.stream()
@@ -154,14 +168,28 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
             total, "VND", paymentMethod, userContextPort.getCurrentAuthenticatedUserId(), null, now
         ));
 
+        reportDebtClearedIfStillWithinLimit(wasOverGrading, subscription.getId(), input.schoolId(), QuotaType.GRADING, now);
+        reportDebtClearedIfStillWithinLimit(wasOverClassTest, subscription.getId(), input.schoolId(), QuotaType.CLASS_TEST, now);
+
         return TokenPurchaseDtoMapper.toDto(savedPurchase, tokenPurchaseItemRepository.findAllByPurchaseId(savedPurchase.getId()));
+    }
+
+    private void reportDebtClearedIfStillWithinLimit(
+            boolean wasOver, UUID subscriptionId, UUID schoolId, QuotaType quotaType, Instant now) {
+        if (!wasOver || schoolSubscriptionDebtGuardService.isQuotaOverLimit(subscriptionId, quotaType)) {
+            return;
+        }
+        subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, quotaType)
+            .ifPresent(quota -> schoolDebtNotificationService.publishSchoolDebtCleared(
+                subscriptionId, schoolId, quotaType, quota.getTotalAllocated(), quota.getUsedQuantity(), now
+            ));
     }
 
     private BuyTokensCommand normalize(BuyTokensCommand input) {
         return new BuyTokensCommand(
-            input.schoolId(), 
-            input.subscriptionId(), 
-            input.items(), 
+            input.schoolId(),
+            input.subscriptionId(),
+            input.items(),
             StringNormalization.normalizeCode(input.paymentMethod())
         );
     }

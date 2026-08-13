@@ -56,4 +56,9 @@ public class SubscriptionQuotaRepositoryImpl implements SubscriptionQuotaReposit
     public void addAllocation(UUID quotaId, BigDecimal amount) {
         springDataSubscriptionQuotaRepository.addAllocation(quotaId, amount);
     }
+
+    @Override
+    public void addUsage(UUID quotaId, BigDecimal amount) {
+        springDataSubscriptionQuotaRepository.addUsage(quotaId, amount);
+    }
 }

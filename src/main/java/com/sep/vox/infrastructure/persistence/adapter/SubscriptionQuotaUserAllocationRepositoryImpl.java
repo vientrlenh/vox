@@ -54,4 +54,9 @@ public class SubscriptionQuotaUserAllocationRepositoryImpl implements Subscripti
     public boolean tryConsume(UUID id, BigDecimal amount) {
         return springDataRepository.tryConsume(id, amount) > 0;
     }
+
+    @Override
+    public void addUsage(UUID id, BigDecimal amount) {
+        springDataRepository.addUsage(id, amount);
+    }
 }

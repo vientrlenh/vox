@@ -17,12 +17,13 @@ public class SubscriptionPlan {
     private Instant createdAt;
     private UUID createdBy;
     private UUID replacedByPlanId;
+    private BigDecimal serviceFeeRatio;
 
     public SubscriptionPlan() {}
 
     public SubscriptionPlan(UUID id, String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
             Integer maxTimePerAttemptMin, Integer maxStudentCount, PlanStatus status, Integer version,
-            Instant createdAt, UUID createdBy, UUID replacedByPlanId) {
+            Instant createdAt, UUID createdBy, UUID replacedByPlanId, BigDecimal serviceFeeRatio) {
         this.id = id;
         this.name = name;
         this.tagline = tagline;
@@ -35,11 +36,12 @@ public class SubscriptionPlan {
         this.createdAt = createdAt;
         this.createdBy = createdBy;
         this.replacedByPlanId = replacedByPlanId;
+        this.serviceFeeRatio = serviceFeeRatio;
     }
 
     public SubscriptionPlan(String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
             Integer maxTimePerAttemptMin, Integer maxStudentCount, PlanStatus status, Integer version,
-            Instant createdAt, UUID createdBy) {
+            Instant createdAt, UUID createdBy, BigDecimal serviceFeeRatio) {
         this.name = name;
         this.tagline = tagline;
         this.pricePerYear = pricePerYear;
@@ -50,6 +52,7 @@ public class SubscriptionPlan {
         this.version = version;
         this.createdAt = createdAt;
         this.createdBy = createdBy;
+        this.serviceFeeRatio = serviceFeeRatio;
     }
 
     public UUID getId() {
@@ -146,5 +149,13 @@ public class SubscriptionPlan {
 
     public void setReplacedByPlanId(UUID replacedByPlanId) {
         this.replacedByPlanId = replacedByPlanId;
+    }
+
+    public BigDecimal getServiceFeeRatio() {
+        return serviceFeeRatio;
+    }
+
+    public void setServiceFeeRatio(BigDecimal serviceFeeRatio) {
+        this.serviceFeeRatio = serviceFeeRatio;
     }
 }

@@ -17,4 +17,7 @@ public interface SubscriptionQuotaRepository {
 
     /** returns false if usedQuantity + amount would exceed totalAllocated. */
     boolean tryConsume(UUID quotaId, BigDecimal amount);
+
+    /** Unconditional -- always succeeds, can push usedQuantity above totalAllocated (debt). */
+    void addUsage(UUID quotaId, BigDecimal amount);
 }

@@ -50,10 +50,10 @@ public class SubscriptionQuotaUserAllocationJpaEntity {
     @Column(name = "user_id", nullable = false, updatable = false)
     private UUID userId;
 
-    @Column(name = "allocated_quantity", nullable = false, precision = 12, scale = 6)
+    @Column(name = "allocated_quantity", nullable = false, precision = 18, scale = 6)
     private BigDecimal allocatedQuantity;
 
-    @Column(name = "used_quantity", nullable = false, precision = 12, scale = 6)
+    @Column(name = "used_quantity", nullable = false, precision = 18, scale = 6)
     private BigDecimal usedQuantity;
 
     protected SubscriptionQuotaUserAllocationJpaEntity() {}

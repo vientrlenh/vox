@@ -38,10 +38,10 @@ public class SubscriptionQuotaJpaEntity {
     })
     private String quotaType;
 
-    @Column(name = "total_allocated", nullable = false, precision = 12, scale = 6)
+    @Column(name = "total_allocated", nullable = false, precision = 18, scale = 6)
     private BigDecimal totalAllocated;
 
-    @Column(name = "used_quantity", nullable = false, precision = 12, scale = 6)
+    @Column(name = "used_quantity", nullable = false, precision = 18, scale = 6)
     private BigDecimal usedQuantity;
 
     protected SubscriptionQuotaJpaEntity() {}

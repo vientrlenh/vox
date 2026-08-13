@@ -648,6 +648,21 @@ input UpdateExamScheduleInput {
     endDate: String
 }
 
+"""
+Cảnh báo (KHÔNG chặn) ước lượng worst-case chi phí AI + hạn mức còn lại -- xem
+ClassTestTokenQuotaGuardService.estimateTokenQuota. Việc CHẶN thật vẫn xảy ra lúc publish/sửa/thêm
+thí sinh, không phải ở query này.
+"""
+type ExamTokenEstimate {
+    estimatedCostUsd: Float!
+    "null nếu trường chưa có subscription active hoặc chưa cấu hình hạn mức GRADING"
+    remainingGradingUsd: Float
+    "null nếu bài không phải CLASS_TEST, hoặc trường chưa có subscription/hạn mức CLASS_TEST"
+    remainingClassTestUsd: Float
+    wouldExceedGrading: Boolean!
+    wouldExceedClassTest: Boolean!
+}
+
 extend type Query {
     exams(
         kind: ExamKind,
@@ -663,6 +678,9 @@ extend type Query {
     examMyRole(examId: ID!): String
 
     examPaper(id: ID!): ExamPaper
+
+    "Cảnh báo (KHÔNG chặn) ước lượng worst-case chi phí AI + hạn mức còn lại -- xem lúc tạo/sửa bài trước khi publish"
+    examTokenEstimate(examId: ID!): ExamTokenEstimate!
 
     examStatusCounts(schoolId: ID, kind: ExamKind, dateFrom: String, dateTo: String): ExamStatusCounts!
 

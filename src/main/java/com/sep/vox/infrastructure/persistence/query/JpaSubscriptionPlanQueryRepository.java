@@ -51,7 +51,8 @@ public class JpaSubscriptionPlanQueryRepository implements SubscriptionPlanQuery
                 p.version,
                 str(p.createdAt),
                 p.createdBy,
-                p.replacedByPlanId)
+                p.replacedByPlanId,
+                p.serviceFeeRatio)
             FROM SubscriptionPlanJpaEntity p
             WHERE (:status IS NULL OR p.status = :status)
             ORDER BY p.createdAt DESC
@@ -115,7 +116,7 @@ public class JpaSubscriptionPlanQueryRepository implements SubscriptionPlanQuery
                 return new SubscriptionPlanDto(
                     row.id(), row.name(), row.tagline(), row.pricePerYear(), row.validityDays(),
                     row.maxTimePerAttemptMin(), row.maxStudentCount(), popular, row.status(), row.version(),
-                    row.createdAt(), row.createdBy(), row.replacedByPlanId(),
+                    row.createdAt(), row.createdBy(), row.replacedByPlanId(), row.serviceFeeRatio(),
                     quotasByPlanId.getOrDefault(row.id(), List.of()).stream()
                         .map(q -> new PlanQuotaDto(q.id(), q.quotaType(), q.includedQuantity(), q.tokenUnitPrice()))
                         .toList());

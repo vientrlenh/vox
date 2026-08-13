@@ -38,7 +38,7 @@ public class TokenPurchaseItemJpaEntity {
     })
     private String quotaType;
 
-    @Column(name = "quantity", nullable = false, updatable = false, precision = 12, scale = 6)
+    @Column(name = "quantity", nullable = false, updatable = false, precision = 18, scale = 6)
     private BigDecimal quantity;
 
     @Column(name = "unit_price_snapshot", nullable = false, updatable = false, precision = 15, scale = 0)

@@ -66,11 +66,14 @@ public class SubscriptionPlanJpaEntity {
     @Column(name = "replaced_by_plan_id")
     private UUID replacedByPlanId;
 
+    @Column(name = "service_fee_ratio", nullable = false, precision = 5, scale = 4)
+    private BigDecimal serviceFeeRatio;
+
     protected SubscriptionPlanJpaEntity() {}
 
     public SubscriptionPlanJpaEntity(UUID id, String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
             Integer maxTimePerAttemptMin, Integer maxStudentCount, String status, Integer version,
-            Instant createdAt, UUID createdBy, UUID replacedByPlanId) {
+            Instant createdAt, UUID createdBy, UUID replacedByPlanId, BigDecimal serviceFeeRatio) {
         this.id = id;
         this.name = name;
         this.tagline = tagline;
@@ -83,6 +86,7 @@ public class SubscriptionPlanJpaEntity {
         this.createdAt = createdAt;
         this.createdBy = createdBy;
         this.replacedByPlanId = replacedByPlanId;
+        this.serviceFeeRatio = serviceFeeRatio;
     }
 
     public UUID getId() {
@@ -179,5 +183,13 @@ public class SubscriptionPlanJpaEntity {
 
     public void setReplacedByPlanId(UUID replacedByPlanId) {
         this.replacedByPlanId = replacedByPlanId;
+    }
+
+    public BigDecimal getServiceFeeRatio() {
+        return serviceFeeRatio;
+    }
+
+    public void setServiceFeeRatio(BigDecimal serviceFeeRatio) {
+        this.serviceFeeRatio = serviceFeeRatio;
     }
 }

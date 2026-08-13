@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.usecase.exam.CanViewExamBlueprintDataUseCase;
+import com.sep.vox.application.port.input.usecase.exam.EstimateExamTokenQuotaUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamStatusCountsUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamsUseCase;
@@ -51,6 +52,7 @@ class ExamPaperItemSlotFieldTests {
             mock(ViewExamStatusCountsUseCase.class),
             mock(ViewMyExamRoleUseCase.class),
             mock(CanViewExamBlueprintDataUseCase.class),
+            mock(EstimateExamTokenQuotaUseCase.class),
             mock(UserContextPort.class)
         );
     }

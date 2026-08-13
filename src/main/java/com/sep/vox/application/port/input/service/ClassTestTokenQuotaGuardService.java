@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.domain.dto.ExamTokenEstimateDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.subscription.QuotaType;
@@ -40,18 +41,21 @@ public class ClassTestTokenQuotaGuardService {
     private final SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
     private final ExamCandidateRepository examCandidateRepository;
     private final QuotaPricingService quotaPricingService;
+    private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
 
     public ClassTestTokenQuotaGuardService(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SubscriptionQuotaRepository subscriptionQuotaRepository,
             SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
             ExamCandidateRepository examCandidateRepository,
-            QuotaPricingService quotaPricingService) {
+            QuotaPricingService quotaPricingService,
+            SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.quotaPricingService = quotaPricingService;
+        this.schoolSubscriptionDebtGuardService = schoolSubscriptionDebtGuardService;
     }
 
     public void requireWithinTokenQuota(Exam exam) {
@@ -62,13 +66,15 @@ public class ClassTestTokenQuotaGuardService {
         if (exam.getExamTimeDurationSecond() == null || exam.getExamTimeDurationSecond() <= 0) {
             return;
         }
-        var candidateCount = examCandidateRepository.countByExamId(exam.getId());
-        var estimatedSeconds = BigDecimal.valueOf((long) exam.getExamTimeDurationSecond() * candidateCount * exam.getMaxAttempt());
-        var estimatedCostUsd = estimatedSeconds.multiply(quotaPricingService.currentEstimatedCostPerExamSecondUsd());
+        var estimatedCostUsd = computeEstimatedCostUsd(exam);
 
         var subscription = schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId())
             .orElseThrow(() -> new PlanLimitExceededException(
                 "Trường chưa có gói subscription đang hoạt động, không thể lên lịch kỳ thi"));
+
+        // Trường đang nợ (chi phí AI thật đã vượt hạn mức cấp trường) thì chặn luôn ở đây, trước cả
+        // khi soi ước lượng worst-case -- xem SchoolSubscriptionDebtGuardService.
+        schoolSubscriptionDebtGuardService.requireSchoolNotLocked(subscription.getId());
 
         requireSchoolQuota(subscription.getId(), QuotaType.GRADING, estimatedCostUsd);
 
@@ -76,6 +82,49 @@ public class ClassTestTokenQuotaGuardService {
             requireSchoolQuota(subscription.getId(), QuotaType.CLASS_TEST, estimatedCostUsd);
             requireWithinUserAllocation(subscription.getId(), exam.getCreatedBy(), estimatedCostUsd);
         }
+    }
+
+    /** 0 nếu chưa có mã đề (duration null/0) -- không throw, dùng lại được cho cả requireWithinTokenQuota
+     *  (chặn) và estimateTokenQuota (chỉ hiển thị cảnh báo, không chặn). */
+    public BigDecimal computeEstimatedCostUsd(Exam exam) {
+        if (exam.getExamTimeDurationSecond() == null || exam.getExamTimeDurationSecond() <= 0) {
+            return BigDecimal.ZERO;
+        }
+        var candidateCount = examCandidateRepository.countByExamId(exam.getId());
+        var estimatedSeconds = BigDecimal.valueOf((long) exam.getExamTimeDurationSecond() * candidateCount * exam.getMaxAttempt());
+        return estimatedSeconds.multiply(quotaPricingService.currentEstimatedCostPerExamSecondUsd());
+    }
+
+    /**
+     * Ước lượng chi phí + hạn mức còn lại để hiển thị CẢNH BÁO ngay lúc tạo/sửa bài (trước khi
+     * publish) -- KHÔNG throw, kể cả khi trường chưa có subscription active hoặc chưa cấu hình
+     * hạn mức (trả về remaining = null cho trường hợp đó thay vì lỗi).
+     */
+    public ExamTokenEstimateDto estimateTokenQuota(Exam exam) {
+        var estimatedCostUsd = computeEstimatedCostUsd(exam);
+        var subscription = schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId());
+        if (subscription.isEmpty()) {
+            return new ExamTokenEstimateDto(estimatedCostUsd, null, null, false, false);
+        }
+
+        var subscriptionId = subscription.get().getId();
+        var remainingGrading = remainingSchoolQuota(subscriptionId, QuotaType.GRADING);
+        var wouldExceedGrading = remainingGrading != null && estimatedCostUsd.compareTo(remainingGrading) > 0;
+
+        BigDecimal remainingClassTest = null;
+        var wouldExceedClassTest = false;
+        if (exam.getKind() == ExamKind.CLASS_TEST) {
+            remainingClassTest = remainingSchoolQuota(subscriptionId, QuotaType.CLASS_TEST);
+            wouldExceedClassTest = remainingClassTest != null && estimatedCostUsd.compareTo(remainingClassTest) > 0;
+        }
+
+        return new ExamTokenEstimateDto(estimatedCostUsd, remainingGrading, remainingClassTest, wouldExceedGrading, wouldExceedClassTest);
+    }
+
+    private BigDecimal remainingSchoolQuota(UUID subscriptionId, QuotaType quotaType) {
+        return subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, quotaType)
+            .map(quota -> quota.getTotalAllocated().subtract(quota.getUsedQuantity()))
+            .orElse(null);
     }
 
     private void requireSchoolQuota(UUID subscriptionId, QuotaType quotaType, BigDecimal estimatedCostUsd) {

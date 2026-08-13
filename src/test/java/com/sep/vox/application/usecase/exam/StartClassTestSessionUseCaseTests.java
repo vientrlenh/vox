@@ -21,6 +21,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.ServiceUnavailableException;
 import com.sep.vox.application.port.input.command.StartClassTestSessionCommand;
 import com.sep.vox.application.port.input.usecase.exam.StartClassTestSessionUseCase;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.application.port.output.HealthCheckPort;
@@ -40,6 +41,7 @@ import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
  * Bài kiểm tra trên lớp giờ thi trong phòng có giám khảo, nên cổng vào thi phải siết đúng như kỳ
@@ -78,7 +80,9 @@ class StartClassTestSessionUseCaseTests {
             userContextPort,
             mock(CreateExamSessionUseCase.class),
             mock(UpdateExamSessionStatusUseCase.class),
-            healthCheckPort
+            healthCheckPort,
+            mock(SchoolSubscriptionRepository.class),
+            mock(SchoolSubscriptionDebtGuardService.class)
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(STUDENT_ID);

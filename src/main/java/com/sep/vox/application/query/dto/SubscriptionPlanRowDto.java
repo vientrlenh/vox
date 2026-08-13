@@ -15,5 +15,6 @@ public record SubscriptionPlanRowDto(
     Integer version,
     String createdAt,
     UUID createdBy,
-    UUID replacedByPlanId
+    UUID replacedByPlanId,
+    BigDecimal serviceFeeRatio
 ) { }

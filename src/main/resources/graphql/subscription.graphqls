@@ -88,6 +88,9 @@ type SubscriptionPlan {
     createdAt: String
     createdBy: ID
     replacedByPlanId: ID
+    # Margin dịch vụ riêng của gói này (vd 0.20 = 20%), FE tự nhân với usdToVndRate
+    # (quotaPricing query) để ra suggestedTokenUnitPriceVnd -- xem QuotaSellingPriceProperties.
+    serviceFeeRatio: Float!
     quotas: [PlanQuota!]!
 }
 
@@ -126,6 +129,8 @@ type SubscriptionQuota {
     quotaType: QuotaType!
     totalAllocated: Float!
     usedQuantity: Float!
+    "usedQuantity > totalAllocated -- với GRADING/CLASS_TEST, đây là điều kiện khóa cấp trường (không cho publish/sửa bài, không cho vào thi mới cho tới khi hết nợ)"
+    isLocked: Boolean!
 }
 
 type TokenUsageTimeseriesPoint {
@@ -240,6 +245,37 @@ type FinancialEventPage {
     totalPages: Int!
 }
 
+enum SchoolDebtEventType {
+    LOCKED
+    CAP_EXCEEDED
+    CLEARED
+}
+
+# Sổ audit "nguyên nhân nợ hạn mức AI" -- mỗi dòng là đúng 1 bucket quota của trường vừa đổi trạng
+# thái (vượt hạn mức / vượt trần cảnh báo / hết nợ), kèm session/số USD đã gây ra transition đó --
+# xem SchoolDebtEvent (domain model) / SchoolDebtNotificationService.
+type SchoolDebtEvent {
+    id: ID!
+    schoolId: ID!
+    subscriptionId: ID!
+    eventType: SchoolDebtEventType!
+    quotaType: QuotaType!
+    triggerExamSessionId: ID
+    triggerAmountUsd: Float
+    totalAllocatedUsd: Float!
+    usedQuantityUsd: Float!
+    overageUsd: Float!
+    occurredAt: String
+}
+
+type SchoolDebtEventPage {
+    content: [SchoolDebtEvent!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
 input PlanQuotaItemInput {
     quotaType: QuotaType!
     includedQuantity: Float!
@@ -253,11 +289,13 @@ input UpdateSubscriptionPlanInput {
     validityDays: Int
     maxTimePerAttemptMin: Int
     maxStudentCount: Int
+    serviceFeeRatio: Float
     quotas: [PlanQuotaItemInput!]
 }
 
 type QuotaPricing {
     estimatedCostPerExamSecondUsd: Float!
+    usdToVndRate: Float!
 }
 
 extend type Query {
@@ -294,6 +332,7 @@ extend type Query {
 
     invoices(schoolId: ID!, page: Int = 0, size: Int = 20): InvoicePage!
     financialEvents(schoolId: ID!, page: Int = 0, size: Int = 20): FinancialEventPage!
+    schoolDebtEvents(schoolId: ID!, page: Int = 0, size: Int = 20): SchoolDebtEventPage!
 }
 
 extend type Mutation {

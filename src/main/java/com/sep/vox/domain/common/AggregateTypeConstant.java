@@ -13,4 +13,6 @@ public final class AggregateTypeConstant {
     public static final String EXAM_BLUEPRINT_VERSION = "ExamBlueprintVersion";
 
     public static final String INVOICE = "Invoice";
+
+    public static final String SCHOOL_SUBSCRIPTION = "SchoolSubscription";
 }

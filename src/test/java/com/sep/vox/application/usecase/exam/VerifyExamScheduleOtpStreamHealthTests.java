@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.common.CacheKey;
 import com.sep.vox.application.exception.ServiceUnavailableException;
 import com.sep.vox.application.port.input.command.VerifyExamScheduleOtpCommand;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.exam.VerifyExamScheduleOtpUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
@@ -41,6 +42,7 @@ import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
  * Bài có giám sát bằng stream thì phải biết service streaming còn sống TRƯỚC khi phát vé vào thi:
@@ -83,7 +85,9 @@ class VerifyExamScheduleOtpStreamHealthTests {
             userContextPort,
             mock(CreateExamSessionUseCase.class),
             mock(UpdateExamSessionStatusUseCase.class),
-            healthCheckPort
+            healthCheckPort,
+            mock(SchoolSubscriptionRepository.class),
+            mock(SchoolSubscriptionDebtGuardService.class)
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(STUDENT_ID);

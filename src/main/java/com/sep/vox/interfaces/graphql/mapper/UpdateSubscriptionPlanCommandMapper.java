@@ -20,6 +20,7 @@ public final class UpdateSubscriptionPlanCommandMapper {
             input.validityDays(),
             input.maxTimePerAttemptMin(),
             input.maxStudentCount(),
+            input.serviceFeeRatio(),
             input.quotas() == null
                 ? null
                 : input.quotas().stream()

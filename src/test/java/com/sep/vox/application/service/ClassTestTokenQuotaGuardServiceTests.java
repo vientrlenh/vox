@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.QuotaPricingService;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.subscription.QuotaType;
@@ -60,7 +61,8 @@ class ClassTestTokenQuotaGuardServiceTests {
             subscriptionQuotaRepository,
             subscriptionQuotaUserAllocationRepository,
             examCandidateRepository,
-            quotaPricingService);
+            quotaPricingService,
+            new SchoolSubscriptionDebtGuardService(subscriptionQuotaRepository));
 
         var subscription = new SchoolSubscription();
         subscription.setId(subscriptionId);
@@ -156,6 +158,28 @@ class ClassTestTokenQuotaGuardServiceTests {
         var exam = classTest(3600);
 
         assertThatCode(() -> guard.requireWithinTokenQuota(exam)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void should_reject_when_school_already_in_debt_on_grading_bucket() {
+        // usedQuantity > totalAllocated = trường đang nợ -- chặn ngay trước khi soi ước lượng,
+        // kể cả khi ước lượng lần này thừa dư (không liên quan gì đến lần trừ đã gây ra nợ).
+        givenSchoolQuota(QuotaType.GRADING, 100, 150);
+        var exam = centralizedExam(3600);
+
+        assertThatThrownBy(() -> guard.requireWithinTokenQuota(exam))
+            .isInstanceOf(PlanLimitExceededException.class);
+    }
+
+    @Test
+    void should_reject_when_school_already_in_debt_on_class_test_bucket_even_for_centralized_exam() {
+        // Nợ ở bucket CLASS_TEST vẫn khóa CẢ TRƯỜNG (kể cả publish bài CENTRALIZED không đụng
+        // bucket này) -- khóa là ở cấp trường, không phải theo loại bài đang publish.
+        givenSchoolQuota(QuotaType.CLASS_TEST, 100, 150);
+        var exam = centralizedExam(3600);
+
+        assertThatThrownBy(() -> guard.requireWithinTokenQuota(exam))
+            .isInstanceOf(PlanLimitExceededException.class);
     }
 
     @Test

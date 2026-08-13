@@ -38,6 +38,7 @@ public final class SubscriptionPlanDtoMapper {
             valueOf(domain.getCreatedAt()),
             domain.getCreatedBy(),
             domain.getReplacedByPlanId(),
+            domain.getServiceFeeRatio(),
             toQuotaDtoList(quotas)
         );
     }

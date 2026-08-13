@@ -26,6 +26,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleProctor;
@@ -95,15 +96,60 @@ class UpdateExamScheduleStatusUseCaseTests {
     }
 
     @Test
-    void should_publish_when_at_least_one_proctor() {
+    void should_publish_when_every_candidate_has_paper() {
         var schedule = schedule(ExamScheduleStatus.DRAFT);
         when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
         when(examScheduleProctorRepository.countByScheduleId(scheduleId)).thenReturn(1L);
+        when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(candidateWithPaper()));
 
         var result = useCase.execute(command("PUBLISH", null));
 
         assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.PUBLISHED);
         assertThat(result.status()).isEqualTo(ExamScheduleStatus.PUBLISHED.name());
+    }
+
+    /**
+     * Ca công bố mà thí sinh chưa có đề thì tới lúc vào phòng thi mới nổ
+     * (VerifyExamScheduleOtpUseCase) — phải chặn ngay từ lúc công bố.
+     */
+    @Test
+    void should_reject_publish_when_candidate_has_no_paper() {
+        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleProctorRepository.countByScheduleId(scheduleId)).thenReturn(1L);
+        when(examCandidateRepository.findByScheduleId(scheduleId))
+            .thenReturn(List.of(candidateWithPaper(), candidate()));
+
+        assertThatThrownBy(() -> useCase.execute(command("PUBLISH", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Còn 1 học sinh chưa được gán đề");
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    @Test
+    void should_reject_publish_when_schedule_has_no_candidate() {
+        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleProctorRepository.countByScheduleId(scheduleId)).thenReturn(1L);
+        when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> useCase.execute(command("PUBLISH", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Ca thi chưa có thí sinh nào");
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    /** Thí sinh đã huỷ/miễn thi không vào phòng nên không cần đề, không được chặn cả ca. */
+    @Test
+    void should_ignore_cancelled_candidate_without_paper_when_publishing() {
+        var schedule = schedule(ExamScheduleStatus.DRAFT);
+        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
+        when(examScheduleProctorRepository.countByScheduleId(scheduleId)).thenReturn(1L);
+        when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(
+            candidateWithPaper(),
+            candidate(null, ExamCandidateStatus.CANCELLED)));
+
+        useCase.execute(command("PUBLISH", null));
+
+        assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.PUBLISHED);
     }
 
     @Test
@@ -252,11 +298,21 @@ class UpdateExamScheduleStatusUseCaseTests {
     }
 
     private ExamCandidate candidate() {
+        return candidate(null, ExamCandidateStatus.ASSIGNED);
+    }
+
+    private ExamCandidate candidateWithPaper() {
+        return candidate(UUID.randomUUID(), ExamCandidateStatus.ASSIGNED);
+    }
+
+    private ExamCandidate candidate(UUID assignedPaperId, ExamCandidateStatus status) {
         var candidate = new ExamCandidate();
         candidate.setId(UUID.randomUUID());
         candidate.setExamId(examId);
         candidate.setStudentId(UUID.randomUUID());
         candidate.setScheduleId(scheduleId);
+        candidate.setAssignedPaperId(assignedPaperId);
+        candidate.setStatus(status);
         return candidate;
     }
 

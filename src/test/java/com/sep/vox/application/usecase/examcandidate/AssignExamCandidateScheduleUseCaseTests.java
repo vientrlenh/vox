@@ -17,7 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.AssignExamCandidateScheduleCommand;
-import com.sep.vox.application.port.input.service.ClassTestPaperAutoAssigner;
+import com.sep.vox.application.port.input.service.ExamPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.ExamScheduleManageAccessService;
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamCandidateScheduleUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -66,7 +66,7 @@ class AssignExamCandidateScheduleUseCaseTests {
         // trước khi nó được tách ra khỏi use case.
         useCase = new AssignExamCandidateScheduleUseCase(
             examRepository, examCandidateRepository, examScheduleRepository,
-            new ClassTestPaperAutoAssigner(mock(ExamPaperRepository.class)),
+            new ExamPaperAutoAssigner(mock(ExamPaperRepository.class), examCandidateRepository),
             new ExamScheduleManageAccessService(
                 examMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort));
 

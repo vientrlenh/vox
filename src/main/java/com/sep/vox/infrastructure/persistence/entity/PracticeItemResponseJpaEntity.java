@@ -3,6 +3,8 @@ package com.sep.vox.infrastructure.persistence.entity;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.personalization.PracticeGradingStatus;
+
 import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -50,7 +52,16 @@ public class PracticeItemResponseJpaEntity {
             constraint = "grading_status IN ('PENDING', 'GRADING', 'GRADED', 'GRADING_FAILED')"
         )
     })
-    private String gradingStatus;
+    // KHỞI TẠO NGAY TẠI ĐÂY, không dựa vào DEFAULT của Postgres.
+    //
+    // V21 khai cột là NOT NULL DEFAULT 'PENDING', nhưng DEFAULT chỉ áp dụng khi câu INSERT KHÔNG
+    // nhắc tới cột. Cột đã được ánh xạ lên entity thì Hibernate luôn đưa nó vào INSERT với giá trị
+    // Java -- constructor không gán thì đó là null, và Postgres từ chối.
+    //
+    // Đo trên production 2026-08-13: mọi POST /internal/practice-sessions/{id}/turns trả 500, ba
+    // lần thử đều hỏng, agents đóng kết nối -- học sinh đang luyện bị văng ra giữa chừng và phiên
+    // bị ghi ABANDONED/TOO_HARD dù em ấy có nói.
+    private String gradingStatus = PracticeGradingStatus.PENDING.name();
 
     /**
      * Lúc gửi yêu cầu chấm gần nhất. Đi CẶP với {@link #gradingStatus}: trạng thái nói đang ở

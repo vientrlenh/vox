@@ -114,7 +114,7 @@ class UpdateExamUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         useCase.execute(new UpdateExamCommand(
-            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null));
+            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null, null));
 
         verify(examRepository).save(exam);
         verify(examScheduleRepository, never()).save(any());
@@ -147,7 +147,7 @@ class UpdateExamUseCaseTests {
             .when(classTestTokenQuotaGuardService).requireWithinTokenQuota(exam);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamCommand(
-                examId, null, null, null, null, null, null, 2 * 3600, null, null, null, null)))
+                examId, null, null, null, null, null, null, 2 * 3600, null, null, null, null, null)))
             .isInstanceOf(PlanLimitExceededException.class)
             .hasMessageContaining("vượt quá hạn mức");
         verify(examRepository, never()).save(any());
@@ -162,7 +162,7 @@ class UpdateExamUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         useCase.execute(new UpdateExamCommand(
-            examId, null, null, null, null, null, null, 2 * 3600, null, null, null, null));
+            examId, null, null, null, null, null, null, 2 * 3600, null, null, null, null, null));
 
         verifyNoInteractions(classTestTokenQuotaGuardService);
         verify(examRepository).save(exam);
@@ -177,7 +177,7 @@ class UpdateExamUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         useCase.execute(new UpdateExamCommand(
-            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null));
+            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null, null));
 
         verifyNoInteractions(classTestTokenQuotaGuardService);
         verify(examRepository).save(exam);
@@ -211,7 +211,7 @@ class UpdateExamUseCaseTests {
             .thenReturn(List.of(schedule(ExamScheduleStatus.DRAFT, open, open.plus(1, ChronoUnit.HOURS))));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamCommand(
-                examId, null, null, null, null, null, null, 2 * 3600, null, null, null, null)))
+                examId, null, null, null, null, null, null, 2 * 3600, null, null, null, null, null)))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("vượt quá thời lượng");
         verify(examRepository, never()).save(any());
@@ -238,7 +238,7 @@ class UpdateExamUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         useCase.execute(new UpdateExamCommand(
-            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null));
+            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null, null));
 
         // Không gửi field thời gian nào -> không cần truy vấn ca thi.
         verify(examScheduleRepository, never()).findByExamId(any());
@@ -254,7 +254,7 @@ class UpdateExamUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamCommand(
-                examId, "Tên mới", null, null, null, null, null, null, null, null, null, null)))
+                examId, "Tên mới", null, null, null, null, null, null, null, null, null, null, null)))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("đã bắt đầu");
         verify(examRepository, never()).save(any());
@@ -267,7 +267,7 @@ class UpdateExamUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamCommand(
-                examId, "Tên mới", null, null, null, null, null, null, null, null, null, null)))
+                examId, "Tên mới", null, null, null, null, null, null, null, null, null, null, null)))
             .isInstanceOf(IllegalStateException.class);
         verify(examRepository, never()).save(any());
     }
@@ -279,7 +279,7 @@ class UpdateExamUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         useCase.execute(new UpdateExamCommand(
-            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null));
+            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null, null));
 
         verify(examRepository).save(exam);
     }
@@ -306,7 +306,7 @@ class UpdateExamUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         useCase.execute(new UpdateExamCommand(
-            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null));
+            examId, "Tên mới", null, null, null, null, null, null, null, null, null, null, null));
 
         assertThat(exam.getRequiredStreamType()).isEqualTo(ExamRequiredStreamType.CAMERA);
     }
@@ -356,7 +356,7 @@ class UpdateExamUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         useCase.execute(new UpdateExamCommand(
-            examId, "Mới", null, null, null, null, null, null, null, null, null, null));
+            examId, "Mới", null, null, null, null, null, null, null, null, null, null, null));
 
         assertThat(exam.getName()).isEqualTo("Mới");
         verify(examRepository).save(exam);
@@ -371,7 +371,7 @@ class UpdateExamUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamCommand(
-            examId, "Mới", null, null, null, null, null, null, null, null, null, null)))
+            examId, "Mới", null, null, null, null, null, null, null, null, null, null, null)))
             .isInstanceOf(ForbiddenException.class)
             .hasMessageContaining("Quyền truy cập bị từ chối");
         verify(examRepository, never()).save(any());
@@ -387,11 +387,11 @@ class UpdateExamUseCaseTests {
     private UpdateExamCommand streamCommand(List<String> requiredStreamTypes, String streamTypePermission) {
         return new UpdateExamCommand(
             examId, null, null, null, null, null, null, null, null, null,
-            requiredStreamTypes, streamTypePermission);
+            requiredStreamTypes, streamTypePermission, null);
     }
 
     private UpdateExamCommand command(String openAt, String closeAt) {
-        return new UpdateExamCommand(examId, null, null, openAt, closeAt, null, null, null, null, null, null, null);
+        return new UpdateExamCommand(examId, null, null, openAt, closeAt, null, null, null, null, null, null, null, null);
     }
 
     private Exam classTest(Integer examTimeDurationSecond) {

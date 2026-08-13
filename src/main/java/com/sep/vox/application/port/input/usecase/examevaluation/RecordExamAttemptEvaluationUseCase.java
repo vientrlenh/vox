@@ -351,7 +351,16 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                             turnOrder == null ? 0 : turnOrder,
                             parseTurnType(turn.turnType()),
                             turn.promptText(),
-                            turn.audioUrl(),
+                            // Cùng cách chắn với transcript ngay dưới, và vì lý do y hệt: cột
+                            // exam_item_evaluation_turns.audio_url là NOT NULL (V1__baseline),
+                            // nên một lượt không có bản ghi âm sẽ ném ngay tại saveAll và kéo
+                            // đổ CẢ giao dịch lưu kết quả chấm -- mất luôn điểm của những lượt
+                            // khác vốn không có vấn đề gì.
+                            //
+                            // Lượt thiếu audio là chuyện có thật, không phải giả định: lượt
+                            // được publish trước khi bản ghi âm kịp về (xem
+                            // turn_publisher.publish_turn_if_new, pha 1) mang audio_url null.
+                            turn.audioUrl() == null ? "" : turn.audioUrl(),
                             turn.transcript() == null ? "" : turn.transcript(),
                             wordCount == null ? 0 : wordCount,
                             turn.durationSeconds(),

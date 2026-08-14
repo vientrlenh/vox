@@ -142,4 +142,19 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     public Optional<UUID> findActiveVersionId(String code) {
         return springDataFrameworkVersionRepository.findActiveVersionId(code);
     }
+
+    @Override
+    public List<ActiveFramework> findActiveFrameworks() {
+        return springDataFrameworkVersionRepository.findActiveFrameworks().stream()
+            .map(row -> new ActiveFramework(
+                row.getFrameworkId(),
+                row.getFrameworkCode(),
+                row.getFrameworkName(),
+                row.getFrameworkDescription(),
+                row.getVersionId(),
+                row.getVersionCode(),
+                row.getVersionNumber() == null ? 0 : row.getVersionNumber()
+            ))
+            .toList();
+    }
 }

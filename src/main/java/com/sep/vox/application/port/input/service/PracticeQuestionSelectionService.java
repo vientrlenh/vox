@@ -140,6 +140,8 @@ public class PracticeQuestionSelectionService {
             UUID studentId,
             PracticeFocusInfo focus,
             int targetRank,
+            int bandCount,
+            UUID frameworkVersionId,
             List<PracticeQuestion> alreadyChosenInSession) {
         var slotIndex = alreadyChosenInSession.size();
         // Chu kỳ 4 ô: yếu nhất, yếu nhất, yếu nhì, xoay vòng phần còn lại -- xem
@@ -150,10 +152,10 @@ public class PracticeQuestionSelectionService {
             criterion,
             focus.subAttributeForSlot(slotIndex)
         );
-        // Trần bậc đọc từ framework đang áp, KHÔNG cứng 6: đổi trường sang thang khác (CEFR 6,
-        // IELTS 9) thì hằng số 6 kẹp sai mà không báo lỗi. Lấy MỘT lần rồi truyền xuống thang
-        // leo, tránh query lặp ở từng bậc.
-        var bandCount = enrichmentService.frameworkBandCount();
+        // Trần bậc do NƠI GỌI truyền xuống, lấy từ khung của chính bậc học sinh đã chọn --
+        // không tự tra "khung đang hiệu lực" nữa. Từ khi màn luyện tập cho chọn khung, hai học
+        // sinh có thể đang ở hai khung khác số bậc (6 với KNLNNVN/CEFR, 9 với IELTS), mà số bậc
+        // đi thẳng vào phép kẹp độ khó dưới đây và vào TensePolicy.
         // Thì đích của ô này: chủ đề nói trước (chủ đề lịch sử thì khoá quá khứ), chủ đề MIXED
         // thì xoay vòng theo ô để một buổi phủ nhiều khung thời gian. Bậc có quyền phủ quyết --
         // xem TensePolicy, thì và độ khó KHÔNG độc lập.
@@ -184,7 +186,8 @@ public class PracticeQuestionSelectionService {
             // Chỉ tới đây mới trả giá LLM 10-40 giây với học sinh đang ngồi chờ -- khi kho thật
             // sự không còn gì hỏi được, chứ không phải mỗi lần pool chưa đủ 4 câu như bản gốc.
             var generated = generateThenReload(
-                topic, studentId, criterion, subAttribute, tense, targetRank, excludeIds, bandCount
+                topic, studentId, criterion, subAttribute, tense, targetRank, excludeIds,
+                bandCount, frameworkVersionId
             );
             chosen = pickOne(generated, alreadyChosenInSession, tense, targetRank, true);
         }
@@ -308,7 +311,8 @@ public class PracticeQuestionSelectionService {
             String tense,
             int targetRank,
             List<UUID> excludeIds,
-            int bandCount) {
+            int bandCount,
+            UUID frameworkVersionId) {
         var selected = new LinkedHashMap<UUID, PracticeQuestion>();
         try {
             generationService.generateAndStore(
@@ -320,7 +324,12 @@ public class PracticeQuestionSelectionService {
                 generationProperties.onlineCandidateCount(),
                 generationProperties.onlineBudget(),
                 bandCount,
-                enrichmentService.frameworkBandLadder(),
+                // Thang bậc của ĐÚNG khung học sinh đang luyện. Lấy frameworkBandLadder() không
+                // tham số là lấy khung đang hiệu lực toàn hệ -- prompt sinh câu sẽ mô tả một
+                // thang khác với thang em ấy chọn, và không có lỗi nào báo ra.
+                frameworkVersionId == null
+                    ? enrichmentService.frameworkBandLadder()
+                    : enrichmentService.frameworkBandLadder(frameworkVersionId),
                 // Câu đã chết vĩnh viễn với CHÍNH học sinh này. Không gửi xuống thì cổng chặn
                 // trùng bên Python so bản nháp mới với cả kho -- kể cả những câu em ấy không
                 // bao giờ được thấy lại -- rồi vứt sạch vì "giống câu đã có", và chủ đề khoá

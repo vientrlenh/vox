@@ -215,7 +215,8 @@ public class ResolveNextPracticeQuestionUseCase {
         var selection = selectionService
             .resolveNextQuestion(
                 claim.topic(), claim.studentId(), claim.focus(),
-                claim.targetBandOrder(), claim.alreadyChosen()
+                claim.targetBandOrder(), claim.targetBandCount(),
+                claim.targetFrameworkVersionId(), claim.alreadyChosen()
             )
             .orElse(null);
         if (selection == null) {

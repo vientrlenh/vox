@@ -70,6 +70,36 @@ public class PracticeTopicOfferEnrichmentService {
     }
 
     /**
+     * Số bậc của khung mà BẬC NÀY thuộc về -- đi cặp với {@link #bandOrder(UUID)}.
+     *
+     * <p>Suy từ chính bậc chứ không tra khung đang hiệu lực, cùng cách
+     * {@code SpringDataPracticeSessionRepository.findCriteriaFrameworks} suy framework lúc chấm.
+     * Nhờ vậy một phiên đã mở theo khung nào thì giữ nguyên khung đó tới cuối, kể cả khi quản
+     * trị ban hành khung khác giữa chừng.
+     */
+    public int frameworkBandCountOfBand(UUID bandId) {
+        if (bandId == null) {
+            return DEFAULT_BAND_COUNT;
+        }
+        return frameworkResultBandRepository.findById(bandId)
+            .map(band -> frameworkBandCount(band.getFrameworkVersionId()))
+            .orElse(DEFAULT_BAND_COUNT);
+    }
+
+    /**
+     * Khung mà bậc này thuộc về. {@code null} khi không tra được -- nơi gọi lùi về khung đang
+     * hiệu lực, giữ nguyên hành vi cũ thay vì chặn cả phiên luyện.
+     */
+    public UUID frameworkVersionIdOfBand(UUID bandId) {
+        if (bandId == null) {
+            return null;
+        }
+        return frameworkResultBandRepository.findById(bandId)
+            .map(band -> band.getFrameworkVersionId())
+            .orElse(null);
+    }
+
+    /**
      * Số bậc của thang năng lực. Mặc định {@value #DEFAULT_BAND_COUNT} khi chưa có khung nào
      * đang hiệu lực -- không phải vì VSTEP, mà vì đó là giá trị an toàn giữ nguyên hành vi cũ
      * cho dữ liệu chưa cấu hình.
@@ -78,7 +108,21 @@ public class PracticeTopicOfferEnrichmentService {
      * không suy từ lớp học sinh qua assessment policy nữa.
      */
     public int frameworkBandCount() {
-        var values = learnerProfileRepository.findFrameworkBandCount(practiceFrameworkVersionId());
+        return frameworkBandCount(practiceFrameworkVersionId());
+    }
+
+    /**
+     * Số bậc của MỘT khung cụ thể -- dùng khi học sinh đã chọn khung, thay vì lấy khung đang
+     * hiệu lực toàn hệ.
+     *
+     * <p>Cần thiết từ khi màn luyện tập cho chọn khung: hai khung có thể khác số bậc (6 với
+     * KNLNNVN/CEFR, 9 với IELTS), mà số bậc đi thẳng vào phép kẹp độ khó ở
+     * {@code PracticeQuestionSelectionService} và {@code TensePolicy}. Lấy nhầm số bậc thì độ
+     * khó ánh xạ lệch mà không có lỗi nào.
+     */
+    public int frameworkBandCount(UUID frameworkVersionId) {
+        var values = learnerProfileRepository.findFrameworkBandCount(
+            frameworkVersionId == null ? NO_FRAMEWORK : frameworkVersionId);
         if (values.isEmpty()) {
             return DEFAULT_BAND_COUNT;
         }
@@ -89,7 +133,18 @@ public class PracticeTopicOfferEnrichmentService {
     /** Cả thang bậc kèm mô tả, để gửi xuống Python dựng ladder trong prompt chấm câu hỏi.
      * Rỗng thì Python tự lùi về ladder mặc định của nó. */
     public List<FrameworkResultBand> frameworkBandLadder() {
-        return learnerProfileRepository.findFrameworkBandLadder(practiceFrameworkVersionId());
+        return frameworkBandLadder(practiceFrameworkVersionId());
+    }
+
+    /** Thang bậc của MỘT khung cụ thể. Xem {@link #frameworkBandCount(UUID)} về lý do. */
+    public List<FrameworkResultBand> frameworkBandLadder(UUID frameworkVersionId) {
+        return learnerProfileRepository.findFrameworkBandLadder(
+            frameworkVersionId == null ? NO_FRAMEWORK : frameworkVersionId);
+    }
+
+    /** Mọi khung còn hiệu lực kèm bản mới nhất -- nguồn cho ô chọn khung trước khi chọn bậc. */
+    public List<FrameworkVersionRepository.ActiveFramework> activeFrameworks() {
+        return frameworkVersionRepository.findActiveFrameworks();
     }
 
     /**

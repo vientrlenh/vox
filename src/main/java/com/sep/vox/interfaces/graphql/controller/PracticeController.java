@@ -1,6 +1,7 @@
 package com.sep.vox.interfaces.graphql.controller;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -17,10 +18,12 @@ import com.sep.vox.application.port.input.usecase.learnerprofile.SetPracticeGoal
 import com.sep.vox.application.port.input.usecase.learnerprofile.SubmitInterestQuizUseCase;
 import com.sep.vox.application.port.input.usecase.learnerprofile.ViewInterestQuizItemsUseCase;
 import com.sep.vox.application.port.input.usecase.learnerprofile.ViewPracticeBandOptionsUseCase;
+import com.sep.vox.application.port.input.usecase.learnerprofile.ViewPracticeFrameworkOptionsUseCase;
 import com.sep.vox.application.port.input.usecase.learnerprofile.ViewLearnerProfileUseCase;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.InterestQuizItem;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.LearnerProfile;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.PracticeBandOption;
+import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.PracticeFrameworkOption;
 import com.sep.vox.domain.model.personalization.QuizAnswer;
 import com.sep.vox.interfaces.graphql.dto.request.SubmitInterestQuizInput;
 
@@ -30,6 +33,7 @@ public class PracticeController {
     private final ViewLearnerProfileUseCase viewLearnerProfileUseCase;
     private final ViewInterestQuizItemsUseCase viewInterestQuizItemsUseCase;
     private final ViewPracticeBandOptionsUseCase viewPracticeBandOptionsUseCase;
+    private final ViewPracticeFrameworkOptionsUseCase viewPracticeFrameworkOptionsUseCase;
     private final SubmitInterestQuizUseCase submitInterestQuizUseCase;
     private final SetPracticeGoalUseCase setPracticeGoalUseCase;
     private final AsyncTaskExecutor practiceGenerationExecutor;
@@ -38,6 +42,7 @@ public class PracticeController {
             ViewLearnerProfileUseCase viewLearnerProfileUseCase,
             ViewInterestQuizItemsUseCase viewInterestQuizItemsUseCase,
             ViewPracticeBandOptionsUseCase viewPracticeBandOptionsUseCase,
+            ViewPracticeFrameworkOptionsUseCase viewPracticeFrameworkOptionsUseCase,
             SubmitInterestQuizUseCase submitInterestQuizUseCase,
             SetPracticeGoalUseCase setPracticeGoalUseCase,
             @Qualifier("practiceGenerationExecutor") AsyncTaskExecutor practiceGenerationExecutor) {
@@ -45,6 +50,7 @@ public class PracticeController {
         this.viewLearnerProfileUseCase = viewLearnerProfileUseCase;
         this.viewInterestQuizItemsUseCase = viewInterestQuizItemsUseCase;
         this.viewPracticeBandOptionsUseCase = viewPracticeBandOptionsUseCase;
+        this.viewPracticeFrameworkOptionsUseCase = viewPracticeFrameworkOptionsUseCase;
         this.submitInterestQuizUseCase = submitInterestQuizUseCase;
         this.setPracticeGoalUseCase = setPracticeGoalUseCase;
     }
@@ -57,8 +63,19 @@ public class PracticeController {
 
     @QueryMapping
     @PreAuthorize("hasRole('STUDENT')")
-    public List<PracticeBandOption> myPracticeBandOptions() {
-        return viewPracticeBandOptionsUseCase.execute(null);
+    public List<PracticeFrameworkOption> myPracticeFrameworkOptions() {
+        return viewPracticeFrameworkOptionsUseCase.execute(null);
+    }
+
+    /**
+     * @param frameworkVersionId khung học sinh vừa chọn ở ô phía trên. Bỏ trống = khung đang
+     *     hiệu lực toàn hệ, giữ nguyên hành vi cho client cũ.
+     */
+    @QueryMapping
+    @PreAuthorize("hasRole('STUDENT')")
+    public List<PracticeBandOption> myPracticeBandOptions(
+            @Argument(name = "frameworkVersionId") UUID frameworkVersionId) {
+        return viewPracticeBandOptionsUseCase.execute(frameworkVersionId);
     }
 
     /**

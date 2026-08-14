@@ -10,7 +10,6 @@ public record SubscriptionPlanRowDto(
     BigDecimal pricePerYear,
     Integer validityDays,
     Integer maxTimePerAttemptMin,
-    Integer maxStudentCount,
     String status,
     Integer version,
     String createdAt,

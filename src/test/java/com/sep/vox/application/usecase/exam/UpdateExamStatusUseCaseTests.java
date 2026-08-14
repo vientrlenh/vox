@@ -650,7 +650,6 @@ class UpdateExamStatusUseCaseTests {
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(subscription));
 
         var plan = mock(SubscriptionPlan.class);
-        when(plan.getMaxStudentCount()).thenReturn(null);
         when(plan.getMaxTimePerAttemptMin()).thenReturn(null);
         when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
 

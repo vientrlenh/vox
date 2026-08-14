@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdatePlanCommand;
+import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
@@ -26,14 +27,17 @@ public class UpdatePlanUseCase implements IUseCase<UpdatePlanCommand, Subscripti
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final PlanQuotaRepository planQuotaRepository;
+    private final QuotaPricingService quotaPricingService;
     private final UserContextPort userContextPort;
 
     public UpdatePlanUseCase(
             SubscriptionPlanRepository subscriptionPlanRepository,
             PlanQuotaRepository planQuotaRepository,
+            QuotaPricingService quotaPricingService,
             UserContextPort userContextPort) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.planQuotaRepository = planQuotaRepository;
+        this.quotaPricingService = quotaPricingService;
         this.userContextPort = userContextPort;
     }
 
@@ -73,9 +77,6 @@ public class UpdatePlanUseCase implements IUseCase<UpdatePlanCommand, Subscripti
         if (input.maxTimePerAttemptMin() != null) {
             plan.setMaxTimePerAttemptMin(input.maxTimePerAttemptMin());
         }
-        if (input.maxStudentCount() != null) {
-            plan.setMaxStudentCount(input.maxStudentCount());
-        }
         if (input.serviceFeeRatio() != null) {
             plan.setServiceFeeRatio(input.serviceFeeRatio());
         }
@@ -91,12 +92,13 @@ public class UpdatePlanUseCase implements IUseCase<UpdatePlanCommand, Subscripti
                 }
             }
             planQuotaRepository.deleteAllByPlanId(savedPlan.getId());
+            var tokenUnitPrice = quotaPricingService.tokenUnitPriceFor(savedPlan.getServiceFeeRatio());
             quotas = input.quotas().stream()
                 .map(quotaInput -> planQuotaRepository.save(new PlanQuota(
                     savedPlan.getId(),
                     quotaInput.quotaType(),
                     quotaInput.includedQuantity(),
-                    quotaInput.tokenUnitPrice()
+                    tokenUnitPrice
                 )))
                 .toList();
         }

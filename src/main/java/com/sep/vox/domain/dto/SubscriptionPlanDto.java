@@ -11,7 +11,6 @@ public record SubscriptionPlanDto(
     BigDecimal pricePerYear,
     Integer validityDays,
     Integer maxTimePerAttemptMin,
-    Integer maxStudentCount,
     boolean popular,
     String status,
     Integer version,

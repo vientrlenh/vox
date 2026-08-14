@@ -14,12 +14,14 @@ import graphql.schema.DataFetchingEnvironment;
 
 import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.query.CanViewExamBlueprintDataQuery;
+import com.sep.vox.application.port.input.query.EstimateExamTokenQuotaQuery;
 import com.sep.vox.application.port.input.query.ViewExamDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewExamPaperDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewExamStatusCountsQuery;
 import com.sep.vox.application.port.input.query.ViewExamsQuery;
 import com.sep.vox.application.port.input.query.ViewMyExamRoleQuery;
 import com.sep.vox.application.port.input.usecase.exam.CanViewExamBlueprintDataUseCase;
+import com.sep.vox.application.port.input.usecase.exam.EstimateExamTokenQuotaUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamStatusCountsUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamsUseCase;
@@ -38,6 +40,7 @@ import com.sep.vox.domain.dto.ExamPaperItemDto;
 import com.sep.vox.domain.dto.ExamPaperSectionDto;
 import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.ExamSecurePoolDto;
+import com.sep.vox.domain.dto.ExamTokenEstimateDto;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.QuestionSelectionSpecDto;
 import com.sep.vox.domain.dto.UserDto;
@@ -54,6 +57,7 @@ public class ExamController {
     private final ViewExamStatusCountsUseCase viewExamStatusCountsUseCase;
     private final ViewMyExamRoleUseCase viewMyExamRoleUseCase;
     private final CanViewExamBlueprintDataUseCase canViewExamBlueprintDataUseCase;
+    private final EstimateExamTokenQuotaUseCase estimateExamTokenQuotaUseCase;
     private final UserContextPort userContextPort;
 
     public ExamController(
@@ -63,6 +67,7 @@ public class ExamController {
             ViewExamStatusCountsUseCase viewExamStatusCountsUseCase,
             ViewMyExamRoleUseCase viewMyExamRoleUseCase,
             CanViewExamBlueprintDataUseCase canViewExamBlueprintDataUseCase,
+            EstimateExamTokenQuotaUseCase estimateExamTokenQuotaUseCase,
             UserContextPort userContextPort) {
         this.viewExamsUseCase = viewExamsUseCase;
         this.viewExamDetailsUseCase = viewExamDetailsUseCase;
@@ -70,6 +75,7 @@ public class ExamController {
         this.viewExamStatusCountsUseCase = viewExamStatusCountsUseCase;
         this.viewMyExamRoleUseCase = viewMyExamRoleUseCase;
         this.canViewExamBlueprintDataUseCase = canViewExamBlueprintDataUseCase;
+        this.estimateExamTokenQuotaUseCase = estimateExamTokenQuotaUseCase;
         this.userContextPort = userContextPort;
     }
 
@@ -111,6 +117,11 @@ public class ExamController {
     @QueryMapping(name = "examPaper")
     public ExamPaperDto examPaper(@Argument(name = "id") UUID id) {
         return viewExamPaperDetailsUseCase.execute(new ViewExamPaperDetailsQuery(id));
+    }
+
+    @QueryMapping(name = "examTokenEstimate")
+    public ExamTokenEstimateDto examTokenEstimate(@Argument(name = "examId") UUID examId) {
+        return estimateExamTokenQuotaUseCase.execute(new EstimateExamTokenQuotaQuery(examId));
     }
 
     @QueryMapping(name = "examStatusCounts")

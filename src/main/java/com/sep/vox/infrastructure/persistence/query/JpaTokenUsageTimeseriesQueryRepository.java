@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.query;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
@@ -46,7 +47,7 @@ public class JpaTokenUsageTimeseriesQueryRepository implements TokenUsageTimeser
             .map(row -> new TokenUsageBucketDto(
                 ((Timestamp) row[0]).toInstant(),
                 (String) row[1],
-                ((Number) row[2]).intValue()))
+                row[2] == null ? BigDecimal.ZERO : new BigDecimal(row[2].toString())))
             .toList();
     }
 }

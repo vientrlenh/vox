@@ -22,15 +22,18 @@ import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionU
 import com.sep.vox.application.port.input.usecase.examsession.DeleteExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.FlagExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ForceEndExamSessionUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.ReportAiUsageUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.RetryGradingExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionRemainingTimeUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamSessionRequest;
+import com.sep.vox.interfaces.rest.dto.request.ReportAiUsageRequest;
 import com.sep.vox.interfaces.rest.dto.request.SessionReasonRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamSessionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateRemainingTimeRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
+import com.sep.vox.interfaces.rest.mapper.ReportAiUsageCommandMapper;
 
 import jakarta.validation.Valid;
 
@@ -48,6 +51,7 @@ public class ExamSessionController {
     private final ForceEndExamSessionUseCase forceEndExamSessionUseCase;
     private final RetryGradingExamSessionUseCase retryGradingExamSessionUseCase;
     private final UpdateExamSessionRemainingTimeUseCase updateExamSessionRemainingTimeUseCase;
+    private final ReportAiUsageUseCase reportAiUsageUseCase;
 
     public ExamSessionController(
             CreateExamSessionUseCase createExamSessionUseCase,
@@ -58,7 +62,8 @@ public class ExamSessionController {
             FlagExamSessionUseCase flagExamSessionUseCase,
             ForceEndExamSessionUseCase forceEndExamSessionUseCase,
             RetryGradingExamSessionUseCase retryGradingExamSessionUseCase,
-            UpdateExamSessionRemainingTimeUseCase updateExamSessionRemainingTimeUseCase) {
+            UpdateExamSessionRemainingTimeUseCase updateExamSessionRemainingTimeUseCase,
+            ReportAiUsageUseCase reportAiUsageUseCase) {
         this.createExamSessionUseCase = createExamSessionUseCase;
         this.completeExamSessionGradingUseCase = completeExamSessionGradingUseCase;
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
@@ -68,6 +73,7 @@ public class ExamSessionController {
         this.forceEndExamSessionUseCase = forceEndExamSessionUseCase;
         this.retryGradingExamSessionUseCase = retryGradingExamSessionUseCase;
         this.updateExamSessionRemainingTimeUseCase = updateExamSessionRemainingTimeUseCase;
+        this.reportAiUsageUseCase = reportAiUsageUseCase;
     }
 
     @PostMapping
@@ -153,5 +159,19 @@ public class ExamSessionController {
     public ResponseEntity<ApiResponse<Void>> completeGrading(@PathVariable(name = "sessionId") UUID sessionId) {
         completeExamSessionGradingUseCase.execute(new CompleteExamSessionGradingCommand(sessionId));
         return ResponseEntity.ok(ApiResponse.success("Ghi nhận hoàn tất chấm bài thành công"));
-}
+    }
+
+    /**
+     * Đường REST song song với Kafka topic ai-usage-recorded -- dùng cho nguồn không có kết nối
+     * Kafka trực tiếp, ví dụ desktop app tự tổng hợp TTS ngay trên máy học viên
+     * (VoxExamDesktop/LocalAvatarSpeaker.cs) thay vì qua Agentic AI. Xem ReportAiUsageUseCase.
+     */
+    @PostMapping("/{id}/ai-usage")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<Void>> reportAiUsage(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody ReportAiUsageRequest request) {
+        reportAiUsageUseCase.execute(ReportAiUsageCommandMapper.toCommand(id, request));
+        return ResponseEntity.ok(ApiResponse.success("Ghi nhận chi phí AI thành công"));
+    }
 }

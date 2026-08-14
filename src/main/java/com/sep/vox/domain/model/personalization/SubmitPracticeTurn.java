@@ -1,5 +1,6 @@
 package com.sep.vox.domain.model.personalization;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,6 +14,9 @@ public class SubmitPracticeTurn {
     private String audioUrl;
     private String transcript;
     private int durationSeconds;
+    // Chi phí AI thật (USD) của turn này -- xem SubmitPracticeTurnUseCase, dùng số này để trừ
+    // SubscriptionQuota(PRACTICE) thay vì durationSeconds. Nullable: client Python cũ chưa gửi.
+    private BigDecimal turnCostUsd;
     private String wordFeedbackJson;
     private Double turnScore;
     private boolean questionComplete;
@@ -30,6 +34,7 @@ public class SubmitPracticeTurn {
             String audioUrl,
             String transcript,
             int durationSeconds,
+            BigDecimal turnCostUsd,
             String wordFeedbackJson,
             Double turnScore,
             boolean questionComplete,
@@ -42,6 +47,7 @@ public class SubmitPracticeTurn {
         this.audioUrl = audioUrl;
         this.transcript = transcript;
         this.durationSeconds = durationSeconds;
+        this.turnCostUsd = turnCostUsd;
         this.wordFeedbackJson = wordFeedbackJson;
         this.turnScore = turnScore;
         this.questionComplete = questionComplete;
@@ -110,6 +116,14 @@ public class SubmitPracticeTurn {
 
     public void setDurationSeconds(int durationSeconds) {
         this.durationSeconds = durationSeconds;
+    }
+
+    public BigDecimal getTurnCostUsd() {
+        return turnCostUsd;
+    }
+
+    public void setTurnCostUsd(BigDecimal turnCostUsd) {
+        this.turnCostUsd = turnCostUsd;
     }
 
     public String getWordFeedbackJson() {

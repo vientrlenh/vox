@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.event.internal.consumer;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
@@ -9,6 +11,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.sep.vox.domain.model.subscription.SubscriptionQuota;
+import com.sep.vox.domain.model.subscription.TokenPurchaseItem;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,12 +184,12 @@ public class InvoiceEmailConsumer {
             itemTitle = "Mua thêm hạn mức";
             var items = tokenPurchaseItemRepository.findAllByPurchaseId(payload.sourceId());
             itemsHtml = buildItemsHtml(items.stream()
-                .collect(Collectors.toMap(item -> item.getQuotaType(), item -> item.getQuantity())));
+                .collect(Collectors.toMap(TokenPurchaseItem::getQuotaType, TokenPurchaseItem::getQuantity)));
         } else {
             itemTitle = "Gói " + plan.getName();
             var quotas = subscriptionQuotaRepository.findAllBySubscriptionId(subscription.getId());
             itemsHtml = buildItemsHtml(quotas.stream()
-                .collect(Collectors.toMap(quota -> quota.getQuotaType(), quota -> quota.getTotalAllocated())));
+                .collect(Collectors.toMap(SubscriptionQuota::getQuotaType, SubscriptionQuota::getTotalAllocated)));
         }
 
         var amountFormatter = new DecimalFormat("#,###", DecimalFormatSymbols.getInstance(Locale.of("vi", "VN")));
@@ -199,20 +203,20 @@ public class InvoiceEmailConsumer {
             amountLabel, paidAtLabel, validUntilLabel);
     }
 
-    // Quota tính bằng GIÂY audio xử lý (xem FE), quy đổi sang phút cho dễ đọc trong mail.
-    private String buildItemsHtml(Map<QuotaType, Integer> quantityByType) {
+    // Quota tính bằng USD chi phí AI (xem V22__quota_unit_to_usd.sql), hiển thị 2 chữ số thập phân.
+    private String buildItemsHtml(Map<QuotaType, BigDecimal> quantityByType) {
         var rows = new StringBuilder();
         for (var quotaType : QuotaType.values()) {
             var quantity = quantityByType.get(quotaType);
             if (quantity == null) {
                 continue;
             }
-            var minutes = Math.round(quantity / 60.0);
+            var usdLabel = quantity.setScale(2, RoundingMode.HALF_UP).toPlainString();
             rows.append("<tr><td style=\"padding:6px 20px; color:#475569; font-size:14px;\">")
                 .append(QUOTA_LABELS.get(quotaType))
                 .append("</td><td style=\"padding:6px 20px; text-align:right; font-weight:700; font-size:14px; color:#1e293b;\">")
-                .append(minutes)
-                .append(" phút</td></tr>");
+                .append(usdLabel)
+                .append(" USD</td></tr>");
         }
         return rows.toString();
     }

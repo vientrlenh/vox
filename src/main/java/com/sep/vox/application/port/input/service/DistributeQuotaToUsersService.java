@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,6 +36,12 @@ import com.sep.vox.domain.repository.UserRepository;
 public class DistributeQuotaToUsersService {
 
     private static final int MAX_ELIGIBLE_USERS_PAGE_SIZE = 10_000;
+
+    // Đơn vị nhỏ nhất theo đúng scale numeric(18,6) của cột quota (xem V22__quota_unit_to_usd.sql,
+    // precision nới lên ở V27__widen_quota_columns_precision.sql, scale 6 giữ nguyên).
+    // Dùng để rải phần dư sau khi chia đều -- tương đương "1 giây" ở logic chia số nguyên cũ, giờ là
+    // "1 phần triệu đô" để chia hết totalAllocated mà không làm tròn mất tiền.
+    private static final BigDecimal SMALLEST_UNIT = new BigDecimal("0.000001");
 
     private final UserContextPort userContextPort;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
@@ -96,18 +104,22 @@ public class DistributeQuotaToUsersService {
         return buildSummary(subscription.getId(), quotaType, pool, eligibleUserIds);
     }
 
-    private Map<UUID, Integer> computeAutoSplit(List<UUID> eligibleUserIds, int totalAllocated,
+    private Map<UUID, BigDecimal> computeAutoSplit(List<UUID> eligibleUserIds, BigDecimal totalAllocated,
             Map<UUID, SubscriptionQuotaUserAllocation> existing) {
         var count = eligibleUserIds.size();
-        var base = totalAllocated / count;
-        var remainder = totalAllocated % count;
+        var base = totalAllocated.divide(BigDecimal.valueOf(count), 6, RoundingMode.DOWN);
+        // Phần dư sau khi chia đều (không hết vì DOWN), quy đổi sang số đơn vị SMALLEST_UNIT để rải
+        // cho count đầu tiên -- giữ đúng tổng totalAllocated, không "mất" hay "sinh thêm" tiền do làm tròn.
+        var remainderUnits = totalAllocated.subtract(base.multiply(BigDecimal.valueOf(count)))
+            .divide(SMALLEST_UNIT, 0, RoundingMode.DOWN)
+            .intValueExact();
 
-        var result = new LinkedHashMap<UUID, Integer>();
+        var result = new LinkedHashMap<UUID, BigDecimal>();
         for (int i = 0; i < count; i++) {
             var userId = eligibleUserIds.get(i);
-            var amount = base + (i < remainder ? 1 : 0);
+            var amount = i < remainderUnits ? base.add(SMALLEST_UNIT) : base;
             var used = usedQuantityOrZero(existing.get(userId));
-            if (amount < used) {
+            if (amount.compareTo(used) < 0) {
                 throw new IllegalArgumentException(
                     "Không thể chia đều vì có người dùng đã sử dụng vượt mức chia mới, hãy dùng chế độ thủ công");
             }
@@ -116,14 +128,14 @@ public class DistributeQuotaToUsersService {
         return result;
     }
 
-    private Map<UUID, Integer> computeManualAmounts(List<UserQuotaAmount> allocations, List<UUID> eligibleUserIds,
-            Map<UUID, SubscriptionQuotaUserAllocation> existing, int totalAllocated) {
+    private Map<UUID, BigDecimal> computeManualAmounts(List<UserQuotaAmount> allocations, List<UUID> eligibleUserIds,
+            Map<UUID, SubscriptionQuotaUserAllocation> existing, BigDecimal totalAllocated) {
         if (allocations == null || allocations.isEmpty()) {
             throw new IllegalArgumentException("Danh sách phân bổ không được để trống");
         }
 
         var eligibleSet = new HashSet<>(eligibleUserIds);
-        var result = new LinkedHashMap<UUID, Integer>();
+        var result = new LinkedHashMap<UUID, BigDecimal>();
 
         for (var item : allocations) {
             if (item.userId() == null || !eligibleSet.contains(item.userId())) {
@@ -132,37 +144,37 @@ public class DistributeQuotaToUsersService {
             if (result.containsKey(item.userId())) {
                 throw new IllegalArgumentException("Danh sách phân bổ chứa userId trùng lặp: " + item.userId());
             }
-            if (item.amount() == null || item.amount() < 0) {
+            if (item.amount() == null || item.amount().compareTo(BigDecimal.ZERO) < 0) {
                 throw new IllegalArgumentException("Số lượng phân bổ không hợp lệ");
             }
             var used = usedQuantityOrZero(existing.get(item.userId()));
-            if (item.amount() < used) {
+            if (item.amount().compareTo(used) < 0) {
                 throw new IllegalArgumentException("Không thể đặt hạn mức nhỏ hơn số lượng đã sử dụng");
             }
             result.put(item.userId(), item.amount());
         }
 
-        var sumInRequest = result.values().stream().mapToInt(amount -> orZero(amount)).sum();
+        var sumInRequest = result.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
         var sumOthers = existing.entrySet().stream()
             .filter(e -> !result.containsKey(e.getKey()))
-            .mapToInt(e -> orZero(e.getValue().getAllocatedQuantity()))
-            .sum();
-        if (sumInRequest + sumOthers > totalAllocated) {
+            .map(e -> orZero(e.getValue().getAllocatedQuantity()))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (sumInRequest.add(sumOthers).compareTo(totalAllocated) > 0) {
             throw new IllegalArgumentException("Tổng hạn mức phân bổ vượt quá hạn mức của trường");
         }
 
         return result;
     }
 
-    private static int usedQuantityOrZero(SubscriptionQuotaUserAllocation allocation) {
+    private static BigDecimal usedQuantityOrZero(SubscriptionQuotaUserAllocation allocation) {
         if (allocation == null || allocation.getUsedQuantity() == null) {
-            return 0;
+            return BigDecimal.ZERO;
         }
         return allocation.getUsedQuantity();
     }
 
-    private static int orZero(Integer value) {
-        return value != null ? value : 0;
+    private static BigDecimal orZero(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 
     private QuotaUserAllocationSummaryDto buildSummary(UUID subscriptionId, QuotaType quotaType,
@@ -174,7 +186,7 @@ public class DistributeQuotaToUsersService {
         var allocationDtos = eligibleUserIds.stream()
             .map(userId -> {
                 var allocation = existing.getOrDefault(userId,
-                    new SubscriptionQuotaUserAllocation(subscriptionId, quotaType, userId, 0, 0));
+                    new SubscriptionQuotaUserAllocation(subscriptionId, quotaType, userId, BigDecimal.ZERO, BigDecimal.ZERO));
                 return SubscriptionQuotaUserAllocationDtoMapper.toDto(allocation, names.get(userId));
             })
             .toList();

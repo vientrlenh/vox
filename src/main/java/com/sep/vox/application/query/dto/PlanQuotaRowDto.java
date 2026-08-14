@@ -7,6 +7,6 @@ public record PlanQuotaRowDto(
     UUID id,
     UUID planId,
     String quotaType,
-    Integer includedQuantity,
+    BigDecimal includedQuantity,
     BigDecimal tokenUnitPrice
 ) { }

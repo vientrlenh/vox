@@ -47,4 +47,9 @@ public class SubscriptionPlanRepositoryImpl implements SubscriptionPlanRepositor
             .map(SubscriptionPlanMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataSubscriptionPlanRepository.deleteById(id);
+    }
 }

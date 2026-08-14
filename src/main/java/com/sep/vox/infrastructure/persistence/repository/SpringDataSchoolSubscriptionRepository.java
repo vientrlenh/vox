@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -76,7 +77,7 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
         ORDER BY subscription.end_date DESC
         LIMIT 1
         """, nativeQuery = true)
-    List<Integer> findPracticeQuotaRemaining(@Param("userId") UUID userId);
+    List<BigDecimal> findPracticeQuotaRemaining(@Param("userId") UUID userId);
 
     @Query(value = """
         SELECT plan.max_time_per_attempt_min

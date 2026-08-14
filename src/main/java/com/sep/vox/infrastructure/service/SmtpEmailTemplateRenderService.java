@@ -184,6 +184,38 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
             .replace("{{validUntilLabel}}", escapeHtml(validUntilLabel));
     }
 
+    // ---- nợ hạn mức AI ------------------------------------------------
+
+    @Override
+    public String renderDebtCapExceededEmail(String schoolName, String quotaLabel, String overageLabel, String capLabel) {
+        return renderNotification(
+            "Cảnh báo: nợ hạn mức AI vượt trần",
+            "Trường <strong>" + escapeHtml(schoolName) + "</strong> có chi phí AI thực tế vượt hạn mức "
+                + "đã cấp và hiện vượt cả trần cảnh báo.",
+            "Chi tiết",
+            "Hạn mức: " + escapeHtml(quotaLabel) + "<br>Đang nợ: <strong>" + escapeHtml(overageLabel)
+                + "</strong><br>Trần cảnh báo: " + escapeHtml(capLabel));
+    }
+
+    @Override
+    public String renderSchoolLockedDueToDebtEmail(String schoolName) {
+        return renderNotification(
+            "Trường đang bị khóa do nợ hạn mức AI",
+            "Chi phí AI thực tế của trường <strong>" + escapeHtml(schoolName)
+                + "</strong> đã vượt hạn mức được cấp.",
+            "Cần làm gì",
+            "Vui lòng thanh toán hoặc gia hạn/nâng cấp gói để tiếp tục tổ chức thi.");
+    }
+
+    @Override
+    public String renderSchoolDebtClearedEmail(String schoolName) {
+        return renderNotification(
+            "Trường đã hết nợ hạn mức AI",
+            "Trường <strong>" + escapeHtml(schoolName) + "</strong> đã đủ hạn mức trở lại.",
+            "Trạng thái",
+            "Có thể tổ chức thi bình thường.");
+    }
+
     /**
      * Các tham số ở đây đã là HTML (có thẻ {@code <strong>}) và ĐÃ được escape ở từng
      * method gọi vào — đừng escape thêm lần nữa ở đây, nếu không thẻ sẽ hiện ra dưới

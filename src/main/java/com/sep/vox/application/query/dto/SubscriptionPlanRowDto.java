@@ -11,10 +11,10 @@ public record SubscriptionPlanRowDto(
     Integer validityDays,
     Integer maxTimePerAttemptMin,
     Integer maxStudentCount,
-    boolean popular,
     String status,
     Integer version,
     String createdAt,
     UUID createdBy,
-    UUID replacedByPlanId
+    UUID replacedByPlanId,
+    BigDecimal serviceFeeRatio
 ) { }

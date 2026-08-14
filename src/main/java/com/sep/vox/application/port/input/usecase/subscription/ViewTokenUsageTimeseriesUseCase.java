@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -58,7 +59,7 @@ public class ViewTokenUsageTimeseriesUseCase implements IUseCase<ViewTokenUsageT
 
         var activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(input.schoolId());
         if (activeSubscription.isEmpty()) {
-            return new TokenUsageTimeseriesDto(granularity.name(), 0, List.of(), List.of());
+            return new TokenUsageTimeseriesDto(granularity.name(), BigDecimal.ZERO, List.of(), List.of());
         }
         var subscriptionId = activeSubscription.get().getId();
 
@@ -70,8 +71,8 @@ public class ViewTokenUsageTimeseriesUseCase implements IUseCase<ViewTokenUsageT
             .toList();
 
         var totalUsed = buckets.stream()
-            .mapToInt(b -> b.tokensConsumed() == null ? 0 : b.tokensConsumed())
-            .sum();
+            .map(b -> b.tokensConsumed() == null ? BigDecimal.ZERO : b.tokensConsumed())
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         var currentPeriod = SubscriptionQuotaDtoMapper.toDtoList(
             subscriptionQuotaRepository.findAllBySubscriptionId(subscriptionId));

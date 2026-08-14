@@ -21,6 +21,15 @@ public interface SpringDataUserRoleRepository extends JpaRepository<UserRoleJpaE
 
     List<UserRoleJpaEntity> findByUserIdIn(Collection<UUID> userIds);
 
+    @Query("""
+        SELECT DISTINCT ur.userId
+        FROM UserRoleJpaEntity ur
+        JOIN UserJpaEntity u ON ur.userId = u.id
+        JOIN RoleJpaEntity r ON ur.roleId = r.id
+        WHERE r.code = :roleCode AND u.status <> 'DISABLED'
+    """)
+    List<UUID> findActiveUserIdsByRoleCode(@Param("roleCode") String roleCode);
+
     @Query(value = """
         SELECT 
             id, 

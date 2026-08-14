@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.controller.internal;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -106,6 +107,7 @@ public class PracticeSessionInternalController {
             request.audioUrl(),
             request.transcript(),
             request.durationSeconds(),
+            request.turnCostUsd(),
             request.wordFeedbackJson(),
             request.turnScore(),
             request.questionComplete(),
@@ -124,6 +126,11 @@ public class PracticeSessionInternalController {
         String audioUrl,
         String transcript,
         int durationSeconds,
+        // Chi phí AI thật (USD) của turn này, Python tính đồng bộ từ realtimeCorrectionGraph
+        // ngay trong request này (xem PracticeAttemptConnection._flush_turn_usage bên
+        // Agentic AI) -- nullable phòng client Python cũ chưa deploy kịp, SubmitPracticeTurnUseCase
+        // fallback về ZERO. Xem AI_USAGE_QUOTA_USD_MIGRATION.md.
+        BigDecimal turnCostUsd,
         String wordFeedbackJson,
         Double turnScore,
         boolean questionComplete,

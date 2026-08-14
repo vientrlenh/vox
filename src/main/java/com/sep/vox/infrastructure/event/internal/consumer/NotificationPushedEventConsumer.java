@@ -40,6 +40,9 @@ import com.sep.vox.application.event.ExamResultReleasedPayloadV1;
 import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
 import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
 import com.sep.vox.application.event.InvoicePaidPayloadV1;
+import com.sep.vox.application.event.SchoolDebtCapExceededPayloadV1;
+import com.sep.vox.application.event.SchoolDebtClearedPayloadV1;
+import com.sep.vox.application.event.SchoolLockedDueToDebtPayloadV1;
 import com.sep.vox.application.port.output.PushNotificationPort;
 import com.sep.vox.application.response.output.PushMessage;
 import com.sep.vox.domain.common.EventTypeConstant;
@@ -47,6 +50,7 @@ import com.sep.vox.domain.model.notification.Notification;
 import com.sep.vox.domain.model.notification.NotificationCategory;
 import com.sep.vox.domain.model.notification.NotificationPreference;
 import com.sep.vox.domain.model.outbox.ProcessedEvent;
+import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.repository.NotificationDeviceRepository;
 import com.sep.vox.domain.repository.NotificationPreferenceRepository;
 import com.sep.vox.domain.repository.NotificationRepository;
@@ -126,8 +130,14 @@ public class NotificationPushedEventConsumer {
         topics = {
             "${app.internal-event.kafka.consumer-groups.notification.topic.exam-appeal}",
             "${app.internal-event.kafka.consumer-groups.notification.topic.exam-result-lifecycle}",
-            "${app.internal-event.kafka.consumer-groups.notification.topic.grading-assignment}", 
-            "${app.internal-event.kafka.consumer-groups.notification.topic.exam-blueprint-version}"
+            "${app.internal-event.kafka.consumer-groups.notification.topic.grading-assignment}",
+            "${app.internal-event.kafka.consumer-groups.notification.topic.exam-blueprint-version}",
+            // FIX: InvoicePaid đã có case xử lý bên dưới và category BILLING từ trước, nhưng thiếu
+            // đúng dòng này nên consumer chưa từng nhận được message nào từ topic invoice -- thông
+            // báo in-app "Hóa đơn đã được thanh toán" chưa bao giờ chạy (mail thì vẫn chạy bình
+            // thường qua InvoiceEmailConsumer, có topic riêng đúng).
+            "${app.internal-event.kafka.consumer-groups.notification.topic.invoice}",
+            "${app.internal-event.kafka.consumer-groups.notification.topic.school-debt}"
         },
         groupId = "${app.internal-event.kafka.consumer-groups.notification.group-id}",
         containerFactory = "stringKafkaListenerContainerFactory",
@@ -401,6 +411,31 @@ public class NotificationPushedEventConsumer {
                     data(eventType, "blueprintCode", payload.blueprintCode()));
             }
 
+            case EventTypeConstant.SCHOOL_DEBT_CAP_EXCEEDED -> {
+                var payload = parse(value, SchoolDebtCapExceededPayloadV1.class, eventType, eventId);
+                yield fanOut(payload.systemAdminIds(), category,
+                    "Cảnh báo: nợ hạn mức AI vượt trần",
+                    "%s -- nợ %s vượt trần cảnh báo %s".formatted(quotaLabel(payload.quotaType()),
+                        formatUsd(payload.overageUsd()), formatUsd(payload.capUsd())),
+                    data(eventType, "schoolId", payload.schoolId()));
+            }
+
+            case EventTypeConstant.SCHOOL_LOCKED_DUE_TO_DEBT -> {
+                var payload = parse(value, SchoolLockedDueToDebtPayloadV1.class, eventType, eventId);
+                yield fanOut(payload.schoolAdminIds(), category,
+                    "Trường đang bị khóa do nợ hạn mức AI",
+                    "Chi phí AI thực tế đã vượt hạn mức -- thanh toán hoặc gia hạn/nâng cấp gói để tiếp tục tổ chức thi",
+                    data(eventType, "schoolId", payload.schoolId()));
+            }
+
+            case EventTypeConstant.SCHOOL_DEBT_CLEARED -> {
+                var payload = parse(value, SchoolDebtClearedPayloadV1.class, eventType, eventId);
+                yield fanOut(payload.schoolAdminIds(), category,
+                    "Trường đã hết nợ hạn mức AI",
+                    "Đã đủ hạn mức trở lại -- có thể tổ chức thi bình thường",
+                    data(eventType, "schoolId", payload.schoolId()));
+            }
+
             default -> throw new IllegalStateException(
                 "eventType không được xử lý: eventId=" + eventId + ", eventType=" + eventType);
         };
@@ -481,6 +516,21 @@ public class NotificationPushedEventConsumer {
 
     private String formatAmount(BigDecimal amount) {
         return amount == null ? "--" : AMOUNT_FORMAT.get().format(amount) + " ₫";
+    }
+
+    private String formatUsd(BigDecimal amountUsd) {
+        return amountUsd == null ? "--" : "$" + amountUsd.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
+    }
+
+    private String quotaLabel(QuotaType quotaType) {
+        if (quotaType == null) {
+            return "--";
+        }
+        return switch (quotaType) {
+            case GRADING -> "Bài thi cần chấm";
+            case CLASS_TEST -> "Bài kiểm tra trên lớp";
+            case PRACTICE -> "Lượt ôn luyện cá nhân";
+        };
     }
 
     private String formatDeadline(Instant deadline) {

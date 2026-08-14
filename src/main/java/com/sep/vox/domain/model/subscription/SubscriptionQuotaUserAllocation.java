@@ -1,5 +1,6 @@
 package com.sep.vox.domain.model.subscription;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public class SubscriptionQuotaUserAllocation {
@@ -7,13 +8,13 @@ public class SubscriptionQuotaUserAllocation {
     private UUID subscriptionId;
     private QuotaType quotaType;
     private UUID userId;
-    private Integer allocatedQuantity;
-    private Integer usedQuantity;
+    private BigDecimal allocatedQuantity;
+    private BigDecimal usedQuantity;
 
     public SubscriptionQuotaUserAllocation() {}
 
     public SubscriptionQuotaUserAllocation(UUID id, UUID subscriptionId, QuotaType quotaType, UUID userId,
-            Integer allocatedQuantity, Integer usedQuantity) {
+            BigDecimal allocatedQuantity, BigDecimal usedQuantity) {
         this.id = id;
         this.subscriptionId = subscriptionId;
         this.quotaType = quotaType;
@@ -23,7 +24,7 @@ public class SubscriptionQuotaUserAllocation {
     }
 
     public SubscriptionQuotaUserAllocation(UUID subscriptionId, QuotaType quotaType, UUID userId,
-            Integer allocatedQuantity, Integer usedQuantity) {
+            BigDecimal allocatedQuantity, BigDecimal usedQuantity) {
         this.subscriptionId = subscriptionId;
         this.quotaType = quotaType;
         this.userId = userId;
@@ -63,19 +64,19 @@ public class SubscriptionQuotaUserAllocation {
         this.userId = userId;
     }
 
-    public Integer getAllocatedQuantity() {
+    public BigDecimal getAllocatedQuantity() {
         return allocatedQuantity;
     }
 
-    public void setAllocatedQuantity(Integer allocatedQuantity) {
+    public void setAllocatedQuantity(BigDecimal allocatedQuantity) {
         this.allocatedQuantity = allocatedQuantity;
     }
 
-    public Integer getUsedQuantity() {
+    public BigDecimal getUsedQuantity() {
         return usedQuantity;
     }
 
-    public void setUsedQuantity(Integer usedQuantity) {
+    public void setUsedQuantity(BigDecimal usedQuantity) {
         this.usedQuantity = usedQuantity;
     }
 }

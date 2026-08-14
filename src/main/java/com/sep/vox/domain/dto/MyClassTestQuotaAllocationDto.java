@@ -1,7 +1,9 @@
 package com.sep.vox.domain.dto;
 
+import java.math.BigDecimal;
+
 public record MyClassTestQuotaAllocationDto(
-    Integer allocatedQuantity,
-    Integer usedQuantity
+    BigDecimal allocatedQuantity,
+    BigDecimal usedQuantity
 ) {
 }

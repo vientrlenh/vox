@@ -16,7 +16,8 @@ public final class SubscriptionQuotaDtoMapper {
             domain.getSubscriptionId(),
             domain.getQuotaType().name(),
             domain.getTotalAllocated(),
-            domain.getUsedQuantity()
+            domain.getUsedQuantity(),
+            domain.getUsedQuantity().compareTo(domain.getTotalAllocated()) > 0
         );
     }
 

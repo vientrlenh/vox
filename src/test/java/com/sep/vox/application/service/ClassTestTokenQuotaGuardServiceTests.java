@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,6 +14,8 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
+import com.sep.vox.application.port.input.service.QuotaPricingService;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.subscription.QuotaType;
@@ -49,11 +52,17 @@ class ClassTestTokenQuotaGuardServiceTests {
         subscriptionQuotaRepository = mock(SubscriptionQuotaRepository.class);
         subscriptionQuotaUserAllocationRepository = mock(SubscriptionQuotaUserAllocationRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
+        var quotaPricingService = mock(QuotaPricingService.class);
+        // Hệ số quy đổi = 1 để estimatedCostUsd trùng số với "estimatedTokens" cũ (duration × số thí
+        // sinh × maxAttempt) -- giữ nguyên các giá trị test bên dưới thay vì phải tính lại theo USD thật.
+        when(quotaPricingService.currentEstimatedCostPerExamSecondUsd()).thenReturn(BigDecimal.ONE);
         guard = new ClassTestTokenQuotaGuardService(
             schoolSubscriptionRepository,
             subscriptionQuotaRepository,
             subscriptionQuotaUserAllocationRepository,
-            examCandidateRepository);
+            examCandidateRepository,
+            quotaPricingService,
+            new SchoolSubscriptionDebtGuardService(subscriptionQuotaRepository));
 
         var subscription = new SchoolSubscription();
         subscription.setId(subscriptionId);
@@ -136,7 +145,7 @@ class ClassTestTokenQuotaGuardServiceTests {
         when(subscriptionQuotaUserAllocationRepository
             .findBySubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.CLASS_TEST, teacherId))
             .thenReturn(Optional.of(new SubscriptionQuotaUserAllocation(
-                subscriptionId, QuotaType.CLASS_TEST, teacherId, 100, 0)));
+                subscriptionId, QuotaType.CLASS_TEST, teacherId, BigDecimal.valueOf(100), BigDecimal.ZERO)));
         var exam = classTest(3600);
 
         assertThatThrownBy(() -> guard.requireWithinTokenQuota(exam))
@@ -152,6 +161,28 @@ class ClassTestTokenQuotaGuardServiceTests {
     }
 
     @Test
+    void should_reject_when_school_already_in_debt_on_grading_bucket() {
+        // usedQuantity > totalAllocated = trường đang nợ -- chặn ngay trước khi soi ước lượng,
+        // kể cả khi ước lượng lần này thừa dư (không liên quan gì đến lần trừ đã gây ra nợ).
+        givenSchoolQuota(QuotaType.GRADING, 100, 150);
+        var exam = centralizedExam(3600);
+
+        assertThatThrownBy(() -> guard.requireWithinTokenQuota(exam))
+            .isInstanceOf(PlanLimitExceededException.class);
+    }
+
+    @Test
+    void should_reject_when_school_already_in_debt_on_class_test_bucket_even_for_centralized_exam() {
+        // Nợ ở bucket CLASS_TEST vẫn khóa CẢ TRƯỜNG (kể cả publish bài CENTRALIZED không đụng
+        // bucket này) -- khóa là ở cấp trường, không phải theo loại bài đang publish.
+        givenSchoolQuota(QuotaType.CLASS_TEST, 100, 150);
+        var exam = centralizedExam(3600);
+
+        assertThatThrownBy(() -> guard.requireWithinTokenQuota(exam))
+            .isInstanceOf(PlanLimitExceededException.class);
+    }
+
+    @Test
     void should_reject_when_no_active_subscription() {
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.empty());
         var exam = classTest(3600);
@@ -162,7 +193,8 @@ class ClassTestTokenQuotaGuardServiceTests {
 
     private void givenSchoolQuota(QuotaType type, int totalAllocated, int usedQuantity) {
         when(subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, type))
-            .thenReturn(Optional.of(new SubscriptionQuota(subscriptionId, type, totalAllocated, usedQuantity)));
+            .thenReturn(Optional.of(new SubscriptionQuota(
+                subscriptionId, type, BigDecimal.valueOf(totalAllocated), BigDecimal.valueOf(usedQuantity))));
     }
 
     private Exam classTest(Integer examTimeDurationSecond) {

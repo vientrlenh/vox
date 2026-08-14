@@ -21,6 +21,8 @@ import com.sep.vox.application.port.input.command.CancelSubscriptionCommand;
 import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
 import com.sep.vox.application.port.input.command.CreatePaymentLinkForRenewalCommand;
 import com.sep.vox.application.port.input.command.CreatePaymentLinkForSubscriptionRequestCommand;
+import com.sep.vox.application.port.input.command.DeleteDraftPlanCommand;
+import com.sep.vox.application.port.input.command.PublishPlanCommand;
 import com.sep.vox.application.port.input.command.RejectRequestCommand;
 import com.sep.vox.application.port.input.command.RenewSubscriptionCommand;
 import com.sep.vox.application.port.input.command.SubmitRequestCommand;
@@ -37,7 +39,9 @@ import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLink
 import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForSubscriptionRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForTokenPurchaseUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreatePlanUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.DeleteDraftPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.PreviewRenewalUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.PublishPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.RejectRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.RenewSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.SubmitRequestUseCase;
@@ -69,6 +73,8 @@ public class SubscriptionController {
 
     private final CreatePlanUseCase createPlanUseCase;
     private final ArchivePlanUseCase archivePlanUseCase;
+    private final PublishPlanUseCase publishPlanUseCase;
+    private final DeleteDraftPlanUseCase deleteDraftPlanUseCase;
     private final RenewSubscriptionUseCase renewSubscriptionUseCase;
     private final CancelSubscriptionUseCase cancelSubscriptionUseCase;
     private final SubmitRequestUseCase submitRequestUseCase;
@@ -88,6 +94,8 @@ public class SubscriptionController {
     public SubscriptionController(
             CreatePlanUseCase createPlanUseCase,
             ArchivePlanUseCase archivePlanUseCase,
+            PublishPlanUseCase publishPlanUseCase,
+            DeleteDraftPlanUseCase deleteDraftPlanUseCase,
             RenewSubscriptionUseCase renewSubscriptionUseCase,
             CancelSubscriptionUseCase cancelSubscriptionUseCase,
             SubmitRequestUseCase submitRequestUseCase,
@@ -105,6 +113,8 @@ public class SubscriptionController {
             ViewPracticeQuotaAllocationsUseCase viewPracticeQuotaAllocationsUseCase) {
         this.createPlanUseCase = createPlanUseCase;
         this.archivePlanUseCase = archivePlanUseCase;
+        this.publishPlanUseCase = publishPlanUseCase;
+        this.deleteDraftPlanUseCase = deleteDraftPlanUseCase;
         this.renewSubscriptionUseCase = renewSubscriptionUseCase;
         this.cancelSubscriptionUseCase = cancelSubscriptionUseCase;
         this.submitRequestUseCase = submitRequestUseCase;
@@ -136,6 +146,20 @@ public class SubscriptionController {
             @RequestParam(required = false) UUID replacedByPlanId) {
         var data = archivePlanUseCase.execute(new ArchivePlanCommand(id, replacedByPlanId));
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ gói đăng ký thành công", data));
+    }
+
+    @PostMapping("/plans/{id}/publish")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<SubscriptionPlanDto>> publishPlan(@PathVariable(name = "id") UUID id) {
+        var data = publishPlanUseCase.execute(new PublishPlanCommand(id));
+        return ResponseEntity.ok(ApiResponse.success("Xuất bản gói đăng ký thành công", data));
+    }
+
+    @DeleteMapping("/plans/{id}/draft")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteDraftPlan(@PathVariable(name = "id") UUID id) {
+        deleteDraftPlanUseCase.execute(new DeleteDraftPlanCommand(id));
+        return ResponseEntity.ok(ApiResponse.success("Xóa gói nháp thành công"));
     }
 
     @PostMapping("/schools/{schoolId}/subscriptions/{id}/renew")

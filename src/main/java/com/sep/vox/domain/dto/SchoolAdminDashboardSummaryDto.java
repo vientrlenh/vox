@@ -8,8 +8,8 @@ public record SchoolAdminDashboardSummaryDto(
     AppealStatsDto appealStats,
     BigDecimal revenue,
     List<MonthlySpendingDto> monthlySpending,
-    long tokenAllocated,
-    long tokenUsed,
+    BigDecimal tokenAllocated,
+    BigDecimal tokenUsed,
     SubscriptionRenewalDto subscriptionRenewal
 ) {
 

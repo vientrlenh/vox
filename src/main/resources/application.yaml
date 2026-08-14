@@ -276,7 +276,11 @@ app:
           topic:
             recording-part-changed: ${KAFKA_RECORDING_PART_CHANGED_TOPIC:exam.recording.part.changed}
           group-id: ${KAFKA_RECORDING_GROUP_ID:vox-recording}
-  internal-event: 
+        ai-usage:
+          topic:
+            ai-usage-recorded: ${KAFKA_AI_USAGE_TOPIC:exam-ai-usage-recorded}
+          group-id: ${KAFKA_AI_USAGE_GROUP_ID:vox-ai-usage}
+  internal-event:
     kafka: 
       consumer-groups:
         email:
@@ -287,6 +291,7 @@ app:
             exam-result-lifecycle: ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
             invoice: ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
+            school-debt: ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
             # Hai topic OTP chỉ email đọc. Payload của chúng KHÔNG chứa mã OTP -- mã được
             # sinh tại consumer ngay trước lúc gửi mail, xem EventTypeConstant.
             reset-password-otp: ${KAFKA_RESET_PASSWORD_OTP_TOPIC:vox.reset-password-otp.v1}
@@ -303,6 +308,7 @@ app:
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
             exam-blueprint-version: ${KAFKA_EXAM_BLUEPRINT_VERSION_TOPIC:vox.exam-blueprint-version.v1}
             invoice: ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
+            school-debt: ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
           # Ngược lại, group-id BẮT BUỘC phải là biến riêng. Dùng chung KAFKA_EMAIL_GROUP_ID
           # thì khi biến đó được set, hai listener rơi vào cùng một consumer group và Kafka
           # chỉ giao mỗi message cho MỘT trong hai -- mail hoặc notification, ngẫu nhiên.
@@ -339,6 +345,10 @@ app:
 
       "[InvoicePaid]": ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
 
+      "[SchoolDebtCapExceeded]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
+      "[SchoolLockedDueToDebt]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
+      "[SchoolDebtCleared]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
+
       # Hai event OTP: payload chỉ mang địa chỉ nhận, mã sinh ở consumer.
       "[ResetPasswordOtpRequested]": ${KAFKA_RESET_PASSWORD_OTP_TOPIC:vox.reset-password-otp.v1}
       "[RegisterVerificationOtpRequested]": ${KAFKA_REGISTER_VERIFICATION_OTP_TOPIC:vox.register-verification-otp.v1}
@@ -359,6 +369,36 @@ payos:
   checksum-key: ${PAYOS_CHECKSUM_KEY:}
   return-url: ${PAYOS_RETURN_URL:}
   cancel-url: ${PAYOS_CANCEL_URL:}              
+
+vox:
+  quota:
+    # PLACEHOLDER: dùng để ước lượng worst-case chi phí AI (USD) trước khi cho phép
+    # lên lịch kỳ thi -- xem ClassTestTokenQuotaGuardService. Đây KHÔNG phải chi phí
+    # thật (chi phí thật lấy từ ai_usage_record.cost_usd sau khi Agentic AI xử lý
+    # xong), chỉ là hệ số quy đổi tạm để chặn sớm khi trường rõ ràng không đủ hạn
+    # mức. Cần thay bằng số đo thực tế (trung bình cost_usd / audio_duration_seconds
+    # trên một khoảng thời gian đủ dài) trước khi dùng ở production..
+    estimated-cost-per-exam-second-usd: ${VOX_QUOTA_ESTIMATED_COST_PER_EXAM_SECOND_USD:}
+    # Cùng vai trò như dòng trên nhưng riêng cho PRACTICE -- tự tính lại độc lập qua
+    # QuotaPricingCalibrationJob.runPractice(), xem QuotaPricingCalibrationService/QuotaPricingSource.
+    estimated-cost-per-practice-second-usd: ${VOX_QUOTA_ESTIMATED_COST_PER_PRACTICE_SECOND_USD:}
+    calibration:
+      # QuotaPricingCalibrationJob dùng các số này để tự tính lại estimated-cost-per-exam-second-usd
+      # ở trên từ dữ liệu ai_usage_record/exam_item_responses thật, thay vì phải tự sửa .env tay --
+      # xem QuotaPricingCalibrationService.
+      window-days: ${VOX_QUOTA_CALIBRATION_WINDOW_DAYS:}
+      min-sample-sessions: ${VOX_QUOTA_CALIBRATION_MIN_SAMPLE_SESSIONS:}
+      max-change-ratio: ${VOX_QUOTA_CALIBRATION_MAX_CHANGE_RATIO:}
+      min-rate-bound: ${VOX_QUOTA_CALIBRATION_MIN_RATE_BOUND:}
+      max-rate-bound: ${VOX_QUOTA_CALIBRATION_MAX_RATE_BOUND:}
+    debt:
+      # Trần cảnh báo (KHÔNG chặn) khi nợ (usedQuantity - totalAllocated) vượt tỉ lệ này so với
+      # totalAllocated -- xem QuotaDebtProperties/SchoolSubscriptionDebtGuardService.
+      cap-ratio: ${VOX_QUOTA_DEBT_CAP_RATIO:}
+    selling-price:
+      # Tỷ giá USD->VND để FE tự tính giá gợi ý bán quota, kết hợp với serviceFeeRatio riêng của
+      # từng SubscriptionPlan -- xem QuotaSellingPriceProperties/QuotaPricingService.
+      usd-to-vnd-rate: ${VOX_QUOTA_USD_TO_VND_RATE:}
 
 sepay:
   pg:

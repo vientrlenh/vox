@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,6 +18,8 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.BuyTokensCommand;
 import com.sep.vox.application.port.input.command.TokenPurchaseItemInput;
+import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.subscription.BuyTokensUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.subscription.QuotaType;
@@ -72,7 +75,9 @@ class BuyTokensUseCaseGuardTests {
             tokenPurchaseItemRepository,
             invoiceRepository,
             financialEventRepository,
-            userContextPort
+            userContextPort,
+            mock(SchoolSubscriptionDebtGuardService.class),
+            mock(SchoolDebtNotificationService.class)
         );
 
         when(userContextPort.isSystemAdmin()).thenReturn(true);
@@ -82,7 +87,7 @@ class BuyTokensUseCaseGuardTests {
         return new BuyTokensCommand(
             schoolId,
             subscriptionId,
-            List.of(new TokenPurchaseItemInput(QuotaType.GRADING, 10)),
+            List.of(new TokenPurchaseItemInput(QuotaType.GRADING, BigDecimal.valueOf(10))),
             paymentMethod
         );
     }
@@ -94,7 +99,7 @@ class BuyTokensUseCaseGuardTests {
             .hasMessageContaining("payment-link");
 
         verifyNoInteractions(tokenPurchaseRepository, invoiceRepository, financialEventRepository);
-        verify(subscriptionQuotaRepository, never()).addAllocation(any(), org.mockito.ArgumentMatchers.anyInt());
+        verify(subscriptionQuotaRepository, never()).addAllocation(any(), any());
     }
 
     @Test

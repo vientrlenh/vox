@@ -24,30 +24,33 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
 
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricRepository rubricRepository;
+    private final RubricCriterionRepository rubricCriterionRepository;
+    private final RubricResultBandRepository rubricResultBandRepository;
     private final FrameworkRepository frameworkRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository; // Dùng Repo mới
-    private final RubricCriterionRepository rubricCriterionRepository;
 
     public ChangeSchoolRubricVersionStatusUseCase(
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
+            RubricCriterionRepository rubricCriterionRepository,
+            RubricResultBandRepository rubricResultBandRepository,
             FrameworkRepository frameworkRepository,
             AssessmentPolicyRepository assessmentPolicyRepository,
             UserRepository userRepository,
             UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            RubricCriterionRepository rubricCriterionRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
+        this.rubricCriterionRepository = rubricCriterionRepository;
+        this.rubricResultBandRepository = rubricResultBandRepository;
         this.frameworkRepository = frameworkRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
     }
 
     @Override
@@ -88,6 +91,15 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
 
             if (version.getStatus() != RubricStatus.DRAFT) {
                 throw new IllegalStateException("Chỉ có thể ban hành (PUBLISH) phiên bản đang ở trạng thái Nháp (DRAFT).");
+            }
+
+            // KIỂM TRA VERSION KHÔNG ĐƯỢC RỖNG -- version không có tiêu chí/thang điểm thì không dùng
+            // để chấm bài được, publish xong sẽ vô dụng và không thể sửa nữa (ngoại trừ archive)
+            if (rubricCriterionRepository.findByRubricVersionId(version.getId()).isEmpty()) {
+                throw new IllegalStateException("Không thể ban hành phiên bản này vì chưa có tiêu chí (Criterion) nào.");
+            }
+            if (rubricResultBandRepository.findByRubricVersionId(version.getId()).isEmpty()) {
+                throw new IllegalStateException("Không thể ban hành phiên bản này vì chưa có thang điểm (Result Band) nào.");
             }
 
             Framework framework = frameworkRepository.findById(rubric.getFrameworkId())
@@ -149,12 +161,12 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
         }
 
         if (version.getTotalScoreMethod() == RubricTotalScoreMethod.SUM) {
-            var minSum = criteria.stream().map(c -> c.getMinScore())
+            var minSum = criteria.stream().map(RubricCriterion::getMinScore)
                     .filter(java.util.Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
-            var maxSum = criteria.stream().map(c -> c.getMaxScore())
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            var maxSum = criteria.stream().map(RubricCriterion::getMaxScore)
                     .filter(java.util.Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
             if (maxSum.compareTo(version.getScoringScaleMax()) != 0
                     || minSum.compareTo(version.getScoringScaleMin()) != 0) {
                 throw new IllegalStateException(String.format(
@@ -169,9 +181,9 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
             return;
         }
 
-        var weightSum = criteria.stream().map(c -> c.getWeight())
+        var weightSum = criteria.stream().map(RubricCriterion::getWeight)
                 .filter(java.util.Objects::nonNull)
-                .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         if (weightSum.compareTo(BigDecimal.ONE) != 0) {
             throw new IllegalStateException(String.format(
                     "Không thể ban hành: phương pháp WEIGHTED_AVERAGE yêu cầu tổng trọng số của"

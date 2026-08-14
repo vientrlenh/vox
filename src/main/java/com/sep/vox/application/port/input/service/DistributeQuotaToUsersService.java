@@ -154,11 +154,11 @@ public class DistributeQuotaToUsersService {
             result.put(item.userId(), item.amount());
         }
 
-        var sumInRequest = result.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        var sumInRequest = result.values().stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         var sumOthers = existing.entrySet().stream()
             .filter(e -> !result.containsKey(e.getKey()))
             .map(e -> orZero(e.getValue().getAllocatedQuantity()))
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (sumInRequest.add(sumOthers).compareTo(totalAllocated) > 0) {
             throw new IllegalArgumentException("Tổng hạn mức phân bổ vượt quá hạn mức của trường");
         }

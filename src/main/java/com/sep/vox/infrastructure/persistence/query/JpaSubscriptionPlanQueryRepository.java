@@ -96,7 +96,7 @@ public class JpaSubscriptionPlanQueryRepository implements SubscriptionPlanQuery
             .collect(Collectors.toMap(
                 row -> (UUID) row[0],
                 row -> (Long) row[1],
-                Long::sum,
+                (a, b) -> Long.sum(a, b),
                 HashMap::new
             ));
 

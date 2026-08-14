@@ -107,9 +107,9 @@ public class QuotaPricingCalibrationService {
             return;
         }
 
-        var sessionIds = costs.stream().map(SessionCostAggregate::sessionId).toList();
+        var sessionIds = costs.stream().map(a -> a.sessionId()).toList();
         Map<UUID, Long> durationsBySession = durationLookup.apply(sessionIds).stream()
-            .collect(Collectors.toMap(SessionDurationAggregate::sessionId, SessionDurationAggregate::totalDurationSeconds));
+            .collect(Collectors.toMap(a -> a.sessionId(), a -> a.totalDurationSeconds()));
 
         var totalCost = BigDecimal.ZERO;
         var totalSeconds = 0L;
@@ -139,7 +139,7 @@ public class QuotaPricingCalibrationService {
         var rawRate = totalCost.divide(BigDecimal.valueOf(totalSeconds), 6, RoundingMode.HALF_UP);
 
         var previousApplied = quotaPricingCalibrationRepository.findLatest(source)
-            .map(QuotaPricingCalibration::getAppliedRateUsdPerSecond)
+            .map(c -> c.getAppliedRateUsdPerSecond())
             .orElseGet(defaultRate);
 
         var maxChangeRatio = calibrationProperties.maxChangeRatio();

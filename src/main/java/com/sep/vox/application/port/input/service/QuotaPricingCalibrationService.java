@@ -20,8 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.subscription.QuotaPricingCalibration;
 import com.sep.vox.domain.model.subscription.QuotaPricingSource;
-import com.sep.vox.infrastructure.properties.QuotaPricingCalibrationProperties;
-import com.sep.vox.infrastructure.properties.QuotaPricingProperties;
+import com.sep.vox.application.port.output.QuotaPricingCalibrationConfigPort;
+import com.sep.vox.application.port.output.QuotaPricingConfigPort;
 
 /**
  * Tự tính lại estimatedCostPer{Exam,Practice}SecondUsd (xem QuotaPricingProperties) từ chi phí AI
@@ -51,22 +51,22 @@ public class QuotaPricingCalibrationService {
     private final ExamItemResponseRepository examItemResponseRepository;
     private final PracticeResponseTurnRepository practiceResponseTurnRepository;
     private final QuotaPricingCalibrationRepository quotaPricingCalibrationRepository;
-    private final QuotaPricingCalibrationProperties calibrationProperties;
-    private final QuotaPricingProperties quotaPricingProperties;
+    private final QuotaPricingCalibrationConfigPort calibrationConfig;
+    private final QuotaPricingConfigPort quotaPricingConfig;
 
     public QuotaPricingCalibrationService(
             AiUsageRecordRepository aiUsageRecordRepository,
             ExamItemResponseRepository examItemResponseRepository,
             PracticeResponseTurnRepository practiceResponseTurnRepository,
             QuotaPricingCalibrationRepository quotaPricingCalibrationRepository,
-            QuotaPricingCalibrationProperties calibrationProperties,
-            QuotaPricingProperties quotaPricingProperties) {
+            QuotaPricingCalibrationConfigPort calibrationConfig,
+            QuotaPricingConfigPort quotaPricingConfig) {
         this.aiUsageRecordRepository = aiUsageRecordRepository;
         this.examItemResponseRepository = examItemResponseRepository;
         this.practiceResponseTurnRepository = practiceResponseTurnRepository;
         this.quotaPricingCalibrationRepository = quotaPricingCalibrationRepository;
-        this.calibrationProperties = calibrationProperties;
-        this.quotaPricingProperties = quotaPricingProperties;
+        this.calibrationConfig = calibrationConfig;
+        this.quotaPricingConfig = quotaPricingConfig;
     }
 
     /** Calibrate estimatedCostPerExamSecondUsd -- giây trả lời thật lấy từ exam_item_responses. */
@@ -75,7 +75,7 @@ public class QuotaPricingCalibrationService {
         recalibrate(
             QuotaPricingSource.EXAM,
             examItemResponseRepository::sumDurationSecondsGroupedBySessionIds,
-            quotaPricingProperties::estimatedCostPerExamSecondUsd
+            quotaPricingConfig::estimatedCostPerExamSecondUsd
         );
     }
 
@@ -85,7 +85,7 @@ public class QuotaPricingCalibrationService {
         recalibrate(
             QuotaPricingSource.PRACTICE,
             practiceResponseTurnRepository::sumDurationSecondsGroupedBySessionIds,
-            quotaPricingProperties::estimatedCostPerPracticeSecondUsd
+            quotaPricingConfig::estimatedCostPerPracticeSecondUsd
         );
     }
 
@@ -93,8 +93,8 @@ public class QuotaPricingCalibrationService {
             QuotaPricingSource source,
             Function<Collection<UUID>, List<SessionDurationAggregate>> durationLookup,
             Supplier<BigDecimal> defaultRate) {
-        var windowDays = calibrationProperties.windowDays();
-        var minSampleSessions = calibrationProperties.minSampleSessions();
+        var windowDays = calibrationConfig.windowDays();
+        var minSampleSessions = calibrationConfig.minSampleSessions();
         var since = Instant.now().minus(windowDays, ChronoUnit.DAYS);
 
         var costs = aiUsageRecordRepository.sumCostUsdGroupedBySessionSince(since);
@@ -142,12 +142,12 @@ public class QuotaPricingCalibrationService {
             .map(c -> c.getAppliedRateUsdPerSecond())
             .orElseGet(defaultRate);
 
-        var maxChangeRatio = calibrationProperties.maxChangeRatio();
+        var maxChangeRatio = calibrationConfig.maxChangeRatio();
         var lowerSmoothBound = previousApplied.multiply(BigDecimal.ONE.subtract(maxChangeRatio));
         var upperSmoothBound = previousApplied.multiply(BigDecimal.ONE.add(maxChangeRatio));
         var smoothed = clamp(rawRate, lowerSmoothBound, upperSmoothBound);
 
-        var applied = clamp(smoothed, calibrationProperties.minRateBound(), calibrationProperties.maxRateBound());
+        var applied = clamp(smoothed, calibrationConfig.minRateBound(), calibrationConfig.maxRateBound());
 
         String note = applied.compareTo(rawRate) == 0
             ? null

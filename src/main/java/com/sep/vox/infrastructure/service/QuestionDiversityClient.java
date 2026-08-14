@@ -18,8 +18,10 @@ import org.springframework.stereotype.Service;
 
 import tools.jackson.databind.json.JsonMapper;
 
+import com.sep.vox.application.port.output.QuestionDiversityPort;
+
 @Service
-public class QuestionDiversityClient {
+public class QuestionDiversityClient implements QuestionDiversityPort {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(
         QuestionDiversityClient.class
@@ -49,6 +51,7 @@ public class QuestionDiversityClient {
         );
     }
 
+    @Override
     public Map<UUID, Double> maxSimilarities(
             List<UUID> candidateIds,
             List<UUID> selectedIds) {

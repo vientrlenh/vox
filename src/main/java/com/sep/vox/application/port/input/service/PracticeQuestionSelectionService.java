@@ -15,7 +15,8 @@ import org.springframework.stereotype.Service;
 
 import tools.jackson.databind.json.JsonMapper;
 
-import com.sep.vox.infrastructure.properties.PracticeGenerationProperties;
+import com.sep.vox.application.port.output.PracticeGenerationConfigPort;
+import com.sep.vox.application.port.output.QuestionDiversityPort;
 import com.sep.vox.application.query.dto.PracticeFocusInfo;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
@@ -23,7 +24,6 @@ import com.sep.vox.domain.repository.CriterionScoreAverageRepository;
 import com.sep.vox.domain.repository.PracticeQuestionRepository;
 import com.sep.vox.domain.service.personalization.SubAttributePolicy;
 import com.sep.vox.domain.service.personalization.TensePolicy;
-import com.sep.vox.infrastructure.service.QuestionDiversityClient;
 
 /**
  * Chọn/sinh ĐÚNG 1 câu MAIN tiếp theo trong lúc phiên luyện đang chạy -- tách từ
@@ -62,23 +62,23 @@ public class PracticeQuestionSelectionService {
 
     private final PracticeQuestionRepository questionRepository;
     private final PracticeQuestionGenerationService generationService;
-    private final QuestionDiversityClient diversityClient;
-    private final PracticeGenerationProperties generationProperties;
+    private final QuestionDiversityPort diversityPort;
+    private final PracticeGenerationConfigPort generationConfig;
     private final CriterionScoreAverageRepository criterionScoreRepository;
     private final PracticeTopicOfferEnrichmentService enrichmentService;
 
     public PracticeQuestionSelectionService(
             PracticeQuestionRepository questionRepository,
             PracticeQuestionGenerationService generationService,
-            QuestionDiversityClient diversityClient,
-            PracticeGenerationProperties generationProperties,
+            QuestionDiversityPort diversityPort,
+            PracticeGenerationConfigPort generationConfig,
             CriterionScoreAverageRepository criterionScoreRepository,
             PracticeTopicOfferEnrichmentService enrichmentService) {
         this.enrichmentService = enrichmentService;
         this.questionRepository = questionRepository;
         this.generationService = generationService;
-        this.diversityClient = diversityClient;
-        this.generationProperties = generationProperties;
+        this.diversityPort = diversityPort;
+        this.generationConfig = generationConfig;
         this.criterionScoreRepository = criterionScoreRepository;
     }
 
@@ -216,7 +216,7 @@ public class PracticeQuestionSelectionService {
         if (candidates.isEmpty()) {
             return Optional.empty();
         }
-        var similarities = diversityClient.maxSimilarities(
+        var similarities = diversityPort.maxSimilarities(
             candidates.stream().map(question -> question.getId()).toList(),
             alreadyChosen.stream().map(question -> question.getId()).toList()
         );
@@ -286,12 +286,12 @@ public class PracticeQuestionSelectionService {
         // Nới THÌ trước, nới tiêu chí sau. Thứ tự này không tuỳ tiện: hỏi hai câu cùng khung
         // thời gian chỉ là kém phong phú, còn hỏi câu nhắm sai tiêu chí thì ô đó không luyện
         // đúng thứ đang cần luyện.
-        if (selected.size() < generationProperties.paperTargetQuestionCount()) {
+        if (selected.size() < generationConfig.paperTargetQuestionCount()) {
             questions(topic.getId(), studentId, criterion, null, rankMin, rankMax)
                 .forEach(question -> putIfNotExcluded(selected, question, excludeIds));
         }
 
-        if (selected.size() < generationProperties.paperTargetQuestionCount()) {
+        if (selected.size() < generationConfig.paperTargetQuestionCount()) {
             questions(topic.getId(), studentId, null, null, rankMin, rankMax)
                 .forEach(question -> putIfNotExcluded(selected, question, excludeIds));
         }
@@ -321,8 +321,8 @@ public class PracticeQuestionSelectionService {
                 subAttribute,
                 tense,
                 targetRank,
-                generationProperties.onlineCandidateCount(),
-                generationProperties.onlineBudget(),
+                generationConfig.onlineCandidateCount(),
+                generationConfig.onlineBudget(),
                 bandCount,
                 // Thang bậc của ĐÚNG khung học sinh đang luyện. Lấy frameworkBandLadder() không
                 // tham số là lấy khung đang hiệu lực toàn hệ -- prompt sinh câu sẽ mô tả một

@@ -13,6 +13,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.port.output.TopicGenerationPort;
+import com.sep.vox.application.port.output.TopicGenerationPort.KeywordEvidence;
 import com.sep.vox.application.query.repository.PracticeTopicQueryRepository;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
 import com.sep.vox.application.response.input.topicsuggestion.TopicSuggestionResponses.TopicFromKeywordResult;
@@ -23,8 +25,6 @@ import com.sep.vox.domain.repository.LearnerProfileRepository;
 import com.sep.vox.domain.repository.PracticeTopicRepository;
 import com.sep.vox.domain.repository.TopicSuggestionRepository;
 import com.sep.vox.domain.service.personalization.TensePolicy;
-import com.sep.vox.infrastructure.service.TopicGenerationClient;
-import com.sep.vox.infrastructure.service.TopicGenerationClient.KeywordEvidence;
 
 /**
  * Đề xuất / tạo / khớp chủ đề luyện tập -- gộp từ TopicSuggestionRepositoryImpl vì đây là thuật
@@ -45,7 +45,7 @@ public class TopicSuggestionService {
     private final PracticeTopicRepository practiceTopicRepository;
     private final PracticeTopicQueryRepository practiceTopicQueryRepository;
     private final LearnerProfileRepository learnerProfileRepository;
-    private final TopicGenerationClient generationClient;
+    private final TopicGenerationPort topicGenerationPort;
     private final PracticeTopicOfferEnrichmentService enrichmentService;
     private final KeywordTopicPersistenceService keywordTopicPersistenceService;
     private final InterestDimensionRepository interestDimensionRepository;
@@ -55,7 +55,7 @@ public class TopicSuggestionService {
             PracticeTopicRepository practiceTopicRepository,
             PracticeTopicQueryRepository practiceTopicQueryRepository,
             LearnerProfileRepository learnerProfileRepository,
-            TopicGenerationClient generationClient,
+            TopicGenerationPort topicGenerationPort,
             PracticeTopicOfferEnrichmentService enrichmentService,
             KeywordTopicPersistenceService keywordTopicPersistenceService,
             InterestDimensionRepository interestDimensionRepository) {
@@ -64,7 +64,7 @@ public class TopicSuggestionService {
         this.practiceTopicRepository = practiceTopicRepository;
         this.practiceTopicQueryRepository = practiceTopicQueryRepository;
         this.learnerProfileRepository = learnerProfileRepository;
-        this.generationClient = generationClient;
+        this.topicGenerationPort = topicGenerationPort;
         this.enrichmentService = enrichmentService;
         this.keywordTopicPersistenceService = keywordTopicPersistenceService;
     }
@@ -116,7 +116,7 @@ public class TopicSuggestionService {
             recordKeywordRequest(studentId, keyword, "OUT_OF_EXAM_SCOPE");
             return new TopicFromKeywordResult(null, "OUT_OF_EXAM_SCOPE");
         }
-        var proposals = generationClient.propose(
+        var proposals = topicGenerationPort.propose(
             studentId,
             List.of(new KeywordEvidence(keyword, 1)),
             interestScores(studentId),
@@ -154,7 +154,7 @@ public class TopicSuggestionService {
             proposal.curriculumGroup(),
             proposal.temporalAffordance()
         );
-        generationClient.index(
+        topicGenerationPort.index(
             topicId.toString(), proposal.name(), proposal.reasonText(), true, null, "ACTIVE"
         );
         return new TopicFromKeywordResult(
@@ -193,7 +193,7 @@ public class TopicSuggestionService {
         if (requestedCount <= 0 || "EXAM_PREP".equals(currentGoal(studentId))) {
             return List.of();
         }
-        var proposals = generationClient.propose(
+        var proposals = topicGenerationPort.propose(
             studentId,
             List.of(),
             interestScores(studentId),
@@ -247,7 +247,7 @@ public class TopicSuggestionService {
             candidates.add(new TopicNameCard(
                 topicId, proposal.name(), proposal.interestDimension()
             ));
-            generationClient.index(
+            topicGenerationPort.index(
                 topicId.toString(), proposal.name(), proposal.reasonText(), true, null, "ACTIVE"
             );
             result.add(offerFor(

@@ -18,10 +18,11 @@ import org.springframework.stereotype.Service;
 
 import tools.jackson.databind.json.JsonMapper;
 
+import com.sep.vox.application.port.output.TopicGenerationPort;
 import com.sep.vox.domain.service.personalization.TensePolicy;
 
 @Service
-public class TopicGenerationClient {
+public class TopicGenerationClient implements TopicGenerationPort {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(
         TopicGenerationClient.class
@@ -54,6 +55,7 @@ public class TopicGenerationClient {
         );
     }
 
+    @Override
     public List<TopicProposal> propose(
             UUID studentId,
             List<KeywordEvidence> keywordEvidence,
@@ -129,6 +131,7 @@ public class TopicGenerationClient {
         }
     }
 
+    @Override
     public void index(
             String topicId,
             String name,
@@ -190,6 +193,7 @@ public class TopicGenerationClient {
      * agents chết thì người dùng vẫn có kết quả từ Postgres và không thấy lỗi gì -- suy giảm êm
      * thay vì hỏng cả ô tìm kiếm.
      */
+    @Override
     public List<TopicSearchHit> searchByVector(String keyword, int limit) {
         if (keyword == null || keyword.isBlank()) {
             return List.of();
@@ -222,20 +226,4 @@ public class TopicGenerationClient {
         }
     }
 
-    public record TopicSearchHit(UUID topicId, double similarity) {
-    }
-
-    public record KeywordEvidence(String keyword, int sessionCount) {
-    }
-
-    public record TopicProposal(
-            String name,
-            String interestDimension,
-            String curriculumGroup,
-            String temporalAffordance,
-            double confidence,
-            String reasonText,
-            String evidenceType,
-            String evidenceJson) {
-    }
 }

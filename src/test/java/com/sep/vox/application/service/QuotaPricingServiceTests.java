@@ -10,12 +10,12 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.domain.model.subscription.ExchangeRateSnapshot;
 import com.sep.vox.domain.repository.ExchangeRateSnapshotRepository;
 import com.sep.vox.domain.repository.QuotaPricingCalibrationRepository;
 import com.sep.vox.infrastructure.properties.QuotaPricingProperties;
 import com.sep.vox.infrastructure.properties.QuotaSellingPriceProperties;
+import com.sep.vox.infrastructure.service.QuotaPricingService;
 
 class QuotaPricingServiceTests {
 

@@ -12,6 +12,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.QuotaDebtConfigPort;
 import com.sep.vox.domain.dto.SubscriptionQuotaDto;
 import com.sep.vox.domain.mapper.SubscriptionQuotaDtoMapper;
 import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
@@ -22,7 +23,6 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionQuotaUserAllocationRepository;
 import com.sep.vox.domain.repository.TokenUsageEventRepository;
-import com.sep.vox.infrastructure.properties.QuotaDebtProperties;
 
 // Internal service-to-service use case (called from the exam-session flow), not end-user-facing —
 // no UserContextPort school-scoping check here
@@ -34,7 +34,7 @@ public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, Subscr
     private final SubscriptionQuotaRepository subscriptionQuotaRepository;
     private final SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
     private final TokenUsageEventRepository tokenUsageEventRepository;
-    private final QuotaDebtProperties quotaDebtProperties;
+    private final QuotaDebtConfigPort quotaDebtConfig;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolDebtNotificationService schoolDebtNotificationService;
 
@@ -42,13 +42,13 @@ public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, Subscr
             SubscriptionQuotaRepository subscriptionQuotaRepository,
             SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
             TokenUsageEventRepository tokenUsageEventRepository,
-            QuotaDebtProperties quotaDebtProperties,
+            QuotaDebtConfigPort quotaDebtConfig,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SchoolDebtNotificationService schoolDebtNotificationService) {
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
         this.tokenUsageEventRepository = tokenUsageEventRepository;
-        this.quotaDebtProperties = quotaDebtProperties;
+        this.quotaDebtConfig = quotaDebtConfig;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.schoolDebtNotificationService = schoolDebtNotificationService;
     }
@@ -110,7 +110,7 @@ public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, Subscr
         if (overageAfter.compareTo(BigDecimal.ZERO) <= 0) {
             return;
         }
-        var cap = after.getTotalAllocated().multiply(quotaDebtProperties.capRatio());
+        var cap = after.getTotalAllocated().multiply(quotaDebtConfig.capRatio());
         if (overageAfter.compareTo(cap) <= 0) {
             return;
         }

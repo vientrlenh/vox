@@ -7,11 +7,11 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.mapper.learnerprofile.LearnerProfileResponseMapper;
-import com.sep.vox.infrastructure.properties.InterestQuizProperties;
 import com.sep.vox.application.port.input.service.InterestQuizItemSelector;
 import com.sep.vox.application.port.input.service.InterestQuizScorer;
-import com.sep.vox.infrastructure.service.InterestQuizGenerationClient;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.InterestQuizConfigPort;
+import com.sep.vox.application.port.output.InterestQuizGenerationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.InterestQuizItem;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
@@ -25,10 +25,10 @@ import com.sep.vox.domain.repository.TopicInterestEventRepository;
 @Service
 public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<InterestQuizItem>> {
 
-    private final InterestQuizProperties quizProperties;
+    private final InterestQuizConfigPort quizConfig;
     private final InterestQuizItemRepository quizItemRepository;
     private final TopicInterestEventRepository topicInterestEventRepository;
-    private final InterestQuizGenerationClient generationClient;
+    private final InterestQuizGenerationPort quizGenerationPort;
     private final UserContextPort userContextPort;
     private final InterestQuizScorer interestQuizScorer;
     private final InterestQuizItemSelector itemSelector;
@@ -36,21 +36,21 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
     public ViewInterestQuizItemsUseCase(
             InterestQuizItemRepository quizItemRepository,
             TopicInterestEventRepository topicInterestEventRepository,
-            InterestQuizGenerationClient generationClient,
+            InterestQuizGenerationPort quizGenerationPort,
             UserContextPort userContextPort,
             InterestQuizScorer interestQuizScorer,
             InterestQuizItemSelector itemSelector,
-            InterestQuizProperties quizProperties) {
-        this.quizProperties = quizProperties;
+            InterestQuizConfigPort quizConfig) {
+        this.quizConfig = quizConfig;
         this.itemSelector = itemSelector;
         this.quizItemRepository = quizItemRepository;
         this.topicInterestEventRepository = topicInterestEventRepository;
-        this.generationClient = generationClient;
+        this.quizGenerationPort = quizGenerationPort;
         this.userContextPort = userContextPort;
         this.interestQuizScorer = interestQuizScorer;
     }
 
-    // Không @Transactional -- generationClient.generate() gọi LLM chậm (Python agents,
+    // Không @Transactional -- quizGenerationPort.generate() gọi LLM chậm (Python agents,
     // 10-20s). Bọc trong transaction từng gây HikariCP cạn pool dưới tải (xem
     // BuildPracticePaperUseCase/PracticeQuestionGenerationService, cùng đợt sửa). Mỗi lệnh gọi
     // repository bên dưới tự transact riêng qua Spring Data proxy.
@@ -85,8 +85,8 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
         // model tự cân bằng chiều -- 46,8 giây đo được, vượt cả trần Tomcat lẫn trần client.
         // Nay Python chia thành 7 lượt song song, mỗi lượt một item với bộ ba chiều và bối
         // cảnh đã phân công sẵn, ở mức suy luận thấp.
-        var generated = generationClient.generate(
-            quizProperties.itemCount(),
+        var generated = quizGenerationPort.generate(
+            quizConfig.itemCount(),
             existingStatements,
             interestQuizScorer.quizDimensionCodes()
         );
@@ -126,7 +126,7 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
      * hỏi (app.personalization.quiz.item-count) -- xem InterestQuizItemSelector để biết vì sao
      * cần cả hai. */
     private List<InterestQuizSeedItem> selectBalanced(List<InterestQuizSeedItem> pool) {
-        return itemSelector.select(pool, quizProperties.itemCount());
+        return itemSelector.select(pool, quizConfig.itemCount());
     }
 
     private List<InterestQuizItem> toResponse(List<InterestQuizSeedItem> items) {

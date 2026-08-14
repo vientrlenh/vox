@@ -14,13 +14,14 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.port.output.PracticeQuestionGenerationPort;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Service
-public class PracticeQuestionGenerationClient {
+public class PracticeQuestionGenerationClient implements PracticeQuestionGenerationPort {
 
     private final HttpClient httpClient;
     private final JsonMapper jsonMapper;
@@ -51,6 +52,7 @@ public class PracticeQuestionGenerationClient {
      * @param bandLadder mô tả từng bậc, để prompt chấm nói đúng thang của trường. Rỗng thì
      *                   Python tự lùi về ladder mặc định của nó.
      */
+    @Override
     public List<GeneratedQuestion> generate(
             TopicDetails topic,
             String criterionCode,
@@ -129,6 +131,7 @@ public class PracticeQuestionGenerationClient {
         }
     }
 
+    @Override
     public void index(GeneratedQuestion question) {
         try {
             var request = HttpRequest.newBuilder(indexEndpoint)
@@ -181,30 +184,4 @@ public class PracticeQuestionGenerationClient {
         );
     }
 
-    public record TopicDetails(
-        UUID id,
-        String name,
-        String interestDimension,
-        String curriculumGroup
-    ) {
-    }
-
-    public record GeneratedQuestion(
-        UUID id,
-        UUID topicId,
-        String questionText,
-        String criterionCode,
-        String subAttribute,
-        String targetTense,
-        int difficultyRank,
-        String difficultyFeaturesJson,
-        String evaluationGuideJson,
-        String suggestedIdeasJson,
-        String questionType,
-        int maxResponseSeconds,
-        int minResponseSeconds,
-        int vstepPart,
-        JsonNode sourceJson
-    ) {
-    }
 }

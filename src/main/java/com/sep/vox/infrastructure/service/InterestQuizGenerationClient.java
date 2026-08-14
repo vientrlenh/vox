@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import tools.jackson.databind.json.JsonMapper;
 
+import com.sep.vox.application.port.output.InterestQuizGenerationPort;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
 
 /**
@@ -24,7 +25,7 @@ import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
  * chỉ khác endpoint/payload.
  */
 @Service
-public class InterestQuizGenerationClient {
+public class InterestQuizGenerationClient implements InterestQuizGenerationPort {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InterestQuizGenerationClient.class);
 
@@ -50,6 +51,7 @@ public class InterestQuizGenerationClient {
      *                   xuống thay vì để Python gắn cứng, nhờ vậy SYSTEM_ADMIN thêm chiều mới
      *                   là có hiệu lực ngay, không phải deploy lại service Python.
      */
+    @Override
     public List<InterestQuizSeedItem> generate(
             int maxItems,
             List<String> existingStatements,

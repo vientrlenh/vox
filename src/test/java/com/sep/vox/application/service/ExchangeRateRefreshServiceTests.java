@@ -13,11 +13,11 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.port.input.service.ExchangeRateRefreshService;
 import com.sep.vox.domain.model.subscription.ExchangeRateSnapshot;
 import com.sep.vox.domain.repository.ExchangeRateSnapshotRepository;
 import com.sep.vox.infrastructure.client.ExchangeRateApiClient;
 import com.sep.vox.infrastructure.properties.ExchangeRateApiProperties;
+import com.sep.vox.infrastructure.service.ExchangeRateRefreshService;
 
 class ExchangeRateRefreshServiceTests {
 

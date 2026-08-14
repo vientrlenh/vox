@@ -66,9 +66,16 @@ public interface SpringDataExamBlueprintRepository extends JpaRepository<ExamBlu
                     WHERE ur.userId = :userId AND r.code = 'SCHOOL_ADMIN'
                 )
                 OR EXISTS (
+                    -- CHAIR ngang AUTHOR ở đây, KHÔNG phải chỉ AUTHOR.
+                    --
+                    -- Chủ tịch hội đồng là người quyết định của kỳ thi (duyệt/khoá đề, lên
+                    -- lịch, công bố kết quả) mà lại không tự dựng được phiên bản blueprint cho
+                    -- chính kỳ thi mình chủ trì -- phải nhờ một AUTHOR hoặc quản trị trường
+                    -- làm hộ. Quyền hẹp hơn người mình có quyền duyệt là ngược đời.
                     SELECT 1 FROM ExamJpaEntity e
                     JOIN ExamMemberJpaEntity em ON em.examId = e.id
-                    WHERE e.blueprintId = b.id AND em.userId = :userId AND em.role = 'AUTHOR'
+                    WHERE e.blueprintId = b.id AND em.userId = :userId
+                      AND em.role IN ('AUTHOR', 'CHAIR')
                 )
                 OR (
                     NOT EXISTS (SELECT 1 FROM ExamJpaEntity e2 WHERE e2.blueprintId = b.id)

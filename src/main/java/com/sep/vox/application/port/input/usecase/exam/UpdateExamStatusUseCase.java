@@ -246,14 +246,6 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         var plan = subscriptionPlanRepository.findById(activeSubscription.getPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói subscription"));
 
-        var candidateCount = examCandidateRepository.countByExamId(exam.getId());
-        if (plan.getMaxStudentCount() != null && candidateCount > plan.getMaxStudentCount()) {
-            throw new PlanLimitExceededException(
-                "Số học sinh dự thi (" + candidateCount + ") vượt quá giới hạn của gói \"" + plan.getName()
-                    + "\" (tối đa " + plan.getMaxStudentCount() + " học sinh), vui lòng nâng cấp gói"
-            );
-        }
-
         if (exam.getExamTimeDurationSecond() != null && plan.getMaxTimePerAttemptMin() != null
                 && exam.getExamTimeDurationSecond() > plan.getMaxTimePerAttemptMin() * 60) {
             throw new PlanLimitExceededException(

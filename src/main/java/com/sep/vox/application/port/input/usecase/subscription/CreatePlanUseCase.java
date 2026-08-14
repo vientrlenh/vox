@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.CreatePlanCommand;
+import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
@@ -28,14 +29,17 @@ public class CreatePlanUseCase implements IUseCase<CreatePlanCommand, Subscripti
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final PlanQuotaRepository planQuotaRepository;
+    private final QuotaPricingService quotaPricingService;
     private final UserContextPort userContextPort;
 
     public CreatePlanUseCase(
             SubscriptionPlanRepository subscriptionPlanRepository,
             PlanQuotaRepository planQuotaRepository,
+            QuotaPricingService quotaPricingService,
             UserContextPort userContextPort) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.planQuotaRepository = planQuotaRepository;
+        this.quotaPricingService = quotaPricingService;
         this.userContextPort = userContextPort;
     }
 
@@ -61,7 +65,6 @@ public class CreatePlanUseCase implements IUseCase<CreatePlanCommand, Subscripti
             input.pricePerYear(),
             input.validityDays(),
             input.maxTimePerAttemptMin(),
-            input.maxStudentCount(),
             PlanStatus.DRAFT,
             1,
             Instant.now(),
@@ -70,12 +73,13 @@ public class CreatePlanUseCase implements IUseCase<CreatePlanCommand, Subscripti
         );
         var savedPlan = subscriptionPlanRepository.save(plan);
 
+        var tokenUnitPrice = quotaPricingService.tokenUnitPriceFor(savedPlan.getServiceFeeRatio());
         var savedQuotas = input.quotas().stream()
             .map(quotaInput -> planQuotaRepository.save(new PlanQuota(
                 savedPlan.getId(),
                 quotaInput.quotaType(),
                 quotaInput.includedQuantity(),
-                quotaInput.tokenUnitPrice()
+                tokenUnitPrice
             )))
             .toList();
 

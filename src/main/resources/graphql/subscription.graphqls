@@ -81,7 +81,6 @@ type SubscriptionPlan {
     pricePerYear: Float!
     validityDays: Int!
     maxTimePerAttemptMin: Int
-    maxStudentCount: Int
     popular: Boolean!
     status: PlanStatus!
     version: Int!
@@ -279,7 +278,6 @@ type SchoolDebtEventPage {
 input PlanQuotaItemInput {
     quotaType: QuotaType!
     includedQuantity: Float!
-    tokenUnitPrice: Float!
 }
 
 input UpdateSubscriptionPlanInput {
@@ -288,7 +286,6 @@ input UpdateSubscriptionPlanInput {
     pricePerYear: Float
     validityDays: Int
     maxTimePerAttemptMin: Int
-    maxStudentCount: Int
     serviceFeeRatio: Float
     quotas: [PlanQuotaItemInput!]
 }

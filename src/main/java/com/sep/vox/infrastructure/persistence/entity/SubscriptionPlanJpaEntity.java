@@ -43,9 +43,6 @@ public class SubscriptionPlanJpaEntity {
     @Column(name = "max_time_per_attempt_min", nullable = false)
     private Integer maxTimePerAttemptMin;
 
-    @Column(name = "max_student_count", nullable = false)
-    private Integer maxStudentCount;
-
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_subscription_plan_status_valid",
@@ -72,7 +69,7 @@ public class SubscriptionPlanJpaEntity {
     protected SubscriptionPlanJpaEntity() {}
 
     public SubscriptionPlanJpaEntity(UUID id, String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
-            Integer maxTimePerAttemptMin, Integer maxStudentCount, String status, Integer version,
+            Integer maxTimePerAttemptMin, String status, Integer version,
             Instant createdAt, UUID createdBy, UUID replacedByPlanId, BigDecimal serviceFeeRatio) {
         this.id = id;
         this.name = name;
@@ -80,7 +77,6 @@ public class SubscriptionPlanJpaEntity {
         this.pricePerYear = pricePerYear;
         this.validityDays = validityDays;
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
-        this.maxStudentCount = maxStudentCount;
         this.status = status;
         this.version = version;
         this.createdAt = createdAt;
@@ -135,14 +131,6 @@ public class SubscriptionPlanJpaEntity {
 
     public void setMaxTimePerAttemptMin(Integer maxTimePerAttemptMin) {
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
-    }
-
-    public Integer getMaxStudentCount() {
-        return maxStudentCount;
-    }
-
-    public void setMaxStudentCount(Integer maxStudentCount) {
-        this.maxStudentCount = maxStudentCount;
     }
 
     public String getStatus() {

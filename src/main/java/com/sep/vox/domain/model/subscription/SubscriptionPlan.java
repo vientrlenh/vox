@@ -11,7 +11,6 @@ public class SubscriptionPlan {
     private BigDecimal pricePerYear;
     private Integer validityDays;
     private Integer maxTimePerAttemptMin;
-    private Integer maxStudentCount;
     private PlanStatus status;
     private Integer version;
     private Instant createdAt;
@@ -22,7 +21,7 @@ public class SubscriptionPlan {
     public SubscriptionPlan() {}
 
     public SubscriptionPlan(UUID id, String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
-            Integer maxTimePerAttemptMin, Integer maxStudentCount, PlanStatus status, Integer version,
+            Integer maxTimePerAttemptMin, PlanStatus status, Integer version,
             Instant createdAt, UUID createdBy, UUID replacedByPlanId, BigDecimal serviceFeeRatio) {
         this.id = id;
         this.name = name;
@@ -30,7 +29,6 @@ public class SubscriptionPlan {
         this.pricePerYear = pricePerYear;
         this.validityDays = validityDays;
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
-        this.maxStudentCount = maxStudentCount;
         this.status = status;
         this.version = version;
         this.createdAt = createdAt;
@@ -40,14 +38,13 @@ public class SubscriptionPlan {
     }
 
     public SubscriptionPlan(String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
-            Integer maxTimePerAttemptMin, Integer maxStudentCount, PlanStatus status, Integer version,
+            Integer maxTimePerAttemptMin, PlanStatus status, Integer version,
             Instant createdAt, UUID createdBy, BigDecimal serviceFeeRatio) {
         this.name = name;
         this.tagline = tagline;
         this.pricePerYear = pricePerYear;
         this.validityDays = validityDays;
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
-        this.maxStudentCount = maxStudentCount;
         this.status = status;
         this.version = version;
         this.createdAt = createdAt;
@@ -101,14 +98,6 @@ public class SubscriptionPlan {
 
     public void setMaxTimePerAttemptMin(Integer maxTimePerAttemptMin) {
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
-    }
-
-    public Integer getMaxStudentCount() {
-        return maxStudentCount;
-    }
-
-    public void setMaxStudentCount(Integer maxStudentCount) {
-        this.maxStudentCount = maxStudentCount;
     }
 
     public PlanStatus getStatus() {

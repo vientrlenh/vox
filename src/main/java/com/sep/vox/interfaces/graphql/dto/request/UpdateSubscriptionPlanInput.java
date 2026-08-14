@@ -9,7 +9,6 @@ public record UpdateSubscriptionPlanInput(
     BigDecimal pricePerYear,
     Integer validityDays,
     Integer maxTimePerAttemptMin,
-    Integer maxStudentCount,
     BigDecimal serviceFeeRatio,
     List<PlanQuotaItemInput> quotas
 ) {

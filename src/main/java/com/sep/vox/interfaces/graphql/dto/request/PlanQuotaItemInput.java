@@ -6,7 +6,6 @@ import com.sep.vox.domain.model.subscription.QuotaType;
 
 public record PlanQuotaItemInput(
     QuotaType quotaType,
-    BigDecimal includedQuantity,
-    BigDecimal tokenUnitPrice
+    BigDecimal includedQuantity
 ) {
 }

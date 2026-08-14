@@ -1,11 +1,14 @@
 package com.sep.vox.application.port.input.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
+import com.sep.vox.domain.model.subscription.ExchangeRateSnapshot;
 import com.sep.vox.domain.model.subscription.QuotaPricingCalibration;
 import com.sep.vox.domain.model.subscription.QuotaPricingSource;
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.domain.repository.ExchangeRateSnapshotRepository;
 import com.sep.vox.domain.repository.QuotaPricingCalibrationRepository;
 import com.sep.vox.infrastructure.properties.QuotaPricingProperties;
 import com.sep.vox.infrastructure.properties.QuotaSellingPriceProperties;
@@ -22,14 +25,17 @@ import com.sep.vox.infrastructure.properties.QuotaSellingPriceProperties;
 public class QuotaPricingService {
 
     private final QuotaPricingCalibrationRepository quotaPricingCalibrationRepository;
+    private final ExchangeRateSnapshotRepository exchangeRateSnapshotRepository;
     private final QuotaPricingProperties quotaPricingProperties;
     private final QuotaSellingPriceProperties quotaSellingPriceProperties;
 
     public QuotaPricingService(
             QuotaPricingCalibrationRepository quotaPricingCalibrationRepository,
+            ExchangeRateSnapshotRepository exchangeRateSnapshotRepository,
             QuotaPricingProperties quotaPricingProperties,
             QuotaSellingPriceProperties quotaSellingPriceProperties) {
         this.quotaPricingCalibrationRepository = quotaPricingCalibrationRepository;
+        this.exchangeRateSnapshotRepository = exchangeRateSnapshotRepository;
         this.quotaPricingProperties = quotaPricingProperties;
         this.quotaSellingPriceProperties = quotaSellingPriceProperties;
     }
@@ -47,6 +53,20 @@ public class QuotaPricingService {
     }
 
     public BigDecimal usdToVndRate() {
-        return quotaSellingPriceProperties.usdToVndRate();
+        return exchangeRateSnapshotRepository.findLatest()
+            .map(ExchangeRateSnapshot::getUsdToVndRate)
+            .orElseGet(quotaSellingPriceProperties::usdToVndRate);
+    }
+
+    /**
+     * Giá bán mỗi $1 hạn mức cho CreatePlanUseCase/UpdatePlanUseCase -- tính từ usdToVndRate() ×
+     * (1 + serviceFeeRatio), làm tròn HALF_UP về số nguyên (khớp cột plan_quota.token_unit_price
+     * NUMERIC(15,0)). serviceFeeRatio là field cấp-gói (không theo từng quotaType) nên cùng 1 giá
+     * áp dụng cho mọi loại quota của gói đó.
+     */
+    public BigDecimal tokenUnitPriceFor(BigDecimal serviceFeeRatio) {
+        return usdToVndRate()
+            .multiply(BigDecimal.ONE.add(serviceFeeRatio))
+            .setScale(0, RoundingMode.HALF_UP);
     }
 }

@@ -14,7 +14,6 @@ public record CreatePlanRequest(
     @NotNull BigDecimal pricePerYear,
     @NotNull Integer validityDays,
     Integer maxTimePerAttemptMin,
-    @NotNull Integer maxStudentCount,
     // Bỏ trống -> mặc định 0.20 (20%), xem CreatePlanUseCase.
     @DecimalMin("0") BigDecimal serviceFeeRatio,
     @NotEmpty List<PlanQuotaItemRequest> quotas

@@ -19,12 +19,11 @@ public final class UpdateSubscriptionPlanCommandMapper {
             input.pricePerYear(),
             input.validityDays(),
             input.maxTimePerAttemptMin(),
-            input.maxStudentCount(),
             input.serviceFeeRatio(),
             input.quotas() == null
                 ? null
                 : input.quotas().stream()
-                    .map(item -> new PlanQuotaInput(item.quotaType(), item.includedQuantity(), item.tokenUnitPrice()))
+                    .map(item -> new PlanQuotaInput(item.quotaType(), item.includedQuantity()))
                     .toList()
         );
     }

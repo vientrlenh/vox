@@ -16,10 +16,9 @@ public final class CreatePlanCommandMapper {
             request.pricePerYear(),
             request.validityDays(),
             request.maxTimePerAttemptMin(),
-            request.maxStudentCount(),
             request.serviceFeeRatio(),
             request.quotas().stream()
-                .map(item -> new PlanQuotaInput(item.quotaType(), item.includedQuantity(), item.tokenUnitPrice()))
+                .map(item -> new PlanQuotaInput(item.quotaType(), item.includedQuantity()))
                 .toList()
         );
     }

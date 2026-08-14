@@ -95,7 +95,7 @@ class ApproveRequestUseCaseTests {
             amount, RequestStatus.PENDING, Instant.now(), null, null
         );
         var plan = new SubscriptionPlan(
-            planId, "Gói Trường", null, amount, 365, 60, 500, PlanStatus.ACTIVE, 1, Instant.now(), null, null, new BigDecimal("0.20")
+            planId, "Gói Trường", null, amount, 365, 60, PlanStatus.ACTIVE, 1, Instant.now(), null, null, new BigDecimal("0.20")
         );
         when(subscriptionRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
         when(subscriptionRequestRepository.save(any(SubscriptionRequest.class))).thenAnswer(call -> call.getArgument(0));

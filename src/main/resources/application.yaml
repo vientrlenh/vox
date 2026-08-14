@@ -396,9 +396,17 @@ vox:
       # totalAllocated -- xem QuotaDebtProperties/SchoolSubscriptionDebtGuardService.
       cap-ratio: ${VOX_QUOTA_DEBT_CAP_RATIO:}
     selling-price:
-      # Tỷ giá USD->VND để FE tự tính giá gợi ý bán quota, kết hợp với serviceFeeRatio riêng của
-      # từng SubscriptionPlan -- xem QuotaSellingPriceProperties/QuotaPricingService.
+      # Fallback tĩnh khi chưa có snapshot nào từ ExchangeRateRefreshJob (mới deploy) -- xem
+      # QuotaSellingPriceProperties/QuotaPricingService.
       usd-to-vnd-rate: ${VOX_QUOTA_USD_TO_VND_RATE:}
+    exchange-rate-api:
+      # API tỷ giá USD->VND thật, miễn phí, không cần key -- ExchangeRateRefreshJob gọi định kỳ để
+      # lưu snapshot mới, xem ExchangeRateApiProperties/ExchangeRateApiClient.
+      base-url: ${VOX_EXCHANGE_RATE_API_BASE_URL:}
+      # Chặn an toàn: fetch bị coi là thất bại (không lưu snapshot) nếu tỷ giá trả về nằm ngoài
+      # khoảng này -- tránh 1 lần API trả rác làm hỏng giá bán quota thật.
+      min-rate-bound: ${VOX_EXCHANGE_RATE_MIN_RATE_BOUND:}
+      max-rate-bound: ${VOX_EXCHANGE_RATE_MAX_RATE_BOUND:}
 
 sepay:
   pg:

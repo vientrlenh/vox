@@ -84,7 +84,7 @@ class RenewSubscriptionUseCaseTests {
         when(userContextPort.isSystemAdmin()).thenReturn(true);
 
         var plan = new SubscriptionPlan(
-            planId, "Gói Trường", null, amount, 365, 60, 500, PlanStatus.ACTIVE, 1, Instant.now(), null, null, new BigDecimal("0.20")
+            planId, "Gói Trường", null, amount, 365, 60, PlanStatus.ACTIVE, 1, Instant.now(), null, null, new BigDecimal("0.20")
         );
         when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
         when(planQuotaRepository.findAllByPlanId(planId)).thenReturn(List.of(

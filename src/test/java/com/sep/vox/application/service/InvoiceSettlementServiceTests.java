@@ -153,7 +153,7 @@ class InvoiceSettlementServiceTests {
         );
         var plan = new SubscriptionPlan(
             planId, "Gói Trường", null, amount, 365,
-            60, 500, PlanStatus.ACTIVE, 1, Instant.now(), null, null, new BigDecimal("0.20")
+            60, PlanStatus.ACTIVE, 1, Instant.now(), null, null, new BigDecimal("0.20")
         );
 
         when(subscriptionRequestRepository.findById(sourceId)).thenReturn(Optional.of(request));
@@ -186,7 +186,7 @@ class InvoiceSettlementServiceTests {
 
     private void givenActiveSubscriptionToRenew(UUID existingSubscriptionId, boolean locked) {
         var plan = new SubscriptionPlan(
-            planId, "Gói Trường", null, amount, 365, 60, 500, PlanStatus.ACTIVE, 1, Instant.now(), null, null, new BigDecimal("0.20")
+            planId, "Gói Trường", null, amount, 365, 60, PlanStatus.ACTIVE, 1, Instant.now(), null, null, new BigDecimal("0.20")
         );
         var current = new SchoolSubscription(
             existingSubscriptionId, schoolId, planId, LocalDate.now().minusDays(360), LocalDate.now(),

@@ -70,7 +70,7 @@ class ViewQuestionStatusCountsUseCaseTests {
         var result = useCase.execute(query());
 
         assertThat(result).hasSize(QuestionStatus.values().length);
-        assertThat(result).extracting(QuestionStatusCountInfo::status)
+        assertThat(result).extracting(info -> info.status())
             .containsExactly(QuestionStatus.values());
         assertThat(result).allMatch(row -> row.count() == 0L);
     }
@@ -103,7 +103,7 @@ class ViewQuestionStatusCountsUseCaseTests {
 
         var result = useCase.execute(query());
 
-        assertThat(result).extracting(QuestionStatusCountInfo::status)
+        assertThat(result).extracting(info -> info.status())
             .containsExactly(QuestionStatus.values());
     }
 

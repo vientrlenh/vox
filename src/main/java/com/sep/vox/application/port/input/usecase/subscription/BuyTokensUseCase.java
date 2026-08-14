@@ -15,6 +15,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.BuyTokensCommand;
+import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -36,6 +37,7 @@ import com.sep.vox.domain.repository.FinancialEventRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.domain.repository.PlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
 import com.sep.vox.domain.repository.TokenPurchaseItemRepository;
 import com.sep.vox.domain.repository.TokenPurchaseRepository;
@@ -44,7 +46,9 @@ import com.sep.vox.domain.repository.TokenPurchaseRepository;
 public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchaseDto> {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
+    private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final PlanQuotaRepository planQuotaRepository;
+    private final QuotaPricingService quotaPricingService;
     private final SubscriptionQuotaRepository subscriptionQuotaRepository;
     private final TokenPurchaseRepository tokenPurchaseRepository;
     private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
@@ -56,7 +60,9 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
 
     public BuyTokensUseCase(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
+            SubscriptionPlanRepository subscriptionPlanRepository,
             PlanQuotaRepository planQuotaRepository,
+            QuotaPricingService quotaPricingService,
             SubscriptionQuotaRepository subscriptionQuotaRepository,
             TokenPurchaseRepository tokenPurchaseRepository,
             TokenPurchaseItemRepository tokenPurchaseItemRepository,
@@ -66,7 +72,9 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
             SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService,
             SchoolDebtNotificationService schoolDebtNotificationService) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
+        this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.planQuotaRepository = planQuotaRepository;
+        this.quotaPricingService = quotaPricingService;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.tokenPurchaseRepository = tokenPurchaseRepository;
         this.tokenPurchaseItemRepository = tokenPurchaseItemRepository;
@@ -105,7 +113,13 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
             throw new IllegalStateException("Gói đăng ký không ở trạng thái đang hoạt động");
         }
 
+        var plan = subscriptionPlanRepository.findById(subscription.getPlanId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
         var planQuotas = planQuotaRepository.findAllByPlanId(subscription.getPlanId());
+        // Tính theo tỷ giá USD->VND hiện tại (snapshot mới nhất do ExchangeRateRefreshJob cập nhật
+        // hằng ngày), không dùng planQuota.getTokenUnitPrice() đã đóng băng lúc gói còn DRAFT -- xem
+        // QuotaPricingService.tokenUnitPriceFor.
+        var tokenUnitPrice = quotaPricingService.tokenUnitPriceFor(plan.getServiceFeeRatio());
         var subscriptionQuotas = subscriptionQuotaRepository.findAllBySubscriptionId(subscription.getId()).stream()
             .collect(Collectors.toMap(quota -> quota.getQuotaType(), Function.identity()));
         var now = Instant.now();
@@ -119,15 +133,15 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
         var wasOverClassTest = schoolSubscriptionDebtGuardService.isQuotaOverLimit(subscription.getId(), QuotaType.CLASS_TEST);
 
         for (var item : command.items()) {
-            var planQuota = planQuotas.stream()
+            planQuotas.stream()
                 .filter(pq -> pq.getQuotaType() == item.quotaType())
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn giá cho loại quota này"));
-            var subtotal = planQuota.getTokenUnitPrice().multiply(item.quantity());
+            var subtotal = tokenUnitPrice.multiply(item.quantity());
             total = total.add(subtotal);
 
             tokenPurchaseItemRepository.save(new TokenPurchaseItem(
-                purchase.getId(), item.quotaType(), item.quantity(), planQuota.getTokenUnitPrice(), subtotal
+                purchase.getId(), item.quotaType(), item.quantity(), tokenUnitPrice, subtotal
             ));
 
             var subscriptionQuota = subscriptionQuotas.get(item.quotaType());

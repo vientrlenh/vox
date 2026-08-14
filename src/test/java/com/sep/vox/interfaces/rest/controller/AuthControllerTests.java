@@ -19,6 +19,7 @@ import com.sep.vox.application.port.input.command.RefreshCommand;
 import com.sep.vox.application.port.input.command.ResetPasswordCommand;
 import com.sep.vox.application.port.input.command.SendResetPasswordOtpCommand;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
+import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
 import com.sep.vox.application.port.input.usecase.auth.ResetPasswordUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
@@ -37,6 +38,8 @@ import com.sep.vox.interfaces.rest.dto.request.SendResetPasswordOtpRequest;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+
 public class AuthControllerTests {
 
     private LoginUseCase loginUseCase;
@@ -49,6 +52,8 @@ public class AuthControllerTests {
     private RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase;
     private VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase;
     private CookieManagerPort cookieManagerPort;
+    private OAuth2LoginUseCase oAuth2LoginUseCase;
+    private GoogleIdTokenVerifier googleIdTokenVerifier;
     private AuthController authController;
 
     @BeforeEach
@@ -63,7 +68,9 @@ public class AuthControllerTests {
         registerBySelfDeclaredUseCase = mock(RegisterBySelfDeclaredUseCase.class);
         verifyRegisterFormOtpUseCase = mock(VerifyRegisterFormOtpUseCase.class);
         cookieManagerPort = mock(CookieManagerPort.class);
-        authController = new AuthController(loginUseCase, registerFromSchoolDirectoryUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, cookieManagerPort);
+        oAuth2LoginUseCase = mock(OAuth2LoginUseCase.class);
+        googleIdTokenVerifier = mock(GoogleIdTokenVerifier.class);
+        authController = new AuthController(loginUseCase, registerFromSchoolDirectoryUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, cookieManagerPort, oAuth2LoginUseCase, googleIdTokenVerifier);
     }
 
 
@@ -107,8 +114,44 @@ public class AuthControllerTests {
     }
 
     @Test
-    void refresh_should_return_ok_response() {
-        var request = new RefreshRequest("device-1");
+    void login_should_return_refresh_token_in_body_for_mobile_platform() {
+        var request = new LoginRequest(
+            "admin@example.com",
+            "password",
+            new ClientDeviceRequest("device-1", "Pixel 8", "ANDROID")
+        );
+        var expectedCommand = new LoginCommand(
+            request.login(),
+            request.password(),
+            "203.0.113.10",
+            "JUnit User Agent",
+            new ClientDeviceCommand(
+                request.device().deviceId(),
+                request.device().deviceName(),
+                request.device().platform()
+            )
+        );
+        var roles = List.of("STUDENT");
+        var loginResponse = new LoginResponse("access-token", "refresh-token", roles);
+
+        when(servletRequest.getHeader("X-Forwarded-For")).thenReturn(null);
+        when(servletRequest.getHeader("X-Real-IP")).thenReturn(null);
+        when(servletRequest.getHeader("User-Agent")).thenReturn("JUnit User Agent");
+        when(servletRequest.getRemoteAddr()).thenReturn("203.0.113.10");
+        when(loginUseCase.execute(expectedCommand))
+            .thenReturn(loginResponse);
+
+        var servletResponse = new MockHttpServletResponse();
+
+        var response = authController.login(request, servletRequest, servletResponse);
+
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo(new LoginResponse("access-token", "refresh-token", roles));
+    }
+
+    @Test
+    void refresh_should_use_cookie_token_and_return_ok_response() {
+        var request = new RefreshRequest("device-1", null);
         var expectedCommand = new RefreshCommand("old-refresh-token", request.deviceId());
         var refreshResponse = new RefreshResponse("access-token", "new-refresh-token");
 
@@ -122,6 +165,26 @@ public class AuthControllerTests {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().data()).isEqualTo(new RefreshResponse("access-token", null));
+        verify(cookieManagerPort).setCookie(servletResponse, "refresh_token", "new-refresh-token", 259200L);
+        verify(refreshUseCase).execute(expectedCommand);
+    }
+
+    @Test
+    void refresh_should_fall_back_to_body_token_and_echo_it_back_for_mobile() {
+        var request = new RefreshRequest("device-1", "old-refresh-token");
+        var expectedCommand = new RefreshCommand("old-refresh-token", request.deviceId());
+        var refreshResponse = new RefreshResponse("access-token", "new-refresh-token");
+
+        when(refreshUseCase.execute(expectedCommand))
+            .thenReturn(refreshResponse);
+
+        var servletResponse = new MockHttpServletResponse();
+
+        var response = authController.refresh(request, null, servletResponse);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo(new RefreshResponse("access-token", "new-refresh-token"));
         verify(cookieManagerPort).setCookie(servletResponse, "refresh_token", "new-refresh-token", 259200L);
         verify(refreshUseCase).execute(expectedCommand);
     }

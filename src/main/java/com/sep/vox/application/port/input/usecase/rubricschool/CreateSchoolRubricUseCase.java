@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
@@ -81,17 +82,31 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
             throw new IllegalStateException("Khung tiêu chuẩn (Framework) này đã bị vô hiệu hóa.");
         }
 
-        // 4. Kiểm tra xem trường này đã tạo bộ tiêu chí cho ngôn ngữ này chưa
-        boolean isSchoolRubricExisted = rubricRepository.existsByOwnerTypeAndSchoolIdAndLanguageId(
-                RubricOwnerType.SCHOOL.toString(), command.schoolId(), command.languageId()
-        );
-        if (isSchoolRubricExisted) {
-            throw new IllegalStateException("Trường của bạn đã thiết lập một bộ Rubric cho ngôn ngữ này rồi.");
-        }
-
         String safeCode = StringNormalization.trimAndCollapseSpaces(command.code());
         String safeName = StringNormalization.trimAndCollapseSpaces(command.name());
         String safeDesc = command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
+
+        // 4. Chặn trùng MÃ trong cùng phạm vi (trường + ngôn ngữ + khung năng lực).
+        //
+        // Bỏ 2026-08-14 luật cũ "mỗi trường chỉ một bộ tiêu chí cho mỗi ngôn ngữ". Luật đó ép khối
+        // 10/11/12 phải dùng chung một bộ, nên khối chỉ còn cách mã hoá bằng SỐ HIỆU PHIÊN BẢN
+        // (khối 10 = v1, khối 11 = v2, khối 12 = v3). Lúc đó `version` mất nghĩa "lần sửa đổi" và
+        // không còn cách nào diễn tả "sang năm sửa lại tiêu chí của riêng khối 10".
+        //
+        // Nay mỗi khối có một BỘ riêng, phân biệt bằng mã (VD ENG-K10, ENG-K11), và mỗi bộ tự đánh
+        // số phiên bản từ 1. Không có gì phía dưới dựa vào tính duy nhất cũ: chính sách đánh giá
+        // trỏ thẳng rubricVersionId chứ không tra bộ theo trường+ngôn ngữ, và phía SYSTEM vốn đã
+        // không có luật này (CreateSystemRubricUseCase). Ràng buộc thật nằm ở unique index
+        // (owner_type, school_id, language_id, framework_id, code) -- kiểm ở đây để báo lỗi tử tế
+        // thay vì để DB ném constraint violation thô.
+        boolean isCodeTaken = rubricRepository.existsByOwnerTypeAndSchoolIdAndLanguageIdAndFrameworkIdAndCode(
+                RubricOwnerType.SCHOOL.toString(), command.schoolId(), command.languageId(),
+                command.frameworkId(), safeCode);
+        if (isCodeTaken) {
+            throw new DuplicatedException("Trường của bạn đã có một bộ tiêu chí đánh giá mang mã '"
+                    + safeCode + "' cho ngôn ngữ và khung năng lực này. Hãy dùng mã khác"
+                    + " (ví dụ đặt theo khối: ENG-K10, ENG-K11).");
+        }
 
         // 5. Build thực thể Rubric gắn chặt schoolId
         Rubric newRubric = new Rubric(

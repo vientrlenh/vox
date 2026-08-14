@@ -55,9 +55,10 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
     private record VersionScopeKey(UUID languageId, UUID frameworkVersionId,
                                     UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
 
-    // Dùng để chặn trùng (scope + Rubric Version) ngay trong cùng 1 lần gọi API (nhiều Policy trong 1 request)
-    private record RubricScopeKey(UUID languageId, UUID frameworkVersionId,
-                                   UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId, UUID rubricVersionId) {}
+    // Chặn hai Policy trùng PHẠM VI ngay trong cùng 1 lần gọi API. KHÔNG gồm rubricVersionId:
+    // một phạm vi chỉ được đúng một chính sách, bất kể trỏ vào phiên bản Rubric nào.
+    private record ScopeClaimKey(UUID languageId, UUID frameworkVersionId,
+                                  UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
 
     public CreateSchoolAssessmentPolicyUseCase(
             AssessmentPolicyRepository assessmentPolicyRepository,
@@ -105,7 +106,7 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
         Instant now = Instant.now();
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
-        Set<RubricScopeKey> rubricScopesClaimed = new HashSet<>();
+        Set<ScopeClaimKey> scopeClaimsInBatch = new HashSet<>();
 
         for (CreateAssessmentPolicyCommand command : commands) {
             if (!schoolId.equals(command.schoolId())) {
@@ -162,13 +163,29 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             VersionScopeKey versionScopeKey = new VersionScopeKey(command.languageId(), command.frameworkVersionId(),
                     command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId());
 
-            // 7. XỬ LÝ VÒNG LẶP RUBRIC (1 Rubric Version tương ứng đúng 1 Assessment Policy)
+            // 7. Mỗi phạm vi chỉ được có ĐÚNG MỘT chính sách còn hiệu lực.
+            //
+            // Siết 2026-08-14. Trước đó một phạm vi giữ được nhiều chính sách miễn là khác Rubric
+            // Version, và `version` bị dùng làm số thứ tự để né unique index (scope + version).
+            // Nhưng lúc chấm bài, findActivePolicy chỉ lấy MỘT bản (ORDER BY độ hẹp của scope, rồi
+            // version DESC, LIMIT 1) -- nên các bản còn lại vĩnh viễn không được dùng, mà vẫn tính
+            // vào existsPublishedByRubricVersionId nên vẫn đóng vai cửa chặn publish cho Rubric của
+            // chúng. Dữ liệu chết nhưng vẫn có quyền lực, và không có gì báo cho người dùng biết.
+            if (command.rubricVersionIds().size() != 1) {
+                throw new IllegalArgumentException(
+                        "Mỗi Assessment Policy chỉ được gắn đúng 1 Phiên bản Rubric. Muốn áp cho"
+                                + " nhiều phạm vi thì tạo nhiều Policy, mỗi Policy một phạm vi.");
+            }
+
+            ScopeClaimKey scopeClaimKey = new ScopeClaimKey(command.languageId(), command.frameworkVersionId(),
+                    command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId());
+            if (!scopeClaimsInBatch.add(scopeClaimKey)) {
+                throw new DuplicatedException(
+                        "Trong cùng một lần tạo có hai Assessment Policy trùng phạm vi áp dụng."
+                                + " Mỗi phạm vi chỉ được một chính sách.");
+            }
+
             for (UUID rubricVersionId : command.rubricVersionIds()) {
-                RubricScopeKey rubricScopeKey = new RubricScopeKey(command.languageId(), command.frameworkVersionId(),
-                        command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId(), rubricVersionId);
-                if (!rubricScopesClaimed.add(rubricScopeKey)) {
-                    throw new DuplicatedException("Bị trùng Rubric Version ID trong cùng 1 lần tạo: " + rubricVersionId);
-                }
 
                 RubricVersion rubricVersion = rubricVersionRepository.findById(rubricVersionId)
                         .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric ID: " + rubricVersionId));
@@ -185,12 +202,12 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
                     throw new IllegalStateException("Phiên bản Rubric và Khung năng lực không khớp nhau.");
                 }
 
-                boolean isDuplicated = assessmentPolicyRepository.existsActiveForScope(
+                boolean isDuplicated = assessmentPolicyRepository.existsActiveForScopeAnyRubricVersion(
                         schoolId, command.languageId(), command.frameworkVersionId(),
-                        command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId(),
-                        rubricVersionId);
+                        command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId());
                 if (isDuplicated) {
-                    throw new DuplicatedException("Đã tồn tại Assessment Policy cho Rubric ID: " + rubricVersionId + " trong phạm vi này. Hãy Archive bản cũ.");
+                    throw new DuplicatedException("Phạm vi này đã có một Assessment Policy còn hiệu lực"
+                            + " (DRAFT hoặc PUBLISHED). Hãy Archive bản cũ trước khi tạo bản mới.");
                 }
 
                 int nextVersion = nextVersionByScope.computeIfAbsent(versionScopeKey, key ->

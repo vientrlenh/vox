@@ -97,6 +97,13 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     }
 
     @Override
+    public boolean existsActiveForScopeAnyRubricVersion(UUID schoolId, UUID languageId, UUID frameworkVersionId,
+            UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId) {
+        return springDataAssessmentPolicyRepository.existsActiveForScopeAnyRubricVersion(schoolId, languageId,
+                frameworkVersionId, schoolGradeLevelId, schoolGradeId, schoolClassId);
+    }
+
+    @Override
     public int findMaxVersionForScope(UUID schoolId, UUID languageId, UUID frameworkVersionId,
             UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId) {
         return springDataAssessmentPolicyRepository.findMaxVersionForScope(schoolId, languageId, frameworkVersionId,

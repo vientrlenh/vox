@@ -29,6 +29,10 @@ public interface AssessmentPolicyRepository {
     boolean existsActiveForScope(UUID schoolId, UUID languageId, UUID frameworkVersionId,
             UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId, UUID rubricVersionId);
 
+    // Một phạm vi chỉ được đúng một chính sách còn hiệu lực, bất kể trỏ vào phiên bản Rubric nào
+    boolean existsActiveForScopeAnyRubricVersion(UUID schoolId, UUID languageId, UUID frameworkVersionId,
+            UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId);
+
     // Lấy TOÀN BỘ Assessment Policy (mọi trạng thái, kể cả ARCHIVED) trong phạm vi schoolId (null = toàn hệ thống).
     // Dùng để prefetch 1 lần rồi tự tính trong memory (scope đang active để chặn trùng, version lớn nhất theo
     // scope để phát version kế tiếp) khi import hàng loạt, thay vì gọi existsActiveForScope/findMaxVersionForScope

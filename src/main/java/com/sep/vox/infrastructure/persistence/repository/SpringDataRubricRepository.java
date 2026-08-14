@@ -16,6 +16,9 @@ public interface SpringDataRubricRepository extends JpaRepository<RubricJpaEntit
 
     boolean existsByOwnerTypeAndLanguageId(String ownerType, UUID languageId);
 
+    boolean existsByOwnerTypeAndSchoolIdAndLanguageIdAndFrameworkIdAndCode(
+            String ownerType, UUID schoolId, UUID languageId, UUID frameworkId, String code);
+
 
     @Modifying
     @Query("""

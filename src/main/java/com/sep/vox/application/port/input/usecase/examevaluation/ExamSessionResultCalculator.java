@@ -191,6 +191,7 @@ public class ExamSessionResultCalculator {
                 paperItem.getId(),
                 response.getId(),
                 paperItem.getSectionId(),
+                paperItem.getQuestionId(),
                 itemScore,
                 weightedScore
             ));
@@ -235,9 +236,39 @@ public class ExamSessionResultCalculator {
         var orderedSections = examPaperSectionRepository.findByPaperId(session.getPaperId()).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
-        var responses = examItemResponseRepository.findBySessionId(sessionId);
         var paperItemsById = examPaperItemRepository.findByPaperId(session.getPaperId()).stream()
             .collect(Collectors.toMap(item -> item.getId(), Function.identity(), (left, right) -> left));
+
+        // Sắp NGAY TẠI ĐÂY chứ không ở chỗ dựng danh sách hiển thị: cả ba vòng lặp trong lớp này
+        // (calculate, preview, rollUp) đều duyệt `responses`, nên sắp ở nguồn thì mọi đường ra đều
+        // cùng một thứ tự.
+        //
+        // findBySessionId không có ORDER BY, tức thứ tự là do Postgres trả về sao thì lấy vậy.
+        // Quan sát thật (phiên 019fff59, 2026-08-14): trả về câu của Part 2 trước câu của Part 1,
+        // mà cũng không theo thời gian nộp (Part 1 nộp lúc 08:19, Part 2 lúc 08:21). Client đánh
+        // số "Câu {index + 1}" theo vị trí mảng nên học sinh thấy Câu 1 mang điểm của Part 2.
+        //
+        // Phải so SECTION TRƯỚC rồi mới tới item: đề hai phần mỗi phần một câu thì cả hai câu đều
+        // có order = 1, chỉ so item là hoà và thứ tự lại thành tuỳ ý như cũ. Chốt bằng id để hai
+        // lần gọi liên tiếp không ra hai thứ tự khác nhau khi dữ liệu lỗi làm hoà cả hai khoá.
+        var sectionRankById = new java.util.HashMap<UUID, Integer>();
+        for (var index = 0; index < orderedSections.size(); index++) {
+            sectionRankById.put(orderedSections.get(index).getId(), index);
+        }
+        var responses = examItemResponseRepository.findBySessionId(sessionId).stream()
+            .sorted(Comparator
+                .<ExamItemResponse>comparingInt(response -> {
+                    var paperItem = paperItemsById.get(response.getPaperItemId());
+                    return paperItem == null
+                        ? Integer.MAX_VALUE
+                        : sectionRankById.getOrDefault(paperItem.getSectionId(), Integer.MAX_VALUE);
+                })
+                .thenComparingInt(response -> {
+                    var paperItem = paperItemsById.get(response.getPaperItemId());
+                    return paperItem == null ? Integer.MAX_VALUE : paperItem.getOrder();
+                })
+                .thenComparing(response -> response.getId()))
+            .toList();
 
         return new LoadedSession(
             session, exam.getId(), policy, orderedSections, responses, paperItemsById,
@@ -420,10 +451,17 @@ public class ExamSessionResultCalculator {
     ) {
     }
 
+    /**
+     * @param questionId câu hỏi đứng sau item này. Lớp này KHÔNG nạp nội dung câu hỏi -- chấm
+     *                   điểm không cần đọc đề, và kéo bảng questions vào đây thì mỗi lần tính
+     *                   điểm lại gánh thêm một truy vấn chẳng phục vụ việc tính. Bên hiển thị
+     *                   ({@code ViewExamSessionResultUseCase}) tự nạp nội dung theo lô từ id này.
+     */
     public record ItemScore(
         UUID paperItemId,
         UUID responseId,
         UUID sectionId,
+        UUID questionId,
         BigDecimal itemScore,
         BigDecimal weightedScore
     ) {

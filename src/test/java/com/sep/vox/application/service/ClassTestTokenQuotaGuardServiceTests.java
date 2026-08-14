@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
-import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.subscription.QuotaType;
@@ -52,16 +52,16 @@ class ClassTestTokenQuotaGuardServiceTests {
         subscriptionQuotaRepository = mock(SubscriptionQuotaRepository.class);
         subscriptionQuotaUserAllocationRepository = mock(SubscriptionQuotaUserAllocationRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
-        var quotaPricingService = mock(QuotaPricingService.class);
+        var quotaPricingPort = mock(QuotaPricingPort.class);
         // Hệ số quy đổi = 1 để estimatedCostUsd trùng số với "estimatedTokens" cũ (duration × số thí
         // sinh × maxAttempt) -- giữ nguyên các giá trị test bên dưới thay vì phải tính lại theo USD thật.
-        when(quotaPricingService.currentEstimatedCostPerExamSecondUsd()).thenReturn(BigDecimal.ONE);
+        when(quotaPricingPort.currentEstimatedCostPerExamSecondUsd()).thenReturn(BigDecimal.ONE);
         guard = new ClassTestTokenQuotaGuardService(
             schoolSubscriptionRepository,
             subscriptionQuotaRepository,
             subscriptionQuotaUserAllocationRepository,
             examCandidateRepository,
-            quotaPricingService,
+            quotaPricingPort,
             new SchoolSubscriptionDebtGuardService(subscriptionQuotaRepository));
 
         var subscription = new SchoolSubscription();

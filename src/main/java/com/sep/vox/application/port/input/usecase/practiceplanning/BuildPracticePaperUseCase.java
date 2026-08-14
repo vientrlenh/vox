@@ -13,8 +13,8 @@ import com.sep.vox.application.port.input.command.BuildPracticePaperCommand;
 import com.sep.vox.application.port.input.service.PracticePaperPersistenceService;
 import com.sep.vox.application.port.input.service.PracticeQuestionSelectionService;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
-import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
 import com.sep.vox.domain.mapper.PracticePaperDtoMapper;
@@ -39,7 +39,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
     private final PracticePaperPersistenceService persistenceService;
     private final UserContextPort userContextPort;
     private final ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase;
-    private final QuotaPricingService quotaPricingService;
+    private final QuotaPricingPort quotaPricingPort;
 
     public BuildPracticePaperUseCase(
             PracticeTopicRepository topicRepository,
@@ -50,7 +50,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
             PracticePaperPersistenceService persistenceService,
             UserContextPort userContextPort,
             ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase,
-            QuotaPricingService quotaPricingService) {
+            QuotaPricingPort quotaPricingPort) {
         this.viewPracticeTopicOffersUseCase = viewPracticeTopicOffersUseCase;
         this.topicRepository = topicRepository;
         this.paperRepository = paperRepository;
@@ -59,7 +59,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         this.selectionService = selectionService;
         this.persistenceService = persistenceService;
         this.userContextPort = userContextPort;
-        this.quotaPricingService = quotaPricingService;
+        this.quotaPricingPort = quotaPricingPort;
     }
 
     @Override
@@ -68,7 +68,8 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         var topic = requireTopic(input.topicId());
         var quotaRemainingUsd = remainingPracticeQuotaUsd(studentId);
         var focus = selectionService.resolveFocus(studentId, input.fromSubAttribute());
-        var chosenBandOrder = chosenBandOrder(input.targetFrameworkBandId());
+        var chosen = chosenBand(input.targetFrameworkBandId());
+        var chosenBandOrder = chosen.order();
         // Deliberately NOT wrapped in a Spring transaction: resolveNextQuestion can call out
         // to the Python agents service (diversity check, and -- on a thin/new topic -- live
         // LLM question generation, which alone can take 10+ seconds). Holding a HikariCP
@@ -80,7 +81,8 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         // -- self-invocation within this class would bypass the AOP proxy) needs a real
         // transaction, scoped separately there.
         var selection = selectionService
-            .resolveNextQuestion(topic, studentId, focus, chosenBandOrder, List.of())
+            .resolveNextQuestion(topic, studentId, focus, chosenBandOrder, chosen.bandCount(),
+                chosen.frameworkVersionId(), List.of())
             .orElseThrow(() -> new NotFoundException("Chủ đề chưa có câu luyện phù hợp."));
         var question = selection.question();
         // Ước lượng worst-case (giây x giá/giây calibrate) -- không phải chi phí thật, cùng tinh
@@ -91,7 +93,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         // cùng vượt hạn mức trong lúc chưa phiên nào submit turn thật.
         var reservedSeconds = paperRepository.sumReservedQuotaSeconds(studentId);
         var estimatedCostUsd = BigDecimal.valueOf((long) reservedSeconds + question.spokenSeconds())
-            .multiply(quotaPricingService.currentEstimatedCostPerPracticeSecondUsd());
+            .multiply(quotaPricingPort.currentEstimatedCostPerPracticeSecondUsd());
         if (quotaRemainingUsd.compareTo(estimatedCostUsd) < 0) {
             throw new QuotaExceededException("Hạn mức PRACTICE không đủ cho một câu trọn vẹn.");
         }
@@ -156,17 +158,41 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
      * {@code result_band_order} của nó vô nghĩa với thang này, và mọi phép so độ khó phía sau
      * lệch âm thầm. Dùng luôn thang bậc đã nạp cho màn hình chọn nên không tốn query mới.
      */
-    private int chosenBandOrder(UUID bandId) {
+    /**
+     * Bậc học sinh chọn, xác thực theo KHUNG CỦA CHÍNH BẬC ĐÓ.
+     *
+     * <p>Trước đây đối chiếu với {@code frameworkBandLadder()} -- tức khung đang hiệu lực toàn
+     * hệ. Từ khi màn luyện tập cho chọn khung, cách đó từ chối mọi bậc thuộc khung khác, kể cả
+     * khi khung ấy vẫn đang ban hành và hiển thị ngay trên màn hình.
+     *
+     * <p>Vẫn phải xác thực chứ không tin thẳng client: bậc gửi lên có thể thuộc một bản nháp
+     * hoặc bản đã hết hiệu lực. Điều kiện "còn hiệu lực" lấy từ chính danh sách khung mà màn
+     * chọn khung dùng, nên hai bên không thể lệch nhau.
+     *
+     * <p>Trả về cả số bậc của khung đó: {@code PracticeQuestionSelectionService} cần nó để kẹp
+     * độ khó, và lấy theo khung đang hiệu lực thay vì khung đã chọn sẽ ánh xạ sai khi hai khung
+     * khác số bậc.
+     */
+    private ChosenBand chosenBand(UUID bandId) {
         if (bandId == null) {
             throw new NotFoundException("Chưa chọn bậc muốn luyện.");
         }
-        return enrichmentService.frameworkBandLadder().stream()
-            .filter(band -> bandId.equals(band.getId()))
-            .findFirst()
-            .map(band -> band.getOrder())
-            .orElseThrow(() -> new NotFoundException(
-                "Bậc luyện tập không thuộc khung đánh giá đang áp dụng."
-            ));
+        for (var framework : enrichmentService.activeFrameworks()) {
+            var match = enrichmentService.frameworkBandLadder(framework.versionId()).stream()
+                .filter(band -> bandId.equals(band.getId()))
+                .findFirst();
+            if (match.isPresent()) {
+                return new ChosenBand(
+                    match.get().getOrder(),
+                    enrichmentService.frameworkBandCount(framework.versionId()),
+                    framework.versionId()
+                );
+            }
+        }
+        throw new NotFoundException("Bậc luyện tập không thuộc khung đánh giá nào đang ban hành.");
+    }
+
+    private record ChosenBand(int order, int bandCount, UUID frameworkVersionId) {
     }
 
     private PracticeTopic requireTopic(UUID topicId) {

@@ -35,4 +35,25 @@ public interface FrameworkVersionRepository {
      * @param code chỉ định thẳng một mã version; null = tự chọn bản đang hoạt động
      */
     Optional<UUID> findActiveVersionId(String code);
+
+    /**
+     * Mọi khung đánh giá còn hiệu lực, mỗi khung kèm bản ĐÃ BAN HÀNH mới nhất -- nguồn cho ô
+     * chọn khung trước khi chọn bậc ở màn luyện tập.
+     *
+     * <p>Cùng bộ điều kiện hiệu lực với {@link #findActiveVersionId}, chỉ khác là không thu về
+     * một khung duy nhất.
+     */
+    List<ActiveFramework> findActiveFrameworks();
+
+    /** Một khung còn hiệu lực kèm bản mới nhất của nó. */
+    record ActiveFramework(
+        UUID frameworkId,
+        String frameworkCode,
+        String frameworkName,
+        String frameworkDescription,
+        UUID versionId,
+        String versionCode,
+        int versionNumber
+    ) {
+    }
 }

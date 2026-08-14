@@ -9,10 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.SearchPracticeTopicsQuery;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.TopicGenerationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.PracticeTopicQueryRepository;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
-import com.sep.vox.infrastructure.service.TopicGenerationClient;
 
 
 @Service
@@ -24,17 +24,17 @@ public class SearchPracticeTopicsSemanticUseCase
 
     private final PracticeTopicQueryRepository practiceTopicQueryRepository;
     private final PracticeTopicOfferEnrichmentService enrichmentService;
-    private final TopicGenerationClient topicGenerationClient;
+    private final TopicGenerationPort topicGenerationPort;
     private final UserContextPort userContextPort;
 
     public SearchPracticeTopicsSemanticUseCase(
             PracticeTopicQueryRepository practiceTopicQueryRepository,
             PracticeTopicOfferEnrichmentService enrichmentService,
-            TopicGenerationClient topicGenerationClient,
+            TopicGenerationPort topicGenerationPort,
             UserContextPort userContextPort) {
         this.practiceTopicQueryRepository = practiceTopicQueryRepository;
         this.enrichmentService = enrichmentService;
-        this.topicGenerationClient = topicGenerationClient;
+        this.topicGenerationPort = topicGenerationPort;
         this.userContextPort = userContextPort;
     }
 
@@ -45,7 +45,7 @@ public class SearchPracticeTopicsSemanticUseCase
         if (keyword.isBlank()) {
             return List.of();
         }
-        var hits = topicGenerationClient.searchByVector(keyword, VECTOR_FETCH_LIMIT);
+        var hits = topicGenerationPort.searchByVector(keyword, VECTOR_FETCH_LIMIT);
         if (hits.isEmpty()) {
             return List.of();
         }

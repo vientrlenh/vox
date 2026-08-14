@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.domain.dto.ExamTokenEstimateDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -23,7 +24,7 @@ import com.sep.vox.domain.repository.SubscriptionQuotaUserAllocationRepository;
  * cả 3 chỗ này khi chấm xong, nên publish/sửa bài phải soi trước cả 3 chứ không chỉ
  * GRADING.
  *
- * <p>estimatedCostPerExamSecondUsd lấy qua QuotaPricingService -- ưu tiên giá đã tự calibrate từ
+ * <p>estimatedCostPerExamSecondUsd lấy qua QuotaPricingPort -- ưu tiên giá đã tự calibrate từ
  * dữ liệu thật (QuotaPricingCalibrationJob), fallback về hằng số tĩnh .env
  * (QuotaPricingProperties) khi chưa đủ dữ liệu. Đây vẫn chỉ là số ƯỚC TÍNH, KHÔNG phải chi phí
  * thật -- chi phí thật trừ vào quota lấy từ tổng cost_usd trong ai_usage_record của session,
@@ -40,7 +41,7 @@ public class ClassTestTokenQuotaGuardService {
     private final SubscriptionQuotaRepository subscriptionQuotaRepository;
     private final SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
     private final ExamCandidateRepository examCandidateRepository;
-    private final QuotaPricingService quotaPricingService;
+    private final QuotaPricingPort quotaPricingPort;
     private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
 
     public ClassTestTokenQuotaGuardService(
@@ -48,13 +49,13 @@ public class ClassTestTokenQuotaGuardService {
             SubscriptionQuotaRepository subscriptionQuotaRepository,
             SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
             ExamCandidateRepository examCandidateRepository,
-            QuotaPricingService quotaPricingService,
+            QuotaPricingPort quotaPricingPort,
             SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
         this.examCandidateRepository = examCandidateRepository;
-        this.quotaPricingService = quotaPricingService;
+        this.quotaPricingPort = quotaPricingPort;
         this.schoolSubscriptionDebtGuardService = schoolSubscriptionDebtGuardService;
     }
 
@@ -92,7 +93,7 @@ public class ClassTestTokenQuotaGuardService {
         }
         var candidateCount = examCandidateRepository.countByExamId(exam.getId());
         var estimatedSeconds = BigDecimal.valueOf((long) exam.getExamTimeDurationSecond() * candidateCount * exam.getMaxAttempt());
-        return estimatedSeconds.multiply(quotaPricingService.currentEstimatedCostPerExamSecondUsd());
+        return estimatedSeconds.multiply(quotaPricingPort.currentEstimatedCostPerExamSecondUsd());
     }
 
     /**

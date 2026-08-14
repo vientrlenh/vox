@@ -11,11 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.port.output.CacheManagerPort;
-import com.sep.vox.infrastructure.properties.PracticeGenerationProperties;
 import com.sep.vox.application.port.input.service.PracticeQuestionSelectionService;
 import com.sep.vox.application.port.input.service.ResolveNextPracticeQuestionClaimService;
 import com.sep.vox.application.port.input.service.ResolveNextPracticeQuestionPersistenceService;
+import com.sep.vox.application.port.output.CacheManagerPort;
+import com.sep.vox.application.port.output.PracticeGenerationConfigPort;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 
 /**
@@ -104,19 +104,19 @@ public class ResolveNextPracticeQuestionUseCase {
     private final PracticeQuestionSelectionService selectionService;
     private final ResolveNextPracticeQuestionPersistenceService persistenceService;
     private final CacheManagerPort cacheManagerPort;
-    private final PracticeGenerationProperties generationProperties;
+    private final PracticeGenerationConfigPort generationConfig;
 
     public ResolveNextPracticeQuestionUseCase(
             ResolveNextPracticeQuestionClaimService claimService,
             PracticeQuestionSelectionService selectionService,
             ResolveNextPracticeQuestionPersistenceService persistenceService,
             CacheManagerPort cacheManagerPort,
-            PracticeGenerationProperties generationProperties) {
+            PracticeGenerationConfigPort generationConfig) {
         this.claimService = claimService;
         this.selectionService = selectionService;
         this.persistenceService = persistenceService;
         this.cacheManagerPort = cacheManagerPort;
-        this.generationProperties = generationProperties;
+        this.generationConfig = generationConfig;
     }
 
     public Result execute(UUID sessionId) {
@@ -178,7 +178,7 @@ public class ResolveNextPracticeQuestionUseCase {
      * số ở đây là gài mìn cho lần chỉnh cấu hình sau.
      */
     private Duration clusterLockTtl() {
-        return generationProperties.onlineBudget().plus(CLUSTER_LOCK_MARGIN);
+        return generationConfig.onlineBudget().plus(CLUSTER_LOCK_MARGIN);
     }
 
     /**
@@ -215,7 +215,8 @@ public class ResolveNextPracticeQuestionUseCase {
         var selection = selectionService
             .resolveNextQuestion(
                 claim.topic(), claim.studentId(), claim.focus(),
-                claim.targetBandOrder(), claim.alreadyChosen()
+                claim.targetBandOrder(), claim.targetBandCount(),
+                claim.targetFrameworkVersionId(), claim.alreadyChosen()
             )
             .orElse(null);
         if (selection == null) {

@@ -26,6 +26,7 @@ import com.sep.vox.application.port.input.command.PreviewSchoolGradeImportFromFi
 import com.sep.vox.application.port.input.command.PreviewSchoolGradeLevelImportFromFileCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolUserImportFromFileCommand;
 import com.sep.vox.application.port.input.command.VerifySchoolDirectoryCommand;
+import com.sep.vox.application.port.input.usecase.school.CreateSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.DeleteSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolStatusUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.AcceptSchoolClassImportUseCase;
@@ -87,6 +88,7 @@ import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassUserRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolDirectoryRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolGradeLevelRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolGradeRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateSchoolRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolUserRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateSchoolClassUserStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
@@ -102,6 +104,7 @@ import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassUserCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolDirectoryCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolGradeCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.CreateSchoolCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolGradeLevelCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolUserCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.DeleteSchoolClassUserCommandMapper;
@@ -137,6 +140,7 @@ public class SchoolController {
     private final AcceptSchoolClassUserImportUseCase acceptSchoolClassUserImportUseCase;
 
 
+    private final CreateSchoolUseCase createSchoolUseCase;
     private final DeleteSchoolUseCase deleteSchoolUseCase;
     private final UpdateSchoolStatusUseCase updateSchoolStatusUseCase;
 
@@ -175,8 +179,9 @@ public class SchoolController {
                         CreateSchoolUserUseCase createSchoolUserUseCase, 
                         DeleteSchoolUserUseCase deleteSchoolUserUseCase, PreviewSchoolUserImportFromFileUseCase previewSchoolUserImportFromFileUseCase, AcceptSchoolUserImportUseCase acceptSchoolUserImportUseCase, PreviewSchoolClassUserImportFromFileUseCase previewSchoolClassUserImportFromFileUseCase, 
                         AcceptSchoolClassUserImportUseCase acceptSchoolClassUserImportUseCase, 
-                        DeleteSchoolUseCase deleteSchoolUseCase, 
-                        UpdateSchoolStatusUseCase updateSchoolStatusUseCase, 
+                        CreateSchoolUseCase createSchoolUseCase,
+                        DeleteSchoolUseCase deleteSchoolUseCase,
+                        UpdateSchoolStatusUseCase updateSchoolStatusUseCase,
                         AddSchoolRoomUseCase addSchoolRoomUseCase,
                         DeleteSchoolRoomUseCase deleteSchoolRoomUseCase,
                         PreviewSchoolRoomImportFromFileUseCase previewSchoolRoomImportFromFileUseCase,
@@ -208,6 +213,7 @@ public class SchoolController {
         this.acceptSchoolUserImportUseCase = acceptSchoolUserImportUseCase;
         this.previewSchoolClassUserImportFromFileUseCase = previewSchoolClassUserImportFromFileUseCase;
         this.acceptSchoolClassUserImportUseCase = acceptSchoolClassUserImportUseCase;
+        this.createSchoolUseCase = createSchoolUseCase;
         this.deleteSchoolUseCase = deleteSchoolUseCase;
         this.updateSchoolStatusUseCase = updateSchoolStatusUseCase;
         this.addSchoolRoomUseCase = addSchoolRoomUseCase;
@@ -645,5 +651,16 @@ public class SchoolController {
         var data = verifySchoolDirectoryUseCase.execute(command);
         var response = ApiResponse.success("Danh mục trường đã được xác minh", data);
         return ResponseEntity.ok(response);
+    }
+
+
+    @Operation(summary = "Tạo trường học trực tiếp, không qua đơn đăng ký (có danh mục thì ưu tiên lấy thông tin từ danh mục)")
+    @PostMapping
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<UUID>> createSchool(@Valid @RequestBody CreateSchoolRequest request) {
+        var command = CreateSchoolCommandMapper.fromRequest(request);
+        var schoolId = createSchoolUseCase.execute(command);
+        var response = ApiResponse.success("Trường học đã được tạo thành công", schoolId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

@@ -449,6 +449,8 @@ type ExamCandidateResultItem {
     paperItemId: ID!
     responseId: ID!
     sectionId: ID!
+    "Đề bài của câu. Null khi paper item không trỏ tới câu hỏi nào hoặc câu hỏi đã bị xoá."
+    questionText: String
     itemScore: Float!
     weightedScore: Float!
 }

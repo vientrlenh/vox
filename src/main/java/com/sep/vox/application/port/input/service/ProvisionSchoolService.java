@@ -54,7 +54,8 @@ public class ProvisionSchoolService {
         this.jsonSerializationPort = jsonSerializationPort;
     }
 
-    public void provision(ProvisionSchoolCommand command) {
+    /** @return id của trường vừa tạo. */
+    public UUID provision(ProvisionSchoolCommand command) {
         var schoolAdminRole = roleRepository.findByCode("SCHOOL_ADMIN")
             .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò quản trị nhà trường"));
 
@@ -68,10 +69,6 @@ public class ProvisionSchoolService {
 
         if (schoolRepository.existsByCode(command.schoolCode())) {
             throw new DuplicatedException("Mã trường đã tồn tại");
-        }
-
-        if (command.schoolDomain() != null && schoolRepository.existsByDomain(command.schoolDomain())) {
-            throw new DuplicatedException("Domain yêu cầu đã tồn tại trong hệ thống");
         }
 
         var savedSchool = saveSchool(command);
@@ -94,6 +91,8 @@ public class ProvisionSchoolService {
         var outbox = Outbox.create(
             AggregateTypeConstant.USER, savedSchoolAdmin.getId(), EventTypeConstant.USER_CREATED, payload, Instant.now());
         outboxRepository.save(outbox);
+
+        return savedSchool.getId();
     }
 
     private School saveSchool(ProvisionSchoolCommand command) {

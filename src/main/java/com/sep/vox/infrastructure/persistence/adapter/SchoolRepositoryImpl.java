@@ -37,9 +37,10 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     }
 
     @Override
-    public Optional<School> findByDomain(String domain) {
-        return springDataSchoolRepository.findByDomain(domain)
-            .map(SchoolMapper::toDomain);
+    public List<School> findByDomain(String domain) {
+        return springDataSchoolRepository.findByDomain(domain).stream()
+            .map(entity -> SchoolMapper.toDomain(entity))
+            .toList();
     }
 
     @Override
@@ -69,18 +70,6 @@ public class SchoolRepositoryImpl implements SchoolRepository {
         return springDataSchoolRepository.existsById(id);
     }
 
-
-    @Override
-    public boolean existsByDomain(String domain) {
-        return springDataSchoolRepository.existsByDomain(domain);
-    }
-
-
-
-    @Override
-    public boolean existsByDomainAndIdNot(String domain, UUID id) {
-        return springDataSchoolRepository.existsByDomainAndIdNot(domain, id);
-    }
 
     @Override
     public boolean existsByContactEmailAndIdNot(String email, UUID id) {

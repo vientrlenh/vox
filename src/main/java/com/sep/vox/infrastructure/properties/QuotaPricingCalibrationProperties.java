@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import com.sep.vox.application.port.output.QuotaPricingCalibrationConfigPort;
+
 /**
  * Tham số cho QuotaPricingCalibrationJob/Service -- job tự tính lại
  * estimatedCostPerExamSecondUsd (xem QuotaPricingProperties) từ dữ liệu ai_usage_record +
@@ -16,7 +18,7 @@ public record QuotaPricingCalibrationProperties(
     BigDecimal maxChangeRatio,
     BigDecimal minRateBound,
     BigDecimal maxRateBound
-) {
+) implements QuotaPricingCalibrationConfigPort {
 
     private static final int DEFAULT_WINDOW_DAYS = 90;
     private static final int DEFAULT_MIN_SAMPLE_SESSIONS = 30;

@@ -72,7 +72,7 @@ public class ViewTokenUsageTimeseriesUseCase implements IUseCase<ViewTokenUsageT
 
         var totalUsed = buckets.stream()
             .map(b -> b.tokensConsumed() == null ? BigDecimal.ZERO : b.tokensConsumed())
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
         var currentPeriod = SubscriptionQuotaDtoMapper.toDtoList(
             subscriptionQuotaRepository.findAllBySubscriptionId(subscriptionId));

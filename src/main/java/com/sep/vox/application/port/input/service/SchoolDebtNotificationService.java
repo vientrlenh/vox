@@ -15,7 +15,6 @@ import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.common.AggregateTypeConstant;
 import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.outbox.Outbox;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolDebtEvent;
 import com.sep.vox.domain.model.subscription.SchoolDebtEventType;
@@ -126,6 +125,6 @@ public class SchoolDebtNotificationService {
 
     private List<UUID> schoolAdminIdsOf(UUID schoolId) {
         return schoolUserRepository.findBySchoolIdWithRole(schoolId, RoleConstant.SCHOOL_ADMIN_ROLE)
-            .stream().map(SchoolUser::getUserId).toList();
+            .stream().map(su -> su.getUserId()).toList();
     }
 }

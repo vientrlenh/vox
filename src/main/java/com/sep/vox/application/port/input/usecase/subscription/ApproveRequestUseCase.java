@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -10,6 +11,8 @@ import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ApproveRequestCommand;
+import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SubscriptionRequestDto;
@@ -17,6 +20,7 @@ import com.sep.vox.domain.mapper.SubscriptionRequestDtoMapper;
 import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
 import com.sep.vox.domain.model.subscription.PaymentMethod;
+import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.model.subscription.RequestStatus;
 import com.sep.vox.domain.model.subscription.RequestType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
@@ -39,6 +43,8 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
     private final SubscriptionQuotaRepository subscriptionQuotaRepository;
     private final FinancialEventRepository financialEventRepository;
     private final UserContextPort userContextPort;
+    private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
+    private final SchoolDebtNotificationService schoolDebtNotificationService;
 
     public ApproveRequestUseCase(
             SubscriptionRequestRepository subscriptionRequestRepository,
@@ -47,7 +53,9 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
             PlanQuotaRepository planQuotaRepository,
             SubscriptionQuotaRepository subscriptionQuotaRepository,
             FinancialEventRepository financialEventRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService,
+            SchoolDebtNotificationService schoolDebtNotificationService) {
         this.subscriptionRequestRepository = subscriptionRequestRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
@@ -55,6 +63,8 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.financialEventRepository = financialEventRepository;
         this.userContextPort = userContextPort;
+        this.schoolSubscriptionDebtGuardService = schoolSubscriptionDebtGuardService;
+        this.schoolDebtNotificationService = schoolDebtNotificationService;
     }
 
     @Override
@@ -75,11 +85,19 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
 
         var now = Instant.now();
 
-        // one ACTIVE subscription per school
-        schoolSubscriptionRepository.findActiveBySchoolId(request.getSchoolId()).ifPresent(current -> {
-            current.setStatus(SubscriptionStatus.EXPIRED);
-            schoolSubscriptionRepository.save(current);
-        });
+        // one ACTIVE subscription per school -- chụp bucket nào của gói CŨ đang vượt hạn mức trước
+        // khi expire nó (gói mới tạo bên dưới luôn có SubscriptionQuota tinh khôi nên chắc chắn không khóa).
+        var oldSubscriptionId = schoolSubscriptionRepository.findActiveBySchoolId(request.getSchoolId())
+            .map(current -> {
+                current.setStatus(SubscriptionStatus.EXPIRED);
+                schoolSubscriptionRepository.save(current);
+                return current.getId();
+            })
+            .orElse(null);
+        var wasOverGrading = oldSubscriptionId != null
+            && schoolSubscriptionDebtGuardService.isQuotaOverLimit(oldSubscriptionId, QuotaType.GRADING);
+        var wasOverClassTest = oldSubscriptionId != null
+            && schoolSubscriptionDebtGuardService.isQuotaOverLimit(oldSubscriptionId, QuotaType.CLASS_TEST);
 
         var startDate = LocalDate.ofInstant(now, DateMapper.DEFAULT_INPUT_ZONE);
         var subscription = new SchoolSubscription(
@@ -99,7 +117,7 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
                 savedSubscription.getId(),
                 planQuota.getQuotaType(),
                 planQuota.getIncludedQuantity(),
-                0
+                BigDecimal.ZERO
             ))
         );
 
@@ -123,6 +141,20 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
             now
         ));
 
+        reportDebtClearedIfNeeded(wasOverGrading, savedSubscription, QuotaType.GRADING, now);
+        reportDebtClearedIfNeeded(wasOverClassTest, savedSubscription, QuotaType.CLASS_TEST, now);
+
         return SubscriptionRequestDtoMapper.toDto(savedRequest);
+    }
+
+    private void reportDebtClearedIfNeeded(boolean wasOver, SchoolSubscription newSubscription, QuotaType quotaType, Instant now) {
+        if (!wasOver) {
+            return;
+        }
+        subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(newSubscription.getId(), quotaType)
+            .ifPresent(quota -> schoolDebtNotificationService.publishSchoolDebtCleared(
+                newSubscription.getId(), newSubscription.getSchoolId(), quotaType,
+                quota.getTotalAllocated(), quota.getUsedQuantity(), now
+            ));
     }
 }

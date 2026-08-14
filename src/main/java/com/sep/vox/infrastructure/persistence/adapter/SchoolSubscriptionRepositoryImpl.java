@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -84,11 +85,11 @@ public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepos
     }
 
     @Override
-    public int findPracticeQuotaRemaining(UUID userId) {
+    public BigDecimal findPracticeQuotaRemaining(UUID userId) {
         return springDataSchoolSubscriptionRepository.findPracticeQuotaRemaining(userId)
             .stream()
             .findFirst()
-            .orElse(0);
+            .orElse(BigDecimal.ZERO);
     }
 
     @Override

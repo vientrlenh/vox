@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.service.InvoiceSettlementService;
+import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.service.SubscriptionPlanResolver;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.common.EventTypeConstant;
@@ -76,6 +78,8 @@ class InvoiceSettlementServiceTests {
     private OutboxRepository outboxRepository;
     private JsonSerializationPort jsonSerializationPort;
     private SubscriptionPlanResolver subscriptionPlanResolver;
+    private SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
+    private SchoolDebtNotificationService schoolDebtNotificationService;
     private InvoiceSettlementService service;
 
     private final UUID invoiceId = UUID.randomUUID();
@@ -100,6 +104,8 @@ class InvoiceSettlementServiceTests {
         schoolUserRepository = mock(SchoolUserRepository.class);
         outboxRepository = mock(OutboxRepository.class);
         jsonSerializationPort = mock(JsonSerializationPort.class);
+        schoolSubscriptionDebtGuardService = mock(SchoolSubscriptionDebtGuardService.class);
+        schoolDebtNotificationService = mock(SchoolDebtNotificationService.class);
         when(schoolUserRepository.findBySchoolIdWithRole(any(), any())).thenReturn(List.of());
         when(jsonSerializationPort.toJson(any())).thenReturn("{}");
 
@@ -112,11 +118,13 @@ class InvoiceSettlementServiceTests {
             subscriptionQuotaRepository,
             tokenPurchaseRepository,
             tokenPurchaseItemRepository,
-            financialEventRepository, 
+            financialEventRepository,
             subscriptionPlanResolver,
             schoolUserRepository,
             outboxRepository,
-            jsonSerializationPort
+            jsonSerializationPort,
+            schoolSubscriptionDebtGuardService,
+            schoolDebtNotificationService
         );
 
         when(invoiceRepository.save(any(Invoice.class))).thenAnswer(call -> call.getArgument(0));
@@ -145,14 +153,14 @@ class InvoiceSettlementServiceTests {
         );
         var plan = new SubscriptionPlan(
             planId, "Gói Trường", null, amount, 365,
-            60, 500, false, PlanStatus.ACTIVE, 1, Instant.now(), null, null
+            60, 500, PlanStatus.ACTIVE, 1, Instant.now(), null, null, new BigDecimal("0.20")
         );
 
         when(subscriptionRequestRepository.findById(sourceId)).thenReturn(Optional.of(request));
         when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.empty());
         when(planQuotaRepository.findAllByPlanId(planId)).thenReturn(List.of(
-            new PlanQuota(planId, QuotaType.GRADING, 100, new BigDecimal("1000"))
+            new PlanQuota(planId, QuotaType.GRADING, BigDecimal.valueOf(100), new BigDecimal("1000"))
         ));
         when(schoolSubscriptionRepository.save(any(SchoolSubscription.class))).thenAnswer(call -> {
             SchoolSubscription saved = call.getArgument(0);
@@ -161,6 +169,75 @@ class InvoiceSettlementServiceTests {
             }
             return saved;
         });
+        // Quota tinh khôi của gói mới -- reportDebtClearedIfNeeded đọc lại quota này để biết snapshot
+        // sau khi hết nợ (xem InvoiceSettlementService.approveSubscriptionRequest/renewSubscription).
+        when(subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, QuotaType.GRADING))
+            .thenReturn(Optional.of(new SubscriptionQuota(UUID.randomUUID(), subscriptionId, QuotaType.GRADING,
+                BigDecimal.valueOf(100), BigDecimal.ZERO)));
+    }
+
+    private Invoice invoiceForRenewal(UUID existingSubscriptionId) {
+        return new Invoice(
+            invoiceId, "INV-2026-ABCD1234", schoolId, subscriptionId, InvoiceSourceType.SUBSCRIPTION, existingSubscriptionId,
+            LocalDate.of(2026, 8, 5), amount, InvoiceStatus.PENDING, PaymentMethod.PAYOS, "1754380800000", "link-id",
+            "https://pay.test/checkout", null, planId
+        );
+    }
+
+    private void givenActiveSubscriptionToRenew(UUID existingSubscriptionId, boolean locked) {
+        var plan = new SubscriptionPlan(
+            planId, "Gói Trường", null, amount, 365, 60, 500, PlanStatus.ACTIVE, 1, Instant.now(), null, null, new BigDecimal("0.20")
+        );
+        var current = new SchoolSubscription(
+            existingSubscriptionId, schoolId, planId, LocalDate.now().minusDays(360), LocalDate.now(),
+            SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L
+        );
+        when(schoolSubscriptionRepository.findById(existingSubscriptionId)).thenReturn(Optional.of(current));
+        when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
+        when(planQuotaRepository.findAllByPlanId(planId)).thenReturn(List.of(
+            new PlanQuota(planId, QuotaType.GRADING, BigDecimal.valueOf(100), new BigDecimal("1000"))
+        ));
+        when(schoolSubscriptionDebtGuardService.isQuotaOverLimit(existingSubscriptionId, QuotaType.GRADING)).thenReturn(locked);
+        when(schoolSubscriptionRepository.save(any(SchoolSubscription.class))).thenAnswer(call -> {
+            SchoolSubscription saved = call.getArgument(0);
+            if (saved.getId() == null) {
+                saved.setId(subscriptionId);
+            }
+            return saved;
+        });
+        when(subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, QuotaType.GRADING))
+            .thenReturn(Optional.of(new SubscriptionQuota(UUID.randomUUID(), subscriptionId, QuotaType.GRADING,
+                BigDecimal.valueOf(100), BigDecimal.ZERO)));
+    }
+
+    /**
+     * Trường đang khóa và gia hạn gói -- gói mới luôn có SubscriptionQuota tinh khôi nên chắc chắn
+     * hết nợ, phải báo SchoolDebtCleared. Xem InvoiceSettlementService.renewSubscription.
+     */
+    @Test
+    void publishesDebtClearedWhenRenewingSubscriptionForASchoolThatWasLocked() {
+        var existingSubscriptionId = UUID.randomUUID();
+        var pending = invoiceForRenewal(existingSubscriptionId);
+        lockedInvoiceIs(pending);
+        givenActiveSubscriptionToRenew(existingSubscriptionId, true);
+
+        service.settle(pending, true);
+
+        verify(schoolDebtNotificationService).publishSchoolDebtCleared(
+            eq(subscriptionId), eq(schoolId), eq(QuotaType.GRADING), any(), any(), any());
+    }
+
+    /** Trường không hề đang nợ -- gia hạn bình thường thì không có gì để báo. */
+    @Test
+    void doesNotPublishDebtClearedWhenRenewingSubscriptionForASchoolThatWasNotLocked() {
+        var existingSubscriptionId = UUID.randomUUID();
+        var pending = invoiceForRenewal(existingSubscriptionId);
+        lockedInvoiceIs(pending);
+        givenActiveSubscriptionToRenew(existingSubscriptionId, false);
+
+        service.settle(pending, true);
+
+        verify(schoolDebtNotificationService, never()).publishSchoolDebtCleared(any(), any(), any(), any(), any(), any());
     }
 
     /** Trả về id của SubscriptionQuota sẽ nhận thêm token. */
@@ -170,16 +247,59 @@ class InvoiceSettlementServiceTests {
             new TokenPurchase(sourceId, subscriptionId, amount, PurchaseStatus.PENDING, Instant.now())
         ));
         when(tokenPurchaseItemRepository.findAllByPurchaseId(any())).thenReturn(List.of(
-            new TokenPurchaseItem(sourceId, QuotaType.GRADING, 50, new BigDecimal("1000"), amount)
+            new TokenPurchaseItem(sourceId, QuotaType.GRADING, BigDecimal.valueOf(50), new BigDecimal("1000"), amount)
         ));
         when(subscriptionQuotaRepository.findAllBySubscriptionId(subscriptionId)).thenReturn(List.of(
-            new SubscriptionQuota(quotaId, subscriptionId, QuotaType.GRADING, 100, 10)
+            new SubscriptionQuota(quotaId, subscriptionId, QuotaType.GRADING, BigDecimal.valueOf(100), BigDecimal.valueOf(10))
         ));
         when(schoolSubscriptionRepository.findById(subscriptionId)).thenReturn(Optional.of(
             new SchoolSubscription(subscriptionId, schoolId, planId, LocalDate.now(), LocalDate.now().plusDays(365),
                 SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L)
         ));
         return quotaId;
+    }
+
+    /**
+     * Trường đang khóa (nợ hạn mức) và duyệt gói mới thay thế -- gói mới luôn có SubscriptionQuota
+     * tinh khôi nên chắc chắn hết nợ, phải báo SchoolDebtCleared. Xem InvoiceSettlementService
+     * .approveSubscriptionRequest.
+     */
+    @Test
+    void publishesDebtClearedWhenApprovingRequestForASchoolThatWasLocked() {
+        var pending = invoice(InvoiceSourceType.SUBSCRIPTION_REQUEST, InvoiceStatus.PENDING);
+        lockedInvoiceIs(pending);
+        givenPendingSubscriptionRequest();
+
+        var existingSubscriptionId = UUID.randomUUID();
+        when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(
+            new SchoolSubscription(existingSubscriptionId, schoolId, planId, LocalDate.now(), LocalDate.now().plusDays(30),
+                SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L)
+        ));
+        when(schoolSubscriptionDebtGuardService.isQuotaOverLimit(existingSubscriptionId, QuotaType.GRADING)).thenReturn(true);
+
+        service.settle(pending, true);
+
+        verify(schoolDebtNotificationService).publishSchoolDebtCleared(
+            eq(subscriptionId), eq(schoolId), eq(QuotaType.GRADING), any(), any(), any());
+    }
+
+    /** Trường không hề đang nợ -- duyệt gói mới bình thường thì không có gì để báo. */
+    @Test
+    void doesNotPublishDebtClearedWhenApprovingRequestForASchoolThatWasNotLocked() {
+        var pending = invoice(InvoiceSourceType.SUBSCRIPTION_REQUEST, InvoiceStatus.PENDING);
+        lockedInvoiceIs(pending);
+        givenPendingSubscriptionRequest();
+
+        var existingSubscriptionId = UUID.randomUUID();
+        when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(
+            new SchoolSubscription(existingSubscriptionId, schoolId, planId, LocalDate.now(), LocalDate.now().plusDays(30),
+                SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L)
+        ));
+        when(schoolSubscriptionDebtGuardService.isQuotaOverLimit(existingSubscriptionId, QuotaType.GRADING)).thenReturn(false);
+
+        service.settle(pending, true);
+
+        verify(schoolDebtNotificationService, never()).publishSchoolDebtCleared(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -205,7 +325,7 @@ class InvoiceSettlementServiceTests {
         var quotaCaptor = ArgumentCaptor.forClass(SubscriptionQuota.class);
         verify(subscriptionQuotaRepository).save(quotaCaptor.capture());
         assertThat(quotaCaptor.getValue().getQuotaType()).isEqualTo(QuotaType.GRADING);
-        assertThat(quotaCaptor.getValue().getTotalAllocated()).isEqualTo(100);
+        assertThat(quotaCaptor.getValue().getTotalAllocated()).isEqualByComparingTo(BigDecimal.valueOf(100));
 
         var eventCaptor = ArgumentCaptor.forClass(FinancialEvent.class);
         verify(financialEventRepository).save(eventCaptor.capture());
@@ -315,7 +435,7 @@ class InvoiceSettlementServiceTests {
         service.settle(pending, true);
 
         assertThat(pending.getStatus()).isEqualTo(InvoiceStatus.PAID);
-        verify(subscriptionQuotaRepository).addAllocation(eq(quotaId), eq(50));
+        verify(subscriptionQuotaRepository).addAllocation(eq(quotaId), eq(BigDecimal.valueOf(50)));
 
         var purchaseCaptor = ArgumentCaptor.forClass(TokenPurchase.class);
         verify(tokenPurchaseRepository).save(purchaseCaptor.capture());

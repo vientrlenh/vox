@@ -82,13 +82,11 @@ public class UpdateSchoolRubricUseCase implements IUseCase<UpdateSchoolRubricCom
             }
         }
 
-        String finalDesc = null;
-        if (command.description() != null) {
-            finalDesc = StringNormalization.trimAndCollapseSpaces(command.description());
-            if (finalDesc.isBlank()) {
-                throw new IllegalArgumentException("Description đang bị trống hoặc ko hợp lợi");
-            }
-        }
+        // Để trống (null hoặc rỗng) thì coi như không đổi -- giữ nguyên description cũ (SQL COALESCE),
+        // đồng nhất với UpdateSchoolRubricCriterionUseCase/UpdateSchoolRubricResultBandUseCase.
+        String finalDesc = (command.description() != null && !command.description().isBlank())
+                ? StringNormalization.trimAndCollapseSpaces(command.description())
+                : null;
         // 6. Bắn SQL Atomic xuống DB
         rubricRepository.updateRubricAtomic(
                 command.rubricId(),

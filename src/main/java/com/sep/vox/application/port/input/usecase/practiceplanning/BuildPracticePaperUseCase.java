@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,6 +13,7 @@ import com.sep.vox.application.port.input.command.BuildPracticePaperCommand;
 import com.sep.vox.application.port.input.service.PracticePaperPersistenceService;
 import com.sep.vox.application.port.input.service.PracticeQuestionSelectionService;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
+import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
@@ -37,6 +39,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
     private final PracticePaperPersistenceService persistenceService;
     private final UserContextPort userContextPort;
     private final ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase;
+    private final QuotaPricingService quotaPricingService;
 
     public BuildPracticePaperUseCase(
             PracticeTopicRepository topicRepository,
@@ -46,7 +49,8 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
             PracticeQuestionSelectionService selectionService,
             PracticePaperPersistenceService persistenceService,
             UserContextPort userContextPort,
-            ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase) {
+            ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase,
+            QuotaPricingService quotaPricingService) {
         this.viewPracticeTopicOffersUseCase = viewPracticeTopicOffersUseCase;
         this.topicRepository = topicRepository;
         this.paperRepository = paperRepository;
@@ -55,13 +59,14 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         this.selectionService = selectionService;
         this.persistenceService = persistenceService;
         this.userContextPort = userContextPort;
+        this.quotaPricingService = quotaPricingService;
     }
 
     @Override
     public PracticePaper execute(BuildPracticePaperCommand input) {
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
         var topic = requireTopic(input.topicId());
-        var quotaRemaining = remainingPracticeQuota(studentId);
+        var quotaRemainingUsd = remainingPracticeQuotaUsd(studentId);
         var focus = selectionService.resolveFocus(studentId, input.fromSubAttribute());
         var chosenBandOrder = chosenBandOrder(input.targetFrameworkBandId());
         // Deliberately NOT wrapped in a Spring transaction: resolveNextQuestion can call out
@@ -78,7 +83,16 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
             .resolveNextQuestion(topic, studentId, focus, chosenBandOrder, List.of())
             .orElseThrow(() -> new NotFoundException("Chủ đề chưa có câu luyện phù hợp."));
         var question = selection.question();
-        if (quotaRemaining < question.spokenSeconds()) {
+        // Ước lượng worst-case (giây x giá/giây calibrate) -- không phải chi phí thật, cùng tinh
+        // thần Công thức 1 của ClassTestTokenQuotaGuardService (xem AI_USAGE_QUOTA_USD_MIGRATION.md
+        // mục 5/6), nhưng dùng rate calibrate RIÊNG cho PRACTICE (currentEstimatedCostPerPracticeSecondUsd,
+        // xem QuotaPricingCalibrationService/QuotaPricingSource) vì pipeline AI khác hẳn exam. Cộng
+        // cả reservedSeconds (câu đang chờ nộp của các phiên khác) để không cho 2 phiên cùng lúc
+        // cùng vượt hạn mức trong lúc chưa phiên nào submit turn thật.
+        var reservedSeconds = paperRepository.sumReservedQuotaSeconds(studentId);
+        var estimatedCostUsd = BigDecimal.valueOf((long) reservedSeconds + question.spokenSeconds())
+            .multiply(quotaPricingService.currentEstimatedCostPerPracticeSecondUsd());
+        if (quotaRemainingUsd.compareTo(estimatedCostUsd) < 0) {
             throw new QuotaExceededException("Hạn mức PRACTICE không đủ cho một câu trọn vẹn.");
         }
         var paper = persistenceService.persist(
@@ -130,10 +144,9 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
             : origin;
     }
 
-    private int remainingPracticeQuota(UUID studentId) {
+    private BigDecimal remainingPracticeQuotaUsd(UUID studentId) {
         var quota = schoolSubscriptionRepository.findPracticeQuotaRemaining(studentId);
-        var reserved = paperRepository.sumReservedQuotaSeconds(studentId);
-        return Math.max(0, quota - reserved);
+        return quota.max(BigDecimal.ZERO);
     }
 
     /**

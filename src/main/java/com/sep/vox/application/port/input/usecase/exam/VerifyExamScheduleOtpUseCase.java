@@ -16,6 +16,7 @@ import com.sep.vox.application.port.input.command.VerifyExamScheduleOtpCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.HealthCheckPort;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -30,6 +31,7 @@ import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 @Service
 public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamScheduleOtpCommand, ExamEntryTicketResponse> {
@@ -46,6 +48,8 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
     private final CreateExamSessionUseCase createExamSessionUseCase;
     private final UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase;
     private final HealthCheckPort healthCheckPort;
+    private final SchoolSubscriptionRepository schoolSubscriptionRepository;
+    private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
 
     public VerifyExamScheduleOtpUseCase(
             ExamCandidateRepository examCandidateRepository,
@@ -56,7 +60,9 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
             CacheManagerPort cacheManagerPort,
             UserContextPort userContextPort,
             CreateExamSessionUseCase createExamSessionUseCase,
-            UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase, HealthCheckPort healthCheckPort) {
+            UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase, HealthCheckPort healthCheckPort,
+            SchoolSubscriptionRepository schoolSubscriptionRepository,
+            SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService) {
         this.examCandidateRepository = examCandidateRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examRepository = examRepository;
@@ -67,6 +73,8 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
         this.createExamSessionUseCase = createExamSessionUseCase;
         this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
         this.healthCheckPort = healthCheckPort;
+        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
+        this.schoolSubscriptionDebtGuardService = schoolSubscriptionDebtGuardService;
     }
 
     @Override
@@ -138,6 +146,12 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
                 throw new DuplicatedException("Đã hết số lượt thi cho phép (" + exam.getMaxAttempt() + " lượt)");
             }
         }
+
+        // Chỉ chặn tạo phiên MỚI khi trường đang nợ -- không chặn nhánh resume ở trên để không cắt
+        // ngang thí sinh đang thi dở. Không throw nếu trường không có subscription active (giữ
+        // nguyên hành vi cũ cho case đó, ngoài phạm vi sửa lần này).
+        schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId())
+            .ifPresent(subscription -> schoolSubscriptionDebtGuardService.requireSchoolNotLocked(subscription.getId()));
 
         var session = createExamSessionUseCase.execute(new CreateExamSessionCommand(
             input.examId(),

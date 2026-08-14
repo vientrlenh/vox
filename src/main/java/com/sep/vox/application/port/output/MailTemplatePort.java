@@ -54,4 +54,15 @@ public interface MailTemplatePort {
         String validUntilLabel
     );
 
+    // ---- nợ hạn mức AI (mục 13, AI_USAGE_QUOTA_USD_MIGRATION.md) ----------
+
+    /** Nợ hạn mức AI của trường vừa vượt trần cảnh báo -- gửi mọi SYSTEM_ADMIN. */
+    String renderDebtCapExceededEmail(String schoolName, String quotaLabel, String overageLabel, String capLabel);
+
+    /** Trường vừa bị khóa vì chi phí AI thật vượt hạn mức -- gửi mọi SCHOOL_ADMIN của trường. */
+    String renderSchoolLockedDueToDebtEmail(String schoolName);
+
+    /** Trường vừa hết nợ hạn mức AI (mua thêm/gia hạn/nâng cấp) -- gửi mọi SCHOOL_ADMIN của trường. */
+    String renderSchoolDebtClearedEmail(String schoolName);
+
 }

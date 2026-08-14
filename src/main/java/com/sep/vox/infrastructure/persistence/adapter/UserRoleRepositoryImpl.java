@@ -78,4 +78,9 @@ public class UserRoleRepositoryImpl implements UserRoleRepository {
         return springDataUserRoleRepository.countByRoleId(roleId);
     }
 
+    @Override
+    public List<UUID> findActiveUserIdsByRoleCode(String roleCode) {
+        return springDataUserRoleRepository.findActiveUserIdsByRoleCode(roleCode);
+    }
+
 }

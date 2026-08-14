@@ -44,8 +44,8 @@ type SchoolAdminDashboardSummary {
     revenue: Float!
     "Chi tiêu 12 tháng gần nhất, xếp từ cũ đến mới"
     monthlySpending: [SchoolMonthlySpending!]!
-    tokenAllocated: Int!
-    tokenUsed: Int!
+    tokenAllocated: Float!
+    tokenUsed: Float!
     "null nếu trường chưa từng có gói đăng ký nào đang hoạt động"
     subscriptionRenewal: SubscriptionRenewal
 }

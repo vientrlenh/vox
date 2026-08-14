@@ -6,7 +6,7 @@ import java.util.UUID;
 public record PlanQuotaDto(
     UUID id,
     String quotaType,
-    Integer includedQuantity,
+    BigDecimal includedQuantity,
     BigDecimal tokenUnitPrice
 ) {
 }

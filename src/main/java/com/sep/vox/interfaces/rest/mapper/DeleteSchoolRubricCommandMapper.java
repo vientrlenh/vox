@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.mapper;
 
+import com.sep.vox.application.port.input.command.DeleteSchoolRubricCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolRubricCriterionCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolRubricResultBandCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolRubricVersionCommand;
@@ -7,6 +8,11 @@ import com.sep.vox.application.port.input.command.DeleteSchoolRubricVersionComma
 import java.util.UUID;
 
 public class DeleteSchoolRubricCommandMapper {
+
+    // 0. Cho Rubric gốc
+    public static DeleteSchoolRubricCommand fromRequest(UUID schoolId, UUID rubricId) {
+        return new DeleteSchoolRubricCommand(schoolId, rubricId);
+    }
 
     // 1. Cho Version
     public static DeleteSchoolRubricVersionCommand versionFromRequest(UUID schoolId, UUID versionId) {

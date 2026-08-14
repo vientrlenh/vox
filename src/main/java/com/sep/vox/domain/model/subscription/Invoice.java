@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 public class Invoice {
-    private UUID id;
+    private UUID id; //
     private String invoiceNumber;
     private UUID schoolId;
     private UUID subscriptionId;

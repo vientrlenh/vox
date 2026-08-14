@@ -38,8 +38,8 @@ public class TokenPurchaseItemJpaEntity {
     })
     private String quotaType;
 
-    @Column(name = "quantity", nullable = false, updatable = false)
-    private Integer quantity;
+    @Column(name = "quantity", nullable = false, updatable = false, precision = 18, scale = 6)
+    private BigDecimal quantity;
 
     @Column(name = "unit_price_snapshot", nullable = false, updatable = false, precision = 15, scale = 0)
     private BigDecimal unitPriceSnapshot;
@@ -49,7 +49,7 @@ public class TokenPurchaseItemJpaEntity {
 
     protected TokenPurchaseItemJpaEntity() {}
 
-    public TokenPurchaseItemJpaEntity(UUID id, UUID purchaseId, String quotaType, Integer quantity,
+    public TokenPurchaseItemJpaEntity(UUID id, UUID purchaseId, String quotaType, BigDecimal quantity,
             BigDecimal unitPriceSnapshot, BigDecimal subtotal) {
         this.id = id;
         this.purchaseId = purchaseId;
@@ -83,11 +83,11 @@ public class TokenPurchaseItemJpaEntity {
         this.quotaType = quotaType;
     }
 
-    public Integer getQuantity() {
+    public BigDecimal getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(Integer quantity) {
+    public void setQuantity(BigDecimal quantity) {
         this.quantity = quantity;
     }
 

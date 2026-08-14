@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,8 +13,11 @@ public interface SubscriptionQuotaRepository {
     SubscriptionQuota save(SubscriptionQuota quota);
     List<SubscriptionQuota> findAllBySubscriptionId(UUID subscriptionId);
     Optional<SubscriptionQuota> findBySubscriptionIdAndQuotaType(UUID subscriptionId, QuotaType quotaType);
-    void addAllocation(UUID quotaId, int amount);
+    void addAllocation(UUID quotaId, BigDecimal amount);
 
     /** returns false if usedQuantity + amount would exceed totalAllocated. */
-    boolean tryConsume(UUID quotaId, int amount);
+    boolean tryConsume(UUID quotaId, BigDecimal amount);
+
+    /** Unconditional -- always succeeds, can push usedQuantity above totalAllocated (debt). */
+    void addUsage(UUID quotaId, BigDecimal amount);
 }

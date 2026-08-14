@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -112,11 +113,17 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         var quotaExhausted = false;
         if (turn.getDurationSeconds() > 0) {
             try {
+                // Chi phí AI thật (USD) của turn này, Python tính đồng bộ từ realtimeCorrectionGraph
+                // ngay trong request submit_turn (không đợi được ai_usage_record qua Kafka như exam,
+                // vì PRACTICE trừ quota NGAY trong request này) -- xem
+                // PracticeAttemptConnection._flush_turn_usage bên Agentic AI,
+                // AI_USAGE_QUOTA_USD_MIGRATION.md mục 5/7. Fallback ZERO cho client Python cũ chưa gửi.
+                var costUsd = turn.getTurnCostUsd() != null ? turn.getTurnCostUsd() : BigDecimal.ZERO;
                 consumeQuotaUseCase.execute(new ConsumeQuotaCommand(
                     activeSubscriptionId(studentId),
                     turn.getSessionId(),
                     QuotaType.PRACTICE,
-                    turn.getDurationSeconds(),
+                    costUsd,
                     studentId
                 ));
             } catch (QuotaExceededException exception) {

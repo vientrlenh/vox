@@ -7,7 +7,7 @@ public record TokenPurchaseItemDto(
     UUID id,
     UUID purchaseId,
     String quotaType,
-    Integer quantity,
+    BigDecimal quantity,
     BigDecimal unitPriceSnapshot,
     BigDecimal subtotal
 ) {

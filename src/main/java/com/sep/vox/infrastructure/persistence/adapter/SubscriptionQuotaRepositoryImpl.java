@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,12 +48,17 @@ public class SubscriptionQuotaRepositoryImpl implements SubscriptionQuotaReposit
     }
 
     @Override
-    public boolean tryConsume(UUID quotaId, int amount) {
+    public boolean tryConsume(UUID quotaId, BigDecimal amount) {
         return springDataSubscriptionQuotaRepository.tryConsume(quotaId, amount) > 0;
     }
 
     @Override
-    public void addAllocation(UUID quotaId, int amount) {
+    public void addAllocation(UUID quotaId, BigDecimal amount) {
         springDataSubscriptionQuotaRepository.addAllocation(quotaId, amount);
+    }
+
+    @Override
+    public void addUsage(UUID quotaId, BigDecimal amount) {
+        springDataSubscriptionQuotaRepository.addUsage(quotaId, amount);
     }
 }

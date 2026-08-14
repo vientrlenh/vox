@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -49,16 +50,16 @@ public class SubscriptionQuotaUserAllocationJpaEntity {
     @Column(name = "user_id", nullable = false, updatable = false)
     private UUID userId;
 
-    @Column(name = "allocated_quantity", nullable = false)
-    private Integer allocatedQuantity;
+    @Column(name = "allocated_quantity", nullable = false, precision = 18, scale = 6)
+    private BigDecimal allocatedQuantity;
 
-    @Column(name = "used_quantity", nullable = false)
-    private Integer usedQuantity;
+    @Column(name = "used_quantity", nullable = false, precision = 18, scale = 6)
+    private BigDecimal usedQuantity;
 
     protected SubscriptionQuotaUserAllocationJpaEntity() {}
 
     public SubscriptionQuotaUserAllocationJpaEntity(UUID id, UUID subscriptionId, String quotaType, UUID userId,
-            Integer allocatedQuantity, Integer usedQuantity) {
+            BigDecimal allocatedQuantity, BigDecimal usedQuantity) {
         this.id = id;
         this.subscriptionId = subscriptionId;
         this.quotaType = quotaType;
@@ -99,19 +100,19 @@ public class SubscriptionQuotaUserAllocationJpaEntity {
         this.userId = userId;
     }
 
-    public Integer getAllocatedQuantity() {
+    public BigDecimal getAllocatedQuantity() {
         return allocatedQuantity;
     }
 
-    public void setAllocatedQuantity(Integer allocatedQuantity) {
+    public void setAllocatedQuantity(BigDecimal allocatedQuantity) {
         this.allocatedQuantity = allocatedQuantity;
     }
 
-    public Integer getUsedQuantity() {
+    public BigDecimal getUsedQuantity() {
         return usedQuantity;
     }
 
-    public void setUsedQuantity(Integer usedQuantity) {
+    public void setUsedQuantity(BigDecimal usedQuantity) {
         this.usedQuantity = usedQuantity;
     }
 }

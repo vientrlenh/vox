@@ -38,7 +38,11 @@ public enum NotificationCategory {
         Map.entry(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, GRADING), 
         Map.entry(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED, EXAM_BLUEPRINT),
 
-        Map.entry(EventTypeConstant.INVOICE_PAID, BILLING)
+        Map.entry(EventTypeConstant.INVOICE_PAID, BILLING),
+
+        Map.entry(EventTypeConstant.SCHOOL_DEBT_CAP_EXCEEDED, SYSTEM),
+        Map.entry(EventTypeConstant.SCHOOL_LOCKED_DUE_TO_DEBT, BILLING),
+        Map.entry(EventTypeConstant.SCHOOL_DEBT_CLEARED, BILLING)
     );
 
     /**

@@ -1,5 +1,6 @@
 package com.sep.vox.domain.model.subscription;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -8,13 +9,13 @@ public class TokenUsageEvent {
     private UUID subscriptionId;
     private UUID examSessionId;
     private QuotaType quotaType;
-    private Integer tokensConsumed;
+    private BigDecimal tokensConsumed;
     private Instant occurredAt;
 
     public TokenUsageEvent() {}
 
     public TokenUsageEvent(UUID id, UUID subscriptionId, UUID examSessionId, QuotaType quotaType,
-            Integer tokensConsumed, Instant occurredAt) {
+            BigDecimal tokensConsumed, Instant occurredAt) {
         this.id = id;
         this.subscriptionId = subscriptionId;
         this.examSessionId = examSessionId;
@@ -24,7 +25,7 @@ public class TokenUsageEvent {
     }
 
     public TokenUsageEvent(UUID subscriptionId, UUID examSessionId, QuotaType quotaType,
-            Integer tokensConsumed, Instant occurredAt) {
+            BigDecimal tokensConsumed, Instant occurredAt) {
         this.subscriptionId = subscriptionId;
         this.examSessionId = examSessionId;
         this.quotaType = quotaType;
@@ -64,11 +65,11 @@ public class TokenUsageEvent {
         this.quotaType = quotaType;
     }
 
-    public Integer getTokensConsumed() {
+    public BigDecimal getTokensConsumed() {
         return tokensConsumed;
     }
 
-    public void setTokensConsumed(Integer tokensConsumed) {
+    public void setTokensConsumed(BigDecimal tokensConsumed) {
         this.tokensConsumed = tokensConsumed;
     }
 

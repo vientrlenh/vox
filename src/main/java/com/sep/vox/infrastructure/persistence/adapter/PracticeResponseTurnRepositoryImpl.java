@@ -1,12 +1,14 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
+import com.sep.vox.domain.repository.SessionDurationAggregate;
 import com.sep.vox.infrastructure.persistence.entity.PracticeResponseTurnJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeResponseTurnRepository;
 
@@ -68,6 +70,16 @@ public class PracticeResponseTurnRepositoryImpl implements PracticeResponseTurnR
     public List<TurnRecord> findBySessionIdOrderByTurnOrder(UUID sessionId) {
         return repository.findBySessionIdOrderByTurnOrder(sessionId).stream()
             .map(this::toRecord)
+            .toList();
+    }
+
+    @Override
+    public List<SessionDurationAggregate> sumDurationSecondsGroupedBySessionIds(Collection<UUID> sessionIds) {
+        if (sessionIds.isEmpty()) {
+            return List.of();
+        }
+        return repository.sumDurationSecondsGroupedBySessionIds(sessionIds).stream()
+            .map(row -> new SessionDurationAggregate((UUID) row[0], ((Number) row[1]).longValue()))
             .toList();
     }
 

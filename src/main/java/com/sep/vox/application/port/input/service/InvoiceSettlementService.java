@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -24,6 +25,7 @@ import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.model.subscription.InvoiceStatus;
 import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.model.subscription.PurchaseStatus;
+import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.model.subscription.RequestStatus;
 import com.sep.vox.domain.model.subscription.RequestType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
@@ -63,6 +65,8 @@ public class InvoiceSettlementService {
     private final SchoolUserRepository schoolUserRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
+    private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
+    private final SchoolDebtNotificationService schoolDebtNotificationService;
 
     public InvoiceSettlementService(
             InvoiceRepository invoiceRepository,
@@ -77,7 +81,9 @@ public class InvoiceSettlementService {
             SubscriptionPlanResolver subscriptionPlanResolver,
             SchoolUserRepository schoolUserRepository,
             OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort) {
+            JsonSerializationPort jsonSerializationPort,
+            SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService,
+            SchoolDebtNotificationService schoolDebtNotificationService) {
         this.invoiceRepository = invoiceRepository;
         this.subscriptionRequestRepository = subscriptionRequestRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
@@ -91,6 +97,8 @@ public class InvoiceSettlementService {
         this.schoolUserRepository = schoolUserRepository;
         this.outboxRepository = outboxRepository;
         this.jsonSerializationPort = jsonSerializationPort;
+        this.schoolSubscriptionDebtGuardService = schoolSubscriptionDebtGuardService;
+        this.schoolDebtNotificationService = schoolDebtNotificationService;
     }
 
     // Idempotent: nếu invoice không còn PENDING (đã được chốt trước đó, kể cả bởi lần gọi khác) thì bỏ qua.
@@ -200,10 +208,20 @@ public class InvoiceSettlementService {
         var plan = subscriptionPlanRepository.findById(request.getRequestedPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
-        schoolSubscriptionRepository.findActiveBySchoolId(request.getSchoolId()).ifPresent(current -> {
-            current.setStatus(SubscriptionStatus.EXPIRED);
-            schoolSubscriptionRepository.save(current);
-        });
+        // Chụp bucket nào của gói CŨ (nếu có) đang vượt hạn mức trước khi expire nó -- gói mới tạo
+        // bên dưới luôn có SubscriptionQuota tinh khôi (usedQuantity=0) nên chắc chắn không khóa,
+        // không cần check lại "sau" như checkDebtCapTransition (ConsumeQuotaUseCase).
+        var oldSubscriptionId = schoolSubscriptionRepository.findActiveBySchoolId(request.getSchoolId())
+            .map(current -> {
+                current.setStatus(SubscriptionStatus.EXPIRED);
+                schoolSubscriptionRepository.save(current);
+                return current.getId();
+            })
+            .orElse(null);
+        var wasOverGrading = oldSubscriptionId != null
+            && schoolSubscriptionDebtGuardService.isQuotaOverLimit(oldSubscriptionId, QuotaType.GRADING);
+        var wasOverClassTest = oldSubscriptionId != null
+            && schoolSubscriptionDebtGuardService.isQuotaOverLimit(oldSubscriptionId, QuotaType.CLASS_TEST);
 
         var startDate = LocalDate.ofInstant(now, DateMapper.DEFAULT_INPUT_ZONE);
         var savedSubscription = schoolSubscriptionRepository.save(new SchoolSubscription(
@@ -222,7 +240,7 @@ public class InvoiceSettlementService {
                 savedSubscription.getId(),
                 planQuota.getQuotaType(),
                 planQuota.getIncludedQuantity(),
-                0
+                BigDecimal.ZERO
             ))
         );
 
@@ -238,7 +256,26 @@ public class InvoiceSettlementService {
             request.getAmount(), "VND", paymentProvider, null, null, now
         ));
 
+        reportDebtClearedIfNeeded(wasOverGrading, savedSubscription, QuotaType.GRADING, now);
+        reportDebtClearedIfNeeded(wasOverClassTest, savedSubscription, QuotaType.CLASS_TEST, now);
+
         return savedSubscription;
+    }
+
+    /**
+     * Báo SchoolDebtCleared cho ĐÚNG 1 bucket vừa hết nợ (gói mới luôn tinh khôi nên chắc chắn hết
+     * nợ nếu bucket đó trước đó có nợ) -- dùng ở cả approveSubscriptionRequest lẫn renewSubscription,
+     * 2 nơi tạo subscription mới thay thế subscription cũ.
+     */
+    private void reportDebtClearedIfNeeded(boolean wasOver, SchoolSubscription newSubscription, QuotaType quotaType, Instant now) {
+        if (!wasOver) {
+            return;
+        }
+        subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(newSubscription.getId(), quotaType)
+            .ifPresent(quota -> schoolDebtNotificationService.publishSchoolDebtCleared(
+                newSubscription.getId(), newSubscription.getSchoolId(), quotaType,
+                quota.getTotalAllocated(), quota.getUsedQuantity(), now
+            ));
     }
 
     private SchoolSubscription renewSubscription(
@@ -261,6 +298,11 @@ public class InvoiceSettlementService {
             : subscriptionPlanResolver.resolveActivePlan(subscriptionPlanRepository.findById(current.getPlanId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy gói")));
 
+        // Chụp bucket nào của gói CŨ đang vượt hạn mức trước khi expire nó -- cùng lý do như
+        // approveSubscriptionRequest.
+        var wasOverGrading = schoolSubscriptionDebtGuardService.isQuotaOverLimit(current.getId(), QuotaType.GRADING);
+        var wasOverClassTest = schoolSubscriptionDebtGuardService.isQuotaOverLimit(current.getId(), QuotaType.CLASS_TEST);
+
         current.setStatus(SubscriptionStatus.EXPIRED);
         schoolSubscriptionRepository.save(current);
 
@@ -281,7 +323,7 @@ public class InvoiceSettlementService {
                 savedSubscription.getId(),
                 planQuota.getQuotaType(),
                 planQuota.getIncludedQuantity(),
-                0
+                BigDecimal.ZERO
             ))
         );
 
@@ -289,6 +331,9 @@ public class InvoiceSettlementService {
             current.getSchoolId(), savedSubscription.getId(), FinancialEventType.SUB_RENEWED,
             plan.getPricePerYear(), "VND", paymentProvider, null, null, now
         ));
+
+        reportDebtClearedIfNeeded(wasOverGrading, savedSubscription, QuotaType.GRADING, now);
+        reportDebtClearedIfNeeded(wasOverClassTest, savedSubscription, QuotaType.CLASS_TEST, now);
 
         return savedSubscription;
     }
@@ -302,6 +347,9 @@ public class InvoiceSettlementService {
         }
         purchase.setStatus(PurchaseStatus.PAID);
         tokenPurchaseRepository.save(purchase);
+
+        var wasOverGrading = schoolSubscriptionDebtGuardService.isQuotaOverLimit(subscriptionId, QuotaType.GRADING);
+        var wasOverClassTest = schoolSubscriptionDebtGuardService.isQuotaOverLimit(subscriptionId, QuotaType.CLASS_TEST);
 
         var items = tokenPurchaseItemRepository.findAllByPurchaseId(purchase.getId());
         var subscriptionQuotas = subscriptionQuotaRepository.findAllBySubscriptionId(subscriptionId).stream()
@@ -320,6 +368,22 @@ public class InvoiceSettlementService {
             subscription.getSchoolId(), subscriptionId, FinancialEventType.TOKEN_PURCHASED,
             purchase.getTotalAmount(), "VND", paymentProvider, null, null, now
         ));
+
+        // Báo SchoolDebtCleared cho TỪNG bucket riêng vừa hết nợ (mua thêm token có thể chỉ top-up 1
+        // trong 2 bucket) -- khác trước đây chỉ báo gộp khi CẢ 2 bucket cùng hết nợ.
+        reportDebtClearedIfStillWithinLimit(wasOverGrading, subscriptionId, subscription.getSchoolId(), QuotaType.GRADING, now);
+        reportDebtClearedIfStillWithinLimit(wasOverClassTest, subscriptionId, subscription.getSchoolId(), QuotaType.CLASS_TEST, now);
+    }
+
+    private void reportDebtClearedIfStillWithinLimit(
+            boolean wasOver, UUID subscriptionId, UUID schoolId, QuotaType quotaType, Instant now) {
+        if (!wasOver || schoolSubscriptionDebtGuardService.isQuotaOverLimit(subscriptionId, quotaType)) {
+            return;
+        }
+        subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, quotaType)
+            .ifPresent(quota -> schoolDebtNotificationService.publishSchoolDebtCleared(
+                subscriptionId, schoolId, quotaType, quota.getTotalAllocated(), quota.getUsedQuantity(), now
+            ));
     }
 
 }

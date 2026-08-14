@@ -40,6 +40,13 @@ public class ArchivePlanUseCase implements IUseCase<ArchivePlanCommand, Subscrip
         var plan = subscriptionPlanRepository.findById(input.planId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
+        if (plan.getStatus() == PlanStatus.DRAFT) {
+            throw new IllegalStateException("Gói đang ở trạng thái nháp thì phải xóa cứng, không lưu trữ.");
+        }
+        if (plan.getStatus() == PlanStatus.ARCHIVED) {
+            throw new IllegalStateException("Gói đã được lưu trữ trước đó.");
+        }
+
         if (input.replacedByPlanId() != null) {
             if (input.replacedByPlanId().equals(plan.getId())) {
                 throw new IllegalArgumentException("Gói thay thế không được trùng với chính gói đang lưu trữ");

@@ -72,14 +72,10 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
             buildAppealStats(schoolId),
             sumAmount(paidInvoices),
             buildMonthlySpending(paidInvoices),
-            gradingQuota.map(quota -> toLong(quota.getTotalAllocated())).orElse(0L),
-            gradingQuota.map(quota -> toLong(quota.getUsedQuantity())).orElse(0L),
+            gradingQuota.map(quota -> quota.getTotalAllocated()).orElse(BigDecimal.ZERO),
+            gradingQuota.map(quota -> quota.getUsedQuantity()).orElse(BigDecimal.ZERO),
             buildSubscriptionRenewal(activeSubscription)
         );
-    }
-
-    private static long toLong(Integer value) {
-        return value == null ? 0L : value.longValue();
     }
 
     private ExamStatusCountsDto buildExamStatusCounts(UUID currentUserId, UUID schoolId) {

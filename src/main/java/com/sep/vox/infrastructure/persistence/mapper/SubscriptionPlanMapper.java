@@ -17,12 +17,12 @@ public final class SubscriptionPlanMapper {
             jpa.getValidityDays(),
             jpa.getMaxTimePerAttemptMin(),
             jpa.getMaxStudentCount(),
-            jpa.isPopular(),
             PlanStatus.valueOf(jpa.getStatus()),
             jpa.getVersion(),
             jpa.getCreatedAt(),
             jpa.getCreatedBy(),
-            jpa.getReplacedByPlanId()
+            jpa.getReplacedByPlanId(),
+            jpa.getServiceFeeRatio()
         );
     }
 
@@ -35,12 +35,12 @@ public final class SubscriptionPlanMapper {
             domain.getValidityDays(),
             domain.getMaxTimePerAttemptMin(),
             domain.getMaxStudentCount(),
-            domain.isPopular(),
             domain.getStatus().name(),
             domain.getVersion(),
             domain.getCreatedAt(),
             domain.getCreatedBy(),
-            domain.getReplacedByPlanId()
+            domain.getReplacedByPlanId(),
+            domain.getServiceFeeRatio()
         );
     }
 }

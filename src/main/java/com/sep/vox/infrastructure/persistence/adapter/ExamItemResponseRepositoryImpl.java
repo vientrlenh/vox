@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.exam.ExamItemResponse;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.SessionDurationAggregate;
 import com.sep.vox.infrastructure.persistence.mapper.ExamItemResponseMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataExamItemResponseRepository;
 
@@ -52,5 +54,13 @@ public class ExamItemResponseRepositoryImpl implements ExamItemResponseRepositor
     @Override
     public void deleteBySessionId(UUID sessionId) {
         springDataExamItemResponseRepository.deleteBySessionId(sessionId);
+    }
+
+    @Override
+    public List<SessionDurationAggregate> sumDurationSecondsGroupedBySessionIds(Collection<UUID> sessionIds) {
+        if (sessionIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamItemResponseRepository.sumDurationSecondsGroupedBySessionIds(sessionIds);
     }
 }

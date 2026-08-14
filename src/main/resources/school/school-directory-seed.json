@@ -1,0 +1,641 @@
+[
+  {
+    "code": "PTNK-HCM-1",
+    "name": "Trường Phổ thông Năng Khiếu, Đại học Quốc gia TP.HCM",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường An Đông",
+    "domain": "ptnk.edu.vn",
+    "address": "153 Nguyễn Chí Thanh, P. An Đông, Tp.HCM"
+  },
+  {
+    "code": "PTNK-HCM-2",
+    "name": "Trường Phổ thông Năng Khiếu, Đại học Quốc gia TP.HCM",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Đông Hòa",
+    "domain": "ptnk.edu.vn",
+    "address": "Khu đô thị Đại học Quốc gia, P. Đông Hòa, Tp.HCM"
+  },
+  {
+    "code": "THPT-C-TRANDAINGHIA-HCM-1",
+    "name": "Trường THPT chuyên Trần Đại Nghĩa",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Sài Gòn",
+    "domain": "trandainghia.edu.vn",
+    "address": "20 Lý Tự Trọng, P. Sài Gòn, Tp.HCM"
+  },
+  {
+    "code": "THPT-C-TRANDAINGHIA-HCM-2",
+    "name": "Trường THPT chuyên Trần Đại Nghĩa",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường An Khánh",
+    "domain": "trandainghia.edu.vn",
+    "address": "2/6A Lương Định Của, P. An Khánh, Tp.HCM"
+  },
+  {
+    "code": "THPT-C-LEHONGPHONG-HCM",
+    "name": "Trường THPT chuyên Lê Hồng Phong",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Chợ Quán",
+    "domain": "thpt-lehongphong-tphcm.edu.vn",
+    "address": "235 Nguyễn Văn Cừ, P. Chợ Quán, Tp.HCM"
+  },
+  {
+    "code": "THPT-C-LEQUYDON-HCM",
+    "name": "Trường THPT chuyên Lê Quý Đôn",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Phước Thắng",
+    "domain": "thptchuyen-lequydon-hcm.edu.vn",
+    "address": "Giao lộ Hàng Điều - 3 Tháng 2, P. Phước Thắng, Tp.HCM"
+  },
+  {
+    "code": "THPT-C-HUNGVUONG-HCM",
+    "name": "Trường THPT chuyên Hùng Vương",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Thủ Dầu Một",
+    "domain": "thptchv.edu.vn",
+    "address": "593 Đại lộ Bình Dương, P. Thủ Dầu Một, Tp.HCM"
+  },
+  {
+    "code": "THPT-NKTDTT-HCM",
+    "name": "Trường THPT Năng khiếu Thể dục Thể thao TP.HCM",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Tân Định",
+    "domain": "thptnangkhieutdtt.hcm.edu.vn",
+    "address": "43 Điện Biên Phủ, P. Tân Định, Tp.HCM"
+  },
+  {
+    "code": "THPT-NKTDTTNGUYENTHIDINH-HCM",
+    "name": "Trường THPT Năng khiếu Thể dục Thể thao Nguyễn Thị Định",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Phú Định",
+    "domain": "thptnangkhieutdttnguyenthidinh.hcm.edu.vn",
+    "address": "215 Đường Hoàng Ngân, P. Phú Định, Tp.HCM"
+  },
+  {
+    "code": "THPT-NKTDTTOLYMPIC-HCM",
+    "name": "Trường THPT Năng khiếu Thể dục Thể thao Olympic - Đại học Thể dục Thể thao TPHCM",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Linh Xuân",
+    "domain": "nkttolympic.hcm.edu.vn",
+    "address": "Đại học Thể dục Thể thao TPHCM, P. Linh Xuân, Tp.HCM"
+  },
+  {
+    "code": "THPT-NKTDTTBINHCHANH-HCM",
+    "name": "Trường THPT Năng khiếu Thể dục Thể thao Bình Chánh",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Xã Bình Lợi",
+    "domain": "thptnangkhieutdttbinhchanh.hcm.edu.vn",
+    "address": "A10/3D Mai Bá Hương, X. Bình Lợi, Tp.HCM"
+  },
+  {
+    "code": "THPT-BUITHIXUAN-HCM",
+    "name": "Trường THPT Bùi Thị Xuân",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Bến Thành",
+    "domain": "thptbuithixuan.hcm.edu.vn",
+    "address": "73 - 75 Bùi Thị Xuân, P. Bến Thành, Tp.HCM"
+  },
+  {
+    "code": "THPT-TRUNGVUONG-HCM",
+    "name": "Trường THPT Trưng Vương",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Sài Gòn",
+    "domain": "thpttrungvuong.hcm.edu.vn",
+    "address": "3 Nguyễn Bỉnh Khiêm, P. Sài Gòn, Tp.HCM"
+  },
+  {
+    "code": "THPT-ENLOMAN-HCM",
+    "name": "Trường THPT Ernst Thalmann",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Bến Thành",
+    "domain": "thpttenloman.hcm.edu.vn",
+    "address": "8 Trần Hưng Đạo, P. Bến Thành, Tp.HCM"
+  },
+  {
+    "code": "THPT-LUONGTHEVINH-HCM",
+    "name": "Trường THPT Lương Thế Vinh",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Cầu Ông Lãnh",
+    "domain": "thptluongthevinh.hcm.edu.vn",
+    "address": "131 Cô Bắc, P. Cầu Ông Lãnh, Tp.HCM"
+  },
+  {
+    "code": "THCS-THPT-TRANDAINGHIA-HCM",
+    "name": "Trường THCS - THPT Trần Đại Nghĩa",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Sài Gòn",
+    "domain": "trandainghia.edu.vn",
+    "address": "20 Lý Tự Trọng, P. Sài Gòn, Tp.HCM"
+  },
+  {
+    "code": "THPT-LEQUYDON-HCM",
+    "name": "Trường THPT Lê Quý Đôn",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Xuân Hòa",
+    "domain": "thpt-lequydon-hcm.edu.vn",
+    "address": "10 Nguyễn Thị Minh Khai, P. Xuân Hòa, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGUYENTHIMINHKHAI-HCM",
+    "name": "Trường THPT Nguyễn Thị Minh Khai",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Xuân Hòa",
+    "domain": "thptnguyenthiminhkhai.hcm.edu.vn",
+    "address": "275 Điện Biên Phủ, P. Xuân Hòa, Tp.HCM"
+  },
+  {
+    "code": "THPT-MARIECURIE-HCM",
+    "name": "Trường THPT Marie Curie",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Xuân Hòa",
+    "domain": "thptmariecurie.hcm.edu.vn",
+    "address": "159 Nam Kỳ Khởi Nghĩa, P. Xuân Hòa, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGUYENTHIDIEU-HCM",
+    "name": "Trường THPT Nguyễn Thị Diệu",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Xuân Hòa",
+    "domain": "thptnguyenthidieu.hcm.edu.vn",
+    "address": "12 Trần Quốc Toản, P. Xuân Hòa, Tp.HCM"
+  },
+  {
+    "code": "THPT-LETHIHONGGAM-HCM",
+    "name": "Trường THPT Lê Thị Hồng Gấm",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Xuân Hòa",
+    "domain": "thptlethihonggam.hcm.edu.vn",
+    "address": "147 Pasteur, P. Xuân Hòa, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGUYENTRAI-HCM",
+    "name": "Trường THPT Nguyễn Trãi",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Xóm Chiếu",
+    "domain": "thptnguyentrai.hcm.edu.vn",
+    "address": "Số 364 Nguyễn Tất Thành, P. Xóm Chiếu, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGUYENHUUTHO-HCM",
+    "name": "Trường THPT Nguyễn Hữu Thọ",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Xóm Chiếu",
+    "domain": "thptnguyenhuutho.hcm.edu.vn",
+    "address": "Số 2 Bến Vân Đồn, P. Xóm Chiếu, Tp.HCM"
+  },
+  {
+    "code": "THPT-HUNGVUONG-HCM",
+    "name": "Trường THPT Hùng Vương",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Chợ Lớn",
+    "domain": "thpthungvuong.hcm.edu.vn",
+    "address": "Số 124 Hồng Bàng, P. Chợ Lớn, Tp.HCM"
+  },
+  {
+    "code": "THTH-SG-HCM",
+    "name": "Trường Trung học Thực hành Sài Gòn",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Chợ Quán",
+    "domain": "thuchanhsaigon.sgu.edu.vn",
+    "address": "Số 220 Trần Bình Trọng, P. Chợ Quán, Tp.HCM"
+  },
+  {
+    "code": "THTH-DHSP-HCM",
+    "name": "Trường Trung học Thực hành - Đại học Sư phạm TP.HCM",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Chợ Quán",
+    "domain": "trunghocthuchanh.hcmue.edu.vn",
+    "address": "Đại học Sư Phạm TPHCM, Số 280 An Dương Vương, P. Chợ Quán, Tp.HCM"
+  },
+  {
+    "code": "THPT-TRANKHAINGUYEN-HCM",
+    "name": "Trường THPT Trần Khai Nguyên",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường An Đông",
+    "domain": "thpttrankhainguyen.hcm.edu.vn",
+    "address": "Số 225 Nguyễn Tri Phương, P. An Đông, Tp.HCM"
+  },
+  {
+    "code": "THPT-TRANHUUTRANG-HCM",
+    "name": "Trường THPT Trần Hữu Trang",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Chợ Lớn",
+    "domain": "thpttranhuutrang.hcm.edu.vn",
+    "address": "Số 276 Trần Hưng Đạo B, P. Chợ Lớn, Tp.HCM"
+  },
+  {
+    "code": "THPT-BINHPHU-HCM",
+    "name": "Trường THPT Bình Phú",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Bình Phú",
+    "domain": "thptbinhphu.hcm.edu.vn",
+    "address": "Số 102 Trần Văn Kiều, P. Bình Phú, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGUYENTATTHANH-HCM",
+    "name": "Trường THPT Nguyễn Tất Thành",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Bình Phú",
+    "domain": "thptnguyentatthanh.hcm.edu.vn",
+    "address": "Số 249 Nguyễn Văn Luông, P. Bình Phú, Tp.HCM"
+  },
+  {
+    "code": "THPT-PHAMPHUTHU-HCM",
+    "name": "Trường THPT Phạm Phú Thứ",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Bình Tiên",
+    "domain": "thptphamphuthu.hcm.edu.vn",
+    "address": "Số 425 - 435 Gia Phú, P. Bình Tiên, Tp.HCM"
+  },
+  {
+    "code": "THPT-MACDINHCHI-HCM",
+    "name": "Trường THPT Mạc Đĩnh Chi",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Phú Lâm",
+    "domain": "thptmacdinhchi.hcm.edu.vn",
+    "address": "4 Tân Hòa, P. Phú Lâm, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGOQUYEN-HCM",
+    "name": "Trường THPT Ngô Quyền",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Phú Mỹ",
+    "domain": "thptngoquyen.hcm.edu.vn",
+    "address": "Số 1360 Huỳnh Tấn Phát, P. Phú Mỹ, Tp.HCM"
+  },
+  {
+    "code": "THPT-LETHANHTON-HCM",
+    "name": "Trường THPT Lê Thánh Tôn",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Tân Hưng",
+    "domain": "thptlethanhton.hcm.edu.vn",
+    "address": "Số 124 Đường 17, P. Tân Hưng, Tp.HCM"
+  },
+  {
+    "code": "TH-THCS-THPT-NAMSAIGON-HCM",
+    "name": "Trường Tiểu học - THCS - THPT Nam Sài Gòn",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Tân Mỹ",
+    "domain": "thptnamsaigon.hcm.edu.vn",
+    "address": "Khu A - Đô thị mới Nam Sài Gòn, P. Tân Mỹ, Tp.HCM"
+  },
+  {
+    "code": "THPT-TANPHONG-HCM",
+    "name": "Trường THPT Tân Phong",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Tân Hưng",
+    "domain": "thpttanphong.hcm.edu.vn",
+    "address": "Số 15F Nguyễn Văn Linh, P. Tân Hưng, Tp.HCM"
+  },
+  {
+    "code": "THPT-LUONGVANCAN-HCM",
+    "name": "Trường THPT Lương Văn Can",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Chánh Hưng",
+    "domain": "thptluongvancan.hcm.edu.vn",
+    "address": "Số 173 Phạm Hùng, P. Chánh Hưng, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGOGIATU-HCM",
+    "name": "Trường THPT Ngô Gia Tự",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Phú Định",
+    "domain": "thptngogiatu.hcm.edu.vn",
+    "address": "Số 360E Bến Bình Đông, P. Phú Định, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGUYENVANLINH-HCM",
+    "name": "Trường THPT Nguyễn Văn Linh",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Chánh Hưng",
+    "domain": "thptnguyenvanlinh.hcm.edu.vn",
+    "address": "Số 2 Đường 3154 Phạm Thế Hiển, P. Chánh Hưng, Tp.HCM"
+  },
+  {
+    "code": "THPT-VOVANKIET-HCM",
+    "name": "Trường THPT Võ Văn Kiệt",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Xóm Cùi",
+    "domain": "thptvovankiet.hcm.edu.vn",
+    "address": "Số 629 Bến Bình Đông, P. Xóm Cùi, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGUYENANNINH-HCM",
+    "name": "Trường THPT Nguyễn An Ninh",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Vườn Lài",
+    "domain": "thptnguyenanninh.hcm.edu.vn",
+    "address": "Số 93 Trần Nhân Tôn, P. Vườn Lài, Tp.HCM"
+  },
+  {
+    "code": "THCS-THPT-SUONGNGUYETANH-HCM",
+    "name": "Trường THCS - THPT Sương Nguyệt Anh",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Vườn Lài",
+    "domain": "thptsuongnguyetanh.hcm.edu.vn",
+    "address": "Số 249 Hòa Hảo, P. Vườn Lài, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGUYENDU-HCM",
+    "name": "Trường THPT Nguyễn Du",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Hòa Hưng",
+    "domain": "thptnguyendu.hcm.edu.vn",
+    "address": "Số XX1 Đồng Nai - Cư xá Bắc Hải, P. Hòa Hưng, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGUYENKHUYEN-HCM",
+    "name": "Trường THPT Nguyễn Khuyến",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Hòa Hưng",
+    "domain": "thptnguyenkhuyen.hcm.edu.vn",
+    "address": "Số 50 Thành Thái, P. Hòa Hưng, Tp.HCM"
+  },
+  {
+    "code": "THCS-THPT-DIENHONG-HCM",
+    "name": "Trường THCS - THPT Diên Hồng",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Diên Hồng",
+    "domain": "thptdienhong.hcm.edu.vn",
+    "address": "Số 11 Thành Thái, P. Diên Hồng, Tp.HCM"
+  },
+  {
+    "code": "THPT-NAMKYKHOINGHIA-HCM",
+    "name": "Trường THPT Nam Kỳ Khởi Nghĩa",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Minh Phụng",
+    "domain": "thptnamkykhoinghia.hcm.edu.vn",
+    "address": "Số 269/8 Nguyễn Thị Nhỏ, P. Minh Phụng, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGUYENHIEN-HCM",
+    "name": "Trường THPT Nguyễn Hiền",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Bình Thới",
+    "domain": "thptnguyenhien.hcm.edu.vn",
+    "address": "Số 3 Dương Đình Nghệ, P. Bình Thới, Tp.HCM"
+  },
+  {
+    "code": "THPT-TRANQUANGKHAI-HCM",
+    "name": "Trường THPT Trần Quang Khải",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Hòa Bình",
+    "domain": "thpttranquangkhai.hcm.edu.vn",
+    "address": "Số 343D Lạc Long Quân, P. Hòa Bình, Tp.HCM"
+  },
+  {
+    "code": "THPT-VOTRUONGTOAN-HCM",
+    "name": "Trường THPT Võ Trường Toản",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Tân Thới Hiệp",
+    "domain": "thptvotruongtoan.hcm.edu.vn",
+    "address": "Số 482 Nguyễn Thị Đặng, P. Tân Thới Hiệp, Tp.HCM"
+  },
+  {
+    "code": "THPT-TRUONGCHINH-HCM",
+    "name": "Trường THPT Trường Chinh",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Đông Hưng Thuận",
+    "domain": "thpttruongchinh.hcm.edu.vn",
+    "address": "Số 1 DN 11, P. Đông Hưng Thuận, Tp.HCM"
+  },
+  {
+    "code": "THPT-THANHLOC-HCM",
+    "name": "Trường THPT Thạnh Lộc",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường An Phú Đông",
+    "domain": "thpt-thanhloc-tphcm.edu.vn",
+    "address": "Số 116 Nguyễn Thị Sáu, P. An Phú Đông, Tp.HCM"
+  },
+  {
+    "code": "TH-THCS-THPT-LETHIRIENG-HCM",
+    "name": "Trường TH - THCS - THPT Lê Thị Riêng",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Thới An",
+    "domain": null,
+    "address": "Số 1 Lê Thị Riêng, P. Thới An, Tp.HCM"
+  },
+  {
+    "code": "THPT-PHANVANHON-HCM",
+    "name": "Trường THPT Phan Văn Hớn",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Đông Hưng Thuận",
+    "domain": null,
+    "address": "Khu Tái định cư 38Ha, P. Đông Hưng Thuận, Tp.HCM"
+  },
+  {
+    "code": "THPT-ANLAC-HCM",
+    "name": "Trường THPT An Lạc",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường An Lạc",
+    "domain": "thptanlac.hcm.edu.vn",
+    "address": "Số 595 Kinh Dương Vương, P. An Lạc, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGUYENHUUCANH-HCM",
+    "name": "Trường THPT Nguyễn Hữu Cảnh",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Bình Trị Đông",
+    "domain": "thptnguyenhuucanh.hcm.edu.vn",
+    "address": "Số 845 Hương Lộ 2, P. Bình Trị Đông, Tp.HCM"
+  },
+  {
+    "code": "THPT-BINHHUNGHOA-HCM",
+    "name": "Trường THPT Bình Hưng Hòa",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Bình Hưng Hòa",
+    "domain": "thptbinhhunghoa.hcm.edu.vn",
+    "address": "Số 79/19 Đường số 4, P. Bình Hưng Hòa, Tp.HCM"
+  },
+  {
+    "code": "THPT-VINHLOC-HCM",
+    "name": "Trường THPT Vĩnh Lộc",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Bình Tân",
+    "domain": "thptvinhloc.hcm.edu.vn",
+    "address": "Số 87 Đường số 3, P. Bình Tân, Tp.HCM"
+  },
+  {
+    "code": "THPT-HOANGTHETHIEN-HCM",
+    "name": "Trường THPT Hoàng Thế Thiện",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường An Lạc",
+    "domain": "thpthoangthethien.hcm.edu.vn",
+    "address": "Số 19 đường Tên lửa nối dài, P. An Lạc, Tp.HCM"
+  },
+  {
+    "code": "THPT-VOTHISAU-HCM",
+    "name": "Trường THPT Võ Thị Sáu",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Gia Định",
+    "domain": "thptvothisau.hcm.edu.vn",
+    "address": "Số 95 Lê Văn Duyệt, P. Gia Định, Tp.HCM"
+  },
+  {
+    "code": "THPT-PHANDANGLUU-HCM",
+    "name": "Trường THPT Phan Đăng Lưu",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Bình Lợi Trung",
+    "domain": "thptphandangluu.hcm.edu.vn",
+    "address": "Số 27 Nguyễn Văn Đậu, P. Bình Lợi Trung, Tp.HCM"
+  },
+  {
+    "code": "THPT-HOANGHOATHAM-HCM",
+    "name": "Trường THPT Hoàng Hoa Thám",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Gia Định",
+    "domain": "thpthoanghoatham.hcm.edu.vn",
+    "address": "Số 6 Hoàng Hoa Thám, P. Gia Định, Tp.HCM"
+  },
+  {
+    "code": "THPT-THANHDA-HCM",
+    "name": "Trường THPT Thanh Đa",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Bình Thạnh",
+    "domain": "thptthanhda.edu.vn",
+    "address": "Số 186 Nguyễn Xí, P. Bình Thạnh, Tp.HCM"
+  },
+  {
+    "code": "THPT-TRANVANGIAU-HCM",
+    "name": "Trường THPT Trần Văn Giàu",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Bình Lợi Trung",
+    "domain": "thpttranvangiau.hcm.edu.vn",
+    "address": "Số 203/40 Đặng Thùy Trâm, P. Bình Lợi Trung, Tp.HCM"
+  },
+  {
+    "code": "THPT-GIADINH-HCM",
+    "name": "Trường THPT Gia Định",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Thạnh Mỹ Tây",
+    "domain": "thptgiadinh.hcm.edu.vn",
+    "address": "44 Võ Oanh, P. Thạnh Mỹ Tây, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGUYENTRUNGTRUC-HCM",
+    "name": "Trường THPT Nguyễn Trung Trực",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường An Hội Đông",
+    "domain": "thptnguyentrungtruc.hcm.edu.vn",
+    "address": "Số 9/168 Lê Đức Thọ, P. An Hội Đông, Tp.HCM"
+  },
+  {
+    "code": "THPT-GOVAP-HCM",
+    "name": "Trường THPT Gò Vấp",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Hạnh Thông",
+    "domain": "thptgovap.hcm.edu.vn",
+    "address": "Số 90A Nguyễn Thái Sơn, P. Hạnh Thông, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGUYENCONGTRU-HCM",
+    "name": "Trường THPT Nguyễn Công Trứ",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Thông Tây Hội",
+    "domain": "thptnguyencongtru.hcm.edu.vn",
+    "address": "Số 97 Quang Trung, P. Thông Tây Hội, Tp.HCM"
+  },
+  {
+    "code": "THPT-TRANHUNGDAO-HCM",
+    "name": "Trường THPT Trần Hưng Đạo",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường An Nhơn",
+    "domain": "thpttranhungdao.hcm.edu.vn",
+    "address": "Số 88/955E Lê Đức Thọ, P. An Nhơn, Tp.HCM"
+  },
+  {
+    "code": "THPT-PHUNHUAN-HCM",
+    "name": "Trường THPT Phú Nhuận",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Đức Nhuận",
+    "domain": "thptphunhuan.hcm.edu.vn",
+    "address": "Số 5 Hoàng Minh Giám, P. Đức Nhuận, Tp.HCM"
+  },
+  {
+    "code": "THPT-HANTHUYEN-HCM",
+    "name": "Trường THPT Hàn Thuyên",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Phú Nhuận",
+    "domain": "thpthanthuyen.hcm.edu.vn",
+    "address": "Số 37 Đặng Văn Ngữ, P. Phú Nhuận, Tp.HCM"
+  },
+  {
+    "code": "THPT-NGUYENTHUONGHIEN-HCM",
+    "name": "Trường THPT Nguyễn Thượng HIện",
+    "province_code": "TP.HCM",
+    "province_name": "Thành phố Hồ Chí Minh",
+    "district_name": "Phường Tân Sơn Nhất",
+    "domain": "thptnguyenthuonghien.edu.vn",
+    "address": "544 Cách Mạng Tháng Tám, P. Tân Sơn Nhất, Tp.HCM"
+  }
+]

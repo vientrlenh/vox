@@ -1,0 +1,15 @@
+-- Bỏ ràng buộc unique (code, domain) trên bảng schools.
+--
+-- Hai lý do:
+--
+-- 1. Nó THỪA ngay từ đầu: idx_schools_code đã unique trên riêng code, nên cặp (code, domain)
+--    không thể trùng được nữa. Ràng buộc này chưa bao giờ chặn được gì.
+--
+-- 2. Nó GÂY HIỂU NHẦM: người đọc schema dễ tưởng tên miền là duy nhất, trong khi thực tế không
+--    có index nào trên riêng domain. Từ nay điều đó là CỐ Ý -- một trường nhiều cơ sở dùng chung
+--    1 tên miền (vd Phổ thông Năng Khiếu có 2 cơ sở trên ptnk.edu.vn, Trần Đại Nghĩa có 3 cơ sở
+--    trên trandainghia.edu.vn), mỗi cơ sở là một School độc lập với mã trường riêng.
+--
+-- Danh tính của trường là MÃ TRƯỜNG (idx_schools_code), không phải tên miền. Xem
+-- ProvisionSchoolService: chỉ còn chống trùng theo mã, email và số điện thoại.
+alter table schools drop constraint if exists idx_schools_code_domain;

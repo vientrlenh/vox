@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.registration;
 
 import java.time.Instant;
-import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,44 +14,31 @@ import com.sep.vox.domain.model.registerform.RegisterFormDocument;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.repository.RegisterFormDocumentRepository;
 import com.sep.vox.domain.repository.RegisterFormRepository;
-import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
 public class RegisterBySelfDeclaredUseCase implements IUseCase<RegisterBySelfDeclaredCommand, Void> {
 
     private final RegisterFormRepository registerFormRepository;
-    private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
     private final RegisterFormDocumentRepository registerFormDocumentRepository;
 
-    public RegisterBySelfDeclaredUseCase(RegisterFormRepository registerFormRepository, SchoolRepository schoolRepository, UserRepository userRepository, RegisterFormDocumentRepository registerFormDocumentRepository) {
+    public RegisterBySelfDeclaredUseCase(RegisterFormRepository registerFormRepository, UserRepository userRepository, RegisterFormDocumentRepository registerFormDocumentRepository) {
         this.registerFormRepository = registerFormRepository;
-        this.schoolRepository = schoolRepository;
         this.userRepository = userRepository;
         this.registerFormDocumentRepository = registerFormDocumentRepository;
     }
-
-    private static final List<RegisterFormStatus> blockingFormStatuses = List.of(
-        RegisterFormStatus.APPROVED, 
-        RegisterFormStatus.AUTO_APPROVED, 
-        RegisterFormStatus.PENDING
-    );
 
     @Override
     @Transactional
     public Void execute(RegisterBySelfDeclaredCommand input) {
         var command = normalize(input);
 
-        if (command.schoolDomain() != null) {
-            if (schoolRepository.existsByDomain(command.schoolDomain())) {
-                throw new DuplicatedException("Domain yêu cầu đã được đăng ký");
-            }
-            if (registerFormRepository.existsBySchoolDomainAndStatusIn(command.schoolDomain(), blockingFormStatuses)) {
-                throw new DuplicatedException("Hiện đang có đơn đăng ký đang chờ phê duyệt cho domain trường này");
-            }
-        } 
-
+        // KHÔNG chặn theo tên miền nữa: một trường nhiều cơ sở dùng chung 1 tên miền là chuyện
+        // bình thường (vd Phổ thông Năng Khiếu có 2 cơ sở trên ptnk.edu.vn), mà mỗi cơ sở là một
+        // School độc lập. Chặn theo tên miền thì cơ sở nộp đơn sau vĩnh viễn không đăng ký được --
+        // blockingFormStatuses cũ tính cả APPROVED nên không phải chờ hết hạn gì cả. Danh tính
+        // thật của trường là MÃ TRƯỜNG, và mã vẫn được ProvisionSchoolService chống trùng.
         var formAlreadyPendingByContactInfo = registerFormRepository.existsByContactEmailAndStatus(command.contactEmail(), RegisterFormStatus.PENDING) || registerFormRepository.existsByContactPhoneAndStatus(command.contactPhone(), RegisterFormStatus.PENDING);
 
         if (formAlreadyPendingByContactInfo) {

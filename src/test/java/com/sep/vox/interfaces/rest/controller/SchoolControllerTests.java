@@ -39,6 +39,7 @@ import com.sep.vox.application.port.input.usecase.schooluser.AcceptSchoolUserImp
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.PreviewSchoolUserImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.school.CreateSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.DeleteSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolStatusUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.AddSchoolRoomUseCase;
@@ -90,6 +91,7 @@ class SchoolControllerTests {
     private UpdateSchoolClassUserStatusUseCase updateSchoolClassUserStatusUseCase;
     private PreviewSchoolClassUserImportFromFileUseCase previewSchoolClassUserImportFromFileUseCase;
     private AcceptSchoolClassUserImportUseCase acceptSchoolClassUserImportUseCase;
+    private CreateSchoolUseCase createSchoolUseCase;
     private DeleteSchoolUseCase deleteSchoolUseCase;
     private UpdateSchoolStatusUseCase updateSchoolStatusUseCase;
     private AddSchoolRoomUseCase addSchoolRoomUseCase;
@@ -133,6 +135,7 @@ class SchoolControllerTests {
         updateSchoolClassUserStatusUseCase = mock(UpdateSchoolClassUserStatusUseCase.class);
         previewSchoolClassUserImportFromFileUseCase = mock(PreviewSchoolClassUserImportFromFileUseCase.class);
         acceptSchoolClassUserImportUseCase = mock(AcceptSchoolClassUserImportUseCase.class);
+        createSchoolUseCase = mock(CreateSchoolUseCase.class);
         deleteSchoolUseCase = mock(DeleteSchoolUseCase.class);
         updateSchoolStatusUseCase = mock(UpdateSchoolStatusUseCase.class);
         addSchoolRoomUseCase = mock(AddSchoolRoomUseCase.class);
@@ -167,8 +170,9 @@ class SchoolControllerTests {
             acceptSchoolUserImportUseCase,
             previewSchoolClassUserImportFromFileUseCase, 
             acceptSchoolClassUserImportUseCase,
-            deleteSchoolUseCase, 
-            updateSchoolStatusUseCase, 
+            createSchoolUseCase,
+            deleteSchoolUseCase,
+            updateSchoolStatusUseCase,
             addSchoolRoomUseCase,
             deleteSchoolRoomUseCase,
             previewSchoolRoomImportFromFileUseCase,

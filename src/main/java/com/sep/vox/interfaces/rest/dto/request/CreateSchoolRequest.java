@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.rest.dto.request;
 
 import java.util.UUID;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -22,6 +23,7 @@ public record CreateSchoolRequest(
     String schoolDomain, 
 
     @NotNull(message = "Số học sinh trong trường không được để trống")
+    @Min(value = 1, message = "Số lượng học sinh không được nhỏ hơn 1")
     Integer studentCount, 
 
     @NotBlank(message = "Email của quản trị viên nhà trường không được để trống")

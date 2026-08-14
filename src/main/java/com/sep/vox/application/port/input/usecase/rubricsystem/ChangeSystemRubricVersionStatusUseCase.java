@@ -11,6 +11,7 @@ import com.sep.vox.domain.model.rubric.*;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
+import com.sep.vox.domain.service.rubric.RubricScoringConsistencyValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -108,6 +109,15 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
             }
 
             // ĐÃ BỎ LỆNH SAVE RUBRIC DƯ THỪA Ở ĐÂY VÌ MODEL KHÔNG CÒN CURRENTVERSIONID
+
+            // Bổ sung 2026-08-14: trước đây đường system KHÔNG kiểm thang điểm, nên system admin
+            // ban hành được phiên bản mà điểm câu vọt ra ngoài thang rồi bị kẹp -- đúng lỗi mà phía
+            // school đã phải vá. Nay hai đường dùng chung một validator.
+            RubricScoringConsistencyValidator.assertPublishable(
+                    version.getTotalScoreMethod(),
+                    version.getScoringScaleMin(),
+                    version.getScoringScaleMax(),
+                    rubricCriterionRepository.findByRubricVersionId(version.getId()));
 
         } else if (command.status() == RubricStatus.ARCHIVED) {
             throw new IllegalStateException("Hành động bị từ chối: Vui lòng dùng chức năng Lưu trữ (Archive) riêng để chuyển phiên bản sang ARCHIVED.");

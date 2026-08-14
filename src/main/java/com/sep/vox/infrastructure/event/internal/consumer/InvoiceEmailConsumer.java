@@ -11,8 +11,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
-import com.sep.vox.domain.model.subscription.TokenPurchaseItem;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,12 +182,12 @@ public class InvoiceEmailConsumer {
             itemTitle = "Mua thêm hạn mức";
             var items = tokenPurchaseItemRepository.findAllByPurchaseId(payload.sourceId());
             itemsHtml = buildItemsHtml(items.stream()
-                .collect(Collectors.toMap(TokenPurchaseItem::getQuotaType, TokenPurchaseItem::getQuantity)));
+                .collect(Collectors.toMap(item -> item.getQuotaType(), item -> item.getQuantity())));
         } else {
             itemTitle = "Gói " + plan.getName();
             var quotas = subscriptionQuotaRepository.findAllBySubscriptionId(subscription.getId());
             itemsHtml = buildItemsHtml(quotas.stream()
-                .collect(Collectors.toMap(SubscriptionQuota::getQuotaType, SubscriptionQuota::getTotalAllocated)));
+                .collect(Collectors.toMap(quota -> quota.getQuotaType(), quota -> quota.getTotalAllocated())));
         }
 
         var amountFormatter = new DecimalFormat("#,###", DecimalFormatSymbols.getInstance(Locale.of("vi", "VN")));

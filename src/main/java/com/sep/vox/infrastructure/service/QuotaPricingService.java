@@ -1,13 +1,12 @@
-package com.sep.vox.application.port.input.service;
+package com.sep.vox.infrastructure.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-import com.sep.vox.domain.model.subscription.ExchangeRateSnapshot;
-import com.sep.vox.domain.model.subscription.QuotaPricingCalibration;
 import com.sep.vox.domain.model.subscription.QuotaPricingSource;
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.domain.repository.ExchangeRateSnapshotRepository;
 import com.sep.vox.domain.repository.QuotaPricingCalibrationRepository;
 import com.sep.vox.infrastructure.properties.QuotaPricingProperties;
@@ -20,9 +19,12 @@ import com.sep.vox.infrastructure.properties.QuotaSellingPriceProperties;
  * trường, dùng chung mọi gói -- xem QuotaSellingPriceProperties). Dùng ở cả
  * ClassTestTokenQuotaGuardService (chặn trước) lẫn SubscriptionController (query quotaPricing cho FE)
  * để mọi nơi luôn thấy CÙNG 1 giá trị.
+ *
+ * <p>Nằm ở infrastructure vì đọc trực tiếp @ConfigurationProperties; phía application/interfaces gọi
+ * qua QuotaPricingPort để không phụ thuộc ngược lên tầng này.
  */
 @Service
-public class QuotaPricingService {
+public class QuotaPricingService implements QuotaPricingPort {
 
     private final QuotaPricingCalibrationRepository quotaPricingCalibrationRepository;
     private final ExchangeRateSnapshotRepository exchangeRateSnapshotRepository;
@@ -40,21 +42,24 @@ public class QuotaPricingService {
         this.quotaSellingPriceProperties = quotaSellingPriceProperties;
     }
 
+    @Override
     public BigDecimal currentEstimatedCostPerExamSecondUsd() {
         return quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.EXAM)
-            .map(QuotaPricingCalibration::getAppliedRateUsdPerSecond)
+            .map(calibration -> calibration.getAppliedRateUsdPerSecond())
             .orElseGet(quotaPricingProperties::estimatedCostPerExamSecondUsd);
     }
 
+    @Override
     public BigDecimal currentEstimatedCostPerPracticeSecondUsd() {
         return quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.PRACTICE)
-            .map(QuotaPricingCalibration::getAppliedRateUsdPerSecond)
+            .map(calibration -> calibration.getAppliedRateUsdPerSecond())
             .orElseGet(quotaPricingProperties::estimatedCostPerPracticeSecondUsd);
     }
 
+    @Override
     public BigDecimal usdToVndRate() {
         return exchangeRateSnapshotRepository.findLatest()
-            .map(ExchangeRateSnapshot::getUsdToVndRate)
+            .map(snapshot -> snapshot.getUsdToVndRate())
             .orElseGet(quotaSellingPriceProperties::usdToVndRate);
     }
 
@@ -64,6 +69,7 @@ public class QuotaPricingService {
      * NUMERIC(15,0)). serviceFeeRatio là field cấp-gói (không theo từng quotaType) nên cùng 1 giá
      * áp dụng cho mọi loại quota của gói đó.
      */
+    @Override
     public BigDecimal tokenUnitPriceFor(BigDecimal serviceFeeRatio) {
         return usdToVndRate()
             .multiply(BigDecimal.ONE.add(serviceFeeRatio))

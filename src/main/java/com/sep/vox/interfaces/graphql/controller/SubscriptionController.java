@@ -27,7 +27,6 @@ import com.sep.vox.application.port.input.query.ViewSubscriptionHistoryQuery;
 import com.sep.vox.application.port.input.query.ViewTokenPurchasesQuery;
 import com.sep.vox.application.port.input.query.ViewTokenUsageTimeseriesQuery;
 import com.sep.vox.application.port.input.query.ViewUsageQuery;
-import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.application.port.input.usecase.subscription.UpdatePlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewCurrentSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewFinancialEventsUseCase;
@@ -43,6 +42,7 @@ import com.sep.vox.application.port.input.usecase.subscription.ViewSubscriptionH
 import com.sep.vox.application.port.input.usecase.subscription.ViewTokenPurchasesUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewTokenUsageTimeseriesUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewUsageUseCase;
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.FinancialEventDto;
 import com.sep.vox.domain.dto.InvoiceDto;
@@ -80,7 +80,7 @@ public class SubscriptionController {
     private final ViewInvoicesUseCase viewInvoicesUseCase;
     private final ViewFinancialEventsUseCase viewFinancialEventsUseCase;
     private final ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase;
-    private final QuotaPricingService quotaPricingService;
+    private final QuotaPricingPort quotaPricingPort;
 
     public SubscriptionController(
             ViewPlansUseCase viewPlansUseCase,
@@ -98,7 +98,7 @@ public class SubscriptionController {
             ViewInvoicesUseCase viewInvoicesUseCase,
             ViewFinancialEventsUseCase viewFinancialEventsUseCase,
             ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase,
-            QuotaPricingService quotaPricingService) {
+            QuotaPricingPort quotaPricingPort) {
         this.viewPlansUseCase = viewPlansUseCase;
         this.viewPlanDetailUseCase = viewPlanDetailUseCase;
         this.updatePlanUseCase = updatePlanUseCase;
@@ -114,7 +114,7 @@ public class SubscriptionController {
         this.viewInvoicesUseCase = viewInvoicesUseCase;
         this.viewFinancialEventsUseCase = viewFinancialEventsUseCase;
         this.viewSchoolDebtEventsUseCase = viewSchoolDebtEventsUseCase;
-        this.quotaPricingService = quotaPricingService;
+        this.quotaPricingPort = quotaPricingPort;
     }
 
     @QueryMapping(name = "subscriptionPlans")
@@ -132,9 +132,9 @@ public class SubscriptionController {
     @QueryMapping(name = "quotaPricing")
     public QuotaPricingDto quotaPricing() {
         return new QuotaPricingDto(
-            quotaPricingService.currentEstimatedCostPerExamSecondUsd(),
-            quotaPricingService.currentEstimatedCostPerPracticeSecondUsd(),
-            quotaPricingService.usdToVndRate()
+            quotaPricingPort.currentEstimatedCostPerExamSecondUsd(),
+            quotaPricingPort.currentEstimatedCostPerPracticeSecondUsd(),
+            quotaPricingPort.usdToVndRate()
         );
     }
 

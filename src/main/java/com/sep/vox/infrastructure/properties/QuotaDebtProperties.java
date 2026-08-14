@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import com.sep.vox.application.port.output.QuotaDebtConfigPort;
+
 /**
  * Trần cảnh báo cho nợ hạn mức AI (usedQuantity vượt totalAllocated -- xem
  * SchoolSubscriptionDebtGuardService). CHỈ để cảnh báo sớm khi pipeline đo chi phí AI có bug làm
@@ -13,7 +15,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "vox.quota.debt")
 public record QuotaDebtProperties(
     BigDecimal capRatio
-) {
+) implements QuotaDebtConfigPort {
 
     private static final BigDecimal DEFAULT_CAP_RATIO = new BigDecimal("0.20");
 

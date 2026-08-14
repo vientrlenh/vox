@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import com.sep.vox.application.port.output.QuotaPricingConfigPort;
+
 /**
  * Hệ số quy đổi USD dùng để ước lượng worst-case chi phí AI trước khi cho phép lên
  * lịch kỳ thi (xem ClassTestTokenQuotaGuardService). Đây là số ước tính, KHÔNG phải
@@ -19,7 +21,7 @@ public record QuotaPricingProperties(
     // Tách riêng khỏi estimatedCostPerExamSecondUsd -- PRACTICE dùng pipeline AI nhẹ hơn hẳn EXAM
     // (realtimeCorrectionGraph vs evalGraph), xem QuotaPricingCalibrationService/QuotaPricingSource.
     BigDecimal estimatedCostPerPracticeSecondUsd
-) {
+) implements QuotaPricingConfigPort {
 
     private static final BigDecimal DEFAULT_ESTIMATED_COST_PER_EXAM_SECOND_USD = new BigDecimal("0.01");
     private static final BigDecimal DEFAULT_ESTIMATED_COST_PER_PRACTICE_SECOND_USD = new BigDecimal("0.01");

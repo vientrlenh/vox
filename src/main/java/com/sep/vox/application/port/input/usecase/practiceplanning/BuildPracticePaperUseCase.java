@@ -13,8 +13,8 @@ import com.sep.vox.application.port.input.command.BuildPracticePaperCommand;
 import com.sep.vox.application.port.input.service.PracticePaperPersistenceService;
 import com.sep.vox.application.port.input.service.PracticeQuestionSelectionService;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
-import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
 import com.sep.vox.domain.mapper.PracticePaperDtoMapper;
@@ -39,7 +39,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
     private final PracticePaperPersistenceService persistenceService;
     private final UserContextPort userContextPort;
     private final ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase;
-    private final QuotaPricingService quotaPricingService;
+    private final QuotaPricingPort quotaPricingPort;
 
     public BuildPracticePaperUseCase(
             PracticeTopicRepository topicRepository,
@@ -50,7 +50,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
             PracticePaperPersistenceService persistenceService,
             UserContextPort userContextPort,
             ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase,
-            QuotaPricingService quotaPricingService) {
+            QuotaPricingPort quotaPricingPort) {
         this.viewPracticeTopicOffersUseCase = viewPracticeTopicOffersUseCase;
         this.topicRepository = topicRepository;
         this.paperRepository = paperRepository;
@@ -59,7 +59,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         this.selectionService = selectionService;
         this.persistenceService = persistenceService;
         this.userContextPort = userContextPort;
-        this.quotaPricingService = quotaPricingService;
+        this.quotaPricingPort = quotaPricingPort;
     }
 
     @Override
@@ -91,7 +91,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         // cùng vượt hạn mức trong lúc chưa phiên nào submit turn thật.
         var reservedSeconds = paperRepository.sumReservedQuotaSeconds(studentId);
         var estimatedCostUsd = BigDecimal.valueOf((long) reservedSeconds + question.spokenSeconds())
-            .multiply(quotaPricingService.currentEstimatedCostPerPracticeSecondUsd());
+            .multiply(quotaPricingPort.currentEstimatedCostPerPracticeSecondUsd());
         if (quotaRemainingUsd.compareTo(estimatedCostUsd) < 0) {
             throw new QuotaExceededException("Hạn mức PRACTICE không đủ cho một câu trọn vẹn.");
         }

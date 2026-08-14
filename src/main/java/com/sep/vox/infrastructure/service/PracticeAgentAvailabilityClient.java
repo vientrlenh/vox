@@ -9,8 +9,10 @@ import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.port.output.PracticeAgentAvailabilityPort;
+
 @Service
-public class PracticeAgentAvailabilityClient {
+public class PracticeAgentAvailabilityClient implements PracticeAgentAvailabilityPort {
 
     private final HttpClient httpClient;
     private final URI readinessUri;
@@ -28,6 +30,7 @@ public class PracticeAgentAvailabilityClient {
         );
     }
 
+    @Override
     public void requireReady() {
         try {
             var request = HttpRequest.newBuilder(readinessUri)

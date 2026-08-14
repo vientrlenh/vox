@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.port.output.InterestQuizGenerationPort;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
 import com.sep.vox.domain.repository.InterestQuizItemRepository;
-import com.sep.vox.infrastructure.service.InterestQuizGenerationClient;
 
 /**
  * Bổ sung kho quiz sở thích khi có chiều chưa được phủ đủ.
@@ -33,15 +33,15 @@ public class InterestQuizBankTopUpService {
     private static final int MAX_ITEMS_PER_RUN = 7;
 
     private final InterestQuizItemRepository quizItemRepository;
-    private final InterestQuizGenerationClient generationClient;
+    private final InterestQuizGenerationPort quizGenerationPort;
     private final InterestQuizScorer interestQuizScorer;
 
     public InterestQuizBankTopUpService(
             InterestQuizItemRepository quizItemRepository,
-            InterestQuizGenerationClient generationClient,
+            InterestQuizGenerationPort quizGenerationPort,
             InterestQuizScorer interestQuizScorer) {
         this.quizItemRepository = quizItemRepository;
-        this.generationClient = generationClient;
+        this.quizGenerationPort = quizGenerationPort;
         this.interestQuizScorer = interestQuizScorer;
     }
 
@@ -84,7 +84,7 @@ public class InterestQuizBankTopUpService {
             .toList();
         // Vẫn gửi TOÀN BỘ danh mục chứ không chỉ chiều thiếu: mỗi triplet bắt buộc dùng 3
         // chiều KHÁC NHAU, nên nếu chỉ đưa 1 chiều thiếu thì không dựng nổi triplet nào.
-        var generated = generationClient.generate(
+        var generated = quizGenerationPort.generate(
             MAX_ITEMS_PER_RUN,
             existingStatements,
             dimensions

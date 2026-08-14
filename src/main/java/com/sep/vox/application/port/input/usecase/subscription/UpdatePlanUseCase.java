@@ -8,8 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdatePlanCommand;
-import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.mapper.SubscriptionPlanDtoMapper;
@@ -27,17 +27,17 @@ public class UpdatePlanUseCase implements IUseCase<UpdatePlanCommand, Subscripti
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final PlanQuotaRepository planQuotaRepository;
-    private final QuotaPricingService quotaPricingService;
+    private final QuotaPricingPort quotaPricingPort;
     private final UserContextPort userContextPort;
 
     public UpdatePlanUseCase(
             SubscriptionPlanRepository subscriptionPlanRepository,
             PlanQuotaRepository planQuotaRepository,
-            QuotaPricingService quotaPricingService,
+            QuotaPricingPort quotaPricingPort,
             UserContextPort userContextPort) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.planQuotaRepository = planQuotaRepository;
-        this.quotaPricingService = quotaPricingService;
+        this.quotaPricingPort = quotaPricingPort;
         this.userContextPort = userContextPort;
     }
 
@@ -92,7 +92,7 @@ public class UpdatePlanUseCase implements IUseCase<UpdatePlanCommand, Subscripti
                 }
             }
             planQuotaRepository.deleteAllByPlanId(savedPlan.getId());
-            var tokenUnitPrice = quotaPricingService.tokenUnitPriceFor(savedPlan.getServiceFeeRatio());
+            var tokenUnitPrice = quotaPricingPort.tokenUnitPriceFor(savedPlan.getServiceFeeRatio());
             quotas = input.quotas().stream()
                 .map(quotaInput -> planQuotaRepository.save(new PlanQuota(
                     savedPlan.getId(),

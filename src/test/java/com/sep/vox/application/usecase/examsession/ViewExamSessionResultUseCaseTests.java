@@ -30,6 +30,7 @@ import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
+import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 
@@ -49,6 +50,7 @@ class ViewExamSessionResultUseCaseTests {
     private static final UUID PAPER_ID = UUID.randomUUID();
     private static final UUID SECTION_ID = UUID.randomUUID();
     private static final UUID PAPER_ITEM_ID = UUID.randomUUID();
+    private static final UUID QUESTION_ID = UUID.randomUUID();
     private static final UUID RESPONSE_ID = UUID.randomUUID();
 
     private ExamCandidateResultRepository examCandidateResultRepository;
@@ -57,6 +59,7 @@ class ViewExamSessionResultUseCaseTests {
     private RubricResultBandRepository rubricResultBandRepository;
     private RubricVersionRepository rubricVersionRepository;
     private ExamResultAccessService examResultAccessService;
+    private QuestionRepository questionRepository;
     private ViewExamSessionResultUseCase useCase;
 
     @BeforeEach
@@ -67,13 +70,15 @@ class ViewExamSessionResultUseCaseTests {
         rubricResultBandRepository = mock(RubricResultBandRepository.class);
         rubricVersionRepository = mock(RubricVersionRepository.class);
         examResultAccessService = mock(ExamResultAccessService.class);
+        questionRepository = mock(QuestionRepository.class);
         useCase = new ViewExamSessionResultUseCase(
             examCandidateResultRepository,
             examSessionResultCalculator,
             frameworkResultBandRepository,
             rubricResultBandRepository,
             rubricVersionRepository,
-            examResultAccessService
+            examResultAccessService,
+            questionRepository
         );
     }
 
@@ -200,7 +205,7 @@ class ViewExamSessionResultUseCaseTests {
         when(examSessionResultCalculator.calculate(SESSION_ID)).thenReturn(new CalculatedExamSessionResult(
             SESSION_ID, EXAM_ID, PAPER_ID, CANDIDATE_ID, null, new BigDecimal("7.50"), null, null,
             List.of(new SectionScore(SECTION_ID, "Part 1", new BigDecimal("7.50"))),
-            List.of(new ItemScore(PAPER_ITEM_ID, RESPONSE_ID, SECTION_ID,
+            List.of(new ItemScore(PAPER_ITEM_ID, RESPONSE_ID, SECTION_ID, QUESTION_ID,
                 new BigDecimal("7.50"), new BigDecimal("7.50"))),
             false));
     }

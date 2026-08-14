@@ -82,7 +82,11 @@ public class ResolveNextPracticeQuestionClaimService {
          * lượng lại bậc mỗi lượt (bậc đo được + EMA hiệu năng + lần bỏ dở gần nhất), nên độ
          * khó có thể trôi ngay giữa phiên mà học sinh không hiểu vì sao.
          */
-        int targetBandOrder) {
+        int targetBandOrder,
+        /** Số bậc của khung mà targetBandOrder thuộc về -- xem frameworkBandCountOfBand. */
+        int targetBandCount,
+        /** Khung mà bậc đích thuộc về -- ladder gửi xuống Python phải theo đúng khung này. */
+        UUID targetFrameworkVersionId) {
     }
 
     /**
@@ -105,6 +109,9 @@ public class ResolveNextPracticeQuestionClaimService {
         // thanh tiến độ, kể cả nhánh trả lại nguyên câu cũ sau một lần gọi bị timeout.
         var spokenSeconds = session.getGradedSeconds();
         var targetBandOrder = enrichmentService.bandOrder(session.getTargetFrameworkBandId());
+        var targetBandCount = enrichmentService.frameworkBandCountOfBand(session.getTargetFrameworkBandId());
+        var targetFrameworkVersionId =
+            enrichmentService.frameworkVersionIdOfBand(session.getTargetFrameworkBandId());
         var budgetSeconds = enrichmentService.sessionBudgetSeconds(
             session.getStudentId(), targetBandOrder
         );
@@ -118,7 +125,7 @@ public class ResolveNextPracticeQuestionClaimService {
                 return new Claim(
                     session.getStudentId(), session.getPracticePaperId(), null, null, null,
                     latestQuestion, alreadyChosenIds.size(), null,
-                    spokenSeconds, budgetSeconds, targetBandOrder
+                    spokenSeconds, budgetSeconds, targetBandOrder, targetBandCount, targetFrameworkVersionId
                 );
             }
         }
@@ -141,7 +148,7 @@ public class ResolveNextPracticeQuestionClaimService {
         if (spokenSeconds + MINIMUM_USEFUL_TURN_SECONDS > budgetSeconds) {
             return new Claim(
                 session.getStudentId(), session.getPracticePaperId(), null, null, null,
-                null, 0, "budget_exhausted", spokenSeconds, budgetSeconds, targetBandOrder
+                null, 0, "budget_exhausted", spokenSeconds, budgetSeconds, targetBandOrder, targetBandCount, targetFrameworkVersionId
             );
         }
 
@@ -152,7 +159,7 @@ public class ResolveNextPracticeQuestionClaimService {
 
         return new Claim(
             session.getStudentId(), session.getPracticePaperId(), topic, focus, alreadyChosen,
-            null, 0, null, spokenSeconds, budgetSeconds, targetBandOrder
+            null, 0, null, spokenSeconds, budgetSeconds, targetBandOrder, targetBandCount, targetFrameworkVersionId
         );
     }
 

@@ -14,6 +14,7 @@ import com.sep.vox.application.response.input.examsession.ExamCandidateResultSec
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
+import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 
@@ -26,6 +27,7 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
     private final RubricResultBandRepository rubricResultBandRepository;
     private final RubricVersionRepository rubricVersionRepository;
     private final ExamResultAccessService examResultAccessService;
+    private final QuestionRepository questionRepository;
 
     public ViewExamSessionResultUseCase(
             ExamCandidateResultRepository examCandidateResultRepository,
@@ -33,13 +35,48 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
             FrameworkResultBandRepository frameworkResultBandRepository,
             RubricResultBandRepository rubricResultBandRepository,
             RubricVersionRepository rubricVersionRepository,
-            ExamResultAccessService examResultAccessService) {
+            ExamResultAccessService examResultAccessService,
+            QuestionRepository questionRepository) {
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examSessionResultCalculator = examSessionResultCalculator;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.rubricResultBandRepository = rubricResultBandRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.examResultAccessService = examResultAccessService;
+        this.questionRepository = questionRepository;
+    }
+
+    /**
+     * Danh sách câu kèm đề bài. Đề bài nạp MỘT lần cho cả bài thay vì mỗi câu một truy vấn --
+     * endpoint này chạy mỗi lần mở trang kết quả, không phải một lần lúc chấm.
+     *
+     * <p>Thứ tự giữ nguyên theo {@code items}, tức thứ tự (section, item) mà
+     * {@link ExamSessionResultCalculator} đã sắp -- client đánh số "Câu 1, Câu 2" theo vị trí
+     * trong mảng này nên đừng stream lại qua Map làm xáo thứ tự.
+     */
+    private java.util.List<ExamCandidateResultItemResponse> itemResponses(
+            java.util.List<ExamSessionResultCalculator.ItemScore> items) {
+        var questionIds = items.stream()
+            .map(item -> item.questionId())
+            .filter(id -> id != null)
+            .distinct()
+            .toList();
+        var texts = new java.util.HashMap<java.util.UUID, String>();
+        if (!questionIds.isEmpty()) {
+            for (var question : questionRepository.findByIdIn(questionIds)) {
+                texts.put(question.getId(), question.getQuestionText());
+            }
+        }
+        return items.stream()
+            .map(item -> new ExamCandidateResultItemResponse(
+                item.paperItemId(),
+                item.responseId(),
+                item.sectionId(),
+                item.questionId() == null ? null : texts.get(item.questionId()),
+                item.itemScore(),
+                item.weightedScore()
+            ))
+            .toList();
     }
 
     @Override
@@ -90,15 +127,7 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
             scoreVisible && calculated != null ? calculated.sections().stream()
                 .map(section -> new ExamCandidateResultSectionResponse(section.sectionId(), section.title(), section.score()))
                 .toList() : java.util.List.of(),
-            scoreVisible && calculated != null ? calculated.items().stream()
-                .map(item -> new ExamCandidateResultItemResponse(
-                    item.paperItemId(),
-                    item.responseId(),
-                    item.sectionId(),
-                    item.itemScore(),
-                    item.weightedScore()
-                ))
-                .toList() : java.util.List.of()
+            scoreVisible && calculated != null ? itemResponses(calculated.items()) : java.util.List.of()
         );
     }
 

@@ -30,6 +30,46 @@ public interface SpringDataFrameworkVersionRepository extends JpaRepository<Fram
     Page<FrameworkVersionJpaEntity> findByFrameworkIdAndStatus(UUID frameworkId, String status, Pageable pageable);
     Optional<FrameworkVersionJpaEntity> findByFrameworkIdAndVersion(UUID frameworkId, int version);
 
+    /**
+     * Mỗi khung đánh giá còn hiệu lực kèm BẢN MỚI NHẤT đã ban hành của nó -- nguồn cho ô chọn
+     * khung ở màn luyện tập.
+     *
+     * <p>{@code DISTINCT ON (f.id)} cộng {@code ORDER BY f.id, fv.version DESC} cho đúng một
+     * dòng mỗi khung, là bản version cao nhất. Cùng bộ điều kiện hiệu lực với
+     * {@code findActiveVersionId} -- hai đường phải nhất quán, nếu không màn hình liệt kê ra
+     * một khung mà chỗ khác lại không chọn nó.
+     *
+     * <p>Khác {@code findActiveVersionId} ở chỗ: hàm kia trả về ĐÚNG MỘT khung cho cả hệ, còn
+     * hàm này trả về TẤT CẢ để học sinh tự chọn.
+     */
+    @Query(value = """
+        SELECT DISTINCT ON (f.id)
+               fv.id            AS versionId,
+               fv.code          AS versionCode,
+               fv.version       AS versionNumber,
+               f.id             AS frameworkId,
+               f.code           AS frameworkCode,
+               f.name           AS frameworkName,
+               f.description    AS frameworkDescription
+        FROM framework_versions fv
+        JOIN frameworks f ON f.id = fv.framework_id AND f.is_active = true
+        WHERE fv.status = 'PUBLISHED'
+          AND fv.effective_from <= CURRENT_TIMESTAMP
+          AND (fv.effective_to IS NULL OR fv.effective_to >= CURRENT_TIMESTAMP)
+        ORDER BY f.id, fv.version DESC
+        """, nativeQuery = true)
+    List<ActiveFrameworkProjection> findActiveFrameworks();
+
+    interface ActiveFrameworkProjection {
+        UUID getVersionId();
+        String getVersionCode();
+        Integer getVersionNumber();
+        UUID getFrameworkId();
+        String getFrameworkCode();
+        String getFrameworkName();
+        String getFrameworkDescription();
+    }
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT v FROM FrameworkVersionJpaEntity v WHERE v.id = :id")
     Optional<FrameworkVersionJpaEntity> findByIdForUpdate(@Param("id") UUID id);

@@ -56,6 +56,16 @@ public interface SpringDataExamBlueprintRepository extends JpaRepository<ExamBlu
     """)
     boolean existsUsedByExam(@Param("blueprintId") UUID blueprintId);
 
+    // Nhánh EXISTS thứ hai nhận CHAIR ngang AUTHOR, KHÔNG phải chỉ AUTHOR.
+    //
+    // Chủ tịch hội đồng là người quyết định của kỳ thi (duyệt/khoá đề, lên lịch, công bố kết
+    // quả) mà lại không tự dựng được phiên bản blueprint cho chính kỳ thi mình chủ trì -- phải
+    // nhờ một AUTHOR hoặc quản trị trường làm hộ. Quyền hẹp hơn người mình có quyền duyệt là
+    // ngược đời.
+    //
+    // Chú thích phải nằm NGOÀI chuỗi @Query: HQL không có comment `--`, để trong thì
+    // SpringDataExamBlueprintRepository không tạo được bean và cả ứng dụng không khởi động nổi
+    // (đã xảy ra thật, mọi pod crashloop).
     @Query("""
         SELECT CASE WHEN (
             b.schoolId = :schoolId
@@ -68,7 +78,8 @@ public interface SpringDataExamBlueprintRepository extends JpaRepository<ExamBlu
                 OR EXISTS (
                     SELECT 1 FROM ExamJpaEntity e
                     JOIN ExamMemberJpaEntity em ON em.examId = e.id
-                    WHERE e.blueprintId = b.id AND em.userId = :userId AND em.role = 'AUTHOR'
+                    WHERE e.blueprintId = b.id AND em.userId = :userId
+                      AND em.role IN ('AUTHOR', 'CHAIR')
                 )
                 OR (
                     NOT EXISTS (SELECT 1 FROM ExamJpaEntity e2 WHERE e2.blueprintId = b.id)

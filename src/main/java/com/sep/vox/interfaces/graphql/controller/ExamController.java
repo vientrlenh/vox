@@ -12,7 +12,7 @@ import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
 
-import com.sep.vox.application.common.InstantParser;
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.query.CanViewExamBlueprintDataQuery;
 import com.sep.vox.application.port.input.query.ViewExamDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewExamPaperDetailsQuery;
@@ -122,8 +122,8 @@ public class ExamController {
         return viewExamStatusCountsUseCase.execute(new ViewExamStatusCountsQuery(
             schoolId,
             kind,
-            InstantParser.parseOrNull(dateFrom, "dateFrom"),
-            InstantParser.parseOrNull(dateTo, "dateTo")
+            DateMapper.toInstant(dateFrom),
+            DateMapper.toInstant(dateTo)
         ));
     }
 

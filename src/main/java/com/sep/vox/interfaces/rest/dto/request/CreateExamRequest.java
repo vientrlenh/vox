@@ -1,10 +1,15 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.math.BigDecimal;
+
 import java.util.List;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -43,6 +48,17 @@ public record CreateExamRequest(
 
     /** Thiết bị làm bài: LAB = thiết bị nhà trường, STUDENT_DEVICE = thiết bị thí sinh. Bỏ trống = LAB. */
     @Pattern(regexp = "STUDENT_DEVICE|LAB", message = "Hình thức làm bài không hợp lệ")
-    String deliveryMode
+    String deliveryMode,
+    /**
+     * Ngưỡng tin cậy AI theo PHẦN TRĂM (0-100), nhà trường tự đặt. Bỏ trống = không đặt, hệ thống dùng luật
+     * ngưỡng cứng như trước.
+     *
+     * <p>Đặt rồi thì bản chấm nào có overall_confidence thấp hơn ngưỡng sẽ sang PENDING_REVIEW,
+     * và các luật cứng nội bộ bị bỏ qua -- xem RecordExamAttemptEvaluationUseCase.
+     */
+    @DecimalMin(value = "0.0", message = "Ngưỡng tin cậy phải từ 0 đến 100")
+    @DecimalMax(value = "100.0", message = "Ngưỡng tin cậy phải từ 0 đến 100")
+    @Digits(integer = 3, fraction = 2, message = "Ngưỡng tin cậy tối đa 2 chữ số thập phân")
+    BigDecimal aiConfidenceThresholdPercent
 ) {
 }

@@ -20,6 +20,14 @@ public record CreateExamCommand(
     Boolean requiresOtp,
     List<String> requiredStreamTypes,
     String streamTypePermission,
-    String deliveryMode
+    String deliveryMode,
+
+    /**
+     * Ngưỡng tin cậy AI (0.00-1.00). NULL = không đặt, hệ thống dùng luật cứng như cũ.
+     *
+     * <p>Đặt ngưỡng thì bản chấm có overall_confidence thấp hơn sẽ sang PENDING_REVIEW, và toàn
+     * bộ luật ngưỡng nội bộ bị bỏ qua -- xem RecordExamAttemptEvaluationUseCase.
+     */
+    java.math.BigDecimal aiConfidenceThresholdPercent
 ) {
 }

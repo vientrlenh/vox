@@ -33,6 +33,15 @@ public interface SessionRowInfo {
     Instant getEndedAt();
 
     /**
+     * Số câu học sinh ĐÃ NÓI mà chưa có bản chấm.
+     *
+     * <p>Chấm là bất đồng bộ nên {@code overall_score} lúc đóng phiên chỉ gộp những câu đã
+     * chấm xong. Con số này cho client biết điểm đang cầm là TẠM hay đã chốt -- thiếu nó thì
+     * danh sách hiện một con số sẽ đổi sau vài chục giây mà không báo hiệu gì.
+     */
+    int getPendingEvaluations();
+
+    /**
      * Thang chấm của chính phiên này. Phiên từ V13 luôn 0-100; phiên CŨ lấy thang của rubric
      * đã dùng lúc đó. Suy theo phiên chứ không theo cấu hình toàn cục -- hai loại cùng tồn tại
      * lâu dài và màn tổng kết phải hiện đúng cho cả hai.

@@ -140,7 +140,10 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
                 data.get("code"),
                 data.get("name"),
                 data.get("description"),
-                false,
+                // Cùng trạng thái với thêm tay (AddSchoolRoomUseCase): isActive=false là cờ xóa mềm,
+                // DeleteSchoolRoomUseCase từ chối xóa phòng đã inactive mà không có API nào bật lại
+                // nên phòng import ra sẽ kẹt vĩnh viễn ở trạng thái "đã xóa".
+                true,
                 now,
                 now,
                 currentUserId,
@@ -151,6 +154,9 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
         var now = Instant.now();
         existing.setName(data.get("name"));
         existing.setDescription(data.get("description"));
+        // Import lại mã phòng đang inactive = khôi phục phòng đó, vì không có API nào bật lại
+        // và unique (school_id, code) chặn tạo mới cùng mã.
+        existing.setActive(true);
         existing.setUpdatedAt(now);
         existing.setUpdatedBy(currentUserId);
         schoolRoomRepository.save(existing);

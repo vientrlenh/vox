@@ -171,7 +171,7 @@ class ExamCandidateControllerTests {
         var dto = candidate(null, scheduleId);
         var exam = new ExamDto(examId, null, null, "E1", "Exam", null, UUID.randomUUID(), UUID.randomUUID(),
             "CENTRALIZED", "LAB", "DRAFT", null, null, null, null, null, null, false, null, null, null, null, null,
-            null, null);
+            null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, ExamDto>getDataLoader("examById")).thenReturn(loader);

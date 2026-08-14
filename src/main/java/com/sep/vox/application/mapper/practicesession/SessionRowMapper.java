@@ -23,7 +23,8 @@ public final class SessionRowMapper {
             row.getOverallScore(),
             row.getGradedSeconds(),
             row.getStartedAt().toString(),
-            row.getEndedAt() == null ? null : row.getEndedAt().toString()
+            row.getEndedAt() == null ? null : row.getEndedAt().toString(),
+            row.getPendingEvaluations()
         );
     }
 }

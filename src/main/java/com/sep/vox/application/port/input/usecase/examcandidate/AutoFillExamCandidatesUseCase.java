@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AutoFillExamCandidatesCommand;
-import com.sep.vox.application.port.input.service.ClassTestPaperAutoAssigner;
+import com.sep.vox.application.port.input.service.ExamPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.ExamScheduleManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.ExamCandidateDto;
@@ -36,19 +36,19 @@ public class AutoFillExamCandidatesUseCase
     private final ExamRepository examRepository;
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamScheduleRepository examScheduleRepository;
-    private final ClassTestPaperAutoAssigner classTestPaperAutoAssigner;
+    private final ExamPaperAutoAssigner examPaperAutoAssigner;
     private final ExamScheduleManageAccessService examScheduleManageAccessService;
 
     public AutoFillExamCandidatesUseCase(
             ExamRepository examRepository,
             ExamCandidateRepository examCandidateRepository,
             ExamScheduleRepository examScheduleRepository,
-            ClassTestPaperAutoAssigner classTestPaperAutoAssigner,
+            ExamPaperAutoAssigner examPaperAutoAssigner,
             ExamScheduleManageAccessService examScheduleManageAccessService) {
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examScheduleRepository = examScheduleRepository;
-        this.classTestPaperAutoAssigner = classTestPaperAutoAssigner;
+        this.examPaperAutoAssigner = examPaperAutoAssigner;
         this.examScheduleManageAccessService = examScheduleManageAccessService;
     }
 
@@ -91,21 +91,16 @@ public class AutoFillExamCandidatesUseCase
             return List.of();
         }
 
-        // Bài kiểm tra trên lớp chỉ có một đề nên gán luôn, giáo viên không phải bấm thêm bước phân đề.
-        // Đề của kỳ thi không đổi trong vòng lặp nên tra đúng MỘT lần ở đây; gọi trong vòng lặp thì mỗi
-        // thí sinh là một findByExamId y hệt nhau.
-        var singlePaperId = classTestPaperAutoAssigner.resolveSinglePaperId(exam);
-
         var assigned = new ArrayList<ExamCandidate>();
         int i = 0;
         for (var candidate : unassigned) {
             candidate.assignToSchedule(lockedScheduleIds.get(i % lockedScheduleIds.size()), now, currentUserId);
-            if (singlePaperId != null && candidate.getAssignedPaperId() == null) {
-                candidate.assignPaper(singlePaperId, now, currentUserId);
-            }
             assigned.add(candidate);
             i++;
         }
+        // Gán đề mặc định cho cả lượt trong một lần: đề của kỳ thi không đổi trong vòng lặp, và rải
+        // đều cần nhìn toàn bộ danh sách chứ không gán được từng người một.
+        examPaperAutoAssigner.assignPapersIfNeeded(exam, assigned, now, currentUserId);
         return ExamCandidateDtoMapper.toDtoList(examCandidateRepository.saveAll(assigned));
     }
 }

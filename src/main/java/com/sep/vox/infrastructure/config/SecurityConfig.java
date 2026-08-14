@@ -67,7 +67,8 @@ public class SecurityConfig {
         "/api/v1/callback/**",
         "/graphql",
         "/graphiql/**",
-        "/internal/practice-sessions/**"
+        "/internal/practice-sessions/**",
+        "/internal/exam-turns/**"
     };
 
     private static final List<String> CORS_ALLOWED_METHODS = List.of(

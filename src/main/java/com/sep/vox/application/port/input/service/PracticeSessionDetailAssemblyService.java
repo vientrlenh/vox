@@ -85,6 +85,12 @@ public class PracticeSessionDetailAssemblyService {
             scores,
             "COMPLETED".equals(summary.getStatus()),
             practiceItemResponseRepository.countAwaitingEvaluation(sessionId),
+            // Số câu ĐÃ BỎ CUỘC. Tách khỏi "đang chờ" vì hai chuyện khác hẳn nhau: chờ thì rồi
+            // sẽ có, bỏ cuộc thì không bao giờ. Gộp làm một là bắt học sinh ngồi quay vòng chờ
+            // một kết quả sẽ không tới.
+            practiceItemResponseRepository.countGradingGaveUp(
+                sessionId, PracticeGradingFlushService.MAX_GRADING_ATTEMPTS
+            ),
             practiceItemResponseRepository.findAverageDifficultyRank(sessionId),
             turns,
             summary.getScoreScaleMin(),

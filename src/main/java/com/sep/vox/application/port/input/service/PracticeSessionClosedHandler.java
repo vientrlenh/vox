@@ -115,6 +115,7 @@ public class PracticeSessionClosedHandler {
             row.getOrigin(),
             diagnosis,
             "COMPLETED".equals(status),
+            row.getGradedSeconds(),
             offeredTopicIds(row.getOfferedTopicIdsJson(), "current"),
             offeredTopicIds(row.getOfferedTopicIdsJson(), "previous")
         );

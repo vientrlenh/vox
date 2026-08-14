@@ -14,7 +14,7 @@ import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
 
-import com.sep.vox.application.common.InstantParser;
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.query.ViewCurrentSubscriptionQuery;
 import com.sep.vox.application.port.input.query.ViewFinancialEventsQuery;
 import com.sep.vox.application.port.input.query.ViewInvoicesQuery;
@@ -164,8 +164,8 @@ public class SubscriptionController {
             @Argument(name = "granularity") TokenUsageGranularity granularity) {
         return viewTokenUsageTimeseriesUseCase.execute(new ViewTokenUsageTimeseriesQuery(
             schoolId,
-            InstantParser.parseOrNull(dateFrom, "dateFrom"),
-            InstantParser.parseOrNull(dateTo, "dateTo"),
+            DateMapper.toInstant(dateFrom),
+            DateMapper.toInstant(dateTo),
             granularity
         ));
     }

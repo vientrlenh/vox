@@ -12,7 +12,11 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.input.usecase.practiceevaluation.RecordPracticeAttemptEvaluationUseCase;
+import java.util.UUID;
+
+import com.sep.vox.domain.repository.PracticeItemResponseRepository;
 import com.sep.vox.interfaces.kafka.dto.PracticeAttemptEvaluationCompletedEventDto;
+import com.sep.vox.interfaces.kafka.dto.PracticeAttemptEvaluationFailedEventDto;
 import com.sep.vox.interfaces.kafka.mapper.RecordPracticeAttemptEvaluationCommandMapper;
 
 import tools.jackson.databind.json.JsonMapper;
@@ -25,12 +29,15 @@ public class PracticeAttemptEvaluationCompletedConsumer {
     );
 
     private final RecordPracticeAttemptEvaluationUseCase recordPracticeAttemptEvaluationUseCase;
+    private final PracticeItemResponseRepository practiceItemResponseRepository;
     private final JsonMapper jsonMapper;
 
     public PracticeAttemptEvaluationCompletedConsumer(
             RecordPracticeAttemptEvaluationUseCase recordPracticeAttemptEvaluationUseCase,
+            PracticeItemResponseRepository practiceItemResponseRepository,
             JsonMapper jsonMapper) {
         this.recordPracticeAttemptEvaluationUseCase = recordPracticeAttemptEvaluationUseCase;
+        this.practiceItemResponseRepository = practiceItemResponseRepository;
         this.jsonMapper = jsonMapper;
     }
 
@@ -59,6 +66,20 @@ public class PracticeAttemptEvaluationCompletedConsumer {
                     RecordPracticeAttemptEvaluationCommandMapper.toCommand(dto)
                 );
                 LOGGER.info("Recorded practice evaluation for practiceResponseId={}", dto.practiceResponseId());
+            } else if ("PracticeAttemptEvaluationFailed".equals(eventType)) {
+                // Trước 2026-08-12 nhánh này không tồn tại: sự kiện hỏng rơi vào "Skip unknown"
+                // nên Java không bao giờ biết chấm đã hỏng. Câu đó mãi mãi "chưa có bản chấm",
+                // job quét bắn lại mỗi 5 phút, hỏng lại -- vòng lặp vô hạn, và học sinh nhìn màn
+                // tổng kết quay mãi chờ một kết quả sẽ không bao giờ tới.
+                var failed = jsonMapper.treeToValue(payload, PracticeAttemptEvaluationFailedEventDto.class);
+                practiceItemResponseRepository.markGradingFailed(
+                    UUID.fromString(failed.practiceResponseId())
+                );
+                LOGGER.warn(
+                    "Chấm luyện tập hỏng practiceResponseId={} lỗi={}",
+                    failed.practiceResponseId(),
+                    failed.payload() == null ? null : failed.payload().error()
+                );
             } else {
                 LOGGER.info("Skip unknown practice evaluation event type={}", eventType);
             }

@@ -42,7 +42,8 @@ public final class ExamDtoMapper {
             valueOf(domain.getCreatedAt()),
             valueOf(domain.getUpdatedAt()),
             domain.getCreatedBy(),
-            domain.getUpdatedBy()
+            domain.getUpdatedBy(),
+            domain.getAiConfidenceThresholdPercent()
         );
     }
 

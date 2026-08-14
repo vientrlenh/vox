@@ -3,11 +3,12 @@ package com.sep.vox.interfaces.rest.dto.request;
 import java.util.UUID;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateSystemQuestionBankRequest(
 
-    @NotBlank(message = "ID ngôn ngữ không được để trống")
+    @NotNull(message = "ID ngôn ngữ không được để trống")
     UUID languageId,
 
     @NotBlank(message = "Mã ngân hàng câu hỏi không được để trống")

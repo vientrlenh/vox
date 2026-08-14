@@ -1,6 +1,10 @@
 package com.sep.vox.domain.service.personalization;
 
 public final class SessionDiagnosisPolicy {
+    // Hai phần trong cùng một file vì cùng trả lời MỘT câu hỏi: buổi vừa rồi nói lên điều gì
+    // về sở thích của học sinh. diagnose() lo phần "vì sao bỏ dở", signal() lo phần "mạnh tới
+    // đâu", và cả hai cùng chảy vào InterestVectorService.recordSessionOutcome. Tách ra hai
+    // lớp thì mỗi lần chỉnh mức tín hiệu lại phải mở hai file để đối chiếu bảng giá trị.
 
     private SessionDiagnosisPolicy() {
     }
@@ -25,6 +29,8 @@ public final class SessionDiagnosisPolicy {
      * <p>Chỉ gọi ở đường học sinh TỰ bấm kết thúc. Đường dọn phiên rớt mạng
      * ({@code PracticeSessionCleanupService}) không có hai con số này nên trả thẳng
      * {@code UNKNOWN} thay vì đoán -- xem chú thích ở đó.
+     *
+     * <p>Sức mạnh của tín hiệu ấy do {@link #signal} quyết định -- xem javadoc ở đó.
      *
      * <p><b>Kết quả đi đâu:</b> {@code practice_session.abandon_diagnosis}, và nơi tiêu thụ
      * DUY NHẤT có tác dụng là cổng vào của
@@ -79,5 +85,69 @@ public final class SessionDiagnosisPolicy {
             return "TOO_HARD";
         }
         return "UNKNOWN";
+    }
+
+    /** Từ mốc này trở lên là tín hiệu đầy đủ, y như trước khi có thang. */
+    public static final int FULL_SIGNAL_SECONDS = 120;
+
+    /**
+     * @param origin nguồn chủ đề vào phiên: học sinh tự tìm ({@code KEYWORD}), hệ thống thăm dò
+     *               ({@code EXPLORATION}/{@code RANDOM}/{@code EPSILON}), hay được đề xuất.
+     * @param spokenSeconds số giây VAD nghe thấy tiếng -- cùng con số quota trừ, KHÔNG phải
+     *                      thời lượng phiên (thời lượng gồm cả lúc AI nói và lúc ngồi nghĩ).
+     *                      Bằng 0 ở phiên bỏ dở, và khi đó hàm trả đúng mức cũ.
+     */
+    public static double signal(String origin, int spokenSeconds) {
+        var abandoned = abandonedSignal(origin);
+        var full = fullSignal(origin);
+        if (spokenSeconds <= 0) {
+            return abandoned;
+        }
+        if (spokenSeconds >= FULL_SIGNAL_SECONDS) {
+            return full;
+        }
+        var progress = (double) spokenSeconds / FULL_SIGNAL_SECONDS;
+        return abandoned + progress * (full - abandoned);
+    }
+
+    /**
+     * Mức đầy đủ theo nguồn -- giữ nguyên bảng cũ.
+     *
+     * <p>{@code EPSILON} xếp CÙNG NHÓM với {@code EXPLORATION} (sửa 2026-08-06). Trước đó nó
+     * không có case nên rơi vào {@code default} và nhận 0,95 -- y hệt học sinh tự chọn, đúng
+     * cái "dương giả" mà chú thích ở {@code BuildPracticePaperUseCase.resolveOrigin} tưởng là
+     * đã tránh được.
+     *
+     * <p>Vì sao cùng nhóm: cả hai đều là HỆ THỐNG đưa chủ đề tới, không phải bằng chứng học
+     * sinh vốn thích nó. Với ε-greedy thì đây còn là điều kiện để phép đo có nghĩa -- nếu điểm
+     * của slot thăm dò bằng điểm của slot khai thác thì chính thứ mà thăm dò sinh ra để đo lại
+     * bị nhiễu bởi ưu thế của lựa chọn có sẵn.
+     *
+     * <p>Chấp nhận đánh đổi: chủ đề chỉ từng vào phiên qua đường thăm dò thì lần đầu tối đa chỉ
+     * được 0,60. Muốn lên cao hơn thì lần sau em phải CHỦ ĐỘNG chọn lại -- đúng thứ ta muốn coi
+     * là bằng chứng thật.
+     */
+    private static double fullSignal(String origin) {
+        return switch (origin == null ? "" : origin) {
+            case "KEYWORD" -> 1.00;
+            case "EXPLORATION", "RANDOM", "EPSILON" -> 0.60;
+            default -> 0.95;
+        };
+    }
+
+    /**
+     * Mức của phiên bỏ dở -- cũng giữ nguyên bảng cũ, và chỉ tới được khi
+     * {@link SessionDiagnosisPolicy} kết luận {@code BORED}.
+     *
+     * <p>Thăm dò bị phạt NHẸ NHẤT (0,10 so với 0,20 của tự tìm) vì cùng một logic với
+     * {@link #fullSignal}: hệ thống tự đưa chủ đề tới thì việc học sinh bỏ ngang nói ít về em
+     * ấy hơn là khi chính em gõ từ khoá đi tìm rồi vẫn bỏ.
+     */
+    private static double abandonedSignal(String origin) {
+        return switch (origin == null ? "" : origin) {
+            case "KEYWORD" -> 0.20;
+            case "EXPLORATION", "RANDOM", "EPSILON" -> 0.10;
+            default -> 0.15;
+        };
     }
 }

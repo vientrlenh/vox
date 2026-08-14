@@ -66,6 +66,23 @@ public class PracticeSessionInternalController {
         );
     }
 
+    /**
+     * Nhịp tim của phiên luyện -- agents gọi định kỳ trong suốt lúc WebSocket realtime còn mở.
+     *
+     * <p>Vì sao để AGENTS gửi chứ không phải app: app đã giữ WS tới agents và bơm audio liên
+     * tục, nên agents biết từng giây phiên còn sống hay không. Timer trong app thì vẫn chạy dù
+     * mạng đã rớt, và Android bóp timer khi app xuống nền -- cả hai đều cho tín hiệu sai.
+     *
+     * <p>Trả 200 kể cả khi phiên đã đóng: đây là tín hiệu sống, không phải lệnh nghiệp vụ. Agents
+     * không có việc gì để làm với lỗi ở đây, và ném lỗi chỉ tổ đẻ ra log nhiễu lúc phiên vừa kết
+     * thúc bình thường mà nhịp cuối còn đang bay.
+     */
+    @PostMapping("/{sessionId}/heartbeat")
+    public ApiResponse<Void> heartbeat(@PathVariable UUID sessionId) {
+        practiceSessionRepository.touchHeartbeat(sessionId);
+        return ApiResponse.success("OK", null);
+    }
+
     @GetMapping("/{sessionId}/turns/{turnOrder}/upload-url")
     public ApiResponse<TurnUploadUrlResponse> turnUploadUrl(
             @PathVariable UUID sessionId,

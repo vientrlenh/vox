@@ -24,6 +24,8 @@ public final class UpdateExamCommandMapper {
             request.requiresOtp(),
             request.requiredStreamTypes(),
             request.streamTypePermission()
+,
+            request.aiConfidenceThresholdPercent()
         );
     }
 }

@@ -5,7 +5,7 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.InstantParser;
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -94,10 +94,10 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             exam.setDescription(command.description());
         }
         if (command.openAt() != null) {
-            exam.setOpenAt(InstantParser.parseOrNull(command.openAt(), "Thời gian mở bài"));
+            exam.setOpenAt(DateMapper.toInstant(command.openAt()));
         }
         if (command.closeAt() != null) {
-            exam.setCloseAt(InstantParser.parseOrNull(command.closeAt(), "Thời gian đóng bài"));
+            exam.setCloseAt(DateMapper.toInstant(command.closeAt()));
         }
         if (command.assessmentPolicyId() != null) {
             // Kiểm theo trường của chính bài kiểm tra, không phải trường người gọi: bài đã tồn tại nên
@@ -124,6 +124,9 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         }
         if (command.requiresOtp() != null) {
             exam.setRequiresOtp(command.requiresOtp());
+        }
+        if (command.aiConfidenceThresholdPercent() != null) {
+            exam.setAiConfidenceThresholdPercent(command.aiConfidenceThresholdPercent());
         }
         // null = giữ nguyên (patch semantics như mọi trường khác); danh sách RỖNG = tắt giám sát.
         // Phân biệt này là bắt buộc: lúc tạo, null nghĩa là "không giám sát", còn ở đây null phải
@@ -182,6 +185,8 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
                 .map(StringNormalization::normalizeCode)
                 .toList(),
             input.streamTypePermission() == null ? null : StringNormalization.normalizeCode(input.streamTypePermission())
+,
+            input.aiConfidenceThresholdPercent()
         );
     }
 

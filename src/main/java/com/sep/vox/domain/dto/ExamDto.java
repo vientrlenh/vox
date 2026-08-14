@@ -27,6 +27,9 @@ public record ExamDto(
     String createdAt,
     String updatedAt,
     UUID createdBy,
-    UUID updatedBy
+    UUID updatedBy,
+
+    /** Ngưỡng tin cậy AI theo phần trăm (0-100); null = nhà trường không đặt. */
+    java.math.BigDecimal aiConfidenceThresholdPercent
 ) {
 }

@@ -306,6 +306,7 @@ class CreateClassTestSetupTests {
             streamTypePermission,
             deliveryMode,
             requiresOtp,
+            null,
             null
         );
     }

@@ -19,12 +19,17 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
+
+    /** File Excel ghi phần trăm, DB lưu phân số -- xem chỗ dùng bên dưới. */
+    private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
+
 
     private final RubricCriterionRepository rubricCriterionRepository;
     private final RubricVersionRepository rubricVersionRepository;
@@ -220,8 +225,19 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                     var safeOrderStr = orderStr == null ? "" : orderStr.trim();
 
                     try {
-                        weight = new BigDecimal(safeWeightStr);
-                        if (weight.compareTo(BigDecimal.ZERO) < 0) errors.add(error("weight", "Trọng số không được âm."));
+                        // File Excel ghi PHẦN TRĂM (20), cột DB lưu PHÂN SỐ (0.2).
+                        //
+                        // Quy đổi ngay tại đây cho khớp màn nhập tay: người dùng ở cả hai đường
+                        // đều làm việc bằng phần trăm, còn cổng ban hành
+                        // (ChangeSchoolRubricVersionStatusUseCase) đòi tổng đúng bằng 1. Không
+                        // chia thì file 5 tiêu chí × 20 vào DB thành tổng 100, tạo/sửa vẫn
+                        // trót lọt vì chỗ đó chỉ kiểm >= 0, tới lúc ban hành mới nổ.
+                        //
+                        // Chia 100 với scale 6: 20 -> 0.200000, đủ chỗ cho cả trọng số lẻ như
+                        // 12.5% mà không mất chữ số.
+                        var weightPercent = new BigDecimal(safeWeightStr);
+                        if (weightPercent.compareTo(BigDecimal.ZERO) < 0) errors.add(error("weight", "Trọng số không được âm."));
+                        weight = weightPercent.divide(ONE_HUNDRED, 6, RoundingMode.HALF_UP);
 
                         minScore = new BigDecimal(safeMinStr);
                         maxScore = new BigDecimal(safeMaxStr);

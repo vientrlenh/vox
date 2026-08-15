@@ -19,6 +19,13 @@ public class RubricVersion {
     private BigDecimal scoringScaleMin;
     private BigDecimal scoringScaleMax;
     private RubricTotalScoreMethod totalScoreMethod;
+    /**
+     * Phiên bản gốc mà bản này được sao ra, hoặc null nếu do chính chủ sở hữu soạn.
+     *
+     * <p>Cố ý KHÔNG nằm trong constructor: thêm tham số vào đó buộc mọi nơi đang dựng RubricVersion
+     * phải sửa theo, tuyệt đại đa số chỉ để truyền null. Bên sao chép tự gọi setter.
+     */
+    private UUID sourceRubricVersionId;
     private Instant createdAt;
     private Instant updatedAt;
     private UUID createdBy;
@@ -195,6 +202,14 @@ public class RubricVersion {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public UUID getSourceRubricVersionId() {
+        return sourceRubricVersionId;
+    }
+
+    public void setSourceRubricVersionId(UUID sourceRubricVersionId) {
+        this.sourceRubricVersionId = sourceRubricVersionId;
     }
 
     

@@ -91,6 +91,13 @@ public class RubricVersionJpaEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
+    /**
+     * Phiên bản gốc mà bản này được sao ra. Không khai khoá ngoại: bản mẫu phía hệ thống có vòng đời
+     * riêng và có thể bị lưu trữ hoặc xoá, còn bản sao của trường thì phải sống tiếp bình thường.
+     */
+    @Column(name = "source_rubric_version_id", updatable = false)
+    private UUID sourceRubricVersionId;
+
     protected RubricVersionJpaEntity() {}
 
     public RubricVersionJpaEntity(UUID id, UUID rubricId, int version, String code, String name, String description, String status, Instant effectiveFrom,
@@ -236,6 +243,14 @@ public class RubricVersionJpaEntity {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public UUID getSourceRubricVersionId() {
+        return sourceRubricVersionId;
+    }
+
+    public void setSourceRubricVersionId(UUID sourceRubricVersionId) {
+        this.sourceRubricVersionId = sourceRubricVersionId;
     }
 
     public String getCode() {

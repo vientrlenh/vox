@@ -217,6 +217,16 @@ practice:
     secret: ${PRACTICE_INTERNAL_SECRET:}
 
 app:
+  mail:
+    # Địa chỉ người gửi. BẮT BUỘC phải có: thiếu nó thì JavaMail tự suy địa chỉ local bằng
+    # user.name + hostname của máy chạy, và khi không suy được sẽ ném
+    # "can't determine local email address" -- toàn bộ mail không gửi được.
+    #
+    # Mặc định lấy chính tài khoản SMTP đang xác thực. Với Gmail thì gần như bắt buộc phải để
+    # vậy: đặt from khác tài khoản đăng nhập thì Gmail hoặc ghi đè lại, hoặc từ chối gửi.
+    from: ${MAIL_FROM:${spring.mail.username}}
+    # Tên hiển thị trong hộp thư người nhận, không ảnh hưởng việc gửi.
+    from-display-name: ${MAIL_FROM_DISPLAY_NAME:VOX}
   grpc:
     # Bí mật dùng chung gắn vào mọi lời gọi gRPC sang vox-streaming (xem
     # StreamingServiceTokenInterceptor). Phải trùng GRPC_SERVICE_TOKEN bên vox-streaming.

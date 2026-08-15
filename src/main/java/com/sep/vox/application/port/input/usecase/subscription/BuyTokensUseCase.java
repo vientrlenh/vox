@@ -111,7 +111,7 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
         // QuotaPricingService.tokenUnitPriceFor.
         var tokenUnitPrice = quotaPricingService.tokenUnitPriceFor(plan.getServiceFeeRatio());
         var subscriptionQuotas = subscriptionQuotaRepository.findAllBySubscriptionId(subscription.getId()).stream()
-            .collect(Collectors.toMap(SubscriptionQuota::getQuotaType, Function.identity()));
+            .collect(Collectors.toMap(quota -> quota.getQuotaType(), Function.identity()));
         var now = Instant.now();
         var total = BigDecimal.ZERO;
 

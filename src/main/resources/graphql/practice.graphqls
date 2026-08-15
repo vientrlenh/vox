@@ -15,6 +15,13 @@ extend type Query {
 extend type Mutation {
     submitInterestQuiz(input: SubmitInterestQuizInput!): LearnerProfile!
     setPracticeGoal(goalType: PracticeGoalType!): LearnerProfile!
+    """
+    Làm lại quiz sở thích.
+
+    Bộ cũ chưa nộp xong thì trả lại đúng bộ đó để làm tiếp -- KHÔNG sinh mới, tránh vứt phần
+    em ấy đã làm. Nộp xong rồi mới tắt bộ cũ và sinh bộ mới.
+    """
+    regenerateInterestQuiz: [InterestQuizItem!]!
 }
 
 enum PracticeGoalType {

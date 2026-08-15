@@ -105,6 +105,18 @@ public class PracticeController {
         return submitInterestQuizUseCase.execute(new SubmitInterestQuizCommand(answers));
     }
 
+    /**
+     * Async cùng lý do với {@link #interestQuizItems()}: nhánh sinh mới gọi LLM 10-20 giây.
+     */
+    @MutationMapping
+    @PreAuthorize("hasRole('STUDENT')")
+    public CompletableFuture<List<InterestQuizItem>> regenerateInterestQuiz() {
+        return CompletableFuture.supplyAsync(
+            viewInterestQuizItemsUseCase::regenerate,
+            practiceGenerationExecutor
+        );
+    }
+
     @MutationMapping
     @PreAuthorize("hasRole('STUDENT')")
     public LearnerProfile setPracticeGoal(@Argument("goalType") String goalType) {

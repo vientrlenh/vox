@@ -280,6 +280,11 @@ app:
           topic:
             ai-usage-recorded: ${KAFKA_AI_USAGE_TOPIC:exam-ai-usage-recorded}
           group-id: ${KAFKA_AI_USAGE_GROUP_ID:vox-ai-usage}
+        # Cảnh báo giám sát thi do vox-streaming phát (domain.TopicAlertRaised bên đó).
+        proctoring-alert:
+          topic:
+            alert-raised: ${KAFKA_PROCTORING_ALERT_TOPIC:exam.alert.raised}
+          group-id: ${KAFKA_PROCTORING_ALERT_GROUP_ID:vox-proctoring-alert}
   internal-event:
     kafka: 
       consumer-groups:

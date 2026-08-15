@@ -39,6 +39,7 @@ import com.sep.vox.application.port.input.usecase.examsession.SubmitExamSessionU
 import com.sep.vox.application.port.input.usecase.examsession.ViewExamSessionResultUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ViewExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ViewMyExamResultsUseCase;
+import com.sep.vox.application.port.input.usecase.proctoring.ViewExamSessionProctoringAlertsUseCase;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationDetailsResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemResponseDetailsResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemResponseTurnResponse;
@@ -46,6 +47,7 @@ import com.sep.vox.application.response.input.examitemresponse.ExamSessionFollow
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultResponse;
 import com.sep.vox.application.response.input.examsession.ExamSessionResponse;
 import com.sep.vox.application.response.input.examsession.StudentExamResultSummaryResponse;
+import com.sep.vox.domain.dto.ExamProctoringAlertDto;
 import com.sep.vox.domain.dto.ExamRecordingDto;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 
@@ -68,6 +70,7 @@ public class ExamSessionController {
     private final SubmitExamSessionUseCase submitExamSessionUseCase;
     private final GetExamRecordsUseCase getExamRecordsUseCase;
     private final GetExamRecordingPlaybackUseCase getExamRecordingPlaybackUseCase;
+    private final ViewExamSessionProctoringAlertsUseCase viewExamSessionProctoringAlertsUseCase;
 
 
     public ExamSessionController(
@@ -85,8 +88,10 @@ public class ExamSessionController {
             RetryGradingExamSessionUseCase retryGradingExamSessionUseCase,
             SubmitExamSessionUseCase submitExamSessionUseCase,
             GetExamRecordsUseCase getExamRecordsUseCase,
-            GetExamRecordingPlaybackUseCase getExamRecordingPlaybackUseCase) {
+            GetExamRecordingPlaybackUseCase getExamRecordingPlaybackUseCase,
+            ViewExamSessionProctoringAlertsUseCase viewExamSessionProctoringAlertsUseCase) {
         this.getExamRecordingPlaybackUseCase = getExamRecordingPlaybackUseCase;
+        this.viewExamSessionProctoringAlertsUseCase = viewExamSessionProctoringAlertsUseCase;
         this.viewExamSessionUseCase = viewExamSessionUseCase;
         this.viewExamSessionResultUseCase = viewExamSessionResultUseCase;
         this.viewExamSessionFollowupsUseCase = viewExamSessionFollowupsUseCase;
@@ -120,6 +125,19 @@ public class ExamSessionController {
     public List<ExamRecordingPlaybackResponse> examRecordingPlayback(
             @Argument(name = "examSessionId") UUID examSessionId) {
         return getExamRecordingPlaybackUseCase.execute(new GetExamRecordsQuery(examSessionId, null));
+    }
+
+    /**
+     * Cảnh báo giám sát của một phiên thi, theo thứ tự thời gian.
+     *
+     * <p>Cùng luật quyền với {@link #examRecordingPlayback}: hai thứ này là cùng một loại bằng chứng
+     * về cùng một con người, nên chúng phải mở cho cùng một tập người.
+     */
+    @QueryMapping
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public List<ExamProctoringAlertDto> examSessionProctoringAlerts(
+            @Argument(name = "examSessionId") UUID examSessionId) {
+        return viewExamSessionProctoringAlertsUseCase.execute(examSessionId);
     }
 
     @QueryMapping

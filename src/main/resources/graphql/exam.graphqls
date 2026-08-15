@@ -646,6 +646,45 @@ type ExamRecordingPlayback {
     playbackUrl: String
 }
 
+"""
+Một đợt vi phạm được phát hiện trong lúc giám sát thi.
+
+Là BẰNG CHỨNG để người chấm tự phán đoán, không phải một con số tham gia tính điểm. Cảnh báo là
+phát hiện của AI kèm độ tin cậy, chạy trên webcam và có dương tính giả; còn điểm tiêu chí đo năng
+lực ngôn ngữ. Cho cảnh báo kéo điểm xuống nghĩa là phạt nghi vấn gian lận bằng cách giả vờ rằng
+học viên nói kém hơn thực tế. Cần cẩu đúng là quyết định uphold/regrade/invalidate và cờ nghi vấn
+trên phiên thi.
+"""
+type ExamProctoringAlert {
+    id: ID!
+    """Định danh sự kiện gốc. Dùng để khử trùng khi gộp lịch sử này với luồng cảnh báo trực tiếp."""
+    eventId: String!
+    examSessionId: ID!
+    """
+    Thí sinh, nếu nguồn phát biết được.
+
+    NULL là câu trả lời hợp lệ chứ không phải dữ liệu hỏng: đường AI nối thẳng chỉ cầm id phiên thi
+    nên không có cách nào biết thí sinh nào. Để trống vẫn trung thực hơn là điền một id sai, vì id
+    sai sẽ gắn vi phạm này sang hồ sơ của người khác.
+    """
+    candidateId: ID
+    streamId: String
+    streamType: String
+    alertType: String!
+    level: String
+    source: String
+    detail: String
+    confidence: Float
+    """
+    Thời điểm SỰ VIỆC xảy ra, dạng ISO-8601 tuyệt đối -- KHÔNG phải mốc tua trong video.
+
+    Quy về offset cần thời điểm bắt đầu của bản ghi, thứ hiện chưa được lưu ở đâu.
+    """
+    capturedAt: String!
+    """Thời điểm cảnh báo được phát đi. Lệch với capturedAt chính là độ trễ của đường truyền."""
+    raisedAt: String!
+}
+
 input UpdateExamScheduleInput {
     schoolRoomId: ID
     startDate: String
@@ -727,6 +766,15 @@ extend type Query {
 
     myProctorScheduleCandidates(scheduleId: ID!): [ProctorCandidateSummary!]!
 
+    """
+    Lịch sử cảnh báo giám sát của cả ca thi, xếp theo thời gian xảy ra.
+
+    Kênh cảnh báo trực tiếp là Redis pub/sub (fire-and-forget), nên nó chỉ kể được những gì xảy ra
+    SAU khi giám thị kết nối. Query này là phần còn lại: vào ca muộn, tải lại trang, hay mở thêm một
+    người giám sát thứ hai đều thấy đủ như nhau.
+    """
+    scheduleProctoringAlerts(scheduleId: ID!): [ExamProctoringAlert!]!
+
     examItemResponse(answerId: ID!): ExamItemResponseDetails
 
     examItemResponseTurns(answerId: ID!): [ExamItemResponseTurn!]!
@@ -744,6 +792,14 @@ extend type Query {
     hội đồng / giám thị của đúng ca thi).
     """
     examRecordingPlayback(examSessionId: ID!): [ExamRecordingPlayback!]!
+
+    """
+    Cảnh báo giám sát của một phiên thi, xếp theo thời gian xảy ra.
+
+    Cùng luật quyền với `examRecordingPlayback` (school admin, hoặc giáo viên là chủ tịch hội đồng /
+    giám thị / người đang cầm bài): hai thứ này là cùng một loại bằng chứng về cùng một con người.
+    """
+    examSessionProctoringAlerts(examSessionId: ID!): [ExamProctoringAlert!]!
 }
 
 extend type Mutation {

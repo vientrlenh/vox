@@ -16,6 +16,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.BuyTokensCommand;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.output.CreatePaymentLinkCommand;
 import com.sep.vox.domain.dto.PaymentLinkDto;
@@ -32,6 +33,7 @@ import com.sep.vox.domain.model.subscription.TokenPurchaseItem;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.domain.repository.PlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 import com.sep.vox.domain.repository.TokenPurchaseItemRepository;
 import com.sep.vox.domain.repository.TokenPurchaseRepository;
 
@@ -39,7 +41,9 @@ import com.sep.vox.domain.repository.TokenPurchaseRepository;
 public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTokensCommand, PaymentLinkDto> {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
+    private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final PlanQuotaRepository planQuotaRepository;
+    private final QuotaPricingPort quotaPricingService;
     private final TokenPurchaseRepository tokenPurchaseRepository;
     private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private final InvoiceRepository invoiceRepository;
@@ -48,14 +52,18 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
 
     public CreatePaymentLinkForTokenPurchaseUseCase(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
+            SubscriptionPlanRepository subscriptionPlanRepository,
             PlanQuotaRepository planQuotaRepository,
+            QuotaPricingPort quotaPricingService,
             TokenPurchaseRepository tokenPurchaseRepository,
             TokenPurchaseItemRepository tokenPurchaseItemRepository,
             InvoiceRepository invoiceRepository,
             PaymentProcessResolver paymentProcessResolver,
             UserContextPort userContextPort) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
+        this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.planQuotaRepository = planQuotaRepository;
+        this.quotaPricingService = quotaPricingService;
         this.tokenPurchaseRepository = tokenPurchaseRepository;
         this.tokenPurchaseItemRepository = tokenPurchaseItemRepository;
         this.invoiceRepository = invoiceRepository;
@@ -81,13 +89,19 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
             throw new IllegalStateException("Gói đăng ký không ở trạng thái đang hoạt động");
         }
 
+        var plan = subscriptionPlanRepository.findById(subscription.getPlanId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
         var planQuotas = planQuotaRepository.findAllByPlanId(subscription.getPlanId());
+        // Tính theo tỷ giá USD->VND hiện tại (snapshot mới nhất do ExchangeRateRefreshJob cập nhật
+        // hằng ngày), không dùng planQuota.getTokenUnitPrice() đã đóng băng lúc gói còn DRAFT -- xem
+        // QuotaPricingService.tokenUnitPriceFor.
+        var tokenUnitPrice = quotaPricingService.tokenUnitPriceFor(plan.getServiceFeeRatio());
         var now = Instant.now();
 
         var total = BigDecimal.ZERO;
         for (var item : command.items()) {
-            var planQuota = findPlanQuota(planQuotas, item.quotaType());
-            total = total.add(planQuota.getTokenUnitPrice().multiply(item.quantity()));
+            findPlanQuota(planQuotas, item.quotaType());
+            total = total.add(tokenUnitPrice.multiply(item.quantity()));
         }
 
         // total_amount không cho update sau khi tạo (xem TokenPurchaseJpaEntity), nên phải tính total
@@ -95,11 +109,10 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
         var savedPurchase = tokenPurchaseRepository.save(new TokenPurchase(subscription.getId(), total, PurchaseStatus.PENDING, now));
 
         for (var item : command.items()) {
-            var planQuota = findPlanQuota(planQuotas, item.quotaType());
-            var subtotal = planQuota.getTokenUnitPrice().multiply(item.quantity());
+            var subtotal = tokenUnitPrice.multiply(item.quantity());
 
             tokenPurchaseItemRepository.save(new TokenPurchaseItem(
-                savedPurchase.getId(), item.quotaType(), item.quantity(), planQuota.getTokenUnitPrice(), subtotal
+                savedPurchase.getId(), item.quotaType(), item.quantity(), tokenUnitPrice, subtotal
             ));
         }
 

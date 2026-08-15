@@ -18,9 +18,9 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.command.BuyTokensCommand;
 import com.sep.vox.application.port.input.command.TokenPurchaseItemInput;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
-import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForTokenPurchaseUseCase;
 import com.sep.vox.application.port.output.PaymentProcessPort;
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.output.PaymentCheckoutResult;
 import com.sep.vox.domain.model.subscription.Invoice;
@@ -49,7 +49,7 @@ class CreatePaymentLinkForTokenPurchaseUseCasePricingTests {
     private static final BigDecimal FROZEN_PRICE_AT_PLAN_CREATION = new BigDecimal("26000");
     private static final BigDecimal LIVE_PRICE_TODAY = new BigDecimal("31200");
 
-    private QuotaPricingService quotaPricingService;
+    private QuotaPricingPort quotaPricingService;
     private TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private InvoiceRepository invoiceRepository;
     private CreatePaymentLinkForTokenPurchaseUseCase useCase;
@@ -63,7 +63,7 @@ class CreatePaymentLinkForTokenPurchaseUseCasePricingTests {
         var schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         var subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
         var planQuotaRepository = mock(PlanQuotaRepository.class);
-        quotaPricingService = mock(QuotaPricingService.class);
+        quotaPricingService = mock(QuotaPricingPort.class);
         var tokenPurchaseRepository = mock(TokenPurchaseRepository.class);
         tokenPurchaseItemRepository = mock(TokenPurchaseItemRepository.class);
         invoiceRepository = mock(InvoiceRepository.class);

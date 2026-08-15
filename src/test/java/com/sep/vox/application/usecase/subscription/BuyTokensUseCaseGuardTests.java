@@ -18,10 +18,10 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.BuyTokensCommand;
 import com.sep.vox.application.port.input.command.TokenPurchaseItemInput;
-import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.subscription.BuyTokensUseCase;
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.model.subscription.TokenPurchase;
@@ -73,7 +73,7 @@ class BuyTokensUseCaseGuardTests {
             schoolSubscriptionRepository,
             mock(SubscriptionPlanRepository.class),
             planQuotaRepository,
-            mock(QuotaPricingService.class),
+            mock(QuotaPricingPort.class),
             subscriptionQuotaRepository,
             tokenPurchaseRepository,
             tokenPurchaseItemRepository,

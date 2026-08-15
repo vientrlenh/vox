@@ -17,10 +17,10 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.BuyTokensCommand;
 import com.sep.vox.application.port.input.command.TokenPurchaseItemInput;
-import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.subscription.BuyTokensUseCase;
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.subscription.PlanQuota;
 import com.sep.vox.domain.model.subscription.PlanStatus;
@@ -52,7 +52,7 @@ class BuyTokensUseCasePricingTests {
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
     private SubscriptionPlanRepository subscriptionPlanRepository;
     private PlanQuotaRepository planQuotaRepository;
-    private QuotaPricingService quotaPricingService;
+    private QuotaPricingPort quotaPricingService;
     private SubscriptionQuotaRepository subscriptionQuotaRepository;
     private TokenPurchaseRepository tokenPurchaseRepository;
     private TokenPurchaseItemRepository tokenPurchaseItemRepository;
@@ -67,7 +67,7 @@ class BuyTokensUseCasePricingTests {
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
         planQuotaRepository = mock(PlanQuotaRepository.class);
-        quotaPricingService = mock(QuotaPricingService.class);
+        quotaPricingService = mock(QuotaPricingPort.class);
         subscriptionQuotaRepository = mock(SubscriptionQuotaRepository.class);
         tokenPurchaseRepository = mock(TokenPurchaseRepository.class);
         tokenPurchaseItemRepository = mock(TokenPurchaseItemRepository.class);

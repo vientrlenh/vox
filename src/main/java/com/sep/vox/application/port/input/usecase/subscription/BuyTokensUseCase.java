@@ -7,6 +7,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.sep.vox.domain.model.subscription.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,24 +16,13 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.BuyTokensCommand;
-import com.sep.vox.application.port.input.service.QuotaPricingService;
 import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.TokenPurchaseDto;
 import com.sep.vox.domain.mapper.TokenPurchaseDtoMapper;
-import com.sep.vox.domain.model.subscription.FinancialEvent;
-import com.sep.vox.domain.model.subscription.FinancialEventType;
-import com.sep.vox.domain.model.subscription.Invoice;
-import com.sep.vox.domain.model.subscription.InvoiceSourceType;
-import com.sep.vox.domain.model.subscription.InvoiceStatus;
-import com.sep.vox.domain.model.subscription.PaymentMethod;
-import com.sep.vox.domain.model.subscription.PurchaseStatus;
-import com.sep.vox.domain.model.subscription.QuotaType;
-import com.sep.vox.domain.model.subscription.SubscriptionStatus;
-import com.sep.vox.domain.model.subscription.TokenPurchase;
-import com.sep.vox.domain.model.subscription.TokenPurchaseItem;
 import com.sep.vox.domain.repository.FinancialEventRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.domain.repository.PlanQuotaRepository;
@@ -48,7 +38,7 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final PlanQuotaRepository planQuotaRepository;
-    private final QuotaPricingService quotaPricingService;
+    private final QuotaPricingPort quotaPricingService;
     private final SubscriptionQuotaRepository subscriptionQuotaRepository;
     private final TokenPurchaseRepository tokenPurchaseRepository;
     private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
@@ -62,7 +52,7 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
             PlanQuotaRepository planQuotaRepository,
-            QuotaPricingService quotaPricingService,
+            QuotaPricingPort quotaPricingService,
             SubscriptionQuotaRepository subscriptionQuotaRepository,
             TokenPurchaseRepository tokenPurchaseRepository,
             TokenPurchaseItemRepository tokenPurchaseItemRepository,
@@ -121,7 +111,7 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
         // QuotaPricingService.tokenUnitPriceFor.
         var tokenUnitPrice = quotaPricingService.tokenUnitPriceFor(plan.getServiceFeeRatio());
         var subscriptionQuotas = subscriptionQuotaRepository.findAllBySubscriptionId(subscription.getId()).stream()
-            .collect(Collectors.toMap(quota -> quota.getQuotaType(), Function.identity()));
+            .collect(Collectors.toMap(SubscriptionQuota::getQuotaType, Function.identity()));
         var now = Instant.now();
         var total = BigDecimal.ZERO;
 

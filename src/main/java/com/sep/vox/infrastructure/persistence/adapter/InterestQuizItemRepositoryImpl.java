@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
@@ -43,7 +44,7 @@ public class InterestQuizItemRepositoryImpl
 
     @Override
     public boolean hasQuizItemsForStudent(UUID studentId) {
-        return repository.existsByStudentId(studentId);
+        return repository.existsByStudentIdAndActiveTrue(studentId);
     }
 
     @Override
@@ -93,5 +94,11 @@ public class InterestQuizItemRepositoryImpl
             jsonSerialization.toStringList(entity.getStatementsJson()),
             entity.getDesirabilityNote()
         );
+    }
+
+    @Override
+    @Transactional
+    public int deactivateGeneratedForStudent(UUID studentId) {
+        return repository.deactivateByStudentId(studentId);
     }
 }

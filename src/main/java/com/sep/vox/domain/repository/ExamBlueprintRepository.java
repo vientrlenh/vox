@@ -28,6 +28,9 @@ public interface ExamBlueprintRepository {
     boolean existsUsedByExam(UUID blueprintId);
     boolean canEditBlueprint(UUID blueprintId, UUID userId, UUID schoolId);
     boolean canChangeVersionStatus(UUID blueprintId, UUID userId, UUID schoolId);
+
+    /** CHAIR của một kỳ thi đang gắn blueprint này -- chỉ CHAIR, không tính REVIEWER. */
+    boolean isChairOfExamUsingBlueprint(UUID blueprintId, UUID userId, UUID schoolId);
     boolean canViewBlueprint(UUID blueprintId, UUID userId, UUID schoolId);
     void deleteById(UUID id);
 }

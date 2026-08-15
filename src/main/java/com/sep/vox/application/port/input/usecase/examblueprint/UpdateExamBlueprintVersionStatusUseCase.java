@@ -139,14 +139,27 @@ public class UpdateExamBlueprintVersionStatusUseCase
             throw new ForbiddenException(
                 "Quyền truy cập bị từ chối — cần là SCHOOL_ADMIN hoặc CHAIR/REVIEWER của kỳ thi đã gắn blueprint này");
         }
-        // SCHOOL_ADMIN (và SYSTEM_ADMIN) được tự duyệt version do chính mình tạo -- admin là
-        // người có thẩm quyền cao nhất của blueprint, và trong thực tế một trường thường chỉ có
-        // 1 admin nên chặn tuyệt đối sẽ khiến version kẹt vĩnh viễn ở DRAFT không ai duyệt được.
-        // Maker-checker (không tự duyệt) chỉ áp dụng cho nhánh CHAIR/REVIEWER (giáo viên) --
-        // teacher-CHAIR của kỳ thi đã gắn blueprint vẫn không được tự duyệt version mình tạo.
+        // Ai được TỰ DUYỆT version do chính mình tạo.
+        //
+        // SCHOOL_ADMIN/SYSTEM_ADMIN: được, vì là thẩm quyền cao nhất của blueprint và thực tế
+        // một trường thường chỉ có 1 admin -- chặn tuyệt đối thì version kẹt vĩnh viễn ở DRAFT.
+        //
+        // CHAIR: được, ngang quyền admin (đổi 2026-08-15). Trước đây maker-checker áp cho cả
+        // nhánh giáo viên, nên CHAIR tạo version xong phải đi tìm người khác bấm publish mới
+        // chốt được vào kỳ thi của chính mình (AttachExamBlueprintUseCase đòi version đã
+        // PUBLISHED). Với trường ít người thì "người khác" đó thường không tồn tại, và CHAIR
+        // vốn đã là người chịu trách nhiệm cuối cùng cho kỳ thi -- bắt họ xin duyệt khung đề
+        // của chính kỳ thi mình chủ trì chỉ tạo ra một chữ ký hình thức.
+        //
+        // REVIEWER: KHÔNG. Họ tồn tại đúng để làm người thứ hai, cho tự duyệt là xoá luôn vai
+        // trò của mình. Đây là lý do phải hỏi isChairOfExamUsingBlueprint chứ không dùng lại
+        // canChangeVersionStatus ở trên -- câu đó gộp CHAIR với REVIEWER.
         var isAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()) || "SYSTEM_ADMIN".equals(role.roleCode()));
-        if (!isAdmin && currentUserId.equals(version.getCreatedBy())) {
+        var isChair = examBlueprintRepository.isChairOfExamUsingBlueprint(
+            blueprint.getId(), currentUserId, currentSchoolId
+        );
+        if (!isAdmin && !isChair && currentUserId.equals(version.getCreatedBy())) {
             throw new ForbiddenException("Người tạo version không được tự đổi trạng thái version của chính mình");
         }
     }

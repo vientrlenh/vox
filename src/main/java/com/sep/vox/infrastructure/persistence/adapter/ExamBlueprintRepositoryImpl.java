@@ -95,6 +95,11 @@ public class ExamBlueprintRepositoryImpl implements ExamBlueprintRepository {
     }
 
     @Override
+    public boolean isChairOfExamUsingBlueprint(UUID blueprintId, UUID userId, UUID schoolId) {
+        return springDataExamBlueprintRepository.isChairOfExamUsingBlueprint(blueprintId, userId, schoolId);
+    }
+
+    @Override
     public boolean canViewBlueprint(UUID blueprintId, UUID userId, UUID schoolId) {
         return springDataExamBlueprintRepository.canViewBlueprint(blueprintId, userId, schoolId);
     }

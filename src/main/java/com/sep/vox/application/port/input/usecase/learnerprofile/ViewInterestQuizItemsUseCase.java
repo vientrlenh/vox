@@ -13,6 +13,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.InterestQuizConfigPort;
 import com.sep.vox.application.port.output.InterestQuizGenerationPort;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.repository.LearnerProfileRepository;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.InterestQuizItem;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
 import com.sep.vox.domain.repository.InterestQuizItemRepository;
@@ -32,6 +33,7 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
     private final UserContextPort userContextPort;
     private final InterestQuizScorer interestQuizScorer;
     private final InterestQuizItemSelector itemSelector;
+    private final LearnerProfileRepository learnerProfileRepository;
 
     public ViewInterestQuizItemsUseCase(
             InterestQuizItemRepository quizItemRepository,
@@ -40,7 +42,8 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
             UserContextPort userContextPort,
             InterestQuizScorer interestQuizScorer,
             InterestQuizItemSelector itemSelector,
-            InterestQuizConfigPort quizConfig) {
+            InterestQuizConfigPort quizConfig,
+            LearnerProfileRepository learnerProfileRepository) {
         this.quizConfig = quizConfig;
         this.itemSelector = itemSelector;
         this.quizItemRepository = quizItemRepository;
@@ -48,6 +51,7 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
         this.quizGenerationPort = quizGenerationPort;
         this.userContextPort = userContextPort;
         this.interestQuizScorer = interestQuizScorer;
+        this.learnerProfileRepository = learnerProfileRepository;
     }
 
     // Không @Transactional -- quizGenerationPort.generate() gọi LLM chậm (Python agents,
@@ -71,6 +75,38 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
             return toResponse(sharedPool);
         }
 
+        return generateForStudent(studentId, sharedPool);
+    }
+
+    /**
+     * Làm lại quiz theo yêu cầu của học sinh.
+     *
+     * <p>Luật: bộ cũ CHƯA nộp xong thì trả lại ĐÚNG bộ đó để làm tiếp -- sinh bộ mới giữa chừng
+     * là vứt công em ấy đã làm, và những đáp án đã chọn sẽ trỏ tới các item vừa bị tắt. Chỉ khi
+     * {@code quizCompletedAt} đã có mới tắt bộ cũ và sinh bộ mới.
+     *
+     * <p>Không {@code @Transactional}: giống {@link #execute} -- có lời gọi LLM 10-20 giây bên
+     * trong, giữ transaction suốt quãng đó từng làm cạn pool kết nối.
+     */
+    public List<InterestQuizItem> regenerate() {
+        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+
+        var completed = learnerProfileRepository.findCurrent(studentId)
+            .map(profile -> profile.getQuizCompletedAt() != null)
+            .orElse(false);
+        if (!completed) {
+            // Chưa xong -> làm tiếp bộ cũ, không đụng gì tới dữ liệu.
+            return execute(null);
+        }
+
+        quizItemRepository.deactivateGeneratedForStudent(studentId);
+        var sharedPool = selectBalanced(quizItemRepository.findAllActiveQuizItems());
+        return generateForStudent(studentId, sharedPool);
+    }
+
+    /** Sinh bộ câu riêng rồi lưu. Rỗng thì lùi về bộ tĩnh dùng chung thay vì trả rỗng. */
+    private List<InterestQuizItem> generateForStudent(
+            UUID studentId, List<InterestQuizSeedItem> sharedPool) {
         var existingStatements = sharedPool.stream()
             .flatMap(item -> item.getStatements().stream())
             .toList();

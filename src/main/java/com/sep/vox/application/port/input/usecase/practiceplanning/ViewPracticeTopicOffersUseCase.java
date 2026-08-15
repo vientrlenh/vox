@@ -65,6 +65,9 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
     @Transactional
     public List<PracticeTopicOffer> execute(ViewPracticeTopicOffersQuery input) {
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        if (!hasCompletedInterestQuiz(studentId)) {
+            return List.of();
+        }
         var excluded = new HashSet<>(
             input.excludeTopicIds() == null ? List.<UUID>of() : input.excludeTopicIds()
         );
@@ -248,6 +251,32 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
         return learnerProfileRepository.findCurrent(studentId)
             .map(profile -> profile.getGoalType() == null ? "ABILITY_IMPROVEMENT" : profile.getGoalType())
             .orElse("ABILITY_IMPROVEMENT");
+    }
+
+    /**
+     * Chưa nộp quiz sở thích thì KHÔNG chào chủ đề nào.
+     *
+     * <p>Cổng này phải nằm ở server chứ không phải ở app. Cổng bên Flutter chỉ gác tab "Luyện
+     * tập", trong khi màn Trang chủ -- tab hiện ra ngay sau khi đăng nhập -- cũng gọi
+     * {@code practiceTopicOffers} để dựng thẻ "Chủ đề hôm nay" (xem
+     * {@code PersonalizeRepository.getDashboard}). Nên chỉ cần đăng nhập là lô chào đã chạy,
+     * không cần chạm vào tab nào.
+     *
+     * <p>Không chặn thì {@code dimension_interest_score} rỗng và câu xếp hạng lấp bằng
+     * {@code COALESCE(..., 0.5)}: mọi chủ đề trong chương trình ra đúng cùng một điểm, client
+     * vẫn in "% khớp" từ con số đó. Danh sách trông như đã cá nhân hoá trong khi chưa có một
+     * tín hiệu nào -- sai lặng lẽ, không lỗi.
+     *
+     * <p>Hệ quả nữa, quan trọng hơn: lô chào rỗng khiến controller kích hoạt sinh bù, mà lượt
+     * sinh đó gửi bản đồ sở thích RỖNG sang LLM. Đo được trên production 2026-08-15: 111 học
+     * sinh, 0 hồ sơ, 0 phiên luyện, nhưng kho đã có 6 chủ đề chung chung sinh lúc 10:25 --
+     * và kho là của chung nên cả 111 em đều nhận chúng. Xem thêm cổng cùng cặp ở
+     * {@code TopicOfferBackfillService.backfillAsync}.
+     */
+    private boolean hasCompletedInterestQuiz(UUID studentId) {
+        return learnerProfileRepository.findCurrent(studentId)
+            .map(profile -> profile.getQuizCompletedAt() != null)
+            .orElse(false);
     }
 
     private record RankedTopic(

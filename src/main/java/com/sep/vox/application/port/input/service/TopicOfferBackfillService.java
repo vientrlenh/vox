@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.CacheManagerPort;
+import com.sep.vox.domain.repository.LearnerProfileRepository;
 import com.sep.vox.domain.repository.PracticeTopicRepository;
 
 /**
@@ -76,21 +77,43 @@ public class TopicOfferBackfillService {
 
     private final TopicSuggestionService topicSuggestionService;
     private final PracticeTopicRepository practiceTopicRepository;
+    private final LearnerProfileRepository learnerProfileRepository;
     private final CacheManagerPort cacheManagerPort;
 
     public TopicOfferBackfillService(
             TopicSuggestionService topicSuggestionService,
             PracticeTopicRepository practiceTopicRepository,
+            LearnerProfileRepository learnerProfileRepository,
             CacheManagerPort cacheManagerPort) {
         this.topicSuggestionService = topicSuggestionService;
         this.practiceTopicRepository = practiceTopicRepository;
+        this.learnerProfileRepository = learnerProfileRepository;
         this.cacheManagerPort = cacheManagerPort;
     }
 
-   
+
     @Async("practiceGenerationExecutor")
     public void backfillAsync(UUID studentId) {
         if (studentId == null) {
+            return;
+        }
+        // Chưa nộp quiz sở thích thì KHÔNG sinh gì cả -- đây là nửa còn lại của cổng đặt ở
+        // ViewPracticeTopicOffersUseCase, và là nửa QUAN TRỌNG HƠN.
+        //
+        // Chỉ chặn bên use case là không đủ: nó trả rỗng, mà rỗng thì
+        // PracticePlanningController thấy `offers.size() < 3` và gọi thẳng vào đây. Kết quả
+        // còn tệ hơn trước -- lô chào bị chặn nhưng kho vẫn bị lấp.
+        //
+        // Lượt sinh lúc đó gửi `interestScores` RỖNG sang LLM (xem
+        // TopicSuggestionService.synchronousOffers), nên chủ đề nhận về là loại chung chung
+        // không bám vào ai. Mà practice_topic là kho DÙNG CHUNG toàn hệ và những dòng đó ở
+        // lại vĩnh viễn: một lần đăng nhập của một tài khoản chưa làm quiz là đủ định hình
+        // kho cho mọi học sinh sau đó.
+        //
+        // Đường gọi từ PracticeSessionClosedHandler về lý thuyết luôn có quiz rồi (phải luyện
+        // xong một phiên mới tới đó), nên với nó điều kiện này là vô hại.
+        if (!hasCompletedInterestQuiz(studentId)) {
+            LOGGER.debug("Bỏ lượt bổ sung chủ đề: học sinh {} chưa nộp quiz sở thích.", studentId);
             return;
         }
         var key = IN_FLIGHT_KEY_PREFIX + studentId;
@@ -118,5 +141,12 @@ public class TopicOfferBackfillService {
         } finally {
             cacheManagerPort.deleteIfValueMatches(key, token);
         }
+    }
+
+    /** Xem chú thích tại chỗ gọi trong {@link #backfillAsync(UUID)}. */
+    private boolean hasCompletedInterestQuiz(UUID studentId) {
+        return learnerProfileRepository.findCurrent(studentId)
+            .map(profile -> profile.getQuizCompletedAt() != null)
+            .orElse(false);
     }
 }

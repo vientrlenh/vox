@@ -22,4 +22,6 @@ public interface InterestQuizItemRepository {
 
     /** Lưu bộ câu vừa sinh (LLM) riêng cho học sinh này -- active ngay, không qua duyệt. */
     void saveGeneratedForStudent(UUID studentId, List<InterestQuizSeedItem> items);
+
+    int deactivateGeneratedForStudent(UUID studentId);
 }

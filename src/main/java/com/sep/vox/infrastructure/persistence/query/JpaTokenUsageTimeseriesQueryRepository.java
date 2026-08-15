@@ -29,7 +29,7 @@ public class JpaTokenUsageTimeseriesQueryRepository implements TokenUsageTimeser
     @SuppressWarnings("unchecked")
     public List<TokenUsageBucketDto> findBucketedUsage(UUID subscriptionId, Instant from, Instant to, String granularityUnit) {
         List<Object[]> rows = em.createNativeQuery("""
-            SELECT date_trunc(:unit, occurred_at) AS bucket, quota_type, SUM(tokens_consumed) AS tokens_consumed
+            SELECT date_trunc(CAST(:unit AS varchar), occurred_at) AS bucket, quota_type, SUM(tokens_consumed) AS tokens_consumed
             FROM token_usage_event
             WHERE subscription_id = :subscriptionId
               AND occurred_at >= :fromInstant

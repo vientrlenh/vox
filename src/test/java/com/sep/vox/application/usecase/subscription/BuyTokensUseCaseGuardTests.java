@@ -21,6 +21,7 @@ import com.sep.vox.application.port.input.command.TokenPurchaseItemInput;
 import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.subscription.BuyTokensUseCase;
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.model.subscription.TokenPurchase;
@@ -28,6 +29,7 @@ import com.sep.vox.domain.repository.FinancialEventRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.domain.repository.PlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
 import com.sep.vox.domain.repository.TokenPurchaseItemRepository;
 import com.sep.vox.domain.repository.TokenPurchaseRepository;
@@ -69,7 +71,9 @@ class BuyTokensUseCaseGuardTests {
 
         useCase = new BuyTokensUseCase(
             schoolSubscriptionRepository,
+            mock(SubscriptionPlanRepository.class),
             planQuotaRepository,
+            mock(QuotaPricingPort.class),
             subscriptionQuotaRepository,
             tokenPurchaseRepository,
             tokenPurchaseItemRepository,

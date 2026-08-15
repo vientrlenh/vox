@@ -121,6 +121,33 @@ public interface SpringDataExamBlueprintRepository extends JpaRepository<ExamBlu
         @Param("schoolId") UUID schoolId
     );
 
+    /**
+     * Người này có phải CHAIR của một kỳ thi đang gắn blueprint này không.
+     *
+     * <p>Hẹp hơn {@link #canChangeVersionStatus} một cách CÓ CHỦ Ý: câu kia gộp
+     * {@code IN ('CHAIR', 'REVIEWER')} để trả lời "được đụng vào trạng thái version hay không",
+     * còn câu này chỉ dùng cho một việc duy nhất -- quyết định ai được tự duyệt version của
+     * chính mình. CHAIR là người chịu trách nhiệm cuối cùng cho kỳ thi nên được; REVIEWER thì
+     * vẫn phải có người thứ hai, đó chính là vai trò của họ.
+     */
+    @Query("""
+        SELECT CASE WHEN (
+            b.schoolId = :schoolId
+            AND EXISTS (
+                SELECT 1 FROM ExamJpaEntity e
+                JOIN ExamMemberJpaEntity em ON em.examId = e.id
+                WHERE e.blueprintId = b.id AND em.userId = :userId AND em.role = 'CHAIR'
+            )
+        ) THEN true ELSE false END
+        FROM ExamBlueprintJpaEntity b
+        WHERE b.id = :blueprintId
+    """)
+    boolean isChairOfExamUsingBlueprint(
+        @Param("blueprintId") UUID blueprintId,
+        @Param("userId") UUID userId,
+        @Param("schoolId") UUID schoolId
+    );
+
     @Query("""
         SELECT CASE WHEN (
             b.schoolId = :schoolId

@@ -123,8 +123,16 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
             if (cCmd.minScore().compareTo(cCmd.maxScore()) > 0) {
                 throw new IllegalArgumentException("Tiêu chí '" + safeCode + "': Điểm sàn không được lớn hơn điểm trần.");
             }
-            if (cCmd.weight() != null && cCmd.weight().compareTo(BigDecimal.ZERO) < 0) {
-                throw new IllegalArgumentException("Tiêu chí '" + safeCode + "': Trọng số (weight) không được là số âm.");
+            // Chặn 2026-08-14: trước đây chỉ kiểm >= 0, nên đường REST nhận thẳng số phần trăm (20)
+            // trong khi đường import file lại chia 100 trước khi lưu (xem
+            // RubricCriterionImportCommitHandler). Cùng một "20%" ra hai giá trị lệch nhau 100 lần,
+            // và chỉ nổ lúc publish khi tổng trọng số không khớp.
+            if (cCmd.weight() != null
+                    && (cCmd.weight().compareTo(BigDecimal.ZERO) < 0
+                            || cCmd.weight().compareTo(BigDecimal.ONE) > 0)) {
+                throw new IllegalArgumentException("Tiêu chí '" + safeCode
+                        + "': Trọng số (weight) phải nằm trong khoảng 0 đến 1 -- lưu dưới dạng phân"
+                        + " số, ví dụ 20% ghi là 0.2 và 100% ghi là 1.");
             }
 
             // Check trùng thứ tự (order) với sibling đã có trong version hoặc trong cùng batch

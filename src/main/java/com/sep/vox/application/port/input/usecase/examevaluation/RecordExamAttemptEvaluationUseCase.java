@@ -428,7 +428,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             ));
         }
         return RubricItemScoreFormula.compute(
-            scored, totalScoreMethod, scoringScaleMin, scoringScaleMax
+            scored, scoringScaleMin, scoringScaleMax
         );
     }
 

@@ -4,21 +4,17 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
-import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
-
 /**
- * Gộp điểm các tiêu chí thành điểm MỘT câu, theo phương pháp khai trong rubric version.
+ * <p>Bỏ nhánh riêng của {@code SUM} 2026-08-14. Trước đó {@code SUM} nghĩa là "mỗi tiêu chí chiếm
+ * một lát của thang (10 = 2+2+2+2+2), cộng thẳng không qua trọng số" -- và ở kiểu khai đó trọng số
+ * là dữ liệu chết: không tham gia phép tính, cũng không được kiểm lúc publish, nên con số hiện trên
+ * giao diện có thể hoàn toàn bịa. Nay cả hai phương pháp đều chấm mỗi tiêu chí trên TOÀN thang và
+ * gộp bằng cùng biểu thức dưới đây; chúng chỉ khác nhau ở ràng buộc tổng trọng số lúc publish (xem
+ * {@code RubricScoringConsistencyValidator}), tức khác về CÁCH KHAI chứ không khác về phép tính.
  *
- * <p>Gộp 2026-08-11 từ hai bản chép tay của cùng công thức:
- * {@code RecordExamAttemptEvaluationUseCase.computeItemScore} (AI chấm) và
- * {@code GradingItemScoreResolver.itemScore} (giáo viên chấm tay). Hai bản đã trôi lệch ở mẫu số
- * của nhánh dự phòng -- bản AI chia cho số tiêu chí KHỚP được rubric, bản chấm tay chia cho số
- * tiêu chí NỘP LÊN -- nên cùng một bài chấm bằng hai đường có thể ra hai điểm khác nhau.
- *
- * <p>Chỉ gộp phần CÔNG THỨC. Phần phân giải và kiểm tra đầu vào vẫn nằm ở mỗi bên gọi, vì chúng
- * khác nhau có lý do: điểm giáo viên nhập tay phải bị từ chối khi thiếu tiêu chí bắt buộc hoặc
- * lọt ra ngoài khoảng, còn payload của AI thì phải suy giảm êm (bỏ qua tiêu chí lạ) chứ không
- * được làm hỏng cả lượt chấm.
+ * <p>Biểu thức {@code Σ(điểm × trọng số) / Σtrọng số} bất biến với việc nhân tỉ lệ toàn bộ trọng
+ * số, nên nó đúng cho cả hai ràng buộc: phân bổ ({@code Σw = 1}) chia cho 1 nên quy về tổng có
+ * trọng số, còn trung bình ({@code Σw = n}) chia cho n nên quy về trung bình cộng.
  */
 public final class RubricItemScoreFormula {
 
@@ -38,12 +34,10 @@ public final class RubricItemScoreFormula {
 
     /**
      * @param scored   các tiêu chí đã phân giải; rỗng thì trả về {@code scaleMin}
-     * @param method   phương pháp khai trong rubric version
      * @param scaleMin thang điểm của rubric version -- kết quả luôn bị kẹp về trong thang
      */
     public static BigDecimal compute(
             List<ScoredCriterion> scored,
-            RubricTotalScoreMethod method,
             BigDecimal scaleMin,
             BigDecimal scaleMax) {
         if (scored == null || scored.isEmpty()) {
@@ -65,14 +59,7 @@ public final class RubricItemScoreFormula {
         }
 
         BigDecimal resolved;
-        if (method == RubricTotalScoreMethod.SUM) {
-            // SUM nghĩa là "cộng các phần điểm thành phần": mỗi tiêu chí chiếm một lát của thang
-            // (VD thang 10 = 2+2+2+2+2), nên trọng số KHÔNG tham gia -- lát điểm đã chính là
-            // trọng số rồi. Điều kiện để phép cộng này nằm trong thang là tổng max của các tiêu
-            // chí bằng đúng trần thang; ràng buộc đó được ép lúc PUBLISH rubric
-            // (ChangeSchoolRubricVersionStatusUseCase), không kiểm lại ở đây.
-            resolved = plainSum;
-        } else if (weightSum.compareTo(BigDecimal.ZERO) > 0) {
+        if (weightSum.compareTo(BigDecimal.ZERO) > 0) {
             resolved = weightedSum.divide(weightSum, 2, RoundingMode.HALF_UP);
         } else {
             // Không tiêu chí nào khai trọng số -> trung bình cộng. Lưới an toàn cho dữ liệu cũ

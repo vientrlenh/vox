@@ -24,7 +24,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricRepository rubricRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
-    private final RubricResultBandRepository rubricResultBandRepository;
     private final FrameworkRepository frameworkRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UserRepository userRepository;
@@ -34,7 +33,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             RubricCriterionRepository rubricCriterionRepository,
-            RubricResultBandRepository rubricResultBandRepository,
             FrameworkRepository frameworkRepository,
             AssessmentPolicyRepository assessmentPolicyRepository,
             UserRepository userRepository,
@@ -42,7 +40,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricResultBandRepository = rubricResultBandRepository;
         this.frameworkRepository = frameworkRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.userRepository = userRepository;
@@ -87,9 +84,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
             if (rubricCriterionRepository.findByRubricVersionId(version.getId()).isEmpty()) {
                 throw new IllegalStateException("Không thể ban hành phiên bản này vì chưa có tiêu chí (Criterion) nào.");
             }
-            if (rubricResultBandRepository.findByRubricVersionId(version.getId()).isEmpty()) {
-                throw new IllegalStateException("Không thể ban hành phiên bản này vì chưa có thang điểm (Result Band) nào.");
-            }
 
             // KIỂM TRA FRAMEWORK GỐC
             Framework framework = frameworkRepository.findById(rubric.getFrameworkId())
@@ -101,11 +95,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
             // KIỂM TRA ASSESSMENT POLICY LIÊN KẾT ĐÃ ĐƯỢC PUBLISHED HAY CHƯA
             if (!assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())) {
                 throw new IllegalStateException("Không thể ban hành Rubric này vì chưa có Assessment Policy nào liên kết đang ở trạng thái PUBLISHED.");
-            }
-
-            // BẮT BUỘC TẤT CẢ ASSESSMENT POLICY LIÊN KẾT PHẢI ĐANG Ở TRẠNG THÁI PUBLISHED
-            if (assessmentPolicyRepository.existsNotPublishedByRubricVersionId(version.getId())) {
-                throw new IllegalStateException("Không thể ban hành Rubric này vì vẫn còn Assessment Policy liên kết chưa ở trạng thái PUBLISHED.");
             }
 
             // ĐÃ BỎ LỆNH SAVE RUBRIC DƯ THỪA Ở ĐÂY VÌ MODEL KHÔNG CÒN CURRENTVERSIONID

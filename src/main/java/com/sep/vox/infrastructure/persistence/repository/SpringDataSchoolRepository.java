@@ -16,7 +16,7 @@ import org.springframework.data.repository.query.Param;
 public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntity, UUID> {
     Optional<SchoolJpaEntity> findByCode(String code);
 
-    Optional<SchoolJpaEntity> findByDomain(String domain);
+    List<SchoolJpaEntity> findByDomain(String domain);
 
     boolean existsByCode(String code);
 
@@ -24,12 +24,10 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
 
     boolean existsByContactPhone(String contactPhone);
 
-    boolean existsByDomainAndIdNot(String domain, UUID id);
     boolean existsByContactEmailAndIdNot(String email, UUID id);
     boolean existsByContactPhoneAndIdNot(String phone, UUID id);
 
     boolean existsByCodeAndIdNot(String normalizedCode, UUID id);
-    boolean existsByDomain(String domain);
     boolean existsByIdAndIsActiveTrue(UUID schoolId);
 
     //COALESCE sẽ đóng vai trò hoạt động như sau : nhập name nếu ma null -> s.name

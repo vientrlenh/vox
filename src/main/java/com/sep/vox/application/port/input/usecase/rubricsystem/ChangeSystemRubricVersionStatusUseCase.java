@@ -11,6 +11,7 @@ import com.sep.vox.domain.model.rubric.*;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
+import com.sep.vox.domain.service.rubric.RubricScoringConsistencyValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +24,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricRepository rubricRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
-    private final RubricResultBandRepository rubricResultBandRepository;
     private final FrameworkRepository frameworkRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UserRepository userRepository;
@@ -33,7 +33,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             RubricCriterionRepository rubricCriterionRepository,
-            RubricResultBandRepository rubricResultBandRepository,
             FrameworkRepository frameworkRepository,
             AssessmentPolicyRepository assessmentPolicyRepository,
             UserRepository userRepository,
@@ -41,7 +40,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricResultBandRepository = rubricResultBandRepository;
         this.frameworkRepository = frameworkRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.userRepository = userRepository;
@@ -86,9 +84,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
             if (rubricCriterionRepository.findByRubricVersionId(version.getId()).isEmpty()) {
                 throw new IllegalStateException("Không thể ban hành phiên bản này vì chưa có tiêu chí (Criterion) nào.");
             }
-            if (rubricResultBandRepository.findByRubricVersionId(version.getId()).isEmpty()) {
-                throw new IllegalStateException("Không thể ban hành phiên bản này vì chưa có thang điểm (Result Band) nào.");
-            }
 
             // KIỂM TRA FRAMEWORK GỐC
             Framework framework = frameworkRepository.findById(rubric.getFrameworkId())
@@ -102,12 +97,16 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
                 throw new IllegalStateException("Không thể ban hành Rubric này vì chưa có Assessment Policy nào liên kết đang ở trạng thái PUBLISHED.");
             }
 
-            // BẮT BUỘC TẤT CẢ ASSESSMENT POLICY LIÊN KẾT PHẢI ĐANG Ở TRẠNG THÁI PUBLISHED
-            if (assessmentPolicyRepository.existsNotPublishedByRubricVersionId(version.getId())) {
-                throw new IllegalStateException("Không thể ban hành Rubric này vì vẫn còn Assessment Policy liên kết chưa ở trạng thái PUBLISHED.");
-            }
-
             // ĐÃ BỎ LỆNH SAVE RUBRIC DƯ THỪA Ở ĐÂY VÌ MODEL KHÔNG CÒN CURRENTVERSIONID
+
+            // Bổ sung 2026-08-14: trước đây đường system KHÔNG kiểm thang điểm, nên system admin
+            // ban hành được phiên bản mà điểm câu vọt ra ngoài thang rồi bị kẹp -- đúng lỗi mà phía
+            // school đã phải vá. Nay hai đường dùng chung một validator.
+            RubricScoringConsistencyValidator.assertPublishable(
+                    version.getTotalScoreMethod(),
+                    version.getScoringScaleMin(),
+                    version.getScoringScaleMax(),
+                    rubricCriterionRepository.findByRubricVersionId(version.getId()));
 
         } else if (command.status() == RubricStatus.ARCHIVED) {
             throw new IllegalStateException("Hành động bị từ chối: Vui lòng dùng chức năng Lưu trữ (Archive) riêng để chuyển phiên bản sang ARCHIVED.");

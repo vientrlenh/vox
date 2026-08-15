@@ -71,9 +71,11 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         return ImportType.ASSESSMENT_POLICY;
     }
     // schoolGradeLevelId: Khối (tĩnh, không gắn năm học) | schoolGradeId: Khối năm học (khối trong 1 năm học cụ thể)
-    // rubricVersionId nằm trong key vì trùng scope nhưng khác Rubric Version vẫn được phép (giống CreateSchoolAssessmentPolicyUseCase)
+    // KHÔNG gồm rubricVersionId: một phạm vi chỉ được đúng một chính sách còn hiệu lực, bất kể
+    // trỏ vào phiên bản Rubric nào (siết 2026-08-14, giống CreateSchoolAssessmentPolicyUseCase).
+    // Trước đó trùng scope mà khác Rubric Version vẫn lọt, sinh ra chính sách không bao giờ được dùng.
     private record ScopeKey(UUID schoolId, UUID languageId, UUID frameworkVersionId,
-                            UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId, UUID rubricVersionId) {}
+                            UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
 
     // Không gồm rubricVersionId: dùng để phát số "version" kế tiếp, vì DB chỉ unique theo scope+version
     // (không phân biệt Rubric Version), nên các Policy khác Rubric Version nhưng cùng scope này vẫn phải chiếm
@@ -145,7 +147,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         Set<ScopeKey> existingActiveScopes = existingPolicies.stream()
                 .filter(p -> p.getStatus() == AssessmentPolicyStatus.DRAFT || p.getStatus() == AssessmentPolicyStatus.PUBLISHED)
                 .map(p -> new ScopeKey(p.getSchoolId(), p.getLanguageId(), p.getFrameworkVersionId(),
-                        p.getSchoolGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId(), p.getRubricVersionId()))
+                        p.getSchoolGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId()))
                 .collect(Collectors.toSet());
 
         // Version lớn nhất đã từng tồn tại theo từng scope (kể cả ARCHIVED) -> dùng để phát version kế tiếp,
@@ -204,7 +206,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                 ScopeKey scopeKey = null;
                 if (errors.isEmpty()) {
                     scopeKey = new ScopeKey(schoolId, languageId, frameworkVersionId,
-                            scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId(), rubricVersionId);
+                            scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId());
                     if (!scopesClaimedInFile.add(scopeKey)) {
                         errors.add(error("scope", "Bị trùng phạm vi áp dụng ngay trong file Excel."));
                     } else if (existingActiveScopes.contains(scopeKey)) {

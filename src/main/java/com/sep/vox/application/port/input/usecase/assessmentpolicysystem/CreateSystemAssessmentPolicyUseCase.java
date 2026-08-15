@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicysystem;
 
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
@@ -24,8 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -40,7 +43,8 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
 
-    // Dùng để phát số "version" kế tiếp theo scope (ngôn ngữ + framework), xuyên suốt toàn bộ batch
+    // Dùng để phát số "version" kế tiếp theo scope (ngôn ngữ + framework), xuyên suốt toàn bộ batch.
+    // Cũng chính là khoá phạm vi của luồng SYSTEM: policy hệ thống không gắn khối/niên khóa/lớp.
     private record VersionScopeKey(UUID languageId, UUID frameworkVersionId) {}
 
     public CreateSystemAssessmentPolicyUseCase(
@@ -77,6 +81,7 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
         Instant now = Instant.now();
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
+        Set<VersionScopeKey> scopeClaimsInBatch = new HashSet<>();
 
         for (CreateAssessmentPolicyCommand command : commands) {
             // 2. Validate Framework & Language
@@ -108,7 +113,26 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
             // vì DB chỉ unique theo scope+version, không phân biệt theo Rubric Version
             VersionScopeKey versionScopeKey = new VersionScopeKey(command.languageId(), command.frameworkVersionId());
 
-            // 5. XỬ LÝ VÒNG LẶP RUBRIC (1 Rubric Version tương ứng đúng 1 Assessment Policy)
+            // 5. Mỗi phạm vi (ngôn ngữ + framework version) chỉ được ĐÚNG MỘT chính sách còn hiệu
+            // lực. Bổ sung 2026-08-14: trước đó luồng SYSTEM không có phép kiểm trùng nào cả --
+            // không chặn trong batch, cũng không hỏi DB -- nên policy hệ thống chồng lên nhau tự do
+            // trong khi findActivePolicy chỉ dùng được một bản. Xem lý do đầy đủ ở
+            // CreateSchoolAssessmentPolicyUseCase.
+            if (command.rubricVersionIds().size() != 1) {
+                throw new IllegalArgumentException(
+                        "Mỗi Assessment Policy chỉ được gắn đúng 1 Phiên bản Rubric.");
+            }
+            if (!scopeClaimsInBatch.add(versionScopeKey)) {
+                throw new DuplicatedException(
+                        "Trong cùng một lần tạo có hai Assessment Policy trùng ngôn ngữ và Khung"
+                                + " tiêu chuẩn. Mỗi phạm vi chỉ được một chính sách.");
+            }
+            if (assessmentPolicyRepository.existsActiveForScopeAnyRubricVersion(
+                    null, command.languageId(), command.frameworkVersionId(), null, null, null)) {
+                throw new DuplicatedException("Phạm vi này đã có một Assessment Policy hệ thống còn"
+                        + " hiệu lực (DRAFT hoặc PUBLISHED). Hãy Archive bản cũ trước khi tạo bản mới.");
+            }
+
             for (UUID rubricVersionId : command.rubricVersionIds()) {
                 RubricVersion rubricVersion = rubricVersionRepository.findById(rubricVersionId)
                         .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric ID: " + rubricVersionId));

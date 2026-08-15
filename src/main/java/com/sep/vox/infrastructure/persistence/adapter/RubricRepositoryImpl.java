@@ -59,6 +59,13 @@ public class RubricRepositoryImpl implements RubricRepository {
     }
 
     @Override
+    public boolean existsByOwnerTypeAndSchoolIdAndLanguageIdAndFrameworkIdAndCode(
+            String ownerType, UUID schoolId, UUID languageId, UUID frameworkId, String code) {
+        return springDataRubricRepository.existsByOwnerTypeAndSchoolIdAndLanguageIdAndFrameworkIdAndCode(
+                ownerType, schoolId, languageId, frameworkId, code);
+    }
+
+    @Override
     public boolean existsByOwnerTypeAndLanguageId(String ownerType, UUID languageId) {
         return springDataRubricRepository.existsByOwnerTypeAndLanguageId(ownerType, languageId);
     }

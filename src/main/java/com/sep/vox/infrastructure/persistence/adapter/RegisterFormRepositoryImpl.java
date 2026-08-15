@@ -87,14 +87,6 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
     }
 
     @Override
-    public boolean existsBySchoolDomainAndStatusIn(String schoolDomain, Collection<RegisterFormStatus> statuses) {
-        return springDataRegisterFormRepository.existsBySchoolDomainAndStatusIn(schoolDomain, statuses.stream()
-            .map(s -> s.name())
-            .toList()
-        );
-    }
-
-    @Override
     public long countByStatus(RegisterFormStatus status) {
         return springDataRegisterFormRepository.countByStatus(status.name());
     }

@@ -21,6 +21,10 @@ public interface RubricRepository {
 
     boolean existsByOwnerTypeAndLanguageId(String ownerType, UUID languageId);
 
+    /** Chặn trùng mã trong cùng phạm vi -- soi đúng unique index của bảng rubrics. */
+    boolean existsByOwnerTypeAndSchoolIdAndLanguageIdAndFrameworkIdAndCode(
+            String ownerType, UUID schoolId, UUID languageId, UUID frameworkId, String code);
+
     void updateRubricAtomic(UUID id, String name, String description);
 
     PageResult<Rubric> findAllByOwnerType(RubricOwnerType ownerType, int page, int size);

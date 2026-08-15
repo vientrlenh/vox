@@ -12,14 +12,17 @@ import com.sep.vox.domain.model.school.School;
 public interface SchoolRepository {
     Optional<School> findById(UUID id);
     Optional<School> findByCode(String code);
-    Optional<School> findByDomain(String domain);
+
+    /**
+     * Trả về DANH SÁCH chứ không phải Optional: tên miền KHÔNG còn là danh tính của trường, một
+     * trường nhiều cơ sở dùng chung 1 tên miền và mỗi cơ sở là một School riêng. Đổi lại Optional
+     * là ngày nào đó nổ NonUniqueResultException ở chỗ không liên quan.
+     */
+    List<School> findByDomain(String domain);
     PageResult<School> findAll(int pageNumber, int size);
     School save(School school);
     boolean existsById(UUID id);
-    boolean existsByDomain(String domain);
 
-
-    boolean existsByDomainAndIdNot(String domain, UUID id);
     boolean existsByContactEmailAndIdNot(String email, UUID id);
     boolean existsByContactPhoneAndIdNot(String phone, UUID id);
 

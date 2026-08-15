@@ -104,8 +104,14 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
         String safeName = (command.name() != null && !command.name().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
         String safeDesc = (command.description() != null && !command.description().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
 
-        if (command.weight() != null && command.weight().compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Trọng số (weight) không được là số âm.");
+        // Chặn 2026-08-14: xem lý do ở CreateSchoolRubricCriterionUseCase -- đường REST và đường
+        // import file đang hiểu "20%" theo hai kiểu lệch nhau 100 lần.
+        if (command.weight() != null
+                && (command.weight().compareTo(BigDecimal.ZERO) < 0
+                        || command.weight().compareTo(BigDecimal.ONE) > 0)) {
+            throw new IllegalArgumentException(
+                    "Trọng số (weight) phải nằm trong khoảng 0 đến 1 -- lưu dưới dạng phân số,"
+                            + " ví dụ 20% ghi là 0.2 và 100% ghi là 1.");
         }
         if (command.order() != null && command.order() <= 0) {
             throw new IllegalArgumentException("Thứ tự (order) phải lớn hơn 0.");

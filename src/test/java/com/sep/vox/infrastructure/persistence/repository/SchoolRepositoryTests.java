@@ -72,8 +72,25 @@ class SchoolRepositoryTests extends ContainerTestConfig {
 
         var found = schoolRepository.findByDomain("vox-ct.edu.vn");
 
-        assertThat(found).isPresent();
-        assertThat(found.get().getCode().value()).isEqualTo("VOX_CT");
+        assertThat(found).hasSize(1);
+        assertThat(found.get(0).getCode().value()).isEqualTo("VOX_CT");
+    }
+
+    /**
+     * Nhiều cơ sở của cùng một trường dùng chung tên miền -- lưu được và tra ra ĐỦ, không nổ
+     * NonUniqueResultException. Đây là lý do findByDomain trả List thay vì Optional, và là lý do
+     * V34 bỏ ràng buộc unique (code, domain).
+     */
+    @Test
+    void whenFindByDomain_withMultipleCampuses_thenReturnsAll() {
+        schoolRepository.save(newSchool("VOX_MC_1", "Vox Co So 1", "vox-mc.edu.vn", "school-mc1@example.com", "0987654321"));
+        schoolRepository.save(newSchool("VOX_MC_2", "Vox Co So 2", "vox-mc.edu.vn", "school-mc2@example.com", "0987654322"));
+
+        var found = schoolRepository.findByDomain("vox-mc.edu.vn");
+
+        assertThat(found).hasSize(2);
+        assertThat(found).extracting(school -> school.getCode().value())
+            .containsExactlyInAnyOrder("VOX_MC_1", "VOX_MC_2");
     }
 
     @Test

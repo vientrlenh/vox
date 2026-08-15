@@ -275,6 +275,42 @@ public class RubricController {
     }
 
 
+    /**
+     * Danh mục bộ tiêu chí MẪU của hệ thống, cho trường duyệt trước khi sao về.
+     *
+     * <p>Trả về đúng kiểu {@code Rubric} như mọi cổng khác, nên phần đi sâu xuống phiên bản / tiêu
+     * chí / dải kết quả dùng lại nguyên các resolver đã có -- vốn đã gộp truy vấn qua DataLoader và
+     * đã mở cho SCHOOL_ADMIN. Trường lọc bản đã ban hành bằng chính đối số sẵn có:
+     * {@code versions(status: "PUBLISHED")}.
+     *
+     * <p>Tách khỏi {@link #searchSystemRubrics} thay vì nới quyền của nó: hai cổng phục vụ hai vai
+     * khác nhau, gộp lại thì lần sau ai đó siết hoặc nới một bên sẽ vô tình đổi luôn bên kia.
+     *
+     * <p>Bản nháp của hệ thống vẫn nhìn thấy được nếu trường không truyền bộ lọc trạng thái. Chấp
+     * nhận được, vì cửa chặn thật nằm ở hành động chứ không ở tầm nhìn:
+     * {@code CloneSystemRubricToSchoolUseCase} từ chối sao chép mọi phiên bản chưa PUBLISHED.
+     */
+    @QueryMapping(name = "systemRubricTemplates")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<RubricDto> systemRubricTemplates(
+            @Argument(name = "filter") SearchRubricFilterRequest filter,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+
+        int validPage = page != null ? page - 1 : 0;
+        int validSize = (size != null && size > 0) ? size : 10;
+        var safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
+
+        return searchSystemRubricsUseCase.execute(new SearchSystemRubricsQuery(
+                safeFilter.keyword(),
+                safeFilter.frameworkId(),
+                safeFilter.languageId(),
+                validPage,
+                validSize
+        ));
+    }
+
+
     //Search Rubric theo code, name của trường
     @QueryMapping(name = "searchSchoolRubrics")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")

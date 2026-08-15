@@ -17,5 +17,13 @@ public record RubricVersionDto(
         BigDecimal scoringScaleMin,
         BigDecimal scoringScaleMax,
         String totalScoreMethod,
-        Instant createdAt
+        Instant createdAt,
+        /**
+         * Phiên bản mẫu mà bản này được sao ra, hoặc null nếu do chính chủ sở hữu soạn.
+         *
+         * <p>Có nó thì trang phiên bản nói được "Bản sao từ bộ tiêu chí mẫu của hệ thống" thay vì để
+         * bản sao trông y hệt một bản tự soạn, và về sau đối chiếu được khi hệ thống ban hành bản
+         * mới hơn bản mà trường đang dùng.
+         */
+        UUID sourceRubricVersionId
 ) {}

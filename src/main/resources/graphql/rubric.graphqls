@@ -94,6 +94,14 @@ type RubricVersion {
     scoringScaleMax: Float!
     totalScoreMethod: String!
     createdAt: String
+    """
+    Phiên bản mẫu mà bản này được sao ra; NULL nếu do chính chủ sở hữu soạn.
+
+    Cho phép trang phiên bản nói rõ "Bản sao từ bộ tiêu chí mẫu của hệ thống" thay vì để bản sao
+    trông y hệt một bản tự soạn. Không có khoá ngoại: bản mẫu có thể đã bị lưu trữ hoặc xoá mà bản
+    sao vẫn sống bình thường, nên đừng coi đây là quan hệ chắc chắn giải được.
+    """
+    sourceRubricVersionId: ID
     criteria(page: Int = 1, size: Int = 10): RubricCriterionPage!
     resultBands(page: Int = 1, size: Int = 10): RubricResultBandPage!
 }
@@ -191,6 +199,17 @@ extend type Query {
     viewSchoolRubrics(schoolId: ID!, page: Int = 0, size: Int = 10): RubricPage!
     # Cổng tìm kiếm cho System Admin
     searchSystemRubrics(filter: SearchRubricFilter, page: Int = 0, size: Int = 10): RubricPage!
+    """
+    Danh mục bộ tiêu chí MẪU của hệ thống, cho Trường duyệt trước khi sao về.
+
+    Trả về đúng kiểu `Rubric` như các cổng khác, nên việc đi sâu xuống phiên bản / tiêu chí / dải
+    kết quả dùng lại nguyên các resolver sẵn có (đã gộp truy vấn qua DataLoader). Lọc bản đã ban
+    hành bằng chính đối số có sẵn: `versions(status: "PUBLISHED")`.
+
+    Tách khỏi `searchSystemRubrics` thay vì nới quyền của nó, để lần sau ai đó siết hoặc nới một
+    cổng sẽ không vô tình đổi luôn cổng kia.
+    """
+    systemRubricTemplates(filter: SearchRubricFilter, page: Int = 0, size: Int = 10): RubricPage!
     # Cổng tìm kiếm cho School Admin (Bắt buộc phải truyền schoolId)
     searchSchoolRubrics(schoolId: ID!, filter: SearchRubricFilter, page: Int = 0, size: Int = 10): RubricPage!
     # Cổng tìm kiếm cho Teacher (schoolId tự suy ra từ token, chỉ thấy rubric của trường mình)

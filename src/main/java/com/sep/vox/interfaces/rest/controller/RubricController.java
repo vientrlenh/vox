@@ -25,6 +25,7 @@ import com.sep.vox.application.port.input.usecase.rubricschool.ArchiveSchoolRubr
 import com.sep.vox.application.port.input.usecase.rubricschool.ChangeSchoolRubricVersionStatusUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.CreateSchoolRubricCriterionUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.CreateSchoolRubricResultBandsUseCase;
+import com.sep.vox.application.port.input.usecase.rubricschool.CloneSystemRubricToSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.CreateSchoolRubricUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.DeleteSchoolRubricCriterionUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.DeleteSchoolRubricResultBandUseCase;
@@ -59,6 +60,7 @@ import com.sep.vox.application.response.input.importfile.PreviewRubricResultBand
 import com.sep.vox.application.response.input.importfile.PreviewRubricVersionImportResponse;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.interfaces.rest.dto.request.AcceptImportRequest;
+import com.sep.vox.interfaces.rest.dto.request.CloneSystemRubricRequest;
 import com.sep.vox.interfaces.rest.dto.request.AddRubricVersionsRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolRubricCriteriaRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolRubricRequest;
@@ -72,6 +74,7 @@ import com.sep.vox.interfaces.rest.mapper.AcceptRubricResultBandImportCommandMap
 import com.sep.vox.interfaces.rest.mapper.AcceptRubricVersionImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AddRubricVersionsCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.ChangeRubricVersionStatusCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.CloneSystemRubricCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolRubricCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolRubricCriteriaCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolRubricResultBandsCommandMapper;
@@ -123,6 +126,7 @@ public class RubricController {
     private final AcceptSystemRubricResultBandImportUseCase acceptSystemRubricResultBandImportUseCase;
     private final PreviewSchoolRubricResultBandImportFromFileUseCase previewSchoolRubricResultBandImportFromFileUseCase;
     private final AcceptSchoolRubricResultBandImportUseCase acceptSchoolRubricResultBandImportUseCase;
+    private final CloneSystemRubricToSchoolUseCase cloneSystemRubricToSchoolUseCase;
 
     public RubricController(CreateSchoolRubricCriterionUseCase createSchoolRubricCriterionUseCase,
                             CreateSchoolRubricUseCase createSchoolRubricUseCase,
@@ -137,7 +141,8 @@ public class RubricController {
                             DeleteSystemRubricUseCase deleteSystemRubricUseCase,
                             DeleteSystemRubricVersionUseCase deleteSystemRubricVersionUseCase,
                             DeleteSystemRubricCriterionUseCase deleteSystemRubricCriterionUseCase, DeleteSystemRubricResultBandUseCase deleteSystemRubricResultBandUseCase, ChangeSystemRubricVersionStatusUseCase changeSystemRubricVersionStatusUseCase,
-                            ChangeSchoolRubricVersionStatusUseCase changeSchoolRubricVersionStatusUseCase, PreviewSystemRubricVersionImportFromFileUseCase previewSystemRubricVersionImportFromFileUseCase, AcceptSystemRubricVersionImportUseCase acceptSystemRubricVersionImportUseCase, AddSystemRubricVersionsUseCase addSystemRubricVersionsUseCase, AcceptSchoolRubricVersionImportUseCase acceptSchoolRubricVersionImportUseCase, PreviewSchoolRubricVersionImportFromFileUseCase previewSchoolRubricVersionImportFromFileUseCase, AddSchoolRubricVersionsUseCase addSchoolRubricVersionsUseCase, PreviewSystemRubricCriterionImportFromFileUseCase previewSystemRubricCriterionImportFromFileUseCase, AcceptSystemRubricCriterionImportUseCase acceptSystemRubricCriterionImportUseCase, PreviewSchoolRubricCriterionImportFromFileUseCase previewSchoolRubricCriterionImportFromFileUseCase1, AcceptSchoolRubricCriterionImportUseCase acceptSchoolRubricCriterionImportUseCase, PreviewSystemRubricResultBandImportFromFileUseCase previewSystemRubricResultBandImportFromFileUseCase, AcceptSystemRubricResultBandImportUseCase acceptSystemRubricResultBandImportUseCase, PreviewSchoolRubricResultBandImportFromFileUseCase previewSchoolRubricResultBandImportFromFileUseCase, AcceptSchoolRubricResultBandImportUseCase acceptSchoolRubricResultBandImportUseCase, ArchiveSystemRubricVersionUseCase archiveSystemRubricVersionUseCase, ArchiveSchoolRubricVersionUseCase archiveSchoolRubricVersionUseCase) {
+                            ChangeSchoolRubricVersionStatusUseCase changeSchoolRubricVersionStatusUseCase, PreviewSystemRubricVersionImportFromFileUseCase previewSystemRubricVersionImportFromFileUseCase, AcceptSystemRubricVersionImportUseCase acceptSystemRubricVersionImportUseCase, AddSystemRubricVersionsUseCase addSystemRubricVersionsUseCase, AcceptSchoolRubricVersionImportUseCase acceptSchoolRubricVersionImportUseCase, PreviewSchoolRubricVersionImportFromFileUseCase previewSchoolRubricVersionImportFromFileUseCase, AddSchoolRubricVersionsUseCase addSchoolRubricVersionsUseCase, PreviewSystemRubricCriterionImportFromFileUseCase previewSystemRubricCriterionImportFromFileUseCase, AcceptSystemRubricCriterionImportUseCase acceptSystemRubricCriterionImportUseCase, PreviewSchoolRubricCriterionImportFromFileUseCase previewSchoolRubricCriterionImportFromFileUseCase1, AcceptSchoolRubricCriterionImportUseCase acceptSchoolRubricCriterionImportUseCase, PreviewSystemRubricResultBandImportFromFileUseCase previewSystemRubricResultBandImportFromFileUseCase, AcceptSystemRubricResultBandImportUseCase acceptSystemRubricResultBandImportUseCase, PreviewSchoolRubricResultBandImportFromFileUseCase previewSchoolRubricResultBandImportFromFileUseCase, AcceptSchoolRubricResultBandImportUseCase acceptSchoolRubricResultBandImportUseCase, ArchiveSystemRubricVersionUseCase archiveSystemRubricVersionUseCase, ArchiveSchoolRubricVersionUseCase archiveSchoolRubricVersionUseCase,
+                            CloneSystemRubricToSchoolUseCase cloneSystemRubricToSchoolUseCase) {
         this.createSchoolRubricCriterionUseCase = createSchoolRubricCriterionUseCase;
         this.createSchoolRubricUseCase = createSchoolRubricUseCase;
         this.createSystemRubricUseCase = createSystemRubricUseCase;
@@ -170,6 +175,7 @@ public class RubricController {
         this.acceptSchoolRubricResultBandImportUseCase = acceptSchoolRubricResultBandImportUseCase;
         this.archiveSystemRubricVersionUseCase = archiveSystemRubricVersionUseCase;
         this.archiveSchoolRubricVersionUseCase = archiveSchoolRubricVersionUseCase;
+        this.cloneSystemRubricToSchoolUseCase = cloneSystemRubricToSchoolUseCase;
     }
 
     //==========================RUBRIC  & RUBRIC VERSION===================================
@@ -239,6 +245,28 @@ public class RubricController {
         var command = CreateSchoolRubricCommandMapper.fromRequest(schoolId, request);
         var response = createSchoolRubricUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Khởi tạo bộ tiêu chí nháp thành công", response));
+    }
+
+    /**
+     * Sao một bộ tiêu chí mẫu ĐÃ BAN HÀNH của hệ thống về làm của trường.
+     *
+     * <p>Trả về id của PHIÊN BẢN vừa tạo, không phải id rubric: đó là thứ giao diện cần để đi thẳng
+     * tới trang phiên bản, và cũng là thứ trường gắn chính sách đánh giá vào ở bước ngay sau.
+     *
+     * <p>Bản sao luôn ở trạng thái DRAFT, nên luồng tiếp theo giống hệt lúc trường tự soạn: gắn
+     * chính sách -> ban hành chính sách -> ban hành phiên bản.
+     */
+    @Operation(summary = "Sao bộ tiêu chí mẫu của hệ thống về cho Trường học")
+    @PostMapping("/schools/{schoolId}/rubrics/clone-from-system")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<UUID>> cloneSystemRubricToSchool(
+            @PathVariable("schoolId") UUID schoolId,
+            @Valid @RequestBody CloneSystemRubricRequest request
+    ) {
+        var command = CloneSystemRubricCommandMapper.fromRequest(schoolId, request);
+        var versionId = cloneSystemRubricToSchoolUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Sao chép bộ tiêu chí mẫu thành công. Phiên bản mới đang ở trạng thái nháp.", versionId));
     }
 
 

@@ -25,7 +25,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
     private final RubricRepository rubricRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
     private final FrameworkRepository frameworkRepository;
-    private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
 
@@ -34,14 +33,12 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
             RubricRepository rubricRepository,
             RubricCriterionRepository rubricCriterionRepository,
             FrameworkRepository frameworkRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
             UserRepository userRepository,
             UserContextPort userContextPort) {
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.frameworkRepository = frameworkRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
     }
@@ -92,16 +89,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
                 throw new IllegalStateException("Không thể ban hành Rubric này vì Khung tiêu chuẩn (Framework) gốc đang bị vô hiệu hóa.");
             }
 
-            // KIỂM TRA ASSESSMENT POLICY LIÊN KẾT ĐÃ ĐƯỢC PUBLISHED HAY CHƯA
-            if (!assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())) {
-                throw new IllegalStateException("Không thể ban hành Rubric này vì chưa có Assessment Policy nào liên kết đang ở trạng thái PUBLISHED.");
-            }
-
-            // ĐÃ BỎ LỆNH SAVE RUBRIC DƯ THỪA Ở ĐÂY VÌ MODEL KHÔNG CÒN CURRENTVERSIONID
-
-            // Bổ sung 2026-08-14: trước đây đường system KHÔNG kiểm thang điểm, nên system admin
-            // ban hành được phiên bản mà điểm câu vọt ra ngoài thang rồi bị kẹp -- đúng lỗi mà phía
-            // school đã phải vá. Nay hai đường dùng chung một validator.
             RubricScoringConsistencyValidator.assertPublishable(
                     version.getTotalScoreMethod(),
                     version.getScoringScaleMin(),

@@ -25,7 +25,8 @@ public class RubricVersionDtoMapper {
                 version.getScoringScaleMin(),
                 version.getScoringScaleMax(),
                 version.getTotalScoreMethod() != null ? version.getTotalScoreMethod().name() : null,
-                version.getCreatedAt()
+                version.getCreatedAt(),
+                version.getSourceRubricVersionId()
         );
     }
 

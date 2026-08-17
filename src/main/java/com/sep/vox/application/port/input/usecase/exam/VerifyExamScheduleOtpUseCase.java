@@ -23,6 +23,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.exam.ExamEntryTicketResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
+import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
@@ -137,7 +138,11 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
                 );
                 resumableSession = examSessionRepository.findById(resumableSession.getId()).orElse(resumableSession);
             }
-            return buildEntryTicket(resumableSession.getId(), now, schedule.getEndDate(), exam);
+            // Phiên đang dở: lựa chọn stream có thể đã bị chốt ở lần vào trước, và client phải biết
+            // để không hiện lại màn chọn rồi ăn 403.
+            return buildEntryTicket(
+                resumableSession.getId(), now, schedule.getEndDate(), exam,
+                resumableSession.getChosenStreamType());
         }
 
         if (exam.getMaxAttempt() != null) {
@@ -158,7 +163,8 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
             candidate.getId(),
             candidate.getAssignedPaperId()
         ));
-        return buildEntryTicket(session.id(), now, schedule.getEndDate(), exam);
+        // Phiên vừa tạo: chưa phát token lần nào nên chưa chốt gì.
+        return buildEntryTicket(session.id(), now, schedule.getEndDate(), exam, null);
     }
 
     private ExamSession findResumableSession(UUID candidateId) {
@@ -185,13 +191,19 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
             || (exam.getCloseAt() != null && exam.getCloseAt().isBefore(now));
     }
 
-    private ExamEntryTicketResponse buildEntryTicket(UUID sessionId, Instant now, Instant scheduleEndAt, Exam exam) {
+    private ExamEntryTicketResponse buildEntryTicket(
+            UUID sessionId,
+            Instant now,
+            Instant scheduleEndAt,
+            Exam exam,
+            ExamRequiredStreamType chosenStreamType) {
         return ExamEntryTicketResponse.of(
             sessionId,
             UUID.randomUUID().toString(),
             now.plus(ENTRY_TICKET_TTL).toString(),
             scheduleEndAt,
-            exam
+            exam,
+            chosenStreamType
         );
     }
 }

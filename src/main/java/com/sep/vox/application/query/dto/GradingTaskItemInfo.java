@@ -21,6 +21,19 @@ public record GradingTaskItemInfo(
     String partLabel,
     UUID sectionId,
     int orderInSection,
+    /**
+     * Đề bài của câu, lấy thẳng từ {@code questions.question_text} qua
+     * {@code exam_paper_items.question_id} -- cùng nguồn với màn Xem kết quả
+     * ({@code ViewExamSessionResultUseCase#itemResponses}).
+     *
+     * <p>Trước đây màn chấm KHÔNG có trường này: giáo viên chỉ thấy "Phần 1, câu 2" và phải
+     * đoán đề bài qua {@code promptText} của lượt nói. Mà lời dẫn đó là câu AI đọc lúc vào lượt
+     * ("You have 5 seconds to get ready…") chứ không phải đề, nên chấm mà không biết câu hỏi là
+     * gì -- không đánh giá nổi câu trả lời có đúng trọng tâm hay không.
+     *
+     * <p>{@code null} khi paper item không trỏ tới câu hỏi nào hoặc câu hỏi đã bị xoá.
+     */
+    String questionText,
     BigDecimal currentItemScore,
     String currentFeedbackSummary,
     List<GradingCriterionScoreInfo> currentScores,

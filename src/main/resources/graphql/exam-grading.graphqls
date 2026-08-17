@@ -130,6 +130,12 @@ type GradingTaskItem {
     sectionId: ID
     "Thứ tự của câu trong section, bắt đầu từ 1"
     orderInSection: Int!
+    """
+    Đề bài của câu — cùng nguồn với màn Xem kết quả (`questions.question_text`).
+    Null khi paper item không trỏ tới câu hỏi nào hoặc câu hỏi đã bị xoá.
+    KHÁC `GradingTurn.promptText`: cái đó là lời AI đọc lúc vào lượt, không phải đề bài.
+    """
+    questionText: String
     "Điểm của bản chấm đang có hiệu lực (lần đầu là điểm AI) — mốc để đối chiếu"
     currentItemScore: Float
     currentFeedbackSummary: String

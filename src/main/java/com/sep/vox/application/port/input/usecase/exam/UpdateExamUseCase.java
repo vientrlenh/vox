@@ -12,7 +12,11 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamCommand;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
+import com.sep.vox.application.port.input.service.ExamScheduleCandidateConflictValidator;
+import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
+import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
+import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -41,6 +45,10 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
     private final ExamStreamConfigResolver examStreamConfigResolver;
     private final UserContextPort userContextPort;
     private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
+    private final ExamScheduleRoomValidator examScheduleRoomValidator;
+    private final ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator;
+    private final ExamScheduleCandidateConflictValidator examScheduleCandidateConflictValidator;
+    private final SubscriptionPeriodGuardService subscriptionPeriodGuardService;
 
     public UpdateExamUseCase(
             ExamRepository examRepository,
@@ -51,9 +59,17 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             ExamAssessmentPolicyValidator examAssessmentPolicyValidator,
             ExamStreamConfigResolver examStreamConfigResolver,
             UserContextPort userContextPort,
-            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService) {
+            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService,
+            ExamScheduleRoomValidator examScheduleRoomValidator,
+            ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator,
+            ExamScheduleCandidateConflictValidator examScheduleCandidateConflictValidator,
+            SubscriptionPeriodGuardService subscriptionPeriodGuardService) {
+        this.subscriptionPeriodGuardService = subscriptionPeriodGuardService;
         this.examAssessmentPolicyValidator = examAssessmentPolicyValidator;
         this.examStreamConfigResolver = examStreamConfigResolver;
+        this.examScheduleRoomValidator = examScheduleRoomValidator;
+        this.examScheduleProctorConflictValidator = examScheduleProctorConflictValidator;
+        this.examScheduleCandidateConflictValidator = examScheduleCandidateConflictValidator;
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.examScheduleRepository = examScheduleRepository;
@@ -138,16 +154,20 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             exam.setStreamTypePermission(streamConfig.streamTypePermission());
         }
         if (exam.getKind() == ExamKind.CLASS_TEST) {
-            requireClassTestScheduleWindow(exam.getOpenAt(), exam.getCloseAt());
+            requireExamWindow(exam.getOpenAt(), exam.getCloseAt(), exam.getKind());
             // Khung mở/đóng sẽ được đồng bộ thẳng xuống ca thi ở dưới, nên phải đủ dài cho bài làm.
             if (touchesScheduleTiming(command)
                     && exam.isScheduleWindowShorterThanExamTime(exam.getOpenAt(), exam.getCloseAt())) {
                 throw new IllegalStateException(ExamScheduleWindowMessages.schedulesNoLongerFit(1, exam));
             }
         } else {
-            validateOpenClose(exam.getOpenAt(), exam.getCloseAt());
+            requireExamWindow(exam.getOpenAt(), exam.getCloseAt(), exam.getKind());
             requireExistingSchedulesStillFit(exam, command);
         }
+        // Soi theo trường của chính bài kiểm tra, không phải trường người gọi -- cùng lý do đã ghi ở
+        // nhánh assessmentPolicy phía trên.
+        subscriptionPeriodGuardService.requireWithinSubscriptionPeriod(
+            exam.getSchoolId(), exam.getOpenAt(), exam.getCloseAt());
         var now = Instant.now();
         if (exam.getKind() == ExamKind.CLASS_TEST && (command.openAt() != null || command.closeAt() != null)) {
             syncClassTestDraftSchedules(exam, currentUserId, now);
@@ -157,9 +177,22 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         return ExamDtoMapper.toDto(examRepository.save(exam));
     }
 
+    /**
+     * Đổi khung mở/đóng của bài kiểm tra trên lớp ghi THẲNG giờ mới xuống ca thi, không đi qua
+     * {@code UpdateExamScheduleUseCase}. Nên phải soát đúng những luật mà use case kia soát — nếu
+     * không, sửa giờ ở màn kỳ thi trở thành đường vòng qua mặt cả ba luật chống trùng (phòng bị đặt
+     * hai ca, giáo viên bị gác hai ca, học sinh bị xếp hai ca).
+     */
     private void syncClassTestDraftSchedules(com.sep.vox.domain.model.exam.Exam exam, java.util.UUID currentUserId, Instant now) {
         for (var schedule : examScheduleRepository.findByExamId(exam.getId())) {
             if (schedule.getStatus() == ExamScheduleStatus.DRAFT || schedule.getStatus() == ExamScheduleStatus.PUBLISHED) {
+                examScheduleRoomValidator.requireNoOverlap(
+                    schedule.getSchoolRoomId(), exam.getOpenAt(), exam.getCloseAt(), schedule.getId());
+                examScheduleProctorConflictValidator.requireProctorsFreeForNewWindow(
+                    schedule.getId(), exam.getOpenAt(), exam.getCloseAt());
+                examScheduleCandidateConflictValidator.requireCandidatesFreeForNewWindow(
+                    schedule.getId(), exam.getOpenAt(), exam.getCloseAt());
+
                 schedule.setStartDate(exam.getOpenAt());
                 schedule.setEndDate(exam.getCloseAt());
                 schedule.setUpdatedAt(now);
@@ -257,19 +290,22 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
     }
 
 
-    private void validateOpenClose(Instant openAt, Instant closeAt) {
+    /**
+     * Cả hai kind đều bắt buộc có khung mở/đóng: với bài trên lớp vì khung này chính là ca thi, với
+     * kỳ thi tập trung vì nó là ràng buộc ngoài của mọi ca thi -- để trống thì ca thi không còn mốc
+     * nào chặn, kể cả hạn gói dịch vụ.
+     *
+     * <p>Bài kiểm tra tạo từ trước khi luật này có hiệu lực có thể còn null; lúc đó phải nhập đủ hai
+     * mốc mới lưu được, đúng như bài tạo mới.
+     */
+    private void requireExamWindow(Instant openAt, Instant closeAt, ExamKind kind) {
         if (openAt == null || closeAt == null) {
-            return;
+            throw new IllegalStateException(kind == ExamKind.CLASS_TEST
+                ? "Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài"
+                : "Kỳ thi phải có thời gian mở bài và đóng bài");
         }
         if (!openAt.isBefore(closeAt)) {
             throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
-    }
-
-    private void requireClassTestScheduleWindow(Instant openAt, Instant closeAt) {
-        if (openAt == null || closeAt == null) {
-            throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
-        }
-        validateOpenClose(openAt, closeAt);
     }
 }

@@ -3,6 +3,7 @@ package com.sep.vox.application.usecase.examschedule;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -20,6 +21,7 @@ import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.UpdateExamScheduleStatusCommand;
+import com.sep.vox.application.port.input.service.ExamScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -33,11 +35,13 @@ import com.sep.vox.domain.model.exam.ExamScheduleProctor;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamCandidateRepository.StudentScheduleConflict;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.UserRepository;
 
 class UpdateExamScheduleStatusUseCaseTests {
 
@@ -71,7 +75,10 @@ class UpdateExamScheduleStatusUseCaseTests {
             examRepository, examScheduleRepository, examScheduleProctorRepository,
             // Validator thật trên proctor repo đã mock: mặc định "giáo viên rảnh", test dời ca bên
             // dưới bật cờ trùng lịch lên để kiểm tra luật.
-            new ExamScheduleProctorConflictValidator(examScheduleProctorRepository), examCandidateRepository,
+            new ExamScheduleProctorConflictValidator(examScheduleProctorRepository),
+            // Validator thí sinh cũng dùng bản thật trên candidate repo đã mock, cùng lý do.
+            new ExamScheduleCandidateConflictValidator(examCandidateRepository, mock(UserRepository.class)),
+            examCandidateRepository,
             examMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
@@ -82,6 +89,8 @@ class UpdateExamScheduleStatusUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam(ExamStatus.SCHEDULED)));
         when(examScheduleRepository.save(any(ExamSchedule.class))).thenAnswer(inv -> inv.getArgument(0));
         when(examCandidateRepository.findByScheduleId(any(UUID.class))).thenReturn(List.of());
+        when(examCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
+            .thenReturn(List.of());
         when(examScheduleProctorRepository.findByScheduleId(any(UUID.class))).thenReturn(List.of());
     }
 
@@ -250,6 +259,40 @@ class UpdateExamScheduleStatusUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(command("MOVE", targetId)))
             .isInstanceOf(DuplicatedException.class);
         verify(examScheduleProctorRepository, never()).save(any());
+    }
+
+    /** Đối xứng với luật giám thị: thí sinh đi theo sang ca đích có thể đâm vào một ca thứ ba. */
+    @Test
+    void should_reject_move_when_student_busy_in_target_window() {
+        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        givenSource(ExamScheduleStatus.PUBLISHED);
+        var moving = candidate();
+        when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(moving));
+        when(examCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
+            .thenReturn(List.of(new StudentScheduleConflict(
+                moving.getStudentId(), UUID.randomUUID(), Instant.now(), Instant.now().plusSeconds(3600))));
+
+        assertThatThrownBy(() -> useCase.execute(command("MOVE", targetId)))
+            .isInstanceOf(DuplicatedException.class);
+        // Không ai được chuyển, kể cả người không vướng.
+        verify(examCandidateRepository, never()).saveAll(anyCollection());
+    }
+
+    @Test
+    void should_ignore_the_source_schedule_when_checking_candidate_conflicts() {
+        // Thí sinh đang ở ca nguồn nên dĩ nhiên "bận" ở đó — ca nguồn sắp thành MOVED, không tính.
+        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        givenSource(ExamScheduleStatus.PUBLISHED);
+        var moving = candidate();
+        when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(moving));
+        when(examCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
+            .thenReturn(List.of(new StudentScheduleConflict(
+                moving.getStudentId(), scheduleId, Instant.now(), Instant.now().plusSeconds(3600))));
+
+        useCase.execute(command("MOVE", targetId));
+
+        assertThat(moving.getScheduleId()).isEqualTo(targetId);
+        verify(examCandidateRepository).saveAll(anyCollection());
     }
 
     @Test

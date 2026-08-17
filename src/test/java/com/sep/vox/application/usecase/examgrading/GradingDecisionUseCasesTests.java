@@ -97,7 +97,15 @@ class GradingDecisionUseCasesTests {
             outboxRepository,
             jsonSerializationPort);
 
-        uphold = new UpholdResultUseCase(support, examSessionRepository);
+        // Bài trong bộ test này luôn đã có evaluation, nên nhánh điền 0 của Uphold không chạy;
+        // mock rỗng là đủ và giữ nguyên hành vi các ca đang kiểm.
+        uphold = new UpholdResultUseCase(
+            support,
+            examSessionRepository,
+            mock(com.sep.vox.domain.repository.ExamItemResponseRepository.class),
+            mock(com.sep.vox.domain.repository.ExamItemEvaluationRepository.class),
+            mock(com.sep.vox.application.port.input.service.MissingResponseBackfillService.class),
+            mock(com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase.class));
         invalidate = new InvalidateResultUseCase(support, outboxRepository, jsonSerializationPort);
         decline = new DeclineGradingAssignmentUseCase(support, outboxRepository, jsonSerializationPort);
         clearInvalid = new ClearInvalidResultUseCase(

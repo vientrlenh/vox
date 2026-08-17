@@ -8,7 +8,12 @@ import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.examgrading.GradingActionResponse;
 import com.sep.vox.domain.model.exam.GradingOutcome;
+import com.sep.vox.domain.model.exam.GradingRoundPolicy;
 import com.sep.vox.domain.model.exam.GradingRoundType;
+import com.sep.vox.application.port.input.service.MissingResponseBackfillService;
+import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
+import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
+import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 
 /**
@@ -27,12 +32,24 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
 
     private final GradingActionSupport gradingActionSupport;
     private final ExamSessionRepository examSessionRepository;
+    private final ExamItemResponseRepository examItemResponseRepository;
+    private final ExamItemEvaluationRepository examItemEvaluationRepository;
+    private final MissingResponseBackfillService missingResponseBackfillService;
+    private final UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
 
     public UpholdResultUseCase(
             GradingActionSupport gradingActionSupport,
-            ExamSessionRepository examSessionRepository) {
+            ExamSessionRepository examSessionRepository,
+            ExamItemResponseRepository examItemResponseRepository,
+            ExamItemEvaluationRepository examItemEvaluationRepository,
+            MissingResponseBackfillService missingResponseBackfillService,
+            UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase) {
         this.gradingActionSupport = gradingActionSupport;
         this.examSessionRepository = examSessionRepository;
+        this.examItemResponseRepository = examItemResponseRepository;
+        this.examItemEvaluationRepository = examItemEvaluationRepository;
+        this.missingResponseBackfillService = missingResponseBackfillService;
+        this.upsertExamCandidateResultUseCase = upsertExamCandidateResultUseCase;
     }
 
     @Override
@@ -53,14 +70,49 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
         }
 
         var result = prepared.context().candidateResult();
-        gradingActionSupport.finish(prepared, result);
+
+        // "Giữ nguyên điểm" trên một câu CHƯA có bản chấm nào nghĩa là giữ nguyên con số rỗng.
+        // Ghi thẳng 0 cho những câu đó rồi mới chốt.
+        //
+        // Đo được 2026-08-17 trên phiên 01a00e64: bài 2 câu, 0 evaluation, bấm Uphold ở vòng
+        // INITIAL đẩy kết quả sang RELEASED với total_score = NULL -- bài đã CÔNG BỐ mà không
+        // có điểm. Trang Xem kết quả thì vỡ luôn vì calculator gặp câu thiếu evaluation.
+        //
+        // Dùng lại recordSilentAnswer (0 điểm, không gọi LLM) thay vì thêm luật mới: đó đã là
+        // cách hệ xử lý "không có nội dung để chấm" ở đường nộp bài.
+        var responses = examItemResponseRepository.findBySessionId(result.getSessionId());
+        var evaluatedResponseIds = examItemEvaluationRepository
+            .findByResponseIdIn(responses.stream().map(response -> response.getId()).toList()).stream()
+            .map(evaluation -> evaluation.getResponseId())
+            .collect(java.util.stream.Collectors.toSet());
+        var filledAny = false;
+        for (var response : responses) {
+            if (!evaluatedResponseIds.contains(response.getId())) {
+                missingResponseBackfillService.recordSilentAnswer(
+                    response.getId(), response.getPaperItemId());
+                filledAny = true;
+            }
+        }
+
+        // Chỉ tính lại khi thật sự vừa điền -- bài đã chấm đủ giữ nguyên đường cũ, không đụng
+        // tới điểm đang có.
+        var finalResult = result;
+        if (filledAny) {
+            var targetStatus = GradingRoundPolicy.resultStatusAfter(
+                prepared.roundType(), GradingOutcome.UPHELD);
+            finalResult = upsertExamCandidateResultUseCase.execute(
+                result.getSessionId(),
+                targetStatus == null ? result.getStatus() : targetStatus);
+        }
+
+        gradingActionSupport.finish(prepared, finalResult);
 
         return new GradingActionResponse(
             command.assignmentId(),
-            result.getId(),
+            finalResult.getId(),
             GradingOutcome.UPHELD.name(),
-            result.getStatus() == null ? null : result.getStatus().name(),
-            result.getTotalScore(),
+            finalResult.getStatus() == null ? null : finalResult.getStatus().name(),
+            finalResult.getTotalScore(),
             null
         );
     }

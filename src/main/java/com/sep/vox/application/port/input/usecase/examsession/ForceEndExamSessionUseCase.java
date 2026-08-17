@@ -12,6 +12,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.ExamAttemptForceEndRequestedExternalEvent;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ForceEndExamSessionCommand;
+import com.sep.vox.application.port.input.service.MissingResponseBackfillService;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.service.ExamSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -33,6 +34,7 @@ public class ForceEndExamSessionUseCase implements IUseCase<ForceEndExamSessionC
     private final ExamSessionModerationAccessService moderationAccessService;
     private final ExamCandidateResultFinalizationService examCandidateResultFinalizationService;
     private final ExternalEventPublisherPort externalEventPublisherPort;
+    private final MissingResponseBackfillService missingResponseBackfillService;
 
     public ForceEndExamSessionUseCase(
             ExamSessionRepository examSessionRepository,
@@ -40,13 +42,15 @@ public class ForceEndExamSessionUseCase implements IUseCase<ForceEndExamSessionC
             ExamRepository examRepository,
             ExamSessionModerationAccessService moderationAccessService,
             ExamCandidateResultFinalizationService examCandidateResultFinalizationService,
-            ExternalEventPublisherPort externalEventPublisherPort) {
+            ExternalEventPublisherPort externalEventPublisherPort,
+            MissingResponseBackfillService missingResponseBackfillService) {
         this.examSessionRepository = examSessionRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examRepository = examRepository;
         this.moderationAccessService = moderationAccessService;
         this.examCandidateResultFinalizationService = examCandidateResultFinalizationService;
         this.externalEventPublisherPort = externalEventPublisherPort;
+        this.missingResponseBackfillService = missingResponseBackfillService;
     }
 
     @Override
@@ -91,6 +95,21 @@ public class ForceEndExamSessionUseCase implements IUseCase<ForceEndExamSessionC
 
         examSessionRepository.save(session);
         examCandidateRepository.save(candidate);
+
+        // Lấp câu chưa có bản ghi trả lời, y như đường nộp bài (SubmitExamSessionUseCase:159).
+        //
+        // Buộc kết thúc KHÔNG đi qua đường nộp, nên trước đây những câu thí sinh chưa kịp làm
+        // không có response lẫn evaluation nào. Hệ quả đo được 2026-08-17 trên phiên 01a00e64:
+        // bài có response mà thiếu evaluation làm ExamSessionResultCalculator ném
+        // NotFoundException, kéo sập cả truy vấn examSessionResult -- trang Xem kết quả hiện
+        // "Không có dữ liệu trả lời" dù câu trả lời còn nguyên trong DB.
+        //
+        // backfill ghi thẳng 0 điểm, KHÔNG gọi LLM (xem MissingResponseBackfillService), nên nó
+        // không mâu thuẫn với quyết định "gỡ chặn thì không cho AI chấm lại".
+        //
+        // Nó chỉ đụng câu KHÔNG có response. Câu thí sinh đã nói thật vẫn chưa có evaluation cho
+        // tới khi giáo viên chấm tay -- đó là chủ ý: cho 0 một câu có bài làm là chấm oan.
+        missingResponseBackfillService.backfill(session.getId(), session.getPaperId());
 
         if (isAlreadyGraded) {
             // G.4 case 1: phát hiện vi phạm muộn cho 1 bài đã chấm xong - chốt ngay

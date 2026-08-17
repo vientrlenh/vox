@@ -29,6 +29,8 @@ import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
+import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
@@ -60,6 +62,8 @@ class ViewExamSessionResultUseCaseTests {
     private RubricVersionRepository rubricVersionRepository;
     private ExamResultAccessService examResultAccessService;
     private QuestionRepository questionRepository;
+    private ExamItemResponseRepository examItemResponseRepository;
+    private ExamItemEvaluationRepository examItemEvaluationRepository;
     private ViewExamSessionResultUseCase useCase;
 
     @BeforeEach
@@ -71,6 +75,8 @@ class ViewExamSessionResultUseCaseTests {
         rubricVersionRepository = mock(RubricVersionRepository.class);
         examResultAccessService = mock(ExamResultAccessService.class);
         questionRepository = mock(QuestionRepository.class);
+        examItemResponseRepository = mock(ExamItemResponseRepository.class);
+        examItemEvaluationRepository = mock(ExamItemEvaluationRepository.class);
         useCase = new ViewExamSessionResultUseCase(
             examCandidateResultRepository,
             examSessionResultCalculator,
@@ -78,7 +84,9 @@ class ViewExamSessionResultUseCaseTests {
             rubricResultBandRepository,
             rubricVersionRepository,
             examResultAccessService,
-            questionRepository
+            questionRepository,
+            examItemResponseRepository,
+            examItemEvaluationRepository
         );
     }
 
@@ -202,6 +210,15 @@ class ViewExamSessionResultUseCaseTests {
     }
 
     private void givenCalculatedBreakdown() {
+        // shouldIncludeBreakdown nay hỏi "mọi câu đã có bản chấm chưa" thay vì chỉ nhìn trạng
+        // thái, nên bài có bảng điểm phải có response VÀ evaluation khớp nhau.
+        var response = mock(com.sep.vox.domain.model.exam.ExamItemResponse.class);
+        when(response.getId()).thenReturn(RESPONSE_ID);
+        when(examItemResponseRepository.findBySessionId(SESSION_ID)).thenReturn(List.of(response));
+        var evaluation = mock(com.sep.vox.domain.model.exam.ExamItemEvaluation.class);
+        when(evaluation.getResponseId()).thenReturn(RESPONSE_ID);
+        when(examItemEvaluationRepository.findByResponseIdIn(List.of(RESPONSE_ID)))
+            .thenReturn(List.of(evaluation));
         when(examSessionResultCalculator.calculate(SESSION_ID)).thenReturn(new CalculatedExamSessionResult(
             SESSION_ID, EXAM_ID, PAPER_ID, CANDIDATE_ID, null, new BigDecimal("7.50"), null, null,
             List.of(new SectionScore(SECTION_ID, "Part 1", new BigDecimal("7.50"))),

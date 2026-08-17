@@ -462,8 +462,10 @@ type ExamCandidateResultItem {
     sectionId: ID!
     "Đề bài của câu. Null khi paper item không trỏ tới câu hỏi nào hoặc câu hỏi đã bị xoá."
     questionText: String
-    itemScore: Float!
-    weightedScore: Float!
+    "Null khi câu chưa được chấm -- bài vẫn trả về câu để client hiện bản ghi bài nói."
+    itemScore: Float
+    "Null khi câu chưa được chấm."
+    weightedScore: Float
 }
 
 type ExamCandidateResult {
@@ -568,7 +570,8 @@ type ExamItemAiEvaluationContext {
 }
 
 type ExamItemEvaluationDetails {
-    id: ID!
+    "Null khi câu CHƯA có bản chấm nào -- lúc đó chỉ `turns` có dữ liệu, mọi field điểm đều trống."
+    id: ID
     responseId: ID!
     paperItemId: ID!
     engineType: String

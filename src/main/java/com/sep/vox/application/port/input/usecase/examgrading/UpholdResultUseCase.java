@@ -72,7 +72,7 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
         var result = prepared.context().candidateResult();
 
         // "Giữ nguyên điểm" trên một câu CHƯA có bản chấm nào nghĩa là giữ nguyên con số rỗng.
-        // Ghi thẳng 0 cho những câu đó rồi mới chốt.
+        // Câu thí sinh không nói gì thì ghi thẳng 0 rồi mới chốt; câu có nói thì chặn (xem bên dưới).
         //
         // Đo được 2026-08-17 trên phiên 01a00e64: bài 2 câu, 0 evaluation, bấm Uphold ở vòng
         // INITIAL đẩy kết quả sang RELEASED với total_score = NULL -- bài đã CÔNG BỐ mà không
@@ -85,13 +85,36 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
             .findByResponseIdIn(responses.stream().map(response -> response.getId()).toList()).stream()
             .map(evaluation -> evaluation.getResponseId())
             .collect(java.util.stream.Collectors.toSet());
+        var ungraded = responses.stream()
+            .filter(response -> !evaluatedResponseIds.contains(response.getId()))
+            .toList();
+
+        // Chỉ câu THẬT SỰ rỗng mới được cho 0. Câu thí sinh có nói mà chưa ai chấm thì không
+        // "giữ nguyên" được -- không có con điểm nào ở đó để mà giữ.
+        //
+        // Bản đầu của nhánh này cho 0 tất cả câu chưa có bản chấm, không hỏi câu đó có nội dung
+        // hay không. Đo được 2026-08-17 trên phiên 01a0101d: một câu đã nói 2 lượt (41 giây +
+        // 36 giây, đủ audio lẫn transcript) bị ghi 0 điểm kèm "Thí sinh không đưa ra câu trả
+        // lời nào cho câu hỏi này" -- hệ thống phát ngôn một điều sai về học sinh.
+        //
+        // Chặn thay vì đoán: ba lối ra đều tệ hơn. Cho 0 là chấm oan; bỏ qua rồi chốt là công bố
+        // bài thiếu điểm (đúng lỗi mà nhánh này sinh ra để vá); gọi AI chấm hộ thì mâu thuẫn với
+        // quyết định "gỡ chặn không cho AI chấm lại". Việc còn thiếu ở đây là việc của người
+        // chấm, nên nói thẳng ra là còn thiếu.
+        var answeredButUngraded = ungraded.stream()
+            .filter(response -> !missingResponseBackfillService.isSilentAnswer(response))
+            .count();
+        if (answeredButUngraded > 0) {
+            throw new IllegalStateException(
+                "Còn " + answeredButUngraded + " câu thí sinh có trả lời nhưng chưa được chấm. "
+                    + "Hãy chấm những câu đó trước khi giữ nguyên điểm."
+            );
+        }
+
         var filledAny = false;
-        for (var response : responses) {
-            if (!evaluatedResponseIds.contains(response.getId())) {
-                missingResponseBackfillService.recordSilentAnswer(
-                    response.getId(), response.getPaperItemId());
-                filledAny = true;
-            }
+        for (var response : ungraded) {
+            filledAny |= missingResponseBackfillService.recordSilentAnswer(
+                response.getId(), response.getPaperItemId());
         }
 
         // Chỉ tính lại khi thật sự vừa điền -- bài đã chấm đủ giữ nguyên đường cũ, không đụng

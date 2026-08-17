@@ -15,6 +15,7 @@ import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
@@ -32,6 +33,7 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
     private final QuestionRepository questionRepository;
     private final ExamItemResponseRepository examItemResponseRepository;
     private final ExamItemEvaluationRepository examItemEvaluationRepository;
+    private final ExamPaperItemRepository examPaperItemRepository;
 
     public ViewExamSessionResultUseCase(
             ExamCandidateResultRepository examCandidateResultRepository,
@@ -42,7 +44,8 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
             ExamResultAccessService examResultAccessService,
             QuestionRepository questionRepository,
             ExamItemResponseRepository examItemResponseRepository,
-            ExamItemEvaluationRepository examItemEvaluationRepository) {
+            ExamItemEvaluationRepository examItemEvaluationRepository,
+            ExamPaperItemRepository examPaperItemRepository) {
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examSessionResultCalculator = examSessionResultCalculator;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
@@ -52,6 +55,7 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
         this.questionRepository = questionRepository;
         this.examItemResponseRepository = examItemResponseRepository;
         this.examItemEvaluationRepository = examItemEvaluationRepository;
+        this.examPaperItemRepository = examPaperItemRepository;
     }
 
     /**
@@ -83,6 +87,60 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
                 item.questionId() == null ? null : texts.get(item.questionId()),
                 item.itemScore(),
                 item.weightedScore()
+            ))
+            .toList();
+    }
+
+    /**
+     * Danh sách câu khi CHƯA chấm xong -- dựng thẳng từ câu trả lời, không qua calculator.
+     *
+     * <p>Trước đây bài chưa chấm trả về {@code items = []}, và đó là toàn bộ lý do trang Xem kết
+     * quả trắng trơn sau khi gỡ vi phạm: không có item thì client không có {@code responseId} nào
+     * để hỏi chi tiết, nên nó KHÔNG GỌI truy vấn chi tiết lần nào -- bản vá fallback lượt nói ở
+     * {@code ViewExamItemResponseEvaluationUseCase} nằm sau một cánh cửa không ai mở.
+     *
+     * <p>Điểm để {@code null} vì chưa chấm thì thật sự chưa có điểm. Nhưng bản ghi tiếng nói và
+     * transcript KHÔNG phải điểm -- chúng là bằng chứng, và không có lý do gì bắt chờ chấm xong
+     * mới cho xem. Màn chấm vốn đã hiện chúng ngay từ đầu (JpaExamGradingQueryRepository
+     * LEFT JOIN sang evaluation); đây là kéo trang kết quả về cùng một giả định.
+     */
+    private java.util.List<ExamCandidateResultItemResponse> itemResponsesWithoutScores(
+            java.util.UUID sessionId, java.util.UUID paperId) {
+        var responseByPaperItemId = new java.util.HashMap<java.util.UUID, java.util.UUID>();
+        for (var response : examItemResponseRepository.findBySessionId(sessionId)) {
+            if (response.getPaperItemId() != null) {
+                responseByPaperItemId.putIfAbsent(response.getPaperItemId(), response.getId());
+            }
+        }
+        if (responseByPaperItemId.isEmpty() || paperId == null) {
+            return java.util.List.of();
+        }
+
+        // Đi theo ĐỀ chứ không theo response: giữ đúng thứ tự (section, order) mà calculator dùng,
+        // nên số "Câu 1, Câu 2" trên client không nhảy khi bài chuyển từ chưa chấm sang đã chấm.
+        var paperItems = examPaperItemRepository.findByPaperId(paperId).stream()
+            .filter(paperItem -> responseByPaperItemId.containsKey(paperItem.getId()))
+            .sorted(java.util.Comparator.comparingInt(paperItem -> paperItem.getOrder()))
+            .toList();
+        var questionIds = paperItems.stream()
+            .map(paperItem -> paperItem.getQuestionId())
+            .filter(id -> id != null)
+            .distinct()
+            .toList();
+        var texts = new java.util.HashMap<java.util.UUID, String>();
+        if (!questionIds.isEmpty()) {
+            for (var question : questionRepository.findByIdIn(questionIds)) {
+                texts.put(question.getId(), question.getQuestionText());
+            }
+        }
+        return paperItems.stream()
+            .map(paperItem -> new ExamCandidateResultItemResponse(
+                paperItem.getId(),
+                responseByPaperItemId.get(paperItem.getId()),
+                paperItem.getSectionId(),
+                paperItem.getQuestionId() == null ? null : texts.get(paperItem.getQuestionId()),
+                null,
+                null
             ))
             .toList();
     }
@@ -135,7 +193,14 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
             scoreVisible && calculated != null ? calculated.sections().stream()
                 .map(section -> new ExamCandidateResultSectionResponse(section.sectionId(), section.title(), section.score()))
                 .toList() : java.util.List.of(),
-            scoreVisible && calculated != null ? itemResponses(calculated.items()) : java.util.List.of()
+            // Chưa chấm xong (kể cả bài đang INVALID) thì vẫn trả danh sách câu, chỉ khuyết điểm
+            // -- xem itemResponsesWithoutScores. Vẫn nằm sau scoreVisible để giữ nguyên luật cũ:
+            // học sinh chưa được xem kết quả thì không thấy câu nào, y như trước.
+            scoreVisible
+                ? (calculated != null
+                    ? itemResponses(calculated.items())
+                    : itemResponsesWithoutScores(session.getId(), session.getPaperId()))
+                : java.util.List.of()
         );
     }
 

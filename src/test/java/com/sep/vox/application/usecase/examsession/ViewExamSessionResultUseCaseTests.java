@@ -31,6 +31,7 @@ import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
@@ -64,6 +65,7 @@ class ViewExamSessionResultUseCaseTests {
     private QuestionRepository questionRepository;
     private ExamItemResponseRepository examItemResponseRepository;
     private ExamItemEvaluationRepository examItemEvaluationRepository;
+    private ExamPaperItemRepository examPaperItemRepository;
     private ViewExamSessionResultUseCase useCase;
 
     @BeforeEach
@@ -77,6 +79,7 @@ class ViewExamSessionResultUseCaseTests {
         questionRepository = mock(QuestionRepository.class);
         examItemResponseRepository = mock(ExamItemResponseRepository.class);
         examItemEvaluationRepository = mock(ExamItemEvaluationRepository.class);
+        examPaperItemRepository = mock(ExamPaperItemRepository.class);
         useCase = new ViewExamSessionResultUseCase(
             examCandidateResultRepository,
             examSessionResultCalculator,
@@ -86,7 +89,8 @@ class ViewExamSessionResultUseCaseTests {
             examResultAccessService,
             questionRepository,
             examItemResponseRepository,
-            examItemEvaluationRepository
+            examItemEvaluationRepository,
+            examPaperItemRepository
         );
     }
 

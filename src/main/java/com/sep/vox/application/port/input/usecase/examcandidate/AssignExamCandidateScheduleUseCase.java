@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AssignExamCandidateScheduleCommand;
 import com.sep.vox.application.port.input.service.ExamPaperAutoAssigner;
+import com.sep.vox.application.port.input.service.ExamScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.ExamCandidateDto;
@@ -32,18 +33,21 @@ public class AssignExamCandidateScheduleUseCase
     private final ExamScheduleRepository examScheduleRepository;
     private final ExamPaperAutoAssigner examPaperAutoAssigner;
     private final ExamScheduleManageAccessService examScheduleManageAccessService;
+    private final ExamScheduleCandidateConflictValidator examScheduleCandidateConflictValidator;
 
     public AssignExamCandidateScheduleUseCase(
             ExamRepository examRepository,
             ExamCandidateRepository examCandidateRepository,
             ExamScheduleRepository examScheduleRepository,
             ExamPaperAutoAssigner examPaperAutoAssigner,
-            ExamScheduleManageAccessService examScheduleManageAccessService) {
+            ExamScheduleManageAccessService examScheduleManageAccessService,
+            ExamScheduleCandidateConflictValidator examScheduleCandidateConflictValidator) {
         this.examPaperAutoAssigner = examPaperAutoAssigner;
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examScheduleRepository = examScheduleRepository;
         this.examScheduleManageAccessService = examScheduleManageAccessService;
+        this.examScheduleCandidateConflictValidator = examScheduleCandidateConflictValidator;
     }
 
     @Override
@@ -81,6 +85,11 @@ public class AssignExamCandidateScheduleUseCase
         if (!ASSIGNABLE_STATUSES.contains(schedule.getStatus())) {
             throw new IllegalStateException("Chỉ có thể xếp thí sinh vào ca ở trạng thái nháp hoặc đã công bố");
         }
+
+        // Ca hiện tại của chính thí sinh này được validator tự loại, nên đổi ca trong cùng một kỳ
+        // thi (kể cả khi hai ca chồng giờ) vẫn chạy được.
+        examScheduleCandidateConflictValidator.requireCandidatesFree(
+            List.of(candidate), schedule.getStartDate(), schedule.getEndDate());
 
         candidate.assignToSchedule(schedule.getId(), now, currentUserId);
         // Gán đề mặc định luôn nếu mọi mã đề đã khoá, để không phải bấm thêm bước phân đề. Đề chưa

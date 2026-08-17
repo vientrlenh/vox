@@ -37,5 +37,18 @@ public interface ExamCandidateRepository {
     boolean existsByExamIdAndScheduleIdIsNotNull(UUID examId);
     Optional<ExamCandidate> findByScheduleIdAndStudentId(UUID scheduleId, UUID studentId);
     List<ExamCandidate> findActiveCandidates(UUID studentId, Instant now);
+
+    /**
+     * Với mỗi học sinh trong {@code studentIds}, ca thi (DRAFT/PUBLISHED) mà họ đã được xếp và giao
+     * thời gian với [start, end). Quét MỌI kỳ thi chứ không riêng kỳ thi đang mở: một học sinh không
+     * thể ngồi ở hai phòng cùng lúc. {@code excludeScheduleId} (nếu khác null) được loại khỏi phép
+     * kiểm tra. Học sinh rảnh thì không có mặt trong kết quả.
+     */
+    List<StudentScheduleConflict> findConflictsForStudents(
+            Collection<UUID> studentIds, Instant start, Instant end, UUID excludeScheduleId);
+
+    /** Một lần vướng lịch: học sinh {@code studentId} đã được xếp ca {@code scheduleId} chạy [start, end). */
+    record StudentScheduleConflict(UUID studentId, UUID scheduleId, Instant startDate, Instant endDate) {
+    }
 }
 

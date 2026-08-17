@@ -53,14 +53,43 @@ public interface SpringDataExamCandidateRepository extends JpaRepository<ExamCan
     Optional<ExamCandidateJpaEntity> findByScheduleIdAndStudentId(UUID scheduleId, UUID studentId);
 
     @Query("""
-        SELECT c 
-            FROM ExamCandidateJpaEntity c 
-        JOIN ExamScheduleJpaEntity s 
-            ON c.scheduleId = s.id 
-        WHERE c.studentId = :userId 
-            AND s.startDate <= :now 
+        SELECT c
+            FROM ExamCandidateJpaEntity c
+        JOIN ExamScheduleJpaEntity s
+            ON c.scheduleId = s.id
+        WHERE c.studentId = :userId
+            AND s.startDate <= :now
             AND s.endDate > :now
     """)
     List<ExamCandidateJpaEntity> findActiveCandidate(@Param("userId") UUID userId, @Param("now") Instant now);
+
+    /**
+     * Với mỗi học sinh trong {@code studentIds}, ca thi (DRAFT/PUBLISHED) mà họ đã được xếp và giao
+     * thời gian với [start, end).
+     *
+     * <p>Giờ nằm ở bảng cha nên phải join sang {@code exam_schedules}. Điều kiện giao khoảng dùng
+     * đúng dạng nửa mở như {@code SpringDataExamScheduleProctorRepository.countOverlappingAssignments}:
+     * hai ca kề nhau (ca trước kết thúc đúng lúc ca sau bắt đầu) KHÔNG tính là trùng.
+     *
+     * <p>Thí sinh đã miễn thi hoặc đã huỷ không vào phòng nên không chiếm chỗ -- cùng cách phân loại
+     * với {@code ExamCandidateStatus.isNonScorable}. Trạng thái lưu dạng chuỗi nên phải liệt kê
+     * literal ở đây; đổi enum thì phải sửa cả hai chỗ.
+     */
+    @Query("""
+        SELECT c.studentId, s.id, s.startDate, s.endDate
+        FROM ExamCandidateJpaEntity c
+        JOIN ExamScheduleJpaEntity s ON s.id = c.scheduleId
+        WHERE c.studentId IN :studentIds
+          AND c.status NOT IN ('EXEMPTED', 'CANCELLED')
+          AND s.status IN ('DRAFT', 'PUBLISHED')
+          AND (:excludeScheduleId IS NULL OR s.id <> :excludeScheduleId)
+          AND s.startDate < :end AND s.endDate > :start
+        ORDER BY s.startDate
+        """)
+    List<Object[]> findOverlappingScheduleAssignments(
+        @Param("studentIds") Collection<UUID> studentIds,
+        @Param("start") Instant start,
+        @Param("end") Instant end,
+        @Param("excludeScheduleId") UUID excludeScheduleId);
 }
 

@@ -21,6 +21,7 @@ import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamSchedul
 import com.sep.vox.application.port.input.usecase.examschedule.ViewExamSchedulesUseCase;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewMyExamSchedulesUseCase;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewProctorBusySlotsUseCase;
+import com.sep.vox.application.port.input.usecase.examschedule.ViewStudentBusySlotsUseCase;
 import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -35,6 +36,7 @@ class ExamScheduleControllerTests {
     private UpdateExamScheduleUseCase updateExamScheduleUseCase;
     private ExamScheduleProctorRepository examScheduleProctorRepository;
     private ExamCandidateRepository examCandidateRepository;
+    private ViewStudentBusySlotsUseCase viewStudentBusySlotsUseCase;
     private ExamScheduleController controller;
 
     private final UUID examId = UUID.randomUUID();
@@ -47,8 +49,10 @@ class ExamScheduleControllerTests {
         updateExamScheduleUseCase = mock(UpdateExamScheduleUseCase.class);
         examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
+        viewStudentBusySlotsUseCase = mock(ViewStudentBusySlotsUseCase.class);
         controller = new ExamScheduleController(viewExamSchedulesUseCase, viewMyExamSchedulesUseCase,
             updateExamScheduleUseCase, mock(ViewProctorBusySlotsUseCase.class),
+            viewStudentBusySlotsUseCase,
             examScheduleProctorRepository, examCandidateRepository);
     }
 

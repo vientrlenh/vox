@@ -28,8 +28,13 @@ public record CreateExamRequest(
     UUID languageId,
 
     UUID blueprintId,
+
+    @NotBlank(message = "Thời gian mở bài là bắt buộc")
     String openAt,
+
+    @NotBlank(message = "Thời gian đóng bài là bắt buộc")
     String closeAt,
+
     UUID assessmentPolicyId,
 
     @Min(value = 1, message = "Số lượt thi tối đa phải lớn hơn 0")

@@ -11,11 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.BulkAssignExamCandidateScheduleCommand;
 import com.sep.vox.application.port.input.service.ExamPaperAutoAssigner;
+import com.sep.vox.application.port.input.service.ExamScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
 import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -41,18 +43,21 @@ public class BulkAssignExamCandidateScheduleUseCase
     private final ExamScheduleRepository examScheduleRepository;
     private final ExamPaperAutoAssigner examPaperAutoAssigner;
     private final ExamScheduleManageAccessService examScheduleManageAccessService;
+    private final ExamScheduleCandidateConflictValidator examScheduleCandidateConflictValidator;
 
     public BulkAssignExamCandidateScheduleUseCase(
             ExamRepository examRepository,
             ExamCandidateRepository examCandidateRepository,
             ExamScheduleRepository examScheduleRepository,
             ExamPaperAutoAssigner examPaperAutoAssigner,
-            ExamScheduleManageAccessService examScheduleManageAccessService) {
+            ExamScheduleManageAccessService examScheduleManageAccessService,
+            ExamScheduleCandidateConflictValidator examScheduleCandidateConflictValidator) {
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examScheduleRepository = examScheduleRepository;
         this.examPaperAutoAssigner = examPaperAutoAssigner;
         this.examScheduleManageAccessService = examScheduleManageAccessService;
+        this.examScheduleCandidateConflictValidator = examScheduleCandidateConflictValidator;
     }
 
     @Override
@@ -71,8 +76,9 @@ public class BulkAssignExamCandidateScheduleUseCase
         // Khoá ca TRƯỚC, đụng thí sinh SAU — cùng thứ tự với AutoFillExamCandidatesUseCase để hai
         // luồng chạy song song không khoá chéo nhau.
         var scheduleId = input.scheduleId();
+        ExamSchedule schedule = null;
         if (scheduleId != null) {
-            var schedule = examScheduleRepository.findByIdForUpdate(scheduleId)
+            schedule = examScheduleRepository.findByIdForUpdate(scheduleId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
             if (!schedule.getExamId().equals(exam.getId())) {
                 throw new NotFoundException("Không tìm thấy ca thi");
@@ -87,6 +93,13 @@ public class BulkAssignExamCandidateScheduleUseCase
         // hỏng cả lượt thay vì âm thầm xếp một phần.
         if (candidates.size() != candidateIds.stream().distinct().count()) {
             throw new NotFoundException("Không tìm thấy thí sinh");
+        }
+
+        // Soát cả lô bằng MỘT query trước khi đụng vào ai: hỏng ở người thứ 25 mà 24 người trước đã
+        // đổi ca thì rollback lo được, nhưng message phải nêu đủ tên để người xếp lịch gỡ một lần.
+        if (schedule != null) {
+            examScheduleCandidateConflictValidator.requireCandidatesFree(
+                candidates, schedule.getStartDate(), schedule.getEndDate());
         }
 
         var now = Instant.now();

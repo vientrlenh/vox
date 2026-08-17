@@ -14,6 +14,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamCommand;
 import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
+import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -39,6 +40,7 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
     private final UserContextPort userContextPort;
     private final ExamStreamConfigResolver examStreamConfigResolver;
     private final ExamAssessmentPolicyValidator examAssessmentPolicyValidator;
+    private final SubscriptionPeriodGuardService subscriptionPeriodGuardService;
 
     public CreateExamUseCase(
             ExamRepository examRepository,
@@ -47,7 +49,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort,
             ExamStreamConfigResolver examStreamConfigResolver,
-            ExamAssessmentPolicyValidator examAssessmentPolicyValidator) {
+            ExamAssessmentPolicyValidator examAssessmentPolicyValidator,
+            SubscriptionPeriodGuardService subscriptionPeriodGuardService) {
         this.examRepository = examRepository;
         this.examBlueprintRepository = examBlueprintRepository;
         this.schoolUserRepository = schoolUserRepository;
@@ -55,6 +58,7 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
         this.userContextPort = userContextPort;
         this.examStreamConfigResolver = examStreamConfigResolver;
         this.examAssessmentPolicyValidator = examAssessmentPolicyValidator;
+        this.subscriptionPeriodGuardService = subscriptionPeriodGuardService;
     }
 
     @Override
@@ -88,7 +92,7 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
         var streamConfig = examStreamConfigResolver.resolve(
             command.requiredStreamTypes(), command.streamTypePermission());
 
-        validateOpenClose(command.openAt(), command.closeAt());
+        validateOpenClose(command.openAt(), command.closeAt(), currentSchoolId);
 
         var now = Instant.now();
         var exam = new Exam(
@@ -146,16 +150,21 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
         );
     }
 
-    /** Chỉ so được khi có đủ cả hai; thiếu một vế thì bỏ qua, kỳ thi tập trung cho phép để trống. */
-    private void validateOpenClose(String openAt, String closeAt) {
+    /**
+     * Bắt buộc cả hai vế: khung mở/đóng của kỳ thi là ràng buộc ngoài của mọi ca thi
+     * ({@code isScheduleWindowOutsideExamWindow}), nên để trống đồng nghĩa ca thi không bị chặn bởi
+     * bất cứ mốc nào -- kể cả hạn gói dịch vụ mà {@code SubscriptionPeriodGuardService} vừa áp.
+     */
+    private void validateOpenClose(String openAt, String closeAt, UUID schoolId) {
         var open = DateMapper.toInstant(openAt);
         var close = DateMapper.toInstant(closeAt);
         if (open == null || close == null) {
-            return;
+            throw new IllegalStateException("Kỳ thi phải có thời gian mở bài và đóng bài");
         }
         if (!open.isBefore(close)) {
             throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
+        subscriptionPeriodGuardService.requireWithinSubscriptionPeriod(schoolId, open, close);
     }
 
     private String examCodeOf(String code) {

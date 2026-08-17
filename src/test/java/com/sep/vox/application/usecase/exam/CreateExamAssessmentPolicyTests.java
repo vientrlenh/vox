@@ -3,6 +3,7 @@ package com.sep.vox.application.usecase.exam;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -21,6 +22,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamCommand;
 import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
+import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.exam.CreateExamUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
@@ -49,12 +51,14 @@ class CreateExamAssessmentPolicyTests {
 
     private AssessmentPolicyRepository assessmentPolicyRepository;
     private ExamRepository examRepository;
+    private SubscriptionPeriodGuardService subscriptionPeriodGuardService;
     private CreateExamUseCase useCase;
 
     @BeforeEach
     void setUp() {
         assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
         examRepository = mock(ExamRepository.class);
+        subscriptionPeriodGuardService = mock(SubscriptionPeriodGuardService.class);
         var schoolUserRepository = mock(SchoolUserRepository.class);
         var userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         var userContextPort = mock(UserContextPort.class);
@@ -66,7 +70,8 @@ class CreateExamAssessmentPolicyTests {
             userRoleQueryRepository,
             userContextPort,
             new ExamStreamConfigResolver(),
-            new ExamAssessmentPolicyValidator(assessmentPolicyRepository)
+            new ExamAssessmentPolicyValidator(assessmentPolicyRepository),
+            subscriptionPeriodGuardService
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(ADMIN_ID);
@@ -155,17 +160,50 @@ class CreateExamAssessmentPolicyTests {
         verify(examRepository, never()).save(any());
     }
 
-    /** Ô datetime để trống gửi lên chuỗi rỗng chứ không bỏ hẳn field — phải coi như không có. */
+    /**
+     * Ô datetime để trống gửi lên chuỗi rỗng chứ không bỏ hẳn field, nên chặn theo null là chưa đủ —
+     * phải chặn cả chuỗi rỗng, nếu không kỳ thi vẫn lọt vào DB với khung mở/đóng trống và mọi ca thi
+     * của nó thoát khỏi ràng buộc hạn gói.
+     */
     @Test
-    void should_treat_blank_open_at_as_absent() {
-        var result = useCase.execute(command(null, "", ""));
+    void should_reject_blank_open_at_and_close_at() {
+        assertThatThrownBy(() -> useCase.execute(command(null, "", "")))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Kỳ thi phải có thời gian mở bài và đóng bài");
+        verify(examRepository, never()).save(any());
+    }
 
-        assertThat(result.openAt()).isNull();
-        assertThat(result.closeAt()).isNull();
+    @Test
+    void should_reject_when_window_falls_outside_subscription_period() {
+        doThrow(new IllegalStateException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
+            .when(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(any(), any(), any());
+
+        assertThatThrownBy(() -> useCase.execute(command(null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("hạn gói dịch vụ");
+        verify(examRepository, never()).save(any());
+    }
+
+    @Test
+    void should_check_subscription_period_against_school_of_the_admin() {
+        useCase.execute(command(null));
+
+        verify(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(
+            SCHOOL_ID,
+            Instant.parse("2026-08-10T08:00:00Z"),
+            Instant.parse("2026-08-10T10:00:00Z"));
+    }
+
+    @Test
+    void should_reject_when_only_open_at_is_provided() {
+        assertThatThrownBy(() -> useCase.execute(command(null, "2026-08-10T08:00:00Z", null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Kỳ thi phải có thời gian mở bài và đóng bài");
+        verify(examRepository, never()).save(any());
     }
 
     private CreateExamCommand command(UUID assessmentPolicyId) {
-        return command(assessmentPolicyId, null, null);
+        return command(assessmentPolicyId, "2026-08-10T08:00:00Z", "2026-08-10T10:00:00Z");
     }
 
     private CreateExamCommand command(UUID assessmentPolicyId, String openAt, String closeAt) {

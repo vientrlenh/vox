@@ -5,9 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -23,6 +25,7 @@ import com.sep.vox.application.port.input.command.UpdateExamScheduleCommand;
 import com.sep.vox.application.port.input.service.ExamScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
+import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -56,6 +59,7 @@ class UpdateExamScheduleUseCaseTests {
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
     private UserContextPort userContextPort;
+    private SubscriptionPeriodGuardService subscriptionPeriodGuardService;
     private UpdateExamScheduleUseCase useCase;
 
     private final UUID userId = UUID.randomUUID();
@@ -81,13 +85,15 @@ class UpdateExamScheduleUseCaseTests {
         // như trước khi nó được tách ra khỏi use case.
         examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
+        subscriptionPeriodGuardService = mock(SubscriptionPeriodGuardService.class);
         useCase = new UpdateExamScheduleUseCase(
             examRepository, examScheduleRepository,
             new ExamScheduleRoomValidator(schoolRoomRepository, examScheduleRepository),
             new ExamScheduleProctorConflictValidator(examScheduleProctorRepository),
             new ExamScheduleCandidateConflictValidator(examCandidateRepository, mock(UserRepository.class)),
             examMemberRepository,
-            schoolUserRepository, userRoleQueryRepository, userContextPort);
+            schoolUserRepository, userRoleQueryRepository,
+            subscriptionPeriodGuardService, userContextPort);
 
         when(examCandidateRepository.findByScheduleId(any(UUID.class))).thenReturn(List.of());
         when(examCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
@@ -258,10 +264,68 @@ class UpdateExamScheduleUseCaseTests {
         verify(examRepository).save(exam);
     }
 
+    /**
+     * Sửa ca thi của bài kiểm tra trên lớp ghi ngược openAt/closeAt xuống exam, nên nó là một đường
+     * ghi khung mở/đóng khác — không soi hạn gói ở đây thì đổi giờ ca là lối vòng qua mặt ràng buộc
+     * mà Create/UpdateExamUseCase đang áp.
+     */
+    @Test
+    void should_reject_moving_class_test_schedule_outside_subscription_period() {
+        var exam = classTestExam();
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
+        doThrow(new IllegalStateException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
+            .when(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(any(), any(), any());
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("hạn gói dịch vụ");
+        verify(examScheduleRepository, never()).save(any());
+        verify(examRepository, never()).save(any());
+    }
+
+    @Test
+    void should_check_subscription_period_with_effective_window_of_the_class_test() {
+        var exam = classTestExam();
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
+
+        useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd));
+
+        verify(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(schoolId, newStart, newEnd);
+    }
+
+    /**
+     * Kỳ thi tập trung đi đường khác: ca thi đã bị ràng phải nằm TRONG khung mở/đóng của kỳ thi, mà
+     * khung đó đã được soi hạn gói lúc tạo/sửa kỳ thi — soi lại ở đây là thừa.
+     */
+    @Test
+    void should_not_check_subscription_period_for_centralized_schedule() {
+        when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
+        when(examScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId)))
+            .thenReturn(1);
+
+        useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd));
+
+        verifyNoInteractions(subscriptionPeriodGuardService);
+    }
+
     private Exam exam() {
         var exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
+        return exam;
+    }
+
+    private Exam classTestExam() {
+        var exam = exam();
+        exam.setKind(ExamKind.CLASS_TEST);
+        exam.setStatus(ExamStatus.DRAFT);
+        exam.setOpenAt(start);
+        exam.setCloseAt(end);
         return exam;
     }
 

@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.UpdateExamCommand;
+import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
@@ -68,6 +69,7 @@ class UpdateExamUseCaseTests {
     private UserRoleQueryRepository userRoleQueryRepository;
     private UserContextPort userContextPort;
     private ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
+    private SubscriptionPeriodGuardService subscriptionPeriodGuardService;
     private ExamScheduleProctorRepository examScheduleProctorRepository;
     private ExamCandidateRepository examCandidateRepository;
     private UpdateExamUseCase useCase;
@@ -88,6 +90,7 @@ class UpdateExamUseCaseTests {
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
         classTestTokenQuotaGuardService = mock(ClassTestTokenQuotaGuardService.class);
+        subscriptionPeriodGuardService = mock(SubscriptionPeriodGuardService.class);
         examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
         useCase = new UpdateExamUseCase(
@@ -101,7 +104,8 @@ class UpdateExamUseCaseTests {
             // nên phải soát đúng những luật mà UpdateExamScheduleUseCase soát.
             new ExamScheduleRoomValidator(mock(SchoolRoomRepository.class), examScheduleRepository),
             new ExamScheduleProctorConflictValidator(examScheduleProctorRepository),
-            new ExamScheduleCandidateConflictValidator(examCandidateRepository, mock(UserRepository.class)));
+            new ExamScheduleCandidateConflictValidator(examCandidateRepository, mock(UserRepository.class)),
+            subscriptionPeriodGuardService);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
@@ -223,6 +227,54 @@ class UpdateExamUseCaseTests {
         candidate.setScheduleId(scheduleId);
         candidate.setStatus(ExamCandidateStatus.ASSIGNED);
         return candidate;
+    }
+
+    // --- Khung mở/đóng phải nằm trong hạn gói dịch vụ của trường ---
+
+    /**
+     * Soi theo trường của CHÍNH bài kiểm tra chứ không phải trường người gọi: bài đã tồn tại nên
+     * schoolId của nó mới là phạm vi đúng (SCHOOL_ADMIN của trường khác không được mượn hạn gói
+     * trường mình để nới khung cho bài của trường kia).
+     */
+    @Test
+    void should_check_subscription_period_against_school_of_the_exam() {
+        var exam = classTest(3600);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        useCase.execute(command(open.toString(), close.toString()));
+
+        verify(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(schoolId, open, close);
+    }
+
+    @Test
+    void should_reject_when_new_window_falls_outside_subscription_period() {
+        var exam = classTest(3600);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        doThrow(new IllegalStateException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
+            .when(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(any(), any(), any());
+
+        assertThatThrownBy(() -> useCase.execute(command(open.toString(), close.toString())))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("hạn gói dịch vụ");
+        // Chặn TRƯỚC khi ghi: ca thi của bài trên lớp được đồng bộ theo khung này, để lọt là ca thi
+        // cũng lệch ra ngoài hạn gói theo.
+        verify(examRepository, never()).save(any());
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    /** Kỳ thi tập trung cũ còn thiếu mốc thì phải nhập đủ mới lưu được, không lặng lẽ bỏ qua. */
+    @Test
+    void should_reject_updating_centralized_exam_without_window() {
+        var exam = centralized(3600);
+        exam.setOpenAt(null);
+        exam.setCloseAt(null);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamCommand(
+                examId, "Tên mới", null, null, null, null, null, null, null, null, null, null, null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Kỳ thi phải có thời gian mở bài và đóng bài");
+        verify(examRepository, never()).save(any());
     }
 
     // --- Bài trên lớp đã publish: sửa duration/maxAttempt phải soi lại token quota ---
@@ -509,6 +561,10 @@ class UpdateExamUseCaseTests {
         exam.setSchoolId(schoolId);
         exam.setKind(kind);
         exam.setExamTimeDurationSecond(examTimeDurationSecond);
+        // Cả hai kind đều bắt buộc có khung mở/đóng, nên bài nào cũng phải có sẵn -- test nào cần
+        // khung khác thì tự ghi đè bằng setOpenAt/setCloseAt.
+        exam.setOpenAt(open);
+        exam.setCloseAt(close);
         return exam;
     }
 

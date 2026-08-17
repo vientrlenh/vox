@@ -27,6 +27,7 @@ import com.sep.vox.application.port.input.usecase.exam.CreateClassTestUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.support.SubscriptionPeriodGuards;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
@@ -90,6 +91,7 @@ class CreateClassTestAssessmentPolicyTests {
             new ExamStreamConfigResolver(),
             mock(ExamScheduleRoomValidator.class),
             mock(ExamScheduleProctorConflictValidator.class),
+            SubscriptionPeriodGuards.alwaysWithinPeriod(),
             userContextPort
         );
 

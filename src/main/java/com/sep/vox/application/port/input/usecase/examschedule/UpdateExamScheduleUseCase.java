@@ -12,6 +12,7 @@ import com.sep.vox.application.port.input.command.UpdateExamScheduleCommand;
 import com.sep.vox.application.port.input.service.ExamScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
+import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -37,6 +38,7 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
     private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
+    private final SubscriptionPeriodGuardService subscriptionPeriodGuardService;
     private final UserContextPort userContextPort;
 
     public UpdateExamScheduleUseCase(
@@ -48,7 +50,9 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
             ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
+            SubscriptionPeriodGuardService subscriptionPeriodGuardService,
             UserContextPort userContextPort) {
+        this.subscriptionPeriodGuardService = subscriptionPeriodGuardService;
         this.examRepository = examRepository;
         this.examScheduleRepository = examScheduleRepository;
         this.examScheduleRoomValidator = examScheduleRoomValidator;
@@ -114,6 +118,14 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
         // cho chúng chồng lên là lối lách y hệt.
         examScheduleCandidateConflictValidator.requireCandidatesFreeForNewWindow(
             schedule.getId(), effectiveStart, effectiveEnd);
+
+        // Với bài kiểm tra trên lớp, ca thi CHÍNH LÀ khung mở/đóng của bài (ghi ngược xuống exam ở
+        // dưới), nên sửa ca thi là một đường ghi openAt/closeAt khác -- không soi ở đây thì đổi giờ
+        // ca là lối vòng qua mặt ràng buộc hạn gói mà Create/UpdateExamUseCase đang áp.
+        if (isClassTest) {
+            subscriptionPeriodGuardService.requireWithinSubscriptionPeriod(
+                exam.getSchoolId(), effectiveStart, effectiveEnd);
+        }
 
         var now = Instant.now();
         if (isClassTest) {

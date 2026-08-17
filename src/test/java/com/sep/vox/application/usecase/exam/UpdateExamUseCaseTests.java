@@ -3,6 +3,8 @@ package com.sep.vox.application.usecase.exam;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -26,21 +28,33 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 import com.sep.vox.domain.model.exam.ExamSchedule;
+import com.sep.vox.domain.model.exam.ExamScheduleProctor;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.exam.ExamStreamTypePermission;
 import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
+import com.sep.vox.application.port.input.service.ExamScheduleCandidateConflictValidator;
+import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
+import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
+import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamCandidateRepository.StudentScheduleConflict;
 import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
+import com.sep.vox.domain.repository.SchoolRoomRepository;
+import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -54,6 +68,8 @@ class UpdateExamUseCaseTests {
     private UserRoleQueryRepository userRoleQueryRepository;
     private UserContextPort userContextPort;
     private ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
+    private ExamScheduleProctorRepository examScheduleProctorRepository;
+    private ExamCandidateRepository examCandidateRepository;
     private UpdateExamUseCase useCase;
 
     private final UUID userId = UUID.randomUUID();
@@ -72,13 +88,20 @@ class UpdateExamUseCaseTests {
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
         classTestTokenQuotaGuardService = mock(ClassTestTokenQuotaGuardService.class);
+        examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
+        examCandidateRepository = mock(ExamCandidateRepository.class);
         useCase = new UpdateExamUseCase(
             examRepository, examMemberRepository, examScheduleRepository,
             schoolUserRepository, userRoleQueryRepository,
             new ExamAssessmentPolicyValidator(mock(AssessmentPolicyRepository.class)),
             new ExamStreamConfigResolver(),
             userContextPort,
-            classTestTokenQuotaGuardService);
+            classTestTokenQuotaGuardService,
+            // Ba validator thật trên repository đã mock: sửa giờ bài trên lớp ghi thẳng xuống ca thi
+            // nên phải soát đúng những luật mà UpdateExamScheduleUseCase soát.
+            new ExamScheduleRoomValidator(mock(SchoolRoomRepository.class), examScheduleRepository),
+            new ExamScheduleProctorConflictValidator(examScheduleProctorRepository),
+            new ExamScheduleCandidateConflictValidator(examCandidateRepository, mock(UserRepository.class)));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
@@ -87,6 +110,10 @@ class UpdateExamUseCaseTests {
             .thenReturn(true);
         when(examRepository.existsSubmittedSessionByExamId(examId)).thenReturn(false);
         when(examRepository.save(any(Exam.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(examScheduleProctorRepository.findByScheduleId(any(UUID.class))).thenReturn(List.of());
+        when(examCandidateRepository.findByScheduleId(any(UUID.class))).thenReturn(List.of());
+        when(examCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
+            .thenReturn(List.of());
     }
 
     // --- CLASS_TEST: khung mở/đóng mới bị đồng bộ xuống ca thi, phải đủ dài ---
@@ -132,6 +159,70 @@ class UpdateExamUseCaseTests {
         assertThat(schedule.getStartDate()).isEqualTo(open);
         assertThat(schedule.getEndDate()).isEqualTo(close.plus(1, ChronoUnit.HOURS));
         verify(examScheduleRepository).save(schedule);
+    }
+
+    // --- Sửa giờ bài trên lớp ghi thẳng xuống ca thi, nên phải soát cả ba luật chống trùng ---
+
+    @Test
+    void should_reject_class_test_window_change_when_a_student_is_busy_in_the_new_window() {
+        var exam = classTest(3600);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, close);
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
+        var studentId = UUID.randomUUID();
+        when(examCandidateRepository.findByScheduleId(schedule.getId())).thenReturn(List.of(candidate(schedule.getId(), studentId)));
+        when(examCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
+            .thenReturn(List.of(new StudentScheduleConflict(studentId, UUID.randomUUID(), open, close)));
+
+        assertThatThrownBy(() -> useCase.execute(command(open.toString(), close.plus(1, ChronoUnit.HOURS).toString())))
+            .isInstanceOf(DuplicatedException.class)
+            .hasMessageContaining("đã có ca thi khác");
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    @Test
+    void should_reject_class_test_window_change_when_a_proctor_is_busy_in_the_new_window() {
+        var exam = classTest(3600);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, close);
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
+        var teacherId = UUID.randomUUID();
+        when(examScheduleProctorRepository.findByScheduleId(schedule.getId()))
+            .thenReturn(List.of(new ExamScheduleProctor(schedule.getId(), teacherId)));
+        when(examScheduleProctorRepository.existsOverlappingAssignment(
+            eq(teacherId), any(Instant.class), any(Instant.class), eq(schedule.getId()))).thenReturn(true);
+
+        assertThatThrownBy(() -> useCase.execute(command(open.toString(), close.plus(1, ChronoUnit.HOURS).toString())))
+            .isInstanceOf(DuplicatedException.class)
+            .hasMessageContaining("Giám thị");
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    @Test
+    void should_reject_class_test_window_change_when_the_room_is_taken() {
+        var exam = classTest(3600);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, close);
+        var roomId = UUID.randomUUID();
+        schedule.setSchoolRoomId(roomId);
+        when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
+        when(examScheduleRepository.existsOverlapping(
+            eq(roomId), any(Instant.class), any(Instant.class), eq(schedule.getId()))).thenReturn(true);
+
+        assertThatThrownBy(() -> useCase.execute(command(open.toString(), close.plus(1, ChronoUnit.HOURS).toString())))
+            .isInstanceOf(DuplicatedException.class)
+            .hasMessageContaining("Phòng học");
+        verify(examScheduleRepository, never()).save(any());
+    }
+
+    private ExamCandidate candidate(UUID scheduleId, UUID studentId) {
+        var candidate = new ExamCandidate();
+        candidate.setId(UUID.randomUUID());
+        candidate.setExamId(examId);
+        candidate.setStudentId(studentId);
+        candidate.setScheduleId(scheduleId);
+        candidate.setStatus(ExamCandidateStatus.ASSIGNED);
+        return candidate;
     }
 
     // --- Bài trên lớp đã publish: sửa duration/maxAttempt phải soi lại token quota ---

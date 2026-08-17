@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AutoFillExamCandidatesCommand;
 import com.sep.vox.application.port.input.service.ExamPaperAutoAssigner;
+import com.sep.vox.application.port.input.service.ExamScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.ExamCandidateDto;
@@ -38,18 +40,21 @@ public class AutoFillExamCandidatesUseCase
     private final ExamScheduleRepository examScheduleRepository;
     private final ExamPaperAutoAssigner examPaperAutoAssigner;
     private final ExamScheduleManageAccessService examScheduleManageAccessService;
+    private final ExamScheduleCandidateConflictValidator examScheduleCandidateConflictValidator;
 
     public AutoFillExamCandidatesUseCase(
             ExamRepository examRepository,
             ExamCandidateRepository examCandidateRepository,
             ExamScheduleRepository examScheduleRepository,
             ExamPaperAutoAssigner examPaperAutoAssigner,
-            ExamScheduleManageAccessService examScheduleManageAccessService) {
+            ExamScheduleManageAccessService examScheduleManageAccessService,
+            ExamScheduleCandidateConflictValidator examScheduleCandidateConflictValidator) {
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examScheduleRepository = examScheduleRepository;
         this.examPaperAutoAssigner = examPaperAutoAssigner;
         this.examScheduleManageAccessService = examScheduleManageAccessService;
+        this.examScheduleCandidateConflictValidator = examScheduleCandidateConflictValidator;
     }
 
     @Override
@@ -73,13 +78,15 @@ public class AutoFillExamCandidatesUseCase
             .toList();
 
         // BƯỚC 1 — Khoá TRƯỚC toàn bộ ca mục tiêu theo thứ tự ổn định, CHƯA đụng candidate.
-        var lockedScheduleIds = new ArrayList<UUID>();
+        // Giữ nguyên bản thể ĐÃ KHOÁ chứ không chỉ id: khung giờ dùng để soát trùng lịch phải là
+        // khung đọc dưới FOR UPDATE, không phải bản copy lấy trước khi khoá.
+        var lockedSchedules = new ArrayList<ExamSchedule>();
         for (var schedule : targetSchedules) {
             var locked = examScheduleRepository.findByIdForUpdate(schedule.getId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
-            lockedScheduleIds.add(locked.getId());
+            lockedSchedules.add(locked);
         }
-        if (lockedScheduleIds.isEmpty()) {
+        if (lockedSchedules.isEmpty()) {
             return List.of();
         }
 
@@ -91,10 +98,27 @@ public class AutoFillExamCandidatesUseCase
             return List.of();
         }
 
+        // BƯỚC 3 — Chia nhóm trước, soát trùng lịch từng nhóm theo ĐÚNG khung giờ ca của nhóm đó,
+        // rồi mới gán. Mỗi ca một khung giờ khác nhau nên soát cả lượt bằng một khung là sai. Không
+        // thể tự đụng nhau trong cùng lượt: unique (exam_id, student_id) nên mỗi học sinh chỉ xuất
+        // hiện một lần trong danh sách chưa gán.
+        var groupBySchedule = new LinkedHashMap<UUID, List<ExamCandidate>>();
+        for (int i = 0; i < unassigned.size(); i++) {
+            var target = lockedSchedules.get(i % lockedSchedules.size());
+            groupBySchedule.computeIfAbsent(target.getId(), key -> new ArrayList<>()).add(unassigned.get(i));
+        }
+        for (var target : lockedSchedules) {
+            var group = groupBySchedule.get(target.getId());
+            if (group != null) {
+                examScheduleCandidateConflictValidator.requireCandidatesFree(
+                    group, target.getStartDate(), target.getEndDate());
+            }
+        }
+
         var assigned = new ArrayList<ExamCandidate>();
         int i = 0;
         for (var candidate : unassigned) {
-            candidate.assignToSchedule(lockedScheduleIds.get(i % lockedScheduleIds.size()), now, currentUserId);
+            candidate.assignToSchedule(lockedSchedules.get(i % lockedSchedules.size()).getId(), now, currentUserId);
             assigned.add(candidate);
             i++;
         }

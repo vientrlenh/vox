@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamScheduleCommand;
+import com.sep.vox.application.port.input.service.ExamScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -32,6 +33,7 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
     private final ExamScheduleRepository examScheduleRepository;
     private final ExamScheduleRoomValidator examScheduleRoomValidator;
     private final ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator;
+    private final ExamScheduleCandidateConflictValidator examScheduleCandidateConflictValidator;
     private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
@@ -42,6 +44,7 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
             ExamScheduleRepository examScheduleRepository,
             ExamScheduleRoomValidator examScheduleRoomValidator,
             ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator,
+            ExamScheduleCandidateConflictValidator examScheduleCandidateConflictValidator,
             ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
@@ -50,6 +53,7 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
         this.examScheduleRepository = examScheduleRepository;
         this.examScheduleRoomValidator = examScheduleRoomValidator;
         this.examScheduleProctorConflictValidator = examScheduleProctorConflictValidator;
+        this.examScheduleCandidateConflictValidator = examScheduleCandidateConflictValidator;
         this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -59,7 +63,10 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
     @Override
     @Transactional
     public UUID execute(UpdateExamScheduleCommand input) {
-        var schedule = examScheduleRepository.findById(input.id())
+        // Khoá hàng ca ngay từ đầu: ba luật chống trùng dưới đây đều soát khung giờ MỚI, nên nếu
+        // một luồng khác đang xếp người vào chính ca này thì hai bên phải nối đuôi chứ không được
+        // cùng đọc một trạng thái cũ.
+        var schedule = examScheduleRepository.findByIdForUpdate(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
         var exam = examRepository.findById(schedule.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
@@ -102,6 +109,10 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
         // Dời giờ ca cũng phải soát giám thị, nếu không thì luật "không gác hai ca trùng giờ" bị
         // lách bằng cách gán lúc hai ca chưa đụng nhau rồi mới kéo chúng chồng lên.
         examScheduleProctorConflictValidator.requireProctorsFreeForNewWindow(
+            schedule.getId(), effectiveStart, effectiveEnd);
+        // Cùng lý do, đổi trục sang thí sinh: xếp học sinh lúc hai ca chưa đụng nhau rồi kéo giờ
+        // cho chúng chồng lên là lối lách y hệt.
+        examScheduleCandidateConflictValidator.requireCandidatesFreeForNewWindow(
             schedule.getId(), effectiveStart, effectiveEnd);
 
         var now = Instant.now();

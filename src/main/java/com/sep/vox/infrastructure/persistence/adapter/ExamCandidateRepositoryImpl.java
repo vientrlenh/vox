@@ -185,5 +185,20 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
             .map(ExamCandidateMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public List<StudentScheduleConflict> findConflictsForStudents(
+            Collection<UUID> studentIds, Instant start, Instant end, UUID excludeScheduleId) {
+        // Ca thi chưa đặt giờ thì không có gì để so — coi như không vướng, đúng như cách
+        // ExamScheduleRoomValidator bỏ qua khi thiếu dữ liệu.
+        if (studentIds == null || studentIds.isEmpty() || start == null || end == null) {
+            return List.of();
+        }
+        return springDataExamCandidateRepository
+            .findOverlappingScheduleAssignments(studentIds, start, end, excludeScheduleId).stream()
+            .map(row -> new StudentScheduleConflict(
+                (UUID) row[0], (UUID) row[1], (Instant) row[2], (Instant) row[3]))
+            .toList();
+    }
 }
 

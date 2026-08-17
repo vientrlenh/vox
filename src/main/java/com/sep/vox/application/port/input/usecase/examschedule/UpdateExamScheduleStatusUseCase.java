@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamScheduleStatusCommand;
+import com.sep.vox.application.port.input.service.ExamScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -35,6 +36,7 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
     private final ExamScheduleRepository examScheduleRepository;
     private final ExamScheduleProctorRepository examScheduleProctorRepository;
     private final ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator;
+    private final ExamScheduleCandidateConflictValidator examScheduleCandidateConflictValidator;
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamMemberRepository examMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
@@ -46,6 +48,7 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
             ExamScheduleRepository examScheduleRepository,
             ExamScheduleProctorRepository examScheduleProctorRepository,
             ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator,
+            ExamScheduleCandidateConflictValidator examScheduleCandidateConflictValidator,
             ExamCandidateRepository examCandidateRepository,
             ExamMemberRepository examMemberRepository,
             SchoolUserRepository schoolUserRepository,
@@ -55,6 +58,7 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
         this.examScheduleRepository = examScheduleRepository;
         this.examScheduleProctorRepository = examScheduleProctorRepository;
         this.examScheduleProctorConflictValidator = examScheduleProctorConflictValidator;
+        this.examScheduleCandidateConflictValidator = examScheduleCandidateConflictValidator;
         this.examCandidateRepository = examCandidateRepository;
         this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
@@ -159,19 +163,26 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
             throw new IllegalStateException("Ca thi đích không ở trạng thái hợp lệ");
         }
 
-        moveCandidates(schedule.getId(), target.getId(), currentUserId, now);
+        moveCandidates(schedule.getId(), target, currentUserId, now);
         moveProctors(schedule.getId(), target);
 
         schedule.setStatus(ExamScheduleStatus.MOVED);
         schedule.setMovedToScheduleId(targetScheduleId);
     }
 
-    private void moveCandidates(UUID sourceScheduleId, UUID targetScheduleId, UUID currentUserId, Instant now) {
+    private void moveCandidates(UUID sourceScheduleId, ExamSchedule target, UUID currentUserId, Instant now) {
         var candidates = examCandidateRepository.findByScheduleId(sourceScheduleId);
         if (candidates.isEmpty()) {
             return;
         }
-        candidates.forEach(candidate -> candidate.assignToSchedule(targetScheduleId, now, currentUserId));
+        // Ca đích có khung giờ khác ca nguồn nên phải soát lại, đối xứng với moveProctors: thí sinh
+        // đi theo có thể đâm vào một ca thứ ba ở kỳ thi khác. Ca nguồn tự bị loại (nó là ca hiện tại
+        // của mọi thí sinh ở đây) và cũng sắp thành MOVED. Soát TRỌN lô trước khi đụng vào ai để
+        // không để lại nửa vời trong bộ nhớ khi người thứ 40 mới là người vướng.
+        examScheduleCandidateConflictValidator.requireCandidatesFree(
+            candidates, target.getStartDate(), target.getEndDate());
+
+        candidates.forEach(candidate -> candidate.assignToSchedule(target.getId(), now, currentUserId));
         examCandidateRepository.saveAll(candidates);
     }
 

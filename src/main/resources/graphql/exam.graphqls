@@ -345,6 +345,17 @@ type ProctorBusySlot {
     endDate: String
 }
 
+# Một học sinh đang vướng lịch khi cân nhắc xếp vào `targetScheduleId`: đã được xếp ca
+# `busyScheduleId` chạy [startDate, endDate).
+# Chỉ để làm mờ sẵn lựa chọn bị trùng ở màn xếp thí sinh — luật chặn thật chạy lúc ghi.
+type StudentBusySlot {
+    studentId: ID!
+    targetScheduleId: ID!
+    busyScheduleId: ID!
+    startDate: String
+    endDate: String
+}
+
 type ExamCandidate {
     id: ID!
     examId: ID!
@@ -751,6 +762,7 @@ extend type Query {
     examSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
     myExamSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
     proctorBusySlots(scheduleId: ID!, teacherIds: [ID!]!): [ProctorBusySlot!]!
+    studentBusySlots(scheduleIds: [ID!]!, studentIds: [ID!]!): [StudentBusySlot!]!
 
     examCandidates(examId: ID!, scheduleId: ID, status: ExamCandidateStatus): [ExamCandidate!]!
 

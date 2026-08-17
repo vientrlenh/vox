@@ -3,6 +3,7 @@ package com.sep.vox.application.usecase.examschedule;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -19,24 +20,30 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.UpdateExamScheduleCommand;
+import com.sep.vox.application.port.input.service.ExamScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleProctor;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamCandidateRepository.StudentScheduleConflict;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.UserRepository;
 
 class UpdateExamScheduleUseCaseTests {
 
@@ -44,6 +51,7 @@ class UpdateExamScheduleUseCaseTests {
     private ExamScheduleRepository examScheduleRepository;
     private SchoolRoomRepository schoolRoomRepository;
     private ExamScheduleProctorRepository examScheduleProctorRepository;
+    private ExamCandidateRepository examCandidateRepository;
     private ExamMemberRepository examMemberRepository;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
@@ -72,13 +80,18 @@ class UpdateExamScheduleUseCaseTests {
         // Validator thật chạy trên hai repository đã mock: luật kiểm tra phòng vẫn được test đúng
         // như trước khi nó được tách ra khỏi use case.
         examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
+        examCandidateRepository = mock(ExamCandidateRepository.class);
         useCase = new UpdateExamScheduleUseCase(
             examRepository, examScheduleRepository,
             new ExamScheduleRoomValidator(schoolRoomRepository, examScheduleRepository),
             new ExamScheduleProctorConflictValidator(examScheduleProctorRepository),
+            new ExamScheduleCandidateConflictValidator(examCandidateRepository, mock(UserRepository.class)),
             examMemberRepository,
             schoolUserRepository, userRoleQueryRepository, userContextPort);
 
+        when(examCandidateRepository.findByScheduleId(any(UUID.class))).thenReturn(List.of());
+        when(examCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
+            .thenReturn(List.of());
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of());
@@ -89,7 +102,7 @@ class UpdateExamScheduleUseCaseTests {
 
     @Test
     void should_update_draft_schedule_time() {
-        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
         when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
         when(examScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId)))
             .thenReturn(1);
@@ -102,7 +115,7 @@ class UpdateExamScheduleUseCaseTests {
 
     @Test
     void should_reject_when_schedule_not_draft() {
-        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.PUBLISHED)));
+        when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.PUBLISHED)));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
             .isInstanceOf(IllegalStateException.class);
@@ -111,7 +124,7 @@ class UpdateExamScheduleUseCaseTests {
 
     @Test
     void should_reject_when_new_time_overlaps() {
-        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
         when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
@@ -126,7 +139,7 @@ class UpdateExamScheduleUseCaseTests {
     @Test
     void should_reject_moving_schedule_when_proctor_busy_in_new_window() {
         var teacherId = UUID.randomUUID();
-        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
         when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
         when(examScheduleProctorRepository.findByScheduleId(scheduleId))
             .thenReturn(List.of(new ExamScheduleProctor(scheduleId, teacherId)));
@@ -139,9 +152,54 @@ class UpdateExamScheduleUseCaseTests {
         verify(examScheduleRepository, never()).updateAtomic(any(), any(), any(), any(), any(), any());
     }
 
+    /** Cùng lỗ đó, đổi trục sang thí sinh: xếp học sinh lúc chưa đụng, rồi kéo giờ cho chồng lên. */
+    @Test
+    void should_reject_moving_schedule_when_student_busy_in_new_window() {
+        var candidate = candidateOfSchedule();
+        when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
+        when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(candidate));
+        when(examCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
+            .thenReturn(List.of(new StudentScheduleConflict(
+                candidate.getStudentId(), UUID.randomUUID(), newStart, newEnd)));
+
+        assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
+            .isInstanceOf(DuplicatedException.class)
+            .hasMessageContaining("đã có ca thi khác");
+        verify(examScheduleRepository, never()).updateAtomic(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void should_ignore_candidates_of_the_schedule_being_moved() {
+        // Thí sinh của chính ca đang đổi giờ dĩ nhiên "bận" ở ca đó — không được tự chặn mình.
+        var candidate = candidateOfSchedule();
+        when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
+        when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(candidate));
+        when(examCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
+            .thenReturn(List.of(new StudentScheduleConflict(
+                candidate.getStudentId(), scheduleId, newStart, newEnd)));
+        when(examScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId)))
+            .thenReturn(1);
+
+        var result = useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd));
+
+        assertThat(result).isEqualTo(scheduleId);
+    }
+
+    private ExamCandidate candidateOfSchedule() {
+        var candidate = new ExamCandidate();
+        candidate.setId(UUID.randomUUID());
+        candidate.setExamId(examId);
+        candidate.setStudentId(UUID.randomUUID());
+        candidate.setScheduleId(scheduleId);
+        candidate.setStatus(ExamCandidateStatus.ASSIGNED);
+        return candidate;
+    }
+
     @Test
     void should_reject_when_atomic_update_affects_no_rows() {
-        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
         when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
         when(examScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId)))
             .thenReturn(0);
@@ -156,7 +214,7 @@ class UpdateExamScheduleUseCaseTests {
         // Khung giờ mới dài 2 tiếng nhưng thời gian làm bài là 3 tiếng.
         exam.setExamTimeDurationSecond(3 * 3600);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
             .isInstanceOf(IllegalArgumentException.class)
@@ -170,7 +228,7 @@ class UpdateExamScheduleUseCaseTests {
         exam.setOpenAt(start);
         exam.setCloseAt(end);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
 
         // newStart/newEnd là ngày hôm sau, nằm ngoài khung mở/đóng của kỳ thi.
         assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
@@ -189,7 +247,7 @@ class UpdateExamScheduleUseCaseTests {
         exam.setOpenAt(start);
         exam.setCloseAt(end);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
+        when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
         when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
 
         var result = useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd));

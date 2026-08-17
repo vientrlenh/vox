@@ -12,6 +12,9 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamCommand;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
+import com.sep.vox.application.port.input.service.ExamScheduleCandidateConflictValidator;
+import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
+import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -41,6 +44,9 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
     private final ExamStreamConfigResolver examStreamConfigResolver;
     private final UserContextPort userContextPort;
     private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
+    private final ExamScheduleRoomValidator examScheduleRoomValidator;
+    private final ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator;
+    private final ExamScheduleCandidateConflictValidator examScheduleCandidateConflictValidator;
 
     public UpdateExamUseCase(
             ExamRepository examRepository,
@@ -51,9 +57,15 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             ExamAssessmentPolicyValidator examAssessmentPolicyValidator,
             ExamStreamConfigResolver examStreamConfigResolver,
             UserContextPort userContextPort,
-            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService) {
+            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService,
+            ExamScheduleRoomValidator examScheduleRoomValidator,
+            ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator,
+            ExamScheduleCandidateConflictValidator examScheduleCandidateConflictValidator) {
         this.examAssessmentPolicyValidator = examAssessmentPolicyValidator;
         this.examStreamConfigResolver = examStreamConfigResolver;
+        this.examScheduleRoomValidator = examScheduleRoomValidator;
+        this.examScheduleProctorConflictValidator = examScheduleProctorConflictValidator;
+        this.examScheduleCandidateConflictValidator = examScheduleCandidateConflictValidator;
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.examScheduleRepository = examScheduleRepository;
@@ -157,9 +169,22 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         return ExamDtoMapper.toDto(examRepository.save(exam));
     }
 
+    /**
+     * Đổi khung mở/đóng của bài kiểm tra trên lớp ghi THẲNG giờ mới xuống ca thi, không đi qua
+     * {@code UpdateExamScheduleUseCase}. Nên phải soát đúng những luật mà use case kia soát — nếu
+     * không, sửa giờ ở màn kỳ thi trở thành đường vòng qua mặt cả ba luật chống trùng (phòng bị đặt
+     * hai ca, giáo viên bị gác hai ca, học sinh bị xếp hai ca).
+     */
     private void syncClassTestDraftSchedules(com.sep.vox.domain.model.exam.Exam exam, java.util.UUID currentUserId, Instant now) {
         for (var schedule : examScheduleRepository.findByExamId(exam.getId())) {
             if (schedule.getStatus() == ExamScheduleStatus.DRAFT || schedule.getStatus() == ExamScheduleStatus.PUBLISHED) {
+                examScheduleRoomValidator.requireNoOverlap(
+                    schedule.getSchoolRoomId(), exam.getOpenAt(), exam.getCloseAt(), schedule.getId());
+                examScheduleProctorConflictValidator.requireProctorsFreeForNewWindow(
+                    schedule.getId(), exam.getOpenAt(), exam.getCloseAt());
+                examScheduleCandidateConflictValidator.requireCandidatesFreeForNewWindow(
+                    schedule.getId(), exam.getOpenAt(), exam.getCloseAt());
+
                 schedule.setStartDate(exam.getOpenAt());
                 schedule.setEndDate(exam.getCloseAt());
                 schedule.setUpdatedAt(now);

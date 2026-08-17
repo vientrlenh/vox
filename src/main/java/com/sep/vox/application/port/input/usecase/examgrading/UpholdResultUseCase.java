@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -7,6 +10,7 @@ import com.sep.vox.application.port.input.command.GradingDecisionCommand;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.examgrading.GradingActionResponse;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.GradingOutcome;
 import com.sep.vox.domain.model.exam.GradingRoundPolicy;
 import com.sep.vox.domain.model.exam.GradingRoundType;
@@ -70,21 +74,72 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
         }
 
         var result = prepared.context().candidateResult();
+        var targetStatus = GradingRoundPolicy.resultStatusAfter(
+            prepared.roundType(), GradingOutcome.UPHELD);
 
-        // "Giữ nguyên điểm" trên một câu CHƯA có bản chấm nào nghĩa là giữ nguyên con số rỗng.
-        // Câu thí sinh không nói gì thì ghi thẳng 0 rồi mới chốt; câu có nói thì chặn (xem bên dưới).
+        // Rào "phải chấm đủ" bên dưới CHỈ áp cho vòng nào mà giữ nguyên đồng nghĩa với CÔNG BỐ
+        // (INITIAL, APPEAL -- xem ma trận ở GradingRoundPolicy). Đó là chỗ điểm thiếu lọt ra
+        // tới học sinh, nên cũng là chỗ duy nhất đáng chặn.
         //
-        // Đo được 2026-08-17 trên phiên 01a00e64: bài 2 câu, 0 evaluation, bấm Uphold ở vòng
-        // INITIAL đẩy kết quả sang RELEASED với total_score = NULL -- bài đã CÔNG BỐ mà không
-        // có điểm. Trang Xem kết quả thì vỡ luôn vì calculator gặp câu thiếu evaluation.
-        //
-        // Dùng lại recordSilentAnswer (0 điểm, không gọi LLM) thay vì thêm luật mới: đó đã là
-        // cách hệ xử lý "không có nội dung để chấm" ở đường nộp bài.
-        var responses = examItemResponseRepository.findBySessionId(result.getSessionId());
+        // Vòng REMEDIATION đứng ngoài: bài ở đó đang INVALID và giữ nguyên INVALID (targetStatus
+        // null), giữ nguyên nghĩa là XÁC NHẬN VI PHẠM chứ không phải giữ một con điểm. Bài bị
+        // buộc kết thúc ngay trong lúc thi thì theo thiết kế không có evaluation nào
+        // (SubmitExamSessionUseCase thoát sớm ở nhánh blockedAt), nên rào này bắt trúng CHÍNH
+        // những bài mà vòng REMEDIATION sinh ra để xử lý: giáo viên không chấm được (không có
+        // gì để chấm), không giữ nguyên được, phân công thành ngõ cụt không có lối đóng.
+        // Hậu kiểm (SPOT_CHECK) cũng đứng ngoài vì bài vốn đã RELEASED -- chặn ở đó không thu
+        // hồi lại được gì, chỉ khoá nốt người đang soi bài.
+        var publishesResult = targetStatus == ExamCandidateResultStatus.RELEASED;
+
+        var filledAny = publishesResult && fillSilentAnswersOrRefuse(result.getSessionId());
+
+        // Chỉ tính lại khi thật sự vừa điền -- bài đã chấm đủ giữ nguyên đường cũ, không đụng
+        // tới điểm đang có.
+        var finalResult = result;
+        if (filledAny) {
+            finalResult = upsertExamCandidateResultUseCase.execute(
+                result.getSessionId(),
+                targetStatus == null ? result.getStatus() : targetStatus);
+        }
+
+        gradingActionSupport.finish(prepared, finalResult);
+
+        return new GradingActionResponse(
+            command.assignmentId(),
+            finalResult.getId(),
+            GradingOutcome.UPHELD.name(),
+            finalResult.getStatus() == null ? null : finalResult.getStatus().name(),
+            finalResult.getTotalScore(),
+            null
+        );
+    }
+
+    /**
+     * Lấp nốt các câu chưa có bản chấm trước khi bài được công bố, hoặc từ chối nếu không lấp
+     * được. CHỈ gọi ở vòng mà giữ nguyên = công bố.
+     *
+     * <p>"Giữ nguyên điểm" trên một câu CHƯA có bản chấm nào nghĩa là giữ nguyên con số rỗng.
+     * Câu thí sinh không nói gì thì ghi thẳng 0 rồi mới chốt; câu có nói thì chặn.
+     *
+     * <p>Đo được 2026-08-17 trên phiên 01a00e64: bài 2 câu, 0 evaluation, bấm Uphold ở vòng
+     * INITIAL đẩy kết quả sang RELEASED với {@code total_score = NULL} -- bài đã CÔNG BỐ mà
+     * không có điểm. Trang Xem kết quả thì vỡ luôn vì calculator gặp câu thiếu evaluation.
+     *
+     * <p>Dùng lại {@code recordSilentAnswer} (0 điểm, không gọi LLM) thay vì thêm luật mới: đó
+     * đã là cách hệ xử lý "không có nội dung để chấm" ở đường nộp bài.
+     *
+     * @return true nếu vừa ghi thêm bản chấm 0 -- tức tổng điểm cần được tính lại
+     * @throws IllegalStateException khi còn câu thí sinh CÓ trả lời mà chưa ai chấm
+     */
+    private boolean fillSilentAnswersOrRefuse(UUID sessionId) {
+        var responses = examItemResponseRepository.findBySessionId(sessionId);
+        if (responses.isEmpty()) {
+            return false;
+        }
         var evaluatedResponseIds = examItemEvaluationRepository
             .findByResponseIdIn(responses.stream().map(response -> response.getId()).toList()).stream()
             .map(evaluation -> evaluation.getResponseId())
-            .collect(java.util.stream.Collectors.toSet());
+            .collect(Collectors.toSet());
         var ungraded = responses.stream()
             .filter(response -> !evaluatedResponseIds.contains(response.getId()))
             .toList();
@@ -116,27 +171,6 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
             filledAny |= missingResponseBackfillService.recordSilentAnswer(
                 response.getId(), response.getPaperItemId());
         }
-
-        // Chỉ tính lại khi thật sự vừa điền -- bài đã chấm đủ giữ nguyên đường cũ, không đụng
-        // tới điểm đang có.
-        var finalResult = result;
-        if (filledAny) {
-            var targetStatus = GradingRoundPolicy.resultStatusAfter(
-                prepared.roundType(), GradingOutcome.UPHELD);
-            finalResult = upsertExamCandidateResultUseCase.execute(
-                result.getSessionId(),
-                targetStatus == null ? result.getStatus() : targetStatus);
-        }
-
-        gradingActionSupport.finish(prepared, finalResult);
-
-        return new GradingActionResponse(
-            command.assignmentId(),
-            finalResult.getId(),
-            GradingOutcome.UPHELD.name(),
-            finalResult.getStatus() == null ? null : finalResult.getStatus().name(),
-            finalResult.getTotalScore(),
-            null
-        );
+        return filledAny;
     }
 }

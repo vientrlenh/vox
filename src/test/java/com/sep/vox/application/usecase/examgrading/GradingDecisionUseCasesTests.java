@@ -25,7 +25,9 @@ import com.sep.vox.application.port.input.command.GradingDecisionCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
+import com.sep.vox.application.port.input.service.MissingResponseBackfillService;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
+import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ClearInvalidResultUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.DeclineGradingAssignmentUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.InvalidateResultUseCase;
@@ -35,12 +37,15 @@ import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
+import com.sep.vox.domain.model.exam.ExamItemResponse;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.GradingOutcome;
 import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
+import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.support.OutboxTestSupport;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
@@ -59,6 +64,10 @@ class GradingDecisionUseCasesTests {
     private ExamCandidateRepository examCandidateRepository;
     private ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private ExamSessionRepository examSessionRepository;
+    private ExamItemResponseRepository examItemResponseRepository;
+    private ExamItemEvaluationRepository examItemEvaluationRepository;
+    private MissingResponseBackfillService missingResponseBackfillService;
+    private UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
     private OutboxRepository outboxRepository;
     private GradingActionSupport support;
 
@@ -73,6 +82,7 @@ class GradingDecisionUseCasesTests {
     private final UUID studentId = UUID.randomUUID();
     private final UUID candidateResultId = UUID.randomUUID();
     private final UUID assignmentId = UUID.randomUUID();
+    private final UUID sessionId = UUID.randomUUID();
 
     private ExamSession session;
     private ExamCandidate candidate;
@@ -97,15 +107,19 @@ class GradingDecisionUseCasesTests {
             outboxRepository,
             jsonSerializationPort);
 
-        // Bài trong bộ test này luôn đã có evaluation, nên nhánh điền 0 của Uphold không chạy;
-        // mock rỗng là đủ và giữ nguyên hành vi các ca đang kiểm.
+        // Mặc định bài đã chấm đủ (repo trả rỗng), nên nhánh điền 0 của Uphold không chạy;
+        // ca nào cần bài còn câu chưa chấm thì gọi `givenAnsweredButUngradedItem()`.
+        examItemResponseRepository = mock(ExamItemResponseRepository.class);
+        examItemEvaluationRepository = mock(ExamItemEvaluationRepository.class);
+        missingResponseBackfillService = mock(MissingResponseBackfillService.class);
+        upsertExamCandidateResultUseCase = mock(UpsertExamCandidateResultUseCase.class);
         uphold = new UpholdResultUseCase(
             support,
             examSessionRepository,
-            mock(com.sep.vox.domain.repository.ExamItemResponseRepository.class),
-            mock(com.sep.vox.domain.repository.ExamItemEvaluationRepository.class),
-            mock(com.sep.vox.application.port.input.service.MissingResponseBackfillService.class),
-            mock(com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase.class));
+            examItemResponseRepository,
+            examItemEvaluationRepository,
+            missingResponseBackfillService,
+            upsertExamCandidateResultUseCase);
         invalidate = new InvalidateResultUseCase(support, outboxRepository, jsonSerializationPort);
         decline = new DeclineGradingAssignmentUseCase(support, outboxRepository, jsonSerializationPort);
         clearInvalid = new ClearInvalidResultUseCase(
@@ -126,6 +140,7 @@ class GradingDecisionUseCasesTests {
         var result = new ExamCandidateResult();
         result.setId(candidateResultId);
         result.setCandidateId(candidateId);
+        result.setSessionId(sessionId);
         result.setStatus(status);
         result.setTotalScore(new BigDecimal("6.00"));
 
@@ -140,6 +155,20 @@ class GradingDecisionUseCasesTests {
 
     private GradingDecisionCommand command(String reason) {
         return new GradingDecisionCommand(assignmentId, reason);
+    }
+
+    /**
+     * Một câu thí sinh ĐÃ nói nhưng chưa ai chấm — đúng tình trạng của bài bị buộc kết thúc
+     * ngay trong lúc thi: response còn nguyên, evaluation thì chưa bao giờ có.
+     */
+    private ExamItemResponse givenAnsweredButUngradedItem() {
+        var response = new ExamItemResponse(
+            UUID.randomUUID(), sessionId, UUID.randomUUID(), "s3://audio", 41,
+            "I usually study at the library.", null, Instant.now());
+        when(examItemResponseRepository.findBySessionId(sessionId)).thenReturn(java.util.List.of(response));
+        when(examItemEvaluationRepository.findByResponseIdIn(any())).thenReturn(java.util.List.of());
+        when(missingResponseBackfillService.isSilentAnswer(response)).thenReturn(false);
+        return response;
     }
 
     private <T> T capturePayload(String eventType, Class<T> type) {
@@ -180,6 +209,37 @@ class GradingDecisionUseCasesTests {
         assertThat(session.isFlagged()).isTrue();
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.INVALID);
         verify(examSessionRepository, never()).save(any());
+    }
+
+    @Test
+    void should_refuse_to_release_a_first_round_paper_that_still_has_answered_but_ungraded_items() {
+        var result = given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
+        givenAnsweredButUngradedItem();
+
+        // Giữ nguyên ở vòng này CÔNG BỐ bài — công bố một bài còn câu chưa chấm là công bố
+        // điểm thiếu, đúng lỗi đã đo được trên phiên 01a00e64.
+        assertThatThrownBy(() -> uphold.execute(command("AI chấm đúng")))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("chưa được chấm");
+
+        assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.PENDING_REVIEW);
+    }
+
+    @Test
+    void should_let_remediation_uphold_a_paper_whose_items_were_never_graded() {
+        var result = given(GradingRoundType.REMEDIATION, ExamCandidateResultStatus.INVALID);
+        givenAnsweredButUngradedItem();
+
+        var response = uphold.execute(command("Xác nhận vi phạm"));
+
+        // Bài bị vô hiệu ngay trong lúc thi thì KHÔNG có câu nào được chấm — mà giữ nguyên ở
+        // vòng này chỉ xác nhận vô hiệu, không công bố gì. Đòi chấm đủ trước là khoá cứng
+        // giáo viên trong một phân công không có lối đóng.
+        assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.INVALID);
+        assertThat(response.outcome()).isEqualTo(GradingOutcome.UPHELD.name());
+        // Bài đứng yên ở INVALID nên không có gì để điền hay tính lại.
+        verify(missingResponseBackfillService, never()).recordSilentAnswer(any(), any());
+        verify(upsertExamCandidateResultUseCase, never()).execute(any(), any());
     }
 
     // ---- INVALIDATE ---------------------------------------------------------

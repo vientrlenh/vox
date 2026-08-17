@@ -21,7 +21,10 @@ import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 
 /**
@@ -35,6 +38,7 @@ class ViewMyExamSchedulesUseCaseTests {
     private static final Instant NOW = Instant.now();
 
     private ViewMyExamSchedulesUseCase useCase;
+    private ExamRepository examRepository;
 
     private final List<ExamCandidate> candidates = new ArrayList<>();
     private final List<ExamSchedule> schedules = new ArrayList<>();
@@ -44,15 +48,40 @@ class ViewMyExamSchedulesUseCaseTests {
         var examCandidateRepository = mock(ExamCandidateRepository.class);
         var examScheduleRepository = mock(ExamScheduleRepository.class);
         var userContextPort = mock(UserContextPort.class);
+        examRepository = mock(ExamRepository.class);
 
-        useCase = new ViewMyExamSchedulesUseCase(examCandidateRepository, examScheduleRepository, userContextPort);
+        useCase = new ViewMyExamSchedulesUseCase(
+            examCandidateRepository, examScheduleRepository, examRepository, userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(STUDENT_ID);
         when(examCandidateRepository.findByStudentId(STUDENT_ID)).thenReturn(candidates);
+        // Ca chỉ hiện khi kỳ thi đã công bố; mọi ca trong bộ test này thuộc một kỳ thi
+        // SCHEDULED để các ca kiểm tra đúng thứ nó định kiểm là trạng thái CA.
+        var exam = mock(Exam.class);
+        when(exam.getId()).thenReturn(EXAM_ID);
+        when(exam.getStatus()).thenReturn(ExamStatus.SCHEDULED);
+        when(examRepository.findByIdIn(anyCollection())).thenReturn(List.of(exam));
         when(examScheduleRepository.findByIdIn(anyCollection())).thenAnswer(invocation -> {
             Collection<UUID> ids = invocation.getArgument(0);
             return schedules.stream().filter(schedule -> ids.contains(schedule.getId())).toList();
         });
+    }
+
+    /**
+     * Ca đã publish nhưng KỲ THI còn DRAFT thì vẫn phải giấu: hai trạng thái độc lập nhau, và
+     * lịch của một kỳ thi chưa công bố không được lộ cho thí sinh.
+     */
+    @Test
+    void should_hide_schedules_of_draft_exam() {
+        var draftExam = mock(Exam.class);
+        when(draftExam.getId()).thenReturn(EXAM_ID);
+        when(draftExam.getStatus()).thenReturn(ExamStatus.DRAFT);
+        when(examRepository.findByIdIn(anyCollection())).thenReturn(List.of(draftExam));
+        givenSchedule(ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(1800));
+
+        var result = useCase.execute(new ViewExamSchedulesQuery(null, null, null, null));
+
+        assertThat(result).isEmpty();
     }
 
     @Test

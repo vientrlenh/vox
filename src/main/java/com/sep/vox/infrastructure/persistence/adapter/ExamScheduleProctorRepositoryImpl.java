@@ -105,4 +105,9 @@ public class ExamScheduleProctorRepositoryImpl implements ExamScheduleProctorRep
                 (UUID) row[0], (UUID) row[1], (Instant) row[2], (Instant) row[3]))
             .toList();
     }
+
+    @Override
+    public boolean existsByExamIdAndTeacherId(UUID examId, UUID teacherId) {
+        return springDataExamScheduleProctorRepository.existsByExamIdAndTeacherId(examId, teacherId);
+    }
 }

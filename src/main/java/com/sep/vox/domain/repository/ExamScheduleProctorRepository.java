@@ -37,4 +37,6 @@ public interface ExamScheduleProctorRepository {
     /** Một lần vướng lịch: giáo viên {@code teacherId} đã gác ca {@code scheduleId} chạy [start, end). */
     record ProctorScheduleConflict(UUID teacherId, UUID scheduleId, Instant startDate, Instant endDate) {
     }
+
+    boolean existsByExamIdAndTeacherId(UUID examId, UUID teacherId);
 }

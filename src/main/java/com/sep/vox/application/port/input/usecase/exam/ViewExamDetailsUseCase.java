@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +17,7 @@ import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
@@ -25,18 +28,20 @@ public class ViewExamDetailsUseCase implements IUseCase<ViewExamDetailsQuery, Ex
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
+    private final ExamScheduleProctorRepository examScheduleProctorRepository;
 
     public ViewExamDetailsUseCase(
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
             UserContextPort userContextPort,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            UserRoleQueryRepository userRoleQueryRepository, ExamScheduleProctorRepository examScheduleProctorRepository) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
+        this.examScheduleProctorRepository = examScheduleProctorRepository;
     }
 
     @Override
@@ -61,11 +66,11 @@ public class ViewExamDetailsUseCase implements IUseCase<ViewExamDetailsQuery, Ex
     }
 
     private boolean hasAccess(
-            java.util.UUID examId,
-            java.util.UUID examSchoolId,
+            UUID examId,
+            UUID examSchoolId,
             ExamStatus examStatus,
-            java.util.UUID currentUserId,
-            java.util.UUID currentSchoolId,
+            UUID currentUserId,
+            UUID currentSchoolId,
             boolean schoolAdmin) {
         if (userContextPort.isSystemAdmin()) {
             return true;
@@ -76,6 +81,9 @@ public class ViewExamDetailsUseCase implements IUseCase<ViewExamDetailsQuery, Ex
         // Sau khi kỳ thi đã đóng, ai cùng trường cũng xem được — không cần là member nữa.
         if ((examStatus == ExamStatus.CLOSED || examStatus == ExamStatus.RESULTS_PUBLISHED)
                 && currentSchoolId != null && currentSchoolId.equals(examSchoolId)) {
+            return true;
+        }
+        if (examScheduleProctorRepository.existsByExamIdAndTeacherId(examId, currentUserId)) {
             return true;
         }
         return examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.CHAIR)

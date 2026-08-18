@@ -13,6 +13,7 @@ import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
 
 @Repository
 public class JpaMonitoredExamQueryRepository implements MonitoredExamQueryRepository {
@@ -35,28 +36,34 @@ public class JpaMonitoredExamQueryRepository implements MonitoredExamQueryReposi
     @Override
     public List<MonitoredExamSummary> findMonitorableByTeacher(
             UUID teacherId, UUID examId, Instant now, Instant leadUntil) {
-        return em.createQuery(select("""
+        return query("""
                 JOIN ExamScheduleProctorJpaEntity p
                     ON p.scheduleId = sch.id AND p.teacherId = :teacherId
-            """, ""), MonitoredExamSummary.class)
+            """, "", examId, now, leadUntil)
             .setParameter("teacherId", teacherId)
-            .setParameter("examId", examId)
-            .setParameter("now", now)
-            .setParameter("leadUntil", leadUntil)
-            .setParameter("statuses", MONITORABLE_STATUSES)
             .getResultList();
     }
 
     @Override
     public List<MonitoredExamSummary> findMonitorableBySchool(
             UUID schoolId, UUID examId, Instant now, Instant leadUntil) {
-        return em.createQuery(select("", " AND exam.schoolId = :schoolId\n"), MonitoredExamSummary.class)
+        return query("", " AND exam.schoolId = :schoolId\n", examId, now, leadUntil)
             .setParameter("schoolId", schoolId)
+            .getResultList();
+    }
+
+    /** Dựng câu và gán phần tham số dùng chung; hai đường đọc chỉ còn phải gán bằng chứng quyền. */
+    private TypedQuery<MonitoredExamSummary> query(
+            String accessJoin, String accessWhere, UUID examId, Instant now, Instant leadUntil) {
+        var query = em
+            .createQuery(select(accessJoin, accessWhere, leadUntil != null), MonitoredExamSummary.class)
             .setParameter("examId", examId)
             .setParameter("now", now)
-            .setParameter("leadUntil", leadUntil)
-            .setParameter("statuses", MONITORABLE_STATUSES)
-            .getResultList();
+            .setParameter("statuses", MONITORABLE_STATUSES);
+        if (leadUntil != null) {
+            query.setParameter("leadUntil", leadUntil);
+        }
+        return query;
     }
 
     /**
@@ -65,8 +72,17 @@ public class JpaMonitoredExamQueryRepository implements MonitoredExamQueryReposi
      * <p>Gộp lại vì phần còn lại -- cửa sổ thời gian, phép gom theo kỳ thi, cách đếm ca đang chạy --
      * phải giống hệt nhau: giám thị và school admin nhìn cùng một phòng thi thì không được thấy hai
      * con số khác nhau.
+     *
+     * @param windowed cửa sổ thời gian được GHÉP VÀO hay bỏ hẳn khỏi câu -- cố ý không viết
+     *                 {@code :leadUntil IS NULL OR ...} như chỗ lọc theo examId ngay bên dưới.
+     *                 Bản đầu viết vậy và nổ trên Postgres: {@code could not determine data type of
+     *                 parameter $8}. Driver pgjdbc gửi tham số thời gian KHÔNG kèm OID kiểu để server
+     *                 tự chọn giữa timestamp và timestamptz, nên một {@code $8 IS NULL} đứng trơ
+     *                 không còn gì để suy ra kiểu. {@code :examId IS NULL} thì sống vì UUID có OID
+     *                 riêng -- cùng một lối viết, chỉ khác kiểu Java, nên đây là cái bẫy im lặng:
+     *                 nó qua được cả compile lẫn lúc Hibernate dịch JPQL sang SQL.
      */
-    private String select(String accessJoin, String accessWhere) {
+    private String select(String accessJoin, String accessWhere, boolean windowed) {
         return """
             SELECT NEW com.sep.vox.application.query.dto.MonitoredExamSummary(
                 exam.id,
@@ -85,8 +101,8 @@ public class JpaMonitoredExamQueryRepository implements MonitoredExamQueryReposi
             + """
             WHERE sch.status IN :statuses
               AND (:examId IS NULL OR exam.id = :examId)
-              AND (:leadUntil IS NULL OR (sch.startDate <= :leadUntil AND sch.endDate > :now))
             """
+            + (windowed ? "  AND sch.startDate <= :leadUntil AND sch.endDate > :now\n" : "")
             + accessWhere
             + """
             GROUP BY exam.id, exam.code, exam.name, exam.kind, exam.status

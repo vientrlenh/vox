@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -11,6 +10,8 @@ import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.examgrading.GradingActionResponse;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.exam.ExamSession;
+import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.GradingOutcome;
 import com.sep.vox.domain.model.exam.GradingRoundPolicy;
 import com.sep.vox.domain.model.exam.GradingRoundType;
@@ -91,7 +92,7 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
         // hồi lại được gì, chỉ khoá nốt người đang soi bài.
         var publishesResult = targetStatus == ExamCandidateResultStatus.RELEASED;
 
-        var filledAny = publishesResult && fillSilentAnswersOrRefuse(result.getSessionId());
+        var filledAny = publishesResult && fillSilentAnswersOrRefuse(session);
 
         // Chỉ tính lại khi thật sự vừa điền -- bài đã chấm đủ giữ nguyên đường cũ, không đụng
         // tới điểm đang có.
@@ -131,7 +132,26 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
      * @return true nếu vừa ghi thêm bản chấm 0 -- tức tổng điểm cần được tính lại
      * @throws IllegalStateException khi còn câu thí sinh CÓ trả lời mà chưa ai chấm
      */
-    private boolean fillSilentAnswersOrRefuse(UUID sessionId) {
+    private boolean fillSilentAnswersOrRefuse(ExamSession session) {
+        var sessionId = session.getId();
+
+        // Câu thí sinh CHƯA TỪNG làm không có dòng response nào, nên vòng lặp bên dưới không thấy
+        // nó. Không lấp thì điểm tổng lấy trung bình trên chỉ những câu ĐÃ làm -- bài 2 câu bỏ 1
+        // câu ra 8 thay vì 4. Phải lấp TRƯỚC cả nhánh thoát sớm dưới đây, vì bài không có response
+        // nào chính là bài cần lấp nhiều nhất.
+        //
+        // Nhưng chỉ lấp khi phiên đã thật sự đóng. GradingActionSupport.prepare chỉ soi trạng thái
+        // PHÂN CÔNG và KẾT QUẢ, không soi trạng thái PHIÊN -- nên giáo viên bấm giữ nguyên điểm
+        // được trong lúc thí sinh vẫn đang thi dở. Đường tới đó có thật: ClearInvalidResultUseCase
+        // vừa xoá blockedAt cho thí sinh vào thi tiếp, vừa mở vòng INITIAL cho giáo viên chốt.
+        //
+        // RESUMABLE = {IN_PROGRESS, INTERRUPTED} nghĩa đúng là "thí sinh còn quay lại trả lời
+        // được", nên đó là vị từ cần hỏi. Lấp sớm là tái diễn lỗi hai-response-một-câu mà
+        // ForceEndExamSessionUseCase vừa phải gỡ bỏ.
+        if (!ExamSessionStatus.RESUMABLE.contains(session.getStatus())) {
+            missingResponseBackfillService.backfill(sessionId, session.getPaperId());
+        }
+
         var responses = examItemResponseRepository.findBySessionId(sessionId);
         if (responses.isEmpty()) {
             return false;

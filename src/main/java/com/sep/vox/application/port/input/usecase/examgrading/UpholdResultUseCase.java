@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -92,7 +93,7 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
         // hồi lại được gì, chỉ khoá nốt người đang soi bài.
         var publishesResult = targetStatus == ExamCandidateResultStatus.RELEASED;
 
-        var filledAny = publishesResult && fillSilentAnswersOrRefuse(session);
+        var filledAny = publishesResult && fillSilentAnswersOrRefuse(result.getSessionId(), session);
 
         // Chỉ tính lại khi thật sự vừa điền -- bài đã chấm đủ giữ nguyên đường cũ, không đụng
         // tới điểm đang có.
@@ -132,9 +133,7 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
      * @return true nếu vừa ghi thêm bản chấm 0 -- tức tổng điểm cần được tính lại
      * @throws IllegalStateException khi còn câu thí sinh CÓ trả lời mà chưa ai chấm
      */
-    private boolean fillSilentAnswersOrRefuse(ExamSession session) {
-        var sessionId = session.getId();
-
+    private boolean fillSilentAnswersOrRefuse(UUID sessionId, ExamSession session) {
         // Câu thí sinh CHƯA TỪNG làm không có dòng response nào, nên vòng lặp bên dưới không thấy
         // nó. Không lấp thì điểm tổng lấy trung bình trên chỉ những câu ĐÃ làm -- bài 2 câu bỏ 1
         // câu ra 8 thay vì 4. Phải lấp TRƯỚC cả nhánh thoát sớm dưới đây, vì bài không có response

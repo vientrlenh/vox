@@ -10,7 +10,10 @@ import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.usecase.examcandidate.ViewMyProctorScheduleCandidatesUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ViewMyProctorSchedulesUseCase;
+import com.sep.vox.application.port.input.usecase.proctoring.ViewMonitorableExamUseCase;
+import com.sep.vox.application.port.input.usecase.proctoring.ViewMonitorableExamsUseCase;
 import com.sep.vox.application.port.input.usecase.proctoring.ViewScheduleProctoringAlertsUseCase;
+import com.sep.vox.application.query.dto.MonitoredExamSummary;
 import com.sep.vox.application.query.dto.ProctorCandidateSummary;
 import com.sep.vox.application.query.dto.ProctorScheduleSummary;
 import com.sep.vox.domain.dto.ExamProctoringAlertDto;
@@ -21,20 +24,45 @@ public class ProctorAttendanceController {
     private final ViewMyProctorSchedulesUseCase viewMyProctorSchedulesUseCase;
     private final ViewMyProctorScheduleCandidatesUseCase viewMyProctorScheduleCandidatesUseCase;
     private final ViewScheduleProctoringAlertsUseCase viewScheduleProctoringAlertsUseCase;
+    private final ViewMonitorableExamsUseCase viewMonitorableExamsUseCase;
+    private final ViewMonitorableExamUseCase viewMonitorableExamUseCase;
 
     public ProctorAttendanceController(
             ViewMyProctorSchedulesUseCase viewMyProctorSchedulesUseCase,
             ViewMyProctorScheduleCandidatesUseCase viewMyProctorScheduleCandidatesUseCase,
-            ViewScheduleProctoringAlertsUseCase viewScheduleProctoringAlertsUseCase) {
+            ViewScheduleProctoringAlertsUseCase viewScheduleProctoringAlertsUseCase,
+            ViewMonitorableExamsUseCase viewMonitorableExamsUseCase,
+            ViewMonitorableExamUseCase viewMonitorableExamUseCase) {
         this.viewMyProctorSchedulesUseCase = viewMyProctorSchedulesUseCase;
         this.viewMyProctorScheduleCandidatesUseCase = viewMyProctorScheduleCandidatesUseCase;
         this.viewScheduleProctoringAlertsUseCase = viewScheduleProctoringAlertsUseCase;
+        this.viewMonitorableExamsUseCase = viewMonitorableExamsUseCase;
+        this.viewMonitorableExamUseCase = viewMonitorableExamUseCase;
     }
 
     @QueryMapping
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public List<ProctorScheduleSummary> myProctorSchedules() {
         return viewMyProctorSchedulesUseCase.execute(null);
+    }
+
+    /**
+     * Kỳ thi đang diễn ra hoặc sắp diễn ra mà người đang đăng nhập giám sát được.
+     *
+     * <p>Cố ý KHÔNG dùng {@code exams}: đó là đường vào của màn quản lý kỳ thi, và nới nó cho giám
+     * thị đồng nghĩa mở luôn dashboard kỳ thi cho họ.
+     */
+    @QueryMapping
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
+    public List<MonitoredExamSummary> monitorableExams() {
+        return viewMonitorableExamsUseCase.execute(null);
+    }
+
+    /** Cùng lý do với {@code monitorableExams}, cho phần đầu trang danh sách ca thi. */
+    @QueryMapping
+    @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
+    public MonitoredExamSummary monitorableExam(@Argument(name = "examId") UUID examId) {
+        return viewMonitorableExamUseCase.execute(examId);
     }
 
     @QueryMapping

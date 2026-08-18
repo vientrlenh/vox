@@ -387,6 +387,23 @@ type ProctorScheduleSummary {
     status: String
 }
 
+"""
+Một kỳ thi nhìn từ màn GIÁM SÁT. Cố ý nhỏ hơn `Exam`: giám thị cần đúng chừng này để nhận ra phòng
+của mình, và không được thấy blueprint/chính sách chấm/ngưỡng AI mà `Exam` mang theo.
+"""
+type MonitoredExamSummary {
+    examId: ID!
+    code: String
+    name: String
+    kind: String
+    status: String
+    "Mốc bắt đầu sớm nhất trong các ca người xem giám sát được — KHÔNG phải openAt của kỳ thi."
+    windowStart: String
+    windowEnd: String
+    "Số ca đang chạy ngay lúc này. 0 nghĩa là kỳ thi lọt vào danh sách vì sắp bắt đầu."
+    liveScheduleCount: Int!
+}
+
 type ProctorCandidateSummary {
     candidateId: ID!
     studentId: ID!
@@ -778,6 +795,19 @@ extend type Query {
     myExamResults: [StudentExamResultSummary!]!
 
     myProctorSchedules: [ProctorScheduleSummary!]!
+
+    """
+    Kỳ thi đang diễn ra hoặc sắp diễn ra mà người đang đăng nhập giám sát được.
+
+    Dùng thay cho `exams` ở màn giám sát. `exams` là đường vào của màn QUẢN LÝ kỳ thi, giới hạn
+    theo thành viên hội đồng — mà hội đồng không bắt buộc, nên giám thị của một kỳ thi do nhà
+    trường tự dựng sẽ không thấy phòng mình phải gác. Nới `exams` để chữa việc đó lại mở luôn
+    dashboard kỳ thi cho giám thị, nên quyền giám sát tách hẳn ra đây.
+    """
+    monitorableExams: [MonitoredExamSummary!]!
+
+    "Một kỳ thi đọc bằng quyền giám sát, cho phần đầu trang danh sách ca thi."
+    monitorableExam(examId: ID!): MonitoredExamSummary
 
     myProctorScheduleCandidates(scheduleId: ID!): [ProctorCandidateSummary!]!
 

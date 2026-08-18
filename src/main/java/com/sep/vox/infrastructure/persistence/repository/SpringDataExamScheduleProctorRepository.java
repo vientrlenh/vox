@@ -56,15 +56,4 @@ public interface SpringDataExamScheduleProctorRepository extends JpaRepository<E
         @Param("start") Instant start,
         @Param("end") Instant end,
         @Param("excludeScheduleId") UUID excludeScheduleId);
-
-
-    @Query("""
-        SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
-        FROM ExamScheduleProctorJpaEntity p
-        JOIN ExamScheduleJpaEntity s ON s.id = p.scheduleId
-        WHERE p.teacherId = :teacherId
-          AND s.examId = :examId
-          AND s.status NOT IN ('DELETED', 'MOVED')
-        """)
-    boolean existsByExamIdAndTeacherId(@Param("examId") UUID examId, @Param("teacherId") UUID teacherId);
 }

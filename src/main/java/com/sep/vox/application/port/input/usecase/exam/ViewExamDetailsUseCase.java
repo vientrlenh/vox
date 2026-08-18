@@ -17,7 +17,6 @@ import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
@@ -28,20 +27,18 @@ public class ViewExamDetailsUseCase implements IUseCase<ViewExamDetailsQuery, Ex
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
-    private final ExamScheduleProctorRepository examScheduleProctorRepository;
 
     public ViewExamDetailsUseCase(
             ExamRepository examRepository,
             ExamMemberRepository examMemberRepository,
             UserContextPort userContextPort,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository, ExamScheduleProctorRepository examScheduleProctorRepository) {
+            UserRoleQueryRepository userRoleQueryRepository) {
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
-        this.examScheduleProctorRepository = examScheduleProctorRepository;
     }
 
     @Override
@@ -83,9 +80,11 @@ public class ViewExamDetailsUseCase implements IUseCase<ViewExamDetailsQuery, Ex
                 && currentSchoolId != null && currentSchoolId.equals(examSchoolId)) {
             return true;
         }
-        if (examScheduleProctorRepository.existsByExamIdAndTeacherId(examId, currentUserId)) {
-            return true;
-        }
+        // Giám thị được phân công ca thi CỐ Ý không có mặt ở đây, dù họ có quan hệ thật với kỳ thi.
+        //
+        // Đây là cửa vào màn quản lý kỳ thi, nên mở nó cho giám thị là đưa họ thẳng vào dashboard --
+        // chỗ của hội đồng và nhà trường. Nhu cầu "giám thị đọc được tên kỳ thi mình gác" có đường
+        // riêng: ViewMonitorableExamUseCase, trả đúng vài trường mà đầu trang giám sát cần.
         return examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.CHAIR)
             || examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.AUTHOR)
             || examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.REVIEWER);

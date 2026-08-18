@@ -1,11 +1,15 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import java.time.LocalDate;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.PreviewRenewalQuery;
+import com.sep.vox.application.port.input.service.RenewalProrationService;
 import com.sep.vox.application.port.input.service.SubscriptionPlanResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -26,18 +30,21 @@ public class PreviewRenewalUseCase implements IUseCase<PreviewRenewalQuery, Rene
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final PlanQuotaRepository planQuotaRepository;
     private final SubscriptionPlanResolver subscriptionPlanResolver;
+    private final RenewalProrationService renewalProrationService;
     private final UserContextPort userContextPort;
 
     public PreviewRenewalUseCase(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
-            PlanQuotaRepository planQuotaRepository, 
-            SubscriptionPlanResolver subscriptionPlanResolver, 
+            PlanQuotaRepository planQuotaRepository,
+            SubscriptionPlanResolver subscriptionPlanResolver,
+            RenewalProrationService renewalProrationService,
             UserContextPort userContextPort) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.planQuotaRepository = planQuotaRepository; 
-        this.subscriptionPlanResolver = subscriptionPlanResolver; 
+        this.planQuotaRepository = planQuotaRepository;
+        this.subscriptionPlanResolver = subscriptionPlanResolver;
+        this.renewalProrationService = renewalProrationService;
         this.userContextPort = userContextPort;
     }
 
@@ -57,11 +64,19 @@ public class PreviewRenewalUseCase implements IUseCase<PreviewRenewalQuery, Rene
         var currentPlan = subscriptionPlanRepository.findById(subscription.getPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
         var renewalPlan = subscriptionPlanResolver.resolveActivePlan(currentPlan);
+        var planChanged = !renewalPlan.getId().equals(currentPlan.getId());
+
+        var today = LocalDate.now(DateMapper.DEFAULT_INPUT_ZONE);
+        var unusedCredit = renewalProrationService.calculateUnusedCredit(
+            subscription, renewalPlan.getPricePerYear(), planChanged, today);
+        var amountDue = renewalPlan.getPricePerYear().subtract(unusedCredit);
 
         return new RenewalPreviewDto(
-            !renewalPlan.getId().equals(currentPlan.getId()),
+            planChanged,
             SubscriptionPlanDtoMapper.toDto(currentPlan, planQuotaRepository.findAllByPlanId(currentPlan.getId())),
-            SubscriptionPlanDtoMapper.toDto(renewalPlan, planQuotaRepository.findAllByPlanId(renewalPlan.getId()))
+            SubscriptionPlanDtoMapper.toDto(renewalPlan, planQuotaRepository.findAllByPlanId(renewalPlan.getId())),
+            unusedCredit,
+            amountDue
         );
     }
 

@@ -149,7 +149,7 @@ public class InvoiceSettlementService {
             finalizeTokenPurchase(invoice.getSourceId(), invoice.getSubscriptionId(), paymentProvider, now);
         } else if (invoice.getSourceType() == InvoiceSourceType.SUBSCRIPTION) {
             var savedSubscription = renewSubscription(
-                invoice.getSourceId(), invoice.getResolvedPlanId(), paymentProvider, now);
+                invoice.getSourceId(), invoice.getResolvedPlanId(), invoice.getAmount(), paymentProvider, now);
             invoice.setSubscriptionId(savedSubscription.getId());
         }
 
@@ -279,7 +279,7 @@ public class InvoiceSettlementService {
     }
 
     private SchoolSubscription renewSubscription(
-            UUID subscriptionId, UUID resolvedPlanId, PaymentMethod paymentProvider, Instant now) {
+            UUID subscriptionId, UUID resolvedPlanId, BigDecimal amountPaid, PaymentMethod paymentProvider, Instant now) {
         var current = schoolSubscriptionRepository.findById(subscriptionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
         if (current.getStatus() != SubscriptionStatus.ACTIVE) {
@@ -313,7 +313,11 @@ public class InvoiceSettlementService {
             startDate,
             startDate.plusDays(plan.getValidityDays()),
             SubscriptionStatus.ACTIVE,
-            plan.getPricePerYear(),
+            // amountPaid (= invoice.getAmount()), KHÔNG phải plan.getPricePerYear(): có thể đã được
+            // trừ bù ngày chưa dùng của gói cũ nếu trường bị ép đổi gói (xem
+            // RenewalProrationService/CreatePaymentLinkForRenewalUseCase) -- pricePaidSnapshot phải
+            // luôn khớp số tiền THẬT đã thu.
+            amountPaid,
             null,
             now
         ));
@@ -329,7 +333,7 @@ public class InvoiceSettlementService {
 
         financialEventRepository.save(new FinancialEvent(
             current.getSchoolId(), savedSubscription.getId(), FinancialEventType.SUB_RENEWED,
-            plan.getPricePerYear(), "VND", paymentProvider, null, null, now
+            amountPaid, "VND", paymentProvider, null, null, now
         ));
 
         reportDebtClearedIfNeeded(wasOverGrading, savedSubscription, QuotaType.GRADING, now);

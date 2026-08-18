@@ -172,13 +172,12 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
 
     @Override
     public String renderInvoicePaidEmail(
-            String schoolName, String invoiceNumber, String itemTitle, String itemsHtml,
+            String schoolName, String invoiceNumber, String itemTitle,
             String amountLabel, String paidAtLabel, String validUntilLabel) {
         return loadTemplate(INVOICE_PAID_TEMPLATE)
             .replace("{{schoolName}}", escapeHtml(schoolName))
             .replace("{{invoiceNumber}}", escapeHtml(invoiceNumber))
             .replace("{{itemTitle}}", escapeHtml(itemTitle))
-            .replace("{{itemsHtml}}", itemsHtml)
             .replace("{{amountLabel}}", escapeHtml(amountLabel))
             .replace("{{paidAtLabel}}", escapeHtml(paidAtLabel))
             .replace("{{validUntilLabel}}", escapeHtml(validUntilLabel));

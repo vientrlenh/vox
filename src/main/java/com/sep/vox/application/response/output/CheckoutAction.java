@@ -14,5 +14,11 @@ public enum CheckoutAction {
      * Dựng form ẩn với toàn bộ {@code fields} rồi POST sang {@code actionUrl}. SePay PG dùng cách
      * này: URL checkout là cố định, đơn hàng được mô tả bằng các field kèm chữ ký HMAC.
      */
-    FORM_POST
+    FORM_POST,
+
+    /**
+     * Không cần thanh toán gì thêm — hóa đơn đã được chốt PAID ngay (amountDue = 0 sau khi bù trừ
+     * ngày chưa dùng, xem RenewalProrationService), FE không cần điều hướng sang cổng nào.
+     */
+    NONE
 }

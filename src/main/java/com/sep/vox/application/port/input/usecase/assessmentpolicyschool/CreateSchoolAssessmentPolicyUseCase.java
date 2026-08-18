@@ -107,6 +107,7 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
         Set<ScopeClaimKey> scopeClaimsInBatch = new HashSet<>();
+        Set<UUID> rubricVersionClaimsInBatch = new HashSet<>();
 
         for (CreateAssessmentPolicyCommand command : commands) {
             if (!schoolId.equals(command.schoolId())) {
@@ -171,12 +172,6 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             // version DESC, LIMIT 1) -- nên các bản còn lại vĩnh viễn không được dùng, mà vẫn tính
             // vào existsPublishedByRubricVersionId nên vẫn đóng vai cửa chặn publish cho Rubric của
             // chúng. Dữ liệu chết nhưng vẫn có quyền lực, và không có gì báo cho người dùng biết.
-            if (command.rubricVersionIds().size() != 1) {
-                throw new IllegalArgumentException(
-                        "Mỗi Assessment Policy chỉ được gắn đúng 1 Phiên bản Rubric. Muốn áp cho"
-                                + " nhiều phạm vi thì tạo nhiều Policy, mỗi Policy một phạm vi.");
-            }
-
             ScopeClaimKey scopeClaimKey = new ScopeClaimKey(command.languageId(), command.frameworkVersionId(),
                     command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId());
             if (!scopeClaimsInBatch.add(scopeClaimKey)) {
@@ -185,48 +180,57 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
                                 + " Mỗi phạm vi chỉ được một chính sách.");
             }
 
-            for (UUID rubricVersionId : command.rubricVersionIds()) {
+            UUID rubricVersionId = command.rubricVersionId();
+            RubricVersion rubricVersion = rubricVersionRepository.findById(rubricVersionId)
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric ID: " + rubricVersionId));
+            Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId())
+                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric gốc của version ID: " + rubricVersionId));
 
-                RubricVersion rubricVersion = rubricVersionRepository.findById(rubricVersionId)
-                        .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric ID: " + rubricVersionId));
-                Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId())
-                        .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric gốc của version ID: " + rubricVersionId));
-
-                if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !schoolId.equals(rubric.getSchoolId())) {
-                    throw new ForbiddenException("Phiên bản Rubric không thuộc trường học của bạn.");
-                }
-                if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
-                    throw new IllegalStateException("Chỉ được gán Policy khi Phiên bản Rubric còn ở trạng thái DRAFT.");
-                }
-                if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
-                    throw new IllegalStateException("Phiên bản Rubric và Khung năng lực không khớp nhau.");
-                }
-
-                boolean isDuplicated = assessmentPolicyRepository.existsActiveForScopeAnyRubricVersion(
-                        schoolId, command.languageId(), command.frameworkVersionId(),
-                        command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId());
-                if (isDuplicated) {
-                    throw new DuplicatedException("Phạm vi này đã có một Assessment Policy còn hiệu lực"
-                            + " (DRAFT hoặc PUBLISHED). Hãy Archive bản cũ trước khi tạo bản mới.");
-                }
-
-                int nextVersion = nextVersionByScope.computeIfAbsent(versionScopeKey, key ->
-                        assessmentPolicyRepository.findMaxVersionForScope(
-                                schoolId, key.languageId(), key.frameworkVersionId(),
-                                key.schoolGradeLevelId(), key.schoolGradeId(), key.schoolClassId()) + 1);
-                nextVersionByScope.put(versionScopeKey, nextVersion + 1);
-
-                AssessmentPolicy newPolicy = new AssessmentPolicy(
-                        schoolId, command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId(),
-                        command.languageId(), command.frameworkVersionId(),
-                        rubricVersionId, // Gắn ID từ vòng lặp
-                        command.targetFrameworkBandId(),
-                        command.passingScore(), strictness, nextVersion, AssessmentPolicyStatus.DRAFT,
-                        command.effectiveFrom(), command.effectiveTo(),
-                        now, now, currentUserId, currentUserId
-                );
-                policiesToSave.add(newPolicy);
+            if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !schoolId.equals(rubric.getSchoolId())) {
+                throw new ForbiddenException("Phiên bản Rubric không thuộc trường học của bạn.");
             }
+            if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
+                throw new IllegalStateException("Chỉ được gán Policy khi Phiên bản Rubric còn ở trạng thái DRAFT.");
+            }
+            if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
+                throw new IllegalStateException("Phiên bản Rubric và Khung năng lực không khớp nhau.");
+            }
+
+            boolean isDuplicated = assessmentPolicyRepository.existsActiveForScopeAnyRubricVersion(
+                    schoolId, command.languageId(), command.frameworkVersionId(),
+                    command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId());
+            if (isDuplicated) {
+                throw new DuplicatedException("Phạm vi này đã có một Assessment Policy còn hiệu lực"
+                        + " (DRAFT hoặc PUBLISHED). Hãy Archive bản cũ trước khi tạo bản mới.");
+            }
+
+            // 1 Rubric Version chỉ được gắn với đúng 1 Assessment Policy, vĩnh viễn (kể cả sau khi
+            // Policy đó Archive) -- chặn cả trùng trong cùng batch lẫn trùng với dữ liệu đã có.
+            if (!rubricVersionClaimsInBatch.add(rubricVersionId)) {
+                throw new DuplicatedException(
+                        "Trong cùng một lần tạo có hai Assessment Policy cùng dùng 1 Phiên bản Rubric.");
+            }
+            if (assessmentPolicyRepository.existsByRubricVersionId(rubricVersionId)) {
+                throw new DuplicatedException("Phiên bản Rubric này đã gắn với một Assessment Policy khác."
+                        + " Mỗi Rubric Version chỉ dùng được cho đúng 1 Policy.");
+            }
+
+            int nextVersion = nextVersionByScope.computeIfAbsent(versionScopeKey, key ->
+                    assessmentPolicyRepository.findMaxVersionForScope(
+                            schoolId, key.languageId(), key.frameworkVersionId(),
+                            key.schoolGradeLevelId(), key.schoolGradeId(), key.schoolClassId()) + 1);
+            nextVersionByScope.put(versionScopeKey, nextVersion + 1);
+
+            AssessmentPolicy newPolicy = new AssessmentPolicy(
+                    schoolId, command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId(),
+                    command.languageId(), command.frameworkVersionId(),
+                    rubricVersionId,
+                    command.targetFrameworkBandId(),
+                    command.passingScore(), strictness, nextVersion, AssessmentPolicyStatus.DRAFT,
+                    command.effectiveFrom(), command.effectiveTo(),
+                    now, now, currentUserId, currentUserId
+            );
+            policiesToSave.add(newPolicy);
         }
 
         // 8. Lưu 1 lần xuống DB

@@ -14,6 +14,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateExamCommand;
 import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionActiveGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -39,6 +40,7 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
     private final UserContextPort userContextPort;
     private final ExamStreamConfigResolver examStreamConfigResolver;
     private final ExamAssessmentPolicyValidator examAssessmentPolicyValidator;
+    private final SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService;
 
     public CreateExamUseCase(
             ExamRepository examRepository,
@@ -47,7 +49,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort,
             ExamStreamConfigResolver examStreamConfigResolver,
-            ExamAssessmentPolicyValidator examAssessmentPolicyValidator) {
+            ExamAssessmentPolicyValidator examAssessmentPolicyValidator,
+            SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService) {
         this.examRepository = examRepository;
         this.examBlueprintRepository = examBlueprintRepository;
         this.schoolUserRepository = schoolUserRepository;
@@ -55,6 +58,7 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
         this.userContextPort = userContextPort;
         this.examStreamConfigResolver = examStreamConfigResolver;
         this.examAssessmentPolicyValidator = examAssessmentPolicyValidator;
+        this.schoolSubscriptionActiveGuardService = schoolSubscriptionActiveGuardService;
     }
 
     @Override
@@ -71,6 +75,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
         if (!schoolAdmin || currentSchoolId == null) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
+
+        schoolSubscriptionActiveGuardService.requireActiveForSchool(currentSchoolId, "tạo Bài kiểm tra tập trung");
 
         if (command.blueprintId() != null) {
             var blueprint = examBlueprintRepository.findById(command.blueprintId())

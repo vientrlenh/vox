@@ -62,8 +62,19 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
         """, nativeQuery = true)
     Optional<UUID> findActiveSubscriptionIdForUser(@Param("userId") UUID userId);
 
+    // Phải LEFT JOIN thêm subscription_quota_user_allocations và lấy LEAST(...): ConsumeQuotaUseCase
+    // trừ CẢ hạn mức trường LẪN hạn mức cá nhân (khi có allocation row cho user) cho PRACTICE, nên
+    // cửa chặn ở BuildPracticePaperUseCase phải soi đúng 2 thước đó -- trước đây chỉ soi hạn mức
+    // trường, học sinh hết hạn mức cá nhân nhưng trường còn dư sẽ lọt cửa, dựng đề xong mới chết ở
+    // lượt nói đầu (ConsumeQuotaUseCase ném QuotaExceededException). COALESCE về hạn mức trường khi
+    // user chưa có allocation row (ConsumeQuotaUseCase cũng bỏ qua kiểm tra cá nhân trong case đó,
+    // qua .ifPresent) -- không được LEAST thẳng với NULL, Postgres trả NULL cho cả biểu thức.
     @Query(value = """
-        SELECT quota.total_allocated - quota.used_quantity
+        SELECT LEAST(
+            quota.total_allocated - quota.used_quantity,
+            COALESCE(user_allocation.allocated_quantity - user_allocation.used_quantity,
+                      quota.total_allocated - quota.used_quantity)
+        )
         FROM school_users school_user
         JOIN school_subscription subscription
           ON subscription.school_id = school_user.school_id
@@ -72,6 +83,10 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
         JOIN subscription_quota quota
           ON quota.subscription_id = subscription.id
          AND quota.quota_type = 'PRACTICE'
+        LEFT JOIN subscription_quota_user_allocations user_allocation
+          ON user_allocation.subscription_id = subscription.id
+         AND user_allocation.quota_type = 'PRACTICE'
+         AND user_allocation.user_id = school_user.user_id
         WHERE school_user.user_id = :userId
           AND (school_user.end_date IS NULL OR school_user.end_date >= CURRENT_TIMESTAMP)
         ORDER BY subscription.end_date DESC

@@ -3,19 +3,17 @@ package com.sep.vox.interfaces.rest.dto.request;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStrictness;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 
 public record CreateSchoolAssessmentPolicyRequest(
         @NotNull(message = "Phiên bản Khung tiêu chuẩn không được để trống")
         UUID frameworkVersionId,
 
-        @NotEmpty(message = "Danh sách Phiên bản Rubric không được để trống")
-        List<UUID> rubricVersionIds,
+        @NotNull(message = "Phiên bản Rubric không được để trống")
+        UUID rubricVersionId,
 
         @NotNull(message = "Ngôn ngữ không được để trống")
         UUID languageId,

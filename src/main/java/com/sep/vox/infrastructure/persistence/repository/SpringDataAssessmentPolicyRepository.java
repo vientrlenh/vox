@@ -44,6 +44,8 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
 
     boolean existsByRubricVersionIdAndStatusNot(UUID rubricVersionId, String status);
 
+    boolean existsByRubricVersionId(UUID rubricVersionId);
+
     List<AssessmentPolicyJpaEntity> findBySchoolIdIsNullAndRubricVersionIdAndStatus(UUID rubricVersionId, String status);
 
     List<AssessmentPolicyJpaEntity> findBySchoolIdAndRubricVersionIdAndStatus(UUID schoolId, UUID rubricVersionId, String status);
@@ -106,34 +108,8 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
         Pageable pageable
     );
 
-    @Query("""
-        SELECT COUNT(p) > 0 FROM AssessmentPolicyJpaEntity p
-        WHERE (:schoolId IS NULL OR p.schoolId = :schoolId)
-            AND (:schoolId IS NOT NULL OR p.schoolId IS NULL)
-            AND p.languageId = :languageId
-            AND p.frameworkVersionId = :frameworkVersionId
-            AND (:schoolGradeLevelId IS NULL OR p.schoolGradeLevelId = :schoolGradeLevelId)
-            AND (:schoolGradeLevelId IS NOT NULL OR p.schoolGradeLevelId IS NULL)
-            AND (:schoolGradeId IS NULL OR p.schoolGradeId = :schoolGradeId)
-            AND (:schoolGradeId IS NOT NULL OR p.schoolGradeId IS NULL)
-            AND (:schoolClassId IS NULL OR p.schoolClassId = :schoolClassId)
-            AND (:schoolClassId IS NOT NULL OR p.schoolClassId IS NULL)
-            AND p.rubricVersionId = :rubricVersionId
-            AND p.status IN ('DRAFT', 'PUBLISHED')
-    """)
-    boolean existsActiveForScope(
-        @Param("schoolId") UUID schoolId,
-        @Param("languageId") UUID languageId,
-        @Param("frameworkVersionId") UUID frameworkVersionId,
-        @Param("schoolGradeLevelId") UUID schoolGradeLevelId,
-        @Param("schoolGradeId") UUID schoolGradeId,
-        @Param("schoolClassId") UUID schoolClassId,
-        @Param("rubricVersionId") UUID rubricVersionId
-    );
-
     /**
-     * Giống {@code existsActiveForScope} nhưng KHÔNG lọc theo Rubric Version: một phạm vi chỉ được
-     * có đúng một chính sách còn hiệu lực, bất kể nó trỏ vào phiên bản Rubric nào.
+     * Một phạm vi chỉ được có đúng một chính sách còn hiệu lực, bất kể nó trỏ vào phiên bản Rubric nào.
      */
     @Query("""
         SELECT COUNT(p) > 0 FROM AssessmentPolicyJpaEntity p

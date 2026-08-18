@@ -136,6 +136,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         Instant now = Instant.now();
 
         Set<ScopeKey> scopesClaimedInFile = new HashSet<>();
+        Set<UUID> rubricVersionsClaimedInFile = new HashSet<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
 
         // Prefetch DUY NHẤT 1 lần toàn bộ Assessment Policy (mọi trạng thái) trong phạm vi schoolId này
@@ -148,6 +149,12 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                 .filter(p -> p.getStatus() == AssessmentPolicyStatus.DRAFT || p.getStatus() == AssessmentPolicyStatus.PUBLISHED)
                 .map(p -> new ScopeKey(p.getSchoolId(), p.getLanguageId(), p.getFrameworkVersionId(),
                         p.getSchoolGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId()))
+                .collect(Collectors.toSet());
+
+        // Rubric Version đã gắn với BẤT KỲ Assessment Policy nào (mọi trạng thái) -> 1 Rubric Version chỉ
+        // dùng được cho đúng 1 Policy, vĩnh viễn (kể cả sau khi Policy đó Archive).
+        Set<UUID> existingUsedRubricVersionIds = existingPolicies.stream()
+                .map(AssessmentPolicy::getRubricVersionId)
                 .collect(Collectors.toSet());
 
         // Version lớn nhất đã từng tồn tại theo từng scope (kể cả ARCHIVED) -> dùng để phát version kế tiếp,
@@ -211,6 +218,13 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                         errors.add(error("scope", "Bị trùng phạm vi áp dụng ngay trong file Excel."));
                     } else if (existingActiveScopes.contains(scopeKey)) {
                         errors.add(error("scope", "Đã tồn tại một Quy chế (DRAFT/PUBLISHED) khác cho cùng phạm vi này. Vui lòng lưu trữ (ARCHIVE) bản cũ."));
+                    }
+
+                    // 1 Rubric Version chỉ được gắn với đúng 1 Assessment Policy, vĩnh viễn.
+                    if (!rubricVersionsClaimedInFile.add(rubricVersionId)) {
+                        errors.add(error("rubricVersion", "Phiên bản Rubric này bị dùng lại ở nhiều dòng trong cùng file Excel."));
+                    } else if (existingUsedRubricVersionIds.contains(rubricVersionId)) {
+                        errors.add(error("rubricVersion", "Phiên bản Rubric này đã gắn với một Assessment Policy khác."));
                     }
                 }
 

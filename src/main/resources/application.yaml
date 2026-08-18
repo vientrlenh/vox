@@ -364,6 +364,9 @@ app:
       "[SchoolLockedDueToDebt]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
       "[SchoolDebtCleared]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
 
+      "[SchoolSubscriptionSuspended]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
+      "[SchoolSubscriptionUnsuspended]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
+
       # Hai event OTP: payload chỉ mang địa chỉ nhận, mã sinh ở consumer.
       "[ResetPasswordOtpRequested]": ${KAFKA_RESET_PASSWORD_OTP_TOPIC:vox.reset-password-otp.v1}
       "[RegisterVerificationOtpRequested]": ${KAFKA_REGISTER_VERIFICATION_OTP_TOPIC:vox.register-verification-otp.v1}

@@ -71,7 +71,7 @@ class ViewSchoolAdminDashboardUseCaseTests {
 
         var subscription = new SchoolSubscription(
             subscriptionId, schoolId, UUID.randomUUID(), LocalDate.now(), null,
-            SubscriptionStatus.ACTIVE, BigDecimal.ZERO, null, Instant.now(), null
+            SubscriptionStatus.ACTIVE, BigDecimal.ZERO, null, Instant.now(), null, null, null, null
         );
         when(schoolSubscriptionRepository.findAllBySchoolId(schoolId)).thenReturn(List.of(subscription));
     }

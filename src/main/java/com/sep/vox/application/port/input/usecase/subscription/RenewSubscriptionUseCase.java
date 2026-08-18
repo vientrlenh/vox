@@ -73,6 +73,9 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
         if (!current.getSchoolId().equals(input.schoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
+        if (current.getStatus() != SubscriptionStatus.ACTIVE) {
+            throw new IllegalStateException("Gói đăng ký không ở trạng thái đang hoạt động");
+        }
 
         var plan = subscriptionPlanRepository.findById(current.getPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));

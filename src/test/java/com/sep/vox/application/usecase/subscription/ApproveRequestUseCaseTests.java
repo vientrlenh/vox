@@ -1,6 +1,7 @@
 package com.sep.vox.application.usecase.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -11,6 +12,7 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -100,6 +102,7 @@ class ApproveRequestUseCaseTests {
         when(subscriptionRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
         when(subscriptionRequestRepository.save(any(SubscriptionRequest.class))).thenAnswer(call -> call.getArgument(0));
         when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
+        when(schoolSubscriptionRepository.findAllBySchoolId(schoolId)).thenReturn(new ArrayList<>());
         when(planQuotaRepository.findAllByPlanId(planId)).thenReturn(List.of(
             new PlanQuota(planId, QuotaType.GRADING, BigDecimal.valueOf(100), new BigDecimal("1000"))
         ));
@@ -121,7 +124,7 @@ class ApproveRequestUseCaseTests {
         var existingId = UUID.randomUUID();
         var existing = new SchoolSubscription(
             existingId, schoolId, planId, LocalDate.now().minusDays(360), LocalDate.now(),
-            SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L
+            SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L, null, null, null
         );
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(existing));
         when(schoolSubscriptionDebtGuardService.isQuotaOverLimit(existingId, QuotaType.GRADING)).thenReturn(locked);
@@ -154,5 +157,19 @@ class ApproveRequestUseCaseTests {
 
         assertThat(result).isNotNull();
         verify(schoolDebtNotificationService, never()).publishSchoolDebtCleared(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void throwsWhenSchoolHasSuspendedSubscription() {
+        var suspended = new SchoolSubscription(
+            UUID.randomUUID(), schoolId, planId, LocalDate.now().minusDays(360), LocalDate.now(),
+            SubscriptionStatus.SUSPENDED, amount, null, Instant.now(), 0L, Instant.now(), "Gian lận", UUID.randomUUID()
+        );
+        when(schoolSubscriptionRepository.findAllBySchoolId(schoolId)).thenReturn(List.of(suspended));
+
+        assertThatThrownBy(() -> useCase.execute(new ApproveRequestCommand(requestId)))
+            .isInstanceOf(IllegalStateException.class);
+
+        verify(schoolSubscriptionRepository, never()).save(any(SchoolSubscription.class));
     }
 }

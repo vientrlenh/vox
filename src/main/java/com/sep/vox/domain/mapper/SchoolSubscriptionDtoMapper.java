@@ -23,7 +23,9 @@ public final class SchoolSubscriptionDtoMapper {
             domain.getStatus().name(),
             domain.getPricePaidSnapshot(),
             valueOf(domain.getCancelledAt()),
-            valueOf(domain.getCreatedAt())
+            valueOf(domain.getCreatedAt()),
+            valueOf(domain.getSuspendedAt()),
+            domain.getSuspendedReason()
         );
     }
 

@@ -92,7 +92,7 @@ class BuyTokensUseCasePricingTests {
 
         var subscription = new SchoolSubscription(
             subscriptionId, schoolId, planId, null, null,
-            SubscriptionStatus.ACTIVE, new BigDecimal("5000000"), null, Instant.now(), 0L
+            SubscriptionStatus.ACTIVE, new BigDecimal("5000000"), null, Instant.now(), 0L, null, null, null
         );
         var plan = new SubscriptionPlan(
             planId, "Gói Trường", null, new BigDecimal("5000000"), 365, 60, PlanStatus.ACTIVE, 1,

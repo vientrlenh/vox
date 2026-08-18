@@ -13,6 +13,7 @@ import com.sep.vox.application.port.input.command.BuildPracticePaperCommand;
 import com.sep.vox.application.port.input.service.PracticePaperPersistenceService;
 import com.sep.vox.application.port.input.service.PracticeQuestionSelectionService;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionActiveGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -40,6 +41,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
     private final UserContextPort userContextPort;
     private final ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase;
     private final QuotaPricingPort quotaPricingPort;
+    private final SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService;
 
     public BuildPracticePaperUseCase(
             PracticeTopicRepository topicRepository,
@@ -50,7 +52,8 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
             PracticePaperPersistenceService persistenceService,
             UserContextPort userContextPort,
             ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase,
-            QuotaPricingPort quotaPricingPort) {
+            QuotaPricingPort quotaPricingPort,
+            SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService) {
         this.viewPracticeTopicOffersUseCase = viewPracticeTopicOffersUseCase;
         this.topicRepository = topicRepository;
         this.paperRepository = paperRepository;
@@ -60,11 +63,13 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         this.persistenceService = persistenceService;
         this.userContextPort = userContextPort;
         this.quotaPricingPort = quotaPricingPort;
+        this.schoolSubscriptionActiveGuardService = schoolSubscriptionActiveGuardService;
     }
 
     @Override
     public PracticePaper execute(BuildPracticePaperCommand input) {
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        schoolSubscriptionActiveGuardService.requireActiveForStudent(studentId, "bắt đầu buổi luyện tập cá nhân hóa AI");
         var topic = requireTopic(input.topicId());
         var quotaRemainingUsd = remainingPracticeQuotaUsd(studentId);
         var focus = selectionService.resolveFocus(studentId, input.fromSubAttribute());

@@ -1,7 +1,6 @@
 package com.sep.vox.infrastructure.persistence.query;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -45,7 +44,11 @@ public class JpaTokenUsageTimeseriesQueryRepository implements TokenUsageTimeser
 
         return rows.stream()
             .map(row -> new TokenUsageBucketDto(
-                ((Timestamp) row[0]).toInstant(),
+                // Hibernate 7 trả cột timestamptz không khai kiểu tường minh (kết quả hàm date_trunc
+                // trong native query) về thẳng java.time.Instant, KHÔNG phải java.sql.Timestamp hay
+                // OffsetDateTime -- ép kiểu sai ở đây từng gây ClassCastException, rơi vào nhánh lỗi
+                // chung "Có lỗi xảy ra" vì không khớp exception nào GlobalExceptionResolver xử lý riêng.
+                (Instant) row[0],
                 (String) row[1],
                 row[2] == null ? BigDecimal.ZERO : new BigDecimal(row[2].toString())))
             .toList();

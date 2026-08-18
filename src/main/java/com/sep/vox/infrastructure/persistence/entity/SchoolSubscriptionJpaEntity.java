@@ -45,7 +45,7 @@ public class SchoolSubscriptionJpaEntity {
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_school_subscription_status_valid",
-            constraint = "status IN ('ACTIVE', 'EXPIRED', 'CANCELLED')"
+            constraint = "status IN ('ACTIVE', 'EXPIRED', 'CANCELLED', 'SUSPENDED')"
         )
     })
     private String status;
@@ -63,10 +63,20 @@ public class SchoolSubscriptionJpaEntity {
     @Column(name = "version", nullable = false)
     private Long version;
 
+    @Column(name = "suspended_at")
+    private Instant suspendedAt;
+
+    @Column(name = "suspended_reason")
+    private String suspendedReason;
+
+    @Column(name = "suspended_by")
+    private UUID suspendedBy;
+
     protected SchoolSubscriptionJpaEntity() {}
 
     public SchoolSubscriptionJpaEntity(UUID id, UUID schoolId, UUID planId, LocalDate startDate, LocalDate endDate,
-            String status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt, Long version) {
+            String status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt, Long version,
+            Instant suspendedAt, String suspendedReason, UUID suspendedBy) {
         this.id = id;
         this.schoolId = schoolId;
         this.planId = planId;
@@ -77,6 +87,9 @@ public class SchoolSubscriptionJpaEntity {
         this.cancelledAt = cancelledAt;
         this.createdAt = createdAt;
         this.version = version;
+        this.suspendedAt = suspendedAt;
+        this.suspendedReason = suspendedReason;
+        this.suspendedBy = suspendedBy;
     }
 
     public UUID getId() {
@@ -157,5 +170,29 @@ public class SchoolSubscriptionJpaEntity {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    public Instant getSuspendedAt() {
+        return suspendedAt;
+    }
+
+    public void setSuspendedAt(Instant suspendedAt) {
+        this.suspendedAt = suspendedAt;
+    }
+
+    public String getSuspendedReason() {
+        return suspendedReason;
+    }
+
+    public void setSuspendedReason(String suspendedReason) {
+        this.suspendedReason = suspendedReason;
+    }
+
+    public UUID getSuspendedBy() {
+        return suspendedBy;
+    }
+
+    public void setSuspendedBy(UUID suspendedBy) {
+        this.suspendedBy = suspendedBy;
     }
 }

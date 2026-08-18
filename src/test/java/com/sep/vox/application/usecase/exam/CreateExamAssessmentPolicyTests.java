@@ -3,6 +3,8 @@ package com.sep.vox.application.usecase.exam;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -18,9 +20,11 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.command.CreateExamCommand;
 import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionActiveGuardService;
 import com.sep.vox.application.port.input.usecase.exam.CreateExamUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
@@ -49,6 +53,7 @@ class CreateExamAssessmentPolicyTests {
 
     private AssessmentPolicyRepository assessmentPolicyRepository;
     private ExamRepository examRepository;
+    private SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService;
     private CreateExamUseCase useCase;
 
     @BeforeEach
@@ -58,6 +63,7 @@ class CreateExamAssessmentPolicyTests {
         var schoolUserRepository = mock(SchoolUserRepository.class);
         var userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         var userContextPort = mock(UserContextPort.class);
+        schoolSubscriptionActiveGuardService = mock(SchoolSubscriptionActiveGuardService.class);
 
         useCase = new CreateExamUseCase(
             examRepository,
@@ -66,7 +72,8 @@ class CreateExamAssessmentPolicyTests {
             userRoleQueryRepository,
             userContextPort,
             new ExamStreamConfigResolver(),
-            new ExamAssessmentPolicyValidator(assessmentPolicyRepository)
+            new ExamAssessmentPolicyValidator(assessmentPolicyRepository),
+            schoolSubscriptionActiveGuardService
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(ADMIN_ID);
@@ -81,6 +88,17 @@ class CreateExamAssessmentPolicyTests {
             exam.setId(UUID.randomUUID());
             return exam;
         });
+    }
+
+    @Test
+    void should_reject_when_school_has_no_active_subscription() {
+        doThrow(new PlanLimitExceededException("Trường chưa có gói subscription đang hoạt động, không thể tạo Bài kiểm tra tập trung."))
+            .when(schoolSubscriptionActiveGuardService).requireActiveForSchool(eq(SCHOOL_ID), any());
+
+        assertThatThrownBy(() -> useCase.execute(command(POLICY_ID)))
+            .isInstanceOf(PlanLimitExceededException.class)
+            .hasMessageContaining("chưa có gói subscription đang hoạt động");
+        verify(examRepository, never()).save(any());
     }
 
     @Test

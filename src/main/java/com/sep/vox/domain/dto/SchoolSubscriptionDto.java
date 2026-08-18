@@ -12,6 +12,8 @@ public record SchoolSubscriptionDto(
     String status,
     BigDecimal pricePaidSnapshot,
     String cancelledAt,
-    String createdAt
+    String createdAt,
+    String suspendedAt,
+    String suspendedReason
 ) {
 }

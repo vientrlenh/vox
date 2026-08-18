@@ -16,12 +16,18 @@ public class SchoolSubscription {
     private Instant cancelledAt;
     private Instant createdAt;
     private Long version;
+    // System Admin cưỡng chế đình chỉ (SUSPENDED) -- khác cancelledAt (chỉ tắt gia hạn). Cả 3 null khi
+    // không bị đình chỉ, và bị xóa về null lại khi gỡ đình chỉ (UnsuspendSubscriptionUseCase) -- lịch sử
+    // ai đình chỉ/gỡ lúc nào/vì sao được lưu bền ở FinancialEvent, không phải 3 cột này.
+    private Instant suspendedAt;
+    private String suspendedReason;
+    private UUID suspendedBy;
 
     public SchoolSubscription() {}
 
     public SchoolSubscription(UUID id, UUID schoolId, UUID planId, LocalDate startDate, LocalDate endDate,
             SubscriptionStatus status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt,
-            Long version) {
+            Long version, Instant suspendedAt, String suspendedReason, UUID suspendedBy) {
         this.id = id;
         this.schoolId = schoolId;
         this.planId = planId;
@@ -32,6 +38,9 @@ public class SchoolSubscription {
         this.cancelledAt = cancelledAt;
         this.createdAt = createdAt;
         this.version = version;
+        this.suspendedAt = suspendedAt;
+        this.suspendedReason = suspendedReason;
+        this.suspendedBy = suspendedBy;
     }
 
     public SchoolSubscription(UUID schoolId, UUID planId, LocalDate startDate, LocalDate endDate,
@@ -124,5 +133,29 @@ public class SchoolSubscription {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    public Instant getSuspendedAt() {
+        return suspendedAt;
+    }
+
+    public void setSuspendedAt(Instant suspendedAt) {
+        this.suspendedAt = suspendedAt;
+    }
+
+    public String getSuspendedReason() {
+        return suspendedReason;
+    }
+
+    public void setSuspendedReason(String suspendedReason) {
+        this.suspendedReason = suspendedReason;
+    }
+
+    public UUID getSuspendedBy() {
+        return suspendedBy;
+    }
+
+    public void setSuspendedBy(UUID suspendedBy) {
+        this.suspendedBy = suspendedBy;
     }
 }

@@ -80,6 +80,16 @@ public class ApproveRequestUseCase implements IUseCase<ApproveRequestCommand, Su
             throw new IllegalStateException("Yêu cầu không ở trạng thái chờ duyệt");
         }
 
+        // findActiveBySchoolId bên dưới chỉ thấy status=ACTIVE nên sẽ bỏ sót bản ghi SUSPENDED --
+        // nếu không chặn ở đây, duyệt yêu cầu sẽ âm thầm tạo 1 subscription ACTIVE mới cho trường
+        // đang bị đình chỉ, coi như gỡ đình chỉ mà không qua UnsuspendSubscriptionUseCase.
+        var hasSuspendedSubscription = schoolSubscriptionRepository.findAllBySchoolId(request.getSchoolId()).stream()
+            .anyMatch(subscription -> subscription.getStatus() == SubscriptionStatus.SUSPENDED);
+        if (hasSuspendedSubscription) {
+            throw new IllegalStateException(
+                "Gói đăng ký của trường đang bị đình chỉ, không thể duyệt yêu cầu này. Vui lòng gỡ đình chỉ trước.");
+        }
+
         var plan = subscriptionPlanRepository.findById(request.getRequestedPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 

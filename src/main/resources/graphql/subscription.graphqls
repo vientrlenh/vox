@@ -8,6 +8,7 @@ enum SubscriptionStatus {
     ACTIVE
     EXPIRED
     CANCELLED
+    SUSPENDED
 }
 
 enum QuotaType {
@@ -111,6 +112,8 @@ type SchoolSubscription {
     pricePaidSnapshot: Float!
     cancelledAt: String
     createdAt: String
+    suspendedAt: String
+    suspendedReason: String
     plan: SubscriptionPlan
 }
 

@@ -19,6 +19,8 @@ import com.sep.vox.application.port.input.command.ApproveRequestCommand;
 import com.sep.vox.application.port.input.command.ArchivePlanCommand;
 import com.sep.vox.application.port.input.command.CancelSubscriptionCommand;
 import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
+import com.sep.vox.application.port.input.command.ForceSuspendSubscriptionCommand;
+import com.sep.vox.application.port.input.command.UnsuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.command.CreatePaymentLinkForRenewalCommand;
 import com.sep.vox.application.port.input.command.CreatePaymentLinkForSubscriptionRequestCommand;
 import com.sep.vox.application.port.input.command.DeleteDraftPlanCommand;
@@ -40,11 +42,13 @@ import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLink
 import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForTokenPurchaseUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreatePlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.DeleteDraftPlanUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ForceSuspendSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.PreviewRenewalUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.PublishPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.RejectRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.RenewSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.SubmitRequestUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.UnsuspendSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewClassTestQuotaAllocationsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewPracticeQuotaAllocationsUseCase;
 import com.sep.vox.domain.dto.PaymentLinkDto;
@@ -60,6 +64,8 @@ import com.sep.vox.interfaces.rest.dto.request.ConsumeQuotaRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreatePlanRequest;
 import com.sep.vox.interfaces.rest.dto.request.PaymentMethodRequest;
 import com.sep.vox.interfaces.rest.dto.request.SubmitRequestRequest;
+import com.sep.vox.interfaces.rest.dto.request.SuspendSubscriptionRequest;
+import com.sep.vox.interfaces.rest.dto.request.UnsuspendSubscriptionRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.AllocateQuotaCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.BuyTokensCommandMapper;
@@ -77,6 +83,8 @@ public class SubscriptionController {
     private final DeleteDraftPlanUseCase deleteDraftPlanUseCase;
     private final RenewSubscriptionUseCase renewSubscriptionUseCase;
     private final CancelSubscriptionUseCase cancelSubscriptionUseCase;
+    private final ForceSuspendSubscriptionUseCase forceSuspendSubscriptionUseCase;
+    private final UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase;
     private final SubmitRequestUseCase submitRequestUseCase;
     private final ApproveRequestUseCase approveRequestUseCase;
     private final RejectRequestUseCase rejectRequestUseCase;
@@ -98,6 +106,8 @@ public class SubscriptionController {
             DeleteDraftPlanUseCase deleteDraftPlanUseCase,
             RenewSubscriptionUseCase renewSubscriptionUseCase,
             CancelSubscriptionUseCase cancelSubscriptionUseCase,
+            ForceSuspendSubscriptionUseCase forceSuspendSubscriptionUseCase,
+            UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase,
             SubmitRequestUseCase submitRequestUseCase,
             ApproveRequestUseCase approveRequestUseCase,
             RejectRequestUseCase rejectRequestUseCase,
@@ -117,6 +127,8 @@ public class SubscriptionController {
         this.deleteDraftPlanUseCase = deleteDraftPlanUseCase;
         this.renewSubscriptionUseCase = renewSubscriptionUseCase;
         this.cancelSubscriptionUseCase = cancelSubscriptionUseCase;
+        this.forceSuspendSubscriptionUseCase = forceSuspendSubscriptionUseCase;
+        this.unsuspendSubscriptionUseCase = unsuspendSubscriptionUseCase;
         this.submitRequestUseCase = submitRequestUseCase;
         this.approveRequestUseCase = approveRequestUseCase;
         this.rejectRequestUseCase = rejectRequestUseCase;
@@ -200,6 +212,29 @@ public class SubscriptionController {
             @PathVariable(name = "id") UUID id) {
         var data = cancelSubscriptionUseCase.execute(new CancelSubscriptionCommand(schoolId, id));
         return ResponseEntity.ok(ApiResponse.success("Hủy gói đăng ký thành công", data));
+    }
+
+    // Chỉ SYSTEM_ADMIN -- khác cancel/renew, đây là hành động cưỡng chế, School Admin không được tự làm.
+    @PostMapping("/schools/{schoolId}/subscriptions/{id}/suspend")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<SchoolSubscriptionDto>> suspendSubscription(
+            @PathVariable(name = "schoolId") UUID schoolId,
+            @PathVariable(name = "id") UUID id,
+            @RequestBody @Valid SuspendSubscriptionRequest request) {
+        var data = forceSuspendSubscriptionUseCase.execute(
+            new ForceSuspendSubscriptionCommand(schoolId, id, request.reason()));
+        return ResponseEntity.ok(ApiResponse.success("Đình chỉ gói đăng ký thành công", data));
+    }
+
+    @PostMapping("/schools/{schoolId}/subscriptions/{id}/unsuspend")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<SchoolSubscriptionDto>> unsuspendSubscription(
+            @PathVariable(name = "schoolId") UUID schoolId,
+            @PathVariable(name = "id") UUID id,
+            @RequestBody @Valid UnsuspendSubscriptionRequest request) {
+        var data = unsuspendSubscriptionUseCase.execute(
+            new UnsuspendSubscriptionCommand(schoolId, id, request.note()));
+        return ResponseEntity.ok(ApiResponse.success("Gỡ đình chỉ gói đăng ký thành công", data));
     }
 
     @PostMapping("/schools/{schoolId}/subscription-requests")

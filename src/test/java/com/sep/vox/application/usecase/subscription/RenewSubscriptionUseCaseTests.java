@@ -1,6 +1,7 @@
 package com.sep.vox.application.usecase.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -105,7 +106,7 @@ class RenewSubscriptionUseCaseTests {
     private void givenActiveSubscription(boolean locked) {
         var current = new SchoolSubscription(
             subscriptionId, schoolId, planId, LocalDate.now().minusDays(360), LocalDate.now(),
-            SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L
+            SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L, null, null, null
         );
         when(schoolSubscriptionRepository.findById(subscriptionId)).thenReturn(Optional.of(current));
         when(schoolSubscriptionDebtGuardService.isQuotaOverLimit(subscriptionId, QuotaType.GRADING)).thenReturn(locked);
@@ -129,5 +130,19 @@ class RenewSubscriptionUseCaseTests {
 
         assertThat(result).isNotNull();
         verify(schoolDebtNotificationService, never()).publishSchoolDebtCleared(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void throwsWhenSubscriptionIsSuspended() {
+        var current = new SchoolSubscription(
+            subscriptionId, schoolId, planId, LocalDate.now().minusDays(360), LocalDate.now(),
+            SubscriptionStatus.SUSPENDED, amount, null, Instant.now(), 0L, Instant.now(), "Gian lận", UUID.randomUUID()
+        );
+        when(schoolSubscriptionRepository.findById(subscriptionId)).thenReturn(Optional.of(current));
+
+        assertThatThrownBy(() -> useCase.execute(new RenewSubscriptionCommand(schoolId, subscriptionId)))
+            .isInstanceOf(IllegalStateException.class);
+
+        verify(schoolSubscriptionRepository, never()).save(any(SchoolSubscription.class));
     }
 }

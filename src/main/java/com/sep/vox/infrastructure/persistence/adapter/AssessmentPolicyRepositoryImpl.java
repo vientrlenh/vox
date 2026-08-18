@@ -90,13 +90,6 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     }
 
     @Override
-    public boolean existsActiveForScope(UUID schoolId, UUID languageId, UUID frameworkVersionId,
-            UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId, UUID rubricVersionId) {
-        return springDataAssessmentPolicyRepository.existsActiveForScope(schoolId, languageId, frameworkVersionId,
-                schoolGradeLevelId, schoolGradeId, schoolClassId, rubricVersionId);
-    }
-
-    @Override
     public boolean existsActiveForScopeAnyRubricVersion(UUID schoolId, UUID languageId, UUID frameworkVersionId,
             UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId) {
         return springDataAssessmentPolicyRepository.existsActiveForScopeAnyRubricVersion(schoolId, languageId,
@@ -119,6 +112,11 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     @Override
     public boolean existsPublishedByRubricVersionId(UUID rubricVersionId) {
         return springDataAssessmentPolicyRepository.existsByRubricVersionIdAndStatus(rubricVersionId, "PUBLISHED");
+    }
+
+    @Override
+    public boolean existsByRubricVersionId(UUID rubricVersionId) {
+        return springDataAssessmentPolicyRepository.existsByRubricVersionId(rubricVersionId);
     }
 
     @Override

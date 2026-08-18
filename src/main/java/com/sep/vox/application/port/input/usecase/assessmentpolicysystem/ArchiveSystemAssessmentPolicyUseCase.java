@@ -8,9 +8,12 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
+import com.sep.vox.domain.model.rubric.RubricStatus;
+import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,14 +25,17 @@ import java.util.UUID;
 public class ArchiveSystemAssessmentPolicyUseCase implements IUseCase<ArchiveSystemAssessmentPolicyCommand, UUID> {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
+    private final RubricVersionRepository rubricVersionRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
 
     public ArchiveSystemAssessmentPolicyUseCase(
             AssessmentPolicyRepository assessmentPolicyRepository,
+            RubricVersionRepository rubricVersionRepository,
             UserRepository userRepository,
             UserContextPort userContextPort) {
         this.assessmentPolicyRepository = assessmentPolicyRepository;
+        this.rubricVersionRepository = rubricVersionRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
     }
@@ -66,6 +72,19 @@ public class ArchiveSystemAssessmentPolicyUseCase implements IUseCase<ArchiveSys
         policy.setUpdatedBy(currentUserId);
 
         AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
+
+        // 5. 1 Rubric Version chỉ gắn với đúng 1 Assessment Policy, vĩnh viễn -- khi Policy bị Archive,
+        // Rubric Version liên kết cũng Archive theo (không "rảnh" ra để dùng lại cho Policy khác).
+        rubricVersionRepository.findById(policy.getRubricVersionId()).ifPresent(rubricVersion -> {
+            if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
+                rubricVersion.setStatus(RubricStatus.ARCHIVED);
+                rubricVersion.setEffectiveTo(now.isBefore(rubricVersion.getEffectiveFrom()) ? rubricVersion.getEffectiveFrom() : now);
+                rubricVersion.setUpdatedAt(now);
+                rubricVersion.setUpdatedBy(currentUserId);
+                rubricVersionRepository.save(rubricVersion);
+            }
+        });
+
         return saved.getId();
     }
 }

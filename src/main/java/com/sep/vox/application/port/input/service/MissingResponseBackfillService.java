@@ -14,6 +14,7 @@ import com.sep.vox.domain.model.exam.ExamItemEvaluationStatus;
 import com.sep.vox.domain.model.exam.ExamItemResponse;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 
 
@@ -40,15 +41,38 @@ public class MissingResponseBackfillService {
 
     private final ExamPaperItemRepository examPaperItemRepository;
     private final ExamItemResponseRepository examItemResponseRepository;
+    private final ExamItemResponseTurnRepository examItemResponseTurnRepository;
     private final ExamItemEvaluationRepository examItemEvaluationRepository;
 
     public MissingResponseBackfillService(
             ExamPaperItemRepository examPaperItemRepository,
             ExamItemResponseRepository examItemResponseRepository,
+            ExamItemResponseTurnRepository examItemResponseTurnRepository,
             ExamItemEvaluationRepository examItemEvaluationRepository) {
         this.examPaperItemRepository = examPaperItemRepository;
         this.examItemResponseRepository = examItemResponseRepository;
+        this.examItemResponseTurnRepository = examItemResponseTurnRepository;
         this.examItemEvaluationRepository = examItemEvaluationRepository;
+    }
+
+    /**
+     * Câu này có thật sự KHÔNG có nội dung nào không.
+     *
+     * <p>Xét cả transcript của TỪNG LƯỢT chứ không chỉ ô tổng của response: có đường ghi chỉ
+     * điền transcript ở mức lượt, nên chỉ nhìn response sẽ kết luận nhầm là rỗng.
+     *
+     * <p>Định nghĩa nằm ở đây thay vì viết riêng tại từng nơi gọi, vì trước đây đúng chuyện đó
+     * đã xảy ra: đường nộp bài có rào này, còn {@code UpholdResultUseCase} thì không -- và một
+     * câu học sinh đã nói 2 lượt (41 giây + 36 giây, đủ audio lẫn transcript) bị ghi 0 điểm kèm
+     * câu "Thí sinh không đưa ra câu trả lời nào cho câu hỏi này" (đo được 2026-08-17, phiên
+     * 01a0101d). Một vị từ, một nơi định nghĩa.
+     */
+    public boolean isSilentAnswer(ExamItemResponse response) {
+        if (response.getTranscript() != null && !response.getTranscript().isBlank()) {
+            return false;
+        }
+        return examItemResponseTurnRepository.findByExamItemResponseId(response.getId()).stream()
+            .noneMatch(turn -> turn.getTranscript() != null && !turn.getTranscript().isBlank());
     }
 
     /**
@@ -62,9 +86,22 @@ public class MissingResponseBackfillService {
      * gì thì 0 là câu trả lời duy nhất đúng, và ghi thẳng ở đây vừa chắc chắn vừa khỏi tốn một
      * lượt gọi model.
      *
-     * @return true nếu đã ghi (tức response này thật sự rỗng)
+     * <p>Tự kiểm {@link #isSilentAnswer} chứ không tin người gọi: đây là hàm ghi thẳng 0 điểm
+     * kèm câu "thí sinh không trả lời", tức nó phát ngôn một kết luận về học sinh. Kết luận đó
+     * phải do chính dữ liệu quyết định, không do nơi gọi nhớ hay quên kiểm.
+     *
+     * @return true nếu đã ghi (tức response này thật sự rỗng); false khi câu có nội dung và
+     *         không được phép cho 0
      */
     public boolean recordSilentAnswer(UUID responseId, UUID paperItemId) {
+        var response = examItemResponseRepository.findById(responseId).orElse(null);
+        if (response != null && !isSilentAnswer(response)) {
+            LOGGER.warn(
+                "Từ chối ghi 0 điểm cho câu {}: câu này CÓ nội dung trả lời, phải để người chấm xử lý.",
+                responseId
+            );
+            return false;
+        }
         examItemEvaluationRepository.save(new ExamItemEvaluation(
             responseId,
             paperItemId,

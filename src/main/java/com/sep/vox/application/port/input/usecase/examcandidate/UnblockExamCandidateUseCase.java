@@ -2,17 +2,18 @@ package com.sep.vox.application.port.input.usecase.examcandidate;
 
 import java.time.Instant;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.command.RetryGradingExamSessionCommand;
 import com.sep.vox.application.port.input.command.UnblockExamCandidateCommand;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.ExamSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
-import com.sep.vox.application.port.input.usecase.examsession.RetryGradingExamSessionUseCase;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
@@ -27,6 +28,8 @@ import com.sep.vox.domain.repository.ExamSessionRepository;
 @Service
 public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidateCommand, ExamCandidateDto> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(UnblockExamCandidateUseCase.class);
+
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamRepository examRepository;
     private final ExamSessionRepository examSessionRepository;
@@ -34,7 +37,6 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
     private final ExamItemResponseRepository examItemResponseRepository;
     private final ExamItemEvaluationRepository examItemEvaluationRepository;
     private final UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
-    private final RetryGradingExamSessionUseCase retryGradingExamSessionUseCase;
     private final ExamSessionModerationAccessService moderationAccessService;
     private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
 
@@ -46,7 +48,6 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
             ExamItemResponseRepository examItemResponseRepository,
             ExamItemEvaluationRepository examItemEvaluationRepository,
             UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase,
-            RetryGradingExamSessionUseCase retryGradingExamSessionUseCase,
             ExamSessionModerationAccessService moderationAccessService,
             ClassTestGradingAssignmentService classTestGradingAssignmentService) {
         this.examCandidateRepository = examCandidateRepository;
@@ -56,7 +57,6 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
         this.examItemResponseRepository = examItemResponseRepository;
         this.examItemEvaluationRepository = examItemEvaluationRepository;
         this.upsertExamCandidateResultUseCase = upsertExamCandidateResultUseCase;
-        this.retryGradingExamSessionUseCase = retryGradingExamSessionUseCase;
         this.moderationAccessService = moderationAccessService;
         this.classTestGradingAssignmentService = classTestGradingAssignmentService;
     }
@@ -90,7 +90,8 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
      * G.4 case 2: soi lại thấy KHÔNG vi phạm - tính điểm lại cho mọi session của thí
      * sinh đang bị INVALID do từng bị đánh dấu vi phạm oan. Đã từng có ExamItemEvaluation
      * -> recompute từ dữ liệu cũ (ưu tiên điểm con người, không gọi AI lại); chưa từng có
-     * -> AI chấm thật lần đầu qua retryGradingExamSession (đã mở rộng để nhận case này).
+     * -> chuyển PENDING_REVIEW cho giáo viên chấm tay, KHÔNG gọi AI (xem
+     * {@link #moveToPendingReviewWithoutScores}).
      */
     private void recomputeInvalidatedSessions(java.util.UUID candidateId) {
         for (var session : examSessionRepository.findAllByCandidateId(candidateId)) {
@@ -109,8 +110,42 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
                 // một phân công mới thì giáo viên chủ bài mới chấm lại được.
                 classTestGradingAssignmentService.ensureAssignmentForResult(recalculated);
             } else {
-                retryGradingExamSessionUseCase.execute(new RetryGradingExamSessionCommand(session.getId()));
+                moveToPendingReviewWithoutScores(result, session.getId());
             }
         }
+    }
+
+    /**
+     * Bài CHƯA từng được chấm câu nào: chuyển thẳng sang {@code PENDING_REVIEW} cho giáo viên
+     * chấm tay, KHÔNG gọi AI.
+     *
+     * <p><strong>Vì sao bỏ lời gọi AI (2026-08-16):</strong> bản trước chạy
+     * {@code retryGradingExamSession} ở nhánh này. Nhưng bài rơi vào đây là bài bị buộc kết
+     * thúc giữa chừng — thí sinh mới nói được một hai câu, thường còn dở câu. Bắt AI chấm một
+     * bài như vậy vừa tốn một lượt gọi, vừa cho ra điểm không có nghĩa, trong khi thứ giáo viên
+     * cần để phán quyết là bản ghi lời nói chứ không phải điểm máy. Bản ghi đó vẫn còn nguyên
+     * trong {@code exam_item_response_turns} và nay đã hiện được ở màn chấm
+     * (JpaExamGradingQueryRepository#turnsForItem).
+     *
+     * <p><strong>Vì sao KHÔNG đi qua {@code UpsertExamCandidateResultUseCase}:</strong> nó gọi
+     * {@code ExamSessionResultCalculator.calculate}, mà hàm đó ném {@code NotFoundException}
+     * ngay khi một câu trả lời thiếu evaluation (dòng 82-85). Không có evaluation nào thì không
+     * có gì để tính — đặt thẳng trạng thái là cách đúng, thay vì nới một hàm dùng chung cho mọi
+     * đường tính điểm chỉ để phục vụ ca này.
+     *
+     * <p>Điểm giữ nguyên (chưa có điểm nào để mà đổi); giáo viên chấm xong thì chính lần chấm
+     * đó sinh evaluation, và từ đó mọi đường tính điểm thông thường chạy lại bình thường.
+     */
+    private void moveToPendingReviewWithoutScores(
+            com.sep.vox.domain.model.exam.ExamCandidateResult result, java.util.UUID sessionId) {
+        var now = Instant.now();
+        result.setStatus(ExamCandidateResultStatus.PENDING_REVIEW);
+        result.setUpdatedAt(now);
+        result.setUpdatedBy(moderationAccessService.getCurrentUserId());
+        examCandidateResultRepository.save(result);
+        LOGGER.info(
+            "Gỡ chặn phiên {}: chưa có evaluation nào, chuyển PENDING_REVIEW cho giáo viên chấm tay (không gọi AI).",
+            sessionId
+        );
     }
 }

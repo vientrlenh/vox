@@ -17,6 +17,7 @@ import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictVal
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionActiveGuardService;
+import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -67,6 +68,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private final ExamStreamConfigResolver examStreamConfigResolver;
     private final ExamScheduleRoomValidator examScheduleRoomValidator;
     private final ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator;
+    private final SubscriptionPeriodGuardService subscriptionPeriodGuardService;
     private final UserContextPort userContextPort;
     private final SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService;
 
@@ -83,6 +85,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             ExamStreamConfigResolver examStreamConfigResolver,
             ExamScheduleRoomValidator examScheduleRoomValidator,
             ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator,
+            SubscriptionPeriodGuardService subscriptionPeriodGuardService,
             UserContextPort userContextPort,
             SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService) {
         this.schoolClassRepository = schoolClassRepository;
@@ -97,6 +100,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         this.examStreamConfigResolver = examStreamConfigResolver;
         this.examScheduleRoomValidator = examScheduleRoomValidator;
         this.examScheduleProctorConflictValidator = examScheduleProctorConflictValidator;
+        this.subscriptionPeriodGuardService = subscriptionPeriodGuardService;
         this.userContextPort = userContextPort;
         this.schoolSubscriptionActiveGuardService = schoolSubscriptionActiveGuardService;
     }
@@ -125,7 +129,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
         examAssessmentPolicyValidator.requirePublishedInSchool(
             command.assessmentPolicyId(), schoolClass.getSchoolId());
-        validateOpenClose(command.openAt(), command.closeAt());
+        validateOpenClose(command.openAt(), command.closeAt(), schoolClass.getSchoolId());
 
         var now = Instant.now();
         var exam = createExam(schoolClass, command, currentUserId, now);
@@ -289,7 +293,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         return examCandidateRepository.saveAll(candidates).size();
     }
 
-    private void validateOpenClose(String openAt, String closeAt) {
+    private void validateOpenClose(String openAt, String closeAt, UUID schoolId) {
         var open = DateMapper.toInstant(openAt);
         var close = DateMapper.toInstant(closeAt);
         if (open == null || close == null) {
@@ -298,5 +302,6 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         if (!open.isBefore(close)) {
             throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
+        subscriptionPeriodGuardService.requireWithinSubscriptionPeriod(schoolId, open, close);
     }
 }

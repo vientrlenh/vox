@@ -14,7 +14,9 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.mapper.ExamScheduleDtoMapper;
 import com.sep.vox.domain.model.exam.ExamSchedule;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 
 @Service
@@ -23,14 +25,17 @@ public class ViewMyExamSchedulesUseCase
 
     private final ExamCandidateRepository examCandidateRepository;
     private final ExamScheduleRepository examScheduleRepository;
+    private final ExamRepository examRepository;
     private final UserContextPort userContextPort;
 
     public ViewMyExamSchedulesUseCase(
             ExamCandidateRepository examCandidateRepository,
             ExamScheduleRepository examScheduleRepository,
+            ExamRepository examRepository,
             UserContextPort userContextPort) {
         this.examCandidateRepository = examCandidateRepository;
         this.examScheduleRepository = examScheduleRepository;
+        this.examRepository = examRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -45,7 +50,26 @@ public class ViewMyExamSchedulesUseCase
             throw new ForbiddenException("Bạn không phải là thí sinh của bài kiểm tra này.");
         }
 
+        // Ca thi chỉ hiện khi KỲ THI đã công bố, không chỉ khi ca đã publish.
+        //
+        // Hai trạng thái độc lập nhau: người xếp lịch có thể publish ca trong lúc kỳ thi còn
+        // DRAFT (chưa bấm SCHEDULE). Trước đây chỉ lọc theo ca, nên học sinh thấy lịch của một
+        // kỳ thi chưa được công bố -- lộ đề cương thời gian trước khi nhà trường chốt.
+        //
+        // Cùng luật với ViewMyExamsUseCase#toRow: chỉ ẩn DRAFT. CANCELLED vẫn hiện để học sinh
+        // biết kỳ thi đã bị huỷ, giống cách ca CANCELLED vẫn lọt isVisibleToStudent.
+        var publishedExamIds = examRepository.findByIdIn(
+                candidates.stream()
+                    .map(candidate -> candidate.getExamId())
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList()).stream()
+            .filter(exam -> exam.getStatus() != ExamStatus.DRAFT)
+            .map(exam -> exam.getId())
+            .collect(java.util.stream.Collectors.toSet());
+
         var scheduleIds = candidates.stream()
+            .filter(candidate -> publishedExamIds.contains(candidate.getExamId()))
             .map(candidate -> candidate.getScheduleId())
             .filter(Objects::nonNull)
             .distinct()

@@ -13,6 +13,9 @@ import com.sep.vox.application.response.input.examsession.ExamCandidateResultRes
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultSectionResponse;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
+import com.sep.vox.domain.repository.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
@@ -28,6 +31,9 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
     private final RubricVersionRepository rubricVersionRepository;
     private final ExamResultAccessService examResultAccessService;
     private final QuestionRepository questionRepository;
+    private final ExamItemResponseRepository examItemResponseRepository;
+    private final ExamItemEvaluationRepository examItemEvaluationRepository;
+    private final ExamPaperItemRepository examPaperItemRepository;
 
     public ViewExamSessionResultUseCase(
             ExamCandidateResultRepository examCandidateResultRepository,
@@ -36,7 +42,10 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
             RubricResultBandRepository rubricResultBandRepository,
             RubricVersionRepository rubricVersionRepository,
             ExamResultAccessService examResultAccessService,
-            QuestionRepository questionRepository) {
+            QuestionRepository questionRepository,
+            ExamItemResponseRepository examItemResponseRepository,
+            ExamItemEvaluationRepository examItemEvaluationRepository,
+            ExamPaperItemRepository examPaperItemRepository) {
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examSessionResultCalculator = examSessionResultCalculator;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
@@ -44,6 +53,9 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
         this.rubricVersionRepository = rubricVersionRepository;
         this.examResultAccessService = examResultAccessService;
         this.questionRepository = questionRepository;
+        this.examItemResponseRepository = examItemResponseRepository;
+        this.examItemEvaluationRepository = examItemEvaluationRepository;
+        this.examPaperItemRepository = examPaperItemRepository;
     }
 
     /**
@@ -79,6 +91,60 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
             .toList();
     }
 
+    /**
+     * Danh sách câu khi CHƯA chấm xong -- dựng thẳng từ câu trả lời, không qua calculator.
+     *
+     * <p>Trước đây bài chưa chấm trả về {@code items = []}, và đó là toàn bộ lý do trang Xem kết
+     * quả trắng trơn sau khi gỡ vi phạm: không có item thì client không có {@code responseId} nào
+     * để hỏi chi tiết, nên nó KHÔNG GỌI truy vấn chi tiết lần nào -- bản vá fallback lượt nói ở
+     * {@code ViewExamItemResponseEvaluationUseCase} nằm sau một cánh cửa không ai mở.
+     *
+     * <p>Điểm để {@code null} vì chưa chấm thì thật sự chưa có điểm. Nhưng bản ghi tiếng nói và
+     * transcript KHÔNG phải điểm -- chúng là bằng chứng, và không có lý do gì bắt chờ chấm xong
+     * mới cho xem. Màn chấm vốn đã hiện chúng ngay từ đầu (JpaExamGradingQueryRepository
+     * LEFT JOIN sang evaluation); đây là kéo trang kết quả về cùng một giả định.
+     */
+    private java.util.List<ExamCandidateResultItemResponse> itemResponsesWithoutScores(
+            java.util.UUID sessionId, java.util.UUID paperId) {
+        var responseByPaperItemId = new java.util.HashMap<java.util.UUID, java.util.UUID>();
+        for (var response : examItemResponseRepository.findBySessionId(sessionId)) {
+            if (response.getPaperItemId() != null) {
+                responseByPaperItemId.putIfAbsent(response.getPaperItemId(), response.getId());
+            }
+        }
+        if (responseByPaperItemId.isEmpty() || paperId == null) {
+            return java.util.List.of();
+        }
+
+        // Đi theo ĐỀ chứ không theo response: giữ đúng thứ tự (section, order) mà calculator dùng,
+        // nên số "Câu 1, Câu 2" trên client không nhảy khi bài chuyển từ chưa chấm sang đã chấm.
+        var paperItems = examPaperItemRepository.findByPaperId(paperId).stream()
+            .filter(paperItem -> responseByPaperItemId.containsKey(paperItem.getId()))
+            .sorted(java.util.Comparator.comparingInt(paperItem -> paperItem.getOrder()))
+            .toList();
+        var questionIds = paperItems.stream()
+            .map(paperItem -> paperItem.getQuestionId())
+            .filter(id -> id != null)
+            .distinct()
+            .toList();
+        var texts = new java.util.HashMap<java.util.UUID, String>();
+        if (!questionIds.isEmpty()) {
+            for (var question : questionRepository.findByIdIn(questionIds)) {
+                texts.put(question.getId(), question.getQuestionText());
+            }
+        }
+        return paperItems.stream()
+            .map(paperItem -> new ExamCandidateResultItemResponse(
+                paperItem.getId(),
+                responseByPaperItemId.get(paperItem.getId()),
+                paperItem.getSectionId(),
+                paperItem.getQuestionId() == null ? null : texts.get(paperItem.getQuestionId()),
+                null,
+                null
+            ))
+            .toList();
+    }
+
     @Override
     @Transactional(readOnly = true)
     public ExamCandidateResultResponse execute(ViewExamSessionResultQuery input) {
@@ -91,7 +157,7 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
         // biết bài mình đang ở đâu thay vì gặp màn "không tìm thấy".
         var scoreVisible = !access.candidateOwner()
             || ExamCandidateResultStatus.isVisibleToCandidate(result.getStatus());
-        var includeBreakdown = scoreVisible && shouldIncludeBreakdown(result.getStatus());
+        var includeBreakdown = scoreVisible && shouldIncludeBreakdown(result.getStatus(), session.getId());
         var calculated = includeBreakdown ? examSessionResultCalculator.calculate(session.getId()) : null;
         var targetBand = result.getTargetFrameworkBandId() == null
             ? null
@@ -127,11 +193,46 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
             scoreVisible && calculated != null ? calculated.sections().stream()
                 .map(section -> new ExamCandidateResultSectionResponse(section.sectionId(), section.title(), section.score()))
                 .toList() : java.util.List.of(),
-            scoreVisible && calculated != null ? itemResponses(calculated.items()) : java.util.List.of()
+            // Chưa chấm xong (kể cả bài đang INVALID) thì vẫn trả danh sách câu, chỉ khuyết điểm
+            // -- xem itemResponsesWithoutScores. Vẫn nằm sau scoreVisible để giữ nguyên luật cũ:
+            // học sinh chưa được xem kết quả thì không thấy câu nào, y như trước.
+            scoreVisible
+                ? (calculated != null
+                    ? itemResponses(calculated.items())
+                    : itemResponsesWithoutScores(session.getId(), session.getPaperId()))
+                : java.util.List.of()
         );
     }
 
-    private boolean shouldIncludeBreakdown(ExamCandidateResultStatus status) {
-        return status != ExamCandidateResultStatus.INVALID;
+    /**
+     * Có dựng được bảng điểm chi tiết cho bài này không.
+     *
+     * <p>Hỏi ĐÚNG câu mà {@link ExamSessionResultCalculator} cần: "mọi câu đã có bản chấm chưa".
+     * Bản trước hỏi "trạng thái có phải INVALID không" -- một phép thử gián tiếp, đúng tình cờ
+     * vì bài chưa chấm thường đang ở INVALID.
+     *
+     * <p>Nó vỡ ngay khi bài chưa chấm mang trạng thái khác. Đo được 2026-08-17 trên phiên
+     * 01a00e64: gỡ chặn đưa bài từ INVALID sang PENDING_REVIEW, điều kiện cũ cho qua, calculator
+     * gặp câu không có evaluation và ném NotFoundException -- hỏng CẢ truy vấn
+     * {@code examSessionResult}, nên trang Xem kết quả hiện "Không có dữ liệu trả lời" dù câu
+     * trả lời còn nguyên trong DB.
+     *
+     * <p>Bài chưa chấm đủ thì trả về không có bảng điểm; trang vẫn hiện đầu bài, trạng thái và
+     * cờ nghi vấn -- thiếu điểm là đúng, còn hỏng cả trang thì không.
+     */
+    private boolean shouldIncludeBreakdown(ExamCandidateResultStatus status, java.util.UUID sessionId) {
+        if (status == ExamCandidateResultStatus.INVALID) {
+            return false;
+        }
+        var responseIds = examItemResponseRepository.findBySessionId(sessionId).stream()
+            .map(response -> response.getId())
+            .toList();
+        if (responseIds.isEmpty()) {
+            return false;
+        }
+        var evaluatedResponseIds = examItemEvaluationRepository.findByResponseIdIn(responseIds).stream()
+            .map(evaluation -> evaluation.getResponseId())
+            .collect(java.util.stream.Collectors.toSet());
+        return evaluatedResponseIds.containsAll(responseIds);
     }
 }

@@ -177,9 +177,9 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             // và vẫn trả về một con điểm suy ra từ hư không -- nhìn không phân biệt được với
             // điểm thật.
             //
-            // Xét cả transcript của TỪNG LƯỢT chứ không chỉ ô tổng: có đường ghi chỉ điền
-            // transcript ở mức lượt, nên chỉ nhìn response sẽ kết luận nhầm là rỗng.
-            if (isSilentAnswer(response)) {
+            // Vị từ "im lặng" nằm ở MissingResponseBackfillService -- xem javadoc ở đó để biết
+            // vì sao nó phải là một định nghĩa dùng chung thay vì mỗi nơi tự kiểm.
+            if (missingResponseBackfillService.isSilentAnswer(response)) {
                 missingResponseBackfillService.recordSilentAnswer(response.getId(), paperItemId);
                 continue;
             }
@@ -265,14 +265,6 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
      * <p>KHÔNG xét thời lượng: mic mở nhưng thí sinh im lặng vẫn cho ra vài chục giây audio mà
      * không có chữ nào. Chỉ có chữ mới chấm được.
      */
-    private boolean isSilentAnswer(com.sep.vox.domain.model.exam.ExamItemResponse response) {
-        if (response.getTranscript() != null && !response.getTranscript().isBlank()) {
-            return false;
-        }
-        return examItemResponseTurnRepository.findByExamItemResponseId(response.getId()).stream()
-            .noneMatch(turn -> turn.getTranscript() != null && !turn.getTranscript().isBlank());
-    }
-
     private void persistInvalidBlockedResult(com.sep.vox.domain.model.exam.ExamSession session) {
         var exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy bài kiểm tra"));

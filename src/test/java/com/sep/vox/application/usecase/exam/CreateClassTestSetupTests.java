@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -28,6 +29,7 @@ import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictVal
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionActiveGuardService;
+import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.exam.CreateClassTestUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
@@ -75,6 +77,7 @@ class CreateClassTestSetupTests {
     private ExamCandidateRepository examCandidateRepository;
     private SchoolClassUserRepository schoolClassUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
+    private SubscriptionPeriodGuardService subscriptionPeriodGuardService;
     private CreateClassTestUseCase useCase;
 
     @BeforeEach
@@ -88,6 +91,7 @@ class CreateClassTestSetupTests {
         examScheduleRepository = mock(ExamScheduleRepository.class);
         examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
+        subscriptionPeriodGuardService = mock(SubscriptionPeriodGuardService.class);
 
         useCase = new CreateClassTestUseCase(
             schoolClassRepository,
@@ -104,6 +108,7 @@ class CreateClassTestSetupTests {
             // Validator thật trên proctor repo đã mock: mặc định "giáo viên rảnh", và test riêng
             // bên dưới bật cờ trùng lịch lên để kiểm tra luật.
             new ExamScheduleProctorConflictValidator(examScheduleProctorRepository),
+            subscriptionPeriodGuardService,
             userContextPort,
             mock(SchoolSubscriptionActiveGuardService.class)
         );
@@ -147,6 +152,34 @@ class CreateClassTestSetupTests {
         var result = useCase.execute(command(null, null, null, null));
 
         assertThat(result.exam().status()).isEqualTo(ExamStatus.DRAFT.name());
+    }
+
+    /**
+     * Soi hạn gói theo trường của LỚP chứ không phải trường lấy từ token người gọi: giáo viên có thể
+     * dạy lớp thuộc trường khác, và bài kiểm tra tiêu quota của trường sở hữu lớp.
+     */
+    @Test
+    void should_check_subscription_period_against_school_of_the_class() {
+        useCase.execute(command(null, null, null, null));
+
+        verify(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(
+            eq(SCHOOL_ID),
+            eq(Instant.parse("2026-08-10T08:00:00Z")),
+            eq(Instant.parse("2026-08-10T09:00:00Z")));
+    }
+
+    @Test
+    void should_reject_when_window_falls_outside_subscription_period() {
+        doThrow(new IllegalStateException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
+            .when(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(any(), any(), any());
+
+        assertThatThrownBy(() -> useCase.execute(command(null, null, null, null)))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("hạn gói dịch vụ");
+        // Chặn trước khi dựng bất cứ thứ gì: tạo bài trên lớp còn kéo theo ca thi, CHAIR và cả danh
+        // sách thí sinh, để lọt là phải dọn tay.
+        verify(examRepository, never()).save(any());
+        verify(examCandidateRepository, never()).saveAll(anyCollection());
     }
 
     /** Soạn đề chuyển hẳn sang trang chi tiết, nên tạo bài không sinh mã đề nào. */

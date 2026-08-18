@@ -345,6 +345,17 @@ type ProctorBusySlot {
     endDate: String
 }
 
+# Một học sinh đang vướng lịch khi cân nhắc xếp vào `targetScheduleId`: đã được xếp ca
+# `busyScheduleId` chạy [startDate, endDate).
+# Chỉ để làm mờ sẵn lựa chọn bị trùng ở màn xếp thí sinh — luật chặn thật chạy lúc ghi.
+type StudentBusySlot {
+    studentId: ID!
+    targetScheduleId: ID!
+    busyScheduleId: ID!
+    startDate: String
+    endDate: String
+}
+
 type ExamCandidate {
     id: ID!
     examId: ID!
@@ -451,8 +462,10 @@ type ExamCandidateResultItem {
     sectionId: ID!
     "Đề bài của câu. Null khi paper item không trỏ tới câu hỏi nào hoặc câu hỏi đã bị xoá."
     questionText: String
-    itemScore: Float!
-    weightedScore: Float!
+    "Null khi câu chưa được chấm -- bài vẫn trả về câu để client hiện bản ghi bài nói."
+    itemScore: Float
+    "Null khi câu chưa được chấm."
+    weightedScore: Float
 }
 
 type ExamCandidateResult {
@@ -557,7 +570,8 @@ type ExamItemAiEvaluationContext {
 }
 
 type ExamItemEvaluationDetails {
-    id: ID!
+    "Null khi câu CHƯA có bản chấm nào -- lúc đó chỉ `turns` có dữ liệu, mọi field điểm đều trống."
+    id: ID
     responseId: ID!
     paperItemId: ID!
     engineType: String
@@ -751,6 +765,7 @@ extend type Query {
     examSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
     myExamSchedules(examId: ID, status: ExamScheduleStatus, startDate: String, endDate: String): [ExamSchedule!]!
     proctorBusySlots(scheduleId: ID!, teacherIds: [ID!]!): [ProctorBusySlot!]!
+    studentBusySlots(scheduleIds: [ID!]!, studentIds: [ID!]!): [StudentBusySlot!]!
 
     examCandidates(examId: ID!, scheduleId: ID, status: ExamCandidateStatus): [ExamCandidate!]!
 

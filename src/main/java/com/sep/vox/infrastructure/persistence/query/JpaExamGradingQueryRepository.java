@@ -804,10 +804,11 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
      */
     private List<GradingTaskItemInfo> taskItems(UUID sessionId) {
         var rows = em.createQuery("""
-            SELECT r.id, r.paperItemId, sec.title, pi.sectionId
+            SELECT r.id, r.paperItemId, sec.title, pi.sectionId, q.questionText
             FROM ExamItemResponseJpaEntity r
             LEFT JOIN ExamPaperItemJpaEntity pi ON pi.id = r.paperItemId
             LEFT JOIN ExamPaperSectionJpaEntity sec ON sec.id = pi.sectionId
+            LEFT JOIN QuestionJpaEntity q ON q.id = pi.questionId
             WHERE r.sessionId = :sessionId
             ORDER BY sec.order ASC, pi.order ASC
         """, Tuple.class)
@@ -828,6 +829,24 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         var scoresByEvaluation = criterionScoresByEvaluationIds(scoreEvaluationIds);
         var turnsByEvaluation = turnsByEvaluationIds(
             aiEvaluations.values().stream().map(evaluation -> evaluation.id()).toList());
+        // Câu CHƯA từng được AI chấm thì không có dòng nào trong exam_item_evaluation_turns,
+        // nên màn chấm hiện TRỐNG TRƠN -- không transcript, không audio, không cả câu hỏi.
+        //
+        // Đo được trên production 2026-08-16, phiên 01a00e64: bài bị buộc kết thúc ngay trong
+        // lúc thi nên AI chưa kịp chấm câu nào. Kết quả: 0 evaluation, 0 evaluation_turn --
+        // NHƯNG 2 response và 3 response_turn còn nguyên, đủ cả transcript lẫn audio_url trỏ
+        // S3. Bằng chứng vẫn còn, chỉ là màn chấm không nhìn vào chỗ nó nằm. Giáo viên mở lên
+        // thấy trắng và không có cách nào chấm tay.
+        //
+        // Chỉ truy khi THẬT SỰ có câu thiếu: bài đã chấm bình thường giữ nguyên đúng 4 query
+        // như chú thích đầu hàm, không gánh thêm round-trip nào.
+        var responseIdsWithoutAiTurns = responseIds.stream()
+            .filter(responseId -> {
+                var ai = aiEvaluations.get(responseId);
+                return ai == null || turnsByEvaluation.getOrDefault(ai.id(), List.of()).isEmpty();
+            })
+            .toList();
+        var fallbackTurnsByResponse = turnsByResponseIds(responseIdsWithoutAiTurns);
 
         // Số thứ tự câu trong section: rows đã sắp theo (sec.order, pi.order) nên chỉ
         // cần đếm dồn theo sectionId. Câu không thuộc section nào tự thành câu 1.
@@ -852,10 +871,13 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                 row.get(2, String.class),
                 sectionId,
                 orderInSection,
+                // LEFT JOIN sang câu hỏi ngay trong query có sẵn: không thêm round-trip nào,
+                // giữ đúng "số query cố định" ghi ở đầu hàm.
+                row.get(4, String.class),
                 current == null ? null : current.itemScore(),
                 current == null ? null : current.feedbackSummary(),
                 current == null ? List.of() : scoresByEvaluation.getOrDefault(current.id(), List.of()),
-                ai == null ? List.of() : turnsByEvaluation.getOrDefault(ai.id(), List.of()),
+                turnsForItem(responseId, ai, turnsByEvaluation, fallbackTurnsByResponse),
                 ai == null ? List.of() : scoresByEvaluation.getOrDefault(ai.id(), List.of()),
                 ai == null ? null : ai.overallConfidence(),
                 ai == null ? null : ai.feedbackSummary(),
@@ -978,6 +1000,70 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                     row.get(3, String.class),
                     row.get(4, BigDecimal.class),
                     row.get(5, String.class)
+                ));
+        }
+        return map;
+    }
+
+    /**
+     * Lượt nói của một câu: ưu tiên bản AI, thiếu thì lùi về lượt nói GỐC của thí sinh.
+     *
+     * <p>Không trộn hai nguồn vào nhau. Bản AI có thêm ba thứ mà bảng gốc không có --
+     * {@code asrConfidence}, {@code pronunciationOverall}, {@code wordFeedback} -- nên bài đã
+     * chấm phải lấy trọn bản AI, y hệt trước khi có hàm này. Bài chưa chấm thì ba cột đó vốn
+     * chưa tồn tại, để trống là đúng chứ không phải mất mát.
+     */
+    private List<GradingTurnInfo> turnsForItem(
+            UUID responseId,
+            AiEvaluation ai,
+            Map<UUID, List<GradingTurnInfo>> turnsByEvaluation,
+            Map<UUID, List<GradingTurnInfo>> fallbackTurnsByResponse) {
+        if (ai != null) {
+            var aiTurns = turnsByEvaluation.getOrDefault(ai.id(), List.of());
+            if (!aiTurns.isEmpty()) {
+                return aiTurns;
+            }
+        }
+        return fallbackTurnsByResponse.getOrDefault(responseId, List.of());
+    }
+
+    /**
+     * Lượt nói GỐC của thí sinh, đọc thẳng từ {@code exam_item_response_turns}.
+     *
+     * <p>Bảng này là bằng chứng thô -- nó thuộc về CÂU TRẢ LỜI, không thuộc về lần chấm nào --
+     * nên còn nguyên kể cả khi AI chưa từng chấm, hoặc khi bài bị vô hiệu giữa chừng.
+     *
+     * <p>Ba cột riêng của bản AI trả {@code null}: bảng gốc không có chúng, và bịa ra giá trị
+     * thay thế còn tệ hơn để trống -- giao diện phân biệt được "chưa chấm" với "chấm ra 0".
+     */
+    private Map<UUID, List<GradingTurnInfo>> turnsByResponseIds(List<UUID> responseIds) {
+        if (responseIds.isEmpty()) {
+            return Map.of();
+        }
+        var rows = em.createQuery("""
+            SELECT t.examItemResponseId, t.id, t.turnOrder, t.turnType, t.promptText, t.audioUrl,
+                   t.transcript, t.durationSeconds, t.wordCount
+            FROM ExamItemResponseTurnJpaEntity t
+            WHERE t.examItemResponseId IN (:responseIds)
+            ORDER BY t.turnOrder ASC
+        """, Tuple.class)
+            .setParameter("responseIds", responseIds)
+            .getResultList();
+        var map = new LinkedHashMap<UUID, List<GradingTurnInfo>>();
+        for (var row : rows) {
+            map.computeIfAbsent(row.get(0, UUID.class), ignored -> new ArrayList<>())
+                .add(new GradingTurnInfo(
+                    row.get(1, UUID.class),
+                    row.get(2, Integer.class),
+                    row.get(3, String.class),
+                    row.get(4, String.class),
+                    row.get(5, String.class),
+                    row.get(6, String.class),
+                    row.get(7, Integer.class),
+                    row.get(8, Integer.class),
+                    null,
+                    null,
+                    null
                 ));
         }
         return map;

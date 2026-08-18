@@ -51,6 +51,7 @@ class ViewExamItemResponseEvaluationUseCaseTests {
     private ExamItemEvaluationRepository examItemEvaluationRepository;
     private ExamItemCriterionScoreRepository examItemCriterionScoreRepository;
     private ExamItemEvaluationTurnRepository examItemEvaluationTurnRepository;
+    private com.sep.vox.domain.repository.ExamItemResponseTurnRepository examItemResponseTurnRepository;
     private RubricCriterionRepository rubricCriterionRepository;
     private ExamResultAccessService examResultAccessService;
     private ViewExamItemResponseEvaluationUseCase useCase;
@@ -60,18 +61,22 @@ class ViewExamItemResponseEvaluationUseCaseTests {
         examItemEvaluationRepository = mock(ExamItemEvaluationRepository.class);
         examItemCriterionScoreRepository = mock(ExamItemCriterionScoreRepository.class);
         examItemEvaluationTurnRepository = mock(ExamItemEvaluationTurnRepository.class);
+        examItemResponseTurnRepository = mock(com.sep.vox.domain.repository.ExamItemResponseTurnRepository.class);
         rubricCriterionRepository = mock(RubricCriterionRepository.class);
         examResultAccessService = mock(ExamResultAccessService.class);
         useCase = new ViewExamItemResponseEvaluationUseCase(
             examItemEvaluationRepository,
             examItemCriterionScoreRepository,
             examItemEvaluationTurnRepository,
+            examItemResponseTurnRepository,
             rubricCriterionRepository,
             examResultAccessService,
             new FakeJsonSerializationPort()
         );
         when(rubricCriterionRepository.findById(any())).thenReturn(Optional.empty());
         when(examItemEvaluationTurnRepository.findByEvaluationId(any())).thenReturn(List.of());
+        // Không có lượt gốc: các ca sẵn có kiểm bản AI, nhánh lùi phải đứng yên.
+        when(examItemResponseTurnRepository.findByExamItemResponseId(any())).thenReturn(List.of());
         when(examItemCriterionScoreRepository.findByEvaluationId(any())).thenReturn(List.of());
     }
 

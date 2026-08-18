@@ -23,6 +23,7 @@ import com.sep.vox.application.port.input.usecase.examsession.DeleteExamSessionU
 import com.sep.vox.application.port.input.usecase.examsession.FlagExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ForceEndExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.ReportAiUsageUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.HandOffGradingToHumanUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.RetryGradingExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionRemainingTimeUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
@@ -50,6 +51,7 @@ public class ExamSessionController {
     private final FlagExamSessionUseCase flagExamSessionUseCase;
     private final ForceEndExamSessionUseCase forceEndExamSessionUseCase;
     private final RetryGradingExamSessionUseCase retryGradingExamSessionUseCase;
+    private final HandOffGradingToHumanUseCase handOffGradingToHumanUseCase;
     private final UpdateExamSessionRemainingTimeUseCase updateExamSessionRemainingTimeUseCase;
     private final ReportAiUsageUseCase reportAiUsageUseCase;
 
@@ -62,6 +64,7 @@ public class ExamSessionController {
             FlagExamSessionUseCase flagExamSessionUseCase,
             ForceEndExamSessionUseCase forceEndExamSessionUseCase,
             RetryGradingExamSessionUseCase retryGradingExamSessionUseCase,
+            HandOffGradingToHumanUseCase handOffGradingToHumanUseCase,
             UpdateExamSessionRemainingTimeUseCase updateExamSessionRemainingTimeUseCase,
             ReportAiUsageUseCase reportAiUsageUseCase) {
         this.createExamSessionUseCase = createExamSessionUseCase;
@@ -72,6 +75,7 @@ public class ExamSessionController {
         this.flagExamSessionUseCase = flagExamSessionUseCase;
         this.forceEndExamSessionUseCase = forceEndExamSessionUseCase;
         this.retryGradingExamSessionUseCase = retryGradingExamSessionUseCase;
+        this.handOffGradingToHumanUseCase = handOffGradingToHumanUseCase;
         this.updateExamSessionRemainingTimeUseCase = updateExamSessionRemainingTimeUseCase;
         this.reportAiUsageUseCase = reportAiUsageUseCase;
     }
@@ -145,6 +149,18 @@ public class ExamSessionController {
     public ResponseEntity<ApiResponse<UUID>> retryGrading(@PathVariable("id") UUID id) {
         var data = retryGradingExamSessionUseCase.execute(new RetryGradingExamSessionCommand(id));
         return ResponseEntity.ok(ApiResponse.success("Gửi yêu cầu chấm lại thành công", data));
+    }
+
+    /**
+     * Bài AI chấm lỗi -> đưa vào hàng đợi cho người chấm. Trả về id kết quả vừa tạo, để client
+     * biết bài đã có mặt trong hàng đợi.
+     */
+    @PostMapping("/{id}/hand-off-grading")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<UUID>> handOffGrading(@PathVariable("id") UUID id) {
+        var data = handOffGradingToHumanUseCase.execute(new HandOffGradingToHumanCommand(id));
+        return ResponseEntity.ok(ApiResponse.success(
+            "Đã chuyển bài sang chấm tay, chờ nhà trường phân công giáo viên", data));
     }
 
     @DeleteMapping("/{id}")

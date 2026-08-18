@@ -47,6 +47,8 @@ import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.event.SchoolDebtCapExceededPayloadV1;
 import com.sep.vox.application.event.SchoolDebtClearedPayloadV1;
 import com.sep.vox.application.event.SchoolLockedDueToDebtPayloadV1;
+import com.sep.vox.application.event.SchoolSubscriptionSuspendedPayloadV1;
+import com.sep.vox.application.event.SchoolSubscriptionUnsuspendedPayloadV1;
 import com.sep.vox.application.port.output.PushNotificationPort;
 import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.model.subscription.QuotaType;
@@ -421,6 +423,10 @@ class NotificationPushedEventConsumerTests {
             new TestCase(EventTypeConstant.SCHOOL_LOCKED_DUE_TO_DEBT, new SchoolLockedDueToDebtPayloadV1(
                 List.of(userId), id, id, Instant.parse("2026-09-01T03:00:00Z"))),
             new TestCase(EventTypeConstant.SCHOOL_DEBT_CLEARED, new SchoolDebtClearedPayloadV1(
+                List.of(userId), id, id, Instant.parse("2026-09-01T03:00:00Z"))),
+            new TestCase(EventTypeConstant.SCHOOL_SUBSCRIPTION_SUSPENDED, new SchoolSubscriptionSuspendedPayloadV1(
+                List.of(userId), id, id, "Phát hiện gian lận", Instant.parse("2026-09-01T03:00:00Z"))),
+            new TestCase(EventTypeConstant.SCHOOL_SUBSCRIPTION_UNSUSPENDED, new SchoolSubscriptionUnsuspendedPayloadV1(
                 List.of(userId), id, id, Instant.parse("2026-09-01T03:00:00Z")))
         );
     }

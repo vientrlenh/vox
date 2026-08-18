@@ -15,7 +15,7 @@ public class CreateAssessmentPolicyCommandMapper {
         return new CreateAssessmentPolicyCommand(
                 null,
                 request.frameworkVersionId(),
-                request.rubricVersionIds(),
+                request.rubricVersionId(),
                 request.languageId(),
                 null,
                 null,
@@ -38,7 +38,7 @@ public class CreateAssessmentPolicyCommandMapper {
         return new CreateAssessmentPolicyCommand(
                 schoolId,
                 request.frameworkVersionId(),
-                request.rubricVersionIds(),
+                request.rubricVersionId(),
                 request.languageId(),
                 request.schoolGradeLevelId(),
                 request.schoolGradeId(),

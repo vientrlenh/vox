@@ -43,6 +43,8 @@ import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.event.SchoolDebtCapExceededPayloadV1;
 import com.sep.vox.application.event.SchoolDebtClearedPayloadV1;
 import com.sep.vox.application.event.SchoolLockedDueToDebtPayloadV1;
+import com.sep.vox.application.event.SchoolSubscriptionSuspendedPayloadV1;
+import com.sep.vox.application.event.SchoolSubscriptionUnsuspendedPayloadV1;
 import com.sep.vox.application.port.output.PushNotificationPort;
 import com.sep.vox.application.response.output.PushMessage;
 import com.sep.vox.domain.common.EventTypeConstant;
@@ -433,6 +435,22 @@ public class NotificationPushedEventConsumer {
                 yield fanOut(payload.schoolAdminIds(), category,
                     "Trường đã hết nợ hạn mức AI",
                     "Đã đủ hạn mức trở lại -- có thể tổ chức thi bình thường",
+                    data(eventType, "schoolId", payload.schoolId()));
+            }
+
+            case EventTypeConstant.SCHOOL_SUBSCRIPTION_SUSPENDED -> {
+                var payload = parse(value, SchoolSubscriptionSuspendedPayloadV1.class, eventType, eventId);
+                yield fanOut(payload.schoolAdminIds(), category,
+                    "Gói subscription bị đình chỉ",
+                    "Lý do: %s".formatted(orPlaceholder(payload.reason())),
+                    data(eventType, "schoolId", payload.schoolId()));
+            }
+
+            case EventTypeConstant.SCHOOL_SUBSCRIPTION_UNSUSPENDED -> {
+                var payload = parse(value, SchoolSubscriptionUnsuspendedPayloadV1.class, eventType, eventId);
+                yield fanOut(payload.schoolAdminIds(), category,
+                    "Gói subscription đã được gỡ đình chỉ",
+                    "Trường có thể sử dụng bình thường trở lại",
                     data(eventType, "schoolId", payload.schoolId()));
             }
 

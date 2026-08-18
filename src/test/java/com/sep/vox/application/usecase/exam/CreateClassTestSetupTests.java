@@ -28,6 +28,7 @@ import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionActiveGuardService;
 import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.exam.CreateClassTestUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -108,7 +109,8 @@ class CreateClassTestSetupTests {
             // bên dưới bật cờ trùng lịch lên để kiểm tra luật.
             new ExamScheduleProctorConflictValidator(examScheduleProctorRepository),
             subscriptionPeriodGuardService,
-            userContextPort
+            userContextPort,
+            mock(SchoolSubscriptionActiveGuardService.class)
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(TEACHER_ID);

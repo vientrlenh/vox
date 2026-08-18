@@ -1,6 +1,8 @@
 package com.sep.vox.interfaces.graphql.exception;
 
 import com.sep.vox.application.exception.ForbiddenException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.graphql.execution.DataFetcherExceptionResolverAdapter;
 import org.springframework.graphql.execution.ErrorType;
 import org.springframework.security.access.AccessDeniedException;
@@ -8,6 +10,8 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -20,11 +24,15 @@ import graphql.schema.DataFetchingEnvironment;
 
 @Component
 public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter {
-    
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionResolver.class);
+
     @Override
     protected GraphQLError resolveToSingleError(Throwable ex, DataFetchingEnvironment env) {
 
-        ex.printStackTrace();
+        // printStackTrace() cũ chỉ in ra stderr, không qua Logback nên không vào được logs/vox.log --
+        // đổi sang logger thật để có thể tra lỗi INTERNAL_ERROR (nhánh dưới cùng) sau khi xảy ra.
+        LOGGER.error("Unhandled exception resolving field {}", env.getExecutionStepInfo().getPath(), ex);
 
         if (ex instanceof NotFoundException) {
             return GraphQLError.newError()
@@ -101,7 +109,17 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
                     .build();
         }
 
-        if (ex instanceof QuotaExceededException || ex instanceof PlanLimitExceededException) {
+        if (ex instanceof PlanLimitExceededException) {
+            return GraphQLError.newError()
+                    .errorType(ErrorType.BAD_REQUEST)
+                    .message(ex.getMessage())
+                    .extensions(Map.of("code", "PLAN_LIMIT_EXCEEDED"))
+                    .path(env.getExecutionStepInfo().getPath())
+                    .location(env.getField().getSourceLocation())
+                    .build();
+        }
+
+        if (ex instanceof QuotaExceededException) {
             return GraphQLError.newError()
                     .errorType(ErrorType.BAD_REQUEST)
                     .message(ex.getMessage())

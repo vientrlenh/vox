@@ -190,7 +190,7 @@ class InvoiceSettlementServiceTests {
         );
         var current = new SchoolSubscription(
             existingSubscriptionId, schoolId, planId, LocalDate.now().minusDays(360), LocalDate.now(),
-            SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L
+            SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L, null, null, null
         );
         when(schoolSubscriptionRepository.findById(existingSubscriptionId)).thenReturn(Optional.of(current));
         when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
@@ -254,7 +254,7 @@ class InvoiceSettlementServiceTests {
         ));
         when(schoolSubscriptionRepository.findById(subscriptionId)).thenReturn(Optional.of(
             new SchoolSubscription(subscriptionId, schoolId, planId, LocalDate.now(), LocalDate.now().plusDays(365),
-                SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L)
+                SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L, null, null, null)
         ));
         return quotaId;
     }
@@ -273,7 +273,7 @@ class InvoiceSettlementServiceTests {
         var existingSubscriptionId = UUID.randomUUID();
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(
             new SchoolSubscription(existingSubscriptionId, schoolId, planId, LocalDate.now(), LocalDate.now().plusDays(30),
-                SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L)
+                SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L, null, null, null)
         ));
         when(schoolSubscriptionDebtGuardService.isQuotaOverLimit(existingSubscriptionId, QuotaType.GRADING)).thenReturn(true);
 
@@ -293,7 +293,7 @@ class InvoiceSettlementServiceTests {
         var existingSubscriptionId = UUID.randomUUID();
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(
             new SchoolSubscription(existingSubscriptionId, schoolId, planId, LocalDate.now(), LocalDate.now().plusDays(30),
-                SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L)
+                SubscriptionStatus.ACTIVE, amount, null, Instant.now(), 0L, null, null, null)
         ));
         when(schoolSubscriptionDebtGuardService.isQuotaOverLimit(existingSubscriptionId, QuotaType.GRADING)).thenReturn(false);
 

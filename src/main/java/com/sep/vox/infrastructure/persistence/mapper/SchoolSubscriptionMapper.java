@@ -19,7 +19,10 @@ public final class SchoolSubscriptionMapper {
             jpa.getPricePaidSnapshot(),
             jpa.getCancelledAt(),
             jpa.getCreatedAt(),
-            jpa.getVersion()
+            jpa.getVersion(),
+            jpa.getSuspendedAt(),
+            jpa.getSuspendedReason(),
+            jpa.getSuspendedBy()
         );
     }
 
@@ -34,7 +37,10 @@ public final class SchoolSubscriptionMapper {
             domain.getPricePaidSnapshot(),
             domain.getCancelledAt(),
             domain.getCreatedAt(),
-            domain.getVersion()
+            domain.getVersion(),
+            domain.getSuspendedAt(),
+            domain.getSuspendedReason(),
+            domain.getSuspendedBy()
         );
     }
 }

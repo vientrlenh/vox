@@ -7,7 +7,10 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.QuotaExceededException;
@@ -48,6 +51,8 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
     private final ConsumeQuotaUseCase consumeQuotaUseCase;
     private final ExternalEventPublisherPort eventPublisher;
     private final UserContextPort userContextPort;
+    // REQUIRES_NEW riêng cho lời gọi ConsumeQuotaUseCase -- xem lý do đầy đủ tại chỗ dùng bên dưới.
+    private final TransactionTemplate consumeQuotaTransactionTemplate;
 
     public SubmitPracticeTurnUseCase(
             PracticeSessionRepository practiceSessionRepository,
@@ -59,7 +64,8 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             PracticeTopicOfferEnrichmentService enrichmentService,
             ConsumeQuotaUseCase consumeQuotaUseCase,
             ExternalEventPublisherPort eventPublisher,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            PlatformTransactionManager transactionManager) {
         this.practiceSessionRepository = practiceSessionRepository;
         this.practiceItemResponseRepository = practiceItemResponseRepository;
         this.practiceResponseTurnRepository = practiceResponseTurnRepository;
@@ -70,6 +76,8 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         this.consumeQuotaUseCase = consumeQuotaUseCase;
         this.eventPublisher = eventPublisher;
         this.userContextPort = userContextPort;
+        this.consumeQuotaTransactionTemplate = new TransactionTemplate(transactionManager);
+        this.consumeQuotaTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     @Override
@@ -119,18 +127,26 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
                 // PracticeAttemptConnection._flush_turn_usage bên Agentic AI,
                 // AI_USAGE_QUOTA_USD_MIGRATION.md mục 5/7. Fallback ZERO cho client Python cũ chưa gửi.
                 var costUsd = turn.getTurnCostUsd() != null ? turn.getTurnCostUsd() : BigDecimal.ZERO;
-                consumeQuotaUseCase.execute(new ConsumeQuotaCommand(
-                    activeSubscriptionId(studentId),
+                var subscriptionId = activeSubscriptionId(studentId);
+                // ConsumeQuotaUseCase cũng @Transactional (REQUIRED mặc định) -- gọi thẳng thì nó
+                // tham gia CHUNG transaction với response/turn/corrections vừa lưu ở trên. Khi nó
+                // ném QuotaExceededException, transaction interceptor của lời gọi đó đánh dấu
+                // rollback-only lên transaction DÙNG CHUNG ngay lập tức, TRƯỚC khi exception bay
+                // tới catch bên dưới -- bắt được và chạy tiếp bình thường không cứu được gì, tới
+                // lúc method này commit Spring vẫn ném UnexpectedRollbackException (500), cuốn theo
+                // cả response/turn/corrections đã lưu. Bọc lời gọi trong transaction RIÊNG
+                // (REQUIRES_NEW) thì lúc nó throw chỉ transaction cô lập đó bị rollback -- transaction
+                // ngoài (của method này) không hề bị đụng tới, vẫn commit sạch ở cuối như bình
+                // thường. Xem QuestionStatusTransition/PracticeSessionClosedHandler cho các chỗ khác
+                // trong repo đã từng dính đúng cái bẫy UnexpectedRollbackException này.
+                consumeQuotaTransactionTemplate.execute(status -> consumeQuotaUseCase.execute(new ConsumeQuotaCommand(
+                    subscriptionId,
                     turn.getSessionId(),
                     QuotaType.PRACTICE,
                     costUsd,
                     studentId
-                ));
+                )));
             } catch (QuotaExceededException exception) {
-                // KHÔNG để lỗi thoát ra: method này @Transactional, nên ném lên là rollback
-                // luôn cả response/turn/corrections vừa lưu ở trên -- học sinh nói xong mà
-                // lượt biến mất, không được chấm, không vào hồ sơ điểm yếu.
-                //
                 // Đã nói thì phải được ghi. Hết hạn mức chỉ có nghĩa là phiên dừng SAU lượt
                 // này, nên báo bằng cờ để tầng gọi đóng phiên một cách tử tế.
                 LOGGER.info(

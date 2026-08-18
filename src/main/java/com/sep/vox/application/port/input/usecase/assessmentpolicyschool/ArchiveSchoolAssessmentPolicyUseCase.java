@@ -8,9 +8,11 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
+import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -24,6 +26,7 @@ import java.util.UUID;
 public class ArchiveSchoolAssessmentPolicyUseCase implements IUseCase<ArchiveSchoolAssessmentPolicyCommand, UUID> {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
+    private final RubricVersionRepository rubricVersionRepository;
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRepository userRepository;
@@ -31,11 +34,13 @@ public class ArchiveSchoolAssessmentPolicyUseCase implements IUseCase<ArchiveSch
 
     public ArchiveSchoolAssessmentPolicyUseCase(
             AssessmentPolicyRepository assessmentPolicyRepository,
+            RubricVersionRepository rubricVersionRepository,
             SchoolRepository schoolRepository,
             SchoolUserRepository schoolUserRepository,
             UserRepository userRepository,
             UserContextPort userContextPort) {
         this.assessmentPolicyRepository = assessmentPolicyRepository;
+        this.rubricVersionRepository = rubricVersionRepository;
         this.schoolRepository = schoolRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRepository = userRepository;
@@ -87,6 +92,19 @@ public class ArchiveSchoolAssessmentPolicyUseCase implements IUseCase<ArchiveSch
         policy.setUpdatedBy(currentUserId);
 
         AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
+
+        // 6. 1 Rubric Version chỉ gắn với đúng 1 Assessment Policy, vĩnh viễn -- khi Policy bị Archive,
+        // Rubric Version liên kết cũng Archive theo (không "rảnh" ra để dùng lại cho Policy khác).
+        rubricVersionRepository.findById(policy.getRubricVersionId()).ifPresent(rubricVersion -> {
+            if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
+                rubricVersion.setStatus(RubricStatus.ARCHIVED);
+                rubricVersion.setEffectiveTo(now.isBefore(rubricVersion.getEffectiveFrom()) ? rubricVersion.getEffectiveFrom() : now);
+                rubricVersion.setUpdatedAt(now);
+                rubricVersion.setUpdatedBy(currentUserId);
+                rubricVersionRepository.save(rubricVersion);
+            }
+        });
+
         return saved.getId();
     }
 }

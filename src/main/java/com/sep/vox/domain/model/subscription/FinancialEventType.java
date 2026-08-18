@@ -7,5 +7,7 @@ public enum FinancialEventType {
     SUB_UPGRADED,
     TOKEN_PURCHASED,
     TOKEN_CONSUMED,
-    REFUND_ISSUED
+    REFUND_ISSUED,
+    SUB_SUSPENDED,
+    SUB_UNSUSPENDED
 }

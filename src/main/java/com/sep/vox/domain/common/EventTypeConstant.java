@@ -29,6 +29,9 @@ public final class EventTypeConstant {
     public static final String SCHOOL_LOCKED_DUE_TO_DEBT = "SchoolLockedDueToDebt";
     public static final String SCHOOL_DEBT_CLEARED = "SchoolDebtCleared";
 
+    public static final String SCHOOL_SUBSCRIPTION_SUSPENDED = "SchoolSubscriptionSuspended";
+    public static final String SCHOOL_SUBSCRIPTION_UNSUSPENDED = "SchoolSubscriptionUnsuspended";
+
     // Hai event OTP dưới đây CỐ TÌNH không mang mã OTP trong payload -- chúng chỉ nói "cần gửi
     // OTP cho địa chỉ này". Mã được sinh tại consumer ngay trước lúc gửi mail, giống hệt token
     // đặt mật khẩu ở UserCreatedEventConsumer. Nhờ vậy credential không bao giờ nằm trong
@@ -55,6 +58,8 @@ public final class EventTypeConstant {
             SCHOOL_DEBT_CAP_EXCEEDED,
             SCHOOL_LOCKED_DUE_TO_DEBT,
             SCHOOL_DEBT_CLEARED,
+            SCHOOL_SUBSCRIPTION_SUSPENDED,
+            SCHOOL_SUBSCRIPTION_UNSUSPENDED,
             RESET_PASSWORD_OTP_REQUESTED,
             REGISTER_VERIFICATION_OTP_REQUESTED
         );

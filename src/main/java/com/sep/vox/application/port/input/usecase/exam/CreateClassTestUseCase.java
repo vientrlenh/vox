@@ -16,6 +16,7 @@ import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
 import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
+import com.sep.vox.application.port.input.service.SchoolSubscriptionActiveGuardService;
 import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -69,6 +70,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private final ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator;
     private final SubscriptionPeriodGuardService subscriptionPeriodGuardService;
     private final UserContextPort userContextPort;
+    private final SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService;
 
     public CreateClassTestUseCase(
             SchoolClassRepository schoolClassRepository,
@@ -84,7 +86,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             ExamScheduleRoomValidator examScheduleRoomValidator,
             ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator,
             SubscriptionPeriodGuardService subscriptionPeriodGuardService,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService) {
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -99,6 +102,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         this.examScheduleProctorConflictValidator = examScheduleProctorConflictValidator;
         this.subscriptionPeriodGuardService = subscriptionPeriodGuardService;
         this.userContextPort = userContextPort;
+        this.schoolSubscriptionActiveGuardService = schoolSubscriptionActiveGuardService;
     }
 
     @Override
@@ -120,6 +124,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         if (!membership.isActive()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
+
+        schoolSubscriptionActiveGuardService.requireActiveForSchool(schoolClass.getSchoolId(), "tạo Class Test");
 
         examAssessmentPolicyValidator.requirePublishedInSchool(
             command.assessmentPolicyId(), schoolClass.getSchoolId());

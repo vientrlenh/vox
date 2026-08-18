@@ -25,10 +25,6 @@ public interface AssessmentPolicyRepository {
     // Kiểm tra còn Assessment Policy nào áp riêng cho một lớp học hay không (dùng khi xóa lớp)
     boolean existsBySchoolClassId(UUID schoolClassId);
 
-    // Kiểm tra đã tồn tại policy DRAFT/PUBLISHED nào trùng scope VÀ cùng Rubric Version hay chưa (chặn tạo trùng)
-    boolean existsActiveForScope(UUID schoolId, UUID languageId, UUID frameworkVersionId,
-            UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId, UUID rubricVersionId);
-
     // Một phạm vi chỉ được đúng một chính sách còn hiệu lực, bất kể trỏ vào phiên bản Rubric nào
     boolean existsActiveForScopeAnyRubricVersion(UUID schoolId, UUID languageId, UUID frameworkVersionId,
             UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId);
@@ -45,6 +41,10 @@ public interface AssessmentPolicyRepository {
 
     // Kiểm tra đã tồn tại Assessment Policy nào liên kết với Rubric Version này đang ở trạng thái PUBLISHED hay chưa
     boolean existsPublishedByRubricVersionId(UUID rubricVersionId);
+
+    // Kiểm tra Rubric Version này đã gắn với BẤT KỲ Assessment Policy nào chưa (mọi trạng thái) --
+    // 1 Rubric Version chỉ được dùng cho đúng 1 Policy, vĩnh viễn (kể cả sau khi Policy đó Archive)
+    boolean existsByRubricVersionId(UUID rubricVersionId);
 
     // Kiểm tra còn Assessment Policy nào liên kết với Rubric Version này CHƯA ở trạng thái PUBLISHED hay không
     boolean existsNotPublishedByRubricVersionId(UUID rubricVersionId);

@@ -17,7 +17,6 @@ import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.CreateSystemAssessmentPolicyUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;

@@ -9,7 +9,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.rubric.RubricStatus;
-import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;

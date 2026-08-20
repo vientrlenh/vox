@@ -462,6 +462,12 @@ type ExamCandidateResultItem {
     sectionId: ID!
     "Đề bài của câu. Null khi paper item không trỏ tới câu hỏi nào hoặc câu hỏi đã bị xoá."
     questionText: String
+    """
+    Tài nguyên đi kèm câu hỏi. Null khi câu không có.
+    Hiện cho cả giáo viên lẫn học sinh: trang này vốn đã trả questionText nên asset không làm lộ
+    thêm gì, mà thiếu nó thì không đối chiếu được câu trả lời với thứ đã nhìn/nghe.
+    """
+    asset: QuestionAsset
     "Null khi câu chưa được chấm -- bài vẫn trả về câu để client hiện bản ghi bài nói."
     itemScore: Float
     "Null khi câu chưa được chấm."

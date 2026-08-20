@@ -22,7 +22,11 @@ import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.application.port.input.usecase.question.QuestionAssetAnalysisRequestPublisher;
+import com.sep.vox.application.port.input.usecase.question.QuestionAssetContentValidator;
 import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionAsset;
+import com.sep.vox.domain.model.question.QuestionAssetType;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionConfidentiality;
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
@@ -31,6 +35,7 @@ import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.model.question.QuestionType;
+import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
@@ -57,13 +62,21 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         "evaluationAcceptableResponses",
         "evaluationOffTopicExamples",
         "evaluationScoringHints",
-        "evaluationCommonMistakes"
+        "evaluationCommonMistakes",
+        "assetType",
+        "assetUrl",
+        "assetTitle",
+        "assetAltText",
+        "assetTranscript",
+        "assetDescription",
+        "assetDurationSeconds"
     );
 
     private final QuestionRepository questionRepository;
     private final QuestionBankRepository questionBankRepository;
     private final QuestionTopicRepository questionTopicRepository;
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
+    private final QuestionAssetRepository questionAssetRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final TransactionTemplate transactionTemplate;
 
@@ -72,12 +85,14 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             QuestionBankRepository questionBankRepository,
             QuestionTopicRepository questionTopicRepository,
             QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
+            QuestionAssetRepository questionAssetRepository,
             JsonSerializationPort jsonSerializationPort,
             PlatformTransactionManager transactionManager) {
         this.questionRepository = questionRepository;
         this.questionBankRepository = questionBankRepository;
         this.questionTopicRepository = questionTopicRepository;
         this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
+        this.questionAssetRepository = questionAssetRepository;
         this.jsonSerializationPort = jsonSerializationPort;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.transactionTemplate.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
@@ -287,6 +302,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             currentUserId
         );
         var savedQuestion = questionRepository.save(question);
+        createAssetIfPresent(data, savedQuestion.getId());
         if (hasEvaluationGuide(data)) {
             questionEvaluationGuideRepository.save(new QuestionEvaluationGuide(
                 savedQuestion.getId(),
@@ -298,6 +314,49 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
                 data.get("evaluationCommonMistakes")
             ));
         }
+    }
+
+    /**
+     * Tạo tài nguyên đi kèm câu hỏi khi file có khai {@code assetType}.
+     *
+     * <p>Đi qua đúng {@link QuestionAssetContentValidator} như luồng nhập tay: ảnh phải có mô tả,
+     * audio/video phải có bản chép lời. Không nới lỏng cho import — AI chỉ biết tài nguyên qua
+     * mấy dòng chữ đó, nên một file nhập hàng loạt mà bỏ trống chúng sẽ sinh ra cả loạt câu hỏi
+     * mà AI hỏi và chấm chung chung, không ai biết cho tới lúc chấm xong.
+     */
+    private void createAssetIfPresent(Map<String, String> data, UUID questionId) {
+        var rawType = data.get("assetType");
+        if (rawType == null || rawType.isBlank()) {
+            return;
+        }
+
+        var assetType = QuestionAssetType.valueOf(rawType.strip().toUpperCase(java.util.Locale.ROOT));
+        var url = assetType == QuestionAssetType.TEXT_PASSAGE ? null : data.get("assetUrl");
+        var transcript = QuestionAssetAnalysisRequestPublisher.supportsTranscript(assetType)
+            ? data.get("assetTranscript")
+            : null;
+        var description = data.get("assetDescription");
+        var altText = data.get("assetAltText");
+
+        QuestionAssetContentValidator.validate(assetType, url, transcript, description, altText);
+
+        Integer durationSeconds = null;
+        var rawDuration = data.get("assetDurationSeconds");
+        if (rawDuration != null && !rawDuration.isBlank()) {
+            durationSeconds = Integer.parseInt(rawDuration.strip());
+        }
+
+        questionAssetRepository.save(new QuestionAsset(
+            questionId,
+            data.get("assetTitle"),
+            durationSeconds,
+            altText,
+            assetType,
+            url,
+            transcript,
+            description,
+            1
+        ));
     }
 
     private boolean hasDifferentContext(Map<String, String> data, ImportContext importContext) {

@@ -66,6 +66,7 @@ class ViewExamSessionResultUseCaseTests {
     private ExamItemResponseRepository examItemResponseRepository;
     private ExamItemEvaluationRepository examItemEvaluationRepository;
     private ExamPaperItemRepository examPaperItemRepository;
+    private com.sep.vox.domain.repository.QuestionAssetRepository questionAssetRepository;
     private ViewExamSessionResultUseCase useCase;
 
     @BeforeEach
@@ -80,6 +81,10 @@ class ViewExamSessionResultUseCaseTests {
         examItemResponseRepository = mock(ExamItemResponseRepository.class);
         examItemEvaluationRepository = mock(ExamItemEvaluationRepository.class);
         examPaperItemRepository = mock(ExamPaperItemRepository.class);
+        questionAssetRepository = mock(com.sep.vox.domain.repository.QuestionAssetRepository.class);
+        // Mặc định câu KHÔNG có asset: mọi test sẵn có đều dựng câu hỏi trần, và trả rỗng giữ
+        // nguyên hành vi chúng đang khẳng định.
+        when(questionAssetRepository.findByQuestionId(any())).thenReturn(java.util.List.of());
         useCase = new ViewExamSessionResultUseCase(
             examCandidateResultRepository,
             examSessionResultCalculator,
@@ -90,7 +95,8 @@ class ViewExamSessionResultUseCaseTests {
             questionRepository,
             examItemResponseRepository,
             examItemEvaluationRepository,
-            examPaperItemRepository
+            examPaperItemRepository,
+            questionAssetRepository
         );
     }
 

@@ -237,7 +237,7 @@ type SchoolDirectoryPage {
 extend type Query {
     schoolRoom(id: ID!): SchoolRoom
     schoolRooms(schoolId: ID!, page: Int, size: Int): SchoolRoomPageResult
-    schools(page: Int = 1, size: Int = 20): SchoolPage!
+    schools(page: Int = 1, size: Int = 20, search: String, isActive: Boolean): SchoolPage!
     school(id: ID!): School
     schoolClasses(page: Int = 1, size: Int = 20, search: String, status: String, languageId: ID, schoolGradeId: ID): SchoolClassPage!
     schoolUsersBySchool(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, roleId: ID, roleCode: String, status: String, excludeClassId: ID): SchoolUserPage!

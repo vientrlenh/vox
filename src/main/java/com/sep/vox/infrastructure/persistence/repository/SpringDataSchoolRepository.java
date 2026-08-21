@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.sep.vox.infrastructure.persistence.entity.SchoolJpaEntity;
@@ -65,4 +67,13 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
     List<Object[]> findIdNameByIdIn(@Param("ids") Collection<UUID> ids);
 
     long countByIsActiveTrue();
+
+    @Query("SELECT s FROM SchoolJpaEntity s WHERE " +
+           "(:search IS NULL OR LOWER(s.name) LIKE :search ESCAPE '!' OR LOWER(s.code) LIKE :search ESCAPE '!')")
+    Page<SchoolJpaEntity> findAllBySearch(@Param("search") String search, Pageable pageable);
+
+    @Query("SELECT s FROM SchoolJpaEntity s WHERE " +
+           "(:search IS NULL OR LOWER(s.name) LIKE :search ESCAPE '!' OR LOWER(s.code) LIKE :search ESCAPE '!') " +
+           "AND s.isActive = :isActive")
+    Page<SchoolJpaEntity> findAllBySearchAndIsActive(@Param("search") String search, @Param("isActive") boolean isActive, Pageable pageable);
 }

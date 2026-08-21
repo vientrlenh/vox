@@ -1,5 +1,7 @@
 package com.sep.vox.domain.mapper;
 
+import java.util.List;
+
 import com.sep.vox.domain.dto.InvoiceDto;
 import com.sep.vox.domain.model.subscription.Invoice;
 
@@ -19,7 +21,9 @@ public final class InvoiceDtoMapper {
             invoice.getStatus() != null ? invoice.getStatus().name() : null,
             invoice.getPaymentLinkId(),
             invoice.getCheckoutUrl(),
-            invoice.getPaidAt() != null ? invoice.getPaidAt().toString() : null
+            invoice.getPaidAt() != null ? invoice.getPaidAt().toString() : null,
+            invoice.getResolvedPlanId(),
+            List.of()
         );
     }
 }

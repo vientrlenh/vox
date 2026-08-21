@@ -7,13 +7,14 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 public record CreatePlanRequest(
     @NotBlank String name,
     String tagline,
-    @NotNull BigDecimal pricePerYear,
-    @NotNull Integer validityDays,
-    Integer maxTimePerAttemptMin,
+    @NotNull @DecimalMin(value = "0", inclusive = false) BigDecimal pricePerYear,
+    @NotNull @Positive Integer validityDays,
+    @NotNull @Positive Integer maxTimePerAttemptMin,
     // Bỏ trống -> mặc định 0.20 (20%), xem CreatePlanUseCase.
     @DecimalMin("0") BigDecimal serviceFeeRatio,
     @NotEmpty List<PlanQuotaItemRequest> quotas

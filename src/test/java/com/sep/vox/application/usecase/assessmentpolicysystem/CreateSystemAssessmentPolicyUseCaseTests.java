@@ -1,6 +1,5 @@
 package com.sep.vox.application.usecase.assessmentpolicysystem;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -13,7 +12,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.CreateSystemAssessmentPolicyUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -36,8 +34,7 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * 1 Rubric Version chỉ được gắn với đúng 1 Assessment Policy -- trước đây không có gì chặn việc cùng
- * 1 Rubric Version bị 2 Policy khác scope (ngôn ngữ/framework) dùng chung.
+ * 1 Rubric Version được phép gắn với nhiều Assessment Policy khác scope (ngôn ngữ/framework).
  */
 class CreateSystemAssessmentPolicyUseCaseTests {
 
@@ -107,17 +104,16 @@ class CreateSystemAssessmentPolicyUseCaseTests {
     }
 
     @Test
-    void rejects_whenRubricVersionAlreadyUsedByAnotherPolicy() {
-        when(assessmentPolicyRepository.existsByRubricVersionId(RUBRIC_VERSION_ID)).thenReturn(true);
+    void succeeds_whenRubricVersionNotYetUsed() {
+        when(assessmentPolicyRepository.findMaxVersionForScope(any(), any(), any(), any(), any(), any())).thenReturn(0);
 
-        assertThatThrownBy(() -> useCase.execute(List.of(command(UUID.randomUUID()))))
-                .isInstanceOf(DuplicatedException.class)
-                .hasMessageContaining("đã gắn với một Assessment Policy khác");
+        List<UUID> ids = useCase.execute(List.of(command(UUID.randomUUID())));
+
+        org.assertj.core.api.Assertions.assertThat(ids).hasSize(1);
     }
 
     @Test
-    void rejects_whenSameBatchReusesRubricVersionAcrossDifferentScopes() {
-        when(assessmentPolicyRepository.existsByRubricVersionId(RUBRIC_VERSION_ID)).thenReturn(false);
+    void allows_whenSameBatchReusesRubricVersionAcrossDifferentScopes() {
         when(assessmentPolicyRepository.findMaxVersionForScope(any(), any(), any(), any(), any(), any())).thenReturn(0);
 
         List<CreateAssessmentPolicyCommand> commands = List.of(
@@ -125,18 +121,8 @@ class CreateSystemAssessmentPolicyUseCaseTests {
                 command(UUID.randomUUID()) // ngôn ngữ khác -> scope khác, nhưng cùng rubricVersionId
         );
 
-        assertThatThrownBy(() -> useCase.execute(commands))
-                .isInstanceOf(DuplicatedException.class)
-                .hasMessageContaining("cùng dùng 1 Phiên bản Rubric");
-    }
+        List<UUID> ids = useCase.execute(commands);
 
-    @Test
-    void succeeds_whenRubricVersionNotYetUsed() {
-        when(assessmentPolicyRepository.existsByRubricVersionId(RUBRIC_VERSION_ID)).thenReturn(false);
-        when(assessmentPolicyRepository.findMaxVersionForScope(any(), any(), any(), any(), any(), any())).thenReturn(0);
-
-        List<UUID> ids = useCase.execute(List.of(command(UUID.randomUUID())));
-
-        org.assertj.core.api.Assertions.assertThat(ids).hasSize(1);
+        org.assertj.core.api.Assertions.assertThat(ids).hasSize(2);
     }
 }

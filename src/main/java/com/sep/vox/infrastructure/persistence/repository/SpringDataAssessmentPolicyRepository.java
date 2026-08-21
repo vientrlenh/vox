@@ -44,8 +44,6 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
 
     boolean existsByRubricVersionIdAndStatusNot(UUID rubricVersionId, String status);
 
-    boolean existsByRubricVersionId(UUID rubricVersionId);
-
     List<AssessmentPolicyJpaEntity> findBySchoolIdIsNullAndRubricVersionIdAndStatus(UUID rubricVersionId, String status);
 
     List<AssessmentPolicyJpaEntity> findBySchoolIdAndRubricVersionIdAndStatus(UUID schoolId, UUID rubricVersionId, String status);

@@ -107,7 +107,6 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
         Set<ScopeClaimKey> scopeClaimsInBatch = new HashSet<>();
-        Set<UUID> rubricVersionClaimsInBatch = new HashSet<>();
 
         for (CreateAssessmentPolicyCommand command : commands) {
             if (!schoolId.equals(command.schoolId())) {
@@ -202,17 +201,6 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             if (isDuplicated) {
                 throw new DuplicatedException("Phạm vi này đã có một Assessment Policy còn hiệu lực"
                         + " (DRAFT hoặc PUBLISHED). Hãy Archive bản cũ trước khi tạo bản mới.");
-            }
-
-            // 1 Rubric Version chỉ được gắn với đúng 1 Assessment Policy, vĩnh viễn (kể cả sau khi
-            // Policy đó Archive) -- chặn cả trùng trong cùng batch lẫn trùng với dữ liệu đã có.
-            if (!rubricVersionClaimsInBatch.add(rubricVersionId)) {
-                throw new DuplicatedException(
-                        "Trong cùng một lần tạo có hai Assessment Policy cùng dùng 1 Phiên bản Rubric.");
-            }
-            if (assessmentPolicyRepository.existsByRubricVersionId(rubricVersionId)) {
-                throw new DuplicatedException("Phiên bản Rubric này đã gắn với một Assessment Policy khác."
-                        + " Mỗi Rubric Version chỉ dùng được cho đúng 1 Policy.");
             }
 
             int nextVersion = nextVersionByScope.computeIfAbsent(versionScopeKey, key ->

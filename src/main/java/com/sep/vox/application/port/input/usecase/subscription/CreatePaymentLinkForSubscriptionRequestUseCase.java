@@ -92,7 +92,7 @@ public class CreatePaymentLinkForSubscriptionRequestUseCase
             null,
             null,
             null,
-            null
+            request.getRequestedPlanId()
         ));
 
         var result = paymentProcessPort.createPaymentLink(new CreatePaymentLinkCommand(

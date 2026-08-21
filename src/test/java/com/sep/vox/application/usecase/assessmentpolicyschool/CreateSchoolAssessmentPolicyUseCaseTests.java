@@ -1,6 +1,5 @@
 package com.sep.vox.application.usecase.assessmentpolicyschool;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -13,7 +12,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.CreateSchoolAssessmentPolicyUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -41,7 +39,7 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * 1 Rubric Version chỉ được gắn với đúng 1 Assessment Policy -- kể cả khi 2 Policy nằm ở 2 lớp
+ * 1 Rubric Version được phép gắn với nhiều Assessment Policy, kể cả khi 2 Policy nằm ở 2 lớp
  * (schoolClassId) khác nhau trong cùng trường.
  */
 class CreateSchoolAssessmentPolicyUseCaseTests {
@@ -130,19 +128,7 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
     }
 
     @Test
-    void rejects_whenRubricVersionAlreadyUsedByAnotherPolicy() {
-        when(assessmentPolicyRepository.existsByRubricVersionId(RUBRIC_VERSION_ID)).thenReturn(true);
-        UUID classId = UUID.randomUUID();
-        stubSchoolClass(classId);
-
-        assertThatThrownBy(() -> useCase.execute(List.of(command(classId))))
-                .isInstanceOf(DuplicatedException.class)
-                .hasMessageContaining("đã gắn với một Assessment Policy khác");
-    }
-
-    @Test
-    void rejects_whenSameBatchReusesRubricVersionAcrossDifferentClasses() {
-        when(assessmentPolicyRepository.existsByRubricVersionId(RUBRIC_VERSION_ID)).thenReturn(false);
+    void allows_whenSameBatchReusesRubricVersionAcrossDifferentClasses() {
         UUID classId1 = UUID.randomUUID();
         UUID classId2 = UUID.randomUUID();
         stubSchoolClass(classId1);
@@ -153,8 +139,8 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
                 command(classId2) // lớp khác -> scope khác, nhưng cùng rubricVersionId
         );
 
-        assertThatThrownBy(() -> useCase.execute(commands))
-                .isInstanceOf(DuplicatedException.class)
-                .hasMessageContaining("cùng dùng 1 Phiên bản Rubric");
+        List<UUID> ids = useCase.execute(commands);
+
+        org.assertj.core.api.Assertions.assertThat(ids).hasSize(2);
     }
 }

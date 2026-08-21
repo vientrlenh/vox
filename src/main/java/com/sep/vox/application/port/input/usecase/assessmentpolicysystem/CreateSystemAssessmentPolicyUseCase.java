@@ -82,7 +82,6 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
         Set<VersionScopeKey> scopeClaimsInBatch = new HashSet<>();
-        Set<UUID> rubricVersionClaimsInBatch = new HashSet<>();
 
         for (CreateAssessmentPolicyCommand command : commands) {
             // 2. Validate Framework & Language
@@ -144,17 +143,6 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
             }
             if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
                 throw new IllegalStateException("Phiên bản Rubric và Khung năng lực không khớp nhau.");
-            }
-
-            // 1 Rubric Version chỉ được gắn với đúng 1 Assessment Policy, vĩnh viễn (kể cả sau khi
-            // Policy đó Archive) -- chặn cả trùng trong cùng batch lẫn trùng với dữ liệu đã có.
-            if (!rubricVersionClaimsInBatch.add(rubricVersionId)) {
-                throw new DuplicatedException(
-                        "Trong cùng một lần tạo có hai Assessment Policy cùng dùng 1 Phiên bản Rubric.");
-            }
-            if (assessmentPolicyRepository.existsByRubricVersionId(rubricVersionId)) {
-                throw new DuplicatedException("Phiên bản Rubric này đã gắn với một Assessment Policy khác."
-                        + " Mỗi Rubric Version chỉ dùng được cho đúng 1 Policy.");
             }
 
             int nextVersion = nextVersionByScope.computeIfAbsent(versionScopeKey, key ->

@@ -215,6 +215,26 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
             "Có thể tổ chức thi bình thường.");
     }
 
+    // ---- đình chỉ/gỡ đình chỉ gói subscription -----------------------------
+
+    @Override
+    public String renderSchoolSubscriptionSuspendedEmail(String schoolName, String reason) {
+        return renderNotification(
+            "Gói subscription bị đình chỉ",
+            "Gói subscription của trường <strong>" + escapeHtml(schoolName) + "</strong> vừa bị đình chỉ.",
+            "Lý do",
+            escapeHtml(reason));
+    }
+
+    @Override
+    public String renderSchoolSubscriptionUnsuspendedEmail(String schoolName) {
+        return renderNotification(
+            "Gói subscription đã được gỡ đình chỉ",
+            "Gói subscription của trường <strong>" + escapeHtml(schoolName) + "</strong> đã được gỡ đình chỉ.",
+            "Trạng thái",
+            "Trường có thể sử dụng bình thường trở lại.");
+    }
+
     /**
      * Các tham số ở đây đã là HTML (có thẻ {@code <strong>}) và ĐÃ được escape ở từng
      * method gọi vào — đừng escape thêm lần nữa ở đây, nếu không thẻ sẽ hiện ra dưới

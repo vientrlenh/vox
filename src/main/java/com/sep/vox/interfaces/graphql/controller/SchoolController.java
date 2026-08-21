@@ -175,11 +175,15 @@ public class SchoolController {
 
     @QueryMapping(name = "schools")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public PageResult<SchoolDto> schools(@Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
+    public PageResult<SchoolDto> schools(
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size,
+            @Argument(name = "search") String search,
+            @Argument(name = "isActive") Boolean isActive) {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
         }
-        var query = new ViewSchoolsQuery(page, size);
+        var query = new ViewSchoolsQuery(page, size, search, isActive);
         return viewSchoolsUseCase.execute(query);
     }
 

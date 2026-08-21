@@ -1,6 +1,7 @@
 package com.sep.vox.domain.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 public record InvoiceDto(
@@ -14,6 +15,8 @@ public record InvoiceDto(
     String status,
     String paymentLinkId,
     String checkoutUrl,
-    String paidAt
+    String paidAt,
+    UUID resolvedPlanId,
+    List<InvoiceQuotaItemDto> quotaItems
 ) {
 }

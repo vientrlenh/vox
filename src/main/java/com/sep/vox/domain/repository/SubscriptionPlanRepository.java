@@ -14,4 +14,5 @@ public interface SubscriptionPlanRepository {
     List<SubscriptionPlan> findAllByStatus(PlanStatus status);
     List<SubscriptionPlan> findByIdIn(Collection<UUID> ids);
     void deleteById(UUID id);
+    boolean existsByNameIgnoreCase(String name);
 }

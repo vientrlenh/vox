@@ -338,6 +338,16 @@ public class FileProcessingService implements FileProcessingPort {
             );
 
             case QUESTION -> Map.ofEntries(
+                // Đích của từng dòng, cho phép MỘT tệp rải câu hỏi sang nhiều ngân hàng/chủ đề.
+                // Bỏ trống thì rơi về ngân hàng/chủ đề đã chọn ở màn upload (luồng cũ).
+                //
+                // schoolCode CHỈ là đối chiếu, KHÔNG phải nguồn quyền: quyền suy từ người đăng
+                // nhập. Để một ô Excel quyết định trường nào là mở đường cho giáo viên gõ mã
+                // trường khác rồi đẩy câu hỏi vào ngân hàng của trường đó.
+                Map.entry("schoolCode", List.of("schoolCode", "school code", "mã trường", "ma truong")),
+                Map.entry("questionBankCode", List.of("questionBankCode", "bank code", "mã ngân hàng", "ma ngan hang", "mã ngân hàng câu hỏi")),
+                Map.entry("questionTopicCode", List.of("questionTopicCode", "topic code", "mã chủ đề", "ma chu de")),
+
                 Map.entry("code", List.of("code", "question code", "mã câu hỏi", "ma cau hoi")),
                 Map.entry("type", List.of("type", "question type", "loại câu hỏi", "loai cau hoi")),
                 Map.entry("questionText", List.of("questionText", "question text", "content", "nội dung câu hỏi", "noi dung cau hoi")),

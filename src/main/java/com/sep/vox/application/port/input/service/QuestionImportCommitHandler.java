@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,6 +29,7 @@ import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionAssetType;
 import com.sep.vox.domain.model.question.QuestionBank;
+import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionConfidentiality;
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
 import com.sep.vox.domain.model.question.QuestionSharing;
@@ -40,6 +42,7 @@ import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
+import com.sep.vox.domain.repository.SchoolRepository;
 
 @Service
 public class QuestionImportCommitHandler implements ImportCommitHandler {
@@ -47,6 +50,9 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
     private static final Set<String> SUPPORTED_FIELDS = Set.of(
         "questionBankId",
         "questionTopicId",
+        "schoolCode",
+        "questionBankCode",
+        "questionTopicCode",
         "code",
         "type",
         "questionText",
@@ -77,6 +83,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
     private final QuestionTopicRepository questionTopicRepository;
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
     private final QuestionAssetRepository questionAssetRepository;
+    private final SchoolRepository schoolRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final TransactionTemplate transactionTemplate;
 
@@ -86,8 +93,10 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             QuestionTopicRepository questionTopicRepository,
             QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
             QuestionAssetRepository questionAssetRepository,
+            SchoolRepository schoolRepository,
             JsonSerializationPort jsonSerializationPort,
             PlatformTransactionManager transactionManager) {
+        this.schoolRepository = schoolRepository;
         this.questionRepository = questionRepository;
         this.questionBankRepository = questionBankRepository;
         this.questionTopicRepository = questionTopicRepository;
@@ -109,7 +118,13 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             return new ImportCommitResult(0L, 0L, 0L, 0L);
         }
 
-        var importContext = resolveContext(rows.get(0));
+        // Hai chế độ, phân biệt bằng việc bước xem trước có ghim ngân hàng/chủ đề vào từng dòng hay
+        // không. Ghim -> luồng cũ, cả tệp vào một chủ đề. Không ghim -> hàng loạt, mỗi dòng tự khai
+        // mã ngân hàng + mã chủ đề nên MỘT tệp rải được sang nhiều chủ đề.
+        var bulkMode = !isPresent(
+            jsonSerializationPort.toStringMap(rows.get(0).getRawDataJson()).get("questionBankId"));
+        var sharedContext = bulkMode ? null : resolveContext(rows.get(0));
+        var bulkScope = bulkMode ? buildBulkScope(session) : null;
         var confirmedMapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         var createdRows = 0L;
         var skippedRows = 0L;
@@ -122,15 +137,18 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             var normalized = normalize(mappedData);
             row.setMappedDataJson(jsonSerializationPort.toJson(normalized));
 
-            var errors = validateRow(normalized, importContext, seenCodes);
-            if (!errors.isEmpty()) {
+            var errors = validateRow(normalized, sharedContext, seenCodes);
+            final var importContext = bulkMode
+                ? resolveContextFromCodes(normalized, bulkScope, errors)
+                : sharedContext;
+            if (!errors.isEmpty() || importContext == null) {
                 row.setErrorsJson(jsonSerializationPort.toJson(errors));
                 row.setStatus(ImportRowStatus.INVALID);
                 invalidRows++;
                 continue;
             }
 
-            if (hasDifferentContext(normalized, importContext)) {
+            if (!bulkMode && hasDifferentContext(normalized, importContext)) {
                 row.setErrorsJson(jsonSerializationPort.toJson(List.of(
                     error("questionTopicId", "dữ liệu row không thuộc cùng question bank và question topic với phiên import")
                 )));
@@ -198,6 +216,106 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         return new ImportContext(questionBank, questionTopic);
     }
 
+    /**
+     * Tìm ngân hàng + chủ đề đích của MỘT dòng theo mã ghi trong file (chế độ hàng loạt).
+     *
+     * <p><b>Phạm vi trường không lấy từ file.</b> {@code session.schoolId} đã chốt ở bước xem
+     * trước theo người đăng nhập: có giá trị nghĩa là phiên của một trường (chỉ tìm trong ngân
+     * hàng SCHOOL của trường đó), {@code null} nghĩa là phiên của quản trị hệ thống (ngân hàng
+     * SYSTEM). Cột {@code schoolCode} trong file chỉ dùng để ĐỐI CHIẾU — khớp thì đi tiếp, lệch
+     * thì báo lỗi dòng. Nếu để nó quyết định phạm vi thì bất kỳ ai cũng gõ được mã trường khác
+     * rồi đẩy câu hỏi vào ngân hàng của trường đó.
+     *
+     * <p>Trả về {@code null} kèm lỗi đã ghi vào {@code errors} khi không giải được.
+     */
+    private ImportContext resolveContextFromCodes(
+            Map<String, String> data,
+            BulkScope scope,
+            List<Map<String, String>> errors) {
+        var bankCode = data.get("questionBankCode");
+        var topicCode = data.get("questionTopicCode");
+        if (!isPresent(bankCode)) {
+            errors.add(error("questionBankCode", "Thiếu mã ngân hàng câu hỏi"));
+        }
+        if (!isPresent(topicCode)) {
+            errors.add(error("questionTopicCode", "Thiếu mã chủ đề câu hỏi"));
+        }
+
+        var schoolCode = data.get("schoolCode");
+        if (isPresent(schoolCode) && !schoolCode.equalsIgnoreCase(scope.schoolCode())) {
+            errors.add(error(
+                "schoolCode",
+                "Mã trường '" + schoolCode + "' không khớp phạm vi của phiên import"
+                    + (scope.schoolCode() == null ? " (ngân hàng hệ thống)" : " ('" + scope.schoolCode() + "')")
+            ));
+        }
+        if (!errors.isEmpty()) {
+            return null;
+        }
+
+        var questionBank = scope.banksByCode().get(normalizeLookupKey(bankCode));
+        if (questionBank == null) {
+            errors.add(error("questionBankCode", "Không tìm thấy ngân hàng câu hỏi có mã '" + bankCode + "'"));
+            return null;
+        }
+
+        var questionTopic = scope.topicsByBankAndCode()
+            .computeIfAbsent(questionBank.getId(), bankId -> {
+                var byCode = new HashMap<String, QuestionTopic>();
+                for (var topic : questionTopicRepository.findByQuestionBankId(bankId)) {
+                    byCode.putIfAbsent(normalizeLookupKey(topic.getCode()), topic);
+                }
+                return byCode;
+            })
+            .get(normalizeLookupKey(topicCode));
+        if (questionTopic == null) {
+            errors.add(error(
+                "questionTopicCode",
+                "Không tìm thấy chủ đề có mã '" + topicCode + "' trong ngân hàng '" + bankCode + "'"
+            ));
+            return null;
+        }
+        if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
+            errors.add(error(
+                "questionTopicCode",
+                "Chủ đề '" + topicCode + "' đang ở trạng thái " + questionTopic.getStatus()
+                    + ". Chỉ import được vào chủ đề đã PUBLISHED."
+            ));
+            return null;
+        }
+        return new ImportContext(questionBank, questionTopic);
+    }
+
+    /**
+     * Phạm vi tra cứu của cả phiên import hàng loạt, dựng MỘT lần rồi dùng lại cho mọi dòng.
+     * Chủ đề nạp lười theo từng ngân hàng thật sự xuất hiện trong file, không nạp trước tất cả.
+     */
+    private record BulkScope(
+        String schoolCode,
+        Map<String, QuestionBank> banksByCode,
+        Map<UUID, Map<String, QuestionTopic>> topicsByBankAndCode
+    ) {
+    }
+
+    private BulkScope buildBulkScope(ImportSession session) {
+        var schoolId = session.getSchoolId();
+        var ownerType = schoolId == null ? QuestionBankOwnerType.SYSTEM : QuestionBankOwnerType.SCHOOL;
+        var banksByCode = new HashMap<String, QuestionBank>();
+        for (var bank : questionBankRepository.findByOwnerScope(ownerType, schoolId)) {
+            banksByCode.putIfAbsent(normalizeLookupKey(bank.getCode()), bank);
+        }
+        var schoolCode = schoolId == null
+            ? null
+            : schoolRepository.findById(schoolId)
+                .map(school -> school.getCode() == null ? null : school.getCode().value())
+                .orElse(null);
+        return new BulkScope(schoolCode, banksByCode, new HashMap<>());
+    }
+
+    private static String normalizeLookupKey(String value) {
+        return value == null ? "" : value.strip().toUpperCase(java.util.Locale.ROOT);
+    }
+
     private Map<String, String> mapRawData(Map<String, String> rawData, Map<String, String> confirmedMapping) {
         var mappedData = new LinkedHashMap<String, String>();
         rawData.forEach((originalHeader, value) -> {
@@ -237,6 +355,10 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         return normalized;
     }
 
+    /**
+     * @param importContext {@code null} ở chế độ hàng loạt — lúc đó đích của dòng chưa xác định
+     *                      và được giải riêng bằng mã, nên phần đối chiếu id ở cuối hàm bỏ qua.
+     */
     private List<Map<String, String>> validateRow(
             Map<String, String> data,
             ImportContext importContext,
@@ -266,6 +388,9 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             errors.add(error("code", "Mã câu hỏi bị trùng trong file import"));
         }
 
+        if (importContext == null) {
+            return errors;
+        }
         if (!Objects.equals(data.get("questionBankId"), importContext.questionBank().getId().toString())) {
             errors.add(error("questionBankId", "Question bank của row không hợp lệ"));
         }

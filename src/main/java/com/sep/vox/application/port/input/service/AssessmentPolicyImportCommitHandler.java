@@ -154,7 +154,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         // Rubric Version đã gắn với BẤT KỲ Assessment Policy nào (mọi trạng thái) -> 1 Rubric Version chỉ
         // dùng được cho đúng 1 Policy, vĩnh viễn (kể cả sau khi Policy đó Archive).
         Set<UUID> existingUsedRubricVersionIds = existingPolicies.stream()
-                .map(AssessmentPolicy::getRubricVersionId)
+                .map(policy -> policy.getRubricVersionId())
                 .collect(Collectors.toSet());
 
         // Version lớn nhất đã từng tồn tại theo từng scope (kể cả ARCHIVED) -> dùng để phát version kế tiếp,

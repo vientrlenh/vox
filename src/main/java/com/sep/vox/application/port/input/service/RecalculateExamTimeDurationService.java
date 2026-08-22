@@ -12,17 +12,25 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
+import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.service.exam.ExamScheduleWindowMessages;
+import com.sep.vox.domain.service.exam.PaperTimeCalculator;
 
 /**
- * H.1: paper.timeDurationSeconds = tổng preparationTimeSeconds + maxResponseSeconds của mọi item
- * đã gán câu hỏi trong mã đề; exam.examTimeDurationSecond = MAX(paperDuration) trên mọi ExamPaper của kỳ thi.
- * Các field này tự động tính, không nhập tay ở frontend - gọi lại hàm này mỗi khi cấu trúc 1 mã đề thay đổi.
+ * H.1: paper.timeDurationSeconds = tổng thời gian THẬT của mọi item đã gán câu hỏi trong mã đề --
+ * preparationTimeSeconds + maxResponseSeconds, CỘNG thời lượng phát của asset AUDIO/VIDEO (xem
+ * {@link PaperTimeCalculator}); exam.examTimeDurationSecond = MAX(paperDuration) trên mọi ExamPaper
+ * của kỳ thi. Các field này tự động tính, không nhập tay ở frontend - gọi lại hàm này mỗi khi cấu
+ * trúc 1 mã đề thay đổi.
+ *
+ * <p>Lưu ý: ước tính CHI PHÍ AI ({@code ClassTestTokenQuotaGuardService}) cố ý KHÔNG dùng con số này
+ * mà tự tính lại phần billable, vì giây phát media không sinh chi phí AI nào.
  */
 @Service
 public class RecalculateExamTimeDurationService {
@@ -31,6 +39,7 @@ public class RecalculateExamTimeDurationService {
     private final ExamPaperRepository examPaperRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
+    private final QuestionAssetRepository questionAssetRepository;
     private final ExamScheduleRepository examScheduleRepository;
 
     public RecalculateExamTimeDurationService(
@@ -38,11 +47,13 @@ public class RecalculateExamTimeDurationService {
             ExamPaperRepository examPaperRepository,
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
+            QuestionAssetRepository questionAssetRepository,
             ExamScheduleRepository examScheduleRepository) {
         this.examRepository = examRepository;
         this.examPaperRepository = examPaperRepository;
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
+        this.questionAssetRepository = questionAssetRepository;
         this.examScheduleRepository = examScheduleRepository;
     }
 
@@ -76,21 +87,29 @@ public class RecalculateExamTimeDurationService {
             .filter(Objects::nonNull)
             .distinct()
             .toList();
-        var durationByQuestionId = questionRepository.findByIdIn(questionIds).stream()
-            .collect(Collectors.toMap(
-                question -> question.getId(),
-                question -> question.getPreparationTimeSeconds() + question.getMaxResponseSeconds()));
+        var questionById = questionRepository.findByIdIn(questionIds).stream()
+            .collect(Collectors.toMap(question -> question.getId(), question -> question));
+        // Thời lượng phát AUDIO/VIDEO cũng là thời gian thí sinh ngồi trong phòng, nên phải nằm trong
+        // ngân sách đồng hồ -- xem PaperTimeCalculator để rõ vì sao ước tính CHI PHÍ lại không được
+        // cộng phần này.
+        var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(
+            questionAssetRepository.findByQuestionIdIn(questionIds));
 
         var maxDuration = 0;
         var changedPapers = new ArrayList<ExamPaper>();
         for (var paper : papers) {
-            var paperDuration = 0;
+            // List chứ không phải Set: một câu hỏi lặp lại trong cùng mã đề thì phải tính đủ số lần.
+            var paperQuestions = new ArrayList<Question>();
             for (var item : itemsByPaperId.getOrDefault(paper.getId(), List.of())) {
                 if (item.getQuestionId() == null) {
                     continue;
                 }
-                paperDuration += durationByQuestionId.getOrDefault(item.getQuestionId(), 0);
+                var question = questionById.get(item.getQuestionId());
+                if (question != null) {
+                    paperQuestions.add(question);
+                }
             }
+            var paperDuration = PaperTimeCalculator.breakdownOf(paperQuestions, assetByQuestionId).totalSeconds();
             if (paper.getTimeDurationSeconds() == null || paper.getTimeDurationSeconds() != paperDuration) {
                 paper.setTimeDurationSeconds(paperDuration);
                 changedPapers.add(paper);

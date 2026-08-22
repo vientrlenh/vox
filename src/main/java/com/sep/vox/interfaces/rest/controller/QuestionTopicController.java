@@ -27,6 +27,10 @@ import com.sep.vox.application.port.input.usecase.questiontopic.AcceptQuestionTo
 import com.sep.vox.application.port.input.usecase.questiontopic.CreateQuestionTopicUseCase;
 import com.sep.vox.application.port.input.usecase.questiontopic.DeleteQuestionTopicUseCase;
 import com.sep.vox.application.port.input.usecase.questiontopic.PreviewQuestionTopicImportFromFileUseCase;
+import com.sep.vox.application.port.input.command.BulkUpdateQuestionScopeStatusCommand;
+import com.sep.vox.application.response.input.question.BulkUpdateQuestionTopicStatusResponse;
+import com.sep.vox.application.port.input.usecase.questiontopic.BulkUpdateQuestionTopicStatusUseCase;
+import com.sep.vox.interfaces.rest.dto.request.BulkUpdateQuestionScopeStatusRequest;
 import com.sep.vox.application.port.input.usecase.questiontopic.UpdateQuestionTopicStatusUseCase;
 import com.sep.vox.application.port.input.usecase.questiontopic.UpdateQuestionTopicUseCase;
 import com.sep.vox.application.response.input.importfile.PreviewImportResponse;
@@ -50,6 +54,7 @@ public class QuestionTopicController {
     private final CreateQuestionTopicUseCase createQuestionTopicUseCase;
     private final UpdateQuestionTopicUseCase updateQuestionTopicUseCase;
     private final UpdateQuestionTopicStatusUseCase updateQuestionTopicStatusUseCase;
+    private final BulkUpdateQuestionTopicStatusUseCase bulkUpdateQuestionTopicStatusUseCase;
     private final DeleteQuestionTopicUseCase deleteQuestionTopicUseCase;
     private final PreviewQuestionTopicImportFromFileUseCase previewQuestionTopicImportFromFileUseCase;
     private final AcceptQuestionTopicImportUseCase acceptQuestionTopicImportUseCase;
@@ -58,12 +63,14 @@ public class QuestionTopicController {
             CreateQuestionTopicUseCase createQuestionTopicUseCase,
             UpdateQuestionTopicUseCase updateQuestionTopicUseCase,
             UpdateQuestionTopicStatusUseCase updateQuestionTopicStatusUseCase,
+            BulkUpdateQuestionTopicStatusUseCase bulkUpdateQuestionTopicStatusUseCase,
             DeleteQuestionTopicUseCase deleteQuestionTopicUseCase,
             PreviewQuestionTopicImportFromFileUseCase previewQuestionTopicImportFromFileUseCase,
             AcceptQuestionTopicImportUseCase acceptQuestionTopicImportUseCase) {
         this.createQuestionTopicUseCase = createQuestionTopicUseCase;
         this.updateQuestionTopicUseCase = updateQuestionTopicUseCase;
         this.updateQuestionTopicStatusUseCase = updateQuestionTopicStatusUseCase;
+        this.bulkUpdateQuestionTopicStatusUseCase = bulkUpdateQuestionTopicStatusUseCase;
         this.deleteQuestionTopicUseCase = deleteQuestionTopicUseCase;
         this.previewQuestionTopicImportFromFileUseCase = previewQuestionTopicImportFromFileUseCase;
         this.acceptQuestionTopicImportUseCase = acceptQuestionTopicImportUseCase;
@@ -125,6 +132,22 @@ public class QuestionTopicController {
         var command = UpdateQuestionTopicStatusCommandMapper.fromRequest(id, request);
         var data = updateQuestionTopicStatusUseCase.execute(command);
         var response = ApiResponse.success("Cập nhật trạng thái chủ đề câu hỏi thành công", data);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Thành công một phần: mục hợp lệ thì đổi, mục không thì nằm trong {@code failed} kèm lý do.
+     *
+     * <p>Bước hay vấp nhất khi nạp dữ liệu: import câu hỏi chỉ nhận chủ đề đã PUBLISHED, mà chủ đề
+     * nhập từ Excel luôn vào ở DRAFT.
+     */
+    @PatchMapping("/bulk/status")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<BulkUpdateQuestionTopicStatusResponse>> bulkUpdateStatus(
+            @Valid @RequestBody BulkUpdateQuestionScopeStatusRequest request) {
+        var data = bulkUpdateQuestionTopicStatusUseCase.execute(
+            new BulkUpdateQuestionScopeStatusCommand(request.ids(), request.action()));
+        var response = ApiResponse.success("Cập nhật trạng thái chủ đề câu hỏi hàng loạt thành công", data);
         return ResponseEntity.ok(response);
     }
 

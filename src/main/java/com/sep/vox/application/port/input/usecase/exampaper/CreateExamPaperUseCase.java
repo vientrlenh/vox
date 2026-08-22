@@ -48,7 +48,9 @@ import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
+import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.service.exam.PaperTimeCalculator;
 
 @Service
 public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, ExamPaperDto> {
@@ -62,6 +64,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
     private final ExamPaperSectionRepository examPaperSectionRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
+    private final QuestionAssetRepository questionAssetRepository;
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
@@ -78,6 +81,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             ExamPaperSectionRepository examPaperSectionRepository,
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
+            QuestionAssetRepository questionAssetRepository,
             QuestionCollaboratorRepository questionCollaboratorRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
             ExamTimeQuotaGuardService examTimeQuotaGuardService,
@@ -92,6 +96,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         this.examPaperSectionRepository = examPaperSectionRepository;
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
+        this.questionAssetRepository = questionAssetRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
         this.examTimeQuotaGuardService = examTimeQuotaGuardService;
@@ -253,7 +258,6 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
 
         var seenQuestionIds = new HashSet<UUID>();
         var questionsBySection = new ArrayList<List<Question>>();
-        var totalSeconds = 0;
         for (var section : sections) {
             if (section.questions() == null || section.questions().isEmpty()) {
                 throw new IllegalStateException("Mỗi phần phải có ít nhất 1 câu hỏi");
@@ -269,10 +273,13 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
                         "Bạn không có quyền sử dụng câu hỏi " + questionCommand.questionId()));
                 requireCanUseQuestion(question, currentUserId);
                 questions.add(question);
-                totalSeconds += question.getPreparationTimeSeconds() + question.getMaxResponseSeconds();
             }
             questionsBySection.add(questions);
         }
+        // Chiếu thời lượng TRƯỚC khi ghi để từ chối sớm -- mã đề chưa tồn tại nên không dùng lại được
+        // RecalculateExamTimeDurationService. Phải là totalSeconds (đã gồm media) vì đây là thước đo
+        // ĐỘ DÀI bài thi so với gói, xem PaperTimeCalculator.
+        var totalSeconds = paperTotalSeconds(questionsBySection.stream().flatMap(List::stream).toList());
         examTimeQuotaGuardService.requireWithinPlan(exam.getSchoolId(), totalSeconds, "Bài kiểm tra trên lớp");
 
         var sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(sections);
@@ -328,6 +335,13 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
 
         recalculateExamTimeDurationService.recalculate(exam.getId());
         return ExamPaperDtoMapper.toDto(examPaperRepository.findById(paper.getId()).orElse(paper));
+    }
+
+    /** Thời gian thật của mã đề, gồm cả thời lượng phát AUDIO/VIDEO -- xem {@link PaperTimeCalculator}. */
+    private int paperTotalSeconds(List<Question> questions) {
+        var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
+            .findByQuestionIdIn(questions.stream().map(Question::getId).distinct().toList()));
+        return PaperTimeCalculator.breakdownOf(questions, assetByQuestionId).totalSeconds();
     }
 
     private void requireCanUseQuestion(Question question, UUID currentUserId) {

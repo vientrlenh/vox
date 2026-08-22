@@ -49,6 +49,7 @@ import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
+import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
@@ -100,6 +101,7 @@ class AssignSelectionSlotQuestionTests {
                 examMemberRepository, schoolUserRepository, mock(UserRoleQueryRepository.class)),
             examBlueprintSlotRepository,
             questionRepository,
+            mock(QuestionAssetRepository.class),
             mock(QuestionCollaboratorRepository.class),
             schoolUserRepository,
             examQuestionSecureLockService,

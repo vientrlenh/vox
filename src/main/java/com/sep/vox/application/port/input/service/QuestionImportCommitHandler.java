@@ -118,11 +118,16 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             return new ImportCommitResult(0L, 0L, 0L, 0L);
         }
 
-        // Hai chế độ, phân biệt bằng việc bước xem trước có ghim ngân hàng/chủ đề vào từng dòng hay
-        // không. Ghim -> luồng cũ, cả tệp vào một chủ đề. Không ghim -> hàng loạt, mỗi dòng tự khai
-        // mã ngân hàng + mã chủ đề nên MỘT tệp rải được sang nhiều chủ đề.
-        var bulkMode = !isPresent(
-            jsonSerializationPort.toStringMap(rows.get(0).getRawDataJson()).get("questionBankId"));
+        // Luồng cũ chỉ áp dụng khi bước xem trước ghim ĐỦ CẢ HAI: cả tệp vào đúng một chủ đề.
+        // Thiếu bất kỳ cái nào -> đi đường giải theo mã, ở đó ngân hàng và chủ đề được giải ĐỘC LẬP
+        // (cái nào đã ghim thì dùng luôn, cái nào chưa thì lấy mã trong file). Nhờ vậy phủ được cả
+        // ba tổ hợp còn lại, không riêng "để trống cả hai".
+        //
+        // Xét cả hai chứ không mỗi questionBankId: ghim ngân hàng mà bỏ trống chủ đề sẽ rơi vào
+        // nhánh cũ rồi ném ngay ở parseUuid(questionTopicId).
+        var firstRowRaw = jsonSerializationPort.toStringMap(rows.get(0).getRawDataJson());
+        var bulkMode = !isPresent(firstRowRaw.get("questionBankId"))
+            || !isPresent(firstRowRaw.get("questionTopicId"));
         var sharedContext = bulkMode ? null : resolveContext(rows.get(0));
         var bulkScope = bulkMode ? buildBulkScope(session) : null;
         var confirmedMapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
@@ -234,10 +239,17 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             List<Map<String, String>> errors) {
         var bankCode = data.get("questionBankCode");
         var topicCode = data.get("questionTopicCode");
-        if (!isPresent(bankCode)) {
+
+        // Ngân hàng và chủ đề giải ĐỘC LẬP nhau: người dùng chọn sẵn cái nào thì cái đó được ghim,
+        // cái còn lại lấy theo mã trong file. Nhờ vậy "chọn ngân hàng, để trống chủ đề" chỉ cần cột
+        // Mã chủ đề, không phải khai lại cả mã ngân hàng vừa chọn trên màn hình.
+        var pinnedBankId = parseUuidOrNull(data.get("questionBankId"));
+        var pinnedTopicId = parseUuidOrNull(data.get("questionTopicId"));
+
+        if (pinnedBankId == null && !isPresent(bankCode)) {
             errors.add(error("questionBankCode", "Thiếu mã ngân hàng câu hỏi"));
         }
-        if (!isPresent(topicCode)) {
+        if (pinnedTopicId == null && !isPresent(topicCode)) {
             errors.add(error("questionTopicCode", "Thiếu mã chủ đề câu hỏi"));
         }
 
@@ -253,10 +265,34 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             return null;
         }
 
-        var questionBank = scope.banksByCode().get(normalizeLookupKey(bankCode));
+        var questionBank = pinnedBankId != null
+            ? questionBankRepository.findById(pinnedBankId).orElse(null)
+            : scope.banksByCode().get(normalizeLookupKey(bankCode));
         if (questionBank == null) {
-            errors.add(error("questionBankCode", "Không tìm thấy ngân hàng câu hỏi có mã '" + bankCode + "'"));
+            errors.add(error(
+                "questionBankCode",
+                pinnedBankId != null
+                    ? "Không tìm thấy ngân hàng câu hỏi đã chọn ở màn nhập"
+                    : "Không tìm thấy ngân hàng câu hỏi có mã '" + bankCode + "'"));
             return null;
+        }
+
+        if (pinnedTopicId != null) {
+            var pinnedTopic = questionTopicRepository.findById(pinnedTopicId).orElse(null);
+            if (pinnedTopic == null || !pinnedTopic.getQuestionBankId().equals(questionBank.getId())) {
+                errors.add(error(
+                    "questionTopicCode",
+                    "Chủ đề đã chọn không thuộc ngân hàng '" + questionBank.getCode() + "'"));
+                return null;
+            }
+            if (pinnedTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
+                errors.add(error(
+                    "questionTopicCode",
+                    "Chủ đề đã chọn đang ở trạng thái " + pinnedTopic.getStatus()
+                        + ". Chỉ import được vào chủ đề đã PUBLISHED."));
+                return null;
+            }
+            return new ImportContext(questionBank, pinnedTopic);
         }
 
         var questionTopic = scope.topicsByBankAndCode()
@@ -332,10 +368,24 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         return mappedData;
     }
 
+    /**
+     * Chép sang map đã chuẩn hoá. Đây là danh sách viết TAY, và mọi trường không có tên ở đây đều
+     * bị bỏ im lặng dù đã nằm trong {@link #SUPPORTED_FIELDS} và đã được ánh xạ đúng cột — thêm
+     * trường mới mà quên chỗ này là dữ liệu biến mất không một lời báo.
+     *
+     * <p>Đã xảy ra đúng vậy hai lần: ba cột mã đích (chế độ hàng loạt luôn báo "Thiếu mã ngân hàng
+     * câu hỏi" dù file có ghi) và bảy cột tài nguyên (asset không bao giờ được tạo, vì
+     * {@code createAssetIfPresent} đọc {@code assetType} từ chính map này).
+     */
     private Map<String, String> normalize(Map<String, String> mappedData) {
         var normalized = new LinkedHashMap<String, String>();
         normalized.put("questionBankId", trimOrNull(mappedData.get("questionBankId")));
         normalized.put("questionTopicId", trimOrNull(mappedData.get("questionTopicId")));
+        // Mã đích của từng dòng ở chế độ hàng loạt. normalizeCode viết hoa -- khớp với cách tra cứu
+        // ngân hàng/chủ đề theo mã, và schoolCode thì đối chiếu bằng equalsIgnoreCase nên vô hại.
+        normalized.put("schoolCode", StringNormalization.normalizeCode(mappedData.get("schoolCode")));
+        normalized.put("questionBankCode", StringNormalization.normalizeCode(mappedData.get("questionBankCode")));
+        normalized.put("questionTopicCode", StringNormalization.normalizeCode(mappedData.get("questionTopicCode")));
         normalized.put("code", StringNormalization.normalizeCode(mappedData.get("code")));
         normalized.put("type", StringNormalization.normalizeCode(mappedData.get("type")));
         normalized.put("questionText", StringNormalization.trimAndCollapseSpaces(mappedData.get("questionText")));
@@ -352,6 +402,18 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         normalized.put("evaluationOffTopicExamples", StringNormalization.trimAndCollapseSpaces(mappedData.get("evaluationOffTopicExamples")));
         normalized.put("evaluationScoringHints", StringNormalization.trimAndCollapseSpaces(mappedData.get("evaluationScoringHints")));
         normalized.put("evaluationCommonMistakes", StringNormalization.trimAndCollapseSpaces(mappedData.get("evaluationCommonMistakes")));
+
+        // Tài nguyên. Chỉ trimOrNull cho url, bản chép lời và mô tả -- KHÔNG trimAndCollapseSpaces:
+        // url phân biệt hoa thường và khoảng trắng không được đụng tới, còn bản chép lời/mô tả có
+        // ngắt đoạn (\n\n) mà gộp khoảng trắng sẽ dính liền thành một khối. Tiêu đề và văn bản thay
+        // thế là nhãn ngắn nên gộp được.
+        normalized.put("assetType", StringNormalization.normalizeCode(mappedData.get("assetType")));
+        normalized.put("assetUrl", trimOrNull(mappedData.get("assetUrl")));
+        normalized.put("assetTitle", StringNormalization.trimAndCollapseSpaces(mappedData.get("assetTitle")));
+        normalized.put("assetAltText", StringNormalization.trimAndCollapseSpaces(mappedData.get("assetAltText")));
+        normalized.put("assetTranscript", trimOrNull(mappedData.get("assetTranscript")));
+        normalized.put("assetDescription", trimOrNull(mappedData.get("assetDescription")));
+        normalized.put("assetDurationSeconds", trimOrNull(mappedData.get("assetDurationSeconds")));
         return normalized;
     }
 
@@ -420,7 +482,12 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             false,
             QuestionConfidentiality.OPEN,
             null,
-            QuestionStatus.SUBMITTED_FOR_REVIEW,
+            // DRAFT chứ không phải SUBMITTED_FOR_REVIEW: câu nhập hàng loạt gần như luôn còn phải
+            // sửa tiếp -- điển hình là upload ảnh/audio thật cho tài nguyên, vì tệp media không đi
+            // kèm được trong Excel. Đẩy thẳng vào hàng đợi duyệt là bắt người duyệt xem một câu
+            // chưa xong. Người nhập là createdBy nên tự bulk SUBMIT được khi đã hoàn thiện
+            // (QuestionStatusTransition: SUBMIT nhận DRAFT hoặc REVISION_REQUESTED).
+            QuestionStatus.DRAFT,
             now,
             now,
             currentUserId,
@@ -529,6 +596,19 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    /** Khác {@link #parseUuid}: thiếu hoặc sai định dạng thì trả null chứ không ném — ở chế độ hàng
+     *  loạt việc "không có id ghim" là bình thường, không phải hỏng dữ liệu. */
+    private UUID parseUuidOrNull(String value) {
+        if (!isPresent(value)) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value.strip());
+        } catch (IllegalArgumentException exception) {
             return null;
         }
     }

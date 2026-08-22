@@ -36,6 +36,22 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
           AND (:type IS NULL OR q.type = :type)
           AND (:sharing IS NULL OR q.sharing = :sharing)
           AND (
+                :assetType IS NULL
+                OR (
+                    :assetType = 'NONE'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM QuestionAssetJpaEntity qaNone WHERE qaNone.questionId = q.id
+                    )
+                )
+                OR (
+                    :assetType <> 'NONE'
+                    AND EXISTS (
+                        SELECT 1 FROM QuestionAssetJpaEntity qa
+                        WHERE qa.questionId = q.id AND qa.type = :assetType
+                    )
+                )
+              )
+          AND (
                 :scope IS NULL
                 OR :scope = 'ALL'
                 OR (:scope = 'MINE' AND q.createdBy = :currentUserId)
@@ -145,6 +161,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
         @Param("status") String status,
         @Param("type") String type,
         @Param("sharing") String sharing,
+        @Param("assetType") String assetType,
         @Param("scope") String scope,
         @Param("keywordPattern") String keywordPattern,
         Pageable pageable
@@ -161,6 +178,22 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
           AND (:status IS NULL OR q.status = :status)
           AND (:type IS NULL OR q.type = :type)
           AND (:sharing IS NULL OR q.sharing = :sharing)
+          AND (
+                :assetType IS NULL
+                OR (
+                    :assetType = 'NONE'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM QuestionAssetJpaEntity qaNone WHERE qaNone.questionId = q.id
+                    )
+                )
+                OR (
+                    :assetType <> 'NONE'
+                    AND EXISTS (
+                        SELECT 1 FROM QuestionAssetJpaEntity qa
+                        WHERE qa.questionId = q.id AND qa.type = :assetType
+                    )
+                )
+              )
           AND (
                 :scope IS NULL
                 OR :scope = 'ALL'
@@ -263,6 +296,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
         @Param("status") String status,
         @Param("type") String type,
         @Param("sharing") String sharing,
+        @Param("assetType") String assetType,
         @Param("scope") String scope,
         @Param("keywordPattern") String keywordPattern,
         Pageable pageable

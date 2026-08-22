@@ -56,6 +56,7 @@ public class ViewQuestionsForExamPaperUseCase implements IUseCase<ViewQuestionsQ
             input.status(),
             input.type(),
             input.sharing(),
+            input.assetType(),
             input.scope(),
             input.keyword(),
             input.page(),

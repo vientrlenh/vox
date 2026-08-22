@@ -181,11 +181,16 @@ public class PreviewQuestionImportFromFileUseCase
         long rowNumber = 1L;
         for (var row : rows) {
             var rawData = new LinkedHashMap<String, String>(row);
-            // Chỉ ghim khi người dùng đã chọn sẵn ngân hàng/chủ đề. Ở chế độ hàng loạt thì để
-            // TRỐNG có chủ đích: chính sự vắng mặt của questionBankId là thứ
-            // QuestionImportCommitHandler dùng để biết phải giải đích theo mã trong từng dòng.
-            if (questionBankId != null && questionTopicId != null) {
+            // Ghim ĐỘC LẬP từng cái: chọn được ngân hàng mà chưa chọn chủ đề thì vẫn ghim ngân
+            // hàng, phần còn lại QuestionImportCommitHandler lấy theo mã trong file. Trước đây chỉ
+            // ghim khi có ĐỦ cả hai, nên "chọn ngân hàng, để trống chủ đề" rơi hết về chế độ hàng
+            // loạt và bắt file khai lại cả mã ngân hàng vừa chọn ngay trên màn hình.
+            //
+            // Để trống cả hai vẫn là chế độ hàng loạt như cũ: mỗi dòng tự khai đủ hai mã.
+            if (questionBankId != null) {
                 rawData.put("questionBankId", questionBankId.toString());
+            }
+            if (questionTopicId != null) {
                 rawData.put("questionTopicId", questionTopicId.toString());
             }
             importRows.add(new ImportRow(

@@ -113,6 +113,8 @@ public class QuestionSpreadsheetService {
                 status,
                 type,
                 sharing,
+                // Xuất Excel không lọc theo loại tài nguyên -- màn xuất không có ô đó.
+                null,
                 scope,
                 keyword,
                 page,

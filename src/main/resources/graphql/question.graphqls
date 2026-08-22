@@ -135,8 +135,6 @@ type QuestionAsset {
     url: String
     transcript: String
     description: String
-    transcriptManuallyEdited: Boolean!
-    descriptionManuallyEdited: Boolean!
     order: Int!
 }
 
@@ -237,6 +235,8 @@ extend type Query {
         status: QuestionStatus,
         type: QuestionType,
         sharing: QuestionSharing,
+        "Tên enum QuestionAssetType, hoặc NONE để lấy câu KHÔNG có tài nguyên. Bỏ trống = không lọc."
+        assetType: String,
         scope: QuestionScope = ALL,
         keyword: String,
         page: Int = 0,
@@ -249,6 +249,8 @@ extend type Query {
         status: QuestionStatus,
         type: QuestionType,
         sharing: QuestionSharing,
+        "Tên enum QuestionAssetType, hoặc NONE để lấy câu KHÔNG có tài nguyên. Bỏ trống = không lọc."
+        assetType: String,
         scope: QuestionScope = ALL,
         keyword: String,
         page: Int = 0,

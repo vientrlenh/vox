@@ -1,7 +1,11 @@
 package com.sep.vox.application.port.input.service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -10,11 +14,18 @@ import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.domain.dto.ExamTokenEstimateDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.ExamPaper;
+import com.sep.vox.domain.model.exam.ExamPaperItem;
+import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamPaperItemRepository;
+import com.sep.vox.domain.repository.ExamPaperRepository;
+import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionQuotaUserAllocationRepository;
+import com.sep.vox.domain.service.exam.PaperTimeCalculator;
 
 /**
  * Ước lượng worst-case chi phí AI theo USD (duration × số thí sinh × maxAttempt ×
@@ -41,6 +52,9 @@ public class ClassTestTokenQuotaGuardService {
     private final SubscriptionQuotaRepository subscriptionQuotaRepository;
     private final SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
     private final ExamCandidateRepository examCandidateRepository;
+    private final ExamPaperRepository examPaperRepository;
+    private final ExamPaperItemRepository examPaperItemRepository;
+    private final QuestionRepository questionRepository;
     private final QuotaPricingPort quotaPricingPort;
     private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
 
@@ -49,12 +63,18 @@ public class ClassTestTokenQuotaGuardService {
             SubscriptionQuotaRepository subscriptionQuotaRepository,
             SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
             ExamCandidateRepository examCandidateRepository,
+            ExamPaperRepository examPaperRepository,
+            ExamPaperItemRepository examPaperItemRepository,
+            QuestionRepository questionRepository,
             QuotaPricingPort quotaPricingPort,
             SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
         this.examCandidateRepository = examCandidateRepository;
+        this.examPaperRepository = examPaperRepository;
+        this.examPaperItemRepository = examPaperItemRepository;
+        this.questionRepository = questionRepository;
         this.quotaPricingPort = quotaPricingPort;
         this.schoolSubscriptionDebtGuardService = schoolSubscriptionDebtGuardService;
     }
@@ -87,13 +107,67 @@ public class ClassTestTokenQuotaGuardService {
 
     /** 0 nếu chưa có mã đề (duration null/0) -- không throw, dùng lại được cho cả requireWithinTokenQuota
      *  (chặn) và estimateTokenQuota (chỉ hiển thị cảnh báo, không chặn). */
+    /**
+     * Số giây dùng ở đây là {@code billableSeconds} -- KHÔNG gồm thời lượng phát AUDIO/VIDEO, nên cố
+     * ý không đọc {@code exam.examTimeDurationSecond} (cột đó đã gồm media, xem
+     * {@link PaperTimeCalculator}). Nhân giây phát media với một cái rate mang nghĩa "USD trên mỗi
+     * giây thí sinh THẬT SỰ nói" là bịa ra chi phí không thể tồn tại.
+     *
+     * <p>Lấy MAX theo TỪNG mã đề chứ không lấy MAX rồi trừ: hai đại lượng có hai mã đề thắng khác
+     * nhau. Mã đề A 1200s không media và mã đề B 1000s + 300s media thì ca thi do B quyết (1300s)
+     * nhưng chi phí do A quyết (1200s) -- trừ media của mã đề thắng sẽ ra 1000s, hụt 200s.
+     *
+     * <p>Kết quả TUYẾN TÍNH theo maxAttempt (phép nhân thuần), nên frontend muốn biết "nếu lưu với
+     * số lượt đang gõ thì tốn bao nhiêu" chỉ cần nhân tỉ lệ con số này -- không cần thêm tham số
+     * override, cũng không cần gọi lại server mỗi lần gõ phím.
+     */
     public BigDecimal computeEstimatedCostUsd(Exam exam) {
         if (exam.getExamTimeDurationSecond() == null || exam.getExamTimeDurationSecond() <= 0) {
             return BigDecimal.ZERO;
         }
+        var billableSeconds = worstCaseBillableSecondsPerAttempt(exam.getId());
+        if (billableSeconds <= 0) {
+            return BigDecimal.ZERO;
+        }
         var candidateCount = examCandidateRepository.countByExamId(exam.getId());
-        var estimatedSeconds = BigDecimal.valueOf((long) exam.getExamTimeDurationSecond() * candidateCount * exam.getMaxAttempt());
+        var estimatedSeconds = BigDecimal.valueOf((long) billableSeconds * candidateCount * exam.getMaxAttempt());
         return estimatedSeconds.multiply(quotaPricingPort.currentEstimatedCostPerExamSecondUsd());
+    }
+
+    /** Mã đề "đắt" nhất của kỳ thi tính theo giây sinh chi phí AI. Mỗi thí sinh chỉ làm MỘT mã đề. */
+    private int worstCaseBillableSecondsPerAttempt(UUID examId) {
+        var papers = examPaperRepository.findByExamId(examId);
+        if (papers.isEmpty()) {
+            return 0;
+        }
+        var paperIds = papers.stream().map(ExamPaper::getId).toList();
+        var itemsByPaperId = examPaperItemRepository.findByPaperIdIn(paperIds).stream()
+            .collect(Collectors.groupingBy(ExamPaperItem::getPaperId));
+        var questionIds = itemsByPaperId.values().stream()
+            .flatMap(List::stream)
+            .map(ExamPaperItem::getQuestionId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+        var questionById = questionRepository.findByIdIn(questionIds).stream()
+            .collect(Collectors.toMap(Question::getId, question -> question));
+
+        var worst = 0;
+        for (var paper : papers) {
+            // List chứ không phải Set: một câu lặp lại trong cùng mã đề thì phải tính đủ số lần.
+            var paperQuestions = new ArrayList<Question>();
+            for (var item : itemsByPaperId.getOrDefault(paper.getId(), List.of())) {
+                if (item.getQuestionId() == null) {
+                    continue;
+                }
+                var question = questionById.get(item.getQuestionId());
+                if (question != null) {
+                    paperQuestions.add(question);
+                }
+            }
+            worst = Math.max(worst, PaperTimeCalculator.billableSecondsOf(paperQuestions));
+        }
+        return worst;
     }
 
     /**

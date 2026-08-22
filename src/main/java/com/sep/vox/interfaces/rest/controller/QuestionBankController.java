@@ -29,6 +29,9 @@ import com.sep.vox.application.port.input.usecase.questionbank.CreateSchoolQuest
 import com.sep.vox.application.port.input.usecase.questionbank.CreateSystemQuestionBankUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.DeleteQuestionBankGradeUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.DeleteQuestionBankUseCase;
+import com.sep.vox.application.port.input.command.BulkUpdateQuestionScopeStatusCommand;
+import com.sep.vox.application.response.input.question.BulkUpdateQuestionBankStatusResponse;
+import com.sep.vox.application.port.input.usecase.questionbank.BulkUpdateQuestionBankStatusUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.UpdateQuestionBankStatusUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.UpdateQuestionBankUseCase;
 import com.sep.vox.application.response.input.questionbank.CreateQuestionBankResponse;
@@ -39,6 +42,7 @@ import com.sep.vox.interfaces.rest.dto.request.CreateQuestionBankGradeRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolQuestionBankRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSystemQuestionBankRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionBankRequest;
+import com.sep.vox.interfaces.rest.dto.request.BulkUpdateQuestionScopeStatusRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionBankStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.CreateQuestionBankCommandMapper;
@@ -59,6 +63,7 @@ public class QuestionBankController {
     private final CreateSchoolQuestionBankUseCase createSchoolQuestionBankUseCase;
     private final UpdateQuestionBankUseCase updateQuestionBankUseCase;
     private final UpdateQuestionBankStatusUseCase updateQuestionBankStatusUseCase;
+    private final BulkUpdateQuestionBankStatusUseCase bulkUpdateQuestionBankStatusUseCase;
     private final DeleteQuestionBankUseCase deleteQuestionBankUseCase;
     private final CreateQuestionBankGradeUseCase createQuestionBankGradeUseCase;
     private final DeleteQuestionBankGradeUseCase deleteQuestionBankGradeUseCase;
@@ -70,6 +75,7 @@ public class QuestionBankController {
             CreateSchoolQuestionBankUseCase createSchoolQuestionBankUseCase,
             UpdateQuestionBankUseCase updateQuestionBankUseCase,
             UpdateQuestionBankStatusUseCase updateQuestionBankStatusUseCase,
+            BulkUpdateQuestionBankStatusUseCase bulkUpdateQuestionBankStatusUseCase,
             DeleteQuestionBankUseCase deleteQuestionBankUseCase,
             CreateQuestionBankGradeUseCase createQuestionBankGradeUseCase,
             DeleteQuestionBankGradeUseCase deleteQuestionBankGradeUseCase,
@@ -81,6 +87,7 @@ public class QuestionBankController {
         this.createSchoolQuestionBankUseCase = createSchoolQuestionBankUseCase;
         this.updateQuestionBankUseCase = updateQuestionBankUseCase;
         this.updateQuestionBankStatusUseCase = updateQuestionBankStatusUseCase;
+        this.bulkUpdateQuestionBankStatusUseCase = bulkUpdateQuestionBankStatusUseCase;
         this.deleteQuestionBankUseCase = deleteQuestionBankUseCase;
         this.createQuestionBankGradeUseCase = createQuestionBankGradeUseCase;
         this.deleteQuestionBankGradeUseCase = deleteQuestionBankGradeUseCase;
@@ -154,6 +161,17 @@ public class QuestionBankController {
         var command = UpdateQuestionBankStatusCommandMapper.fromRequest(id, request);
         var data = updateQuestionBankStatusUseCase.execute(command);
         var response = ApiResponse.success("Cập nhật trạng thái ngân hàng câu hỏi thành công", data);
+        return ResponseEntity.ok(response);
+    }
+
+    /** Thành công một phần: mục hợp lệ thì đổi, mục không thì nằm trong {@code failed} kèm lý do. */
+    @PatchMapping("/bulk/status")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<BulkUpdateQuestionBankStatusResponse>> bulkUpdateStatus(
+            @Valid @RequestBody BulkUpdateQuestionScopeStatusRequest request) {
+        var data = bulkUpdateQuestionBankStatusUseCase.execute(
+            new BulkUpdateQuestionScopeStatusCommand(request.ids(), request.action()));
+        var response = ApiResponse.success("Cập nhật trạng thái ngân hàng câu hỏi hàng loạt thành công", data);
         return ResponseEntity.ok(response);
     }
 

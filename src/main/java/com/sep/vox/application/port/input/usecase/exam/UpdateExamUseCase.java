@@ -127,9 +127,14 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         if (command.examTimeDurationSecond() != null) {
             exam.setExamTimeDurationSecond(command.examTimeDurationSecond());
         }
-        // Bài trên lớp đã publish (SCHEDULED) vẫn sửa được duration/maxAttempt, nhưng đó là 2 input
-        // của ước lượng token đã soi lúc publish (UpdateExamStatusUseCase.validatePlanLimits) -- sửa
-        // xong mà không soi lại thì ước lượng cũ vô nghĩa, nên phải chạy lại đúng guard đó ở đây.
+        // Bài trên lớp đã publish (SCHEDULED) vẫn sửa được duration/maxAttempt -- sửa xong mà không
+        // soi lại thì ước lượng token đã soi lúc publish (UpdateExamStatusUseCase.validatePlanLimits)
+        // thành vô nghĩa, nên phải chạy lại đúng guard đó ở đây.
+        //
+        // Lưu ý: từ khi tách giây-sinh-chi-phí khỏi thời-lượng-bài-thi (xem PaperTimeCalculator),
+        // ước lượng KHÔNG còn đọc examTimeDurationSecond nữa mà tự duyệt mã đề, nên chỉ maxAttempt
+        // mới thật sự làm nó đổi. Vẫn soi lại khi duration đổi vì rẻ, và vì đường REST ghi tay cột
+        // đó có thể lệch với mã đề thật.
         if (exam.getKind() == ExamKind.CLASS_TEST
                 && exam.getStatus() == ExamStatus.SCHEDULED
                 && (command.maxAttempt() != null || command.examTimeDurationSecond() != null)) {

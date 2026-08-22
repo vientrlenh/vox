@@ -85,6 +85,7 @@ public class QuestionController {
             @Argument(name = "type") QuestionType type,
             @Argument(name = "sharing") QuestionSharing sharing,
             @Argument(name = "scope") String scope,
+            @Argument(name = "assetType") String assetType,
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
@@ -96,6 +97,7 @@ public class QuestionController {
             status,
             type,
             sharing,
+            assetType,
             scope,
             keyword,
             page,
@@ -113,6 +115,7 @@ public class QuestionController {
             @Argument(name = "type") QuestionType type,
             @Argument(name = "sharing") QuestionSharing sharing,
             @Argument(name = "scope") String scope,
+            @Argument(name = "assetType") String assetType,
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
@@ -124,6 +127,7 @@ public class QuestionController {
             status,
             type,
             sharing,
+            assetType,
             scope,
             keyword,
             page,

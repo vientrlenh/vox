@@ -137,7 +137,8 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     @Override
     public PageResult<Question> findAccessible(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
             boolean schoolAdmin, UUID questionBankId, UUID questionTopicId, String topicName, QuestionStatus status,
-            QuestionType type, QuestionSharing sharing, String scope, String keyword, int pageNumber, int size) {
+            QuestionType type, QuestionSharing sharing, String assetType, String scope, String keyword,
+            int pageNumber, int size) {
         var pageable = PageRequest.of(pageNumber, size);
         var page = springDataQuestionRepository.findAccessible(
             currentUserId,
@@ -150,6 +151,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             status == null ? null : status.name(),
             type == null ? null : type.name(),
             sharing == null ? null : sharing.name(),
+            assetType,
             scope,
             StringNormalization.toLikePattern(keyword),
             pageable
@@ -168,7 +170,8 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     @Override
     public PageResult<Question> findAccessibleForExamPaper(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
             boolean schoolAdmin, UUID questionBankId, UUID questionTopicId, String topicName, QuestionStatus status,
-            QuestionType type, QuestionSharing sharing, String scope, String keyword, int pageNumber, int size) {
+            QuestionType type, QuestionSharing sharing, String assetType, String scope, String keyword,
+            int pageNumber, int size) {
         var pageable = PageRequest.of(pageNumber, size);
         var page = springDataQuestionRepository.findAccessibleForExamPaper(
             currentUserId,
@@ -181,6 +184,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             status == null ? null : status.name(),
             type == null ? null : type.name(),
             sharing == null ? null : sharing.name(),
+            assetType,
             scope,
             StringNormalization.toLikePattern(keyword),
             pageable

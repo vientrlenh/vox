@@ -54,6 +54,7 @@ import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
+import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 /**
@@ -103,6 +104,7 @@ class CreateClassTestPaperTests {
             examPaperSectionRepository,
             examPaperItemRepository,
             questionRepository,
+            mock(QuestionAssetRepository.class),
             mock(QuestionCollaboratorRepository.class),
             examQuestionSecureLockService,
             mock(ExamTimeQuotaGuardService.class),

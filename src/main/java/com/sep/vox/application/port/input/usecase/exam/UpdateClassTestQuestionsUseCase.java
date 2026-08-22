@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.exam;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,8 +35,11 @@ import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.service.exam.PaperTimeCalculator;
 
 @Service
 public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTestQuestionsCommand, ExamDto> {
@@ -46,6 +50,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
     private final ExamPaperSectionRepository examPaperSectionRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
     private final QuestionRepository questionRepository;
+    private final QuestionAssetRepository questionAssetRepository;
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
@@ -59,6 +64,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             ExamPaperSectionRepository examPaperSectionRepository,
             ExamPaperItemRepository examPaperItemRepository,
             QuestionRepository questionRepository,
+            QuestionAssetRepository questionAssetRepository,
             QuestionCollaboratorRepository questionCollaboratorRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
             ExamTimeQuotaGuardService examTimeQuotaGuardService,
@@ -70,6 +76,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         this.examPaperSectionRepository = examPaperSectionRepository;
         this.examPaperItemRepository = examPaperItemRepository;
         this.questionRepository = questionRepository;
+        this.questionAssetRepository = questionAssetRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
         this.examTimeQuotaGuardService = examTimeQuotaGuardService;
@@ -112,7 +119,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             }
         }
 
-        var candidateDurationSeconds = 0;
+        var candidateQuestions = new ArrayList<Question>();
         for (var section : input.sections()) {
             for (var questionCommand : section.questions()) {
                 var question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, exam.getSchoolId(), false, false)
@@ -125,9 +132,15 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
                         throw new ForbiddenException("Quyền READ_ONLY không được phép dùng câu hỏi trong bài kiểm tra");
                     }
                 }
-                candidateDurationSeconds += question.getPreparationTimeSeconds() + question.getMaxResponseSeconds();
+                candidateQuestions.add(question);
             }
         }
+        // Chiếu TRƯỚC khi ghi nên không dùng lại được RecalculateExamTimeDurationService. Dùng
+        // totalSeconds (đã gồm thời lượng phát AUDIO/VIDEO) vì đây là thước đo ĐỘ DÀI so với gói.
+        var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
+            .findByQuestionIdIn(candidateQuestions.stream().map(Question::getId).distinct().toList()));
+        var candidateDurationSeconds = PaperTimeCalculator
+            .breakdownOf(candidateQuestions, assetByQuestionId).totalSeconds();
         examTimeQuotaGuardService.requireWithinPlan(
             exam.getSchoolId(),
             candidateDurationSeconds,

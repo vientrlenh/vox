@@ -13,6 +13,8 @@ public record ViewQuestionsQuery(
     QuestionStatus status,
     QuestionType type,
     QuestionSharing sharing,
+    /** Tên enum QuestionAssetType, hoặc "NONE" để lấy câu KHÔNG có tài nguyên. null = không lọc. */
+    String assetType,
     String scope,
     String keyword,
     int page,

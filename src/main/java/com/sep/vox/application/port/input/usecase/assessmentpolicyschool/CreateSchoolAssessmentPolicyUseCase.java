@@ -5,6 +5,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
+import com.sep.vox.application.port.input.service.GradeLevelBandScopeGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
@@ -19,7 +20,6 @@ import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolGrade;
-import com.sep.vox.domain.model.school.SchoolGradeLevel;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
@@ -44,21 +44,22 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricRepository rubricRepository;
     private final SupportedLanguageRepository languageRepository;
-    private final SchoolGradeLevelRepository schoolGradeLevelRepository;
+    private final GradeLevelRepository gradeLevelRepository;
     private final SchoolGradeRepository schoolGradeRepository;
     private final SchoolClassRepository schoolClassRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
+    private final GradeLevelBandScopeGuardService gradeLevelBandScopeGuardService;
 
     // Dùng để phát số "version" kế tiếp theo scope, xuyên suốt toàn bộ batch
     private record VersionScopeKey(UUID languageId, UUID frameworkVersionId,
-                                    UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
+                                    UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
 
     // Chặn hai Policy trùng PHẠM VI ngay trong cùng 1 lần gọi API. KHÔNG gồm rubricVersionId:
     // một phạm vi chỉ được đúng một chính sách, bất kể trỏ vào phiên bản Rubric nào.
     private record ScopeClaimKey(UUID languageId, UUID frameworkVersionId,
-                                  UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
+                                  UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
 
     public CreateSchoolAssessmentPolicyUseCase(
             AssessmentPolicyRepository assessmentPolicyRepository,
@@ -67,24 +68,26 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             SupportedLanguageRepository languageRepository,
-            SchoolGradeLevelRepository schoolGradeLevelRepository,
+            GradeLevelRepository gradeLevelRepository,
             SchoolGradeRepository schoolGradeRepository,
             SchoolClassRepository schoolClassRepository,
             SchoolUserRepository schoolUserRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            GradeLevelBandScopeGuardService gradeLevelBandScopeGuardService) {
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.languageRepository = languageRepository;
-        this.schoolGradeLevelRepository = schoolGradeLevelRepository;
+        this.gradeLevelRepository = gradeLevelRepository;
         this.schoolGradeRepository = schoolGradeRepository;
         this.schoolClassRepository = schoolClassRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
+        this.gradeLevelBandScopeGuardService = gradeLevelBandScopeGuardService;
     }
 
     @Override
@@ -107,7 +110,9 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
         Set<ScopeClaimKey> scopeClaimsInBatch = new HashSet<>();
-        Set<UUID> rubricVersionClaimsInBatch = new HashSet<>();
+        // Nhớ lại kết quả tra Lớp -> Khối năm học -> Khối và trần bậc trong suốt batch:
+        // một lần gọi API tạo nhiều policy thường dùng lại đúng vài khối và vài khung.
+        var bandScopeBatch = gradeLevelBandScopeGuardService.newBatch();
 
         for (CreateAssessmentPolicyCommand command : commands) {
             if (!schoolId.equals(command.schoolId())) {
@@ -127,7 +132,7 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             }
 
             // 4. Validate Scope
-            int scopeCount = (command.schoolClassId() != null ? 1 : 0) + (command.schoolGradeId() != null ? 1 : 0) + (command.schoolGradeLevelId() != null ? 1 : 0);
+            int scopeCount = (command.schoolClassId() != null ? 1 : 0) + (command.schoolGradeId() != null ? 1 : 0) + (command.gradeLevelId() != null ? 1 : 0);
             if (scopeCount != 1) {
                 throw new IllegalArgumentException("Phải chọn đúng 1 phạm vi áp dụng: Lớp, Khối năm học, HOẶC Khối.");
             }
@@ -137,11 +142,12 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
                 if (!schoolId.equals(schoolClass.getSchoolId())) throw new ForbiddenException("Lớp học không thuộc trường của bạn.");
             } else if (command.schoolGradeId() != null) {
                 SchoolGrade schoolGrade = schoolGradeRepository.findById(command.schoolGradeId()).orElseThrow(() -> new NotFoundException("Không tìm thấy Khối năm học."));
-                SchoolGradeLevel gradeLevel = schoolGradeLevelRepository.findById(schoolGrade.getSchoolGradeLevelId()).orElseThrow(() -> new NotFoundException("Lỗi cấu trúc cấp học."));
-                if (!schoolId.equals(gradeLevel.getSchoolId())) throw new ForbiddenException("Khối năm học không thuộc trường của bạn.");
+                if (!schoolId.equals(schoolGrade.getSchoolId())) throw new ForbiddenException("Khối năm học không thuộc trường của bạn.");
             } else {
-                SchoolGradeLevel gradeLevel = schoolGradeLevelRepository.findById(command.schoolGradeLevelId()).orElseThrow(() -> new NotFoundException("Không tìm thấy Khối."));
-                if (!schoolId.equals(gradeLevel.getSchoolId())) throw new ForbiddenException("Khối không thuộc trường của bạn.");
+                // Khối lớp là catalog dùng chung: chỉ cần tồn tại, không còn ràng buộc thuộc trường nào.
+                if (gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
+                    throw new NotFoundException("Không tìm thấy Khối.");
+                }
             }
 
             // 5. Validate Band
@@ -150,6 +156,12 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             if (!targetBand.getFrameworkVersionId().equals(command.frameworkVersionId())) {
                 throw new IllegalStateException("Band mục tiêu phải thuộc đúng Khung năng lực đang chọn.");
             }
+
+            // 5b. Trần bậc theo Khối. Phải lần ngược Lớp/Khối năm học về Khối chứ không chỉ xét
+            //     khi phạm vi là Khối -- nếu không, chọn phạm vi hẹp hơn là trần tự mất tác dụng.
+            bandScopeBatch.assertWithinScope(
+                    command.gradeLevelId(), command.schoolGradeId(), command.schoolClassId(),
+                    command.frameworkVersionId(), targetBand);
 
             // 6. Validate Date
             if (command.effectiveFrom() == null) throw new IllegalArgumentException("Ngày bắt đầu không được trống.");
@@ -162,7 +174,7 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             // Mỗi Policy tạo mới trong batch sẽ chiếm 1 số version riêng cho cùng scope,
             // vì DB chỉ unique theo scope+version, không phân biệt theo Rubric Version
             VersionScopeKey versionScopeKey = new VersionScopeKey(command.languageId(), command.frameworkVersionId(),
-                    command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId());
+                    command.gradeLevelId(), command.schoolGradeId(), command.schoolClassId());
 
             // 7. Mỗi phạm vi chỉ được có ĐÚNG MỘT chính sách còn hiệu lực.
             //
@@ -173,7 +185,7 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             // vào existsPublishedByRubricVersionId nên vẫn đóng vai cửa chặn publish cho Rubric của
             // chúng. Dữ liệu chết nhưng vẫn có quyền lực, và không có gì báo cho người dùng biết.
             ScopeClaimKey scopeClaimKey = new ScopeClaimKey(command.languageId(), command.frameworkVersionId(),
-                    command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId());
+                    command.gradeLevelId(), command.schoolGradeId(), command.schoolClassId());
             if (!scopeClaimsInBatch.add(scopeClaimKey)) {
                 throw new DuplicatedException(
                         "Trong cùng một lần tạo có hai Assessment Policy trùng phạm vi áp dụng."
@@ -198,31 +210,26 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
 
             boolean isDuplicated = assessmentPolicyRepository.existsActiveForScopeAnyRubricVersion(
                     schoolId, command.languageId(), command.frameworkVersionId(),
-                    command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId());
+                    command.gradeLevelId(), command.schoolGradeId(), command.schoolClassId());
             if (isDuplicated) {
                 throw new DuplicatedException("Phạm vi này đã có một Assessment Policy còn hiệu lực"
                         + " (DRAFT hoặc PUBLISHED). Hãy Archive bản cũ trước khi tạo bản mới.");
             }
 
-            // 1 Rubric Version chỉ được gắn với đúng 1 Assessment Policy, vĩnh viễn (kể cả sau khi
-            // Policy đó Archive) -- chặn cả trùng trong cùng batch lẫn trùng với dữ liệu đã có.
-            if (!rubricVersionClaimsInBatch.add(rubricVersionId)) {
-                throw new DuplicatedException(
-                        "Trong cùng một lần tạo có hai Assessment Policy cùng dùng 1 Phiên bản Rubric.");
-            }
-            if (assessmentPolicyRepository.existsByRubricVersionId(rubricVersionId)) {
-                throw new DuplicatedException("Phiên bản Rubric này đã gắn với một Assessment Policy khác."
-                        + " Mỗi Rubric Version chỉ dùng được cho đúng 1 Policy.");
-            }
+            // Nhiều chính sách ĐƯỢC PHÉP dùng chung 1 Phiên bản Rubric (V44 gỡ ràng buộc 1-1 của
+            // V38): lớp chuyên và lớp thường cùng khối cần chính sách riêng theo phạm vi Lớp nhưng
+            // vẫn chấm bằng cùng một bộ tiêu chí. Cái phải giữ duy nhất là "mỗi phạm vi chỉ một
+            // chính sách còn hiệu lực" -- đã kiểm ở ScopeClaimKey và existsActiveForScopeAnyRubricVersion
+            // bên trên.
 
             int nextVersion = nextVersionByScope.computeIfAbsent(versionScopeKey, key ->
                     assessmentPolicyRepository.findMaxVersionForScope(
                             schoolId, key.languageId(), key.frameworkVersionId(),
-                            key.schoolGradeLevelId(), key.schoolGradeId(), key.schoolClassId()) + 1);
+                            key.gradeLevelId(), key.schoolGradeId(), key.schoolClassId()) + 1);
             nextVersionByScope.put(versionScopeKey, nextVersion + 1);
 
             AssessmentPolicy newPolicy = new AssessmentPolicy(
-                    schoolId, command.schoolGradeLevelId(), command.schoolGradeId(), command.schoolClassId(),
+                    schoolId, command.gradeLevelId(), command.schoolGradeId(), command.schoolClassId(),
                     command.languageId(), command.frameworkVersionId(),
                     rubricVersionId,
                     command.targetFrameworkBandId(),

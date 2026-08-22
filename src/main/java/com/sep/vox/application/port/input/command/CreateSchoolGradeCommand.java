@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record CreateSchoolGradeCommand (
     UUID schoolId,
-    UUID schoolGradeLevelId,
+    UUID gradeLevelId,
     String code,
     String name,
     String description,

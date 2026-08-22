@@ -33,13 +33,11 @@ import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.model.school.SchoolGrade;
-import com.sep.vox.domain.model.school.SchoolGradeLevel;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 
 class ImportExamCandidatesFromGradeUseCaseTests {
@@ -50,7 +48,6 @@ class ImportExamCandidatesFromGradeUseCaseTests {
     private ExamRepository examRepository;
     private ExamCandidateRepository examCandidateRepository;
     private SchoolGradeRepository schoolGradeRepository;
-    private SchoolGradeLevelRepository schoolGradeLevelRepository;
     private SchoolClassRepository schoolClassRepository;
     private SchoolClassUserRepository schoolClassUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
@@ -77,13 +74,12 @@ class ImportExamCandidatesFromGradeUseCaseTests {
         examRepository = mock(ExamRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
         schoolGradeRepository = mock(SchoolGradeRepository.class);
-        schoolGradeLevelRepository = mock(SchoolGradeLevelRepository.class);
         schoolClassRepository = mock(SchoolClassRepository.class);
         schoolClassUserRepository = mock(SchoolClassUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         examDirectoryAccessService = mock(ExamDirectoryAccessService.class);
         useCase = new ImportExamCandidatesFromGradeUseCase(
-            examRepository, examCandidateRepository, schoolGradeRepository, schoolGradeLevelRepository,
+            examRepository, examCandidateRepository, schoolGradeRepository,
             schoolClassRepository, schoolClassUserRepository, userRoleQueryRepository,
             examDirectoryAccessService);
 
@@ -91,8 +87,7 @@ class ImportExamCandidatesFromGradeUseCaseTests {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examDirectoryAccessService.resolve(exam))
             .thenReturn(new ExamDirectoryScope(userId, schoolId, true));
-        when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.of(grade(gradeLevelId)));
-        when(schoolGradeLevelRepository.findById(gradeLevelId)).thenReturn(Optional.of(gradeLevel(schoolId)));
+        when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.of(grade(gradeLevelId, schoolId)));
     }
 
     @Test
@@ -146,8 +141,8 @@ class ImportExamCandidatesFromGradeUseCaseTests {
 
     @Test
     void should_throw_when_grade_belongs_to_other_school() {
-        when(schoolGradeLevelRepository.findById(gradeLevelId))
-            .thenReturn(Optional.of(gradeLevel(UUID.randomUUID())));
+        when(schoolGradeRepository.findById(gradeId))
+            .thenReturn(Optional.of(grade(gradeLevelId, UUID.randomUUID())));
 
         assertThatThrownBy(() -> useCase.execute(new ImportExamCandidatesFromGradeCommand(examId, gradeId)))
             .isInstanceOf(ForbiddenException.class);
@@ -181,19 +176,14 @@ class ImportExamCandidatesFromGradeUseCaseTests {
         return schoolClass;
     }
 
-    private SchoolGrade grade(UUID levelId) {
+    private SchoolGrade grade(UUID levelId, UUID ownerSchoolId) {
         var grade = new SchoolGrade();
         grade.setId(gradeId);
-        grade.setSchoolGradeLevelId(levelId);
+        grade.setGradeLevelId(levelId);
+        grade.setSchoolId(ownerSchoolId);
         return grade;
     }
 
-    private SchoolGradeLevel gradeLevel(UUID ownerSchoolId) {
-        var level = new SchoolGradeLevel();
-        level.setId(gradeLevelId);
-        level.setSchoolId(ownerSchoolId);
-        return level;
-    }
 
     private Exam exam() {
         var exam = new Exam();

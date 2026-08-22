@@ -7,7 +7,7 @@ import java.util.UUID;
 public record AssessmentPolicyDto(
         UUID id,
         UUID schoolId,
-        UUID schoolGradeLevelId,
+        UUID gradeLevelId,
         UUID schoolGradeId,
         UUID schoolClassId,
         UUID languageId,

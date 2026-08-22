@@ -11,7 +11,7 @@ public final class CreateExamBlueprintCommandMapper {
     public static CreateExamBlueprintCommand fromRequest(CreateExamBlueprintRequest request) {
         return new CreateExamBlueprintCommand(
             request.languageId(),
-            request.schoolGradeLevelId(),
+            request.gradeLevelId(),
             request.code(),
             request.name(),
             request.description()

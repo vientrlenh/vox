@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public record ViewSchoolGradesQuery(
         UUID schoolId,
-        UUID schoolGradeLevelId,
+        UUID gradeLevelId,
         String status,
         int page,
         int size

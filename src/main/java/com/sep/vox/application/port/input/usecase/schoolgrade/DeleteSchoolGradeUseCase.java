@@ -12,7 +12,6 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -28,7 +27,6 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
     private final SchoolGradeRepository schoolGradeRepository;
     private final SchoolClassRepository schoolClassRepository;
     private final SchoolClassUserRepository schoolClassUserRepository;
-    private final SchoolGradeLevelRepository schoolGradeLevelRepository;
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
@@ -37,7 +35,6 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
             SchoolGradeRepository schoolGradeRepository,
             SchoolClassRepository schoolClassRepository,
             SchoolClassUserRepository schoolClassUserRepository,
-            SchoolGradeLevelRepository schoolGradeLevelRepository,
             UserContextPort userContextPort,
             UserRepository userRepository,
             SchoolUserRepository schoolUserRepository
@@ -45,7 +42,6 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
         this.schoolGradeRepository = schoolGradeRepository;
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
-        this.schoolGradeLevelRepository = schoolGradeLevelRepository;
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.schoolUserRepository = schoolUserRepository;
@@ -72,12 +68,8 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
         SchoolGrade grade = schoolGradeRepository.findById(command.id())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy năm học/khóa học này."));
 
-        // 3. Lấy School Grade Level làm "cầu nối" để truy ra School ID
-        var gradeLevel = schoolGradeLevelRepository.findById(grade.getSchoolGradeLevelId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Khối Lớp chứa năm học này."));
-
-
-        if (!gradeLevel.getSchoolId().equals(command.schoolId())) {
+        // 3. school_grades mang schoolId trực tiếp -- không còn phải mượn Khối Lớp làm "cầu nối".
+        if (!grade.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Dữ liệu này không thuộc quyền quản lý của trường bạn.");
         }
 

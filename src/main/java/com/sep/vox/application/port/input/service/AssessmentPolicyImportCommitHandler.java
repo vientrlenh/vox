@@ -18,7 +18,7 @@ import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolGrade;
-import com.sep.vox.domain.model.school.SchoolGradeLevel;
+import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
@@ -38,10 +38,11 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricRepository rubricRepository;
     private final SupportedLanguageRepository languageRepository;
-    private final SchoolGradeLevelRepository schoolGradeLevelRepository;
+    private final GradeLevelRepository gradeLevelRepository;
     private final SchoolGradeRepository schoolGradeRepository;
     private final SchoolClassRepository schoolClassRepository;
     private final JsonSerializationPort jsonSerializationPort;
+    private final GradeLevelBandScopeGuardService gradeLevelBandScopeGuardService;
 
     public AssessmentPolicyImportCommitHandler(
             AssessmentPolicyRepository assessmentPolicyRepository,
@@ -50,46 +51,50 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             SupportedLanguageRepository languageRepository,
-            SchoolGradeLevelRepository schoolGradeLevelRepository,
+            GradeLevelRepository gradeLevelRepository,
             SchoolGradeRepository schoolGradeRepository,
             SchoolClassRepository schoolClassRepository,
-            JsonSerializationPort jsonSerializationPort) {
+            JsonSerializationPort jsonSerializationPort,
+            GradeLevelBandScopeGuardService gradeLevelBandScopeGuardService) {
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.languageRepository = languageRepository;
-        this.schoolGradeLevelRepository = schoolGradeLevelRepository;
+        this.gradeLevelRepository = gradeLevelRepository;
         this.schoolGradeRepository = schoolGradeRepository;
         this.schoolClassRepository = schoolClassRepository;
         this.jsonSerializationPort = jsonSerializationPort;
+        this.gradeLevelBandScopeGuardService = gradeLevelBandScopeGuardService;
     }
 
     @Override
     public ImportType supportedType() {
         return ImportType.ASSESSMENT_POLICY;
     }
-    // schoolGradeLevelId: Khối (tĩnh, không gắn năm học) | schoolGradeId: Khối năm học (khối trong 1 năm học cụ thể)
+    // gradeLevelId: Khối (tĩnh, không gắn năm học) | schoolGradeId: Khối năm học (khối trong 1 năm học cụ thể)
     // KHÔNG gồm rubricVersionId: một phạm vi chỉ được đúng một chính sách còn hiệu lực, bất kể
     // trỏ vào phiên bản Rubric nào (siết 2026-08-14, giống CreateSchoolAssessmentPolicyUseCase).
     // Trước đó trùng scope mà khác Rubric Version vẫn lọt, sinh ra chính sách không bao giờ được dùng.
     private record ScopeKey(UUID schoolId, UUID languageId, UUID frameworkVersionId,
-                            UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
+                            UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
 
     // Không gồm rubricVersionId: dùng để phát số "version" kế tiếp, vì DB chỉ unique theo scope+version
     // (không phân biệt Rubric Version), nên các Policy khác Rubric Version nhưng cùng scope này vẫn phải chiếm
     // các số version khác nhau.
     private record VersionScopeKey(UUID schoolId, UUID languageId, UUID frameworkVersionId,
-                            UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
+                            UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
 
     // Đúng 1 trong 3 phạm vi được điền: Lớp, Khối năm học, hoặc Khối
-    private record ScopeIds(UUID schoolClassId, UUID schoolGradeId, UUID schoolGradeLevelId) {
+    private record ScopeIds(UUID schoolClassId, UUID schoolGradeId, UUID gradeLevelId) {
         static final ScopeIds EMPTY = new ScopeIds(null, null, null);
     }
 
-    private record BandIds(UUID targetBandId) {
-        static final BandIds EMPTY = new BandIds(null);
+    // Giữ cả object Band chứ không chỉ id: bước kiểm trần bậc theo Khối cần result_band_order,
+    // mà band đã nằm sẵn trong LookupContext nên mang theo rẻ hơn là tra lại DB.
+    private record BandIds(UUID targetBandId, FrameworkResultBand targetBand) {
+        static final BandIds EMPTY = new BandIds(null, null);
     }
 
     private record EffectivePeriod(Instant from, Instant to) {
@@ -110,8 +115,8 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
             Map<String, SchoolClass> schoolClassByName,
             Map<String, SchoolGrade> schoolGradeByCode,
             Map<String, SchoolGrade> schoolGradeByName,
-            Map<String, SchoolGradeLevel> schoolGradeLevelByCode,
-            Map<String, SchoolGradeLevel> schoolGradeLevelByName,
+            Map<String, GradeLevel> schoolGradeLevelByCode,
+            Map<String, GradeLevel> schoolGradeLevelByName,
             Map<UUID, Map<String, FrameworkResultBand>> bandByVersionAndCode,
             Map<UUID, Map<String, FrameworkResultBand>> bandByVersionAndLabel) {}
 
@@ -136,7 +141,6 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         Instant now = Instant.now();
 
         Set<ScopeKey> scopesClaimedInFile = new HashSet<>();
-        Set<UUID> rubricVersionsClaimedInFile = new HashSet<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
 
         // Prefetch DUY NHẤT 1 lần toàn bộ Assessment Policy (mọi trạng thái) trong phạm vi schoolId này
@@ -148,13 +152,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         Set<ScopeKey> existingActiveScopes = existingPolicies.stream()
                 .filter(p -> p.getStatus() == AssessmentPolicyStatus.DRAFT || p.getStatus() == AssessmentPolicyStatus.PUBLISHED)
                 .map(p -> new ScopeKey(p.getSchoolId(), p.getLanguageId(), p.getFrameworkVersionId(),
-                        p.getSchoolGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId()))
-                .collect(Collectors.toSet());
-
-        // Rubric Version đã gắn với BẤT KỲ Assessment Policy nào (mọi trạng thái) -> 1 Rubric Version chỉ
-        // dùng được cho đúng 1 Policy, vĩnh viễn (kể cả sau khi Policy đó Archive).
-        Set<UUID> existingUsedRubricVersionIds = existingPolicies.stream()
-                .map(policy -> policy.getRubricVersionId())
+                        p.getGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId()))
                 .collect(Collectors.toSet());
 
         // Version lớn nhất đã từng tồn tại theo từng scope (kể cả ARCHIVED) -> dùng để phát version kế tiếp,
@@ -162,12 +160,17 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         Map<VersionScopeKey, Integer> maxVersionByScope = existingPolicies.stream()
                 .collect(Collectors.groupingBy(
                         p -> new VersionScopeKey(p.getSchoolId(), p.getLanguageId(), p.getFrameworkVersionId(),
-                                p.getSchoolGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId()),
+                                p.getGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId()),
                         Collectors.reducing(0, policy -> policy.getVersion(), (a, b) -> Integer.max(a, b))));
 
         // Prefetch toàn bộ dữ liệu tham chiếu (ngôn ngữ/khung/rubric/scope/band) bằng số query CỐ ĐỊNH,
         // rồi Phase 2 (loop chính) chỉ resolve trong memory, không còn gọi DB theo từng dòng/giá trị distinct nữa.
         LookupContext lookup = prefetchLookups(schoolId, isSchoolScoped, mappedDataList);
+
+        // Trần bậc không nằm trong LookupContext vì nó tra theo Khối ĐÃ SUY RA từ phạm vi của
+        // từng dòng, chưa biết trước lúc prefetch. Batch nhớ lại theo từng giá trị khác nhau nên
+        // vẫn không thành N+1 với file nhiều dòng.
+        var bandScopeBatch = gradeLevelBandScopeGuardService.newBatch();
 
         for (int i = 0; i < pendingRows.size(); i++) {
             ImportRow row = pendingRows.get(i);
@@ -198,6 +201,18 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                         ? resolveBands(frameworkVersionId, mappedData.get("targetFrameworkBand"), errors, lookup)
                         : BandIds.EMPTY;
 
+                // Trần bậc theo Khối. Guard ném IllegalArgumentException cho luồng API, nhưng ở đây
+                // một dòng sai chỉ được đánh INVALID -- không kéo đổ cả file import.
+                if (errors.isEmpty() && isSchoolScoped && bandIds.targetBand() != null) {
+                    try {
+                        bandScopeBatch.assertWithinScope(
+                                scopeIds.gradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId(),
+                                frameworkVersionId, bandIds.targetBand());
+                    } catch (IllegalArgumentException e) {
+                        errors.add(error("targetFrameworkBand", e.getMessage()));
+                    }
+                }
+
                 BigDecimal passingScore = errors.isEmpty()
                         ? parsePassingScore(mappedData.get("passingScore"), errors)
                         : null;
@@ -213,19 +228,16 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                 ScopeKey scopeKey = null;
                 if (errors.isEmpty()) {
                     scopeKey = new ScopeKey(schoolId, languageId, frameworkVersionId,
-                            scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId());
+                            scopeIds.gradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId());
                     if (!scopesClaimedInFile.add(scopeKey)) {
                         errors.add(error("scope", "Bị trùng phạm vi áp dụng ngay trong file Excel."));
                     } else if (existingActiveScopes.contains(scopeKey)) {
                         errors.add(error("scope", "Đã tồn tại một Quy chế (DRAFT/PUBLISHED) khác cho cùng phạm vi này. Vui lòng lưu trữ (ARCHIVE) bản cũ."));
                     }
 
-                    // 1 Rubric Version chỉ được gắn với đúng 1 Assessment Policy, vĩnh viễn.
-                    if (!rubricVersionsClaimedInFile.add(rubricVersionId)) {
-                        errors.add(error("rubricVersion", "Phiên bản Rubric này bị dùng lại ở nhiều dòng trong cùng file Excel."));
-                    } else if (existingUsedRubricVersionIds.contains(rubricVersionId)) {
-                        errors.add(error("rubricVersion", "Phiên bản Rubric này đã gắn với một Assessment Policy khác."));
-                    }
+                    // Dùng lại 1 Phiên bản Rubric ở nhiều dòng là HỢP LỆ từ V44: nhiều lớp khác
+                    // nhau chấm bằng cùng một bộ tiêu chí. Ràng buộc còn hiệu lực là trùng phạm vi,
+                    // đã kiểm ngay bên trên.
                 }
 
                 if (!errors.isEmpty()) {
@@ -236,13 +248,13 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                 }
 
                 VersionScopeKey versionScopeKey = new VersionScopeKey(schoolId, languageId, frameworkVersionId,
-                        scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId());
+                        scopeIds.gradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId());
                 int nextVersion = nextVersionByScope.computeIfAbsent(versionScopeKey, key ->
                         maxVersionByScope.getOrDefault(key, 0) + 1);
                 nextVersionByScope.put(versionScopeKey, nextVersion + 1);
 
                 AssessmentPolicy newPolicy = new AssessmentPolicy(
-                        schoolId, scopeIds.schoolGradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId(),
+                        schoolId, scopeIds.gradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId(),
                         languageId, frameworkVersionId, rubricVersionId, bandIds.targetBandId(),
                         passingScore, strictness, nextVersion, AssessmentPolicyStatus.DRAFT,
                         effectivePeriod.from(), effectivePeriod.to(), now, now, session.getCreatedBy(), session.getCreatedBy()
@@ -309,15 +321,15 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         Map<String, SchoolClass> schoolClassByName = Map.of();
         Map<String, SchoolGrade> schoolGradeByCode = Map.of();
         Map<String, SchoolGrade> schoolGradeByName = Map.of();
-        Map<String, SchoolGradeLevel> schoolGradeLevelByCode = Map.of();
-        Map<String, SchoolGradeLevel> schoolGradeLevelByName = Map.of();
+        Map<String, GradeLevel> schoolGradeLevelByCode = Map.of();
+        Map<String, GradeLevel> schoolGradeLevelByName = Map.of();
         if (isSchoolScoped) {
             schoolClassByCode = indexBy(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, classInputs), c -> c.getCode().value().toUpperCase());
             schoolClassByName = indexBy(schoolClassRepository.findBySchoolIdAndNameIn(schoolId, classInputs), c -> c.getName());
             schoolGradeByCode = indexBy(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, gradeInputs), g -> g.getCode().toUpperCase());
             schoolGradeByName = indexBy(schoolGradeRepository.findBySchoolIdAndNameIn(schoolId, gradeInputs), g -> g.getName());
-            schoolGradeLevelByCode = indexBy(schoolGradeLevelRepository.findBySchoolIdAndCodeIn(schoolId, gradeLevelInputs), l -> l.getCode().toUpperCase());
-            schoolGradeLevelByName = indexBy(schoolGradeLevelRepository.findBySchoolIdAndNameIn(schoolId, gradeLevelInputs), level -> level.getName());
+            schoolGradeLevelByCode = indexBy(gradeLevelRepository.findByCodeIn(gradeLevelInputs), l -> l.getCode().toUpperCase());
+            schoolGradeLevelByName = indexBy(gradeLevelRepository.findByNameIn(gradeLevelInputs), level -> level.getName());
         }
 
         Set<UUID> frameworkVersionIds = new HashSet<>();
@@ -460,7 +472,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
 
         if (hasGradeLevel) {
             String cleanInput = gradeLevelInput == null ? "" : gradeLevelInput.trim();
-            SchoolGradeLevel schoolGradeLevel = lookup.schoolGradeLevelByCode().get(cleanInput.toUpperCase());
+            GradeLevel schoolGradeLevel = lookup.schoolGradeLevelByCode().get(cleanInput.toUpperCase());
             if (schoolGradeLevel == null) schoolGradeLevel = lookup.schoolGradeLevelByName().get(cleanInput);
             if (schoolGradeLevel == null) {
                 errors.add(error("schoolGradeLevel", "Không tìm thấy Khối '" + cleanInput + "'."));
@@ -497,7 +509,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
 
         if (targetBand == null) errors.add(error("targetFrameworkBand", "Band mục tiêu '" + cleanTarget + "' không tồn tại trong Khung này."));
 
-        return new BandIds(targetBand != null ? targetBand.getId() : null);
+        return new BandIds(targetBand != null ? targetBand.getId() : null, targetBand);
     }
 
     private static FrameworkResultBand findBand(UUID frameworkVersionId, String cleanInput, LookupContext lookup) {

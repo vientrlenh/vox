@@ -11,7 +11,7 @@ public record CreateAssessmentPolicyCommand(
         UUID frameworkVersionId,
         UUID rubricVersionId,
         UUID languageId,
-        UUID schoolGradeLevelId,
+        UUID gradeLevelId,
         UUID schoolGradeId,
         UUID schoolClassId,
         UUID targetFrameworkBandId,

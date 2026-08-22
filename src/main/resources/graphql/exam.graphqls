@@ -292,7 +292,7 @@ type ExamBlueprint {
     id: ID!
     schoolId: ID!
     languageId: ID!
-    schoolGradeLevelId: ID
+    gradeLevelId: ID
     code: String!
     name: String!
     description: String

@@ -12,10 +12,8 @@ import com.sep.vox.application.port.input.query.ViewSchoolGradeDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolGradeDto;
-import com.sep.vox.domain.mapper.SchoolGradeDtoMapper;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -25,7 +23,6 @@ import com.sep.vox.domain.repository.UserRepository;
 public class ViewSchoolGradeDetailsUseCase implements IUseCase<ViewSchoolGradeDetailsQuery, SchoolGradeDto> {
 
     private final SchoolGradeRepository schoolGradeRepository;
-    private final SchoolGradeLevelRepository schoolGradeLevelRepository;
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
@@ -33,13 +30,11 @@ public class ViewSchoolGradeDetailsUseCase implements IUseCase<ViewSchoolGradeDe
 
     public ViewSchoolGradeDetailsUseCase(
             SchoolGradeRepository schoolGradeRepository,
-            SchoolGradeLevelRepository schoolGradeLevelRepository,
             SchoolRepository schoolRepository,
             UserRepository userRepository,
             SchoolUserRepository schoolUserRepository,
             UserContextPort userContextPort) {
         this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolGradeLevelRepository = schoolGradeLevelRepository;
         this.schoolRepository = schoolRepository;
         this.userRepository = userRepository;
         this.schoolUserRepository = schoolUserRepository;
@@ -59,15 +54,12 @@ public class ViewSchoolGradeDetailsUseCase implements IUseCase<ViewSchoolGradeDe
         SchoolGrade grade = schoolGradeRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy năm học/khóa học."));
 
-        // Năm học không lưu schoolId trực tiếp; phải bắc cầu qua Khối (GradeLevel) để xác định trường sở hữu.
-        var gradeLevel = schoolGradeLevelRepository.findById(grade.getSchoolGradeLevelId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy năm học/khóa học."));
-
-        if (!gradeLevel.getSchoolId().equals(input.schoolId())) {
+        // Năm học đã lưu schoolId trực tiếp -- không còn phải bắc cầu qua Khối để xác định trường sở hữu.
+        if (!grade.getSchoolId().equals(input.schoolId())) {
             throw new NotFoundException("Không tìm thấy năm học/khóa học.");
         }
 
-        return SchoolGradeDtoMapper.toSchoolGradeDto(grade);
+        return SchoolGradeDto.toDto(grade);
     }
 
     private void validateUserAndAccess(UUID userId, UUID targetSchoolId) {

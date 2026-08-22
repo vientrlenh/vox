@@ -39,9 +39,9 @@ import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDire
 import com.sep.vox.application.port.input.usecase.schooldirectory.ViewSchoolDirectoryPageUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.UpdateSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradeDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.schoolgradelevel.UpdateSchoolGradeLevelUseCase;
-import com.sep.vox.application.port.input.usecase.schoolgradelevel.ViewSchoolGradeLevelDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.schoolgradelevel.ViewSchoolGradeLevelsUseCase;
+import com.sep.vox.application.port.input.usecase.gradelevel.UpdateGradeLevelUseCase;
+import com.sep.vox.application.port.input.usecase.gradelevel.ViewGradeLevelDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.gradelevel.ViewGradeLevelsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradesUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.UpdateSchoolRoomUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomDetailsUseCase;
@@ -85,9 +85,9 @@ class SchoolControllerTests {
     private UpdateSchoolGradeUseCase updateSchoolGradeUseCase;
     private ViewSchoolGradesUseCase viewSchoolGradesUseCase;
     private ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase;
-    private ViewSchoolGradeLevelsUseCase viewSchoolGradeLevelsUseCase;
-    private ViewSchoolGradeLevelDetailsUseCase viewSchoolGradeLevelDetailsUseCase;
-    private UpdateSchoolGradeLevelUseCase updateSchoolGradeLevelUseCase;
+    private ViewGradeLevelsUseCase viewGradeLevelsUseCase;
+    private ViewGradeLevelDetailsUseCase viewGradeLevelDetailsUseCase;
+    private UpdateGradeLevelUseCase updateGradeLevelUseCase;
     private ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase;
     private ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
     private ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
@@ -118,9 +118,9 @@ class SchoolControllerTests {
         updateSchoolGradeUseCase = mock(UpdateSchoolGradeUseCase.class);
         viewSchoolGradesUseCase = mock(ViewSchoolGradesUseCase.class);
         viewSchoolGradeDetailsUseCase = mock(ViewSchoolGradeDetailsUseCase.class);
-        viewSchoolGradeLevelsUseCase = mock(ViewSchoolGradeLevelsUseCase.class);
-        viewSchoolGradeLevelDetailsUseCase = mock(ViewSchoolGradeLevelDetailsUseCase.class);
-        updateSchoolGradeLevelUseCase = mock(UpdateSchoolGradeLevelUseCase.class);
+        viewGradeLevelsUseCase = mock(ViewGradeLevelsUseCase.class);
+        viewGradeLevelDetailsUseCase = mock(ViewGradeLevelDetailsUseCase.class);
+        updateGradeLevelUseCase = mock(UpdateGradeLevelUseCase.class);
         viewSchoolDirectoryCursorPageUseCase = mock(ViewSchoolDirectoryCursorPageUseCase.class);
         viewSchoolDirectoryPageUseCase = mock(ViewSchoolDirectoryPageUseCase.class);
         viewSchoolDirectoryDetailsUseCase = mock(ViewSchoolDirectoryDetailsUseCase.class);
@@ -146,9 +146,9 @@ class SchoolControllerTests {
             updateSchoolGradeUseCase, 
             viewSchoolGradesUseCase,
             viewSchoolGradeDetailsUseCase,
-            viewSchoolGradeLevelsUseCase,
-            viewSchoolGradeLevelDetailsUseCase,
-            updateSchoolGradeLevelUseCase,
+            viewGradeLevelsUseCase,
+            viewGradeLevelDetailsUseCase,
+            updateGradeLevelUseCase,
             viewSchoolDirectoryCursorPageUseCase,
             viewSchoolDirectoryPageUseCase, 
             viewSchoolDirectoryDetailsUseCase
@@ -221,7 +221,7 @@ class SchoolControllerTests {
         var schoolId = UUID.randomUUID();
         var gradeId = UUID.randomUUID();
         var response = schoolClassDto(schoolId, UUID.randomUUID(), gradeId);
-        var expected = new SchoolGradeDto(gradeId, schoolId, "G10", "Grade 10", null, null, null, "ACTIVE", null, null);
+        var expected = new SchoolGradeDto(gradeId, schoolId, UUID.randomUUID(), "G10", "Grade 10", null, null, null, "ACTIVE", null, null);
         var env = mock(DataFetchingEnvironment.class);
         var loader = mock(DataLoader.class);
         when(env.<UUID, SchoolGradeDto>getDataLoader("schoolGradeByClass")).thenReturn(loader);

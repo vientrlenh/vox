@@ -106,7 +106,7 @@ class MyClassControllerTests {
         var gradeId = UUID.randomUUID();
         var schoolClass = new SchoolClassDto(classId, schoolId, UUID.randomUUID(), gradeId,
             "ENG-01", "English 01", null, "ACTIVE", null, null);
-        var expected = new SchoolGradeDto(gradeId, schoolId, "G10", "Grade 10", null, null, null, "ACTIVE", null, null);
+        var expected = new SchoolGradeDto(gradeId, schoolId, UUID.randomUUID(), "G10", "Grade 10", null, null, null, "ACTIVE", null, null);
         var env = mock(DataFetchingEnvironment.class);
         var loader = mock(DataLoader.class);
         when(env.<UUID, SchoolGradeDto>getDataLoader("schoolGradeByClass")).thenReturn(loader);

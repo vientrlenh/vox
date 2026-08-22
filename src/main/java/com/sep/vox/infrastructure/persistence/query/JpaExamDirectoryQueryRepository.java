@@ -30,9 +30,7 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
         var pattern = likePattern(search);
         var filter = """
             FROM SchoolGradeJpaEntity sg
-            JOIN SchoolGradeLevelJpaEntity sgl
-                ON sgl.id = sg.schoolGradeLevelId
-            WHERE sgl.schoolId = :schoolId
+            WHERE sg.schoolId = :schoolId
               AND sg.status = 'ACTIVE'
               AND (:pattern IS NULL OR LOWER(sg.code) LIKE :pattern OR LOWER(sg.name) LIKE :pattern)
             """;

@@ -29,6 +29,7 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
+import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
@@ -60,12 +61,14 @@ class CreateSystemAssessmentPolicyUseCaseTests {
         rubricVersionRepository = mock(RubricVersionRepository.class);
         rubricRepository = mock(RubricRepository.class);
         var languageRepository = mock(SupportedLanguageRepository.class);
+        var gradeLevelRepository = mock(GradeLevelRepository.class);
         var userRepository = mock(UserRepository.class);
         var userContextPort = mock(UserContextPort.class);
 
         useCase = new CreateSystemAssessmentPolicyUseCase(
                 assessmentPolicyRepository, frameworkVersionRepository, frameworkResultBandRepository,
-                rubricVersionRepository, rubricRepository, languageRepository, userRepository, userContextPort);
+                rubricVersionRepository, rubricRepository, languageRepository, gradeLevelRepository,
+                userRepository, userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(ADMIN_ID);
         User currentUser = mock(User.class);
@@ -106,32 +109,29 @@ class CreateSystemAssessmentPolicyUseCaseTests {
     }
 
     @Test
-    void rejects_whenRubricVersionAlreadyUsedByAnotherPolicy() {
-        when(assessmentPolicyRepository.existsByRubricVersionId(RUBRIC_VERSION_ID)).thenReturn(true);
-
-        assertThatThrownBy(() -> useCase.execute(List.of(command(UUID.randomUUID()))))
-                .isInstanceOf(DuplicatedException.class)
-                .hasMessageContaining("đã gắn với một Assessment Policy khác");
-    }
-
-    @Test
-    void rejects_whenSameBatchReusesRubricVersionAcrossDifferentScopes() {
-        when(assessmentPolicyRepository.existsByRubricVersionId(RUBRIC_VERSION_ID)).thenReturn(false);
+    void allowsSharingOneRubricVersionAcrossDifferentScopes() {
         when(assessmentPolicyRepository.findMaxVersionForScope(any(), any(), any(), any(), any(), any())).thenReturn(0);
 
         List<CreateAssessmentPolicyCommand> commands = List.of(
                 command(UUID.randomUUID()),
-                command(UUID.randomUUID()) // ngôn ngữ khác -> scope khác, nhưng cùng rubricVersionId
+                command(UUID.randomUUID()) // ngôn ngữ khác -> scope khác, cùng rubricVersionId
         );
 
-        assertThatThrownBy(() -> useCase.execute(commands))
+        org.assertj.core.api.Assertions.assertThat(useCase.execute(commands)).hasSize(2);
+    }
+
+    @Test
+    void stillRejects_whenTwoPoliciesInBatchShareTheSameScope() {
+        when(assessmentPolicyRepository.findMaxVersionForScope(any(), any(), any(), any(), any(), any())).thenReturn(0);
+        UUID languageId = UUID.randomUUID();
+
+        assertThatThrownBy(() -> useCase.execute(List.of(command(languageId), command(languageId))))
                 .isInstanceOf(DuplicatedException.class)
-                .hasMessageContaining("cùng dùng 1 Phiên bản Rubric");
+                .hasMessageContaining("trùng ngôn ngữ và Khung");
     }
 
     @Test
     void succeeds_whenRubricVersionNotYetUsed() {
-        when(assessmentPolicyRepository.existsByRubricVersionId(RUBRIC_VERSION_ID)).thenReturn(false);
         when(assessmentPolicyRepository.findMaxVersionForScope(any(), any(), any(), any(), any(), any())).thenReturn(0);
 
         List<UUID> ids = useCase.execute(List.of(command(UUID.randomUUID())));

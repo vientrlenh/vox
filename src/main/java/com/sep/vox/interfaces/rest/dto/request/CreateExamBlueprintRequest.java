@@ -9,7 +9,7 @@ public record CreateExamBlueprintRequest(
     @NotNull(message = "LanguageId là bắt buộc")
     UUID languageId,
 
-    UUID schoolGradeLevelId,
+    UUID gradeLevelId,
 
     @NotBlank(message = "Mã blueprint là bắt buộc")
     String code,

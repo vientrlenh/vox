@@ -53,12 +53,19 @@ import com.sep.vox.domain.service.rubric.RubricScoringConsistencyValidator;
  * không có cách nào tái tạo tỉ lệ mà bản mẫu định ra. Bản Phân bổ mang nhiều thông tin hơn, nên nó
  * là dạng đáng lưu.
  *
- * <h2>Có tiêu chí, không có chính sách đánh giá</h2>
+ * <h2>Chính sách đánh giá đi kèm nằm ở initializer khác</h2>
  *
- * <p>Cố ý dừng ở tiêu chí. Chính sách đánh giá cấp hệ thống không chấm được gì:
- * {@code findCandidatePolicies} lọc {@code WHERE p.schoolId = :schoolId}, nên một chính sách không
- * thuộc trường nào sẽ không bao giờ được chọn cho bài thi nào. Chính sách là thứ trường tự nhập sau
- * khi sao bộ tiêu chí về -- và đó cũng là lý do bản sao ra ở trạng thái nháp.
+ * <p>{@link SystemAssessmentPolicyInitializer} chạy sau ({@code @Order(9)}) và dựng cho mỗi khối một
+ * chính sách mẫu trỏ vào đúng bản mẫu cùng khối ở đây. Hai bên nối với nhau bằng MÃ PHIÊN BẢN
+ * ({@code SYS-ENG-K10-V1}...), tức là quy ước {@code code + "-V1"} bên dưới là thứ đi ra ngoài file
+ * này -- đổi nó thì phải đổi cả bảng tra bên đó.
+ *
+ * <p>Ghi chú lịch sử: trước đây chỗ này giải thích là cố ý KHÔNG dựng chính sách hệ thống, vì
+ * {@code findCandidatePolicies} lọc {@code WHERE p.schoolId = :schoolId} nên chính sách không thuộc
+ * trường nào sẽ không bao giờ được chọn. Lý do đó không còn mô tả đúng hệ thống đang chạy: hai hàm
+ * phân giải phạm vi ấy nay là mã chết (đường chấm thật đọc {@code exams.assessment_policy_id}), và
+ * quan trọng hơn, chính sách mẫu của hệ thống không tồn tại để chấm -- nó tồn tại để trường SAO VỀ
+ * qua {@code CloneSystemAssessmentPolicyToSchoolUseCase}. Bản sao mới là bản đi chấm.
  *
  * <h2>Ghi thẳng qua repository</h2>
  *

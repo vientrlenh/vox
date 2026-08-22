@@ -55,13 +55,13 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
 
 
     @Override
-    public boolean existsBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code) {
-        return springDataSchoolGradeRepository.existsBySchoolGradeLevelIdAndCode(schoolGradeLevelId, code);
+    public boolean existsBySchoolIdAndGradeLevelIdAndCode(UUID schoolId, UUID gradeLevelId, String code) {
+        return springDataSchoolGradeRepository.existsBySchoolIdAndGradeLevelIdAndCode(schoolId, gradeLevelId, code);
     }
 
     @Override
-    public Optional<SchoolGrade> findBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code) {
-        return springDataSchoolGradeRepository.findBySchoolGradeLevelIdAndCode(schoolGradeLevelId, code)
+    public Optional<SchoolGrade> findBySchoolIdAndGradeLevelIdAndCode(UUID schoolId, UUID gradeLevelId, String code) {
+        return springDataSchoolGradeRepository.findBySchoolIdAndGradeLevelIdAndCode(schoolId, gradeLevelId, code)
                 .map(SchoolGradeMapper::toDomain);
     }
 
@@ -89,19 +89,19 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
-    public boolean existsBySchoolGradeLevelId(UUID schoolGradeLevelId) {
-        return springDataSchoolGradeRepository.existsBySchoolGradeLevelId(schoolGradeLevelId);
+    public boolean existsByGradeLevelId(UUID gradeLevelId) {
+        return springDataSchoolGradeRepository.existsByGradeLevelId(gradeLevelId);
     }
 
     @Override
-    public boolean existsBySchoolGradeLevelIdAndStatusNot(UUID schoolGradeLevelId, String status) {
-        return springDataSchoolGradeRepository.existsBySchoolGradeLevelIdAndStatusNot(schoolGradeLevelId, status);
+    public boolean existsByGradeLevelIdAndStatusNot(UUID gradeLevelId, String status) {
+        return springDataSchoolGradeRepository.existsByGradeLevelIdAndStatusNot(gradeLevelId, status);
     }
 
     @Override
-    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, UUID schoolGradeLevelId, String status, int pageNumber, int size) {
+    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, UUID gradeLevelId, String status, int pageNumber, int size) {
         var pageable = PageRequest.of(pageNumber - 1, size);
-        var page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, schoolGradeLevelId, status, pageable);
+        var page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, gradeLevelId, status, pageable);
         return new PageResult<>(
                 page.getContent().stream()
                         .map(SchoolGradeMapper::toDomain)

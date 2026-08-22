@@ -11,7 +11,8 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository; // Bổ sung
+import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
+import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository; // Bổ sung
 import com.sep.vox.domain.repository.UserRepository;
@@ -27,19 +28,19 @@ import java.util.UUID;
 public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeCommand, UUID> {
 
     private final SchoolGradeRepository schoolGradeRepository;
-    private final SchoolGradeLevelRepository schoolGradeLevelRepository;
+    private final GradeLevelRepository gradeLevelRepository;
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
 
     public CreateSchoolGradeUseCase(
             SchoolGradeRepository schoolGradeRepository,
-            SchoolGradeLevelRepository schoolGradeLevelRepository,
+            GradeLevelRepository gradeLevelRepository,
             UserRepository userRepository,
             SchoolUserRepository schoolUserRepository,
             UserContextPort userContextPort) {
         this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolGradeLevelRepository = schoolGradeLevelRepository;
+        this.gradeLevelRepository = gradeLevelRepository;
         this.userRepository = userRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userContextPort = userContextPort;
@@ -55,14 +56,16 @@ public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeComma
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         checkUserAccess(currentUserId, command.schoolId());
 
-        // 3. Validate Khối lớp (Grade Level) thuộc về trường
-        schoolGradeLevelRepository.findById(command.schoolGradeLevelId())
-                .filter(gl -> gl.getSchoolId().equals(command.schoolId()))
-                .orElseThrow(() -> new NotFoundException("Khối lớp không tồn tại hoặc không thuộc trường này."));
+        // 3. Validate Khối lớp -- catalog dùng chung nên không còn kiểm tra thuộc trường nào,
+        //    chỉ cần khối tồn tại và chưa bị xóa mềm.
+        gradeLevelRepository.findById(command.gradeLevelId())
+                .filter(gl -> gl.getStatus() == GradeLevelStatus.ACTIVE)
+                .orElseThrow(() -> new NotFoundException("Khối lớp không tồn tại hoặc đã ngừng sử dụng."));
 
-        // 4. Kiểm tra trùng mã
+        // 4. Kiểm tra trùng mã trong phạm vi (trường, khối)
         String normalizedCode = StringNormalization.normalizeCode(command.code());
-        if (schoolGradeRepository.existsBySchoolGradeLevelIdAndCode(command.schoolGradeLevelId(), normalizedCode)) {
+        if (schoolGradeRepository.existsBySchoolIdAndGradeLevelIdAndCode(
+                command.schoolId(), command.gradeLevelId(), normalizedCode)) {
             throw new DuplicatedException("Mã năm học đã tồn tại trong Khối lớp này.");
         }
 
@@ -93,7 +96,8 @@ public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeComma
     private UUID saveNewGrade(CreateSchoolGradeCommand command, String code, UUID creatorId) {
         Instant now = Instant.now();
         SchoolGrade newGrade = new SchoolGrade(
-                command.schoolGradeLevelId(),
+                command.schoolId(),
+                command.gradeLevelId(),
                 code,
                 StringNormalization.trimAndCollapseSpaces(command.name()),
                 command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null,

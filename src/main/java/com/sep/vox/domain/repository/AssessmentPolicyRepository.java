@@ -49,8 +49,18 @@ public interface AssessmentPolicyRepository {
     // Kiểm tra còn Assessment Policy nào liên kết với Rubric Version này CHƯA ở trạng thái PUBLISHED hay không
     boolean existsNotPublishedByRubricVersionId(UUID rubricVersionId);
 
+    // Còn Assessment Policy nào KHÁC (bỏ qua excludedPolicyId) đang dùng Rubric Version này và còn
+    // hiệu lực (DRAFT hoặc PUBLISHED) hay không. Dùng lúc Archive một Policy để biết có được Archive
+    // luôn Rubric Version theo hay không -- từ V44 nhiều Policy dùng chung một phiên bản, nên Archive
+    // kèm vô điều kiện sẽ rút thang chấm khỏi chân các Policy còn lại.
+    boolean existsOtherActiveByRubricVersionId(UUID rubricVersionId, UUID excludedPolicyId);
+
     // Danh sách Assessment Policy hệ thống (schoolId IS NULL) đang DRAFT liên kết với Rubric Version này (dùng cho publish hàng loạt)
     List<AssessmentPolicy> findDraftSystemWideByRubricVersionId(UUID rubricVersionId);
+
+    // Chính sách MẪU đã ban hành gắn với một phiên bản Rubric của hệ thống -- thứ trường thấy và
+    // chọn khi sao bộ tiêu chí đó về (CloneSystemRubricToSchoolUseCase).
+    List<AssessmentPolicy> findPublishedSystemWideByRubricVersionId(UUID rubricVersionId);
 
     // Danh sách Assessment Policy của một trường học đang DRAFT liên kết với Rubric Version này (dùng cho publish hàng loạt)
     List<AssessmentPolicy> findDraftBySchoolIdAndRubricVersionId(UUID schoolId, UUID rubricVersionId);

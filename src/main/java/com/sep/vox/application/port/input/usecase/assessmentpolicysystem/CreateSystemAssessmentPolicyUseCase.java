@@ -158,8 +158,12 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
             if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
                 throw new IllegalStateException("Chỉ được dùng Rubric SYSTEM cho luồng System Admin.");
             }
-            if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
-                throw new IllegalStateException("Chỉ được gán Policy khi Phiên bản Rubric còn ở trạng thái DRAFT.");
+            // Chặn ARCHIVED, KHÔNG chặn PUBLISHED -- xem lý do đầy đủ ở
+            // CreateSchoolAssessmentPolicyUseCase. Hai luồng phải hiểu luật này giống nhau, nếu không
+            // bản mẫu hệ thống và bản sao của trường sẽ có hai vòng đời khác nhau.
+            if (rubricVersion.getStatus() == RubricStatus.ARCHIVED) {
+                throw new IllegalStateException(
+                        "Không gán được Policy vào Phiên bản Rubric đã lưu trữ (ARCHIVED).");
             }
             if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
                 throw new IllegalStateException("Phiên bản Rubric và Khung năng lực không khớp nhau.");

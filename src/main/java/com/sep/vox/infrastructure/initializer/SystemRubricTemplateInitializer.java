@@ -65,7 +65,7 @@ import com.sep.vox.domain.service.rubric.RubricScoringConsistencyValidator;
  * trường nào sẽ không bao giờ được chọn. Lý do đó không còn mô tả đúng hệ thống đang chạy: hai hàm
  * phân giải phạm vi ấy nay là mã chết (đường chấm thật đọc {@code exams.assessment_policy_id}), và
  * quan trọng hơn, chính sách mẫu của hệ thống không tồn tại để chấm -- nó tồn tại để trường SAO VỀ
- * qua {@code CloneSystemAssessmentPolicyToSchoolUseCase}. Bản sao mới là bản đi chấm.
+ * kèm bộ tiêu chí qua {@code CloneSystemRubricToSchoolUseCase}. Bản sao mới là bản đi chấm.
  *
  * <h2>Ghi thẳng qua repository</h2>
  *

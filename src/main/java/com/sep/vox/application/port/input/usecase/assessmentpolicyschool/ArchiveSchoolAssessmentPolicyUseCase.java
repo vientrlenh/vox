@@ -93,17 +93,25 @@ public class ArchiveSchoolAssessmentPolicyUseCase implements IUseCase<ArchiveSch
 
         AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
 
-        // 6. 1 Rubric Version chỉ gắn với đúng 1 Assessment Policy, vĩnh viễn -- khi Policy bị Archive,
-        // Rubric Version liên kết cũng Archive theo (không "rảnh" ra để dùng lại cho Policy khác).
-        rubricVersionRepository.findById(policy.getRubricVersionId()).ifPresent(rubricVersion -> {
-            if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
-                rubricVersion.setStatus(RubricStatus.ARCHIVED);
-                rubricVersion.setEffectiveTo(now.isBefore(rubricVersion.getEffectiveFrom()) ? rubricVersion.getEffectiveFrom() : now);
-                rubricVersion.setUpdatedAt(now);
-                rubricVersion.setUpdatedBy(currentUserId);
-                rubricVersionRepository.save(rubricVersion);
-            }
-        });
+        // 6. Archive Policy thì Archive luôn Phiên bản Rubric liên kết -- NHƯNG chỉ khi không còn
+        // Policy nào khác đang dùng nó.
+        //
+        // Chú thích cũ ở đây ("1 Rubric Version chỉ gắn với đúng 1 Assessment Policy, vĩnh viễn") mô
+        // tả mô hình 1-1 của V38, đã bị V44 gỡ. Từ khi nhiều Policy dùng chung được một phiên bản,
+        // Archive kèm vô điều kiện sẽ rút thang chấm khỏi chân các Policy còn hiệu lực: trường thu
+        // hồi chính sách của lớp thường là chính sách lớp chuyên trỏ vào một phiên bản ARCHIVED.
+        if (!assessmentPolicyRepository.existsOtherActiveByRubricVersionId(policy.getRubricVersionId(), policy.getId())) {
+            rubricVersionRepository.findById(policy.getRubricVersionId()).ifPresent(rubricVersion -> {
+                if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
+                    rubricVersion.setStatus(RubricStatus.ARCHIVED);
+                    rubricVersion.setEffectiveTo(
+                            now.isBefore(rubricVersion.getEffectiveFrom()) ? rubricVersion.getEffectiveFrom() : now);
+                    rubricVersion.setUpdatedAt(now);
+                    rubricVersion.setUpdatedBy(currentUserId);
+                    rubricVersionRepository.save(rubricVersion);
+                }
+            });
+        }
 
         return saved.getId();
     }

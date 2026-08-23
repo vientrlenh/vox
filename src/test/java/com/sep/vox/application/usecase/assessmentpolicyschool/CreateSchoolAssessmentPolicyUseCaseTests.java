@@ -60,6 +60,8 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
 
     private AssessmentPolicyRepository assessmentPolicyRepository;
     private SchoolClassRepository schoolClassRepository;
+    // Trạng thái phiên bản Rubric là thứ các test dưới đây đổi qua lại, nên mock phải là field.
+    private RubricVersion rubricVersion;
     private CreateSchoolAssessmentPolicyUseCase useCase;
 
     @BeforeEach
@@ -111,7 +113,7 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
         when(targetBand.getFrameworkVersionId()).thenReturn(FRAMEWORK_VERSION_ID);
         when(frameworkResultBandRepository.findById(TARGET_BAND_ID)).thenReturn(Optional.of(targetBand));
 
-        RubricVersion rubricVersion = mock(RubricVersion.class);
+        rubricVersion = mock(RubricVersion.class);
         when(rubricVersion.getStatus()).thenReturn(RubricStatus.DRAFT);
         when(rubricVersion.getRubricId()).thenReturn(RUBRIC_ID);
         when(rubricVersionRepository.findById(RUBRIC_VERSION_ID)).thenReturn(Optional.of(rubricVersion));
@@ -169,5 +171,31 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(List.of(command(classId), command(classId))))
                 .isInstanceOf(DuplicatedException.class)
                 .hasMessageContaining("trùng phạm vi áp dụng");
+    }
+
+    @Test
+    void allowsAttachingToAnAlreadyPublishedRubricVersion() {
+        // Nới 2026-08-23. Luật cũ chặn PUBLISHED, tức là trường chỉ có đúng một cửa sổ -- trước lúc
+        // ban hành phiên bản -- để khai hết mọi lớp sẽ dùng bộ tiêu chí này. Mà ban hành lại là điều
+        // kiện để dùng được cho kỳ thi, nên thêm một lớp sau đó buộc phải sao lại cả Rubric.
+        when(rubricVersion.getStatus()).thenReturn(RubricStatus.PUBLISHED);
+        UUID classId = UUID.randomUUID();
+        stubSchoolClass(classId);
+
+        assertThat(useCase.execute(List.of(command(classId)))).hasSize(1);
+    }
+
+    @Test
+    void rejects_whenRubricVersionIsArchived() {
+        // Chiều ngược lại của cùng một luật: phiên bản đã thu hồi thì không được gắn thêm chính sách,
+        // nếu không là chấm học sinh bằng thang trường đã bỏ. Luật cũ dùng `== PUBLISHED` nên nhánh
+        // ARCHIVED lọt qua -- chặn nhầm bản đang dùng, cho qua bản đã bỏ.
+        when(rubricVersion.getStatus()).thenReturn(RubricStatus.ARCHIVED);
+        UUID classId = UUID.randomUUID();
+        stubSchoolClass(classId);
+
+        assertThatThrownBy(() -> useCase.execute(List.of(command(classId))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ARCHIVED");
     }
 }

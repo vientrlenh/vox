@@ -433,8 +433,11 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
             return null;
         }
 
-        if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
-            errors.add(error("rubricVersion", "Phiên bản Rubric này đã được PUBLISHED, không thể tạo Assessment Policy mới cho phiên bản này."));
+        // Cùng luật với hai use case tạo tay (Create{School,System}AssessmentPolicyUseCase): chặn
+        // ARCHIVED chứ không chặn PUBLISHED. Import mà khắt khe hơn đường tạo tay thì cùng một file
+        // Excel lúc chạy được lúc không, tùy phiên bản Rubric đã ban hành hay chưa.
+        if (rubricVersion.getStatus() == RubricStatus.ARCHIVED) {
+            errors.add(error("rubricVersion", "Phiên bản Rubric này đã được lưu trữ (ARCHIVED), không thể tạo Assessment Policy mới cho phiên bản này."));
             return null;
         }
         Rubric rubric = lookup.rubricById().get(rubricVersion.getRubricId());

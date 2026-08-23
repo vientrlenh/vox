@@ -26,7 +26,6 @@ import com.sep.vox.application.port.input.command.PublishSystemAssessmentPolicie
 import com.sep.vox.application.port.input.command.PublishSystemAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.AcceptSchoolAssessmentPolicyImportUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.ArchiveSchoolAssessmentPolicyUseCase;
-import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.CloneSystemAssessmentPolicyToSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.CreateSchoolAssessmentPolicyUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.DeleteSchoolAssessmentPolicyUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.PreviewSchoolAssessmentPolicyImportFromFileUseCase;
@@ -42,12 +41,10 @@ import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.Publish
 import com.sep.vox.application.response.input.importfile.AcceptAssessmentPolicyImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewAssessmentPolicyImportResponse;
 import com.sep.vox.interfaces.rest.dto.request.AcceptImportRequest;
-import com.sep.vox.interfaces.rest.dto.request.CloneSystemAssessmentPolicyRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolAssessmentPolicyRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSystemAssessmentPolicyRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.AcceptAssessmentPolicyImportCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CloneSystemAssessmentPolicyCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateAssessmentPolicyCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.PreviewAssessmentPolicyImportFromFileCommandMapper;
 
@@ -72,7 +69,6 @@ public class AssessmentPolicyController {
     private final PublishSchoolAssessmentPoliciesByRubricVersionUseCase publishSchoolAssessmentPoliciesByRubricVersionUseCase;
     private final ArchiveSystemAssessmentPolicyUseCase archiveSystemAssessmentPolicyUseCase;
     private final ArchiveSchoolAssessmentPolicyUseCase archiveSchoolAssessmentPolicyUseCase;
-    private final CloneSystemAssessmentPolicyToSchoolUseCase cloneSystemAssessmentPolicyToSchoolUseCase;
 
     public AssessmentPolicyController(
             CreateSystemAssessmentPolicyUseCase createSystemAssessmentPolicyUseCase,
@@ -88,8 +84,7 @@ public class AssessmentPolicyController {
             PublishSystemAssessmentPoliciesByRubricVersionUseCase publishSystemAssessmentPoliciesByRubricVersionUseCase,
             PublishSchoolAssessmentPoliciesByRubricVersionUseCase publishSchoolAssessmentPoliciesByRubricVersionUseCase,
             ArchiveSystemAssessmentPolicyUseCase archiveSystemAssessmentPolicyUseCase,
-            ArchiveSchoolAssessmentPolicyUseCase archiveSchoolAssessmentPolicyUseCase,
-            CloneSystemAssessmentPolicyToSchoolUseCase cloneSystemAssessmentPolicyToSchoolUseCase) {
+            ArchiveSchoolAssessmentPolicyUseCase archiveSchoolAssessmentPolicyUseCase) {
         this.createSystemAssessmentPolicyUseCase = createSystemAssessmentPolicyUseCase;
         this.createSchoolAssessmentPolicyUseCase = createSchoolAssessmentPolicyUseCase;
         this.deleteSystemAssessmentPolicyUseCase = deleteSystemAssessmentPolicyUseCase;
@@ -104,7 +99,6 @@ public class AssessmentPolicyController {
         this.publishSchoolAssessmentPoliciesByRubricVersionUseCase = publishSchoolAssessmentPoliciesByRubricVersionUseCase;
         this.archiveSystemAssessmentPolicyUseCase = archiveSystemAssessmentPolicyUseCase;
         this.archiveSchoolAssessmentPolicyUseCase = archiveSchoolAssessmentPolicyUseCase;
-        this.cloneSystemAssessmentPolicyToSchoolUseCase = cloneSystemAssessmentPolicyToSchoolUseCase;
     }
 
     // Tạo mới Assessment Policy áp dụng toàn hệ thống (System Admin) - có thể gửi 1 lúc nhiều Policy
@@ -130,28 +124,6 @@ public class AssessmentPolicyController {
         var commands = CreateAssessmentPolicyCommandMapper.fromSchoolRequests(schoolId, requests);
         List<UUID> policyIds = createSchoolAssessmentPolicyUseCase.execute(commands);
         return ResponseEntity.ok(ApiResponse.success("Tạo Assessment Policy cho trường học thành công", policyIds));
-    }
-
-    /**
-     * Sao một chính sách mẫu của hệ thống về cho trường.
-     *
-     * <p>Kéo theo cả bộ tiêu chí: chính sách của trường chỉ gắn được vào rubric của chính trường,
-     * nên bản mẫu (rubric thuộc SYSTEM) không dùng thẳng được. Bản sao ra ở trạng thái DRAFT.
-     *
-     * <p>Muốn thêm lớp khác dùng chung bộ tiêu chí vừa sao thì KHÔNG gọi lại endpoint này -- tạo
-     * chính sách mới trỏ vào cùng rubricVersionId qua POST /schools/{schoolId}.
-     */
-    @Operation(summary = "Sao chính sách mẫu của hệ thống về cho Trường học (kèm bộ tiêu chí, trạng thái DRAFT)")
-    @PostMapping("/schools/{schoolId}/clone-from-system")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<UUID>> cloneSystemAssessmentPolicyToSchool(
-            @PathVariable("schoolId") UUID schoolId,
-            @Valid @RequestBody CloneSystemAssessmentPolicyRequest request
-    ) {
-        var command = CloneSystemAssessmentPolicyCommandMapper.fromRequest(schoolId, request);
-        var policyId = cloneSystemAssessmentPolicyToSchoolUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success(
-                "Sao chép chính sách mẫu thành công. Chính sách và bộ tiêu chí mới đang ở trạng thái nháp.", policyId));
     }
 
     // Xóa Assessment Policy áp dụng toàn hệ thống (System Admin)

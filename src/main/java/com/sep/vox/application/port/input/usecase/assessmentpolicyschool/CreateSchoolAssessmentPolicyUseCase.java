@@ -201,8 +201,27 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !schoolId.equals(rubric.getSchoolId())) {
                 throw new ForbiddenException("Phiên bản Rubric không thuộc trường học của bạn.");
             }
-            if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
-                throw new IllegalStateException("Chỉ được gán Policy khi Phiên bản Rubric còn ở trạng thái DRAFT.");
+            // Chặn ARCHIVED, KHÔNG chặn PUBLISHED.
+            //
+            // Nới 2026-08-23. Luật cũ ("chỉ gán được khi còn DRAFT") ép mọi chính sách của một phiên
+            // bản Rubric phải khai xong TRƯỚC lúc ban hành phiên bản đó -- mà ban hành lại là điều
+            // kiện để phiên bản dùng được cho kỳ thi (màn tạo kỳ thi chỉ liệt kê phiên bản PUBLISHED).
+            // Nghĩa là trường chỉ có đúng một lần để khai hết mọi lớp sẽ dùng bộ tiêu chí này; thêm
+            // một lớp chuyên vào năm sau thì phải sao lại toàn bộ Rubric. Đó là mâu thuẫn trực tiếp
+            // với V44 (nhiều chính sách dùng chung một phiên bản Rubric).
+            //
+            // Bỏ chặn PUBLISHED không phá gì: PublishSchoolAssessmentPolicyUseCase cố ý không xét
+            // trạng thái phiên bản Rubric, existsPublishedByRubricVersionId chỉ là cửa chặn cho việc
+            // ban hành PHIÊN BẢN (đã ban hành rồi thì vô nghĩa), và đường chấm đọc thẳng
+            // exams.assessment_policy_id nên chính sách mới không hồi tố vào bài đã chấm. Ngược lại,
+            // phiên bản PUBLISHED đã bị đóng băng -- gắn chính sách vào nó AN TOÀN HƠN gắn vào bản
+            // DRAFT còn sửa được tiêu chí bên dưới.
+            //
+            // ARCHIVED thì vẫn phải chặn (trước đây lọt): phiên bản đã thu hồi mà vẫn gắn được chính
+            // sách nghĩa là chấm học sinh bằng thang trường đã bỏ.
+            if (rubricVersion.getStatus() == RubricStatus.ARCHIVED) {
+                throw new IllegalStateException(
+                        "Không gán được Policy vào Phiên bản Rubric đã lưu trữ (ARCHIVED).");
             }
             if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
                 throw new IllegalStateException("Phiên bản Rubric và Khung năng lực không khớp nhau.");

@@ -49,6 +49,21 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
      */
     private static final BigDecimal INCLUDED_QUANTITY_USD = new BigDecimal("1000");
 
+    /**
+     * Giá bán CỐ ĐỊNH, mang tính tượng trưng cho demo -- KHÔNG suy ra từ hạn mức.
+     *
+     * <p>Bản đầu tính giá = tổng USD cấp × giá bán mỗi USD, và ra 93.789.000₫ (1000 USD × 3 loại ×
+     * 31.263₫). Đúng về mặt kinh doanh nhưng vô dụng cho demo: không ai bấm mua một gói 93 triệu để
+     * xem thử luồng đăng ký.
+     *
+     * <p>Hệ quả phải nói rõ: gói này bán LỖ nặng so với chi phí AI nó cấp ({@link
+     * #INCLUDED_QUANTITY_USD} vẫn giữ 1000 USD/loại để không chặn hạn mức giữa buổi trình bày). Đây
+     * là lựa chọn có chủ đích cho môi trường demo, KHÔNG phải công thức giá dùng được thật. Gói tạo
+     * từ giao diện qua {@code CreatePlanUseCase} vẫn tính giá theo cách của nó, không dính gì tới
+     * hằng số này.
+     */
+    private static final BigDecimal PRICE_PER_YEAR = new BigDecimal("10000");
+
     private static final int VALIDITY_DAYS = 365;
 
     /**
@@ -81,16 +96,10 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
         var tokenUnitPrice = quotaPricingPort.tokenUnitPriceFor(SERVICE_FEE_RATIO);
         var quotaTypes = List.of(QuotaType.GRADING, QuotaType.CLASS_TEST, QuotaType.PRACTICE);
 
-        // Giá năm suy TỪ hạn mức thay vì là một con số rời: tổng USD cấp × giá bán mỗi USD. Viết
-        // một số tuỳ ý vào đây sẽ tạo ra một gói bán lỗ hoặc lãi vô lý mà không ai nhận ra.
-        var pricePerYear = INCLUDED_QUANTITY_USD
-            .multiply(BigDecimal.valueOf(quotaTypes.size()))
-            .multiply(tokenUnitPrice);
-
         var plan = subscriptionPlanRepository.save(new SubscriptionPlan(
             PLAN_NAME,
             PLAN_TAGLINE,
-            pricePerYear,
+            PRICE_PER_YEAR,
             VALIDITY_DAYS,
             MAX_TIME_PER_ATTEMPT_MIN,
             // ACTIVE ngay, không phải DRAFT: mục đích của gói này là dùng được luôn, mà DRAFT thì
@@ -115,7 +124,7 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
         LOGGER.info(
             "Subscription plan initialized successfully: {} ({} VND/nam, {} USD moi loai han muc)",
             PLAN_NAME,
-            pricePerYear.toPlainString(),
+            PRICE_PER_YEAR.toPlainString(),
             INCLUDED_QUANTITY_USD.toPlainString()
         );
     }

@@ -19,7 +19,7 @@ import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolGradeRepositoryImpl;
-import com.sep.vox.infrastructure.persistence.entity.SchoolGradeLevelJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.GradeLevelJpaEntity;
 
 import jakarta.persistence.EntityManager;
 
@@ -38,14 +38,14 @@ class SchoolGradeRepositoryTests extends ContainerTestConfig {
     private EntityManager entityManager;
 
     @Test
-    void whenFindBySchoolIdAndCodeIn_thenReturnsGradesThroughMatchingGradeLevels() {
+    void whenFindBySchoolIdAndCodeIn_thenReturnsOnlyGradesOfThatSchool() {
         var schoolId = UUID.randomUUID();
         var otherSchoolId = UUID.randomUUID();
-        var level = persistGradeLevel(schoolId, "LEVEL-BATCH-01", 1);
-        var otherLevel = persistGradeLevel(otherSchoolId, "LEVEL-BATCH-OTHER", 1);
-        schoolGradeRepository.save(newSchoolGrade(level.getId(), "G10", "Grade 10"));
-        schoolGradeRepository.save(newSchoolGrade(level.getId(), "G11", "Grade 11"));
-        schoolGradeRepository.save(newSchoolGrade(otherLevel.getId(), "G12", "Other Grade 12"));
+        // Khối lớp giờ dùng chung: hai trường cùng trỏ vào một grade level, phân biệt bằng schoolId.
+        var level = persistGradeLevel("LEVEL-BATCH-01", 1);
+        schoolGradeRepository.save(newSchoolGrade(schoolId, level.getId(), "G10", "Grade 10"));
+        schoolGradeRepository.save(newSchoolGrade(schoolId, level.getId(), "G11", "Grade 11"));
+        schoolGradeRepository.save(newSchoolGrade(otherSchoolId, level.getId(), "G12", "Other Grade 12"));
 
         var found = schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G10", "G11", "G12", "MISSING"));
 
@@ -55,11 +55,10 @@ class SchoolGradeRepositoryTests extends ContainerTestConfig {
             .containsExactlyInAnyOrder("G10", "G11");
     }
 
-    private SchoolGradeLevelJpaEntity persistGradeLevel(UUID schoolId, String code, int order) {
+    private GradeLevelJpaEntity persistGradeLevel(String code, int order) {
         var now = Instant.now();
-        var level = new SchoolGradeLevelJpaEntity(
+        var level = new GradeLevelJpaEntity(
             null,
-            schoolId,
             code,
             code,
             "Repository test grade level",
@@ -76,10 +75,11 @@ class SchoolGradeRepositoryTests extends ContainerTestConfig {
         return level;
     }
 
-    private static SchoolGrade newSchoolGrade(UUID schoolGradeLevelId, String code, String name) {
+    private static SchoolGrade newSchoolGrade(UUID schoolId, UUID gradeLevelId, String code, String name) {
         var now = Instant.now();
         return new SchoolGrade(
-            schoolGradeLevelId,
+            schoolId,
+            gradeLevelId,
             code,
             name,
             "Repository test grade",

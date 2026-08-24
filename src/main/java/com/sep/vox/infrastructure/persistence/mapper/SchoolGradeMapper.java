@@ -8,9 +8,10 @@ public final class SchoolGradeMapper {
     
     public static final SchoolGrade toDomain(SchoolGradeJpaEntity jpa) {
         return new SchoolGrade(
-            jpa.getId(), 
-            jpa.getSchoolGradeLevelId(),
-            jpa.getCode(), 
+            jpa.getId(),
+            jpa.getSchoolId(),
+            jpa.getGradeLevelId(),
+            jpa.getCode(),
             jpa.getName(), 
             jpa.getDescription(), 
             jpa.getStartDate(), 
@@ -25,9 +26,10 @@ public final class SchoolGradeMapper {
 
     public static final SchoolGradeJpaEntity toJpa(SchoolGrade grade) {
         return new SchoolGradeJpaEntity(
-            grade.getId(), 
-            grade.getSchoolGradeLevelId(), 
-            grade.getCode(), 
+            grade.getId(),
+            grade.getSchoolId(),
+            grade.getGradeLevelId(),
+            grade.getCode(),
             grade.getName(), 
             grade.getDescription(), 
             grade.getStartDate(), 

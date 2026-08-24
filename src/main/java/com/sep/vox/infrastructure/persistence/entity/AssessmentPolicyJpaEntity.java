@@ -17,9 +17,9 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "assessment_policies", indexes = {
-    @Index(columnList = "school_id, school_grade_level_id, school_grade_id, school_class_id, language_id, framework_version_id, version",
+    @Index(columnList = "school_id, grade_level_id, school_grade_id, school_class_id, language_id, framework_version_id, version",
         name = "idx_assessment_policies_scope_version", unique = true),
-    @Index(columnList = "school_id, school_grade_level_id, school_grade_id, language_id, framework_version_id, status",
+    @Index(columnList = "school_id, grade_level_id, school_grade_id, language_id, framework_version_id, status",
         name = "idx_assessment_policies_grade_status"),
     @Index(columnList = "rubric_version_id", name = "idx_assessment_policies_rubric_version"),
     @Index(columnList = "target_framework_band_id", name = "idx_assessment_policies_target_band")
@@ -39,8 +39,8 @@ public class AssessmentPolicyJpaEntity {
     @Column(name = "school_id", updatable = false)
     private UUID schoolId;
 
-    @Column(name = "school_grade_level_id", updatable = false)
-    private UUID schoolGradeLevelId;
+    @Column(name = "grade_level_id", updatable = false)
+    private UUID gradeLevelId;
 
     @Column(name = "school_grade_id", updatable = false)
     private UUID schoolGradeId;
@@ -112,14 +112,14 @@ public class AssessmentPolicyJpaEntity {
 
     protected AssessmentPolicyJpaEntity() {}
 
-    public AssessmentPolicyJpaEntity(UUID id, UUID schoolId, UUID schoolGradeLevelId, UUID schoolGradeId,
+    public AssessmentPolicyJpaEntity(UUID id, UUID schoolId, UUID gradeLevelId, UUID schoolGradeId,
             UUID schoolClassId, UUID languageId, UUID frameworkVersionId, UUID rubricVersionId,
             UUID targetFrameworkBandId, BigDecimal passingScore, String strictness,
             int version, String status, Instant effectiveFrom, Instant effectiveTo,
             Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
-        this.schoolGradeLevelId = schoolGradeLevelId;
+        this.gradeLevelId = gradeLevelId;
         this.schoolGradeId = schoolGradeId;
         this.schoolClassId = schoolClassId;
         this.languageId = languageId;
@@ -154,12 +154,12 @@ public class AssessmentPolicyJpaEntity {
         this.schoolId = schoolId;
     }
 
-    public UUID getSchoolGradeLevelId() {
-        return schoolGradeLevelId;
+    public UUID getGradeLevelId() {
+        return gradeLevelId;
     }
 
-    public void setSchoolGradeLevelId(UUID schoolGradeLevelId) {
-        this.schoolGradeLevelId = schoolGradeLevelId;
+    public void setGradeLevelId(UUID gradeLevelId) {
+        this.gradeLevelId = gradeLevelId;
     }
 
     public UUID getSchoolGradeId() {

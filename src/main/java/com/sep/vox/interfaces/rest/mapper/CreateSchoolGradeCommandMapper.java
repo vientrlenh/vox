@@ -8,11 +8,11 @@ import java.util.UUID;
 
 public class CreateSchoolGradeCommandMapper {
 
-    // Thêm UUID schoolGradeLevelId vào tham số của hàm
-    public static CreateSchoolGradeCommand fromRequest(UUID schoolId, UUID schoolGradeLevelId, CreateSchoolGradeRequest request) {
+    // Thêm UUID gradeLevelId vào tham số của hàm
+    public static CreateSchoolGradeCommand fromRequest(UUID schoolId, UUID gradeLevelId, CreateSchoolGradeRequest request) {
         return new CreateSchoolGradeCommand(
                 schoolId,
-                schoolGradeLevelId, // Truyền thêm thằng này vào đây!
+                gradeLevelId, // Truyền thêm thằng này vào đây!
                 request.code(),
                 request.name(),
                 request.description(),

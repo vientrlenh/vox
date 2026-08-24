@@ -21,11 +21,8 @@ import com.sep.vox.application.port.input.query.ViewSchoolGradeDetailsQuery;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradeDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.SchoolGrade;
-import com.sep.vox.domain.model.school.SchoolGradeLevel;
-import com.sep.vox.domain.model.school.SchoolGradeLevelStatus;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -34,7 +31,6 @@ import com.sep.vox.domain.repository.UserRepository;
 class ViewSchoolGradeDetailsUseCaseTests {
 
     private SchoolGradeRepository schoolGradeRepository;
-    private SchoolGradeLevelRepository schoolGradeLevelRepository;
     private SchoolRepository schoolRepository;
     private UserRepository userRepository;
     private SchoolUserRepository schoolUserRepository;
@@ -49,14 +45,12 @@ class ViewSchoolGradeDetailsUseCaseTests {
     @BeforeEach
     void setUp() {
         schoolGradeRepository = mock(SchoolGradeRepository.class);
-        schoolGradeLevelRepository = mock(SchoolGradeLevelRepository.class);
         schoolRepository = mock(SchoolRepository.class);
         userRepository = mock(UserRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new ViewSchoolGradeDetailsUseCase(
             schoolGradeRepository,
-            schoolGradeLevelRepository,
             schoolRepository,
             userRepository,
             schoolUserRepository,
@@ -69,7 +63,6 @@ class ViewSchoolGradeDetailsUseCaseTests {
     void should_return_detail_when_request_is_valid() {
         grantAccess();
         when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.of(grade()));
-        when(schoolGradeLevelRepository.findById(gradeLevelId)).thenReturn(Optional.of(gradeLevel(schoolId)));
 
         var result = useCase.execute(new ViewSchoolGradeDetailsQuery(schoolId, gradeId));
 
@@ -119,11 +112,10 @@ class ViewSchoolGradeDetailsUseCaseTests {
 
     @Test
     void should_reject_when_grade_belongs_to_another_school() {
-        // Grade level (cầu nối) thuộc trường khác → không được lộ dữ liệu.
+        // Năm học thuộc trường khác → không được lộ dữ liệu.
         grantAccess();
-        when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.of(grade()));
-        when(schoolGradeLevelRepository.findById(gradeLevelId))
-            .thenReturn(Optional.of(gradeLevel(UUID.randomUUID())));
+        when(schoolGradeRepository.findById(gradeId))
+            .thenReturn(Optional.of(grade(UUID.randomUUID())));
 
         assertThatThrownBy(() -> useCase.execute(new ViewSchoolGradeDetailsQuery(schoolId, gradeId)))
             .isInstanceOf(NotFoundException.class);
@@ -136,19 +128,16 @@ class ViewSchoolGradeDetailsUseCaseTests {
     }
 
     private SchoolGrade grade() {
+        return grade(schoolId);
+    }
+
+    private SchoolGrade grade(UUID ownerSchoolId) {
         var now = Instant.now();
         return new SchoolGrade(
-            gradeId, gradeLevelId, "NH2024", "Năm học 2024", "desc",
+            gradeId, ownerSchoolId, gradeLevelId, "NH2024", "Năm học 2024", "desc",
             LocalDate.of(2024, 9, 1), LocalDate.of(2025, 6, 30), SchoolGradeStatus.ACTIVE,
             now, now, UUID.randomUUID(), UUID.randomUUID()
         );
     }
 
-    private SchoolGradeLevel gradeLevel(UUID ownerSchoolId) {
-        var now = Instant.now();
-        return new SchoolGradeLevel(
-            gradeLevelId, ownerSchoolId, "K1", "Khối 1", "desc", 1, SchoolGradeLevelStatus.ACTIVE, now, now,
-            UUID.randomUUID(), UUID.randomUUID()
-        );
-    }
 }

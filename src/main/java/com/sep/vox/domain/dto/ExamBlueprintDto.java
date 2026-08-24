@@ -6,7 +6,7 @@ public record ExamBlueprintDto(
     UUID id,
     UUID schoolId,
     UUID languageId,
-    UUID schoolGradeLevelId,
+    UUID gradeLevelId,
     String code,
     String name,
     String description,

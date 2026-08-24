@@ -23,14 +23,11 @@ import com.sep.vox.application.port.input.command.DeleteSchoolGradeCommand;
 import com.sep.vox.application.port.input.usecase.schoolgrade.DeleteSchoolGradeUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.SchoolGrade;
-import com.sep.vox.domain.model.school.SchoolGradeLevel;
-import com.sep.vox.domain.model.school.SchoolGradeLevelStatus;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -40,7 +37,6 @@ class DeleteSchoolGradeUseCaseTests {
     private SchoolGradeRepository schoolGradeRepository;
     private SchoolClassRepository schoolClassRepository;
     private SchoolClassUserRepository schoolClassUserRepository;
-    private SchoolGradeLevelRepository schoolGradeLevelRepository;
     private UserContextPort userContextPort;
     private UserRepository userRepository;
     private SchoolUserRepository schoolUserRepository;
@@ -56,7 +52,6 @@ class DeleteSchoolGradeUseCaseTests {
         schoolGradeRepository = mock(SchoolGradeRepository.class);
         schoolClassRepository = mock(SchoolClassRepository.class);
         schoolClassUserRepository = mock(SchoolClassUserRepository.class);
-        schoolGradeLevelRepository = mock(SchoolGradeLevelRepository.class);
         userContextPort = mock(UserContextPort.class);
         userRepository = mock(UserRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
@@ -64,7 +59,6 @@ class DeleteSchoolGradeUseCaseTests {
             schoolGradeRepository,
             schoolClassRepository,
             schoolClassUserRepository,
-            schoolGradeLevelRepository,
             userContextPort,
             userRepository,
             schoolUserRepository
@@ -73,7 +67,6 @@ class DeleteSchoolGradeUseCaseTests {
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.findByUserId(currentUserId))
             .thenReturn(Optional.of(new SchoolUser(UUID.randomUUID(), schoolId, currentUserId, null, null)));
-        when(schoolGradeLevelRepository.findById(gradeLevelId)).thenReturn(Optional.of(gradeLevel()));
     }
 
     @Test
@@ -109,17 +102,10 @@ class DeleteSchoolGradeUseCaseTests {
     private SchoolGrade grade(SchoolGradeStatus status) {
         var now = Instant.now();
         return new SchoolGrade(
-            gradeId, gradeLevelId, "NH2024", "Năm học 2024", "desc",
+            gradeId, schoolId, gradeLevelId, "NH2024", "Năm học 2024", "desc",
             LocalDate.of(2024, 9, 1), LocalDate.of(2025, 6, 30), status,
             now, now, UUID.randomUUID(), UUID.randomUUID()
         );
     }
 
-    private SchoolGradeLevel gradeLevel() {
-        var now = Instant.now();
-        return new SchoolGradeLevel(
-            gradeLevelId, schoolId, "K1", "Khối 1", "desc", 1, SchoolGradeLevelStatus.ACTIVE, now, now,
-            UUID.randomUUID(), UUID.randomUUID()
-        );
-    }
 }

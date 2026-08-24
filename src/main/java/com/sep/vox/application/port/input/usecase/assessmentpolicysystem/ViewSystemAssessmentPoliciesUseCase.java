@@ -53,6 +53,18 @@ public class ViewSystemAssessmentPoliciesUseCase implements IUseCase<ViewSystemA
             throw new IllegalArgumentException("Khoảng thời gian effectiveFrom/effectiveTo không hợp lệ.");
         }
 
+        // School Admin xem danh sách này để chọn mẫu đem về sao chép, nên chỉ được thấy bản ĐÃ BAN
+        // HÀNH: bản nháp của hệ thống là việc đang làm dở, chưa rà soát. Cùng lằn ranh mà
+        // CloneSystemRubricToSchoolUseCase áp cho rubric mẫu -- ở đó chặn lúc sao, ở đây giấu ngay
+        // từ lúc liệt kê để trường không chọn phải thứ rồi sẽ bị từ chối.
+        if (!userContextPort.isSystemAdmin()) {
+            if (safeStatus != null && !AssessmentPolicyStatus.PUBLISHED.name().equals(safeStatus)) {
+                throw new IllegalArgumentException(
+                        "Chỉ xem được các chính sách mẫu đã ban hành (PUBLISHED).");
+            }
+            safeStatus = AssessmentPolicyStatus.PUBLISHED.name();
+        }
+
         var policyPage = assessmentPolicyRepository.findAllSystemWide(safeStatus, query.languageId(), query.rubricVersionId(),
                 query.effectiveFrom(), query.effectiveTo(), query.page(), query.size());
         return AssessmentPolicyDtoMapper.toDtoPage(policyPage);

@@ -15,9 +15,12 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
+// grade_level_id trỏ tới catalog TOÀN CỤC (grade_levels) nên unique phải kèm school_id -- nếu chỉ
+// (grade_level_id, code) như bản cũ thì hai trường khác nhau không thể cùng có lớp "10A1" ở khối 10.
 @Table(name = "school_grades", indexes = {
-    @Index(columnList = "school_grade_level_id, code", name = "idx_school_grades_level_code", unique = true),
-    @Index(columnList = "school_grade_level_id", name = "idx_school_grades_level")
+    @Index(columnList = "school_id, grade_level_id, code", name = "idx_school_grades_school_level_code", unique = true),
+    @Index(columnList = "school_id", name = "idx_school_grades_school"),
+    @Index(columnList = "grade_level_id", name = "idx_school_grades_level")
 }, check = {
     @CheckConstraint(
         name = "chk_school_grades_start_end_date_valid", 
@@ -36,8 +39,11 @@ public class SchoolGradeJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "school_grade_level_id", nullable = false, updatable = false)
-    private UUID schoolGradeLevelId;
+    @Column(name = "school_id", nullable = false, updatable = false)
+    private UUID schoolId;
+
+    @Column(name = "grade_level_id", nullable = false, updatable = false)
+    private UUID gradeLevelId;
     
     @Column(name = "code", nullable = false, updatable = false, length = 100)
     private String code; 
@@ -76,11 +82,12 @@ public class SchoolGradeJpaEntity {
 
     protected SchoolGradeJpaEntity() {}
 
-    public SchoolGradeJpaEntity(UUID id, UUID schoolGradeLevelId, String code, String name, String description,
+    public SchoolGradeJpaEntity(UUID id, UUID schoolId, UUID gradeLevelId, String code, String name, String description,
             LocalDate startDate, LocalDate endDate, String status, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.schoolGradeLevelId = schoolGradeLevelId;
+        this.schoolId = schoolId;
+        this.gradeLevelId = gradeLevelId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -93,10 +100,11 @@ public class SchoolGradeJpaEntity {
         this.updatedBy = updatedBy;
     }
 
-    public SchoolGradeJpaEntity(UUID schoolGradeLevelId, String code, String name, String description,
+    public SchoolGradeJpaEntity(UUID schoolId, UUID gradeLevelId, String code, String name, String description,
             LocalDate startDate, LocalDate endDate, String status, Instant createdAt,
             Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.schoolGradeLevelId = schoolGradeLevelId;
+        this.schoolId = schoolId;
+        this.gradeLevelId = gradeLevelId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -117,12 +125,20 @@ public class SchoolGradeJpaEntity {
         this.id = id;
     }
 
-    public UUID getSchoolGradeLevelId() {
-        return schoolGradeLevelId;
+    public UUID getSchoolId() {
+        return schoolId;
     }
 
-    public void setSchoolGradeLevelId(UUID schoolGradeLevelId) {
-        this.schoolGradeLevelId = schoolGradeLevelId;
+    public void setSchoolId(UUID schoolId) {
+        this.schoolId = schoolId;
+    }
+
+    public UUID getGradeLevelId() {
+        return gradeLevelId;
+    }
+
+    public void setGradeLevelId(UUID gradeLevelId) {
+        this.gradeLevelId = gradeLevelId;
     }
 
     public String getCode() {

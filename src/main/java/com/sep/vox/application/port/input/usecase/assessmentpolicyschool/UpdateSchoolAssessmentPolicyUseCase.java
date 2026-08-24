@@ -4,6 +4,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentPolicyCommand;
+import com.sep.vox.application.port.input.service.GradeLevelBandScopeGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
@@ -32,6 +33,7 @@ public class UpdateSchoolAssessmentPolicyUseCase implements IUseCase<UpdateAsses
     private final SchoolUserRepository schoolUserRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
+    private final GradeLevelBandScopeGuardService gradeLevelBandScopeGuardService;
 
     public UpdateSchoolAssessmentPolicyUseCase(
             AssessmentPolicyRepository assessmentPolicyRepository,
@@ -39,13 +41,15 @@ public class UpdateSchoolAssessmentPolicyUseCase implements IUseCase<UpdateAsses
             SchoolRepository schoolRepository,
             SchoolUserRepository schoolUserRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            GradeLevelBandScopeGuardService gradeLevelBandScopeGuardService) {
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.schoolRepository = schoolRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
+        this.gradeLevelBandScopeGuardService = gradeLevelBandScopeGuardService;
     }
 
     @Override
@@ -90,6 +94,13 @@ public class UpdateSchoolAssessmentPolicyUseCase implements IUseCase<UpdateAsses
         if (!targetBand.getFrameworkVersionId().equals(policy.getFrameworkVersionId())) {
             throw new IllegalStateException("Band mục tiêu phải thuộc đúng Phiên bản Khung tiêu chuẩn của Policy này.");
         }
+
+        // 5b. Trần bậc theo Khối. Phạm vi không sửa được ở đây nên lấy thẳng từ policy đang có --
+        //     nhưng Band thì SỬA ĐƯỢC, nên thiếu chốt này thì một policy tạo đúng trần vẫn bị
+        //     chỉnh vượt trần ngay sau đó.
+        gradeLevelBandScopeGuardService.assertWithinScope(
+                policy.getGradeLevelId(), policy.getSchoolGradeId(), policy.getSchoolClassId(),
+                policy.getFrameworkVersionId(), targetBand);
 
         // 6. Kiểm tra khoảng thời gian hiệu lực
         if (command.effectiveFrom() == null) {

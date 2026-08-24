@@ -18,17 +18,19 @@ public interface SchoolGradeRepository {
 
     List<SchoolGrade> findAllById(List<UUID> gradeIds);
 
-    // Đổi chữ SchoolId thành SchoolGradeLevelId
-    boolean existsBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
-    Optional<SchoolGrade> findBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
+    // gradeLevelId nay trỏ tới catalog toàn cục, nên mã lớp chỉ duy nhất trong phạm vi
+    // (schoolId, gradeLevelId) -- phải truyền kèm schoolId, khác bản cũ chỉ cần levelId.
+    boolean existsBySchoolIdAndGradeLevelIdAndCode(UUID schoolId, UUID gradeLevelId, String code);
+    Optional<SchoolGrade> findBySchoolIdAndGradeLevelIdAndCode(UUID schoolId, UUID gradeLevelId, String code);
     List<SchoolGrade> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
     List<SchoolGrade> findBySchoolIdAndNameIn(UUID schoolId, Collection<String> names);
 
-    boolean existsBySchoolGradeLevelId(UUID schoolGradeLevelId);
+    // Quét mọi trường: dùng để chặn xóa một khối trong catalog dùng chung.
+    boolean existsByGradeLevelId(UUID gradeLevelId);
 
-    boolean existsBySchoolGradeLevelIdAndStatusNot(UUID schoolGradeLevelId, String status);
+    boolean existsByGradeLevelIdAndStatusNot(UUID gradeLevelId, String status);
 
-    PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, UUID schoolGradeLevelId, String status, int pageNumber, int size);
+    PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, UUID gradeLevelId, String status, int pageNumber, int size);
 
     boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
     int updateSchoolGradeAtomic(UUID id, String name, String description, LocalDate startDate, LocalDate endDate, Instant now, UUID updatedBy);

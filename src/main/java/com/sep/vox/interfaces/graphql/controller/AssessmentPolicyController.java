@@ -21,7 +21,7 @@ import com.sep.vox.domain.dto.RubricVersionDto;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
-import com.sep.vox.domain.dto.SchoolGradeLevelDto;
+import com.sep.vox.domain.dto.GradeLevelDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateAssessmentPolicyInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateAssessmentPolicyGraphQLMapper;
@@ -65,8 +65,11 @@ public class AssessmentPolicyController {
         this.viewSchoolAssessmentPolicyDetailsUseCase = viewSchoolAssessmentPolicyDetailsUseCase;
     }
 
+    // School Admin cũng đọc được: đây là kho chính sách MẪU để trường chọn rồi sao về, giống
+    // cách trường duyệt bộ tiêu chí mẫu của hệ thống. Use case tự ép chỉ trả bản PUBLISHED cho
+    // người không phải quản trị hệ thống.
     @QueryMapping(name = "viewSystemAssessmentPolicies")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public PageResult<AssessmentPolicyDto> viewSystemAssessmentPolicies(
             @Argument(name = "status") String status,
             @Argument(name = "languageId") UUID languageId,
@@ -124,7 +127,7 @@ public class AssessmentPolicyController {
     }
 
     @QueryMapping(name = "viewSystemAssessmentPolicy")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public AssessmentPolicyDto viewSystemAssessmentPolicy(@Argument(name = "policyId") UUID policyId) {
         return viewSystemAssessmentPolicyDetailsUseCase.execute(new ViewSystemAssessmentPolicyDetailsQuery(policyId));
     }
@@ -147,14 +150,14 @@ public class AssessmentPolicyController {
         return loader.load(policy.schoolId());
     }
 
-    @SchemaMapping(typeName = "AssessmentPolicy", field = "schoolGradeLevel")
-    public CompletableFuture<SchoolGradeLevelDto> getSchoolGradeLevel(AssessmentPolicyDto policy,
+    @SchemaMapping(typeName = "AssessmentPolicy", field = "gradeLevel")
+    public CompletableFuture<GradeLevelDto> getGradeLevel(AssessmentPolicyDto policy,
             DataFetchingEnvironment env) {
-        if (policy.schoolGradeLevelId() == null) {
+        if (policy.gradeLevelId() == null) {
             return CompletableFuture.completedFuture(null);
         }
-        DataLoader<UUID, SchoolGradeLevelDto> loader = env.getDataLoader("schoolGradeLevelDataLoader");
-        return loader.load(policy.schoolGradeLevelId());
+        DataLoader<UUID, GradeLevelDto> loader = env.getDataLoader("gradeLevelDataLoader");
+        return loader.load(policy.gradeLevelId());
     }
 
     @SchemaMapping(typeName = "AssessmentPolicy", field = "schoolGrade")

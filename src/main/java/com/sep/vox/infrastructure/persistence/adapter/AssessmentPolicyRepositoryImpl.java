@@ -91,16 +91,16 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
 
     @Override
     public boolean existsActiveForScopeAnyRubricVersion(UUID schoolId, UUID languageId, UUID frameworkVersionId,
-            UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId) {
+            UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId) {
         return springDataAssessmentPolicyRepository.existsActiveForScopeAnyRubricVersion(schoolId, languageId,
-                frameworkVersionId, schoolGradeLevelId, schoolGradeId, schoolClassId);
+                frameworkVersionId, gradeLevelId, schoolGradeId, schoolClassId);
     }
 
     @Override
     public int findMaxVersionForScope(UUID schoolId, UUID languageId, UUID frameworkVersionId,
-            UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId) {
+            UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId) {
         return springDataAssessmentPolicyRepository.findMaxVersionForScope(schoolId, languageId, frameworkVersionId,
-                schoolGradeLevelId, schoolGradeId, schoolClassId);
+                gradeLevelId, schoolGradeId, schoolClassId);
     }
 
     @Override
@@ -120,8 +120,19 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     }
 
     @Override
+    public boolean existsOtherActiveByRubricVersionId(UUID rubricVersionId, UUID excludedPolicyId) {
+        return springDataAssessmentPolicyRepository.existsOtherActiveByRubricVersionId(rubricVersionId, excludedPolicyId);
+    }
+
+    @Override
     public List<AssessmentPolicy> findDraftSystemWideByRubricVersionId(UUID rubricVersionId) {
         return springDataAssessmentPolicyRepository.findBySchoolIdIsNullAndRubricVersionIdAndStatus(rubricVersionId, "DRAFT")
+                .stream().map(AssessmentPolicyMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<AssessmentPolicy> findPublishedSystemWideByRubricVersionId(UUID rubricVersionId) {
+        return springDataAssessmentPolicyRepository.findBySchoolIdIsNullAndRubricVersionIdAndStatus(rubricVersionId, "PUBLISHED")
                 .stream().map(AssessmentPolicyMapper::toDomain).toList();
     }
 

@@ -16,61 +16,35 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.SchoolGradeJpaEntity;
 import org.springframework.data.jpa.repository.Modifying;
 
+// school_grades giờ mang school_id trực tiếp, nên các truy vấn theo trường không còn phải JOIN
+// sang bảng khối lớp để suy ra schoolId như bản cũ -- phần lớn rút về derived query.
 public interface SpringDataSchoolGradeRepository extends JpaRepository<SchoolGradeJpaEntity, UUID>{
-    @Query("""
-        SELECT sg
-        FROM SchoolGradeJpaEntity sg
-        JOIN SchoolGradeLevelJpaEntity sgl 
-            ON sgl.id = sg.schoolGradeLevelId
-        WHERE sgl.schoolId = :schoolId 
-            AND sg.code = :code
-        """)
-    Optional<SchoolGradeJpaEntity> findBySchoolIdAndCode(@Param("schoolId") UUID schoolId, @Param("code") String code);
 
-    @Query("""
-        SELECT sg
-        FROM SchoolGradeJpaEntity sg
-        JOIN SchoolGradeLevelJpaEntity sgl
-            ON sgl.id = sg.schoolGradeLevelId
-        WHERE sgl.schoolId = :schoolId
-            AND sg.name = :name
-        """)
-    Optional<SchoolGradeJpaEntity> findBySchoolIdAndName(@Param("schoolId") UUID schoolId, @Param("name") String name);
+    Optional<SchoolGradeJpaEntity> findBySchoolIdAndCode(UUID schoolId, String code);
+
+    Optional<SchoolGradeJpaEntity> findBySchoolIdAndName(UUID schoolId, String name);
 
     // Nhận codes đã được Impl uppercase sẵn; entity-side vẫn bọc UPPER() để phòng dữ liệu cũ lỡ không đồng nhất case.
     @Query("""
         SELECT sg
         FROM SchoolGradeJpaEntity sg
-        JOIN SchoolGradeLevelJpaEntity sgl
-            ON sgl.id = sg.schoolGradeLevelId
-        WHERE sgl.schoolId = :schoolId
+        WHERE sg.schoolId = :schoolId
             AND UPPER(sg.code) IN (:codes)
         """)
     List<SchoolGradeJpaEntity> findBySchoolIdAndCodeIn(@Param("schoolId") UUID schoolId, @Param("codes") Collection<String> codes);
 
-    @Query("""
-        SELECT sg
-        FROM SchoolGradeJpaEntity sg
-        JOIN SchoolGradeLevelJpaEntity sgl
-            ON sgl.id = sg.schoolGradeLevelId
-        WHERE sgl.schoolId = :schoolId
-            AND sg.name IN (:names)
-        """)
-    List<SchoolGradeJpaEntity> findBySchoolIdAndNameIn(@Param("schoolId") UUID schoolId, @Param("names") Collection<String> names);
+    List<SchoolGradeJpaEntity> findBySchoolIdAndNameIn(UUID schoolId, Collection<String> names);
 
     List<SchoolGradeJpaEntity> findByIdIn(Collection<UUID> ids);
 
+    boolean existsBySchoolIdAndGradeLevelIdAndCode(UUID schoolId, UUID gradeLevelId, String code);
 
-
-    boolean existsBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
-
-    Optional<SchoolGradeJpaEntity> findBySchoolGradeLevelIdAndCode(UUID schoolGradeLevelId, String code);
+    Optional<SchoolGradeJpaEntity> findBySchoolIdAndGradeLevelIdAndCode(UUID schoolId, UUID gradeLevelId, String code);
 
     @Query("""
         SELECT g FROM SchoolGradeJpaEntity g
-        JOIN SchoolGradeLevelJpaEntity l ON l.id = g.schoolGradeLevelId
-        WHERE l.schoolId = :schoolId
-            AND (:gradeLevelId IS NULL OR g.schoolGradeLevelId = :gradeLevelId)
+        WHERE g.schoolId = :schoolId
+            AND (:gradeLevelId IS NULL OR g.gradeLevelId = :gradeLevelId)
             AND (:status IS NULL OR g.status = :status)
             AND (:status IS NOT NULL OR g.status <> 'ARCHIVED')
         ORDER BY g.startDate DESC
@@ -86,7 +60,7 @@ public interface SpringDataSchoolGradeRepository extends JpaRepository<SchoolGra
     @Modifying
     @Query("""
 
-            UPDATE SchoolGradeJpaEntity g SET 
+            UPDATE SchoolGradeJpaEntity g SET
         g.name = COALESCE(:name, g.name),
         g.description = COALESCE(:description, g.description),
         g.startDate = COALESCE(:startDate, g.startDate),
@@ -105,12 +79,10 @@ public interface SpringDataSchoolGradeRepository extends JpaRepository<SchoolGra
             @Param("updatedBy") UUID updatedBy
     );
 
+    boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
 
-    @Query("SELECT COUNT(g) > 0 FROM SchoolGradeJpaEntity g WHERE g.schoolGradeLevelId IN (SELECT l.id FROM SchoolGradeLevelJpaEntity l WHERE l.schoolId = :schoolId) AND g.status = :status")
-    boolean existsBySchoolIdAndStatus(@Param("schoolId") UUID schoolId, @Param("status") String status);
+    boolean existsByGradeLevelId(UUID gradeLevelId);
 
-    boolean existsBySchoolGradeLevelId(UUID schoolGradeLevelId);
-
-    boolean existsBySchoolGradeLevelIdAndStatusNot(UUID schoolGradeLevelId, String status);
+    boolean existsByGradeLevelIdAndStatusNot(UUID gradeLevelId, String status);
 
 }

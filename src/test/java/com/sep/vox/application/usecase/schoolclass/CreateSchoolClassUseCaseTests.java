@@ -24,14 +24,11 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolGrade;
-import com.sep.vox.domain.model.school.SchoolGradeLevel;
-import com.sep.vox.domain.model.school.SchoolGradeLevelStatus;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
@@ -47,7 +44,6 @@ class CreateSchoolClassUseCaseTests {
     private UserRepository userRepository;
     private SupportedLanguageRepository supportedLanguageRepository;
     private SchoolGradeRepository schoolGradeRepository;
-    private SchoolGradeLevelRepository schoolGradeLevelRepository;
     private UserContextPort userContextPort;
     private SchoolUserRepository schoolUserRepository;
     private CreateSchoolClassUseCase useCase;
@@ -59,7 +55,6 @@ class CreateSchoolClassUseCaseTests {
         userRepository = mock(UserRepository.class);
         supportedLanguageRepository = mock(SupportedLanguageRepository.class);
         schoolGradeRepository = mock(SchoolGradeRepository.class);
-        schoolGradeLevelRepository = mock(SchoolGradeLevelRepository.class);
         userContextPort = mock(UserContextPort.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         useCase = new CreateSchoolClassUseCase(
@@ -68,7 +63,6 @@ class CreateSchoolClassUseCaseTests {
             userRepository,
             supportedLanguageRepository,
             schoolGradeRepository,
-            schoolGradeLevelRepository,
             userContextPort,
             schoolUserRepository
         );
@@ -146,7 +140,9 @@ class CreateSchoolClassUseCaseTests {
         var grade = new SchoolGrade();
         grade.setId(gradeId);
         grade.setCode("G10");
-        grade.setSchoolGradeLevelId(gradeLevelId);
+        grade.setGradeLevelId(gradeLevelId);
+        // Năm học thuộc trường khác → phải bị chặn.
+        grade.setSchoolId(UUID.randomUUID());
         grade.setStatus(SchoolGradeStatus.ACTIVE);
         var command = new CreateSchoolClassCommand(schoolId, languageId, gradeId, "ENG-01", "English 01", null);
 
@@ -156,9 +152,6 @@ class CreateSchoolClassUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(supportedLanguageRepository.findById(languageId)).thenReturn(Optional.of(activeLanguage(languageId)));
         when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.of(grade));
-        // Khối thuộc trường khác → phải bị chặn.
-        when(schoolGradeLevelRepository.findById(gradeLevelId))
-            .thenReturn(Optional.of(gradeLevel(gradeLevelId, UUID.randomUUID())));
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
 
@@ -227,18 +220,10 @@ class CreateSchoolClassUseCaseTests {
         var grade = new SchoolGrade();
         grade.setId(id);
         grade.setCode("G10");
-        grade.setSchoolGradeLevelId(gradeLevelId);
+        grade.setGradeLevelId(gradeLevelId);
+        grade.setSchoolId(schoolId);
         grade.setStatus(SchoolGradeStatus.ACTIVE);
-        // Năm học xác định trường sở hữu qua Khối (GradeLevel), không qua (schoolId, code).
-        when(schoolGradeLevelRepository.findById(gradeLevelId)).thenReturn(Optional.of(gradeLevel(gradeLevelId, schoolId)));
         return grade;
     }
 
-    private static SchoolGradeLevel gradeLevel(UUID id, UUID schoolId) {
-        var gradeLevel = new SchoolGradeLevel();
-        gradeLevel.setId(id);
-        gradeLevel.setSchoolId(schoolId);
-        gradeLevel.setStatus(SchoolGradeLevelStatus.ACTIVE);
-        return gradeLevel;
-    }
 }

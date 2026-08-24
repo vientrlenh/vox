@@ -1,5 +1,7 @@
 package com.sep.vox.application.usecase.assessmentpolicyschool;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -12,7 +14,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
+import com.sep.vox.application.port.input.service.GradeLevelBandScopeGuardService;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.CreateSchoolAssessmentPolicyUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
@@ -32,7 +36,8 @@ import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
+import com.sep.vox.domain.repository.GradeLevelBandScopeRepository;
+import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
@@ -41,6 +46,8 @@ import com.sep.vox.domain.repository.UserRepository;
 /**
  * 1 Rubric Version được phép gắn với nhiều Assessment Policy, kể cả khi 2 Policy nằm ở 2 lớp
  * (schoolClassId) khác nhau trong cùng trường.
+ * Ranh giới sau V44: nhiều Assessment Policy ở các PHẠM VI khác nhau được dùng chung một Rubric
+ * Version, nhưng mỗi phạm vi vẫn chỉ được đúng một chính sách còn hiệu lực.
  */
 class CreateSchoolAssessmentPolicyUseCaseTests {
 
@@ -55,6 +62,8 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
 
     private AssessmentPolicyRepository assessmentPolicyRepository;
     private SchoolClassRepository schoolClassRepository;
+    // Trạng thái phiên bản Rubric là thứ các test dưới đây đổi qua lại, nên mock phải là field.
+    private RubricVersion rubricVersion;
     private CreateSchoolAssessmentPolicyUseCase useCase;
 
     @BeforeEach
@@ -65,17 +74,26 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
         var rubricVersionRepository = mock(RubricVersionRepository.class);
         var rubricRepository = mock(RubricRepository.class);
         var languageRepository = mock(SupportedLanguageRepository.class);
-        var schoolGradeLevelRepository = mock(SchoolGradeLevelRepository.class);
+        var gradeLevelRepository = mock(GradeLevelRepository.class);
         var schoolGradeRepository = mock(SchoolGradeRepository.class);
         schoolClassRepository = mock(SchoolClassRepository.class);
         var schoolUserRepository = mock(SchoolUserRepository.class);
         var userRepository = mock(UserRepository.class);
         var userContextPort = mock(UserContextPort.class);
 
+        // Guard thật, repository giả: chưa stub dòng trần nào nên
+        // findByGradeLevelIdAndFrameworkVersionId trả Optional.empty() -> guard không chặn gì.
+        // Đúng cái các test dưới đây cần, vì chúng kiểm ranh giới phạm vi chứ không phải trần
+        // bậc. Trần bậc có bộ test riêng ở GradeLevelBandScopeGuardServiceTests.
+        var gradeLevelBandScopeGuardService = new GradeLevelBandScopeGuardService(
+                mock(GradeLevelBandScopeRepository.class), frameworkResultBandRepository,
+                gradeLevelRepository, schoolGradeRepository, schoolClassRepository);
+
         useCase = new CreateSchoolAssessmentPolicyUseCase(
                 assessmentPolicyRepository, frameworkVersionRepository, frameworkResultBandRepository,
-                rubricVersionRepository, rubricRepository, languageRepository, schoolGradeLevelRepository,
-                schoolGradeRepository, schoolClassRepository, schoolUserRepository, userRepository, userContextPort);
+                rubricVersionRepository, rubricRepository, languageRepository, gradeLevelRepository,
+                schoolGradeRepository, schoolClassRepository, schoolUserRepository, userRepository, userContextPort,
+                gradeLevelBandScopeGuardService);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(ADMIN_ID);
         User currentUser = mock(User.class);
@@ -97,7 +115,7 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
         when(targetBand.getFrameworkVersionId()).thenReturn(FRAMEWORK_VERSION_ID);
         when(frameworkResultBandRepository.findById(TARGET_BAND_ID)).thenReturn(Optional.of(targetBand));
 
-        RubricVersion rubricVersion = mock(RubricVersion.class);
+        rubricVersion = mock(RubricVersion.class);
         when(rubricVersion.getStatus()).thenReturn(RubricStatus.DRAFT);
         when(rubricVersion.getRubricId()).thenReturn(RUBRIC_ID);
         when(rubricVersionRepository.findById(RUBRIC_VERSION_ID)).thenReturn(Optional.of(rubricVersion));
@@ -129,6 +147,9 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
 
     @Test
     void allows_whenSameBatchReusesRubricVersionAcrossDifferentClasses() {
+        // V44: lớp chuyên và lớp thường cần chính sách riêng theo phạm vi Lớp nhưng chấm bằng cùng
+        // một bộ tiêu chí. Trước V44 mỗi chính sách buộc phải có phiên bản rubric riêng, nên trường
+        // phải nhân bản y hệt bộ tiêu chí cho từng lớp.
         UUID classId1 = UUID.randomUUID();
         UUID classId2 = UUID.randomUUID();
         stubSchoolClass(classId1);
@@ -136,11 +157,47 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
 
         List<CreateAssessmentPolicyCommand> commands = List.of(
                 command(classId1),
-                command(classId2) // lớp khác -> scope khác, nhưng cùng rubricVersionId
+                command(classId2) // lớp khác -> scope khác, cùng rubricVersionId
         );
 
-        List<UUID> ids = useCase.execute(commands);
+        assertThat(useCase.execute(commands)).hasSize(2);
+    }
 
-        org.assertj.core.api.Assertions.assertThat(ids).hasSize(2);
+    @Test
+    void stillRejects_whenTwoPoliciesInBatchShareTheSameScope() {
+        // Ràng buộc còn hiệu lực sau V44: mỗi phạm vi chỉ một chính sách. Lúc chấm bài chỉ MỘT
+        // chính sách được chọn cho một phạm vi, nên bản thứ hai sẽ là dữ liệu chết.
+        UUID classId = UUID.randomUUID();
+        stubSchoolClass(classId);
+
+        assertThatThrownBy(() -> useCase.execute(List.of(command(classId), command(classId))))
+                .isInstanceOf(DuplicatedException.class)
+                .hasMessageContaining("trùng phạm vi áp dụng");
+    }
+
+    @Test
+    void allowsAttachingToAnAlreadyPublishedRubricVersion() {
+        // Nới 2026-08-23. Luật cũ chặn PUBLISHED, tức là trường chỉ có đúng một cửa sổ -- trước lúc
+        // ban hành phiên bản -- để khai hết mọi lớp sẽ dùng bộ tiêu chí này. Mà ban hành lại là điều
+        // kiện để dùng được cho kỳ thi, nên thêm một lớp sau đó buộc phải sao lại cả Rubric.
+        when(rubricVersion.getStatus()).thenReturn(RubricStatus.PUBLISHED);
+        UUID classId = UUID.randomUUID();
+        stubSchoolClass(classId);
+
+        assertThat(useCase.execute(List.of(command(classId)))).hasSize(1);
+    }
+
+    @Test
+    void rejects_whenRubricVersionIsArchived() {
+        // Chiều ngược lại của cùng một luật: phiên bản đã thu hồi thì không được gắn thêm chính sách,
+        // nếu không là chấm học sinh bằng thang trường đã bỏ. Luật cũ dùng `== PUBLISHED` nên nhánh
+        // ARCHIVED lọt qua -- chặn nhầm bản đang dùng, cho qua bản đã bỏ.
+        when(rubricVersion.getStatus()).thenReturn(RubricStatus.ARCHIVED);
+        UUID classId = UUID.randomUUID();
+        stubSchoolClass(classId);
+
+        assertThatThrownBy(() -> useCase.execute(List.of(command(classId))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ARCHIVED");
     }
 }

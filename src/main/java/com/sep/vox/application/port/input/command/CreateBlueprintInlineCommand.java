@@ -6,7 +6,7 @@ public record CreateBlueprintInlineCommand(
     String code,
     String name,
     String description,
-    UUID schoolGradeLevelId,
+    UUID gradeLevelId,
     UUID languageId
 ) {
 }

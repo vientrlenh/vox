@@ -18,11 +18,11 @@ import com.sep.vox.application.port.input.command.CreateSchoolGradeCommand;
 import com.sep.vox.application.port.input.usecase.schoolgrade.CreateSchoolGradeUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.SchoolGrade;
-import com.sep.vox.domain.model.school.SchoolGradeLevel;
-import com.sep.vox.domain.model.school.SchoolGradeLevelStatus;
+import com.sep.vox.domain.model.gradelevel.GradeLevel;
+import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
+import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -30,7 +30,7 @@ import com.sep.vox.domain.repository.UserRepository;
 class CreateSchoolGradeUseCaseTests {
 
     private SchoolGradeRepository schoolGradeRepository;
-    private SchoolGradeLevelRepository schoolGradeLevelRepository;
+    private GradeLevelRepository gradeLevelRepository;
     private UserRepository userRepository;
     private SchoolUserRepository schoolUserRepository;
     private UserContextPort userContextPort;
@@ -43,13 +43,13 @@ class CreateSchoolGradeUseCaseTests {
     @BeforeEach
     void setUp() {
         schoolGradeRepository = mock(SchoolGradeRepository.class);
-        schoolGradeLevelRepository = mock(SchoolGradeLevelRepository.class);
+        gradeLevelRepository = mock(GradeLevelRepository.class);
         userRepository = mock(UserRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userContextPort = mock(UserContextPort.class);
         useCase = new CreateSchoolGradeUseCase(
             schoolGradeRepository,
-            schoolGradeLevelRepository,
+            gradeLevelRepository,
             userRepository,
             schoolUserRepository,
             userContextPort
@@ -62,11 +62,11 @@ class CreateSchoolGradeUseCaseTests {
     @Test
     void should_create_grade_with_active_status() {
         var now = Instant.now();
-        var gradeLevel = new SchoolGradeLevel(
-            gradeLevelId, schoolId, "K1", "Khối 1", "desc", 1, SchoolGradeLevelStatus.ACTIVE, now, now,
+        var gradeLevel = new GradeLevel(
+            gradeLevelId, "K1", "Khối 1", "desc", 1, GradeLevelStatus.ACTIVE, now, now,
             UUID.randomUUID(), UUID.randomUUID());
-        when(schoolGradeLevelRepository.findById(gradeLevelId)).thenReturn(Optional.of(gradeLevel));
-        when(schoolGradeRepository.existsBySchoolGradeLevelIdAndCode(any(), any())).thenReturn(false);
+        when(gradeLevelRepository.findById(gradeLevelId)).thenReturn(Optional.of(gradeLevel));
+        when(schoolGradeRepository.existsBySchoolIdAndGradeLevelIdAndCode(any(), any(), any())).thenReturn(false);
         when(schoolGradeRepository.save(any(SchoolGrade.class))).thenAnswer(invocation -> {
             SchoolGrade toSave = invocation.getArgument(0);
             toSave.setId(UUID.randomUUID());

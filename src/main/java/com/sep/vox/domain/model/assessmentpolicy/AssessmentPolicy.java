@@ -8,7 +8,7 @@ import java.util.UUID;
 public class AssessmentPolicy {
     private UUID id;
     private UUID schoolId;
-    private UUID schoolGradeLevelId;
+    private UUID gradeLevelId;
     private UUID schoolGradeId;
     private UUID schoolClassId;
     private UUID languageId;
@@ -28,14 +28,14 @@ public class AssessmentPolicy {
 
     public AssessmentPolicy() {}
 
-    public AssessmentPolicy(UUID id, UUID schoolId, UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId,
+    public AssessmentPolicy(UUID id, UUID schoolId, UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId,
             UUID languageId, UUID frameworkVersionId, UUID rubricVersionId, UUID targetFrameworkBandId,
             BigDecimal passingScore, AssessmentPolicyStrictness strictness, int version,
             AssessmentPolicyStatus status, Instant effectiveFrom, Instant effectiveTo,
             Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
-        this.schoolGradeLevelId = schoolGradeLevelId;
+        this.gradeLevelId = gradeLevelId;
         this.schoolGradeId = schoolGradeId;
         this.schoolClassId = schoolClassId;
         this.languageId = languageId;
@@ -54,13 +54,13 @@ public class AssessmentPolicy {
         this.updatedBy = updatedBy;
     }
 
-    public AssessmentPolicy(UUID schoolId, UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId,
+    public AssessmentPolicy(UUID schoolId, UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId,
             UUID languageId, UUID frameworkVersionId, UUID rubricVersionId, UUID targetFrameworkBandId,
             BigDecimal passingScore, AssessmentPolicyStrictness strictness, int version,
             AssessmentPolicyStatus status, Instant effectiveFrom, Instant effectiveTo,
             Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
-        this.schoolGradeLevelId = schoolGradeLevelId;
+        this.gradeLevelId = gradeLevelId;
         this.schoolGradeId = schoolGradeId;
         this.schoolClassId = schoolClassId;
         this.languageId = languageId;
@@ -95,12 +95,12 @@ public class AssessmentPolicy {
         this.schoolId = schoolId;
     }
 
-    public UUID getSchoolGradeLevelId() {
-        return schoolGradeLevelId;
+    public UUID getGradeLevelId() {
+        return gradeLevelId;
     }
 
-    public void setSchoolGradeLevelId(UUID schoolGradeLevelId) {
-        this.schoolGradeLevelId = schoolGradeLevelId;
+    public void setGradeLevelId(UUID gradeLevelId) {
+        this.gradeLevelId = gradeLevelId;
     }
 
     public UUID getSchoolGradeId() {
@@ -244,7 +244,7 @@ public class AssessmentPolicy {
     public boolean coversScope(UUID classId, UUID gradeId, UUID gradeLevelId) {
         if (schoolClassId != null) return schoolClassId.equals(classId);
         if (schoolGradeId != null) return schoolGradeId.equals(gradeId);
-        return schoolGradeLevelId != null && schoolGradeLevelId.equals(gradeLevelId);
+        return gradeLevelId != null && gradeLevelId.equals(gradeLevelId);
     }
 
     // không sửa khi đã published

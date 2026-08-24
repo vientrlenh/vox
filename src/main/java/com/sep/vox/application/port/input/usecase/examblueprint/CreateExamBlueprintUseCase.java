@@ -16,24 +16,24 @@ import com.sep.vox.domain.dto.ExamBlueprintDto;
 import com.sep.vox.domain.mapper.ExamBlueprintDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
+import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
 public class CreateExamBlueprintUseCase implements IUseCase<CreateExamBlueprintCommand, ExamBlueprintDto> {
 
     private final ExamBlueprintRepository examBlueprintRepository;
-    private final SchoolGradeLevelRepository schoolGradeLevelRepository;
+    private final GradeLevelRepository gradeLevelRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
 
     public CreateExamBlueprintUseCase(
             ExamBlueprintRepository examBlueprintRepository,
-            SchoolGradeLevelRepository schoolGradeLevelRepository,
+            GradeLevelRepository gradeLevelRepository,
             SchoolUserRepository schoolUserRepository,
             UserContextPort userContextPort) {
         this.examBlueprintRepository = examBlueprintRepository;
-        this.schoolGradeLevelRepository = schoolGradeLevelRepository;
+        this.gradeLevelRepository = gradeLevelRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userContextPort = userContextPort;
     }
@@ -43,7 +43,7 @@ public class CreateExamBlueprintUseCase implements IUseCase<CreateExamBlueprintC
     public ExamBlueprintDto execute(CreateExamBlueprintCommand input) {
         var command = new CreateExamBlueprintCommand(
             input.languageId(),
-            input.schoolGradeLevelId(),
+            input.gradeLevelId(),
             StringNormalization.normalizeCode(input.code()),
             StringNormalization.trimAndCollapseSpaces(input.name()),
             StringNormalization.trimAndCollapseSpaces(input.description())
@@ -53,19 +53,17 @@ public class CreateExamBlueprintUseCase implements IUseCase<CreateExamBlueprintC
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
-        if (command.schoolGradeLevelId() != null) {
-            var gradeLevel = schoolGradeLevelRepository.findById(command.schoolGradeLevelId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy khối lớp"));
-            if (!currentSchoolId.equals(gradeLevel.getSchoolId())) {
-                throw new IllegalStateException("Khối lớp không thuộc trường hiện tại");
-            }
+        // Khối lớp là catalog dùng chung: chỉ cần tồn tại, không còn ràng buộc thuộc trường nào.
+        if (command.gradeLevelId() != null
+                && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
+            throw new NotFoundException("Không tìm thấy khối lớp");
         }
 
         var now = Instant.now();
         var blueprint = new ExamBlueprint(
             currentSchoolId,
             command.languageId(),
-            command.schoolGradeLevelId(),
+            command.gradeLevelId(),
             blueprintCodeOf(command.code()),
             command.name(),
             command.description(),

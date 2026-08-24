@@ -1,9 +1,11 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import java.util.UUID;
 
 public record CloneSystemRubricRequest(
@@ -31,5 +33,35 @@ public record CloneSystemRubricRequest(
          * không suy ra được, nên bản mẫu nên soạn ở dạng SUM.
          */
         @Pattern(regexp = "SUM|WEIGHTED_AVERAGE", message = "Cách tính điểm chỉ nhận SUM hoặc WEIGHTED_AVERAGE")
-        String totalScoreMethod
-) {}
+        String totalScoreMethod,
+
+        /**
+         * Các chính sách chấm mẫu (gắn với chính phiên bản đang sao) mà trường muốn dựng luôn cho
+         * bản sao. Bỏ trống = chỉ sao bộ tiêu chí; khi đó phiên bản mới nằm DRAFT tới khi trường tự
+         * gắn một chính sách, vì ban hành phiên bản đòi phải có chính sách liên kết đã PUBLISHED.
+         */
+        @Valid
+        List<ClonePolicyChoice> policies
+) {
+
+    /**
+     * Phạm vi đi theo TỪNG chính sách, không phải theo cả lần sao: mỗi phạm vi chỉ được đúng một
+     * chính sách còn hiệu lực, nên sao hai bản mẫu (ví dụ Bậc 3 cho lớp thường, Bậc 4 cho lớp
+     * chuyên) vào cùng một phạm vi sẽ bị từ chối ngay trong cùng một lần gọi.
+     */
+    public record ClonePolicyChoice(
+            @NotNull(message = "Chính sách mẫu không được để trống")
+            UUID sourcePolicyId,
+
+            // Chỉ điền khi bản mẫu KHÔNG gắn Khối; khi đó phải chọn đúng 1 trong 3. Bản mẫu đã gắn
+            // Khối thì bản sao giữ nguyên khối đó và cả ba phải để trống.
+            UUID gradeLevelId,
+            UUID schoolGradeId,
+            UUID schoolClassId,
+
+            @NotNull(message = "Ngày bắt đầu hiệu lực không được để trống")
+            String effectiveFrom,
+
+            String effectiveTo
+    ) {}
+}

@@ -23,9 +23,9 @@ import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.school.SchoolGrade;
-import com.sep.vox.domain.model.school.SchoolGradeLevel;
+import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
+import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 
 @Service
@@ -35,17 +35,17 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
             "schoolGradeLevelCode", "code", "name", "description", "startDate", "endDate");
 
     private final SchoolGradeRepository schoolGradeRepository;
-    private final SchoolGradeLevelRepository schoolGradeLevelRepository;
+    private final GradeLevelRepository gradeLevelRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final TransactionTemplate transactionTemplate;
 
     public SchoolGradeImportCommitHandler(
             SchoolGradeRepository schoolGradeRepository,
-            SchoolGradeLevelRepository schoolGradeLevelRepository,
+            GradeLevelRepository gradeLevelRepository,
             JsonSerializationPort jsonSerializationPort,
             PlatformTransactionManager transactionManager) {
         this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolGradeLevelRepository = schoolGradeLevelRepository;
+        this.gradeLevelRepository = gradeLevelRepository;
         this.jsonSerializationPort = jsonSerializationPort;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.transactionTemplate.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
@@ -102,7 +102,7 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
             addIfPresent(levelCodes, normalized.get("schoolGradeLevelCode"));
         }
 
-        var levelsByCode = findGradeLevelsByCode(schoolId, levelCodes);
+        var levelsByCode = findGradeLevelsByCode(levelCodes);
 
         for (var rowContext : rowContexts) {
             var row = rowContext.row();
@@ -120,7 +120,7 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
             var startDate = DateMapper.toLocalDate(normalized.get("startDate"));
             var endDate = DateMapper.toLocalDate(normalized.get("endDate"));
             var existing = schoolGradeRepository
-                    .findBySchoolGradeLevelIdAndCode(gradeLevel.getId(), normalized.get("code"))
+                    .findBySchoolIdAndGradeLevelIdAndCode(schoolId, gradeLevel.getId(), normalized.get("code"))
                     .orElse(null);
 
             try {
@@ -130,7 +130,7 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
                     updatedRows++;
                 } else {
                     transactionTemplate.executeWithoutResult(status ->
-                            createGrade(normalized, gradeLevel.getId(), startDate, endDate, currentUserId));
+                            createGrade(normalized, schoolId, gradeLevel.getId(), startDate, endDate, currentUserId));
                     createdRows++;
                 }
             } catch (DataIntegrityViolationException | IllegalArgumentException exception) {
@@ -147,10 +147,11 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
         return new ImportCommitResult(createdRows, updatedRows, 0L, invalidRows);
     }
 
-    private void createGrade(Map<String, String> data, UUID schoolGradeLevelId, LocalDate startDate, LocalDate endDate, UUID currentUserId) {
+    private void createGrade(Map<String, String> data, UUID schoolId, UUID gradeLevelId, LocalDate startDate, LocalDate endDate, UUID currentUserId) {
         var now = Instant.now();
         schoolGradeRepository.save(new SchoolGrade(
-                schoolGradeLevelId,
+                schoolId,
+                gradeLevelId,
                 data.get("code"),
                 data.get("name"),
                 data.get("description"),
@@ -177,9 +178,10 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
         schoolGradeRepository.save(existing);
     }
 
-    private Map<String, SchoolGradeLevel> findGradeLevelsByCode(UUID schoolId, Set<String> codes) {
-        var levelsByCode = new LinkedHashMap<String, SchoolGradeLevel>();
-        schoolGradeLevelRepository.findBySchoolIdAndCodeIn(schoolId, codes)
+    // Catalog khối lớp dùng chung nên tra theo code là đủ, không còn lọc theo trường.
+    private Map<String, GradeLevel> findGradeLevelsByCode(Set<String> codes) {
+        var levelsByCode = new LinkedHashMap<String, GradeLevel>();
+        gradeLevelRepository.findByCodeIn(codes)
             .forEach(level -> levelsByCode.putIfAbsent(level.getCode(), level));
         return levelsByCode;
     }
@@ -210,7 +212,7 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
     }
 
     private List<Map<String, String>> validateRow(Map<String, String> data, Set<String> seenKeys,
-            Map<String, SchoolGradeLevel> levelsByCode) {
+            Map<String, GradeLevel> levelsByCode) {
         var errors = new ArrayList<Map<String, String>>();
 
         addMissingError(errors, data, "schoolGradeLevelCode", "Mã khối không được để trống");

@@ -18,7 +18,7 @@ public record CreateSchoolAssessmentPolicyRequest(
         @NotNull(message = "Ngôn ngữ không được để trống")
         UUID languageId,
 
-        UUID schoolGradeLevelId,
+        UUID gradeLevelId,
         UUID schoolGradeId,
         UUID schoolClassId,
 

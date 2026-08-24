@@ -7,7 +7,7 @@ public class ExamBlueprint {
     private UUID id;
     private UUID schoolId;
     private UUID languageId;
-    private UUID schoolGradeLevelId;
+    private UUID gradeLevelId;
     private String code;
     private String name;
     private String description;
@@ -19,13 +19,13 @@ public class ExamBlueprint {
 
     public ExamBlueprint() {}
 
-    public ExamBlueprint(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeLevelId, String code, String name,
+    public ExamBlueprint(UUID id, UUID schoolId, UUID languageId, UUID gradeLevelId, String code, String name,
             String description, boolean isActive, Instant createdAt, Instant updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
         this.languageId = languageId;
-        this.schoolGradeLevelId = schoolGradeLevelId;
+        this.gradeLevelId = gradeLevelId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -36,12 +36,12 @@ public class ExamBlueprint {
         this.updatedBy = updatedBy;
     }
 
-    public ExamBlueprint(UUID schoolId, UUID languageId, UUID schoolGradeLevelId, String code, String name,
+    public ExamBlueprint(UUID schoolId, UUID languageId, UUID gradeLevelId, String code, String name,
             String description, boolean isActive, Instant createdAt, Instant updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.schoolId = schoolId;
         this.languageId = languageId;
-        this.schoolGradeLevelId = schoolGradeLevelId;
+        this.gradeLevelId = gradeLevelId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -76,12 +76,12 @@ public class ExamBlueprint {
         this.languageId = languageId;
     }
 
-    public UUID getSchoolGradeLevelId() {
-        return schoolGradeLevelId;
+    public UUID getGradeLevelId() {
+        return gradeLevelId;
     }
 
-    public void setSchoolGradeLevelId(UUID schoolGradeLevelId) {
-        this.schoolGradeLevelId = schoolGradeLevelId;
+    public void setGradeLevelId(UUID gradeLevelId) {
+        this.gradeLevelId = gradeLevelId;
     }
 
     public String getCode() {

@@ -1,5 +1,6 @@
 package com.sep.vox.application.usecase.assessmentpolicysystem;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -12,6 +13,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.CreateSystemAssessmentPolicyUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -27,6 +29,7 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
+import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
@@ -57,12 +60,14 @@ class CreateSystemAssessmentPolicyUseCaseTests {
         rubricVersionRepository = mock(RubricVersionRepository.class);
         rubricRepository = mock(RubricRepository.class);
         var languageRepository = mock(SupportedLanguageRepository.class);
+        var gradeLevelRepository = mock(GradeLevelRepository.class);
         var userRepository = mock(UserRepository.class);
         var userContextPort = mock(UserContextPort.class);
 
         useCase = new CreateSystemAssessmentPolicyUseCase(
                 assessmentPolicyRepository, frameworkVersionRepository, frameworkResultBandRepository,
-                rubricVersionRepository, rubricRepository, languageRepository, userRepository, userContextPort);
+                rubricVersionRepository, rubricRepository, languageRepository, gradeLevelRepository,
+                userRepository, userContextPort);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(ADMIN_ID);
         User currentUser = mock(User.class);
@@ -117,11 +122,19 @@ class CreateSystemAssessmentPolicyUseCaseTests {
 
         List<CreateAssessmentPolicyCommand> commands = List.of(
                 command(UUID.randomUUID()),
-                command(UUID.randomUUID()) // ngôn ngữ khác -> scope khác, nhưng cùng rubricVersionId
+                command(UUID.randomUUID()) // ngôn ngữ khác -> scope khác, cùng rubricVersionId
         );
 
-        List<UUID> ids = useCase.execute(commands);
+        org.assertj.core.api.Assertions.assertThat(useCase.execute(commands)).hasSize(2);
+    }
 
-        org.assertj.core.api.Assertions.assertThat(ids).hasSize(2);
+    @Test
+    void stillRejects_whenTwoPoliciesInBatchShareTheSameScope() {
+        when(assessmentPolicyRepository.findMaxVersionForScope(any(), any(), any(), any(), any(), any())).thenReturn(0);
+        UUID languageId = UUID.randomUUID();
+
+        assertThatThrownBy(() -> useCase.execute(List.of(command(languageId), command(languageId))))
+                .isInstanceOf(DuplicatedException.class)
+                .hasMessageContaining("trùng ngôn ngữ và Khung");
     }
 }

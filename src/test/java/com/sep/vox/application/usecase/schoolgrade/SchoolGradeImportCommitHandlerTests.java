@@ -33,16 +33,16 @@ import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.school.SchoolGrade;
-import com.sep.vox.domain.model.school.SchoolGradeLevel;
-import com.sep.vox.domain.model.school.SchoolGradeLevelStatus;
+import com.sep.vox.domain.model.gradelevel.GradeLevel;
+import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
+import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 
 class SchoolGradeImportCommitHandlerTests {
 
     private SchoolGradeRepository schoolGradeRepository;
-    private SchoolGradeLevelRepository schoolGradeLevelRepository;
+    private GradeLevelRepository gradeLevelRepository;
     private FakeJsonSerializationPort jsonSerializationPort;
     private PlatformTransactionManager txManager;
     private SchoolGradeImportCommitHandler handler;
@@ -54,13 +54,13 @@ class SchoolGradeImportCommitHandlerTests {
     @BeforeEach
     void setUp() {
         schoolGradeRepository = mock(SchoolGradeRepository.class);
-        schoolGradeLevelRepository = mock(SchoolGradeLevelRepository.class);
+        gradeLevelRepository = mock(GradeLevelRepository.class);
         jsonSerializationPort = new FakeJsonSerializationPort();
         txManager = mock(PlatformTransactionManager.class);
         when(txManager.getTransaction(any())).thenReturn(mock(TransactionStatus.class));
         handler = new SchoolGradeImportCommitHandler(
             schoolGradeRepository,
-            schoolGradeLevelRepository,
+            gradeLevelRepository,
             jsonSerializationPort,
             txManager
         );
@@ -74,8 +74,8 @@ class SchoolGradeImportCommitHandlerTests {
             row(sessionId, 2L, data("K10", "", "Thiếu mã", "2024-09-05", "2025-05-30"))
         );
 
-        when(schoolGradeLevelRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
-        when(schoolGradeRepository.findBySchoolGradeLevelIdAndCode(eq(levelId), any())).thenReturn(Optional.empty());
+        when(gradeLevelRepository.findByCodeIn(Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
+        when(schoolGradeRepository.findBySchoolIdAndGradeLevelIdAndCode(eq(schoolId), eq(levelId), any())).thenReturn(Optional.empty());
         when(schoolGradeRepository.save(any(SchoolGrade.class))).thenAnswer(inv -> inv.getArgument(0));
 
         ImportCommitResult result = handler.commit(session(sessionId), rows);
@@ -94,8 +94,8 @@ class SchoolGradeImportCommitHandlerTests {
         var sessionId = UUID.randomUUID();
         var rows = List.of(row(sessionId, 1L, data("K10", "2024", "Năm 2024", "2024-09-05", "2025-05-30")));
 
-        when(schoolGradeLevelRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
-        when(schoolGradeRepository.findBySchoolGradeLevelIdAndCode(eq(levelId), any())).thenReturn(Optional.empty());
+        when(gradeLevelRepository.findByCodeIn(Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
+        when(schoolGradeRepository.findBySchoolIdAndGradeLevelIdAndCode(eq(schoolId), eq(levelId), any())).thenReturn(Optional.empty());
         when(schoolGradeRepository.save(any(SchoolGrade.class))).thenAnswer(inv -> inv.getArgument(0));
 
         handler.commit(session(sessionId), rows);
@@ -110,14 +110,14 @@ class SchoolGradeImportCommitHandlerTests {
         var sessionId = UUID.randomUUID();
         var createdAt = Instant.now().minus(5, ChronoUnit.DAYS);
         var existing = new SchoolGrade(
-            UUID.randomUUID(), levelId, "2024", "Năm cũ", "Mô tả cũ",
+            UUID.randomUUID(), schoolId, levelId, "2024", "Năm cũ", "Mô tả cũ",
             LocalDate.of(2024, 1, 1), LocalDate.of(2024, 6, 1),
             SchoolGradeStatus.ACTIVE, createdAt, createdAt, createdBy, createdBy
         );
         var rows = List.of(row(sessionId, 1L, data("K10", "2024", "Năm mới", "2024-09-05", "2025-05-30")));
 
-        when(schoolGradeLevelRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
-        when(schoolGradeRepository.findBySchoolGradeLevelIdAndCode(levelId, "2024")).thenReturn(Optional.of(existing));
+        when(gradeLevelRepository.findByCodeIn(Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
+        when(schoolGradeRepository.findBySchoolIdAndGradeLevelIdAndCode(schoolId, levelId, "2024")).thenReturn(Optional.of(existing));
         when(schoolGradeRepository.save(any(SchoolGrade.class))).thenAnswer(inv -> inv.getArgument(0));
 
         ImportCommitResult result = handler.commit(session(sessionId), rows);
@@ -138,7 +138,7 @@ class SchoolGradeImportCommitHandlerTests {
         var sessionId = UUID.randomUUID();
         var rows = List.of(row(sessionId, 1L, data("KXX", "2024", "Năm 2024", "2024-09-05", "2025-05-30")));
 
-        when(schoolGradeLevelRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("KXX"))).thenReturn(List.of());
+        when(gradeLevelRepository.findByCodeIn(Set.of("KXX"))).thenReturn(List.of());
 
         ImportCommitResult result = handler.commit(session(sessionId), rows);
 
@@ -157,7 +157,7 @@ class SchoolGradeImportCommitHandlerTests {
             row(sessionId, 2L, data("K10", "2025", "Năm 2025", "2025-05-30", "2024-09-05"))
         );
 
-        when(schoolGradeLevelRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
+        when(gradeLevelRepository.findByCodeIn(Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
 
         ImportCommitResult result = handler.commit(session(sessionId), rows);
 
@@ -176,8 +176,8 @@ class SchoolGradeImportCommitHandlerTests {
             row(sessionId, 2L, data("K10", "2024", "Năm 2024 trùng", "2024-09-05", "2025-05-30"))
         );
 
-        when(schoolGradeLevelRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
-        when(schoolGradeRepository.findBySchoolGradeLevelIdAndCode(eq(levelId), any())).thenReturn(Optional.empty());
+        when(gradeLevelRepository.findByCodeIn(Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
+        when(schoolGradeRepository.findBySchoolIdAndGradeLevelIdAndCode(eq(schoolId), eq(levelId), any())).thenReturn(Optional.empty());
         when(schoolGradeRepository.save(any(SchoolGrade.class))).thenAnswer(inv -> inv.getArgument(0));
 
         ImportCommitResult result = handler.commit(session(sessionId), rows);
@@ -193,8 +193,8 @@ class SchoolGradeImportCommitHandlerTests {
         var sessionId = UUID.randomUUID();
         var rows = List.of(row(sessionId, 1L, data("K10", "2024", "Năm 2024", "2024-09-05", "2025-05-30")));
 
-        when(schoolGradeLevelRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
-        when(schoolGradeRepository.findBySchoolGradeLevelIdAndCode(eq(levelId), any())).thenReturn(Optional.empty());
+        when(gradeLevelRepository.findByCodeIn(Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
+        when(schoolGradeRepository.findBySchoolIdAndGradeLevelIdAndCode(eq(schoolId), eq(levelId), any())).thenReturn(Optional.empty());
         when(schoolGradeRepository.save(any(SchoolGrade.class)))
             .thenThrow(new DataIntegrityViolationException("duplicate code"));
 
@@ -206,10 +206,10 @@ class SchoolGradeImportCommitHandlerTests {
         assertThat(rows.get(0).getErrorsJson()).contains("code");
     }
 
-    private SchoolGradeLevel gradeLevel(String code) {
+    private GradeLevel gradeLevel(String code) {
         var now = Instant.now();
-        return new SchoolGradeLevel(levelId, schoolId, code, "Khối " + code, null, 1,
-            SchoolGradeLevelStatus.ACTIVE, now, now, createdBy, createdBy);
+        return new GradeLevel(levelId, code, "Khối " + code, null, 1,
+            GradeLevelStatus.ACTIVE, now, now, createdBy, createdBy);
     }
 
     private ImportRow row(UUID sessionId, long rowNumber, Map<String, String> rawData) {

@@ -72,17 +72,22 @@ public class ArchiveSystemAssessmentPolicyUseCase implements IUseCase<ArchiveSys
 
         AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
 
-        // 5. 1 Rubric Version chỉ gắn với đúng 1 Assessment Policy, vĩnh viễn -- khi Policy bị Archive,
-        // Rubric Version liên kết cũng Archive theo (không "rảnh" ra để dùng lại cho Policy khác).
-        rubricVersionRepository.findById(policy.getRubricVersionId()).ifPresent(rubricVersion -> {
-            if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
-                rubricVersion.setStatus(RubricStatus.ARCHIVED);
-                rubricVersion.setEffectiveTo(now.isBefore(rubricVersion.getEffectiveFrom()) ? rubricVersion.getEffectiveFrom() : now);
-                rubricVersion.setUpdatedAt(now);
-                rubricVersion.setUpdatedBy(currentUserId);
-                rubricVersionRepository.save(rubricVersion);
-            }
-        });
+        // 5. Archive Policy thì Archive luôn Phiên bản Rubric liên kết -- NHƯNG chỉ khi không còn
+        // Policy nào khác đang dùng nó. Xem lý do đầy đủ ở ArchiveSchoolAssessmentPolicyUseCase:
+        // mô hình 1-1 mà chú thích cũ mô tả là của V38, V44 đã cho nhiều Policy dùng chung một
+        // phiên bản.
+        if (!assessmentPolicyRepository.existsOtherActiveByRubricVersionId(policy.getRubricVersionId(), policy.getId())) {
+            rubricVersionRepository.findById(policy.getRubricVersionId()).ifPresent(rubricVersion -> {
+                if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
+                    rubricVersion.setStatus(RubricStatus.ARCHIVED);
+                    rubricVersion.setEffectiveTo(
+                            now.isBefore(rubricVersion.getEffectiveFrom()) ? rubricVersion.getEffectiveFrom() : now);
+                    rubricVersion.setUpdatedAt(now);
+                    rubricVersion.setUpdatedBy(currentUserId);
+                    rubricVersionRepository.save(rubricVersion);
+                }
+            });
+        }
 
         return saved.getId();
     }

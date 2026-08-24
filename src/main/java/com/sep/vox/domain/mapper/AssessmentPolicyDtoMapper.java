@@ -15,7 +15,7 @@ public class AssessmentPolicyDtoMapper {
         return new AssessmentPolicyDto(
                 policy.getId(),
                 policy.getSchoolId(),
-                policy.getSchoolGradeLevelId(),
+                policy.getGradeLevelId(),
                 policy.getSchoolGradeId(),
                 policy.getSchoolClassId(),
                 policy.getLanguageId(),

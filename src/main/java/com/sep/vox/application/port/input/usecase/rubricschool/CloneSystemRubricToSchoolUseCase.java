@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -11,11 +12,16 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CloneSystemRubricToSchoolCommand;
+import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.CreateSchoolAssessmentPolicyUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
@@ -24,14 +30,28 @@ import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.service.rubric.RubricCloneService;
 
 /**
- * Trường sao một bản mẫu đã ban hành của hệ thống về làm rubric riêng.
+ * Trường sao một bản mẫu đã ban hành của hệ thống về làm rubric riêng, kèm luôn các chính sách chấm
+ * mẫu gắn với phiên bản đó.
  *
  * <p>Vì sao phải sao chứ không dùng thẳng bản của hệ thống: {@code CreateSchoolAssessmentPolicyUseCase}
  * từ chối gắn chính sách của trường vào phiên bản rubric không thuộc trường đó. Nên sao chép không
  * phải tối ưu hoá cho tiện, nó là con đường duy nhất để một bản mẫu đi vào được việc chấm bài.
  *
- * <p>Bản sao ra ở trạng thái DRAFT, và luồng tiếp theo giống hệt khi trường tự soạn: gắn chính sách
- * cho phiên bản DRAFT này -> ban hành chính sách -> ban hành phiên bản rubric.
+ * <h2>Vì sao chính sách nằm chung ở đây</h2>
+ *
+ * <p>Bản sao rubric ra ở trạng thái DRAFT, mà một phiên bản DRAFT chưa ban hành được nếu chưa có
+ * chính sách nào liên kết đã PUBLISHED ({@code ChangeSchoolRubricVersionStatusUseCase}). Nghĩa là
+ * "sao rubric" luôn kéo theo "tạo chính sách" ngay sau đó -- gộp vào một bước là mô tả đúng thứ tự
+ * bắt buộc chứ không phải gói tiện ích. Đường ngược lại (sao chính sách rồi tự nhân bản rubric) đã
+ * bị gỡ vì nó tạo ra bản sao rubric thứ hai mỗi lần trường muốn thêm một chính sách.
+ *
+ * <p>Việc tạo chính sách KHÔNG viết lại ở đây mà uỷ cho {@code CreateSchoolAssessmentPolicyUseCase}:
+ * mọi luật (khung còn PUBLISHED, bậc mục tiêu thuộc đúng khung và không vượt trần của khối, đúng một
+ * phạm vi, mỗi phạm vi một chính sách, đánh số version theo phạm vi) đã nằm trọn ở đó. Nhân bản
+ * chúng sang đây là tạo ra hai bộ luật sẽ trôi lệch nhau.
+ *
+ * <p>Cả hai use case đều {@code @Transactional} nên lời gọi bên trong nhập vào cùng giao dịch: một
+ * chính sách hỏng validate sẽ cuộn lại cả bản sao rubric, không để lại rubric mồ côi.
  */
 @Service
 public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRubricToSchoolCommand, UUID> {
@@ -40,6 +60,8 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
     private final RubricCloneService rubricCloneService;
+    private final AssessmentPolicyRepository assessmentPolicyRepository;
+    private final CreateSchoolAssessmentPolicyUseCase createSchoolAssessmentPolicyUseCase;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
@@ -49,6 +71,8 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
             RubricVersionRepository rubricVersionRepository,
             RubricCriterionRepository rubricCriterionRepository,
             RubricCloneService rubricCloneService,
+            AssessmentPolicyRepository assessmentPolicyRepository,
+            CreateSchoolAssessmentPolicyUseCase createSchoolAssessmentPolicyUseCase,
             SchoolUserRepository schoolUserRepository,
             UserRepository userRepository,
             UserContextPort userContextPort) {
@@ -56,6 +80,8 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricCloneService = rubricCloneService;
+        this.assessmentPolicyRepository = assessmentPolicyRepository;
+        this.createSchoolAssessmentPolicyUseCase = createSchoolAssessmentPolicyUseCase;
         this.schoolUserRepository = schoolUserRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
@@ -138,6 +164,100 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
             targetMethod,
             currentUserId);
 
+        createPoliciesFromTemplates(command, sourceVersion.getId(), clonedVersion.getId());
+
         return clonedVersion.getId();
     }
+
+    /**
+     * Dựng chính sách của trường từ các chính sách mẫu mà trường đã chọn, trỏ vào bản sao rubric vừa
+     * tạo.
+     *
+     * <p>Chỉ kiểm hai thứ mà {@code CreateSchoolAssessmentPolicyUseCase} không thể tự biết: bản mẫu
+     * có hợp lệ và có thuộc đúng phiên bản đang sao hay không, và phạm vi có tuân luật kế thừa Khối
+     * hay không. Mọi luật còn lại để nguyên bên kia.
+     */
+    private void createPoliciesFromTemplates(
+            CloneSystemRubricToSchoolCommand command, UUID sourceVersionId, UUID clonedVersionId) {
+
+        var requested = command.policies();
+        if (requested == null || requested.isEmpty()) {
+            // Sao bộ tiêu chí "trần": hợp lệ, nhưng phiên bản này sẽ nằm DRAFT tới khi trường tự gắn
+            // một chính sách cho nó.
+            return;
+        }
+
+        // Chỉ nạp một lần rồi tra trong bộ nhớ: danh sách chính sách mẫu của một phiên bản luôn nhỏ
+        // (hiện là 1 bản mỗi phiên bản), và làm thế thì phép kiểm "thuộc đúng phiên bản đang sao"
+        // không cần thêm truy vấn nào.
+        List<AssessmentPolicy> templates = assessmentPolicyRepository
+                .findPublishedSystemWideByRubricVersionId(sourceVersionId);
+
+        var policyCommands = requested.stream()
+                .map(choice -> toCreateCommand(command, choice, templates, clonedVersionId))
+                .toList();
+
+        createSchoolAssessmentPolicyUseCase.execute(policyCommands);
+    }
+
+    private CreateAssessmentPolicyCommand toCreateCommand(
+            CloneSystemRubricToSchoolCommand command,
+            CloneSystemRubricToSchoolCommand.PolicyToClone choice,
+            List<AssessmentPolicy> templates,
+            UUID clonedVersionId) {
+
+        if (choice.sourcePolicyId() == null) {
+            throw new IllegalArgumentException("Thiếu id chính sách mẫu cần sao.");
+        }
+
+        // Tra trong danh sách của ĐÚNG phiên bản đang sao, nên tự nó đã chặn việc gửi lên id của một
+        // chính sách mẫu thuộc phiên bản khác -- bản sao sẽ mang thông số soạn cho bộ tiêu chí khác.
+        var template = templates.stream()
+                .filter(candidate -> candidate.getId().equals(choice.sourcePolicyId()))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException(
+                        "Không tìm thấy chính sách mẫu đã ban hành nào thuộc phiên bản bộ tiêu chí này."));
+        if (template.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
+            throw new IllegalStateException("Chỉ được sao từ chính sách mẫu đã được ban hành (PUBLISHED).");
+        }
+
+        var scope = resolveScope(template, choice);
+
+        return new CreateAssessmentPolicyCommand(
+                command.schoolId(),
+                template.getFrameworkVersionId(),
+                clonedVersionId,
+                template.getLanguageId(),
+                scope.gradeLevelId(),
+                scope.schoolGradeId(),
+                scope.schoolClassId(),
+                template.getTargetFrameworkBandId(),
+                template.getPassingScore(),
+                template.getStrictness(),
+                choice.effectiveFrom(),
+                choice.effectiveTo());
+    }
+
+    /**
+     * Bản mẫu đã khai Khối thì bản sao BẮT BUỘC giữ đúng khối đó -- cho trường đổi sang khối khác là
+     * biến bản mẫu "Khối 10" thành chính sách của Khối 12 mà vẫn mang nguyên thông số soạn cho Khối
+     * 10. Bản mẫu không khai khối thì trường tự chọn, và phép kiểm "đúng một phạm vi" nằm ở
+     * {@code CreateSchoolAssessmentPolicyUseCase} nên không lặp lại ở đây.
+     */
+    private TargetScope resolveScope(
+            AssessmentPolicy template, CloneSystemRubricToSchoolCommand.PolicyToClone choice) {
+
+        if (template.getGradeLevelId() != null) {
+            if (choice.gradeLevelId() != null || choice.schoolGradeId() != null || choice.schoolClassId() != null) {
+                throw new IllegalArgumentException(
+                        "Chính sách mẫu này đã gắn với một Khối cụ thể nên bản sao giữ nguyên khối đó;"
+                                + " không nhận phạm vi khác.");
+            }
+            return new TargetScope(template.getGradeLevelId(), null, null);
+        }
+        return new TargetScope(choice.gradeLevelId(), choice.schoolGradeId(), choice.schoolClassId());
+    }
+
+    /** Phạm vi bản sao sẽ áp dụng, sau khi gộp phạm vi của bản mẫu với lựa chọn của trường. */
+    private record TargetScope(UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
 }

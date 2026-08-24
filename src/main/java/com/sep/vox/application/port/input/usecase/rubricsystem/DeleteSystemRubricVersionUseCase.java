@@ -20,6 +20,7 @@ import java.util.UUID;
 @Service
 public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRubricVersionCommand, Void> {
 
+    private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricRepository rubricRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
@@ -27,7 +28,8 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
 
-    public DeleteSystemRubricVersionUseCase(RubricVersionRepository rubricVersionRepository, RubricRepository rubricRepository, RubricCriterionRepository rubricCriterionRepository, RubricResultBandRepository rubricResultBandRepository, UserRepository userRepository, UserContextPort userContextPort) {
+    public DeleteSystemRubricVersionUseCase(AssessmentPolicyRepository assessmentPolicyRepository, RubricVersionRepository rubricVersionRepository, RubricRepository rubricRepository, RubricCriterionRepository rubricCriterionRepository, RubricResultBandRepository rubricResultBandRepository, UserRepository userRepository, UserContextPort userContextPort) {
+        this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
@@ -61,6 +63,17 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
 
         rubricCriterionRepository.deleteByRubricVersionId(version.getId());
         rubricResultBandRepository.deleteByRubricVersionId(version.getId());
+        // 5. Không xóa khi còn Assessment Policy trỏ vào.
+        //
+        // Từ V44 một phiên bản rubric dùng chung được cho nhiều chính sách, nên xóa nhầm không còn
+        // chỉ làm treo một chính sách mà treo cả cụm. Bản thân việc thiếu chốt này đã sai từ trước
+        // (không có khóa ngoại nào canh), chỉ là hậu quả nay lớn hơn nên phải chặn hẳn.
+        if (assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())
+                || assessmentPolicyRepository.existsNotPublishedByRubricVersionId(version.getId())) {
+            throw new IllegalStateException(
+                    "Không thể xóa phiên bản này vì đang có Assessment Policy sử dụng. Hãy xóa hoặc lưu trữ các chính sách đó trước.");
+        }
+
         rubricVersionRepository.deleteById(version.getId());
         return null;
     }

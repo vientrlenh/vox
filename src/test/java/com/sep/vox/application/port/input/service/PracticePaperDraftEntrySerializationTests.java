@@ -72,7 +72,7 @@ class PracticePaperDraftEntrySerializationTests {
 
         for (var draft : List.of(
                 PracticePaperDraft.preparing(draftId),
-                PracticePaperDraft.failed(draftId, "Bạn đã dùng hết hạn mức luyện tập hôm nay."))) {
+                PracticePaperDraft.failed(draftId, "Bạn đã dùng hết hạn mức luyện tập hôm nay.", "QUOTA_EXCEEDED"))) {
             var original = new PracticePaperDraftService.Entry(studentId, draft);
 
             var restored = jsonMapper.readValue(

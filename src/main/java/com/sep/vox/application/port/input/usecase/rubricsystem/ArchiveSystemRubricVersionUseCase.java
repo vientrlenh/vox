@@ -12,6 +12,7 @@ import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -28,16 +29,19 @@ public class ArchiveSystemRubricVersionUseCase implements IUseCase<ArchiveSystem
     private final RubricRepository rubricRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
+    private final AssessmentPolicyRepository assessmentPolicyRepository;
 
     public ArchiveSystemRubricVersionUseCase(
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            AssessmentPolicyRepository assessmentPolicyRepository) {
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
+        this.assessmentPolicyRepository = assessmentPolicyRepository;
     }
 
     @Override
@@ -64,6 +68,15 @@ public class ArchiveSystemRubricVersionUseCase implements IUseCase<ArchiveSystem
         // 3. Chỉ được lưu trữ (ARCHIVE) khi đang PUBLISHED
         if (version.getStatus() != RubricStatus.PUBLISHED) {
             throw new IllegalStateException("Chỉ có thể lưu trữ (ARCHIVE) phiên bản đang ở trạng thái PUBLISHED.");
+        }
+
+        // 3b. Chặn archive trực tiếp nếu còn Assessment Policy đang DRAFT/PUBLISHED dùng version này --
+        // archive vô điều kiện sẽ để lại Policy còn hiệu lực trỏ vào một version đã ARCHIVED. Đối xứng
+        // với existsOtherActiveByRubricVersionId ở chiều archive Policy (ArchiveSystemAssessmentPolicyUseCase).
+        if (assessmentPolicyRepository.existsActiveByRubricVersionId(version.getId())) {
+            throw new IllegalStateException(
+                    "Không thể lưu trữ phiên bản này vì còn Assessment Policy đang DRAFT/PUBLISHED sử dụng. "
+                            + "Hãy lưu trữ các Assessment Policy đó trước.");
         }
 
         // 4. Lưu trạng thái mới

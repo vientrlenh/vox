@@ -67,18 +67,21 @@ public final class PracticePlanningResponses {
             UUID draftId,
             String status,
             String reason,
-            PracticePaper paper) {
+            PracticePaper paper,
+            /** Chỉ có khi status=FAILED. Mã lỗi máy đọc được (vd QUOTA_EXCEEDED) để client phân
+             * biệt lỗi nghiệp vụ (không đáng cho thử lại) với lỗi tạm thời (mất mạng, AI sinh lỗi). */
+            String errorCode) {
 
         public static PracticePaperDraft preparing(UUID draftId) {
-            return new PracticePaperDraft(draftId, "PREPARING", null, null);
+            return new PracticePaperDraft(draftId, "PREPARING", null, null, null);
         }
 
         public static PracticePaperDraft ready(UUID draftId, PracticePaper paper) {
-            return new PracticePaperDraft(draftId, "READY", null, paper);
+            return new PracticePaperDraft(draftId, "READY", null, paper, null);
         }
 
-        public static PracticePaperDraft failed(UUID draftId, String reason) {
-            return new PracticePaperDraft(draftId, "FAILED", reason, null);
+        public static PracticePaperDraft failed(UUID draftId, String reason, String errorCode) {
+            return new PracticePaperDraft(draftId, "FAILED", reason, null, errorCode);
         }
     }
 }

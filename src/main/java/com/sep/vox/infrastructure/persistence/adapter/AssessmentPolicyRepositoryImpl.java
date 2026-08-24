@@ -125,6 +125,11 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     }
 
     @Override
+    public boolean existsActiveByRubricVersionId(UUID rubricVersionId) {
+        return springDataAssessmentPolicyRepository.existsActiveByRubricVersionId(rubricVersionId);
+    }
+
+    @Override
     public List<AssessmentPolicy> findDraftSystemWideByRubricVersionId(UUID rubricVersionId) {
         return springDataAssessmentPolicyRepository.findBySchoolIdIsNullAndRubricVersionIdAndStatus(rubricVersionId, "DRAFT")
                 .stream().map(AssessmentPolicyMapper::toDomain).toList();

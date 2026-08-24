@@ -2,7 +2,9 @@ package com.sep.vox.infrastructure.initializer;
 
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -13,6 +15,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.model.gradelevel.GradeLevelBandScope;
@@ -29,23 +32,24 @@ import com.sep.vox.domain.repository.GradeLevelRepository;
  * thấy dòng cấu hình nào thì nó cho qua mọi bậc. Nghĩa là trần chỉ thực sự có hiệu lực kể từ khi
  * initializer này chạy; trước đó trường vẫn đặt được Bậc 6 cho Khối 10 như cũ.
  *
- * <h2>Vì sao cả ba khối cùng một cấu hình</h2>
+ * <h2>Vì sao mặc định giống nhau nhưng trần lại khác nhau giữa các khối</h2>
  *
  * <p>Chương trình GDPT 2018 môn Tiếng Anh (Thông tư 32/2018/TT-BGDĐT) chốt chuẩn đầu ra theo CẤP
  * HỌC chứ không theo từng lớp: hết tiểu học đạt Bậc 1, hết THCS đạt Bậc 2, hết THPT đạt Bậc 3. Cả
- * Khối 10, 11 lẫn 12 vì thế cùng nhắm Bậc 3.
+ * Khối 10, 11 lẫn 12 vì thế cùng nhắm Bậc 3 làm MẶC ĐỊNH -- không có văn bản nào phân biệt ba khối
+ * này khác nhau (xem thêm ghi chú cũ về 3.1/3.2/3.3 không tách được vì khung chỉ có 6 bậc nguyên).
  *
- * <p>Chỗ ba khối thực sự khác nhau là ở TRONG Bậc 3: sách giáo khoa viết theo chương trình này ghi
- * hết lớp 10 đạt trình độ 3.1, hết lớp 11 đạt 3.2, hết lớp 12 hoàn thành Bậc 3. Khung năng lực
- * trong hệ chỉ có 6 bậc nguyên nên 3.1/3.2/3.3 đều quy về {@code BAC_3} -- không có cách nào phân
- * biệt ba khối bằng bảng này. Muốn phân biệt thật thì phải thêm bậc phụ vào chính khung năng lực
- * (số bậc không bị đóng cứng ở đâu, xem {@link FrameworkInitializer}), và khi đó bảng này biểu diễn
- * được ngay vì nó lưu ID bậc chứ không lưu thứ tự.
+ * <p>Nhưng TRẦN (bậc cao nhất một Lớp cụ thể được phép chọn, vd. lớp chuyên Anh) chỉ nới lên Bậc 4
+ * cho Khối 12 -- Khối 10 và 11 giữ trần bằng đúng mặc định, tức KHÔNG có khoảng nới nào cả dù phạm
+ * vi hẹp tới đâu. Đây là quyết định nghiệp vụ của dự án (không có Thông tư nào quy định phân biệt
+ * trần theo khối như vậy), xuất phát từ việc lớp chuyên thường chỉ thực sự vượt chuẩn Bậc 3 rõ rệt
+ * vào năm cuối cấp.
  *
- * <p>Cấu hình đồng nhất KHÔNG có nghĩa là bảng thừa: phần làm việc thật là TRẦN CỨNG, và nó thôi
- * đồng nhất ngay khi catalog khối có thêm cấp THCS (Khối 6-9 nhắm Bậc 2, trần Bậc 3).
+ * <p>Cấu hình khác nhau giữa các khối KHÔNG có nghĩa map trần dưới đây là thừa việc: phần làm việc
+ * thật là TRẦN CỨNG theo từng khối, và nó dễ mở rộng thêm khi catalog khối có thêm cấp THCS
+ * (Khối 6-9 nhắm Bậc 2, trần cũng theo từng khối tương tự).
  *
- * <h2>Vì sao trần là Bậc 4 chứ không phải Bậc 3</h2>
+ * <h2>Vì sao trần của Khối 12 là Bậc 4 chứ không phải Bậc 3</h2>
  *
  * <p>Siết đúng Bậc 3 sẽ chặn mọi lớp chuyên Anh, vốn thường lấy B2 làm chuẩn thực tế. Lưu ý là
  * chuẩn đó KHÔNG nằm trong quy chế trường chuyên (Thông tư 05/2023/TT-BGDĐT không quy định chuẩn
@@ -69,6 +73,15 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
     // không tìm thấy bậc và bỏ qua toàn bộ -- có log cảnh báo, không âm thầm.
     private static final String BAND_CODE_DEFAULT_TARGET = "BAC_3";
     private static final String BAND_CODE_HARD_MAX = "BAC_4";
+
+    // Trần theo TỪNG khối, không còn dùng chung 1 hằng số -- chỉ Khối 12 được nới lên
+    // BAND_CODE_HARD_MAX (Bậc 4) cho lớp chuyên; Khối 10/11 trần bằng đúng BAND_CODE_DEFAULT_TARGET
+    // (Bậc 3), tức không có khoảng nới nào dù phạm vi hẹp tới đâu. Xem Javadoc lớp.
+    private static final Map<String, String> HARD_MAX_BAND_CODE_BY_GRADE_LEVEL = Map.of(
+        GradeLevelInitializer.GRADE_10, BAND_CODE_DEFAULT_TARGET,
+        GradeLevelInitializer.GRADE_11, BAND_CODE_DEFAULT_TARGET,
+        GradeLevelInitializer.GRADE_12, BAND_CODE_HARD_MAX
+    );
 
     private static final List<String> GRADE_LEVEL_CODES = List.of(
         GradeLevelInitializer.GRADE_10,
@@ -119,21 +132,35 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
 
         var defaultTargetBand = frameworkResultBandRepository
             .findByVersionIdAndCode(frameworkVersion.getId(), BAND_CODE_DEFAULT_TARGET).orElse(null);
-        var hardMaxBand = frameworkResultBandRepository
-            .findByVersionIdAndCode(frameworkVersion.getId(), BAND_CODE_HARD_MAX).orElse(null);
-        if (defaultTargetBand == null || hardMaxBand == null) {
-            LOGGER.warn("Phiên bản khung {} thiếu bậc {} hoặc {}. Bỏ qua khởi tạo trần bậc theo khối",
-                frameworkVersion.getCode(), BAND_CODE_DEFAULT_TARGET, BAND_CODE_HARD_MAX);
+        if (defaultTargetBand == null) {
+            LOGGER.warn("Phiên bản khung {} thiếu bậc {}. Bỏ qua khởi tạo trần bậc theo khối",
+                frameworkVersion.getCode(), BAND_CODE_DEFAULT_TARGET);
             return;
         }
 
-        // Bất biến mà DB không diễn đạt được (cần join sang framework_result_bands) và
-        // GradeLevelBandScopeGuardService canh lúc chạy. Kiểm luôn ở đây để sai hằng số phía trên
-        // làm hỏng lúc khởi động, thay vì sinh ra cấu hình trần ngược đời rồi mới lộ ra khi
-        // trường tạo chính sách.
-        if (defaultTargetBand.getOrder() > hardMaxBand.getOrder()) {
-            throw new IllegalStateException("Bậc mặc định " + BAND_CODE_DEFAULT_TARGET
-                + " đang cao hơn bậc trần " + BAND_CODE_HARD_MAX + " trong khung " + FRAMEWORK_CODE + ".");
+        // Trần khác nhau theo khối (xem HARD_MAX_BAND_CODE_BY_GRADE_LEVEL) nên fetch trước tất cả
+        // band code trần khác nhau đang dùng, cache lại để không query lặp cho các khối cùng trần.
+        Map<String, FrameworkResultBand> hardMaxBandByCode = new HashMap<>();
+        for (var hardMaxBandCode : HARD_MAX_BAND_CODE_BY_GRADE_LEVEL.values()) {
+            if (hardMaxBandByCode.containsKey(hardMaxBandCode)) {
+                continue;
+            }
+            var hardMaxBand = frameworkResultBandRepository
+                .findByVersionIdAndCode(frameworkVersion.getId(), hardMaxBandCode).orElse(null);
+            if (hardMaxBand == null) {
+                LOGGER.warn("Phiên bản khung {} thiếu bậc trần {}. Bỏ qua khởi tạo trần bậc theo khối",
+                    frameworkVersion.getCode(), hardMaxBandCode);
+                return;
+            }
+            // Bất biến mà DB không diễn đạt được (cần join sang framework_result_bands) và
+            // GradeLevelBandScopeGuardService canh lúc chạy. Kiểm luôn ở đây để sai hằng số phía
+            // trên làm hỏng lúc khởi động, thay vì sinh ra cấu hình trần ngược đời rồi mới lộ ra
+            // khi trường tạo chính sách.
+            if (defaultTargetBand.getOrder() > hardMaxBand.getOrder()) {
+                throw new IllegalStateException("Bậc mặc định " + BAND_CODE_DEFAULT_TARGET
+                    + " đang cao hơn bậc trần " + hardMaxBandCode + " trong khung " + FRAMEWORK_CODE + ".");
+            }
+            hardMaxBandByCode.put(hardMaxBandCode, hardMaxBand);
         }
 
         var now = Instant.now();
@@ -149,6 +176,8 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
                     .isPresent()) {
                 continue;
             }
+
+            var hardMaxBand = hardMaxBandByCode.get(HARD_MAX_BAND_CODE_BY_GRADE_LEVEL.get(gradeLevelCode));
 
             gradeLevelBandScopeRepository.save(new GradeLevelBandScope(
                 gradeLevel.getId(),
@@ -167,8 +196,8 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
             LOGGER.info("Trần bậc theo khối trên phiên bản khung {} đã đầy đủ. Bỏ qua", frameworkVersion.getCode());
             return;
         }
-        LOGGER.info("Đã khởi tạo {} trần bậc theo khối trên phiên bản khung {} (mặc định {}, trần {})",
-            created, frameworkVersion.getCode(), BAND_CODE_DEFAULT_TARGET, BAND_CODE_HARD_MAX);
+        LOGGER.info("Đã khởi tạo {} trần bậc theo khối trên phiên bản khung {} (mặc định {}, trần theo khối: {})",
+            created, frameworkVersion.getCode(), BAND_CODE_DEFAULT_TARGET, HARD_MAX_BAND_CODE_BY_GRADE_LEVEL);
     }
 
     private FrameworkVersion latestPublishedVersion(UUID frameworkId) {

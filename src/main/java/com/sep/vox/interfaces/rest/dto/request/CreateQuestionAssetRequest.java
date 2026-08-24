@@ -28,7 +28,9 @@ public record CreateQuestionAssetRequest(
 
     String transcript,
 
-    @Size(max = 2048, message = "Mô tả tài nguyên không được vượt quá 2048 ký tự")
+    // Không giới hạn độ dài, cùng lý do với transcript ngay trên: description là THỨ DUY NHẤT AI
+    // biết về tài nguyên (nó không nhìn được ảnh, không nghe được tệp), nên cắt ngắn là cắt đúng
+    // phần thông tin dùng để hỏi và chấm. Cột đã là TEXT từ V42.
     String description,
 
     @NotNull(message = "Thứ tự tài nguyên không được để trống")

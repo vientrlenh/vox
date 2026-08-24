@@ -8,47 +8,56 @@ public class SubscriptionPlan {
     private UUID id;
     private String name;
     private String tagline;
-    private BigDecimal pricePerYear;
-    private Integer validityDays;
+    private BigDecimal priceVnd;
+    private SubscriptionPlanPeriod periodType;
+    private Integer periodCount;
     private Integer maxTimePerAttemptMin;
-    private PlanStatus status;
+    private SubscriptionPlanStatus status;
     private Integer version;
     private Instant createdAt;
+    private Instant updatedAt;
     private UUID createdBy;
+    private UUID updatedBy;
     private UUID replacedByPlanId;
     private BigDecimal serviceFeeRatio;
 
     public SubscriptionPlan() {}
 
-    public SubscriptionPlan(UUID id, String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
-            Integer maxTimePerAttemptMin, PlanStatus status, Integer version,
-            Instant createdAt, UUID createdBy, UUID replacedByPlanId, BigDecimal serviceFeeRatio) {
+    public SubscriptionPlan(UUID id, String name, String tagline, BigDecimal priceVnd, SubscriptionPlanPeriod periodType, Integer periodCount,
+            Integer maxTimePerAttemptMin, SubscriptionPlanStatus status, Integer version,
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy, UUID replacedByPlanId, BigDecimal serviceFeeRatio) {
         this.id = id;
         this.name = name;
         this.tagline = tagline;
-        this.pricePerYear = pricePerYear;
-        this.validityDays = validityDays;
+        this.priceVnd = priceVnd;
+        this.periodType = periodType;
+        this.periodCount = periodCount;
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
         this.status = status;
         this.version = version;
-        this.createdAt = createdAt;
+        this.createdAt = createdAt; 
+        this.updatedAt = updatedAt;
         this.createdBy = createdBy;
+        this.updatedBy = updatedBy;
         this.replacedByPlanId = replacedByPlanId;
         this.serviceFeeRatio = serviceFeeRatio;
     }
 
-    public SubscriptionPlan(String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
-            Integer maxTimePerAttemptMin, PlanStatus status, Integer version,
-            Instant createdAt, UUID createdBy, BigDecimal serviceFeeRatio) {
+    public SubscriptionPlan(String name, String tagline, BigDecimal priceVnd, SubscriptionPlanPeriod periodType, Integer periodCount,
+            Integer maxTimePerAttemptMin, SubscriptionPlanStatus status, Integer version,
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy, BigDecimal serviceFeeRatio) {
         this.name = name;
         this.tagline = tagline;
-        this.pricePerYear = pricePerYear;
-        this.validityDays = validityDays;
+        this.priceVnd = priceVnd;
+        this.periodType = periodType;
+        this.periodCount = periodCount;
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
         this.status = status;
         this.version = version;
         this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
         this.createdBy = createdBy;
+        this.updatedBy = updatedBy;
         this.serviceFeeRatio = serviceFeeRatio;
     }
 
@@ -76,20 +85,28 @@ public class SubscriptionPlan {
         this.tagline = tagline;
     }
 
-    public BigDecimal getPricePerYear() {
-        return pricePerYear;
+    public BigDecimal getPriceVnd() {
+        return priceVnd;
     }
 
-    public void setPricePerYear(BigDecimal pricePerYear) {
-        this.pricePerYear = pricePerYear;
+    public void setPriceVnd(BigDecimal priceVnd) {
+        this.priceVnd = priceVnd;
     }
 
-    public Integer getValidityDays() {
-        return validityDays;
+    public SubscriptionPlanPeriod getPeriodType() {
+        return periodType;
     }
 
-    public void setValidityDays(Integer validityDays) {
-        this.validityDays = validityDays;
+    public void setPeriodType(SubscriptionPlanPeriod periodType) {
+        this.periodType = periodType;
+    }
+
+    public Integer getPeriodCount() {
+        return periodCount;
+    }
+
+    public void setPeriodCount(Integer periodCount) {
+        this.periodCount = periodCount;
     }
 
     public Integer getMaxTimePerAttemptMin() {
@@ -100,11 +117,11 @@ public class SubscriptionPlan {
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
     }
 
-    public PlanStatus getStatus() {
+    public SubscriptionPlanStatus getStatus() {
         return status;
     }
 
-    public void setStatus(PlanStatus status) {
+    public void setStatus(SubscriptionPlanStatus status) {
         this.status = status;
     }
 
@@ -124,12 +141,28 @@ public class SubscriptionPlan {
         this.createdAt = createdAt;
     }
 
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     public UUID getCreatedBy() {
         return createdBy;
     }
 
     public void setCreatedBy(UUID createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public UUID getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(UUID updatedBy) {
+        this.updatedBy = updatedBy;
     }
 
     public UUID getReplacedByPlanId() {
@@ -147,4 +180,5 @@ public class SubscriptionPlan {
     public void setServiceFeeRatio(BigDecimal serviceFeeRatio) {
         this.serviceFeeRatio = serviceFeeRatio;
     }
+
 }

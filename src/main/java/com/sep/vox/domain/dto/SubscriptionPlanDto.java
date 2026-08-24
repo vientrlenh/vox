@@ -1,23 +1,23 @@
 package com.sep.vox.domain.dto;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 
 public record SubscriptionPlanDto(
     UUID id,
     String name,
     String tagline,
-    BigDecimal pricePerYear,
-    Integer validityDays,
+    BigDecimal priceVnd, 
+    String periodType, 
+    Integer periodCount,
     Integer maxTimePerAttemptMin,
-    boolean popular,
     String status,
     Integer version,
-    String createdAt,
-    UUID createdBy,
+    String createdAt, 
+    String updatedAt, 
+    UUID createdBy, 
+    UUID updatedBy, 
     UUID replacedByPlanId,
-    BigDecimal serviceFeeRatio,
-    List<PlanQuotaDto> quotas
+    BigDecimal serviceFeeRatio
 ) {
 }

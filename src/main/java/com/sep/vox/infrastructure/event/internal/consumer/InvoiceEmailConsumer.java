@@ -1,15 +1,11 @@
 package com.sep.vox.infrastructure.event.internal.consumer;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
@@ -29,13 +25,10 @@ import com.sep.vox.application.port.output.MailSendingPort;
 import com.sep.vox.application.port.output.MailTemplatePort;
 import com.sep.vox.domain.model.outbox.ProcessedEvent;
 import com.sep.vox.domain.model.subscription.InvoiceSourceType;
-import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.repository.ProcessedEventRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
-import com.sep.vox.domain.repository.TokenPurchaseItemRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 import tools.jackson.databind.json.JsonMapper;
@@ -54,12 +47,6 @@ public class InvoiceEmailConsumer {
 
     private static final String CONSUMER_GROUP = "invoice-email";
 
-    private static final Map<QuotaType, String> QUOTA_LABELS = Map.of(
-        QuotaType.GRADING, "Bài thi cần chấm",
-        QuotaType.CLASS_TEST, "Bài kiểm tra trên lớp",
-        QuotaType.PRACTICE, "Lượt ôn luyện cá nhân"
-    );
-
     // DateTimeFormatter an toàn dùng chung giữa các thread; DecimalFormat thì không, nên nó
     // được tạo mới trong mỗi lần gọi consume() thay vì giữ làm field static.
     private static final DateTimeFormatter PAID_AT_FORMATTER =
@@ -69,8 +56,6 @@ public class InvoiceEmailConsumer {
     private final SchoolRepository schoolRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
-    private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private final UserRepository userRepository;
     private final MailSendingPort mailSendingPort;
     private final MailTemplatePort mailTemplatePort;
@@ -81,8 +66,6 @@ public class InvoiceEmailConsumer {
             SchoolRepository schoolRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionQuotaRepository subscriptionQuotaRepository,
-            TokenPurchaseItemRepository tokenPurchaseItemRepository,
             UserRepository userRepository,
             MailSendingPort mailSendingPort,
             MailTemplatePort mailTemplatePort,
@@ -91,8 +74,6 @@ public class InvoiceEmailConsumer {
         this.schoolRepository = schoolRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.subscriptionQuotaRepository = subscriptionQuotaRepository;
-        this.tokenPurchaseItemRepository = tokenPurchaseItemRepository;
         this.userRepository = userRepository;
         this.mailSendingPort = mailSendingPort;
         this.mailTemplatePort = mailTemplatePort;
@@ -176,19 +157,9 @@ public class InvoiceEmailConsumer {
         var plan = subscriptionPlanRepository.findById(subscription.getPlanId())
             .orElseThrow(() -> new IllegalStateException("Không tìm thấy gói: eventId=" + eventId));
 
-        String itemTitle;
-        String itemsHtml;
-        if (payload.sourceType() == InvoiceSourceType.TOKEN_PURCHASE) {
-            itemTitle = "Mua thêm hạn mức";
-            var items = tokenPurchaseItemRepository.findAllByPurchaseId(payload.sourceId());
-            itemsHtml = buildItemsHtml(items.stream()
-                .collect(Collectors.toMap(item -> item.getQuotaType(), item -> item.getQuantity())));
-        } else {
-            itemTitle = "Gói " + plan.getName();
-            var quotas = subscriptionQuotaRepository.findAllBySubscriptionId(subscription.getId());
-            itemsHtml = buildItemsHtml(quotas.stream()
-                .collect(Collectors.toMap(quota -> quota.getQuotaType(), quota -> quota.getTotalAllocated())));
-        }
+        String itemTitle = payload.sourceType() == InvoiceSourceType.TOKEN_PURCHASE
+            ? "Mua thêm hạn mức"
+            : "Gói " + plan.getName();
 
         var amountFormatter = new DecimalFormat("#,###", DecimalFormatSymbols.getInstance(Locale.of("vi", "VN")));
         var amountLabel = amountFormatter.format(payload.amount()) + " ₫";
@@ -197,26 +168,8 @@ public class InvoiceEmailConsumer {
             ? "-" : VALID_UNTIL_FORMATTER.format(subscription.getEndDate());
 
         return mailTemplatePort.renderInvoicePaidEmail(
-            school.getName(), payload.invoiceNumber(), itemTitle, itemsHtml,
+            school.getName(), payload.invoiceNumber(), itemTitle,
             amountLabel, paidAtLabel, validUntilLabel);
-    }
-
-    // Quota tính bằng USD chi phí AI (xem V22__quota_unit_to_usd.sql), hiển thị 2 chữ số thập phân.
-    private String buildItemsHtml(Map<QuotaType, BigDecimal> quantityByType) {
-        var rows = new StringBuilder();
-        for (var quotaType : QuotaType.values()) {
-            var quantity = quantityByType.get(quotaType);
-            if (quantity == null) {
-                continue;
-            }
-            var usdLabel = quantity.setScale(2, RoundingMode.HALF_UP).toPlainString();
-            rows.append("<tr><td style=\"padding:6px 20px; color:#475569; font-size:14px;\">")
-                .append(QUOTA_LABELS.get(quotaType))
-                .append("</td><td style=\"padding:6px 20px; text-align:right; font-weight:700; font-size:14px; color:#1e293b;\">")
-                .append(usdLabel)
-                .append(" USD</td></tr>");
-        }
-        return rows.toString();
     }
 
     private InvoicePaidPayloadV1 parse(String value, UUID eventId) {

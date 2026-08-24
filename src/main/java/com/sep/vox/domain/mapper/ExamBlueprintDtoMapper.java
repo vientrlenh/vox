@@ -17,7 +17,7 @@ public final class ExamBlueprintDtoMapper {
             domain.getId(),
             domain.getSchoolId(),
             domain.getLanguageId(),
-            domain.getSchoolGradeLevelId(),
+            domain.getGradeLevelId(),
             domain.getCode(),
             domain.getName(),
             domain.getDescription(),

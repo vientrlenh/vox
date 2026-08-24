@@ -23,7 +23,6 @@ import com.sep.vox.application.port.input.command.PreviewSchoolClassImportFromFi
 import com.sep.vox.application.port.input.command.PreviewSchoolClassUserImportFromFileCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolDirectoryImportFromFileCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolGradeImportFromFileCommand;
-import com.sep.vox.application.port.input.command.PreviewSchoolGradeLevelImportFromFileCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolUserImportFromFileCommand;
 import com.sep.vox.application.port.input.command.VerifySchoolDirectoryCommand;
 import com.sep.vox.application.port.input.usecase.school.CreateSchoolUseCase;
@@ -47,10 +46,9 @@ import com.sep.vox.application.port.input.usecase.schoolgrade.AcceptSchoolGradeI
 import com.sep.vox.application.port.input.usecase.schoolgrade.CreateSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.DeleteSchoolGradeUseCase;
 import com.sep.vox.application.port.input.usecase.schoolgrade.PreviewSchoolGradeImportFromFileUseCase;
-import com.sep.vox.application.port.input.usecase.schoolgradelevel.AcceptSchoolGradeLevelImportUseCase;
-import com.sep.vox.application.port.input.usecase.schoolgradelevel.CreateSchoolGradeLevelUseCase;
-import com.sep.vox.application.port.input.usecase.schoolgradelevel.DeleteSchoolGradeLevelUseCase;
-import com.sep.vox.application.port.input.usecase.schoolgradelevel.PreviewSchoolGradeLevelImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.gradelevel.CreateGradeLevelUseCase;
+import com.sep.vox.application.port.input.usecase.gradelevel.DeleteGradeLevelUseCase;
+import com.sep.vox.application.port.input.command.DeleteGradeLevelCommand;
 import com.sep.vox.application.port.input.usecase.schoolroom.AddSchoolRoomUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.DeleteSchoolRoomUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.PreviewSchoolRoomImportFromFileUseCase;
@@ -73,20 +71,18 @@ import com.sep.vox.application.response.input.schoolclassuser.UpdateSchoolClassU
 import com.sep.vox.application.response.input.schooldirectory.CreateSchoolDirectoryResponse;
 import com.sep.vox.application.response.input.schooldirectory.PreviewSchoolDirectoryImportResponse;
 import com.sep.vox.application.response.input.schoolgrade.PreviewSchoolGradeImportResponse;
-import com.sep.vox.application.response.input.schoolgradelevel.PreviewSchoolGradeLevelImportResponse;
 import com.sep.vox.application.response.input.schooluser.CreateSchoolUserResponse;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassUserImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolDirectoryImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolGradeImportRequest;
-import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolGradeLevelImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolUserImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AddSchoolRoomRequest;
 import com.sep.vox.interfaces.rest.dto.request.BulkCreateSchoolClassUsersRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassUserRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolDirectoryRequest;
-import com.sep.vox.interfaces.rest.dto.request.CreateSchoolGradeLevelRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateGradeLevelRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolGradeRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolUserRequest;
@@ -96,7 +92,6 @@ import com.sep.vox.interfaces.rest.mapper.AcceptSchoolClassImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AcceptSchoolClassUserImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AcceptSchoolDirectoryImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AcceptSchoolGradeImportCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.AcceptSchoolGradeLevelImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AcceptSchoolUserImportCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.AddSchoolRoomCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.BulkCreateSchoolClassUsersCommandMapper;
@@ -105,12 +100,11 @@ import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassUserCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolDirectoryCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolGradeCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateSchoolGradeLevelCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.CreateGradeLevelCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateSchoolUserCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.DeleteSchoolClassUserCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.DeleteSchoolCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.DeleteSchoolGradeCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.DeleteSchoolGradeLevelCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.DeleteSchoolRoomCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.DeleteSchoolUserCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateSchoolClassUserStatusCommandMapper;
@@ -157,10 +151,8 @@ public class SchoolController {
     private final AcceptSchoolGradeImportUseCase acceptSchoolGradeImportUseCase;
 
 
-    private final CreateSchoolGradeLevelUseCase createSchoolGradeLevelUseCase;
-    private final DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase;
-    private final PreviewSchoolGradeLevelImportFromFileUseCase previewSchoolGradeLevelImportFromFileUseCase;
-    private final AcceptSchoolGradeLevelImportUseCase acceptSchoolGradeLevelImportUseCase;
+    private final CreateGradeLevelUseCase createGradeLevelUseCase;
+    private final DeleteGradeLevelUseCase deleteGradeLevelUseCase;
 
 
     private final PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase;
@@ -190,10 +182,8 @@ public class SchoolController {
                         DeleteSchoolGradeUseCase deleteSchoolGradeUseCase,
                         PreviewSchoolGradeImportFromFileUseCase previewSchoolGradeImportFromFileUseCase,
                         AcceptSchoolGradeImportUseCase acceptSchoolGradeImportUseCase,
-                        CreateSchoolGradeLevelUseCase createSchoolGradeLevelUseCase,
-                        DeleteSchoolGradeLevelUseCase deleteSchoolGradeLevelUseCase,
-                        PreviewSchoolGradeLevelImportFromFileUseCase previewSchoolGradeLevelImportFromFileUseCase,
-                        AcceptSchoolGradeLevelImportUseCase acceptSchoolGradeLevelImportUseCase,
+                        CreateGradeLevelUseCase createGradeLevelUseCase,
+                        DeleteGradeLevelUseCase deleteGradeLevelUseCase,
                         PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase,
                         AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase, 
                         CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase,
@@ -224,10 +214,8 @@ public class SchoolController {
         this.deleteSchoolGradeUseCase = deleteSchoolGradeUseCase;
         this.previewSchoolGradeImportFromFileUseCase = previewSchoolGradeImportFromFileUseCase;
         this.acceptSchoolGradeImportUseCase = acceptSchoolGradeImportUseCase;
-        this.createSchoolGradeLevelUseCase = createSchoolGradeLevelUseCase;
-        this.deleteSchoolGradeLevelUseCase = deleteSchoolGradeLevelUseCase;
-        this.previewSchoolGradeLevelImportFromFileUseCase = previewSchoolGradeLevelImportFromFileUseCase;
-        this.acceptSchoolGradeLevelImportUseCase = acceptSchoolGradeLevelImportUseCase;
+        this.createGradeLevelUseCase = createGradeLevelUseCase;
+        this.deleteGradeLevelUseCase = deleteGradeLevelUseCase;
         this.previewSchoolDirectoryImportFromFileUseCase = previewSchoolDirectoryImportFromFileUseCase;
         this.acceptSchoolDirectoryImportUseCase = acceptSchoolDirectoryImportUseCase;
         this.createSchoolDirectoryUseCase = createSchoolDirectoryUseCase;
@@ -350,30 +338,8 @@ public class SchoolController {
         return ResponseEntity.ok(ApiResponse.success("Yêu cầu import lớp học đã được tiếp nhận, đang xử lý"));
     }
 
-    @PostMapping(
-            value = "/{schoolId}/grade-levels/import/preview",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
-    )
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<PreviewSchoolGradeLevelImportResponse>> createGradeLevelImportFileSession(
-            @PathVariable("schoolId") UUID schoolId,
-            @RequestParam("file") MultipartFile file) throws IOException {
-        var uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
-        var data = previewSchoolGradeLevelImportFromFileUseCase.execute(new PreviewSchoolGradeLevelImportFromFileCommand(schoolId, uploadedFile));
-        var response = ApiResponse.success("Preview import khối học thành công", data);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/{schoolId}/grade-levels/import/{sessionId}/accept")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> acceptGradeLevelImportSession(
-            @PathVariable("schoolId") UUID schoolId,
-            @PathVariable("sessionId") UUID sessionId,
-            @Valid @RequestBody AcceptSchoolGradeLevelImportRequest request) {
-        var command = AcceptSchoolGradeLevelImportCommandMapper.fromRequest(schoolId, sessionId, request);
-        acceptSchoolGradeLevelImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Yêu cầu import khối học đã được tiếp nhận, đang xử lý"));
-    }
+    // Import khối lớp từ Excel đã bị bỏ: catalog dùng chung chỉ có vài dòng, seed bằng migration
+    // (V41) rồi quản trị hệ thống sửa qua POST/DELETE /schools/grade-levels.
 
     @PostMapping(
             value = "/{schoolId}/grades/import/preview",
@@ -578,14 +544,14 @@ public class SchoolController {
     //====================================SCHOOL GRADE ==============================================
 
     @Operation(summary = "Thêm khối học sinh vd: khối 10,11,12")
-    @PostMapping("/{schoolId}/grade-levels/{schoolGradeLevelId}/grades")
+    @PostMapping("/{schoolId}/grade-levels/{gradeLevelId}/grades")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createSchoolGrade(
             @PathVariable("schoolId") UUID schoolId,
-            @PathVariable("schoolGradeLevelId") UUID schoolGradeLevelId,
+            @PathVariable("gradeLevelId") UUID gradeLevelId,
             @Valid @RequestBody CreateSchoolGradeRequest request) {
 
-        var command = CreateSchoolGradeCommandMapper.fromRequest(schoolId, schoolGradeLevelId, request);
+        var command = CreateSchoolGradeCommandMapper.fromRequest(schoolId, gradeLevelId, request);
 
         UUID newGradeId = createSchoolGradeUseCase.execute(command);
 
@@ -612,33 +578,29 @@ public class SchoolController {
         return ResponseEntity.ok(ApiResponse.success("Xóa thành công school grade", result));
     }
 
-    //===================SCHOOL GRADE LEVEL ================================
-    @Operation(summary = "Thêm Khối học sinh cho Trường (VD: Khối 10, Khối 11)")
-    @PostMapping("/{schoolId}/grade-levels")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<UUID>> createSchoolGradeLevel(
-            @PathVariable("schoolId") UUID schoolId,
-            @Valid @RequestBody CreateSchoolGradeLevelRequest request) {
+    //=================== GRADE LEVEL (catalog toàn cục) ================================
+    // Không còn nằm dưới /{schoolId}: khối lớp dùng chung cho mọi trường nên chỉ SYSTEM_ADMIN
+    // được tạo/xóa. Xem GradeLevelController để biết các endpoint đọc.
+    @Operation(summary = "Thêm Khối học sinh vào catalog dùng chung (VD: Khối 10, Khối 11)")
+    @PostMapping("/grade-levels")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<UUID>> createGradeLevel(
+            @Valid @RequestBody CreateGradeLevelRequest request) {
 
-        var command = CreateSchoolGradeLevelCommandMapper.fromRequest(schoolId, request);
-        UUID newGradeLevelId = createSchoolGradeLevelUseCase.execute(command);
+        var command = CreateGradeLevelCommandMapper.fromRequest(request);
+        UUID newGradeLevelId = createGradeLevelUseCase.execute(command);
 
         return ResponseEntity.ok(ApiResponse.success("Thêm khối học sinh thành công", newGradeLevelId));
     }
 
-    @Operation(summary = "Xóa Khối học sinh của Trường")
-    @DeleteMapping("/{schoolId}/grade-levels/{gradeLevelId}")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> deleteSchoolGradeLevel(
-            @PathVariable("schoolId") UUID schoolId,
+    @Operation(summary = "Xóa Khối học sinh khỏi catalog dùng chung")
+    @DeleteMapping("/grade-levels/{gradeLevelId}")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteGradeLevel(
             @PathVariable("gradeLevelId") UUID gradeLevelId) {
 
-        var command = DeleteSchoolGradeLevelCommandMapper.fromRequest(schoolId, gradeLevelId);
+        deleteGradeLevelUseCase.execute(new DeleteGradeLevelCommand(gradeLevelId));
 
-        // Gọi UseCase, nó sẽ return null
-        deleteSchoolGradeLevelUseCase.execute(command);
-
-        // Ném về response báo thành công
         return ResponseEntity.ok(ApiResponse.success("Xóa Khối học sinh thành công", null));
     }
 

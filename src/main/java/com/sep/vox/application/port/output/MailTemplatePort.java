@@ -40,15 +40,11 @@ public interface MailTemplatePort {
 
     /**
      * Hóa đơn thanh toán PayOS thành công (subscription mới/gia hạn/mua thêm token).
-     *
-     * @param itemsHtml chuỗi HTML (các thẻ {@code <tr>}) liệt kê hạn mức đã mua — ĐÃ được escape ở
-     *     nơi gọi (xem InvoicePaidEmailListener), đừng escape thêm lần nữa ở implementation.
      */
     String renderInvoicePaidEmail(
         String schoolName,
         String invoiceNumber,
         String itemTitle,
-        String itemsHtml,
         String amountLabel,
         String paidAtLabel,
         String validUntilLabel

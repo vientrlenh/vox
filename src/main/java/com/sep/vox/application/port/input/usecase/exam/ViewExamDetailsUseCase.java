@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,11 +63,11 @@ public class ViewExamDetailsUseCase implements IUseCase<ViewExamDetailsQuery, Ex
     }
 
     private boolean hasAccess(
-            java.util.UUID examId,
-            java.util.UUID examSchoolId,
+            UUID examId,
+            UUID examSchoolId,
             ExamStatus examStatus,
-            java.util.UUID currentUserId,
-            java.util.UUID currentSchoolId,
+            UUID currentUserId,
+            UUID currentSchoolId,
             boolean schoolAdmin) {
         if (userContextPort.isSystemAdmin()) {
             return true;
@@ -78,6 +80,11 @@ public class ViewExamDetailsUseCase implements IUseCase<ViewExamDetailsQuery, Ex
                 && currentSchoolId != null && currentSchoolId.equals(examSchoolId)) {
             return true;
         }
+        // Giám thị được phân công ca thi CỐ Ý không có mặt ở đây, dù họ có quan hệ thật với kỳ thi.
+        //
+        // Đây là cửa vào màn quản lý kỳ thi, nên mở nó cho giám thị là đưa họ thẳng vào dashboard --
+        // chỗ của hội đồng và nhà trường. Nhu cầu "giám thị đọc được tên kỳ thi mình gác" có đường
+        // riêng: ViewMonitorableExamUseCase, trả đúng vài trường mà đầu trang giám sát cần.
         return examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.CHAIR)
             || examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.AUTHOR)
             || examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.REVIEWER);

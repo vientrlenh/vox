@@ -15,7 +15,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolGradeDto;
 
-import com.sep.vox.domain.mapper.SchoolGradeDtoMapper;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -61,7 +60,7 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
         //    Truyền status=ARCHIVED để lấy đúng bản đã xóa mềm.
         PageResult<SchoolGrade> pageResult = schoolGradeRepository.findAllBySchoolId(
                 query.schoolId(),
-                query.schoolGradeLevelId(),
+                query.gradeLevelId(),
                 parseStatus(query.status()),
                 query.page(),
                 query.size()
@@ -70,7 +69,7 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
         // 2. Chuyển đổi sang DTO và trả về
         return new PageResult<>(
                 pageResult.content().stream()
-                        .map(SchoolGradeDtoMapper::toSchoolGradeDto)
+                        .map(SchoolGradeDto::toDto)
                         .toList(),
                 pageResult.page(),
                 pageResult.size(),

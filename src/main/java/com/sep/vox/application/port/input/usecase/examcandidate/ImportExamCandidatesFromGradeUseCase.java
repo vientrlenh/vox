@@ -23,7 +23,6 @@ import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.service.exam.ExamEditingGuard;
 
@@ -37,7 +36,6 @@ public class ImportExamCandidatesFromGradeUseCase
     private final ExamRepository examRepository;
     private final ExamCandidateRepository examCandidateRepository;
     private final SchoolGradeRepository schoolGradeRepository;
-    private final SchoolGradeLevelRepository schoolGradeLevelRepository;
     private final SchoolClassRepository schoolClassRepository;
     private final SchoolClassUserRepository schoolClassUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
@@ -47,7 +45,6 @@ public class ImportExamCandidatesFromGradeUseCase
             ExamRepository examRepository,
             ExamCandidateRepository examCandidateRepository,
             SchoolGradeRepository schoolGradeRepository,
-            SchoolGradeLevelRepository schoolGradeLevelRepository,
             SchoolClassRepository schoolClassRepository,
             SchoolClassUserRepository schoolClassUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
@@ -55,7 +52,6 @@ public class ImportExamCandidatesFromGradeUseCase
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolGradeLevelRepository = schoolGradeLevelRepository;
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
@@ -79,9 +75,7 @@ public class ImportExamCandidatesFromGradeUseCase
 
         var grade = schoolGradeRepository.findById(input.schoolGradeId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy khối"));
-        var gradeLevel = schoolGradeLevelRepository.findById(grade.getSchoolGradeLevelId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy khối"));
-        if (!gradeLevel.getSchoolId().equals(exam.getSchoolId())) {
+        if (!grade.getSchoolId().equals(exam.getSchoolId())) {
             throw new ForbiddenException("Khối không thuộc trường của bài kiểm tra");
         }
 

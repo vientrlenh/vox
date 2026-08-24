@@ -13,7 +13,7 @@ public final class AssessmentPolicyMapper {
         return new AssessmentPolicy(
             jpa.getId(),
             jpa.getSchoolId(),
-            jpa.getSchoolGradeLevelId(),
+            jpa.getGradeLevelId(),
             jpa.getSchoolGradeId(),
             jpa.getSchoolClassId(),
             jpa.getLanguageId(),
@@ -37,7 +37,7 @@ public final class AssessmentPolicyMapper {
         return new AssessmentPolicyJpaEntity(
             policy.getId(),
             policy.getSchoolId(),
-            policy.getSchoolGradeLevelId(),
+            policy.getGradeLevelId(),
             policy.getSchoolGradeId(),
             policy.getSchoolClassId(),
             policy.getLanguageId(),

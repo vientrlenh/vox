@@ -40,7 +40,7 @@ public class CreateAssessmentPolicyCommandMapper {
                 request.frameworkVersionId(),
                 request.rubricVersionId(),
                 request.languageId(),
-                request.schoolGradeLevelId(),
+                request.gradeLevelId(),
                 request.schoolGradeId(),
                 request.schoolClassId(),
                 request.targetFrameworkBandId(),

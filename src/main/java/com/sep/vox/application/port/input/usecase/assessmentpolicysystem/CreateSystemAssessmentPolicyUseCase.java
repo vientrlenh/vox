@@ -40,12 +40,17 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricRepository rubricRepository;
     private final SupportedLanguageRepository languageRepository;
+    private final GradeLevelRepository gradeLevelRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
 
-    // Dùng để phát số "version" kế tiếp theo scope (ngôn ngữ + framework), xuyên suốt toàn bộ batch.
-    // Cũng chính là khoá phạm vi của luồng SYSTEM: policy hệ thống không gắn khối/niên khóa/lớp.
-    private record VersionScopeKey(UUID languageId, UUID frameworkVersionId) {}
+    // Dùng để phát số "version" kế tiếp theo scope, xuyên suốt toàn bộ batch.
+    //
+    // Từ 2026-08-22 có thêm gradeLevelId: policy hệ thống giờ khai được theo KHỐI. Khối lớp
+    // đã là catalog dùng chung toàn hệ thống (V41) và không gắn với niên khóa nào, nên một chính
+    // sách mẫu cho "Khối 10" vẫn đúng khi trường mở niên khóa năm sau -- không phải khai lại.
+    // Vẫn cho phép null = mẫu áp cho mọi khối, giữ nguyên hành vi cũ.
+    private record VersionScopeKey(UUID languageId, UUID frameworkVersionId, UUID gradeLevelId) {}
 
     public CreateSystemAssessmentPolicyUseCase(
             AssessmentPolicyRepository assessmentPolicyRepository,
@@ -54,6 +59,7 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             SupportedLanguageRepository languageRepository,
+            GradeLevelRepository gradeLevelRepository,
             UserRepository userRepository,
             UserContextPort userContextPort) {
         this.assessmentPolicyRepository = assessmentPolicyRepository;
@@ -62,6 +68,7 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.languageRepository = languageRepository;
+        this.gradeLevelRepository = gradeLevelRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
     }
@@ -82,7 +89,6 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
         Set<VersionScopeKey> scopeClaimsInBatch = new HashSet<>();
-        Set<UUID> rubricVersionClaimsInBatch = new HashSet<>();
 
         for (CreateAssessmentPolicyCommand command : commands) {
             // 2. Validate Framework & Language
@@ -93,6 +99,17 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
             }
             if (!languageRepository.existsById(command.languageId())) {
                 throw new NotFoundException("Ngôn ngữ không tồn tại.");
+            }
+
+            // 2b. Khối (tùy chọn). Luồng SYSTEM không có trường nên KHÔNG nhận niên khóa/lớp --
+            //     hai thứ đó thuộc về một trường cụ thể. Chỉ Khối là khái niệm toàn hệ thống.
+            if (command.schoolGradeId() != null || command.schoolClassId() != null) {
+                throw new IllegalArgumentException(
+                        "Chính sách hệ thống chỉ giới hạn được tới cấp Khối; Niên khóa và Lớp thuộc phạm vi của từng trường.");
+            }
+            if (command.gradeLevelId() != null
+                    && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
+                throw new NotFoundException("Không tìm thấy Khối.");
             }
 
             // 3. Validate Band
@@ -112,7 +129,8 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
 
             // Mỗi Policy tạo mới trong batch sẽ chiếm 1 số version riêng cho cùng scope (ngôn ngữ + framework),
             // vì DB chỉ unique theo scope+version, không phân biệt theo Rubric Version
-            VersionScopeKey versionScopeKey = new VersionScopeKey(command.languageId(), command.frameworkVersionId());
+            VersionScopeKey versionScopeKey = new VersionScopeKey(command.languageId(), command.frameworkVersionId(),
+                    command.gradeLevelId());
 
             // 5. Mỗi phạm vi (ngôn ngữ + framework version) chỉ được ĐÚNG MỘT chính sách còn hiệu
             // lực. Bổ sung 2026-08-14: trước đó luồng SYSTEM không có phép kiểm trùng nào cả --
@@ -125,7 +143,8 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
                                 + " tiêu chuẩn. Mỗi phạm vi chỉ được một chính sách.");
             }
             if (assessmentPolicyRepository.existsActiveForScopeAnyRubricVersion(
-                    null, command.languageId(), command.frameworkVersionId(), null, null, null)) {
+                    null, command.languageId(), command.frameworkVersionId(),
+                    command.gradeLevelId(), null, null)) {
                 throw new DuplicatedException("Phạm vi này đã có một Assessment Policy hệ thống còn"
                         + " hiệu lực (DRAFT hoặc PUBLISHED). Hãy Archive bản cũ trước khi tạo bản mới.");
             }
@@ -139,31 +158,31 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
             if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
                 throw new IllegalStateException("Chỉ được dùng Rubric SYSTEM cho luồng System Admin.");
             }
-            if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
-                throw new IllegalStateException("Chỉ được gán Policy khi Phiên bản Rubric còn ở trạng thái DRAFT.");
+            // Chặn ARCHIVED, KHÔNG chặn PUBLISHED -- xem lý do đầy đủ ở
+            // CreateSchoolAssessmentPolicyUseCase. Hai luồng phải hiểu luật này giống nhau, nếu không
+            // bản mẫu hệ thống và bản sao của trường sẽ có hai vòng đời khác nhau.
+            if (rubricVersion.getStatus() == RubricStatus.ARCHIVED) {
+                throw new IllegalStateException(
+                        "Không gán được Policy vào Phiên bản Rubric đã lưu trữ (ARCHIVED).");
             }
             if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
                 throw new IllegalStateException("Phiên bản Rubric và Khung năng lực không khớp nhau.");
             }
 
-            // 1 Rubric Version chỉ được gắn với đúng 1 Assessment Policy, vĩnh viễn (kể cả sau khi
-            // Policy đó Archive) -- chặn cả trùng trong cùng batch lẫn trùng với dữ liệu đã có.
-            if (!rubricVersionClaimsInBatch.add(rubricVersionId)) {
-                throw new DuplicatedException(
-                        "Trong cùng một lần tạo có hai Assessment Policy cùng dùng 1 Phiên bản Rubric.");
-            }
-            if (assessmentPolicyRepository.existsByRubricVersionId(rubricVersionId)) {
-                throw new DuplicatedException("Phiên bản Rubric này đã gắn với một Assessment Policy khác."
-                        + " Mỗi Rubric Version chỉ dùng được cho đúng 1 Policy.");
-            }
+            // Nhiều chính sách ĐƯỢC PHÉP dùng chung 1 Phiên bản Rubric (V44 gỡ ràng buộc 1-1 của
+            // V38): lớp chuyên và lớp thường cùng khối cần chính sách riêng theo phạm vi Lớp nhưng
+            // vẫn chấm bằng cùng một bộ tiêu chí. Cái phải giữ duy nhất là "mỗi phạm vi chỉ một
+            // chính sách còn hiệu lực" -- đã kiểm ở ScopeClaimKey và existsActiveForScopeAnyRubricVersion
+            // bên trên.
 
             int nextVersion = nextVersionByScope.computeIfAbsent(versionScopeKey, key ->
                     assessmentPolicyRepository.findMaxVersionForScope(
-                            null, key.languageId(), key.frameworkVersionId(), null, null, null) + 1);
+                            null, key.languageId(), key.frameworkVersionId(),
+                            key.gradeLevelId(), null, null) + 1);
             nextVersionByScope.put(versionScopeKey, nextVersion + 1);
 
             AssessmentPolicy newPolicy = new AssessmentPolicy(
-                    null, null, null, null,
+                    null, command.gradeLevelId(), null, null,
                     command.languageId(), command.frameworkVersionId(),
                     rubricVersionId,
                     command.targetFrameworkBandId(),

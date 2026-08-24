@@ -27,7 +27,7 @@ public interface AssessmentPolicyRepository {
 
     // Một phạm vi chỉ được đúng một chính sách còn hiệu lực, bất kể trỏ vào phiên bản Rubric nào
     boolean existsActiveForScopeAnyRubricVersion(UUID schoolId, UUID languageId, UUID frameworkVersionId,
-            UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId);
+            UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId);
 
     // Lấy TOÀN BỘ Assessment Policy (mọi trạng thái, kể cả ARCHIVED) trong phạm vi schoolId (null = toàn hệ thống).
     // Dùng để prefetch 1 lần rồi tự tính trong memory (scope đang active để chặn trùng, version lớn nhất theo
@@ -37,7 +37,7 @@ public interface AssessmentPolicyRepository {
 
     // Lấy version lớn nhất đã từng tồn tại cho scope (kể cả ARCHIVED) để tính version kế tiếp
     int findMaxVersionForScope(UUID schoolId, UUID languageId, UUID frameworkVersionId,
-            UUID schoolGradeLevelId, UUID schoolGradeId, UUID schoolClassId);
+            UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId);
 
     // Kiểm tra đã tồn tại Assessment Policy nào liên kết với Rubric Version này đang ở trạng thái PUBLISHED hay chưa
     boolean existsPublishedByRubricVersionId(UUID rubricVersionId);
@@ -49,8 +49,18 @@ public interface AssessmentPolicyRepository {
     // Kiểm tra còn Assessment Policy nào liên kết với Rubric Version này CHƯA ở trạng thái PUBLISHED hay không
     boolean existsNotPublishedByRubricVersionId(UUID rubricVersionId);
 
+    // Còn Assessment Policy nào KHÁC (bỏ qua excludedPolicyId) đang dùng Rubric Version này và còn
+    // hiệu lực (DRAFT hoặc PUBLISHED) hay không. Dùng lúc Archive một Policy để biết có được Archive
+    // luôn Rubric Version theo hay không -- từ V44 nhiều Policy dùng chung một phiên bản, nên Archive
+    // kèm vô điều kiện sẽ rút thang chấm khỏi chân các Policy còn lại.
+    boolean existsOtherActiveByRubricVersionId(UUID rubricVersionId, UUID excludedPolicyId);
+
     // Danh sách Assessment Policy hệ thống (schoolId IS NULL) đang DRAFT liên kết với Rubric Version này (dùng cho publish hàng loạt)
     List<AssessmentPolicy> findDraftSystemWideByRubricVersionId(UUID rubricVersionId);
+
+    // Chính sách MẪU đã ban hành gắn với một phiên bản Rubric của hệ thống -- thứ trường thấy và
+    // chọn khi sao bộ tiêu chí đó về (CloneSystemRubricToSchoolUseCase).
+    List<AssessmentPolicy> findPublishedSystemWideByRubricVersionId(UUID rubricVersionId);
 
     // Danh sách Assessment Policy của một trường học đang DRAFT liên kết với Rubric Version này (dùng cho publish hàng loạt)
     List<AssessmentPolicy> findDraftBySchoolIdAndRubricVersionId(UUID schoolId, UUID rubricVersionId);

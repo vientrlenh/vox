@@ -34,7 +34,7 @@ type AssessmentPolicy {
     updatedAt: String
 
     school: School
-    schoolGradeLevel: SchoolGradeLevel
+    gradeLevel: GradeLevel
     schoolGrade: SchoolGrade
     schoolClass: SchoolClass
     language: SupportedLanguage

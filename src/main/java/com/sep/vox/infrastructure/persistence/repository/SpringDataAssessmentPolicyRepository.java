@@ -42,6 +42,16 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
 
     boolean existsByRubricVersionIdAndStatus(UUID rubricVersionId, String status);
 
+    @Query("""
+        SELECT COUNT(p) > 0 FROM AssessmentPolicyJpaEntity p
+        WHERE p.rubricVersionId = :rubricVersionId
+            AND p.id <> :excludedPolicyId
+            AND p.status IN ('DRAFT', 'PUBLISHED')
+    """)
+    boolean existsOtherActiveByRubricVersionId(
+            @Param("rubricVersionId") UUID rubricVersionId,
+            @Param("excludedPolicyId") UUID excludedPolicyId);
+
     boolean existsByRubricVersionIdAndStatusNot(UUID rubricVersionId, String status);
 
     boolean existsByRubricVersionId(UUID rubricVersionId);
@@ -88,7 +98,7 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
             AND (
                 p.schoolClassId = :classId 
                 OR (p.schoolClassId IS NULL AND p.schoolGradeId = :gradeId) 
-                OR (p.schoolClassId IS NULL AND p.schoolGradeId IS NULL AND p.schoolGradeLevelId = :gradeLevelId)
+                OR (p.schoolClassId IS NULL AND p.schoolGradeId IS NULL AND p.gradeLevelId = :gradeLevelId)
             )    
         ORDER BY 
             CASE 
@@ -117,8 +127,8 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
             AND (:schoolId IS NOT NULL OR p.schoolId IS NULL)
             AND p.languageId = :languageId
             AND p.frameworkVersionId = :frameworkVersionId
-            AND (:schoolGradeLevelId IS NULL OR p.schoolGradeLevelId = :schoolGradeLevelId)
-            AND (:schoolGradeLevelId IS NOT NULL OR p.schoolGradeLevelId IS NULL)
+            AND (:gradeLevelId IS NULL OR p.gradeLevelId = :gradeLevelId)
+            AND (:gradeLevelId IS NOT NULL OR p.gradeLevelId IS NULL)
             AND (:schoolGradeId IS NULL OR p.schoolGradeId = :schoolGradeId)
             AND (:schoolGradeId IS NOT NULL OR p.schoolGradeId IS NULL)
             AND (:schoolClassId IS NULL OR p.schoolClassId = :schoolClassId)
@@ -129,7 +139,7 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
         @Param("schoolId") UUID schoolId,
         @Param("languageId") UUID languageId,
         @Param("frameworkVersionId") UUID frameworkVersionId,
-        @Param("schoolGradeLevelId") UUID schoolGradeLevelId,
+        @Param("gradeLevelId") UUID gradeLevelId,
         @Param("schoolGradeId") UUID schoolGradeId,
         @Param("schoolClassId") UUID schoolClassId
     );
@@ -140,8 +150,8 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
             AND (:schoolId IS NOT NULL OR p.schoolId IS NULL)
             AND p.languageId = :languageId
             AND p.frameworkVersionId = :frameworkVersionId
-            AND (:schoolGradeLevelId IS NULL OR p.schoolGradeLevelId = :schoolGradeLevelId)
-            AND (:schoolGradeLevelId IS NOT NULL OR p.schoolGradeLevelId IS NULL)
+            AND (:gradeLevelId IS NULL OR p.gradeLevelId = :gradeLevelId)
+            AND (:gradeLevelId IS NOT NULL OR p.gradeLevelId IS NULL)
             AND (:schoolGradeId IS NULL OR p.schoolGradeId = :schoolGradeId)
             AND (:schoolGradeId IS NOT NULL OR p.schoolGradeId IS NULL)
             AND (:schoolClassId IS NULL OR p.schoolClassId = :schoolClassId)
@@ -151,7 +161,7 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
         @Param("schoolId") UUID schoolId,
         @Param("languageId") UUID languageId,
         @Param("frameworkVersionId") UUID frameworkVersionId,
-        @Param("schoolGradeLevelId") UUID schoolGradeLevelId,
+        @Param("gradeLevelId") UUID gradeLevelId,
         @Param("schoolGradeId") UUID schoolGradeId,
         @Param("schoolClassId") UUID schoolClassId
     );

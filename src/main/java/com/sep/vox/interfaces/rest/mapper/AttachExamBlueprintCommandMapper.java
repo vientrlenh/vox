@@ -28,7 +28,7 @@ public final class AttachExamBlueprintCommandMapper {
             request.code(),
             request.name(),
             request.description(),
-            request.schoolGradeLevelId(),
+            request.gradeLevelId(),
             request.languageId()
         );
     }

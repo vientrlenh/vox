@@ -5,18 +5,17 @@ import com.sep.vox.domain.dto.FrameworkVersionDto;
 import com.sep.vox.domain.dto.RubricVersionDto;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
-import com.sep.vox.domain.dto.SchoolGradeLevelDto;
+import com.sep.vox.domain.dto.GradeLevelDto;
 import com.sep.vox.domain.mapper.FrameworkResultBandDtoMapper;
 import com.sep.vox.domain.mapper.FrameworkVersionDtoMapper;
 import com.sep.vox.domain.mapper.RubricVersionDtoMapper;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
 import com.sep.vox.domain.mapper.SchoolDtoMapper;
-import com.sep.vox.domain.mapper.SchoolGradeLevelDtoMapper;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
+import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import org.dataloader.BatchLoaderEnvironment;
 import org.springframework.context.annotation.Configuration;
@@ -34,7 +33,7 @@ public class AssessmentPolicyGraphQlDataLoaderConfig {
     public AssessmentPolicyGraphQlDataLoaderConfig(
             BatchLoaderRegistry registry,
             SchoolRepository schoolRepository,
-            SchoolGradeLevelRepository schoolGradeLevelRepository,
+            GradeLevelRepository gradeLevelRepository,
             SchoolClassRepository schoolClassRepository,
             FrameworkVersionRepository frameworkVersionRepository,
             RubricVersionRepository rubricVersionRepository,
@@ -50,12 +49,12 @@ public class AssessmentPolicyGraphQlDataLoaderConfig {
                         })
                 );
 
-        registry.<UUID, SchoolGradeLevelDto>forName("schoolGradeLevelDataLoader")
+        registry.<UUID, GradeLevelDto>forName("gradeLevelDataLoader")
                 .registerMappedBatchLoader((Set<UUID> ids, BatchLoaderEnvironment env) ->
                         Mono.fromSupplier(() -> {
                             if (ids.isEmpty()) return Collections.emptyMap();
-                            return schoolGradeLevelRepository.findByIdIn(ids).stream()
-                                    .map(SchoolGradeLevelDtoMapper::toDto)
+                            return gradeLevelRepository.findByIdIn(ids).stream()
+                                    .map(GradeLevelDto::toDto)
                                     .collect(Collectors.toMap(sg -> sg.id(), dto -> dto));
                         })
                 );

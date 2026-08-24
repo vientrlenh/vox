@@ -31,8 +31,8 @@ public class ExamBlueprintJpaEntity {
     @Column(name = "language_id", nullable = false, updatable = false)
     private UUID languageId;
 
-    @Column(name = "school_grade_level_id", updatable = false)
-    private UUID schoolGradeLevelId;
+    @Column(name = "grade_level_id", updatable = false)
+    private UUID gradeLevelId;
 
     @Column(name = "code", nullable = false, updatable = false, length = 100)
     private String code;
@@ -60,13 +60,13 @@ public class ExamBlueprintJpaEntity {
 
     protected ExamBlueprintJpaEntity() {}
 
-    public ExamBlueprintJpaEntity(UUID id, UUID schoolId, UUID languageId, UUID schoolGradeLevelId, String code,
+    public ExamBlueprintJpaEntity(UUID id, UUID schoolId, UUID languageId, UUID gradeLevelId, String code,
             String name, String description, boolean isActive, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.schoolId = schoolId;
         this.languageId = languageId;
-        this.schoolGradeLevelId = schoolGradeLevelId;
+        this.gradeLevelId = gradeLevelId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -101,12 +101,12 @@ public class ExamBlueprintJpaEntity {
         this.languageId = languageId;
     }
 
-    public UUID getSchoolGradeLevelId() {
-        return schoolGradeLevelId;
+    public UUID getGradeLevelId() {
+        return gradeLevelId;
     }
 
-    public void setSchoolGradeLevelId(UUID schoolGradeLevelId) {
-        this.schoolGradeLevelId = schoolGradeLevelId;
+    public void setGradeLevelId(UUID gradeLevelId) {
+        this.gradeLevelId = gradeLevelId;
     }
 
     public String getCode() {

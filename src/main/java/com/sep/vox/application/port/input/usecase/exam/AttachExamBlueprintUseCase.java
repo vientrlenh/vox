@@ -23,7 +23,7 @@ import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.SchoolGradeLevelRepository;
+import com.sep.vox.domain.repository.GradeLevelRepository;
 
 @Service
 public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintCommand, ExamDto> {
@@ -33,7 +33,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
     private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
     private final ExamMemberRepository examMemberRepository;
     private final ExamPaperRepository examPaperRepository;
-    private final SchoolGradeLevelRepository schoolGradeLevelRepository;
+    private final GradeLevelRepository gradeLevelRepository;
     private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
     private final UserContextPort userContextPort;
 
@@ -43,7 +43,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
             ExamBlueprintVersionRepository examBlueprintVersionRepository,
             ExamMemberRepository examMemberRepository,
             ExamPaperRepository examPaperRepository,
-            SchoolGradeLevelRepository schoolGradeLevelRepository,
+            GradeLevelRepository gradeLevelRepository,
             ExamTimeQuotaGuardService examTimeQuotaGuardService,
             UserContextPort userContextPort) {
         this.examRepository = examRepository;
@@ -51,7 +51,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
         this.examBlueprintVersionRepository = examBlueprintVersionRepository;
         this.examMemberRepository = examMemberRepository;
         this.examPaperRepository = examPaperRepository;
-        this.schoolGradeLevelRepository = schoolGradeLevelRepository;
+        this.gradeLevelRepository = gradeLevelRepository;
         this.examTimeQuotaGuardService = examTimeQuotaGuardService;
         this.userContextPort = userContextPort;
     }
@@ -157,17 +157,15 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
         if (name == null || name.isBlank()) {
             throw new IllegalStateException("Tên blueprint là bắt buộc");
         }
-        if (command.schoolGradeLevelId() != null) {
-            var gradeLevel = schoolGradeLevelRepository.findById(command.schoolGradeLevelId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy khối lớp"));
-            if (!schoolId.equals(gradeLevel.getSchoolId())) {
-                throw new IllegalStateException("Khối lớp không thuộc trường hiện tại");
-            }
+        // Khối lớp là catalog dùng chung: chỉ cần tồn tại, không còn ràng buộc thuộc trường nào.
+        if (command.gradeLevelId() != null
+                && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
+            throw new NotFoundException("Không tìm thấy khối lớp");
         }
         var blueprint = new ExamBlueprint(
             schoolId,
             command.languageId() == null ? examLanguageId : command.languageId(),
-            command.schoolGradeLevelId(),
+            command.gradeLevelId(),
             blueprintCodeOf(command.code()),
             name,
             StringNormalization.trimAndCollapseSpaces(command.description()),

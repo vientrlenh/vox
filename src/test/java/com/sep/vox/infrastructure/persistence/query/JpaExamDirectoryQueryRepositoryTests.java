@@ -21,7 +21,7 @@ import com.sep.vox.infrastructure.persistence.entity.RoleJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.SchoolClassUserJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.SchoolGradeJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.SchoolGradeLevelJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.GradeLevelJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.SchoolUserJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.UserRoleJpaEntity;
@@ -67,8 +67,8 @@ class JpaExamDirectoryQueryRepositoryTests extends ContainerTestConfig {
     void setUp() {
         schoolId = UUID.randomUUID();
         now = OffsetDateTime.parse("2026-07-29T09:00:00+07:00").toInstant();
-        gradeLevelId = persisted(new SchoolGradeLevelJpaEntity(
-            null, schoolId, "K10-" + suffix(), "Khối 10", null, 1, "ACTIVE", now, now, null, null)).getId();
+        gradeLevelId = persisted(new GradeLevelJpaEntity(
+            null, "K10-" + suffix(), "Khối 10", null, nextGradeLevelOrder(), "ACTIVE", now, now, null, null)).getId();
         studentRoleId = roleId("STUDENT");
         teacherRoleId = roleId("TEACHER");
     }
@@ -134,9 +134,8 @@ class JpaExamDirectoryQueryRepositoryTests extends ContainerTestConfig {
     void should_list_active_grades_of_the_school_only() {
         var active = grade("NK-2026", "ACTIVE");
         grade("NK-2020", "ARCHIVED");
-        var otherSchoolLevel = persisted(new SchoolGradeLevelJpaEntity(
-            null, UUID.randomUUID(), "K11-" + suffix(), "Khối 11", null, 1, "ACTIVE", now, now, null, null)).getId();
-        persisted(new SchoolGradeJpaEntity(null, otherSchoolLevel, "NK-OTHER", "Niên khóa trường khác", null,
+        // Khối lớp dùng chung -> niên khóa trường khác vẫn trỏ cùng gradeLevelId, chỉ khác school_id.
+        persisted(new SchoolGradeJpaEntity(null, UUID.randomUUID(), gradeLevelId, "NK-OTHER", "Niên khóa trường khác", null,
             LocalDate.parse("2026-09-01"), LocalDate.parse("2027-06-01"), "ACTIVE", now, now, null, null));
 
         var page = repository.findGradesBySchoolId(schoolId, null, 1, 20);
@@ -156,6 +155,14 @@ class JpaExamDirectoryQueryRepositoryTests extends ContainerTestConfig {
 
     // ---------- fixtures ----------
 
+    private static final java.util.concurrent.atomic.AtomicInteger GRADE_LEVEL_ORDER =
+        new java.util.concurrent.atomic.AtomicInteger(1000);
+
+    // grade_level_order unique toàn cục -> mỗi lần persist phải lấy số mới.
+    private static int nextGradeLevelOrder() {
+        return GRADE_LEVEL_ORDER.incrementAndGet();
+    }
+
     private static String suffix() {
         return UUID.randomUUID().toString().substring(0, 8);
     }
@@ -172,7 +179,7 @@ class JpaExamDirectoryQueryRepositoryTests extends ContainerTestConfig {
     }
 
     private UUID grade(String code, String status) {
-        return persisted(new SchoolGradeJpaEntity(null, gradeLevelId, code + "-" + suffix(), code, null,
+        return persisted(new SchoolGradeJpaEntity(null, schoolId, gradeLevelId, code + "-" + suffix(), code, null,
             LocalDate.parse("2026-09-01"), LocalDate.parse("2027-06-01"), status, now, now, null, null)).getId();
     }
 

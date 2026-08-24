@@ -21,7 +21,6 @@ import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
 import com.sep.vox.domain.mapper.SchoolDtoMapper;
-import com.sep.vox.domain.mapper.SchoolGradeDtoMapper;
 import com.sep.vox.domain.mapper.SchoolUserDtoMapper;
 import com.sep.vox.domain.mapper.SupportedLanguageDtoMapper;
 import com.sep.vox.domain.mapper.UserDtoMapper;
@@ -126,7 +125,7 @@ public class SchoolGraphQlDataLoaderConfig {
             Mono.fromSupplier(() -> {
                 return schoolGradeRepository.findByIdIn(gradeIds)
                     .stream()
-                    .map(SchoolGradeDtoMapper::toSchoolGradeDto)
+                    .map(SchoolGradeDto::toDto)
                     .collect(Collectors.toMap(sg -> sg.id(), sg -> sg));
             })
         );
@@ -136,7 +135,7 @@ public class SchoolGraphQlDataLoaderConfig {
             Mono.fromSupplier(() -> {
                 return schoolGradeRepository.findByIdIn(gradeIds)
                     .stream()
-                    .map(SchoolGradeDtoMapper::toSchoolGradeDto)
+                    .map(SchoolGradeDto::toDto)
                     .collect(Collectors.toMap(schoolGrade -> schoolGrade.id(), sg -> sg));
             })
         );

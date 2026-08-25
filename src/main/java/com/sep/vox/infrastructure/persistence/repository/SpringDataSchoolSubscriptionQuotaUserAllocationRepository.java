@@ -13,20 +13,20 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionQuotaUserAllocationJpaEntity;
 
 public interface SpringDataSchoolSubscriptionQuotaUserAllocationRepository extends JpaRepository<SchoolSubscriptionQuotaUserAllocationJpaEntity, UUID> {
-    List<SchoolSubscriptionQuotaUserAllocationJpaEntity> findAllBySubscriptionIdAndQuotaType(UUID subscriptionId, String quotaType);
-    Optional<SchoolSubscriptionQuotaUserAllocationJpaEntity> findBySubscriptionIdAndQuotaTypeAndUserId(UUID subscriptionId, String quotaType, UUID userId);
+    List<SchoolSubscriptionQuotaUserAllocationJpaEntity> findBySchoolSubscriptionIdAndQuotaType(UUID schoolSubscriptionId, String quotaType);
+    Optional<SchoolSubscriptionQuotaUserAllocationJpaEntity> findBySchoolSubscriptionIdAndQuotaTypeAndUserId(UUID schoolSubscriptionId, String quotaType, UUID userId);
 
     @Modifying
     @Query("""
         UPDATE SchoolSubscriptionQuotaUserAllocationJpaEntity a
-        SET a.usedQuantity = a.usedQuantity + :amount
-        WHERE a.id = :id AND a.usedQuantity + :amount <= a.allocatedQuantity
+        SET a.usedAmountVnd = a.usedAmountVnd + :amount
+        WHERE a.id = :id AND a.usedAmountVnd + :amount <= a.allocatedAmountVnd
         """)
     int tryConsume(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 
     // clearAutomatically=true -- cùng lý do với SpringDataSchoolSubscriptionQuotaRecordRepository.addUsage:
     // tránh Hibernate trả về entity cache cũ nếu có chỗ nào sau này đọc lại trong cùng transaction.
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE SchoolSubscriptionQuotaUserAllocationJpaEntity a SET a.usedQuantity = a.usedQuantity + :amount WHERE a.id = :id")
+    @Query("UPDATE SchoolSubscriptionQuotaUserAllocationJpaEntity a SET a.usedAmountVnd = a.usedAmountVnd + :amount WHERE a.id = :id")
     void addUsage(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 }

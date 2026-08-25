@@ -102,9 +102,19 @@ CREATE TABLE order_items (
 
 
 -- -----------------------------------------------------------------------------
--- 4. payment_records -- KẾT QUẢ thanh toán do cổng báo về.
---    Chỉ sinh ra khi đã nhận webhook (hoặc reconciler dò thấy kết quả): đường dẫn thanh
---    toán chưa ai trả thì KHÔNG có dòng nào ở đây. Trạng thái chờ/hết hạn/hủy nằm ở orders.
+-- 4. payment_records -- MỘT LẦN THỬ thanh toán, không phải chỉ kết quả cuối.
+--
+--    Dòng sinh ra ngay lúc PHÁT LINK (PENDING) chứ không đợi webhook. Bắt buộc phải vậy:
+--    provider_order_ref là thứ DUY NHẤT mà cả hai cổng gửi kèm khi báo về (PayOS orderCode,
+--    SePay order_invoice_number), nên nếu chưa có dòng nào mang mã đó thì webhook không tra
+--    ngược được callback về đơn nào, và job đối soát cũng không có mã nào để đi hỏi.
+--
+--    Mã đơn KHÔNG BAO GIỜ dùng lại giữa các lần thử: PayOS trả lỗi "Đơn thanh toán đã tồn tại"
+--    với orderCode trùng, còn tài liệu SePay ghi rõ order_invoice_number phải duy nhất. Vì vậy
+--    trả lại sau khi thất bại = một DÒNG MỚI với mã mới, không phải sửa dòng cũ.
+--
+--    Chỉ status và paid_at đổi được sau khi tạo. Sắc thái vì sao không ra tiền (hủy/hết hạn)
+--    nằm ở orders, ở đây chỉ cần biết lần thử này ra tiền hay không.
 -- -----------------------------------------------------------------------------
 CREATE TABLE payment_records (
     amount_vnd numeric(15,0) NOT NULL,
@@ -123,8 +133,14 @@ CREATE TABLE payment_records (
         ('PAYOS'::character varying)::text,
         ('SEPAY'::character varying)::text]))),
     CONSTRAINT chk_payment_records_status_valid CHECK (((status)::text = ANY (ARRAY[
+        ('PENDING'::character varying)::text,
         ('PAID'::character varying)::text,
-        ('FAILED'::character varying)::text])))
+        ('FAILED'::character varying)::text]))),
+    -- Đã trả tiền thì bắt buộc có mốc thời gian cổng ghi nhận, và ngược lại chưa chốt thì
+    -- không được có. Thiếu ràng buộc này, một dòng PENDING mang paid_at sẽ lọt vào mọi báo
+    -- cáo doanh thu theo ngày.
+    CONSTRAINT chk_payment_records_paid_at_matches_status CHECK (
+        ((status)::text <> 'PAID' AND paid_at IS NULL) OR ((status)::text = 'PAID' AND paid_at IS NOT NULL))
 );
 
 
@@ -145,21 +161,25 @@ CREATE TABLE invoices (
 
 
 -- -----------------------------------------------------------------------------
--- 6. school_balances -- số dư cấp TRƯỜNG, hai bộ đếm với hai vòng đời khác nhau.
+-- 6. school_balances -- ví tiền TỰ NẠP của trường. MỘT cột duy nhất.
+--
+--    CỐ TÌNH không có cột "hạn mức kèm gói" ở đây: gói cấp hạn mức theo TỪNG QuotaType
+--    (GRADING / CLASS_TEST / PRACTICE) và đã được school_subscription_quota_records theo dõi
+--    đầy đủ (total_allocated_amount_vnd + used_amount_vnd). Một số dư cấp trường duy nhất
+--    không diễn đạt được "còn 300.000 nhưng không được dùng để chấm bài", nên nhân đôi số tiền
+--    đó ra đây là tạo hai nguồn sự thật chắc chắn sẽ lệch nhau.
+--
+--    Nhờ vậy giữ được bất biến sạch: SUM(school_balance_entries.amount_vnd) = balance_vnd.
 -- -----------------------------------------------------------------------------
 CREATE TABLE school_balances (
-    -- Hạn mức KÈM GÓI: bị ghi giảm về 0 mỗi lần gia hạn (giữ nguyên hành vi "không dùng thì
-    -- mất" hiện tại -> refactor này không tạo thêm nghĩa vụ mới với trường).
-    granted_vnd numeric(18,6) DEFAULT 0 NOT NULL,
-    -- Hạn mức trường TỰ NẠP: không bao giờ hết hạn. CỐ Ý không có CHECK >= 0 -- phần âm ở đây
-    -- CHÍNH LÀ nợ, thay cho điều kiện used_quantity > total_allocated cũ.
-    purchased_vnd numeric(18,6) DEFAULT 0 NOT NULL,
+    -- Không bao giờ hết hạn. CỐ Ý không có CHECK >= 0 -- phần âm ở đây CHÍNH LÀ nợ, thay cho
+    -- điều kiện used_quantity > total_allocated cũ.
+    balance_vnd numeric(18,6) DEFAULT 0 NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
     id uuid DEFAULT uuidv7() NOT NULL,
     school_id uuid NOT NULL,
-    version bigint DEFAULT 0 NOT NULL,
-    CONSTRAINT chk_school_balances_granted_vnd_non_negative CHECK ((granted_vnd >= (0)::numeric))
+    version bigint DEFAULT 0 NOT NULL
 );
 
 
@@ -261,6 +281,14 @@ CREATE UNIQUE INDEX uq_payment_records_provider_ref
 -- (tạo 2 payment link, trả cả hai) sẽ cộng tiền vào số dư hai lần.
 CREATE UNIQUE INDEX uq_payment_records_one_paid_per_order
     ON payment_records USING btree (order_id) WHERE ((status)::text = 'PAID');
+
+-- Mỗi đơn chỉ được có MỘT lần thử đang treo. Đây là ràng buộc CHẶN TRƯỚC, còn
+-- uq_payment_records_one_paid_per_order chỉ chặn SAU khi tiền đã vào: muốn phát link mới thì
+-- buộc phải chốt lần thử cũ, mà muốn chốt thì phải đi hỏi cổng xem nó đã ra tiền chưa. Không có
+-- nó, trường bấm "thanh toán lại" vài lần rồi trả hai link — tiền vào tài khoản hai lần nhưng
+-- lần thứ hai bị index PAID từ chối, thành tiền thật không có dòng nào đại diện.
+CREATE UNIQUE INDEX uq_payment_records_one_pending_per_order
+    ON payment_records USING btree (order_id) WHERE ((status)::text = 'PENDING');
 
 -- Mỗi đơn chỉ được cộng tiền vào sổ cái ĐÚNG MỘT LẦN. Không áp cho OVERAGE_CHARGE vì một
 -- exam_session sinh nhiều lượt trừ.

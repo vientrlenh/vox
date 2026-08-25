@@ -8,5 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.sep.vox.infrastructure.persistence.entity.SubscriptionPlanJpaEntity;
 
 public interface SpringDataSubscriptionPlanRepository extends JpaRepository<SubscriptionPlanJpaEntity, UUID> {
-    List<SubscriptionPlanJpaEntity> findAllByStatus(String status);
+    List<SubscriptionPlanJpaEntity> findByStatus(String status);
 }

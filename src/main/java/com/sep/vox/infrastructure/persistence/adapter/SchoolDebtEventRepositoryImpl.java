@@ -27,8 +27,8 @@ public class SchoolDebtEventRepositoryImpl implements SchoolDebtEventRepository 
     }
 
     @Override
-    public List<SchoolDebtEvent> findAllBySchoolId(UUID schoolId) {
-        return springDataSchoolDebtEventRepository.findAllBySchoolId(schoolId).stream()
+    public List<SchoolDebtEvent> findBySchoolId(UUID schoolId) {
+        return springDataSchoolDebtEventRepository.findBySchoolId(schoolId).stream()
             .map(SchoolDebtEventMapper::toDomain)
             .toList();
     }

@@ -9,15 +9,15 @@ import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation;
 
 public interface SchoolSubscriptionQuotaUserAllocationRepository {
-    List<SchoolSubscriptionQuotaUserAllocation> findAllBySubscriptionIdAndQuotaType(UUID subscriptionId, QuotaType quotaType);
-    Optional<SchoolSubscriptionQuotaUserAllocation> findBySubscriptionIdAndQuotaTypeAndUserId(UUID subscriptionId, QuotaType quotaType, UUID userId);
+    List<SchoolSubscriptionQuotaUserAllocation> findBySchoolSubscriptionIdAndQuotaType(UUID schoolSubscriptionId, QuotaType quotaType);
+    Optional<SchoolSubscriptionQuotaUserAllocation> findBySchoolSubscriptionIdAndQuotaTypeAndUserId(UUID schoolSubscriptionId, QuotaType quotaType, UUID userId);
 
-    /** Set-based upsert: creates the row if missing, otherwise overwrites allocatedQuantity. */
-    SchoolSubscriptionQuotaUserAllocation upsertAllocation(UUID subscriptionId, QuotaType quotaType, UUID userId, BigDecimal allocatedQuantity);
+    /** Set-based upsert: creates the row if missing, otherwise overwrites allocatedAmountVnd. */
+    SchoolSubscriptionQuotaUserAllocation upsertAllocation(UUID schoolSubscriptionId, QuotaType quotaType, UUID userId, BigDecimal allocatedAmountVnd);
 
-    /** returns false if usedQuantity + amount would exceed allocatedQuantity. */
+    /** returns false if usedAmountVnd + amount would exceed allocatedAmountVnd. */
     boolean tryConsume(UUID id, BigDecimal amount);
 
-    /** Unconditional -- always succeeds, can push usedQuantity above allocatedQuantity (debt). */
+    /** Unconditional -- always succeeds, can push usedAmountVnd above allocatedAmountVnd (debt). */
     void addUsage(UUID id, BigDecimal amount);
 }

@@ -11,13 +11,13 @@ import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 public interface SchoolSubscriptionQuotaRecordRepository {
     Optional<SchoolSubscriptionQuotaRecord> findById(UUID id);
     SchoolSubscriptionQuotaRecord save(SchoolSubscriptionQuotaRecord quota);
-    List<SchoolSubscriptionQuotaRecord> findAllBySubscriptionId(UUID subscriptionId);
-    Optional<SchoolSubscriptionQuotaRecord> findBySubscriptionIdAndQuotaType(UUID subscriptionId, QuotaType quotaType);
+    List<SchoolSubscriptionQuotaRecord> findBySchoolSubscriptionId(UUID schoolSubscriptionId);
+    Optional<SchoolSubscriptionQuotaRecord> findBySchoolSubscriptionIdAndQuotaType(UUID schoolSubscriptionId, QuotaType quotaType);
     void addAllocation(UUID quotaId, BigDecimal amount);
 
-    /** returns false if usedQuantity + amount would exceed totalAllocated. */
+    /** returns false if usedAmountVnd + amount would exceed totalAllocatedAmountVnd. */
     boolean tryConsume(UUID quotaId, BigDecimal amount);
 
-    /** Unconditional -- always succeeds, can push usedQuantity above totalAllocated (debt). */
+    /** Unconditional -- always succeeds, can push usedAmountVnd above totalAllocatedAmountVnd (debt). */
     void addUsage(UUID quotaId, BigDecimal amount);
 }

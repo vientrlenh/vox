@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,8 +17,8 @@ import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionJpaEntity
 
 public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<SchoolSubscriptionJpaEntity, UUID> {
     Optional<SchoolSubscriptionJpaEntity> findFirstBySchoolIdAndStatus(UUID schoolId, String status);
-    List<SchoolSubscriptionJpaEntity> findAllBySchoolId(UUID schoolId);
-    boolean existsByPlanIdAndStatus(UUID planId, String status);
+    List<SchoolSubscriptionJpaEntity> findBySchoolId(UUID schoolId);
+    boolean existsBySubscriptionPlanIdAndStatus(UUID subscriptionPlanId, String status);
 
     // Bulk update bỏ qua persistence context nên KHÔNG tự tăng cột @Version — phải tăng tay
     // (s.version = s.version + 1) để bất kỳ bản ghi nào đang được load ở nơi khác (vd
@@ -28,26 +28,31 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
     @Query("""
         UPDATE SchoolSubscriptionJpaEntity s
         SET s.status = 'EXPIRED', s.version = s.version + 1
-        WHERE s.status = 'ACTIVE' AND s.endDate < :today
+        WHERE s.status = 'ACTIVE' AND s.endDate < :cutoff
     """)
-    int expireOverdue(@Param("today") LocalDate today);
+    int expireOverdue(@Param("cutoff") Instant cutoff);
 
     @Query("""
         SELECT s FROM SchoolSubscriptionJpaEntity s
-        WHERE (:planId IS NULL OR s.planId = :planId)
+        WHERE (:planId IS NULL OR s.subscriptionPlanId = :planId)
           AND (:status IS NULL OR s.status = :status)
           AND (:keywordPattern IS NULL OR EXISTS (
                 SELECT 1 FROM SchoolJpaEntity sc
                 WHERE sc.id = s.schoolId AND LOWER(sc.name) LIKE :keywordPattern
               ))
     """)
-    Page<SchoolSubscriptionJpaEntity> findAllForAdmin(
+    Page<SchoolSubscriptionJpaEntity> findForAdmin(
         @Param("planId") UUID planId,
         @Param("status") String status,
         @Param("keywordPattern") String keywordPattern,
         Pageable pageable
     );
 
+    // CÁC NATIVE QUERY DƯỚI ĐÂY CÒN DÙNG TÊN CỘT CŨ (subscription.plan_id, quota.subscription_id,
+    // quota.total_allocated, quota.used_quantity, user_allocation.allocated_quantity/used_quantity)
+    // và tên bảng cũ school_subscription / subscription_plan. Hiện vẫn chạy đúng vì V2 mới chỉ đổi
+    // TÊN BẢNG của 3 bảng quota chứ chưa đổi cột nào. Khi V2 được bổ sung phần rename cột/bảng còn
+    // lại thì phải sửa đồng thời cả 3 query này -- JPQL ở trên đã theo tên mới, native thì không.
     @Query(value = """
         SELECT subscription.id
         FROM school_users school_user

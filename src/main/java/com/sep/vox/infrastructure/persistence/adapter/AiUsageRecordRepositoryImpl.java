@@ -36,8 +36,8 @@ public class AiUsageRecordRepositoryImpl implements AiUsageRecordRepository {
     }
 
     @Override
-    public List<AiUsageRecord> findAllByExamSessionId(UUID examSessionId) {
-        return springDataAiUsageRecordRepository.findAllByExamSessionId(examSessionId).stream()
+    public List<AiUsageRecord> findByExamSessionId(UUID examSessionId) {
+        return springDataAiUsageRecordRepository.findByExamSessionId(examSessionId).stream()
             .map(AiUsageRecordMapper::toDomain)
             .toList();
     }

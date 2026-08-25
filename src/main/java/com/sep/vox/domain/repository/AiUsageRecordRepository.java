@@ -11,7 +11,7 @@ import com.sep.vox.domain.model.aimodel.AiUsageRecord;
 public interface AiUsageRecordRepository {
     Optional<AiUsageRecord> findById(UUID id);
     AiUsageRecord save(AiUsageRecord record);
-    List<AiUsageRecord> findAllByExamSessionId(UUID examSessionId);
+    List<AiUsageRecord> findByExamSessionId(UUID examSessionId);
     boolean existsByUsageEventId(UUID usageEventId);
 
     /** Tổng cost_usd của mọi usage record thuộc session -- nguồn thật để trừ SchoolSubscriptionQuotaRecord. */

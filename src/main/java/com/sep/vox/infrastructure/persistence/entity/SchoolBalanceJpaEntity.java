@@ -7,13 +7,17 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
-import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
+/**
+ * Ví tiền TỰ NẠP của trường. Hạn mức kèm gói KHÔNG nằm ở đây mà ở
+ * school_subscription_quota_records -- tách theo từng QuotaType, nên gộp vào một số dư cấp trường
+ * duy nhất sẽ xóa mất giới hạn theo loại.
+ */
 @Entity
 @Table(name = "school_balances")
 public class SchoolBalanceJpaEntity {
@@ -32,21 +36,11 @@ public class SchoolBalanceJpaEntity {
     @Column(name = "school_id", nullable = false, updatable = false)
     private UUID schoolId;
 
-    // Hạn mức KÈM GÓI: bị ghi giảm về 0 mỗi lần gia hạn. Không bao giờ âm -- mọi phần vượt quá đều
-    // rơi xuống purchased_vnd, xem câu UPDATE trừ số dư trong SpringDataSchoolBalanceRepository.
-    @Column(name = "granted_vnd", nullable = false, precision = 18, scale = 6, check = {
-        @CheckConstraint(
-            name = "chk_school_balances_granted_vnd_non_negative",
-            constraint = "granted_vnd >= 0"
-        )
-    })
-    private BigDecimal grantedVnd;
-
-    // Hạn mức trường TỰ NẠP: không hết hạn. CỐ Ý không có CHECK >= 0 -- phần âm ở đây CHÍNH LÀ nợ
+    // Tiền trường TỰ NẠP: không hết hạn. CỐ Ý không có CHECK >= 0 -- phần âm ở đây CHÍNH LÀ nợ
     // (thay cho điều kiện used_quantity > total_allocated cũ), phát sinh khi QuotaType cho phép ghi
     // nợ (GRADING/CLASS_TEST) tiêu vượt số dư.
-    @Column(name = "purchased_vnd", nullable = false, precision = 18, scale = 6)
-    private BigDecimal purchasedVnd;
+    @Column(name = "balance_vnd", nullable = false, precision = 18, scale = 6)
+    private BigDecimal balanceVnd;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -63,12 +57,11 @@ public class SchoolBalanceJpaEntity {
 
     protected SchoolBalanceJpaEntity() {}
 
-    public SchoolBalanceJpaEntity(UUID id, UUID schoolId, BigDecimal grantedVnd, BigDecimal purchasedVnd,
+    public SchoolBalanceJpaEntity(UUID id, UUID schoolId, BigDecimal balanceVnd,
             Instant createdAt, Instant updatedAt, Long version) {
         this.id = id;
         this.schoolId = schoolId;
-        this.grantedVnd = grantedVnd;
-        this.purchasedVnd = purchasedVnd;
+        this.balanceVnd = balanceVnd;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.version = version;
@@ -90,20 +83,12 @@ public class SchoolBalanceJpaEntity {
         this.schoolId = schoolId;
     }
 
-    public BigDecimal getGrantedVnd() {
-        return grantedVnd;
+    public BigDecimal getBalanceVnd() {
+        return balanceVnd;
     }
 
-    public void setGrantedVnd(BigDecimal grantedVnd) {
-        this.grantedVnd = grantedVnd;
-    }
-
-    public BigDecimal getPurchasedVnd() {
-        return purchasedVnd;
-    }
-
-    public void setPurchasedVnd(BigDecimal purchasedVnd) {
-        this.purchasedVnd = purchasedVnd;
+    public void setBalanceVnd(BigDecimal balanceVnd) {
+        this.balanceVnd = balanceVnd;
     }
 
     public Instant getCreatedAt() {

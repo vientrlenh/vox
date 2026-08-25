@@ -27,28 +27,28 @@ public class SubscriptionPlanQuotaRepositoryImpl implements SubscriptionPlanQuot
     }
 
     @Override
-    public SubscriptionPlanQuota save(SubscriptionPlanQuota planQuota) {
-        var entity = SubscriptionPlanQuotaMapper.toJpa(planQuota);
+    public SubscriptionPlanQuota save(SubscriptionPlanQuota quota) {
+        var entity = SubscriptionPlanQuotaMapper.toJpa(quota);
         var saved = springDataSubscriptionPlanQuotaRepository.save(entity);
         return SubscriptionPlanQuotaMapper.toDomain(saved);
     }
 
     @Override
-    public List<SubscriptionPlanQuota> findAllByPlanId(UUID planId) {
-        return springDataSubscriptionPlanQuotaRepository.findAllByPlanId(planId).stream()
+    public List<SubscriptionPlanQuota> findBySubscriptionPlanId(UUID subscriptionPlanId) {
+        return springDataSubscriptionPlanQuotaRepository.findBySubscriptionPlanId(subscriptionPlanId).stream()
             .map(SubscriptionPlanQuotaMapper::toDomain)
             .toList();
     }
 
     @Override
-    public List<SubscriptionPlanQuota> findAllByPlanIdIn(Collection<UUID> planIds) {
-        return springDataSubscriptionPlanQuotaRepository.findAllByPlanIdIn(planIds).stream()
+    public List<SubscriptionPlanQuota> findBySubscriptionPlanIdIn(Collection<UUID> planIds) {
+        return springDataSubscriptionPlanQuotaRepository.findBySubscriptionPlanIdIn(planIds).stream()
             .map(SubscriptionPlanQuotaMapper::toDomain)
             .toList();
     }
 
     @Override
-    public void deleteAllByPlanId(UUID planId) {
-        springDataSubscriptionPlanQuotaRepository.deleteAllByPlanId(planId);
+    public void deleteBySubscriptionPlanId(UUID subscriptionPlanId) {
+        springDataSubscriptionPlanQuotaRepository.deleteBySubscriptionPlanId(subscriptionPlanId);
     }
 }

@@ -24,27 +24,28 @@ public class SchoolSubscriptionQuotaUserAllocationRepositoryImpl implements Scho
     }
 
     @Override
-    public List<SchoolSubscriptionQuotaUserAllocation> findAllBySubscriptionIdAndQuotaType(UUID subscriptionId, QuotaType quotaType) {
-        return springDataRepository.findAllBySubscriptionIdAndQuotaType(subscriptionId, quotaType.name()).stream()
+    public List<SchoolSubscriptionQuotaUserAllocation> findBySchoolSubscriptionIdAndQuotaType(UUID schoolSubscriptionId, QuotaType quotaType) {
+        return springDataRepository.findBySchoolSubscriptionIdAndQuotaType(schoolSubscriptionId, quotaType.name()).stream()
             .map(SchoolSubscriptionQuotaUserAllocationMapper::toDomain)
             .toList();
     }
 
     @Override
-    public Optional<SchoolSubscriptionQuotaUserAllocation> findBySubscriptionIdAndQuotaTypeAndUserId(UUID subscriptionId, QuotaType quotaType, UUID userId) {
-        return springDataRepository.findBySubscriptionIdAndQuotaTypeAndUserId(subscriptionId, quotaType.name(), userId)
+    public Optional<SchoolSubscriptionQuotaUserAllocation> findBySchoolSubscriptionIdAndQuotaTypeAndUserId(UUID schoolSubscriptionId, QuotaType quotaType, UUID userId) {
+        return springDataRepository.findBySchoolSubscriptionIdAndQuotaTypeAndUserId(schoolSubscriptionId, quotaType.name(), userId)
             .map(SchoolSubscriptionQuotaUserAllocationMapper::toDomain);
     }
 
     @Override
-    public SchoolSubscriptionQuotaUserAllocation upsertAllocation(UUID subscriptionId, QuotaType quotaType, UUID userId, BigDecimal allocatedQuantity) {
-        var existing = springDataRepository.findBySubscriptionIdAndQuotaTypeAndUserId(subscriptionId, quotaType.name(), userId);
+    public SchoolSubscriptionQuotaUserAllocation upsertAllocation(UUID schoolSubscriptionId, QuotaType quotaType, UUID userId, BigDecimal allocatedAmountVnd) {
+        var existing = springDataRepository.findBySchoolSubscriptionIdAndQuotaTypeAndUserId(schoolSubscriptionId, quotaType.name(), userId);
         SchoolSubscriptionQuotaUserAllocationJpaEntity entity;
         if (existing.isPresent()) {
             entity = existing.get();
-            entity.setAllocatedQuantity(allocatedQuantity);
+            entity.setAllocatedAmountVnd(allocatedAmountVnd);
         } else {
-            entity = new SchoolSubscriptionQuotaUserAllocationJpaEntity(null, subscriptionId, quotaType.name(), userId, allocatedQuantity, BigDecimal.ZERO);
+            entity = new SchoolSubscriptionQuotaUserAllocationJpaEntity(
+                null, schoolSubscriptionId, quotaType.name(), userId, allocatedAmountVnd, BigDecimal.ZERO);
         }
         var saved = springDataRepository.save(entity);
         return SchoolSubscriptionQuotaUserAllocationMapper.toDomain(saved);

@@ -19,7 +19,7 @@ import jakarta.persistence.UniqueConstraint;
     uniqueConstraints = {
         @UniqueConstraint(
             name = "uk_school_subscription_quota_user_allocations_subscription_user",
-            columnNames = {"subscription_id", "quota_type", "user_id"}
+            columnNames = {"school_subscription_id", "quota_type", "user_id"}
         )
     }
 )

@@ -35,15 +35,16 @@ public class SchoolSubscriptionQuotaRecordRepositoryImpl implements SchoolSubscr
     }
 
     @Override
-    public List<SchoolSubscriptionQuotaRecord> findAllBySubscriptionId(UUID subscriptionId) {
-        return springDataSchoolSubscriptionQuotaRecordRepository.findAllBySubscriptionId(subscriptionId).stream()
+    public List<SchoolSubscriptionQuotaRecord> findBySchoolSubscriptionId(UUID schoolSubscriptionId) {
+        return springDataSchoolSubscriptionQuotaRecordRepository.findBySchoolSubscriptionId(schoolSubscriptionId).stream()
             .map(SchoolSubscriptionQuotaRecordMapper::toDomain)
             .toList();
     }
 
     @Override
-    public Optional<SchoolSubscriptionQuotaRecord> findBySubscriptionIdAndQuotaType(UUID subscriptionId, QuotaType quotaType) {
-        return springDataSchoolSubscriptionQuotaRecordRepository.findBySubscriptionIdAndQuotaType(subscriptionId, quotaType.name())
+    public Optional<SchoolSubscriptionQuotaRecord> findBySchoolSubscriptionIdAndQuotaType(UUID schoolSubscriptionId, QuotaType quotaType) {
+        return springDataSchoolSubscriptionQuotaRecordRepository
+            .findBySchoolSubscriptionIdAndQuotaType(schoolSubscriptionId, quotaType.name())
             .map(SchoolSubscriptionQuotaRecordMapper::toDomain);
     }
 

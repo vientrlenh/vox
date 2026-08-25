@@ -13,7 +13,7 @@ import com.sep.vox.domain.repository.SessionCostAggregate;
 import com.sep.vox.infrastructure.persistence.entity.AiUsageRecordJpaEntity;
 
 public interface SpringDataAiUsageRecordRepository extends JpaRepository<AiUsageRecordJpaEntity, UUID> {
-    List<AiUsageRecordJpaEntity> findAllByExamSessionId(UUID examSessionId);
+    List<AiUsageRecordJpaEntity> findByExamSessionId(UUID examSessionId);
     boolean existsByUsageEventId(UUID usageEventId);
 
     @Query("""

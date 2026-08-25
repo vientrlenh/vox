@@ -5,13 +5,24 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Kết quả thanh toán do cổng báo về. CHỈ được tạo khi đã nhận webhook (hoặc khi
- * PendingInvoiceReconciler dò thấy kết quả) -- không có bản ghi nào cho đường dẫn thanh toán chưa ai
- * trả. Vòng đời chờ/hết hạn/hủy của một yêu cầu thanh toán nằm ở Order.
+ * MỘT LẦN THỬ thanh toán của một Order -- sinh ra ngay lúc phát link (PENDING), rồi chuyển sang
+ * PAID/FAILED khi cổng báo về hoặc khi mình chủ động hỏi lại.
  *
- * <p>Một Order có thể có NHIỀU PaymentRecord (PayOS cho trả lại sau khi thất bại), nhưng chỉ được
- * có TỐI ĐA MỘT dòng PAID -- xem unique index uq_payment_records_one_paid_per_order. Không có ràng
- * buộc đó thì việc trả trùng sẽ ghi hai lần vào số dư.
+ * <p>Một Order có NHIỀU PaymentRecord (trả hụt rồi trả lại), nhưng tối đa MỘT dòng PAID
+ * (uq_payment_records_one_paid_per_order) và tối đa MỘT dòng PENDING
+ * (uq_payment_records_one_pending_per_order). Ràng buộc PENDING là thứ ép đúng thứ tự: muốn phát
+ * link mới thì phải chốt lần thử cũ trước, tức là phải hỏi cổng xem nó đã trả tiền chưa -- không có
+ * nó thì trường bấm "thanh toán lại" nhiều lần và trả tiền hai lần cho một đơn.
+ *
+ * <p>{@code providerOrderRef} là KHÓA ĐỐI SOÁT với cổng và KHÔNG BAO GIỜ dùng lại: cả hai cổng đều
+ * bắt mã đơn duy nhất phía họ (PayOS trả lỗi "Đơn thanh toán đã tồn tại"; SePay yêu cầu
+ * {@code order_invoice_number} không trùng), nên mỗi lần thử phải mang một mã mới.
+ *
+ * <p>CỐ Ý không lưu checkoutUrl lẫn paymentLinkId, và cũng KHÔNG có cột payload/metadata dạng JSON
+ * cho dữ liệu riêng của từng cổng. Mọi thao tác với cổng đều chỉ cần {@code providerOrderRef}:
+ * PayOS tra theo orderCode, SePay tra theo order_invoice_number, và dashboard của cả hai đều tìm
+ * được bằng chính mã đó. Một cột JSON tự do ở bảng tiền là đúng thứ V2 vừa bỏ đi khi thay cặp
+ * (source_type, source_id) đa hình bằng các cột có kiểu -- thêm lại ở đây là đi ngược.
  */
 public class PaymentRecord {
 
@@ -21,9 +32,9 @@ public class PaymentRecord {
     private PaymentMethod method;
     private PaymentProvider provider;
     private PaymentStatus status;
-    /** Mã giao dịch phía cổng -- khóa đối soát ngược với dashboard PayOS/SePay. */
+    /** Mã giao dịch phía cổng -- duy nhất theo từng lần thử, khóa tra ngược dashboard PayOS/SePay. */
     private String providerOrderRef;
-    /** Thời điểm cổng ghi nhận giao dịch, KHÁC createdAt (lúc mình ghi nhận webhook). */
+    /** Thời điểm cổng ghi nhận giao dịch, KHÁC createdAt (lúc mình phát link). Null khi chưa trả. */
     private Instant paidAt;
     private Instant createdAt;
 
@@ -124,5 +135,10 @@ public class PaymentRecord {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    /** Đã kết thúc (không còn chờ cổng) -- chốt chặn trước khi cho phát link mới. */
+    public boolean isSettled() {
+        return status != PaymentStatus.PENDING;
     }
 }

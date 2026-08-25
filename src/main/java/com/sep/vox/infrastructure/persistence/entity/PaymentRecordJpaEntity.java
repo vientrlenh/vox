@@ -14,7 +14,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * Append-only: kết quả cổng đã báo về thì không sửa nữa. Trả lại lần nữa sẽ sinh dòng MỚI.
+ * MỘT LẦN THỬ thanh toán. Dòng sinh ra lúc phát link (PENDING) và chỉ được đổi đúng hai cột khi cổng
+ * báo kết quả: {@code status} và {@code paid_at}. Mọi cột còn lại {@code updatable = false} -- số
+ * tiền, cổng, mã đơn đã chốt lúc phát link thì không được sửa, sai thì là một lần thử KHÁC.
+ *
+ * <p>Trả lại sau khi thất bại sinh dòng MỚI với mã đơn mới: cả PayOS lẫn SePay đều bắt mã đơn phía
+ * họ là duy nhất, nên không có chuyện dùng lại mã cũ cho lần thử sau.
  */
 @Entity
 @Table(name = "payment_records")
@@ -53,10 +58,11 @@ public class PaymentRecordJpaEntity {
     })
     private String provider;
 
-    @Column(name = "status", nullable = false, updatable = false, length = 20, check = {
+    // KHÔNG updatable=false: đây là cột duy nhất mang vòng đời của lần thử (PENDING -> PAID/FAILED).
+    @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_payment_records_status_valid",
-            constraint = "status IN ('PAID', 'FAILED')"
+            constraint = "status IN ('PENDING', 'PAID', 'FAILED')"
         )
     })
     private String status;
@@ -66,9 +72,9 @@ public class PaymentRecordJpaEntity {
     @Column(name = "provider_order_ref", nullable = false, updatable = false, length = 100)
     private String providerOrderRef;
 
-    // Thời điểm CỔNG ghi nhận giao dịch, khác created_at (lúc mình nhận được webhook) -- lệch nhau
-    // vài giây tới vài phút nếu webhook bị retry.
-    @Column(name = "paid_at", updatable = false)
+    // Thời điểm CỔNG ghi nhận giao dịch, khác created_at (lúc mình PHÁT LINK). Null tới khi lần thử
+    // này ra tiền, nên phải updatable -- điền cùng lúc với status = PAID.
+    @Column(name = "paid_at")
     private Instant paidAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -59,10 +59,16 @@ class GradeLevelBandScopeGuardServiceTests {
                 gradeLevelRepository, schoolGradeRepository, schoolClassRepository);
     }
 
-    /** Trần của khối = bậc order 3. */
+    /**
+     * Trần của khối = bậc order 3. Stub cả defaultTargetBandId lẫn hardMaxBandId trỏ về CÙNG một
+     * band: guard luôn resolve cả hai trước khi tính effectiveCeilingBand (xem invariant "cả hai
+     * bậc phải cùng tồn tại" trong {@link GradeLevelBandScope}), nên chỉ stub hardMaxBandId khiến
+     * defaultBand rỗng và guard bail-out êm thay vì ném lỗi -- không phản ánh đúng dữ liệu thật.
+     */
     private void stubCapAtOrder3() {
         GradeLevelBandScope scope = mock(GradeLevelBandScope.class);
         when(scope.getHardMaxBandId()).thenReturn(HARD_MAX_BAND_ID);
+        when(scope.getDefaultTargetBandId()).thenReturn(HARD_MAX_BAND_ID);
         when(bandScopeRepository.findByGradeLevelIdAndFrameworkVersionId(GRADE_LEVEL_ID, FRAMEWORK_VERSION_ID))
                 .thenReturn(Optional.of(scope));
         // Dựng band TRƯỚC rồi mới stub: gọi band() ngay trong thenReturn(...) là stub lồng stub,

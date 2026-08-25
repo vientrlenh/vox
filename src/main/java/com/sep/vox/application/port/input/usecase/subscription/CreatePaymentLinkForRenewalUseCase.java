@@ -126,7 +126,8 @@ public class CreatePaymentLinkForRenewalUseCase implements IUseCase<CreatePaymen
                 null,
                 null,
                 null,
-                plan.getId()
+                plan.getId(),
+                userContextPort.getCurrentAuthenticatedUserId()
             ));
             invoiceSettlementService.settle(freeInvoice, true);
             return new PaymentLinkDto(freeInvoice.getId(), null, CheckoutAction.NONE.name(), "", null, null);
@@ -152,7 +153,8 @@ public class CreatePaymentLinkForRenewalUseCase implements IUseCase<CreatePaymen
             null,
             null,
             null,
-            plan.getId()
+            plan.getId(),
+            userContextPort.getCurrentAuthenticatedUserId()
         ));
 
         var result = paymentProcessPort.createPaymentLink(new CreatePaymentLinkCommand(

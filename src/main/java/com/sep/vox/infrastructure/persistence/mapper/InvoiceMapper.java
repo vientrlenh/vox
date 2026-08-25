@@ -26,7 +26,8 @@ public final class InvoiceMapper {
             jpa.getPaymentLinkId(),
             jpa.getCheckoutUrl(),
             jpa.getPaidAt(),
-            jpa.getResolvedPlanId()
+            jpa.getResolvedPlanId(),
+            jpa.getCreatedBy()
         );
     }
 
@@ -46,7 +47,8 @@ public final class InvoiceMapper {
             domain.getPaymentLinkId(),
             domain.getCheckoutUrl(),
             domain.getPaidAt(),
-            domain.getResolvedPlanId()
+            domain.getResolvedPlanId(),
+            domain.getCreatedBy()
         );
     }
 }

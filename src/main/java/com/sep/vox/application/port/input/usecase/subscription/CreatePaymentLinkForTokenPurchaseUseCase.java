@@ -142,7 +142,8 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
             null,
             null,
             null,
-            null
+            null,
+            userContextPort.getCurrentAuthenticatedUserId()
         ));
 
         var result = paymentProcessPort.createPaymentLink(new CreatePaymentLinkCommand(

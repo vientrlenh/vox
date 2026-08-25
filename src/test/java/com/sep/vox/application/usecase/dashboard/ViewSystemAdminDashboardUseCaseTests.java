@@ -70,7 +70,7 @@ class ViewSystemAdminDashboardUseCaseTests {
         return new Invoice(
             UUID.randomUUID(), "INV-" + UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
             InvoiceSourceType.SUBSCRIPTION, UUID.randomUUID(), LocalDate.now(), amount,
-            InvoiceStatus.PAID, null, null, null, null, paidAt, null
+            InvoiceStatus.PAID, null, null, null, null, paidAt, null, null
         );
     }
 

@@ -131,6 +131,7 @@ public class InvoiceSettlementService {
                 invoice.setPaidAt(now);
             }
             invoiceRepository.save(invoice);
+            rejectAbandonedSource(invoice);
             return;
         }
 
@@ -143,13 +144,13 @@ public class InvoiceSettlementService {
         var paymentProvider = invoice.getPaymentProvider();
 
         if (invoice.getSourceType() == InvoiceSourceType.SUBSCRIPTION_REQUEST) {
-            var savedSubscription = approveSubscriptionRequest(invoice.getSourceId(), paymentProvider, now);
+            var savedSubscription = approveSubscriptionRequest(invoice.getSourceId(), invoice.getCreatedBy(), paymentProvider, now);
             invoice.setSubscriptionId(savedSubscription.getId());
         } else if (invoice.getSourceType() == InvoiceSourceType.TOKEN_PURCHASE) {
-            finalizeTokenPurchase(invoice.getSourceId(), invoice.getSubscriptionId(), paymentProvider, now);
+            finalizeTokenPurchase(invoice.getSourceId(), invoice.getCreatedBy(), invoice.getSubscriptionId(), paymentProvider, now);
         } else if (invoice.getSourceType() == InvoiceSourceType.SUBSCRIPTION) {
             var savedSubscription = renewSubscription(
-                invoice.getSourceId(), invoice.getResolvedPlanId(), invoice.getAmount(), paymentProvider, now);
+                invoice.getSourceId(), invoice.getCreatedBy(), invoice.getResolvedPlanId(), invoice.getAmount(), paymentProvider, now);
             invoice.setSubscriptionId(savedSubscription.getId());
         }
 
@@ -197,7 +198,33 @@ public class InvoiceSettlementService {
         ));
     }
 
-    private SchoolSubscription approveSubscriptionRequest(UUID requestId, PaymentMethod paymentProvider, Instant now) {
+    // Invoice fail/cancel (webhook báo hủy, hoặc PendingInvoiceReconciler đánh dấu quá hạn) thì đơn
+    // gốc PHẢI thoát khỏi PENDING theo, không thì kẹt vĩnh viễn -- không có cách nào khác để thanh
+    // toán tiếp vì paymentLinkId cũ đã chết. Không đụng reviewedAt/reviewedBy: đây là hệ thống tự
+    // đóng, không phải admin duyệt -- để trống 2 field đó chính là dấu hiệu phân biệt với reject thủ
+    // công (RejectRequestUseCase).
+    private void rejectAbandonedSource(Invoice invoice) {
+        if (invoice.getSourceType() == InvoiceSourceType.SUBSCRIPTION_REQUEST) {
+            subscriptionRequestRepository.findById(invoice.getSourceId()).ifPresent(request -> {
+                if (request.getStatus() == RequestStatus.PENDING) {
+                    request.setStatus(RequestStatus.REJECTED);
+                    subscriptionRequestRepository.save(request);
+                }
+            });
+        } else if (invoice.getSourceType() == InvoiceSourceType.TOKEN_PURCHASE) {
+            tokenPurchaseRepository.findById(invoice.getSourceId()).ifPresent(purchase -> {
+                if (purchase.getStatus() == PurchaseStatus.PENDING) {
+                    purchase.setStatus(PurchaseStatus.FAILED);
+                    tokenPurchaseRepository.save(purchase);
+                }
+            });
+        }
+        // InvoiceSourceType.SUBSCRIPTION (gia hạn): source_id trỏ thẳng school_subscription đang
+        // ACTIVE sẵn có -- gia hạn thất bại thì subscription cứ giữ nguyên trạng thái cũ tới hết
+        // hạn, không có "đơn" nào để reject cả, không cần xử lý gì thêm.
+    }
+
+    private SchoolSubscription approveSubscriptionRequest(UUID requestId, UUID createdBy, PaymentMethod paymentProvider, Instant now) {
         var request = subscriptionRequestRepository.findById(requestId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy yêu cầu"));
         if (request.getStatus() != RequestStatus.PENDING) {
@@ -253,7 +280,7 @@ public class InvoiceSettlementService {
             : FinancialEventType.SUB_PURCHASED;
         financialEventRepository.save(new FinancialEvent(
             request.getSchoolId(), savedSubscription.getId(), eventType,
-            request.getAmount(), "VND", paymentProvider, null, null, now
+            request.getAmount(), "VND", paymentProvider, createdBy, null, now
         ));
 
         reportDebtClearedIfNeeded(wasOverGrading, savedSubscription, QuotaType.GRADING, now);
@@ -279,7 +306,7 @@ public class InvoiceSettlementService {
     }
 
     private SchoolSubscription renewSubscription(
-            UUID subscriptionId, UUID resolvedPlanId, BigDecimal amountPaid, PaymentMethod paymentProvider, Instant now) {
+            UUID subscriptionId, UUID createdBy, UUID resolvedPlanId, BigDecimal amountPaid, PaymentMethod paymentProvider, Instant now) {
         var current = schoolSubscriptionRepository.findById(subscriptionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
         if (current.getStatus() != SubscriptionStatus.ACTIVE) {
@@ -333,7 +360,7 @@ public class InvoiceSettlementService {
 
         financialEventRepository.save(new FinancialEvent(
             current.getSchoolId(), savedSubscription.getId(), FinancialEventType.SUB_RENEWED,
-            amountPaid, "VND", paymentProvider, null, null, now
+            amountPaid, "VND", paymentProvider, createdBy, null, now
         ));
 
         reportDebtClearedIfNeeded(wasOverGrading, savedSubscription, QuotaType.GRADING, now);
@@ -343,7 +370,7 @@ public class InvoiceSettlementService {
     }
 
     private void finalizeTokenPurchase(
-            UUID purchaseId, UUID subscriptionId, PaymentMethod paymentProvider, Instant now) {
+            UUID purchaseId, UUID createdBy, UUID subscriptionId, PaymentMethod paymentProvider, Instant now) {
         var purchase = tokenPurchaseRepository.findById(purchaseId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn mua token"));
         if (purchase.getStatus() != PurchaseStatus.PENDING) {
@@ -370,7 +397,7 @@ public class InvoiceSettlementService {
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
         financialEventRepository.save(new FinancialEvent(
             subscription.getSchoolId(), subscriptionId, FinancialEventType.TOKEN_PURCHASED,
-            purchase.getTotalAmount(), "VND", paymentProvider, null, null, now
+            purchase.getTotalAmount(), "VND", paymentProvider, createdBy, null, now
         ));
 
         // Báo SchoolDebtCleared cho TỪNG bucket riêng vừa hết nợ (mua thêm token có thể chỉ top-up 1

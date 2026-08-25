@@ -14,7 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "school_debt_event")
+@Table(name = "school_debt_events")
 public class SchoolDebtEventJpaEntity {
 
     @Id
@@ -31,8 +31,8 @@ public class SchoolDebtEventJpaEntity {
     @Column(name = "school_id", nullable = false, updatable = false)
     private UUID schoolId;
 
-    @Column(name = "subscription_id", nullable = false, updatable = false)
-    private UUID subscriptionId;
+    @Column(name = "subscription_plan_id", nullable = false, updatable = false)
+    private UUID subscriptionPlanId;
 
     @Column(name = "event_type", nullable = false, updatable = false, length = 20, check = {
         @CheckConstraint(
@@ -44,7 +44,7 @@ public class SchoolDebtEventJpaEntity {
 
     @Column(name = "quota_type", nullable = false, updatable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_school_debt_event_quota_type_valid",
+            name = "chk_school_debt_events_quota_type_valid",
             constraint = "quota_type IN ('GRADING', 'CLASS_TEST', 'PRACTICE')"
         )
     })
@@ -70,12 +70,12 @@ public class SchoolDebtEventJpaEntity {
 
     protected SchoolDebtEventJpaEntity() {}
 
-    public SchoolDebtEventJpaEntity(UUID id, UUID schoolId, UUID subscriptionId, String eventType, String quotaType,
+    public SchoolDebtEventJpaEntity(UUID id, UUID schoolId, UUID subscriptionPlanId, String eventType, String quotaType,
             UUID triggerExamSessionId, BigDecimal triggerAmountUsd, BigDecimal totalAllocatedUsd,
             BigDecimal usedQuantityUsd, BigDecimal overageUsd, Instant occurredAt) {
         this.id = id;
         this.schoolId = schoolId;
-        this.subscriptionId = subscriptionId;
+        this.subscriptionPlanId = subscriptionPlanId;
         this.eventType = eventType;
         this.quotaType = quotaType;
         this.triggerExamSessionId = triggerExamSessionId;
@@ -102,12 +102,12 @@ public class SchoolDebtEventJpaEntity {
         this.schoolId = schoolId;
     }
 
-    public UUID getSubscriptionId() {
-        return subscriptionId;
+    public UUID getSubscriptionPlanId() {
+        return subscriptionPlanId;
     }
 
-    public void setSubscriptionId(UUID subscriptionId) {
-        this.subscriptionId = subscriptionId;
+    public void setSubscriptionPlanId(UUID subscriptionPlanId) {
+        this.subscriptionPlanId = subscriptionPlanId;
     }
 
     public String getEventType() {

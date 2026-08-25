@@ -13,7 +13,7 @@ public final class SchoolDebtEventMapper {
         return new SchoolDebtEvent(
             jpa.getId(),
             jpa.getSchoolId(),
-            jpa.getSubscriptionId(),
+            jpa.getSubscriptionPlanId(),
             SchoolDebtEventType.valueOf(jpa.getEventType()),
             QuotaType.valueOf(jpa.getQuotaType()),
             jpa.getTriggerExamSessionId(),
@@ -29,7 +29,7 @@ public final class SchoolDebtEventMapper {
         return new SchoolDebtEventJpaEntity(
             domain.getId(),
             domain.getSchoolId(),
-            domain.getSubscriptionId(),
+            domain.getSubscriptionPlanId(),
             domain.getEventType().name(),
             domain.getQuotaType().name(),
             domain.getTriggerExamSessionId(),

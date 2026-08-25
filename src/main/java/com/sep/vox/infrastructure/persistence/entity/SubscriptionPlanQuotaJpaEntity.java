@@ -27,8 +27,8 @@ public class SubscriptionPlanQuotaJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "plan_id", nullable = false, updatable = false)
-    private UUID planId;
+    @Column(name = "subscription_plan_id", nullable = false, updatable = false)
+    private UUID subscriptionPlanId;
 
     @Column(name = "quota_type", nullable = false, length = 20, check = {
         @CheckConstraint(
@@ -41,17 +41,17 @@ public class SubscriptionPlanQuotaJpaEntity {
     @Column(name = "included_quantity", nullable = false, precision = 18, scale = 6)
     private BigDecimal includedQuantity;
 
-    @Column(name = "token_unit_price", nullable = false, precision = 15, scale = 0)
-    private BigDecimal tokenUnitPrice;
+    @Column(name = "token_unit_price_vnd", nullable = false, precision = 15, scale = 0)
+    private BigDecimal tokenUnitPriceVnd;
 
     protected SubscriptionPlanQuotaJpaEntity() {}
 
-    public SubscriptionPlanQuotaJpaEntity(UUID id, UUID planId, String quotaType, BigDecimal includedQuantity, BigDecimal tokenUnitPrice) {
+    public SubscriptionPlanQuotaJpaEntity(UUID id, UUID subscriptionPlanId, String quotaType, BigDecimal includedQuantity, BigDecimal tokenUnitPriceVnd) {
         this.id = id;
-        this.planId = planId;
+        this.subscriptionPlanId = subscriptionPlanId;
         this.quotaType = quotaType;
         this.includedQuantity = includedQuantity;
-        this.tokenUnitPrice = tokenUnitPrice;
+        this.tokenUnitPriceVnd = tokenUnitPriceVnd;
     }
 
     public UUID getId() {
@@ -62,12 +62,12 @@ public class SubscriptionPlanQuotaJpaEntity {
         this.id = id;
     }
 
-    public UUID getPlanId() {
-        return planId;
+    public UUID getSubscriptionPlanId() {
+        return subscriptionPlanId;
     }
 
-    public void setPlanId(UUID planId) {
-        this.planId = planId;
+    public void setSubscriptionPlanId(UUID subscriptionPlanId) {
+        this.subscriptionPlanId = subscriptionPlanId;
     }
 
     public String getQuotaType() {
@@ -86,11 +86,11 @@ public class SubscriptionPlanQuotaJpaEntity {
         this.includedQuantity = includedQuantity;
     }
 
-    public BigDecimal getTokenUnitPrice() {
-        return tokenUnitPrice;
+    public BigDecimal getTokenUnitPriceVnd() {
+        return tokenUnitPriceVnd;
     }
 
-    public void setTokenUnitPrice(BigDecimal tokenUnitPrice) {
-        this.tokenUnitPrice = tokenUnitPrice;
+    public void setTokenUnitPriceVnd(BigDecimal tokenUnitPriceVnd) {
+        this.tokenUnitPriceVnd = tokenUnitPriceVnd;
     }
 }

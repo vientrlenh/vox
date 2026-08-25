@@ -10,23 +10,23 @@ public class SubscriptionPlanQuota {
     private UUID subscriptionPlanId;
     private QuotaType quotaType;
     private BigDecimal includedQuantity;
-    private BigDecimal tokenUnitPrice;
+    private BigDecimal tokenUnitPriceVnd;
 
     public SubscriptionPlanQuota() {}
 
-    public SubscriptionPlanQuota(UUID id, UUID subscriptionPlanId, QuotaType quotaType, BigDecimal includedQuantity, BigDecimal tokenUnitPrice) {
+    public SubscriptionPlanQuota(UUID id, UUID subscriptionPlanId, QuotaType quotaType, BigDecimal includedQuantity, BigDecimal tokenUnitPriceVnd) {
         this.id = id;
         this.subscriptionPlanId = subscriptionPlanId;
         this.quotaType = quotaType;
         this.includedQuantity = includedQuantity;
-        this.tokenUnitPrice = tokenUnitPrice;
+        this.tokenUnitPriceVnd = tokenUnitPriceVnd;
     }
 
-    public SubscriptionPlanQuota(UUID subscriptionPlanId, QuotaType quotaType, BigDecimal includedQuantity, BigDecimal tokenUnitPrice) {
+    public SubscriptionPlanQuota(UUID subscriptionPlanId, QuotaType quotaType, BigDecimal includedQuantity, BigDecimal tokenUnitPriceVnd) {
         this.subscriptionPlanId = subscriptionPlanId;
         this.quotaType = quotaType;
         this.includedQuantity = includedQuantity;
-        this.tokenUnitPrice = tokenUnitPrice;
+        this.tokenUnitPriceVnd = tokenUnitPriceVnd;
     }
 
     public UUID getId() {
@@ -61,11 +61,11 @@ public class SubscriptionPlanQuota {
         this.includedQuantity = includedQuantity;
     }
 
-    public BigDecimal getTokenUnitPrice() {
-        return tokenUnitPrice;
+    public BigDecimal getTokenUnitPriceVnd() {
+        return tokenUnitPriceVnd;
     }
 
-    public void setTokenUnitPrice(BigDecimal tokenUnitPrice) {
-        this.tokenUnitPrice = tokenUnitPrice;
+    public void setTokenUnitPriceVnd(BigDecimal tokenUnitPriceVnd) {
+        this.tokenUnitPriceVnd = tokenUnitPriceVnd;
     }
 }

@@ -15,7 +15,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "ai_usage_record", uniqueConstraints = {
+@Table(name = "ai_usage_records", uniqueConstraints = {
     @UniqueConstraint(name = "uk_ai_usage_record_usage_event_id", columnNames = "usage_event_id")
 })
 public class AiUsageRecordJpaEntity {

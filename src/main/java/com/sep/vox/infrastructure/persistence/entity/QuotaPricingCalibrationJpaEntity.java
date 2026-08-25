@@ -13,7 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "quota_pricing_calibration")
+@Table(name = "quota_pricing_calibrations")
 public class QuotaPricingCalibrationJpaEntity {
 
     @Id

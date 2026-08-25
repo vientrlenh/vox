@@ -9,8 +9,8 @@ import com.sep.vox.domain.model.subscription.SubscriptionPlanQuota;
 
 public interface SubscriptionPlanQuotaRepository {
     Optional<SubscriptionPlanQuota> findById(UUID id);
-    SubscriptionPlanQuota save(SubscriptionPlanQuota planQuota);
-    List<SubscriptionPlanQuota> findAllByPlanId(UUID planId);
-    List<SubscriptionPlanQuota> findAllByPlanIdIn(Collection<UUID> planIds);
-    void deleteAllByPlanId(UUID planId);
+    SubscriptionPlanQuota save(SubscriptionPlanQuota quota);
+    List<SubscriptionPlanQuota> findBySubscriptionPlanId(UUID subscriptionPlanId);
+    List<SubscriptionPlanQuota> findBySubscriptionPlanIdIn(Collection<UUID> subscriptionPlanIds);
+    void deleteBySubscriptionPlanId(UUID subscriptionPlanId);
 }

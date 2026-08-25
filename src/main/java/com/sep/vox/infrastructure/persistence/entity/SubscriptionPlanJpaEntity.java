@@ -62,7 +62,7 @@ public class SubscriptionPlanJpaEntity {
 
     @Column(name = "version", nullable = false)
     @Version
-    private Integer version;
+    private Long version;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -85,7 +85,7 @@ public class SubscriptionPlanJpaEntity {
     protected SubscriptionPlanJpaEntity() {}
 
     public SubscriptionPlanJpaEntity(UUID id, String name, String tagline, BigDecimal priceVnd, String periodType, Integer periodCount,
-            Integer maxTimePerAttemptMin, String status, Integer version,
+            Integer maxTimePerAttemptMin, String status, Long version,
             Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy, UUID replacedByPlanId, BigDecimal serviceFeeRatio) {
         this.id = id;
         this.name = name;
@@ -168,11 +168,11 @@ public class SubscriptionPlanJpaEntity {
         this.status = status;
     }
 
-    public Integer getVersion() {
+    public Long getVersion() {
         return version;
     }
 
-    public void setVersion(Integer version) {
+    public void setVersion(Long version) {
         this.version = version;
     }
 

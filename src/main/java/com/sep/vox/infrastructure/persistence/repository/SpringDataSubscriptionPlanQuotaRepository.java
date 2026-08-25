@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.sep.vox.infrastructure.persistence.entity.SubscriptionPlanQuotaJpaEntity;
 
 public interface SpringDataSubscriptionPlanQuotaRepository extends JpaRepository<SubscriptionPlanQuotaJpaEntity, UUID> {
-    List<SubscriptionPlanQuotaJpaEntity> findAllByPlanId(UUID planId);
-    List<SubscriptionPlanQuotaJpaEntity> findAllByPlanIdIn(Collection<UUID> planIds);
-    void deleteAllByPlanId(UUID planId);
+    List<SubscriptionPlanQuotaJpaEntity> findBySubscriptionPlanId(UUID subscriptionPlanId);
+    List<SubscriptionPlanQuotaJpaEntity> findBySubscriptionPlanIdIn(Collection<UUID> subscriptionPlanIds);
+    void deleteBySubscriptionPlanId(UUID subscriptionPlanId);
 }

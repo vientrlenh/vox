@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
-import com.sep.vox.domain.mapper.SubscriptionPlanDtoMapper;
 import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
@@ -21,15 +20,21 @@ public class SubscriptionGraphQlDataLoaderConfig {
     public SubscriptionGraphQlDataLoaderConfig(
             BatchLoaderRegistry registry,
             SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionPlanQuotaRepository planQuotaRepository) {
+            SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository) {
 
         registry.<UUID, SubscriptionPlanDto>forName("subscriptionPlanById")
             .registerMappedBatchLoader((Set<UUID> planIds, BatchLoaderEnvironment env) ->
                 Mono.fromSupplier(() -> subscriptionPlanRepository.findByIdIn(planIds).stream()
                     .collect(Collectors.toMap(
                         plan -> plan.getId(),
-                        plan -> SubscriptionPlanDtoMapper.toDto(plan, planQuotaRepository.findAllByPlanId(plan.getId()))
-                    )))
-            );
+                        plan -> SubscriptionPlanDto.toDto(plan))
+                    )
+                )
+        );
+
+        registry.<UUID, SubscriptionPlanDto>forName("subscriptionPlanQuotaBySubscriptionPlanId")
+            .registerMappedBatchLoader((Set<UUID> subscriptionPlanIds, BatchLoaderEnvironment env) -> 
+                Mono.fromSupplier(() -> )
+        );
     }
 }

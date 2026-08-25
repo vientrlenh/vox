@@ -29,16 +29,18 @@ import com.sep.vox.domain.repository.SchoolGradeRepository;
  * hơn, nên trần sẽ trượt vì vô ý chứ không cần ai cố tình lách. Vì vậy ở đây luôn lần ngược
  * Lớp -> Khối năm học -> Khối trước khi so trần.
  *
+ * <p><b>Hai loại bài kiểm tra, hai trần khác nhau:</b> cột {@code default_target_band_id} mang
+ * nghĩa trần CENTRALIZE (kiểm tra tập trung -- policy áp cho cả Khối hoặc cả Niên khóa, tức
+ * {@code schoolClassId} KHÔNG được chọn); cột {@code hard_max_band_id} mang nghĩa trần CLASS_TEST
+ * (lớp chuyên có bài kiểm tra riêng -- policy neo đúng vào 1 {@code schoolClassId} cụ thể). Tên
+ * cột giữ nguyên như lúc thiết kế ban đầu (không đổi schema), nhưng ngữ nghĩa THỰC TẾ là theo loại
+ * bài kiểm tra, không phải "gợi ý mặc định" với "trần cứng". Chỉ đúng phạm vi Lớp mới được nới tới
+ * trần CLASS_TEST; Khối và Niên khóa (gộp nhiều lớp, không tách được lớp nào chuyên) đều bị ép về
+ * trần CENTRALIZE thấp hơn -- xem {@link Batch#effectiveCeilingBand}.
+ *
  * <p><b>Không áp dụng cho policy hệ thống:</b> CreateSystemAssessmentPolicyUseCase tạo policy với
  * cả bốn cột phạm vi là null (toàn hệ, chỉ theo ngôn ngữ + khung) -- không có khối nào để suy ra,
  * nên bảng trần theo khối về bản chất không phủ được luồng đó.
- *
- * <p><b>Trần thật sự phụ thuộc độ hẹp của phạm vi, không chỉ khối suy ra được:</b> bảng
- * {@code grade_level_band_scopes} chỉ seed 1 dòng defaultBand/hardMaxBand cho mỗi
- * (khối, framework) -- không phân biệt được "lớp chuyên" với lớp thường. Quy ước: chỉ policy neo
- * đúng vào 1 Lớp cụ thể mới được nới tới hardMaxBand đã seed; còn policy áp cho cả Khối hoặc cả
- * Niên khóa (gộp nhiều lớp, không tách được lớp nào chuyên) thì bị ép về defaultBand. Xem
- * {@link #effectiveCeilingBand}.
  */
 @Service
 public class GradeLevelBandScopeGuardService {
@@ -75,56 +77,12 @@ public class GradeLevelBandScopeGuardService {
     }
 
     /**
-     * Bậc gợi ý mặc định của khối, để màn hình tạo policy điền sẵn. Rỗng khi khối chưa cấu hình
-     * trần cho phiên bản khung này.
+     * Trần CENTRALIZE (kiểm tra tập trung, không neo vào 1 Lớp cụ thể) của khối. Rỗng khi khối
+     * chưa cấu hình trần cho phiên bản khung này.
      */
     public Optional<FrameworkResultBand> defaultTargetBand(UUID gradeLevelId, UUID frameworkVersionId) {
         return bandScopeRepository.findByGradeLevelIdAndFrameworkVersionId(gradeLevelId, frameworkVersionId)
                 .flatMap(scope -> frameworkResultBandRepository.findById(scope.getDefaultTargetBandId()));
-    }
-
-    /**
-     * "hardMaxBand" ở đây là trần THẬT SỰ áp dụng cho lần gọi này, không phải giá trị seed thô.
-     * Chỉ khi policy neo đúng vào 1 Lớp cụ thể (có thể là lớp chuyên) mới được nới tới hardMaxBand
-     * đã seed cho khối (Bậc 4); còn policy áp cho cả Khối hoặc cả Niên khóa (nhiều lớp cùng lúc,
-     * không phân biệt lớp nào là chuyên) thì chỉ được defaultBand -- xem {@link #effectiveCeilingBand}.
-     */
-    public record BandCeiling(FrameworkResultBand defaultBand, FrameworkResultBand hardMaxBand) {}
-
-    /**
-     * Bản đọc (không chặn gì) của {@link #assertWithinScope}, để màn hình tạo/sửa policy tự hiện
-     * trần trước khi người dùng bấm submit thay vì chỉ biết bị chặn sau khi gọi API. Dùng lại đúng
-     * logic suy khối (Lớp -> Khối năm học -> Khối) qua {@link Batch#resolveGradeLevelId}, nên FE và
-     * BE không bao giờ lệch nhau về việc nào "mở"/"có trần". Rỗng nghĩa là mở, không có trần.
-     */
-    public Optional<BandCeiling> resolveCeiling(UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId,
-            UUID frameworkVersionId) {
-        UUID resolvedGradeLevelId = newBatch().resolveGradeLevelId(gradeLevelId, schoolGradeId, schoolClassId);
-        if (resolvedGradeLevelId == null) {
-            return Optional.empty();
-        }
-        return bandScopeRepository.findByGradeLevelIdAndFrameworkVersionId(resolvedGradeLevelId, frameworkVersionId)
-                .flatMap(scope -> {
-                    var defaultBand = frameworkResultBandRepository.findById(scope.getDefaultTargetBandId());
-                    var seededHardMaxBand = frameworkResultBandRepository.findById(scope.getHardMaxBandId());
-                    if (defaultBand.isEmpty() || seededHardMaxBand.isEmpty()) {
-                        return Optional.<BandCeiling>empty();
-                    }
-                    FrameworkResultBand effectiveCeiling =
-                            effectiveCeilingBand(schoolClassId, defaultBand.get(), seededHardMaxBand.get());
-                    return Optional.of(new BandCeiling(defaultBand.get(), effectiveCeiling));
-                });
-    }
-
-    /**
-     * Chỉ policy neo đúng vào 1 Lớp cụ thể (schoolClassId khác null) mới được nới tới hardMaxBand đã
-     * seed cho khối -- vì chỉ ở cấp Lớp mới phân biệt được "lớp chuyên" (cần bậc cao hơn) với lớp
-     * thường. Policy áp cho cả Khối hoặc cả Niên khóa gộp nhiều lớp cùng lúc, không tách được lớp nào
-     * là chuyên, nên chỉ được defaultBand.
-     */
-    private static FrameworkResultBand effectiveCeilingBand(UUID schoolClassId, FrameworkResultBand defaultBand,
-            FrameworkResultBand seededHardMaxBand) {
-        return schoolClassId != null ? seededHardMaxBand : defaultBand;
     }
 
     /**
@@ -180,23 +138,36 @@ public class GradeLevelBandScopeGuardService {
                 return;
             }
 
-            var defaultBand = findBand(scope.get().getDefaultTargetBandId());
-            var hardMaxBand = findBand(scope.get().getHardMaxBandId());
-            if (defaultBand.isEmpty() || hardMaxBand.isEmpty()) {
+            var centralizeCapBand = findBand(scope.get().getDefaultTargetBandId());
+            var classTestCapBand = findBand(scope.get().getHardMaxBandId());
+            if (centralizeCapBand.isEmpty() || classTestCapBand.isEmpty()) {
                 // FK trong V42 lẽ ra không cho phép xảy ra; nếu vẫn xảy ra thì cấu hình hỏng chứ
                 // không phải người dùng sai -- không chặn họ, nhưng phải để lại dấu vết.
                 LOGGER.error(
-                    "Trần bậc của khối {} (phiên bản khung {}) trỏ tới bậc không tồn tại (default={}, hardMax={}).",
+                    "Trần bậc của khối {} (phiên bản khung {}) trỏ tới bậc không tồn tại"
+                        + " (centralize={}, classTest={}).",
                     resolvedGradeLevelId, frameworkVersionId,
                     scope.get().getDefaultTargetBandId(), scope.get().getHardMaxBandId()
                 );
                 return;
             }
 
-            FrameworkResultBand effectiveCeiling = effectiveCeilingBand(schoolClassId, defaultBand.get(), hardMaxBand.get());
+            FrameworkResultBand effectiveCeiling =
+                    effectiveCeilingBand(schoolClassId, centralizeCapBand.get(), classTestCapBand.get());
             if (targetBand.getOrder() > effectiveCeiling.getOrder()) {
                 throw new IllegalArgumentException(buildMessage(resolvedGradeLevelId, targetBand, effectiveCeiling));
             }
+        }
+
+        /**
+         * Chỉ policy neo đúng vào 1 Lớp cụ thể ({@code schoolClassId} khác null) mới là bài
+         * CLASS_TEST, được nới tới trần {@code classTestCapBand}. Policy áp cho cả Khối hoặc cả
+         * Niên khóa (gộp nhiều lớp cùng lúc, không tách được lớp nào chuyên) là bài CENTRALIZE,
+         * chỉ được trần {@code centralizeCapBand} thấp hơn.
+         */
+        private static FrameworkResultBand effectiveCeilingBand(UUID schoolClassId,
+                FrameworkResultBand centralizeCapBand, FrameworkResultBand classTestCapBand) {
+            return schoolClassId != null ? classTestCapBand : centralizeCapBand;
         }
 
         /**

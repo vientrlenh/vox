@@ -1,13 +1,11 @@
 package com.sep.vox.interfaces.graphql.controller;
 
 import com.sep.vox.application.common.DateMapper;
-import com.sep.vox.application.port.input.query.GetGradeLevelBandCeilingQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolAssessmentPoliciesQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolAssessmentPolicyDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSystemAssessmentPoliciesQuery;
 import com.sep.vox.application.port.input.query.ViewSystemAssessmentPolicyDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewTeacherAssessmentPoliciesQuery;
-import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.GetGradeLevelBandCeilingUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.UpdateSchoolAssessmentPolicyUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.ViewSchoolAssessmentPoliciesUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.ViewSchoolAssessmentPolicyDetailsUseCase;
@@ -18,7 +16,6 @@ import com.sep.vox.application.port.input.usecase.assessmentpolicyteacher.ViewTe
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.AssessmentPolicyDto;
 import com.sep.vox.domain.dto.FrameworkResultBandDto;
-import com.sep.vox.domain.dto.GradeLevelBandCeilingDto;
 import com.sep.vox.domain.dto.FrameworkVersionDto;
 import com.sep.vox.domain.dto.RubricVersionDto;
 import com.sep.vox.domain.dto.SchoolClassDto;
@@ -50,7 +47,6 @@ public class AssessmentPolicyController {
     private final ViewTeacherAssessmentPoliciesUseCase viewTeacherAssessmentPoliciesUseCase;
     private final ViewSystemAssessmentPolicyDetailsUseCase viewSystemAssessmentPolicyDetailsUseCase;
     private final ViewSchoolAssessmentPolicyDetailsUseCase viewSchoolAssessmentPolicyDetailsUseCase;
-    private final GetGradeLevelBandCeilingUseCase getGradeLevelBandCeilingUseCase;
 
     public AssessmentPolicyController(
             UpdateSystemAssessmentPolicyUseCase updateSystemAssessmentPolicyUseCase,
@@ -59,8 +55,7 @@ public class AssessmentPolicyController {
             ViewSchoolAssessmentPoliciesUseCase viewSchoolAssessmentPoliciesUseCase,
             ViewTeacherAssessmentPoliciesUseCase viewTeacherAssessmentPoliciesUseCase,
             ViewSystemAssessmentPolicyDetailsUseCase viewSystemAssessmentPolicyDetailsUseCase,
-            ViewSchoolAssessmentPolicyDetailsUseCase viewSchoolAssessmentPolicyDetailsUseCase,
-            GetGradeLevelBandCeilingUseCase getGradeLevelBandCeilingUseCase) {
+            ViewSchoolAssessmentPolicyDetailsUseCase viewSchoolAssessmentPolicyDetailsUseCase) {
         this.updateSystemAssessmentPolicyUseCase = updateSystemAssessmentPolicyUseCase;
         this.updateSchoolAssessmentPolicyUseCase = updateSchoolAssessmentPolicyUseCase;
         this.viewSystemAssessmentPoliciesUseCase = viewSystemAssessmentPoliciesUseCase;
@@ -68,7 +63,6 @@ public class AssessmentPolicyController {
         this.viewTeacherAssessmentPoliciesUseCase = viewTeacherAssessmentPoliciesUseCase;
         this.viewSystemAssessmentPolicyDetailsUseCase = viewSystemAssessmentPolicyDetailsUseCase;
         this.viewSchoolAssessmentPolicyDetailsUseCase = viewSchoolAssessmentPolicyDetailsUseCase;
-        this.getGradeLevelBandCeilingUseCase = getGradeLevelBandCeilingUseCase;
     }
 
     // School Admin cũng đọc được: đây là kho chính sách MẪU để trường chọn rồi sao về, giống
@@ -110,18 +104,6 @@ public class AssessmentPolicyController {
                         DateMapper.toInstant(effectiveFrom),
                         DateMapper.toInstant(effectiveTo),
                         validPage, validSize));
-    }
-
-    @QueryMapping(name = "gradeLevelBandCeiling")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public GradeLevelBandCeilingDto gradeLevelBandCeiling(
-            @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "frameworkVersionId") UUID frameworkVersionId,
-            @Argument(name = "gradeLevelId") UUID gradeLevelId,
-            @Argument(name = "schoolGradeId") UUID schoolGradeId,
-            @Argument(name = "schoolClassId") UUID schoolClassId) {
-        return getGradeLevelBandCeilingUseCase.execute(new GetGradeLevelBandCeilingQuery(
-                schoolId, frameworkVersionId, gradeLevelId, schoolGradeId, schoolClassId));
     }
 
     @QueryMapping(name = "viewTeacherAssessmentPolicies")

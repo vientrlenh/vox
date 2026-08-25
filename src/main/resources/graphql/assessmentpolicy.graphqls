@@ -51,11 +51,6 @@ type AssessmentPolicyPage {
     content: [AssessmentPolicy!]!
 }
 
-type GradeLevelBandCeiling {
-    defaultBand: FrameworkResultBand!
-    hardMaxBand: FrameworkResultBand!
-}
-
 extend type Query {
     viewSystemAssessmentPolicies(status: String, languageId: ID, rubricVersionId: ID, effectiveFrom: String, effectiveTo: String, page: Int = 1, size: Int = 10): AssessmentPolicyPage!
     viewSchoolAssessmentPolicies(schoolId: ID!, status: String, languageId: ID, rubricVersionId: ID, effectiveFrom: String, effectiveTo: String, page: Int = 1, size: Int = 10): AssessmentPolicyPage!
@@ -63,7 +58,4 @@ extend type Query {
     viewTeacherAssessmentPolicies(languageId: ID, rubricVersionId: ID, effectiveFrom: String, effectiveTo: String, page: Int = 1, size: Int = 10): AssessmentPolicyPage!
     viewSystemAssessmentPolicy(policyId: ID!): AssessmentPolicy!
     viewSchoolAssessmentPolicy(schoolId: ID!, policyId: ID!): AssessmentPolicy!
-    # Trần bậc mục tiêu (default + hard max) theo (Khối/Niên khóa/Lớp, Framework Version) -- null
-    # nghĩa là chưa cấu hình trần, không giới hạn gì. Truyền tối đa 1 trong 3 field phạm vi.
-    gradeLevelBandCeiling(schoolId: ID!, frameworkVersionId: ID!, gradeLevelId: ID, schoolGradeId: ID, schoolClassId: ID): GradeLevelBandCeiling
 }

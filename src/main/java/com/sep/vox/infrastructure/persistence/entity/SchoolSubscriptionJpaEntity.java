@@ -1,7 +1,6 @@
 package com.sep.vox.infrastructure.persistence.entity;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -16,7 +15,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 @Entity
-@Table(name = "school_subscription")
+@Table(name = "school_subscriptions")
 public class SchoolSubscriptionJpaEntity {
 
     @Id
@@ -33,23 +32,25 @@ public class SchoolSubscriptionJpaEntity {
     @Column(name = "school_id", nullable = false, updatable = false)
     private UUID schoolId;
 
-    @Column(name = "plan_id", nullable = false, updatable = false)
-    private UUID planId;
+    @Column(name = "subscription_plan_id", nullable = false, updatable = false)
+    private UUID subscriptionPlanId;
 
     @Column(name = "start_date", nullable = false)
-    private LocalDate startDate;
+    private Instant startDate;
 
     @Column(name = "end_date", nullable = false)
-    private LocalDate endDate;
+    private Instant endDate;
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_school_subscription_status_valid",
+            name = "chk_school_subscriptions_status_valid",
             constraint = "status IN ('ACTIVE', 'EXPIRED', 'CANCELLED', 'SUSPENDED')"
         )
     })
     private String status;
 
+    // Số tiền trường ĐÃ TRẢ thật -- cùng nhóm "tiền phải thu" với subscription_plans.price_vnd và
+    // orders.total_amount_vnd, nên dùng chung numeric(15,0).
     @Column(name = "price_paid_snapshot", nullable = false, updatable = false, precision = 15, scale = 0)
     private BigDecimal pricePaidSnapshot;
 
@@ -74,12 +75,12 @@ public class SchoolSubscriptionJpaEntity {
 
     protected SchoolSubscriptionJpaEntity() {}
 
-    public SchoolSubscriptionJpaEntity(UUID id, UUID schoolId, UUID planId, LocalDate startDate, LocalDate endDate,
+    public SchoolSubscriptionJpaEntity(UUID id, UUID schoolId, UUID subscriptionPlanId, Instant startDate, Instant endDate,
             String status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt, Long version,
             Instant suspendedAt, String suspendedReason, UUID suspendedBy) {
         this.id = id;
         this.schoolId = schoolId;
-        this.planId = planId;
+        this.subscriptionPlanId = subscriptionPlanId;
         this.startDate = startDate;
         this.endDate = endDate;
         this.status = status;
@@ -108,27 +109,27 @@ public class SchoolSubscriptionJpaEntity {
         this.schoolId = schoolId;
     }
 
-    public UUID getPlanId() {
-        return planId;
+    public UUID getSubscriptionPlanId() {
+        return subscriptionPlanId;
     }
 
-    public void setPlanId(UUID planId) {
-        this.planId = planId;
+    public void setSubscriptionPlanId(UUID subscriptionPlanId) {
+        this.subscriptionPlanId = subscriptionPlanId;
     }
 
-    public LocalDate getStartDate() {
+    public Instant getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(LocalDate startDate) {
+    public void setStartDate(Instant startDate) {
         this.startDate = startDate;
     }
 
-    public LocalDate getEndDate() {
+    public Instant getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(LocalDate endDate) {
+    public void setEndDate(Instant endDate) {
         this.endDate = endDate;
     }
 

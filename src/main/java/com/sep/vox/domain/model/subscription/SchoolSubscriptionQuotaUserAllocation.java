@@ -10,28 +10,28 @@ public class SchoolSubscriptionQuotaUserAllocation {
     private UUID schoolSubscriptionId;
     private QuotaType quotaType;
     private UUID userId;
-    private BigDecimal allocatedQuantity;
-    private BigDecimal usedQuantity;
+    private BigDecimal allocatedAmountVnd;
+    private BigDecimal usedAmountVnd;
 
     public SchoolSubscriptionQuotaUserAllocation() {}
 
     public SchoolSubscriptionQuotaUserAllocation(UUID id, UUID schoolSubscriptionId, QuotaType quotaType, UUID userId,
-            BigDecimal allocatedQuantity, BigDecimal usedQuantity) {
+            BigDecimal allocatedAmountVnd, BigDecimal usedAmountVnd) {
         this.id = id;
         this.schoolSubscriptionId = schoolSubscriptionId;
         this.quotaType = quotaType;
         this.userId = userId;
-        this.allocatedQuantity = allocatedQuantity;
-        this.usedQuantity = usedQuantity;
+        this.allocatedAmountVnd = allocatedAmountVnd;
+        this.usedAmountVnd = usedAmountVnd;
     }
 
     public SchoolSubscriptionQuotaUserAllocation(UUID schoolSubscriptionId, QuotaType quotaType, UUID userId,
-            BigDecimal allocatedQuantity, BigDecimal usedQuantity) {
+            BigDecimal allocatedAmountVnd, BigDecimal usedAmountVnd) {
         this.schoolSubscriptionId = schoolSubscriptionId;
         this.quotaType = quotaType;
         this.userId = userId;
-        this.allocatedQuantity = allocatedQuantity;
-        this.usedQuantity = usedQuantity;
+        this.allocatedAmountVnd = allocatedAmountVnd;
+        this.usedAmountVnd = usedAmountVnd;
     }
 
     public UUID getId() {
@@ -66,19 +66,19 @@ public class SchoolSubscriptionQuotaUserAllocation {
         this.userId = userId;
     }
 
-    public BigDecimal getAllocatedQuantity() {
-        return allocatedQuantity;
+    public BigDecimal getAllocatedAmountVnd() {
+        return allocatedAmountVnd;
     }
 
-    public void setAllocatedQuantity(BigDecimal allocatedQuantity) {
-        this.allocatedQuantity = allocatedQuantity;
+    public void setAllocatedAmountVnd(BigDecimal allocatedAmountVnd) {
+        this.allocatedAmountVnd = allocatedAmountVnd;
     }
 
-    public BigDecimal getUsedQuantity() {
-        return usedQuantity;
+    public BigDecimal getUsedAmountVnd() {
+        return usedAmountVnd;
     }
 
-    public void setUsedQuantity(BigDecimal usedQuantity) {
-        this.usedQuantity = usedQuantity;
+    public void setUsedAmountVnd(BigDecimal usedAmountVnd) {
+        this.usedAmountVnd = usedAmountVnd;
     }
 }

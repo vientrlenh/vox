@@ -11,20 +11,34 @@ public final class SubscriptionPlanQuotaMapper {
     public static SubscriptionPlanQuota toDomain(SubscriptionPlanQuotaJpaEntity jpa) {
         return new SubscriptionPlanQuota(
             jpa.getId(),
-            jpa.getPlanId(),
-            QuotaType.valueOf(jpa.getQuotaType()),
-            jpa.getIncludedQuantity(),
-            jpa.getTokenUnitPrice()
+            jpa.getSubscriptionPlanId(),
+            fromString(jpa.getQuotaType()),
+            jpa.getIncludedAmountVnd(),
+            jpa.getTokenUnitPriceVnd()
         );
     }
 
     public static SubscriptionPlanQuotaJpaEntity toJpa(SubscriptionPlanQuota domain) {
         return new SubscriptionPlanQuotaJpaEntity(
             domain.getId(),
-            domain.getPlanId(),
-            domain.getQuotaType().name(),
-            domain.getIncludedQuantity(),
-            domain.getTokenUnitPrice()
+            domain.getSubscriptionPlanId(),
+            valueOf(domain.getQuotaType()),
+            domain.getIncludedAmountVnd(),
+            domain.getTokenUnitPriceVnd()
         );
+    }
+
+    private static QuotaType fromString(String type) {
+        if (type == null) 
+            return null;
+        try {
+            return QuotaType.valueOf(type);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Loại quota không hợp lệ khi chuyển đổi sang domain model: " + type);
+        }
+    }
+
+    private static String valueOf(QuotaType type) {
+        return type == null ? null : type.name();
     }
 }

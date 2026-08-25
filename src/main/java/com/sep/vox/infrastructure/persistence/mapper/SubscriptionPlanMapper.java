@@ -15,17 +15,16 @@ public final class SubscriptionPlanMapper {
             jpa.getName(),
             jpa.getTagline(),
             jpa.getPriceVnd(),
-            fromString(jpa.getPeriodType()), 
+            periodFromString(jpa.getPeriodType()), 
             jpa.getPeriodCount(),
             jpa.getMaxTimePerAttemptMin(),
-            SubscriptionPlanStatus.valueOf(jpa.getStatus()),
+            statusFromString(jpa.getStatus()),
             jpa.getVersion(),
             jpa.getCreatedAt(), 
             jpa.getUpdatedAt(), 
             jpa.getCreatedBy(), 
             jpa.getUpdatedBy(), 
-            jpa.getReplacedByPlanId(),
-            jpa.getServiceFeeRatio()
+            jpa.getReplacedByPlanId()
         );
     }
 
@@ -38,22 +37,41 @@ public final class SubscriptionPlanMapper {
             valueOf(domain.getPeriodType()),
             domain.getPeriodCount(),
             domain.getMaxTimePerAttemptMin(),
-            domain.getStatus().name(),
+            valueOf(domain.getStatus()),
             domain.getVersion(),
             domain.getCreatedAt(),
             domain.getUpdatedAt(), 
             domain.getCreatedBy(), 
             domain.getUpdatedBy(), 
-            domain.getReplacedByPlanId(),
-            domain.getServiceFeeRatio()
+            domain.getReplacedByPlanId()
         );
     }
 
-    private static SubscriptionPlanPeriod fromString(String periodType) {
-        return periodType == null ? null : SubscriptionPlanPeriod.valueOf(periodType);
+    private static SubscriptionPlanPeriod periodFromString(String periodType) {
+        if (periodType == null)
+            return null;
+        try {
+            return SubscriptionPlanPeriod.valueOf(periodType);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Loại chu kỳ khi chuyển đổi sang domain model không hợp lệ: " + periodType);
+        }
+    }
+
+    private static SubscriptionPlanStatus statusFromString(String status) {
+        if (status == null)
+            return null;
+        try {
+            return SubscriptionPlanStatus.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái khi chuyển đổi sang domain model không hợp lệ: " + status);
+        }
     }
 
     private static String valueOf(SubscriptionPlanPeriod period) {
         return period == null ? null : period.name();
+    }
+
+    private static String valueOf(SubscriptionPlanStatus status) {
+        return status == null ? null : status.name();
     }
 }

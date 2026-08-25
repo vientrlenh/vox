@@ -52,13 +52,11 @@ import com.sep.vox.domain.dto.QuotaPricingDto;
 import com.sep.vox.domain.dto.SchoolDebtEventDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
+import com.sep.vox.domain.dto.SubscriptionPlanQuotaDto;
 import com.sep.vox.domain.dto.SubscriptionQuotaDto;
 import com.sep.vox.domain.dto.SubscriptionRequestDto;
 import com.sep.vox.domain.dto.TokenPurchaseDto;
 import com.sep.vox.domain.dto.TokenUsageTimeseriesDto;
-import com.sep.vox.domain.model.subscription.RequestStatus;
-import com.sep.vox.domain.model.subscription.SubscriptionStatus;
-import com.sep.vox.domain.model.subscription.TokenUsageGranularity;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSubscriptionPlanInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSubscriptionPlanCommandMapper;
 
@@ -236,5 +234,13 @@ public class SubscriptionController {
     public CompletableFuture<SubscriptionPlanDto> plan(SchoolSubscriptionDto source, DataFetchingEnvironment env) {
         DataLoader<UUID, SubscriptionPlanDto> loader = env.getDataLoader("subscriptionPlanById");
         return loader.load(source.planId());
+    }
+
+    @SchemaMapping(typeName = "SubscriptionPlan", field = "quotas")
+    public CompletableFuture<List<SubscriptionPlanQuotaDto>> subscriptionPlanQuotas(SubscriptionPlanDto plan, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<SubscriptionPlanQuotaDto>> loader = env.getDataLoader("quotasBySubscriptionPlanId");
+        if (loader == null) 
+            throw new IllegalStateException("Không tìm thấy data loader quotasBySubscriptionPlanId");
+        return loader.load(plan.id());
     }
 }

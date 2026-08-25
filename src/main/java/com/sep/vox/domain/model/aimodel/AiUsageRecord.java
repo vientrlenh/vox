@@ -18,7 +18,9 @@ public class AiUsageRecord {
     private Integer cacheReadInputTokens;
     private Long durationMs;
     private String unitPriceJson;
-    private BigDecimal costUsd;
+    private BigDecimal costUsd; // report come from AI service
+    private BigDecimal costVnd; // the price that the system really need
+    private BigDecimal fxRateUsed;
     private Instant occurredAt;
 
     public AiUsageRecord() {}
@@ -26,7 +28,7 @@ public class AiUsageRecord {
     public AiUsageRecord(UUID id, UUID examSessionId, UUID turnId, UUID usageEventId, AiUsageType usageType,
             String provider, String modelName, Integer inputTokens, Integer outputTokens,
             Integer cacheCreationInputTokens, Integer cacheReadInputTokens, Long durationMs, String unitPriceJson,
-            BigDecimal costUsd, Instant occurredAt) {
+            BigDecimal costUsd, BigDecimal costVnd, BigDecimal fxRateUsed, Instant occurredAt) {
         this.id = id;
         this.examSessionId = examSessionId;
         this.turnId = turnId;
@@ -41,12 +43,14 @@ public class AiUsageRecord {
         this.durationMs = durationMs;
         this.unitPriceJson = unitPriceJson;
         this.costUsd = costUsd;
+        this.costVnd = costVnd;
+        this.fxRateUsed = fxRateUsed;
         this.occurredAt = occurredAt;
     }
 
     public AiUsageRecord(UUID examSessionId, UUID turnId, UUID usageEventId, AiUsageType usageType, String provider,
             String modelName, Integer inputTokens, Integer outputTokens, Integer cacheCreationInputTokens,
-            Integer cacheReadInputTokens, Long durationMs, String unitPriceJson, BigDecimal costUsd,
+            Integer cacheReadInputTokens, Long durationMs, String unitPriceJson, BigDecimal costUsd, BigDecimal costVnd, BigDecimal fxRateUsed, 
             Instant occurredAt) {
         this.examSessionId = examSessionId;
         this.turnId = turnId;
@@ -60,7 +64,9 @@ public class AiUsageRecord {
         this.cacheReadInputTokens = cacheReadInputTokens;
         this.durationMs = durationMs;
         this.unitPriceJson = unitPriceJson;
-        this.costUsd = costUsd;
+        this.costUsd = costUsd; 
+        this.costVnd = costVnd;
+        this.fxRateUsed = fxRateUsed;
         this.occurredAt = occurredAt;
     }
 
@@ -183,4 +189,22 @@ public class AiUsageRecord {
     public void setOccurredAt(Instant occurredAt) {
         this.occurredAt = occurredAt;
     }
+
+    public BigDecimal getCostVnd() {
+        return costVnd;
+    }
+
+    public void setCostVnd(BigDecimal costVnd) {
+        this.costVnd = costVnd;
+    }
+
+    public BigDecimal getFxRateUsed() {
+        return fxRateUsed;
+    }
+
+    public void setFxRateUsed(BigDecimal fxRateUsed) {
+        this.fxRateUsed = fxRateUsed;
+    }
+    
+    
 }

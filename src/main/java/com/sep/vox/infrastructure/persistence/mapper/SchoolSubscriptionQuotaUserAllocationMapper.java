@@ -11,22 +11,36 @@ public final class SchoolSubscriptionQuotaUserAllocationMapper {
     public static SchoolSubscriptionQuotaUserAllocation toDomain(SchoolSubscriptionQuotaUserAllocationJpaEntity jpa) {
         return new SchoolSubscriptionQuotaUserAllocation(
             jpa.getId(),
-            jpa.getSubscriptionId(),
-            QuotaType.valueOf(jpa.getQuotaType()),
+            jpa.getSchoolSubscriptionId(),
+            fromString(jpa.getQuotaType()),
             jpa.getUserId(),
-            jpa.getAllocatedQuantity(),
-            jpa.getUsedQuantity()
+            jpa.getAllocatedAmountVnd(),
+            jpa.getUsedAmountVnd()
         );
     }
 
     public static SchoolSubscriptionQuotaUserAllocationJpaEntity toJpa(SchoolSubscriptionQuotaUserAllocation domain) {
         return new SchoolSubscriptionQuotaUserAllocationJpaEntity(
             domain.getId(),
-            domain.getSubscriptionId(),
-            domain.getQuotaType().name(),
+            domain.getSchoolSubscriptionId(),
+            valueOf(domain.getQuotaType()),
             domain.getUserId(),
-            domain.getAllocatedQuantity(),
-            domain.getUsedQuantity()
+            domain.getAllocatedAmountVnd(),
+            domain.getUsedAmountVnd()
         );
+    }
+
+    private static QuotaType fromString(String type) {
+        if (type == null) 
+            return null;
+        try {
+            return QuotaType.valueOf(type);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Loại quota không hợp lệ khi chuyển đổi sang domain model: " + type);
+        }
+    }
+
+    private static String valueOf(QuotaType type) {
+        return type == null ? null : type.name();
     }
 }

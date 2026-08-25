@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -35,7 +36,9 @@ public class ExchangeRateSnapshotJpaEntity {
     })
     private String currencyCode;
 
-    @Column(name = "exchange_rate_to_vnd", nullable = false, updatable = false, precision = 18, scale = 2)
+    // Tỷ giá là HỆ SỐ NHÂN, không phải tiền -- dùng chung numeric(12,4) với mọi cột fx_rate_used
+    // (school_balance_entries, ai_usage_records) để một khái niệm chỉ có đúng một hình dạng số.
+    @Column(name = "exchange_rate_to_vnd", nullable = false, updatable = false, precision = 12, scale = 4)
     private BigDecimal exchangeRateToVnd;
 
     @Column(name = "fetched_at", nullable = false, updatable = false)

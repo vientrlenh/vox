@@ -14,7 +14,7 @@ public final class AiUsageRecordMapper {
             jpa.getExamSessionId(),
             jpa.getTurnId(),
             jpa.getUsageEventId(),
-            AiUsageType.valueOf(jpa.getUsageType()),
+            fromString(jpa.getUsageType()),
             jpa.getProvider(),
             jpa.getModelName(),
             jpa.getInputTokens(),
@@ -23,7 +23,9 @@ public final class AiUsageRecordMapper {
             jpa.getCacheReadInputTokens(),
             jpa.getDurationMs(),
             jpa.getUnitPriceJson(),
-            jpa.getCostUsd(),
+            jpa.getCostUsd(), 
+            jpa.getCostVnd(), 
+            jpa.getFxRateUsed(), 
             jpa.getOccurredAt()
         );
     }
@@ -34,7 +36,7 @@ public final class AiUsageRecordMapper {
             domain.getExamSessionId(),
             domain.getTurnId(),
             domain.getUsageEventId(),
-            domain.getUsageType().name(),
+            valueOf(domain.getUsageType()),
             domain.getProvider(),
             domain.getModelName(),
             domain.getInputTokens(),
@@ -43,8 +45,24 @@ public final class AiUsageRecordMapper {
             domain.getCacheReadInputTokens(),
             domain.getDurationMs(),
             domain.getUnitPriceJson(),
-            domain.getCostUsd(),
+            domain.getCostUsd(), 
+            domain.getCostVnd(), 
+            domain.getFxRateUsed(), 
             domain.getOccurredAt()
         );
+    }
+
+    private static AiUsageType fromString(String type) {
+        if (type == null)
+            return null;
+        try {
+            return AiUsageType.valueOf(type);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Loại sử dụng của AI model khi chuyển đổi sang domain model không hợp lệ: " + type);
+        }
+    }
+
+    private static String valueOf(AiUsageType type) {
+        return type == null ? null : type.name();
     }
 }

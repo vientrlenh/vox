@@ -75,6 +75,17 @@ public class AiUsageRecordJpaEntity {
     @Column(name = "cost_usd", nullable = false, updatable = false, precision = 12, scale = 6)
     private BigDecimal costUsd;
 
+    // Chi phí MỘT lời gọi AI quy sang VND -- giá trị lẻ nhất trong cả hệ thống (một lượt nói có thể
+    // chỉ tốn vài phần trăm đồng). Đây là đầu vào cộng dồn cho school_subscription_quota_records
+    // .used_amount_vnd nên phải giữ nguyên numeric(18,6): làm tròn từng dòng về 2 chữ số là mất
+    // trắng khoản trừ, và sai số làm tròn HALF_UP tích lũy lệch một chiều qua hàng nghìn lượt.
+    @Column(name = "cost_vnd", nullable = false, updatable = false, precision = 18, scale = 6)
+    private BigDecimal costVnd;
+
+    // Tỷ giá đã dùng lúc quy đổi -- numeric(12,4), trùng school_balance_entries.fx_rate_used.
+    @Column(name = "fx_rate_used", nullable = false, updatable = false, precision = 12, scale = 4)
+    private BigDecimal fxRateUsed;
+
     @Column(name = "occurred_at", nullable = false, updatable = false)
     private Instant occurredAt;
 
@@ -83,7 +94,7 @@ public class AiUsageRecordJpaEntity {
     public AiUsageRecordJpaEntity(UUID id, UUID examSessionId, UUID turnId, UUID usageEventId, String usageType,
             String provider, String modelName, Integer inputTokens, Integer outputTokens,
             Integer cacheCreationInputTokens, Integer cacheReadInputTokens, Long durationMs, String unitPriceJson,
-            BigDecimal costUsd, Instant occurredAt) {
+            BigDecimal costUsd, BigDecimal costVnd, BigDecimal fxRateUsed, Instant occurredAt) {
         this.id = id;
         this.examSessionId = examSessionId;
         this.turnId = turnId;
@@ -97,7 +108,9 @@ public class AiUsageRecordJpaEntity {
         this.cacheReadInputTokens = cacheReadInputTokens;
         this.durationMs = durationMs;
         this.unitPriceJson = unitPriceJson;
-        this.costUsd = costUsd;
+        this.costUsd = costUsd; 
+        this.costVnd = costVnd;
+        this.fxRateUsed = fxRateUsed;
         this.occurredAt = occurredAt;
     }
 
@@ -220,4 +233,22 @@ public class AiUsageRecordJpaEntity {
     public void setOccurredAt(Instant occurredAt) {
         this.occurredAt = occurredAt;
     }
+
+    public BigDecimal getCostVnd() {
+        return costVnd;
+    }
+
+    public void setCostVnd(BigDecimal costVnd) {
+        this.costVnd = costVnd;
+    }
+
+    public BigDecimal getFxRateUsed() {
+        return fxRateUsed;
+    }
+
+    public void setFxRateUsed(BigDecimal fxRateUsed) {
+        this.fxRateUsed = fxRateUsed;
+    }
+
+    
 }

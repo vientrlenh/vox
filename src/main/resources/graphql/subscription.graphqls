@@ -88,9 +88,6 @@ type SubscriptionPlan {
     createdAt: String
     createdBy: ID
     replacedByPlanId: ID
-    # Margin dịch vụ riêng của gói này (vd 0.20 = 20%), FE tự nhân với usdToVndRate
-    # (quotaPricing query) để ra suggestedTokenUnitPriceVnd -- xem QuotaSellingPriceProperties.
-    serviceFeeRatio: Float!
     quotas: [PlanQuota!]!
 }
 

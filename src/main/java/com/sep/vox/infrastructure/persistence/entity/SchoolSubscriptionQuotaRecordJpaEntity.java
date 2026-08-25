@@ -27,8 +27,8 @@ public class SchoolSubscriptionQuotaRecordJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "subscription_id", nullable = false, updatable = false)
-    private UUID subscriptionId;
+    @Column(name = "school_subscription_id", nullable = false, updatable = false)
+    private UUID schoolSubscriptionId;
 
     @Column(name = "quota_type", nullable = false, updatable = false, length = 20, check = {
         @CheckConstraint(
@@ -38,20 +38,20 @@ public class SchoolSubscriptionQuotaRecordJpaEntity {
     })
     private String quotaType;
 
-    @Column(name = "total_allocated", nullable = false, precision = 18, scale = 6)
-    private BigDecimal totalAllocated;
+    @Column(name = "total_allocated_amount_vnd", nullable = false, precision = 18, scale = 6)
+    private BigDecimal totalAllocatedAmountVnd;
 
-    @Column(name = "used_quantity", nullable = false, precision = 18, scale = 6)
-    private BigDecimal usedQuantity;
+    @Column(name = "used_amount_vnd", nullable = false, precision = 18, scale = 6)
+    private BigDecimal usedAmountVnd;
 
     protected SchoolSubscriptionQuotaRecordJpaEntity() {}
 
-    public SchoolSubscriptionQuotaRecordJpaEntity(UUID id, UUID subscriptionId, String quotaType, BigDecimal totalAllocated, BigDecimal usedQuantity) {
+    public SchoolSubscriptionQuotaRecordJpaEntity(UUID id, UUID schoolSubscriptionId, String quotaType, BigDecimal totalAllocatedAmountVnd, BigDecimal usedAmountVnd) {
         this.id = id;
-        this.subscriptionId = subscriptionId;
+        this.schoolSubscriptionId = schoolSubscriptionId;
         this.quotaType = quotaType;
-        this.totalAllocated = totalAllocated;
-        this.usedQuantity = usedQuantity;
+        this.totalAllocatedAmountVnd = totalAllocatedAmountVnd;
+        this.usedAmountVnd = usedAmountVnd;
     }
 
     public UUID getId() {
@@ -62,12 +62,12 @@ public class SchoolSubscriptionQuotaRecordJpaEntity {
         this.id = id;
     }
 
-    public UUID getSubscriptionId() {
-        return subscriptionId;
+    public UUID getSchoolSubscriptionId() {
+        return schoolSubscriptionId;
     }
 
-    public void setSubscriptionId(UUID subscriptionId) {
-        this.subscriptionId = subscriptionId;
+    public void setSchoolSubscriptionId(UUID schoolSubscriptionId) {
+        this.schoolSubscriptionId = schoolSubscriptionId;
     }
 
     public String getQuotaType() {
@@ -78,19 +78,19 @@ public class SchoolSubscriptionQuotaRecordJpaEntity {
         this.quotaType = quotaType;
     }
 
-    public BigDecimal getTotalAllocated() {
-        return totalAllocated;
+    public BigDecimal getTotalAllocatedAmountVnd() {
+        return totalAllocatedAmountVnd;
     }
 
-    public void setTotalAllocated(BigDecimal totalAllocated) {
-        this.totalAllocated = totalAllocated;
+    public void setTotalAllocated(BigDecimal totalAllocatedAmountVnd) {
+        this.totalAllocatedAmountVnd = totalAllocatedAmountVnd;
     }
 
-    public BigDecimal getUsedQuantity() {
-        return usedQuantity;
+    public BigDecimal getUsedAmountVnd() {
+        return usedAmountVnd;
     }
 
-    public void setUsedQuantity(BigDecimal usedQuantity) {
-        this.usedQuantity = usedQuantity;
+    public void setUsedAmountVnd(BigDecimal usedAmountVnd) {
+        this.usedAmountVnd = usedAmountVnd;
     }
 }

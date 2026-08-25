@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
-import com.sep.vox.domain.model.subscription.SubscriptionStatus;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
 import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionJpaEntity;
 
 public final class SchoolSubscriptionMapper {
@@ -12,10 +12,10 @@ public final class SchoolSubscriptionMapper {
         return new SchoolSubscription(
             jpa.getId(),
             jpa.getSchoolId(),
-            jpa.getPlanId(),
+            jpa.getSubscriptionPlanId(),
             jpa.getStartDate(),
             jpa.getEndDate(),
-            SubscriptionStatus.valueOf(jpa.getStatus()),
+            fromString(jpa.getStatus()),
             jpa.getPricePaidSnapshot(),
             jpa.getCancelledAt(),
             jpa.getCreatedAt(),
@@ -30,10 +30,10 @@ public final class SchoolSubscriptionMapper {
         return new SchoolSubscriptionJpaEntity(
             domain.getId(),
             domain.getSchoolId(),
-            domain.getPlanId(),
+            domain.getSubscriptionPlanId(),
             domain.getStartDate(),
             domain.getEndDate(),
-            domain.getStatus().name(),
+            valueOf(domain.getStatus()),
             domain.getPricePaidSnapshot(),
             domain.getCancelledAt(),
             domain.getCreatedAt(),
@@ -42,5 +42,19 @@ public final class SchoolSubscriptionMapper {
             domain.getSuspendedReason(),
             domain.getSuspendedBy()
         );
+    }
+
+    private static SchoolSubscriptionStatus fromString(String status) {
+        if (status == null)
+            return null;
+        try {
+            return SchoolSubscriptionStatus.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái đơn đăng ký của trường không hợp lệ: " + status);
+        }
+    }
+
+    private static String valueOf(SchoolSubscriptionStatus status) {
+        return status == null ? null : status.name();
     }
 }

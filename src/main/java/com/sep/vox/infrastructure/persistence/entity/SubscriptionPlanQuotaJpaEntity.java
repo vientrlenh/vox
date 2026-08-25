@@ -38,19 +38,19 @@ public class SubscriptionPlanQuotaJpaEntity {
     })
     private String quotaType;
 
-    @Column(name = "included_quantity", nullable = false, precision = 18, scale = 6)
-    private BigDecimal includedQuantity;
+    @Column(name = "included_amount_vnd", nullable = false, precision = 18, scale = 6)
+    private BigDecimal includedAmountVnd;
 
     @Column(name = "token_unit_price_vnd", nullable = false, precision = 15, scale = 0)
     private BigDecimal tokenUnitPriceVnd;
 
     protected SubscriptionPlanQuotaJpaEntity() {}
 
-    public SubscriptionPlanQuotaJpaEntity(UUID id, UUID subscriptionPlanId, String quotaType, BigDecimal includedQuantity, BigDecimal tokenUnitPriceVnd) {
+    public SubscriptionPlanQuotaJpaEntity(UUID id, UUID subscriptionPlanId, String quotaType, BigDecimal includedAmountVnd, BigDecimal tokenUnitPriceVnd) {
         this.id = id;
         this.subscriptionPlanId = subscriptionPlanId;
         this.quotaType = quotaType;
-        this.includedQuantity = includedQuantity;
+        this.includedAmountVnd = includedAmountVnd;
         this.tokenUnitPriceVnd = tokenUnitPriceVnd;
     }
 
@@ -78,12 +78,12 @@ public class SubscriptionPlanQuotaJpaEntity {
         this.quotaType = quotaType;
     }
 
-    public BigDecimal getIncludedQuantity() {
-        return includedQuantity;
+    public BigDecimal getIncludedAmountVnd() {
+        return includedAmountVnd;
     }
 
-    public void setIncludedQuantity(BigDecimal includedQuantity) {
-        this.includedQuantity = includedQuantity;
+    public void setIncludedAmountVnd(BigDecimal includedAmountVnd) {
+        this.includedAmountVnd = includedAmountVnd;
     }
 
     public BigDecimal getTokenUnitPriceVnd() {

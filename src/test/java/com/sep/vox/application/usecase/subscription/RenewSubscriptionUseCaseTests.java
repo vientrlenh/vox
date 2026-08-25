@@ -25,29 +25,29 @@ import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardSer
 import com.sep.vox.application.port.input.usecase.subscription.RenewSubscriptionUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.metering.QuotaType;
-import com.sep.vox.domain.model.subscription.PlanQuota;
+import com.sep.vox.domain.model.subscription.SubscriptionPlanQuota;
 import com.sep.vox.domain.model.subscription.PlanStatus;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.repository.FinancialEventRepository;
-import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 
 /**
  * Đường gia hạn THỦ CÔNG (đối xứng với InvoiceSettlementService.renewSubscription, đường cổng thanh
- * toán) -- tập trung vào transition SchoolDebtCleared: gói mới luôn có SubscriptionQuota tinh khôi
+ * toán) -- tập trung vào transition SchoolDebtCleared: gói mới luôn có SchoolSubscriptionQuotaRecord tinh khôi
  * nên chắc chắn hết nợ, chỉ cần biết gói CŨ có đang khóa hay không.
  */
 class RenewSubscriptionUseCaseTests {
 
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
     private SubscriptionPlanRepository subscriptionPlanRepository;
-    private PlanQuotaRepository planQuotaRepository;
-    private SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private SubscriptionPlanQuotaRepository planQuotaRepository;
+    private SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private FinancialEventRepository financialEventRepository;
     private UserContextPort userContextPort;
     private SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
@@ -64,8 +64,8 @@ class RenewSubscriptionUseCaseTests {
     void setUp() {
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
-        planQuotaRepository = mock(PlanQuotaRepository.class);
-        subscriptionQuotaRepository = mock(SubscriptionQuotaRepository.class);
+        planQuotaRepository = mock(SubscriptionPlanQuotaRepository.class);
+        subscriptionQuotaRepository = mock(SchoolSubscriptionQuotaRecordRepository.class);
         financialEventRepository = mock(FinancialEventRepository.class);
         userContextPort = mock(UserContextPort.class);
         schoolSubscriptionDebtGuardService = mock(SchoolSubscriptionDebtGuardService.class);
@@ -89,7 +89,7 @@ class RenewSubscriptionUseCaseTests {
         );
         when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
         when(planQuotaRepository.findAllByPlanId(planId)).thenReturn(List.of(
-            new PlanQuota(planId, QuotaType.GRADING, BigDecimal.valueOf(100), new BigDecimal("1000"))
+            new SubscriptionPlanQuota(planId, QuotaType.GRADING, BigDecimal.valueOf(100), new BigDecimal("1000"))
         ));
         when(schoolSubscriptionRepository.save(any(SchoolSubscription.class))).thenAnswer(call -> {
             SchoolSubscription saved = call.getArgument(0);
@@ -99,7 +99,7 @@ class RenewSubscriptionUseCaseTests {
             return saved;
         });
         when(subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(newSubscriptionId, QuotaType.GRADING))
-            .thenReturn(Optional.of(new SubscriptionQuota(UUID.randomUUID(), newSubscriptionId, QuotaType.GRADING,
+            .thenReturn(Optional.of(new SchoolSubscriptionQuotaRecord(UUID.randomUUID(), newSubscriptionId, QuotaType.GRADING,
                 BigDecimal.valueOf(100), BigDecimal.ZERO)));
     }
 

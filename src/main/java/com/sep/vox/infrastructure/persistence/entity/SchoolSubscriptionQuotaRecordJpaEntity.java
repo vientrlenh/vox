@@ -13,8 +13,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "subscription_quota")
-public class SubscriptionQuotaJpaEntity {
+@Table(name = "school_subscription_quota_records")
+public class SchoolSubscriptionQuotaRecordJpaEntity {
 
     @Id
     @Generated(event = EventType.INSERT)
@@ -32,7 +32,7 @@ public class SubscriptionQuotaJpaEntity {
 
     @Column(name = "quota_type", nullable = false, updatable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_subscription_quota_quota_type_valid",
+            name = "chk_school_subscription_quota_records_quota_type_valid",
             constraint = "quota_type IN ('GRADING', 'CLASS_TEST', 'PRACTICE')"
         )
     })
@@ -44,9 +44,9 @@ public class SubscriptionQuotaJpaEntity {
     @Column(name = "used_quantity", nullable = false, precision = 18, scale = 6)
     private BigDecimal usedQuantity;
 
-    protected SubscriptionQuotaJpaEntity() {}
+    protected SchoolSubscriptionQuotaRecordJpaEntity() {}
 
-    public SubscriptionQuotaJpaEntity(UUID id, UUID subscriptionId, String quotaType, BigDecimal totalAllocated, BigDecimal usedQuantity) {
+    public SchoolSubscriptionQuotaRecordJpaEntity(UUID id, UUID subscriptionId, String quotaType, BigDecimal totalAllocated, BigDecimal usedQuantity) {
         this.id = id;
         this.subscriptionId = subscriptionId;
         this.quotaType = quotaType;

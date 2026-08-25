@@ -15,15 +15,15 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(
-    name = "subscription_quota_user_allocations",
+    name = "school_subscription_quota_user_allocations",
     uniqueConstraints = {
         @UniqueConstraint(
-            name = "uk_subscription_quota_user_allocations_subscription_quota_user",
+            name = "uk_school_subscription_quota_user_allocations_subscription_user",
             columnNames = {"subscription_id", "quota_type", "user_id"}
         )
     }
 )
-public class SubscriptionQuotaUserAllocationJpaEntity {
+public class SchoolSubscriptionQuotaUserAllocationJpaEntity {
 
     @Id
     @Generated(event = EventType.INSERT)
@@ -41,7 +41,7 @@ public class SubscriptionQuotaUserAllocationJpaEntity {
 
     @Column(name = "quota_type", nullable = false, updatable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_subscription_quota_user_allocations_quota_type_valid",
+            name = "chk_school_subscription_quota_user_allocations_quota_type_valid",
             constraint = "quota_type IN ('CLASS_TEST', 'PRACTICE')"
         )
     })
@@ -56,9 +56,9 @@ public class SubscriptionQuotaUserAllocationJpaEntity {
     @Column(name = "used_quantity", nullable = false, precision = 18, scale = 6)
     private BigDecimal usedQuantity;
 
-    protected SubscriptionQuotaUserAllocationJpaEntity() {}
+    protected SchoolSubscriptionQuotaUserAllocationJpaEntity() {}
 
-    public SubscriptionQuotaUserAllocationJpaEntity(UUID id, UUID subscriptionId, String quotaType, UUID userId,
+    public SchoolSubscriptionQuotaUserAllocationJpaEntity(UUID id, UUID subscriptionId, String quotaType, UUID userId,
             BigDecimal allocatedQuantity, BigDecimal usedQuantity) {
         this.id = id;
         this.subscriptionId = subscriptionId;

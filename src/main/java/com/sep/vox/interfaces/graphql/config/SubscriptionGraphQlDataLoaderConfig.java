@@ -10,7 +10,7 @@ import org.springframework.graphql.execution.BatchLoaderRegistry;
 
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.mapper.SubscriptionPlanDtoMapper;
-import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 import reactor.core.publisher.Mono;
@@ -21,7 +21,7 @@ public class SubscriptionGraphQlDataLoaderConfig {
     public SubscriptionGraphQlDataLoaderConfig(
             BatchLoaderRegistry registry,
             SubscriptionPlanRepository subscriptionPlanRepository,
-            PlanQuotaRepository planQuotaRepository) {
+            SubscriptionPlanQuotaRepository planQuotaRepository) {
 
         registry.<UUID, SubscriptionPlanDto>forName("subscriptionPlanById")
             .registerMappedBatchLoader((Set<UUID> planIds, BatchLoaderEnvironment env) ->

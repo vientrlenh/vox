@@ -25,13 +25,13 @@ import com.sep.vox.domain.model.invoice.InvoiceSourceType;
 import com.sep.vox.domain.model.invoice.InvoiceStatus;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.PaymentMethod;
-import com.sep.vox.domain.model.subscription.PlanQuota;
+import com.sep.vox.domain.model.subscription.SubscriptionPlanQuota;
 import com.sep.vox.domain.model.subscription.PurchaseStatus;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.model.subscription.TokenPurchase;
 import com.sep.vox.domain.model.subscription.TokenPurchaseItem;
 import com.sep.vox.domain.repository.InvoiceRepository;
-import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 import com.sep.vox.domain.repository.TokenPurchaseItemRepository;
@@ -42,7 +42,7 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final PlanQuotaRepository planQuotaRepository;
+    private final SubscriptionPlanQuotaRepository planQuotaRepository;
     private final QuotaPricingPort quotaPricingService;
     private final TokenPurchaseRepository tokenPurchaseRepository;
     private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
@@ -53,7 +53,7 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
     public CreatePaymentLinkForTokenPurchaseUseCase(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
-            PlanQuotaRepository planQuotaRepository,
+            SubscriptionPlanQuotaRepository planQuotaRepository,
             QuotaPricingPort quotaPricingService,
             TokenPurchaseRepository tokenPurchaseRepository,
             TokenPurchaseItemRepository tokenPurchaseItemRepository,
@@ -100,7 +100,7 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
 
         var total = BigDecimal.ZERO;
         for (var item : command.items()) {
-            findPlanQuota(planQuotas, item.quotaType());
+            findSubscriptionPlanQuota(planQuotas, item.quotaType());
             total = total.add(tokenUnitPrice.multiply(item.quantity()));
         }
 
@@ -156,7 +156,7 @@ public class CreatePaymentLinkForTokenPurchaseUseCase implements IUseCase<BuyTok
             savedInvoice.getId(), orderRef, result.action().name(), result.actionUrl(), result.paymentLinkId(), result.fields());
     }
 
-    private PlanQuota findPlanQuota(List<PlanQuota> planQuotas, QuotaType quotaType) {
+    private SubscriptionPlanQuota findSubscriptionPlanQuota(List<SubscriptionPlanQuota> planQuotas, QuotaType quotaType) {
         return planQuotas.stream()
             .filter(pq -> pq.getQuotaType() == quotaType)
             .findFirst()

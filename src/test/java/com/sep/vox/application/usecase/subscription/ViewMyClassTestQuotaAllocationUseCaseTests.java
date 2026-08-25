@@ -15,15 +15,15 @@ import com.sep.vox.application.port.input.usecase.subscription.ViewMyClassTestQu
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
-import com.sep.vox.domain.model.subscription.SubscriptionQuotaUserAllocation;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaUserAllocationRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 
 class ViewMyClassTestQuotaAllocationUseCaseTests {
 
     private UserContextPort userContextPort;
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
+    private SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
     private ViewMyClassTestQuotaAllocationUseCase useCase;
 
     private final UUID userId = UUID.randomUUID();
@@ -34,7 +34,7 @@ class ViewMyClassTestQuotaAllocationUseCaseTests {
     void setUp() {
         userContextPort = mock(UserContextPort.class);
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
-        subscriptionQuotaUserAllocationRepository = mock(SubscriptionQuotaUserAllocationRepository.class);
+        subscriptionQuotaUserAllocationRepository = mock(SchoolSubscriptionQuotaUserAllocationRepository.class);
         useCase = new ViewMyClassTestQuotaAllocationUseCase(
             userContextPort, schoolSubscriptionRepository, subscriptionQuotaUserAllocationRepository);
 
@@ -49,7 +49,7 @@ class ViewMyClassTestQuotaAllocationUseCaseTests {
     void should_return_allocation_when_row_exists() {
         when(subscriptionQuotaUserAllocationRepository
             .findBySubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.CLASS_TEST, userId))
-            .thenReturn(Optional.of(new SubscriptionQuotaUserAllocation(
+            .thenReturn(Optional.of(new SchoolSubscriptionQuotaUserAllocation(
                 subscriptionId, QuotaType.CLASS_TEST, userId, BigDecimal.valueOf(1800), BigDecimal.valueOf(600))));
 
         var result = useCase.execute(null);

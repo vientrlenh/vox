@@ -73,7 +73,7 @@ public class JpaSubscriptionPlanQueryRepository implements SubscriptionPlanQuery
             q.quotaType,
             q.includedQuantity,
             q.tokenUnitPrice)
-            FROM PlanQuotaJpaEntity q
+            FROM SubscriptionPlanQuotaJpaEntity q
             WHERE q.planId IN :planIds
         """, PlanQuotaRowDto.class)
             .setParameter("planIds", plans.stream().map(p -> p.id()).toList())

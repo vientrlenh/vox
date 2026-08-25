@@ -18,12 +18,15 @@ public class Order {
     private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
+    // Phải mang theo ở domain model, không chỉ ở JpaEntity: mapper dựng entity MỚI mỗi lần lưu nên
+    // entity luôn detached -- thiếu version, Hibernate coi là transient và INSERT đè lên id đã có.
+    private Long version;
 
     public Order() {}
 
     public Order(UUID id, UUID schoolId, OrderType type, String description, BigDecimal totalAmountVnd, BigDecimal chargedFeeVnd,
             BigDecimal discountAmountVnd, OrderStatus status, String notes, Instant createdAt, Instant updatedAt, UUID createdBy,
-            UUID updatedBy) {
+            UUID updatedBy, Long version) {
         this.id = id;
         this.schoolId = schoolId;
         this.type = type; 
@@ -37,6 +40,7 @@ public class Order {
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
+        this.version = version;
     }
 
     public Order(UUID schoolId, OrderType type, String description, BigDecimal totalAmountVnd, BigDecimal chargedFeeVnd,
@@ -142,6 +146,14 @@ public class Order {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     public String getNotes() {

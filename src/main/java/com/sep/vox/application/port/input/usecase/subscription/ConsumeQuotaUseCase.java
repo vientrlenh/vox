@@ -17,11 +17,11 @@ import com.sep.vox.domain.dto.SubscriptionQuotaDto;
 import com.sep.vox.domain.mapper.SubscriptionQuotaDtoMapper;
 import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
 import com.sep.vox.domain.model.metering.QuotaType;
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.model.subscription.TokenUsageEvent;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaUserAllocationRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 import com.sep.vox.domain.repository.TokenUsageEventRepository;
 
 // Internal service-to-service use case (called from the exam-session flow), not end-user-facing —
@@ -31,16 +31,16 @@ public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, Subscr
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumeQuotaUseCase.class);
 
-    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
-    private final SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
+    private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
+    private final SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
     private final TokenUsageEventRepository tokenUsageEventRepository;
     private final QuotaDebtConfigPort quotaDebtConfig;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolDebtNotificationService schoolDebtNotificationService;
 
     public ConsumeQuotaUseCase(
-            SubscriptionQuotaRepository subscriptionQuotaRepository,
-            SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
+            SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
+            SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
             TokenUsageEventRepository tokenUsageEventRepository,
             QuotaDebtConfigPort quotaDebtConfig,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
@@ -104,7 +104,7 @@ public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, Subscr
     // không phải để giới hạn số nợ tối đa. So sánh TRƯỚC/SAU (quota fetch đầu execute() vs updated
     // fetch cuối) để chỉ báo đúng 1 lần lúc CHUYỂN từ dưới trần sang vượt trần, không báo lặp lại mỗi
     // lần trừ thêm trong lúc đã vượt trần từ trước.
-    private void checkDebtCapTransition(ConsumeQuotaCommand input, SubscriptionQuota before, SubscriptionQuota after) {
+    private void checkDebtCapTransition(ConsumeQuotaCommand input, SchoolSubscriptionQuotaRecord before, SchoolSubscriptionQuotaRecord after) {
         var overageBefore = before.getUsedQuantity().subtract(before.getTotalAllocated());
         var overageAfter = after.getUsedQuantity().subtract(after.getTotalAllocated());
         if (overageAfter.compareTo(BigDecimal.ZERO) <= 0) {

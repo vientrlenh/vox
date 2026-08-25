@@ -30,7 +30,7 @@ import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 
 class ViewSchoolAdminDashboardUseCaseTests {
 
@@ -41,7 +41,7 @@ class ViewSchoolAdminDashboardUseCaseTests {
     private ExamRepository examRepository;
     private ExamResultAppealRepository examResultAppealRepository;
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private SubscriptionPlanRepository subscriptionPlanRepository;
     private InvoiceRepository invoiceRepository;
     private ViewSchoolAdminDashboardUseCase useCase;
@@ -52,7 +52,7 @@ class ViewSchoolAdminDashboardUseCaseTests {
         examRepository = mock(ExamRepository.class);
         examResultAppealRepository = mock(ExamResultAppealRepository.class);
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
-        subscriptionQuotaRepository = mock(SubscriptionQuotaRepository.class);
+        subscriptionQuotaRepository = mock(SchoolSubscriptionQuotaRecordRepository.class);
         subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
         invoiceRepository = mock(InvoiceRepository.class);
         useCase = new ViewSchoolAdminDashboardUseCase(

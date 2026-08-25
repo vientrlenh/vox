@@ -11,16 +11,20 @@ public class SchoolBalance {
     private BigDecimal purchasedVnd;
     private Instant createdAt;
     private Instant updatedAt;
+    // Phải mang theo ở domain model, không chỉ ở JpaEntity: mapper dựng entity MỚI mỗi lần lưu nên
+    // entity luôn detached -- thiếu version, Hibernate coi là transient và INSERT đè lên id đã có.
+    private Long version;
 
     public SchoolBalance() {}
 
-    public SchoolBalance(UUID id, UUID schoolId, BigDecimal grantedVnd, BigDecimal purchasedVnd, Instant createdAt, Instant updatedAt) {
+    public SchoolBalance(UUID id, UUID schoolId, BigDecimal grantedVnd, BigDecimal purchasedVnd, Instant createdAt, Instant updatedAt, Long version) {
         this.id = id;
         this.schoolId = schoolId;
         this.grantedVnd = grantedVnd;
         this.purchasedVnd = purchasedVnd;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.version = version;
     }
 
     public SchoolBalance(UUID schoolId, BigDecimal grantedVnd, BigDecimal purchasedVnd, Instant createdAt, Instant updatedAt) {
@@ -77,6 +81,27 @@ public class SchoolBalance {
 
     public void setPurchasedVnd(BigDecimal purchasedVnd) {
         this.purchasedVnd = purchasedVnd;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
+
+    /**
+     * Số dư khả dụng = phần kèm gói + phần tự nạp. Đây là con số DUY NHẤT dùng để trả lời "trường
+     * còn dùng được không" -- không nơi nào được so sánh riêng lẻ từng cột.
+     */
+    public BigDecimal getAvailableVnd() {
+        return grantedVnd.add(purchasedVnd);
+    }
+
+    /** Nợ nằm ở purchasedVnd âm (grantedVnd đã có CHECK >= 0). */
+    public boolean isInDebt() {
+        return getAvailableVnd().compareTo(BigDecimal.ZERO) < 0;
     }
 
     public BigDecimal getAvailableAmountVnd() {

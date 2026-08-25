@@ -23,20 +23,20 @@ import com.sep.vox.application.port.input.usecase.subscription.BuyTokensUseCase;
 import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.metering.QuotaType;
-import com.sep.vox.domain.model.subscription.PlanQuota;
+import com.sep.vox.domain.model.subscription.SubscriptionPlanQuota;
 import com.sep.vox.domain.model.subscription.PlanStatus;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.model.subscription.TokenPurchase;
 import com.sep.vox.domain.model.subscription.TokenPurchaseItem;
 import com.sep.vox.domain.repository.FinancialEventRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;
-import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.TokenPurchaseItemRepository;
 import com.sep.vox.domain.repository.TokenPurchaseRepository;
 
@@ -51,9 +51,9 @@ class BuyTokensUseCasePricingTests {
 
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
     private SubscriptionPlanRepository subscriptionPlanRepository;
-    private PlanQuotaRepository planQuotaRepository;
+    private SubscriptionPlanQuotaRepository planQuotaRepository;
     private QuotaPricingPort quotaPricingService;
-    private SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private TokenPurchaseRepository tokenPurchaseRepository;
     private TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private BuyTokensUseCase useCase;
@@ -66,9 +66,9 @@ class BuyTokensUseCasePricingTests {
     void setUp() {
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
-        planQuotaRepository = mock(PlanQuotaRepository.class);
+        planQuotaRepository = mock(SubscriptionPlanQuotaRepository.class);
         quotaPricingService = mock(QuotaPricingPort.class);
-        subscriptionQuotaRepository = mock(SubscriptionQuotaRepository.class);
+        subscriptionQuotaRepository = mock(SchoolSubscriptionQuotaRecordRepository.class);
         tokenPurchaseRepository = mock(TokenPurchaseRepository.class);
         tokenPurchaseItemRepository = mock(TokenPurchaseItemRepository.class);
         var userContextPort = mock(UserContextPort.class);
@@ -100,14 +100,14 @@ class BuyTokensUseCasePricingTests {
         );
         when(schoolSubscriptionRepository.findById(subscriptionId)).thenReturn(Optional.of(subscription));
         when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
-        // Giá đóng băng trong plan_quota lúc tạo gói -- KHÔNG được dùng để tính tiền mua thêm nữa.
+        // Giá đóng băng trong subscription_plan_quotas lúc tạo gói -- KHÔNG được dùng để tính tiền mua thêm nữa.
         when(planQuotaRepository.findAllByPlanId(planId)).thenReturn(List.of(
-            new PlanQuota(planId, QuotaType.GRADING, BigDecimal.valueOf(100), FROZEN_PRICE_AT_PLAN_CREATION)
+            new SubscriptionPlanQuota(planId, QuotaType.GRADING, BigDecimal.valueOf(100), FROZEN_PRICE_AT_PLAN_CREATION)
         ));
         // Giá sống hôm nay theo tỷ giá hiện tại, khác hẳn giá đóng băng để phân biệt rõ trong assertion.
         when(quotaPricingService.tokenUnitPriceFor(eq(new BigDecimal("0.20")))).thenReturn(LIVE_PRICE_TODAY);
         when(subscriptionQuotaRepository.findAllBySubscriptionId(subscriptionId)).thenReturn(List.of(
-            new SubscriptionQuota(UUID.randomUUID(), subscriptionId, QuotaType.GRADING, BigDecimal.valueOf(100), BigDecimal.ZERO)
+            new SchoolSubscriptionQuotaRecord(UUID.randomUUID(), subscriptionId, QuotaType.GRADING, BigDecimal.valueOf(100), BigDecimal.ZERO)
         ));
         when(tokenPurchaseRepository.save(any(TokenPurchase.class))).thenAnswer(call -> {
             TokenPurchase purchase = call.getArgument(0);

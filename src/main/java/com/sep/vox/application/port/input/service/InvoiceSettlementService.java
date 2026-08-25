@@ -29,16 +29,16 @@ import com.sep.vox.domain.model.subscription.PurchaseStatus;
 import com.sep.vox.domain.model.subscription.RequestStatus;
 import com.sep.vox.domain.model.subscription.RequestType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.repository.FinancialEventRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
-import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SubscriptionRequestRepository;
 import com.sep.vox.domain.repository.TokenPurchaseItemRepository;
 import com.sep.vox.domain.repository.TokenPurchaseRepository;
@@ -56,8 +56,8 @@ public class InvoiceSettlementService {
     private final SubscriptionRequestRepository subscriptionRequestRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final PlanQuotaRepository planQuotaRepository;
-    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private final SubscriptionPlanQuotaRepository planQuotaRepository;
+    private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private final TokenPurchaseRepository tokenPurchaseRepository;
     private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private final FinancialEventRepository financialEventRepository;
@@ -73,8 +73,8 @@ public class InvoiceSettlementService {
             SubscriptionRequestRepository subscriptionRequestRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
-            PlanQuotaRepository planQuotaRepository,
-            SubscriptionQuotaRepository subscriptionQuotaRepository,
+            SubscriptionPlanQuotaRepository planQuotaRepository,
+            SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
             TokenPurchaseRepository tokenPurchaseRepository,
             TokenPurchaseItemRepository tokenPurchaseItemRepository,
             FinancialEventRepository financialEventRepository,
@@ -209,7 +209,7 @@ public class InvoiceSettlementService {
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
         // Chụp bucket nào của gói CŨ (nếu có) đang vượt hạn mức trước khi expire nó -- gói mới tạo
-        // bên dưới luôn có SubscriptionQuota tinh khôi (usedQuantity=0) nên chắc chắn không khóa,
+        // bên dưới luôn có SchoolSubscriptionQuotaRecord tinh khôi (usedQuantity=0) nên chắc chắn không khóa,
         // không cần check lại "sau" như checkDebtCapTransition (ConsumeQuotaUseCase).
         var oldSubscriptionId = schoolSubscriptionRepository.findActiveBySchoolId(request.getSchoolId())
             .map(current -> {
@@ -236,7 +236,7 @@ public class InvoiceSettlementService {
         ));
 
         planQuotaRepository.findAllByPlanId(plan.getId()).forEach(planQuota ->
-            subscriptionQuotaRepository.save(new SubscriptionQuota(
+            subscriptionQuotaRepository.save(new SchoolSubscriptionQuotaRecord(
                 savedSubscription.getId(),
                 planQuota.getQuotaType(),
                 planQuota.getIncludedQuantity(),
@@ -323,7 +323,7 @@ public class InvoiceSettlementService {
         ));
 
         planQuotaRepository.findAllByPlanId(plan.getId()).forEach(planQuota ->
-            subscriptionQuotaRepository.save(new SubscriptionQuota(
+            subscriptionQuotaRepository.save(new SchoolSubscriptionQuotaRecord(
                 savedSubscription.getId(),
                 planQuota.getQuotaType(),
                 planQuota.getIncludedQuantity(),

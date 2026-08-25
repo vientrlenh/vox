@@ -25,13 +25,13 @@ import com.sep.vox.domain.model.invoice.InvoiceSourceType;
 import com.sep.vox.domain.model.invoice.InvoiceStatus;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 
 @Service
 public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdminDashboardSummaryDto> {
@@ -40,14 +40,14 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     private final ExamRepository examRepository;
     private final ExamResultAppealRepository examResultAppealRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final InvoiceRepository invoiceRepository;
 
     public ViewSchoolAdminDashboardUseCase(UserContextPort userContextPort, ExamRepository examRepository,
             ExamResultAppealRepository examResultAppealRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionQuotaRepository subscriptionQuotaRepository,
+            SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
             SubscriptionPlanRepository subscriptionPlanRepository, InvoiceRepository invoiceRepository) {
         this.userContextPort = userContextPort;
         this.examRepository = examRepository;
@@ -165,7 +165,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
             .toList();
     }
 
-    private Optional<SubscriptionQuota> activeGradingQuota(Optional<SchoolSubscription> activeSubscription) {
+    private Optional<SchoolSubscriptionQuotaRecord> activeGradingQuota(Optional<SchoolSubscription> activeSubscription) {
         return activeSubscription.flatMap(subscription -> subscriptionQuotaRepository
             .findBySubscriptionIdAndQuotaType(subscription.getId(), QuotaType.GRADING));
     }

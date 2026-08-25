@@ -65,7 +65,7 @@ public class QuotaPricingService implements QuotaPricingPort {
 
     /**
      * Giá bán mỗi $1 hạn mức cho CreatePlanUseCase/UpdatePlanUseCase -- tính từ usdToVndRate() ×
-     * (1 + serviceFeeRatio), làm tròn HALF_UP về số nguyên (khớp cột plan_quota.token_unit_price
+     * (1 + serviceFeeRatio), làm tròn HALF_UP về số nguyên (khớp cột subscription_plan_quotas.token_unit_price
      * NUMERIC(15,0)). serviceFeeRatio là field cấp-gói (không theo từng quotaType) nên cùng 1 giá
      * áp dụng cho mọi loại quota của gói đó.
      */

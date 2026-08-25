@@ -15,7 +15,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RenewalPreviewDto;
 import com.sep.vox.domain.mapper.SubscriptionPlanDtoMapper;
-import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
@@ -28,7 +28,7 @@ public class PreviewRenewalUseCase implements IUseCase<PreviewRenewalQuery, Rene
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final PlanQuotaRepository planQuotaRepository;
+    private final SubscriptionPlanQuotaRepository planQuotaRepository;
     private final SubscriptionPlanResolver subscriptionPlanResolver;
     private final RenewalProrationService renewalProrationService;
     private final UserContextPort userContextPort;
@@ -36,7 +36,7 @@ public class PreviewRenewalUseCase implements IUseCase<PreviewRenewalQuery, Rene
     public PreviewRenewalUseCase(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
-            PlanQuotaRepository planQuotaRepository,
+            SubscriptionPlanQuotaRepository planQuotaRepository,
             SubscriptionPlanResolver subscriptionPlanResolver,
             RenewalProrationService renewalProrationService,
             UserContextPort userContextPort) {

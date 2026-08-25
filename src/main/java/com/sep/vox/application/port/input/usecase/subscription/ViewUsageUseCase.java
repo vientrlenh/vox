@@ -12,18 +12,18 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SubscriptionQuotaDto;
 import com.sep.vox.domain.mapper.SubscriptionQuotaDtoMapper;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 
 @Service
 public class ViewUsageUseCase implements IUseCase<ViewUsageQuery, List<SubscriptionQuotaDto>> {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private final UserContextPort userContextPort;
 
     public ViewUsageUseCase(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionQuotaRepository subscriptionQuotaRepository,
+            SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
             UserContextPort userContextPort) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;

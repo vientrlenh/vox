@@ -35,24 +35,24 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
 import com.sep.vox.domain.model.subscription.PaymentMethod;
-import com.sep.vox.domain.model.subscription.PlanQuota;
+import com.sep.vox.domain.model.subscription.SubscriptionPlanQuota;
 import com.sep.vox.domain.model.subscription.PlanStatus;
 import com.sep.vox.domain.model.subscription.PurchaseStatus;
 import com.sep.vox.domain.model.subscription.RequestStatus;
 import com.sep.vox.domain.model.subscription.RequestType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.model.subscription.SubscriptionRequest;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.model.subscription.TokenPurchase;
 import com.sep.vox.domain.model.subscription.TokenPurchaseItem;
 import com.sep.vox.domain.repository.FinancialEventRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;
-import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SubscriptionRequestRepository;
 import com.sep.vox.domain.repository.TokenPurchaseItemRepository;
 import com.sep.vox.domain.repository.TokenPurchaseRepository;
@@ -69,8 +69,8 @@ class InvoiceSettlementServiceTests {
     private SubscriptionRequestRepository subscriptionRequestRepository;
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
     private SubscriptionPlanRepository subscriptionPlanRepository;
-    private PlanQuotaRepository planQuotaRepository;
-    private SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private SubscriptionPlanQuotaRepository planQuotaRepository;
+    private SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private TokenPurchaseRepository tokenPurchaseRepository;
     private TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private FinancialEventRepository financialEventRepository;
@@ -95,8 +95,8 @@ class InvoiceSettlementServiceTests {
         subscriptionRequestRepository = mock(SubscriptionRequestRepository.class);
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
-        planQuotaRepository = mock(PlanQuotaRepository.class);
-        subscriptionQuotaRepository = mock(SubscriptionQuotaRepository.class);
+        planQuotaRepository = mock(SubscriptionPlanQuotaRepository.class);
+        subscriptionQuotaRepository = mock(SchoolSubscriptionQuotaRecordRepository.class);
         tokenPurchaseRepository = mock(TokenPurchaseRepository.class);
         tokenPurchaseItemRepository = mock(TokenPurchaseItemRepository.class);
         financialEventRepository = mock(FinancialEventRepository.class);
@@ -160,7 +160,7 @@ class InvoiceSettlementServiceTests {
         when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.empty());
         when(planQuotaRepository.findAllByPlanId(planId)).thenReturn(List.of(
-            new PlanQuota(planId, QuotaType.GRADING, BigDecimal.valueOf(100), new BigDecimal("1000"))
+            new SubscriptionPlanQuota(planId, QuotaType.GRADING, BigDecimal.valueOf(100), new BigDecimal("1000"))
         ));
         when(schoolSubscriptionRepository.save(any(SchoolSubscription.class))).thenAnswer(call -> {
             SchoolSubscription saved = call.getArgument(0);
@@ -172,7 +172,7 @@ class InvoiceSettlementServiceTests {
         // Quota tinh khôi của gói mới -- reportDebtClearedIfNeeded đọc lại quota này để biết snapshot
         // sau khi hết nợ (xem InvoiceSettlementService.approveSubscriptionRequest/renewSubscription).
         when(subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, QuotaType.GRADING))
-            .thenReturn(Optional.of(new SubscriptionQuota(UUID.randomUUID(), subscriptionId, QuotaType.GRADING,
+            .thenReturn(Optional.of(new SchoolSubscriptionQuotaRecord(UUID.randomUUID(), subscriptionId, QuotaType.GRADING,
                 BigDecimal.valueOf(100), BigDecimal.ZERO)));
     }
 
@@ -195,7 +195,7 @@ class InvoiceSettlementServiceTests {
         when(schoolSubscriptionRepository.findById(existingSubscriptionId)).thenReturn(Optional.of(current));
         when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
         when(planQuotaRepository.findAllByPlanId(planId)).thenReturn(List.of(
-            new PlanQuota(planId, QuotaType.GRADING, BigDecimal.valueOf(100), new BigDecimal("1000"))
+            new SubscriptionPlanQuota(planId, QuotaType.GRADING, BigDecimal.valueOf(100), new BigDecimal("1000"))
         ));
         when(schoolSubscriptionDebtGuardService.isQuotaOverLimit(existingSubscriptionId, QuotaType.GRADING)).thenReturn(locked);
         when(schoolSubscriptionRepository.save(any(SchoolSubscription.class))).thenAnswer(call -> {
@@ -206,12 +206,12 @@ class InvoiceSettlementServiceTests {
             return saved;
         });
         when(subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, QuotaType.GRADING))
-            .thenReturn(Optional.of(new SubscriptionQuota(UUID.randomUUID(), subscriptionId, QuotaType.GRADING,
+            .thenReturn(Optional.of(new SchoolSubscriptionQuotaRecord(UUID.randomUUID(), subscriptionId, QuotaType.GRADING,
                 BigDecimal.valueOf(100), BigDecimal.ZERO)));
     }
 
     /**
-     * Trường đang khóa và gia hạn gói -- gói mới luôn có SubscriptionQuota tinh khôi nên chắc chắn
+     * Trường đang khóa và gia hạn gói -- gói mới luôn có SchoolSubscriptionQuotaRecord tinh khôi nên chắc chắn
      * hết nợ, phải báo SchoolDebtCleared. Xem InvoiceSettlementService.renewSubscription.
      */
     @Test
@@ -240,7 +240,7 @@ class InvoiceSettlementServiceTests {
         verify(schoolDebtNotificationService, never()).publishSchoolDebtCleared(any(), any(), any(), any(), any(), any());
     }
 
-    /** Trả về id của SubscriptionQuota sẽ nhận thêm token. */
+    /** Trả về id của SchoolSubscriptionQuotaRecord sẽ nhận thêm token. */
     private UUID givenPendingTokenPurchase() {
         var quotaId = UUID.randomUUID();
         when(tokenPurchaseRepository.findById(sourceId)).thenReturn(Optional.of(
@@ -250,7 +250,7 @@ class InvoiceSettlementServiceTests {
             new TokenPurchaseItem(sourceId, QuotaType.GRADING, BigDecimal.valueOf(50), new BigDecimal("1000"), amount)
         ));
         when(subscriptionQuotaRepository.findAllBySubscriptionId(subscriptionId)).thenReturn(List.of(
-            new SubscriptionQuota(quotaId, subscriptionId, QuotaType.GRADING, BigDecimal.valueOf(100), BigDecimal.valueOf(10))
+            new SchoolSubscriptionQuotaRecord(quotaId, subscriptionId, QuotaType.GRADING, BigDecimal.valueOf(100), BigDecimal.valueOf(10))
         ));
         when(schoolSubscriptionRepository.findById(subscriptionId)).thenReturn(Optional.of(
             new SchoolSubscription(subscriptionId, schoolId, planId, LocalDate.now(), LocalDate.now().plusDays(365),
@@ -260,7 +260,7 @@ class InvoiceSettlementServiceTests {
     }
 
     /**
-     * Trường đang khóa (nợ hạn mức) và duyệt gói mới thay thế -- gói mới luôn có SubscriptionQuota
+     * Trường đang khóa (nợ hạn mức) và duyệt gói mới thay thế -- gói mới luôn có SchoolSubscriptionQuotaRecord
      * tinh khôi nên chắc chắn hết nợ, phải báo SchoolDebtCleared. Xem InvoiceSettlementService
      * .approveSubscriptionRequest.
      */
@@ -322,7 +322,7 @@ class InvoiceSettlementServiceTests {
         verify(subscriptionRequestRepository).save(requestCaptor.capture());
         assertThat(requestCaptor.getValue().getStatus()).isEqualTo(RequestStatus.APPROVED);
 
-        var quotaCaptor = ArgumentCaptor.forClass(SubscriptionQuota.class);
+        var quotaCaptor = ArgumentCaptor.forClass(SchoolSubscriptionQuotaRecord.class);
         verify(subscriptionQuotaRepository).save(quotaCaptor.capture());
         assertThat(quotaCaptor.getValue().getQuotaType()).isEqualTo(QuotaType.GRADING);
         assertThat(quotaCaptor.getValue().getTotalAllocated()).isEqualByComparingTo(BigDecimal.valueOf(100));
@@ -409,7 +409,7 @@ class InvoiceSettlementServiceTests {
         assertThat(pending.getPaidAt()).isNull();
         verify(invoiceRepository).save(pending);
         verify(schoolSubscriptionRepository, never()).save(any(SchoolSubscription.class));
-        verify(subscriptionQuotaRepository, never()).save(any(SubscriptionQuota.class));
+        verify(subscriptionQuotaRepository, never()).save(any(SchoolSubscriptionQuotaRecord.class));
         verify(outboxRepository, never()).save(any());
     }
 

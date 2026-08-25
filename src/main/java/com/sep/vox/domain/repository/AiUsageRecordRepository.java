@@ -14,7 +14,7 @@ public interface AiUsageRecordRepository {
     List<AiUsageRecord> findAllByExamSessionId(UUID examSessionId);
     boolean existsByUsageEventId(UUID usageEventId);
 
-    /** Tổng cost_usd của mọi usage record thuộc session -- nguồn thật để trừ SubscriptionQuota. */
+    /** Tổng cost_usd của mọi usage record thuộc session -- nguồn thật để trừ SchoolSubscriptionQuotaRecord. */
     BigDecimal sumCostUsdByExamSessionId(UUID examSessionId);
 
     /**

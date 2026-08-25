@@ -9,19 +9,19 @@ import com.sep.vox.application.port.input.command.DeleteDraftPlanCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.subscription.PlanStatus;
-import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 @Service
 public class DeleteDraftPlanUseCase implements IUseCase<DeleteDraftPlanCommand, Void> {
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final PlanQuotaRepository planQuotaRepository;
+    private final SubscriptionPlanQuotaRepository planQuotaRepository;
     private final UserContextPort userContextPort;
 
     public DeleteDraftPlanUseCase(
             SubscriptionPlanRepository subscriptionPlanRepository,
-            PlanQuotaRepository planQuotaRepository,
+            SubscriptionPlanQuotaRepository planQuotaRepository,
             UserContextPort userContextPort) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.planQuotaRepository = planQuotaRepository;

@@ -10,23 +10,23 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.SubscriptionQuotaUserAllocationJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionQuotaUserAllocationJpaEntity;
 
-public interface SpringDataSubscriptionQuotaUserAllocationRepository extends JpaRepository<SubscriptionQuotaUserAllocationJpaEntity, UUID> {
-    List<SubscriptionQuotaUserAllocationJpaEntity> findAllBySubscriptionIdAndQuotaType(UUID subscriptionId, String quotaType);
-    Optional<SubscriptionQuotaUserAllocationJpaEntity> findBySubscriptionIdAndQuotaTypeAndUserId(UUID subscriptionId, String quotaType, UUID userId);
+public interface SpringDataSchoolSubscriptionQuotaUserAllocationRepository extends JpaRepository<SchoolSubscriptionQuotaUserAllocationJpaEntity, UUID> {
+    List<SchoolSubscriptionQuotaUserAllocationJpaEntity> findAllBySubscriptionIdAndQuotaType(UUID subscriptionId, String quotaType);
+    Optional<SchoolSubscriptionQuotaUserAllocationJpaEntity> findBySubscriptionIdAndQuotaTypeAndUserId(UUID subscriptionId, String quotaType, UUID userId);
 
     @Modifying
     @Query("""
-        UPDATE SubscriptionQuotaUserAllocationJpaEntity a
+        UPDATE SchoolSubscriptionQuotaUserAllocationJpaEntity a
         SET a.usedQuantity = a.usedQuantity + :amount
         WHERE a.id = :id AND a.usedQuantity + :amount <= a.allocatedQuantity
         """)
     int tryConsume(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 
-    // clearAutomatically=true -- cùng lý do với SpringDataSubscriptionQuotaRepository.addUsage:
+    // clearAutomatically=true -- cùng lý do với SpringDataSchoolSubscriptionQuotaRecordRepository.addUsage:
     // tránh Hibernate trả về entity cache cũ nếu có chỗ nào sau này đọc lại trong cùng transaction.
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE SubscriptionQuotaUserAllocationJpaEntity a SET a.usedQuantity = a.usedQuantity + :amount WHERE a.id = :id")
+    @Query("UPDATE SchoolSubscriptionQuotaUserAllocationJpaEntity a SET a.usedQuantity = a.usedQuantity + :amount WHERE a.id = :id")
     void addUsage(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 }

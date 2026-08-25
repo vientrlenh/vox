@@ -21,15 +21,15 @@ import com.sep.vox.domain.mapper.SubscriptionQuotaUserAllocationDtoMapper;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.DistributionMode;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
-import com.sep.vox.domain.model.subscription.SubscriptionQuotaUserAllocation;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaUserAllocationRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -45,8 +45,8 @@ public class DistributeQuotaToUsersService {
 
     private final UserContextPort userContextPort;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
-    private final SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
+    private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
+    private final SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
     private final RoleRepository roleRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRepository userRepository;
@@ -54,8 +54,8 @@ public class DistributeQuotaToUsersService {
     public DistributeQuotaToUsersService(
             UserContextPort userContextPort,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionQuotaRepository subscriptionQuotaRepository,
-            SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
+            SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
+            SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
             RoleRepository roleRepository,
             SchoolUserRepository schoolUserRepository,
             UserRepository userRepository) {
@@ -105,7 +105,7 @@ public class DistributeQuotaToUsersService {
     }
 
     private Map<UUID, BigDecimal> computeAutoSplit(List<UUID> eligibleUserIds, BigDecimal totalAllocated,
-            Map<UUID, SubscriptionQuotaUserAllocation> existing) {
+            Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing) {
         var count = eligibleUserIds.size();
         var base = totalAllocated.divide(BigDecimal.valueOf(count), 6, RoundingMode.DOWN);
         // Phần dư sau khi chia đều (không hết vì DOWN), quy đổi sang số đơn vị SMALLEST_UNIT để rải
@@ -129,7 +129,7 @@ public class DistributeQuotaToUsersService {
     }
 
     private Map<UUID, BigDecimal> computeManualAmounts(List<UserQuotaAmount> allocations, List<UUID> eligibleUserIds,
-            Map<UUID, SubscriptionQuotaUserAllocation> existing, BigDecimal totalAllocated) {
+            Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing, BigDecimal totalAllocated) {
         if (allocations == null || allocations.isEmpty()) {
             throw new IllegalArgumentException("Danh sách phân bổ không được để trống");
         }
@@ -166,7 +166,7 @@ public class DistributeQuotaToUsersService {
         return result;
     }
 
-    private static BigDecimal usedQuantityOrZero(SubscriptionQuotaUserAllocation allocation) {
+    private static BigDecimal usedQuantityOrZero(SchoolSubscriptionQuotaUserAllocation allocation) {
         if (allocation == null || allocation.getUsedQuantity() == null) {
             return BigDecimal.ZERO;
         }
@@ -178,7 +178,7 @@ public class DistributeQuotaToUsersService {
     }
 
     private QuotaUserAllocationSummaryDto buildSummary(UUID subscriptionId, QuotaType quotaType,
-            SubscriptionQuota pool, List<UUID> eligibleUserIds) {
+            SchoolSubscriptionQuotaRecord pool, List<UUID> eligibleUserIds) {
         var existing = fetchExistingAllocationsByUserId(subscriptionId, quotaType);
         var names = userRepository.findByIdIn(eligibleUserIds).stream()
             .collect(Collectors.toMap(u -> u.getId(), u -> u.getFullName().value()));
@@ -186,7 +186,7 @@ public class DistributeQuotaToUsersService {
         var allocationDtos = eligibleUserIds.stream()
             .map(userId -> {
                 var allocation = existing.getOrDefault(userId,
-                    new SubscriptionQuotaUserAllocation(subscriptionId, quotaType, userId, BigDecimal.ZERO, BigDecimal.ZERO));
+                    new SchoolSubscriptionQuotaUserAllocation(subscriptionId, quotaType, userId, BigDecimal.ZERO, BigDecimal.ZERO));
                 return SubscriptionQuotaUserAllocationDtoMapper.toDto(allocation, names.get(userId));
             })
             .toList();
@@ -194,7 +194,7 @@ public class DistributeQuotaToUsersService {
         return new QuotaUserAllocationSummaryDto(SubscriptionQuotaDtoMapper.toDto(pool), allocationDtos);
     }
 
-    private Map<UUID, SubscriptionQuotaUserAllocation> fetchExistingAllocationsByUserId(UUID subscriptionId, QuotaType quotaType) {
+    private Map<UUID, SchoolSubscriptionQuotaUserAllocation> fetchExistingAllocationsByUserId(UUID subscriptionId, QuotaType quotaType) {
         return subscriptionQuotaUserAllocationRepository.findAllBySubscriptionIdAndQuotaType(subscriptionId, quotaType).stream()
             .collect(Collectors.toMap(allocation -> allocation.getUserId(), allocation -> allocation));
     }
@@ -216,7 +216,7 @@ public class DistributeQuotaToUsersService {
             .orElseThrow(() -> new NotFoundException("Trường chưa có gói subscription đang hoạt động"));
     }
 
-    private SubscriptionQuota findPool(UUID subscriptionId, QuotaType quotaType) {
+    private SchoolSubscriptionQuotaRecord findPool(UUID subscriptionId, QuotaType quotaType) {
         return subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, quotaType)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
     }

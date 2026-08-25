@@ -8,11 +8,11 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.MyClassTestQuotaAllocationDto;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaUserAllocationRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 
 /**
  * Cho giáo viên tự xem hạn mức CLASS_TEST cá nhân của chính mình -- endpoint duy nhất đọc
- * SubscriptionQuotaUserAllocation trước đây chỉ SCHOOL_ADMIN gọi được và trả cả trường, không
+ * SchoolSubscriptionQuotaUserAllocation trước đây chỉ SCHOOL_ADMIN gọi được và trả cả trường, không
  * lọc theo người gọi (xem ViewClassTestQuotaAllocationsUseCase). FE dùng số này để cảnh báo
  * trước khi publish/sửa/thêm học sinh, cùng công thức với ClassTestTokenQuotaGuardService.
  *
@@ -24,12 +24,12 @@ public class ViewMyClassTestQuotaAllocationUseCase implements IUseCase<Void, MyC
 
     private final UserContextPort userContextPort;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private final SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
+    private final SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
 
     public ViewMyClassTestQuotaAllocationUseCase(
             UserContextPort userContextPort,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository) {
+            SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository) {
         this.userContextPort = userContextPort;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;

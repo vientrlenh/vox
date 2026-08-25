@@ -7,7 +7,7 @@ import java.util.UUID;
 public class SchoolSubscription {
     private UUID id;
     private UUID schoolId;
-    private UUID currentSubscriptionPlanId;
+    private UUID subscriptionPlanId;
     private Instant startDate;
     private Instant endDate;
     private SchoolSubscriptionStatus status;
@@ -24,12 +24,12 @@ public class SchoolSubscription {
 
     public SchoolSubscription() {}
 
-    public SchoolSubscription(UUID id, UUID schoolId, UUID currentSubscriptionPlanId, Instant startDate, Instant endDate,
+    public SchoolSubscription(UUID id, UUID schoolId, UUID subscriptionPlanId, Instant startDate, Instant endDate,
             SchoolSubscriptionStatus status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt,
             Long version, Instant suspendedAt, String suspendedReason, UUID suspendedBy) {
         this.id = id;
         this.schoolId = schoolId;
-        this.currentSubscriptionPlanId = currentSubscriptionPlanId;
+        this.subscriptionPlanId = subscriptionPlanId;
         this.startDate = startDate;
         this.endDate = endDate;
         this.status = status;
@@ -42,10 +42,10 @@ public class SchoolSubscription {
         this.suspendedBy = suspendedBy;
     }
 
-    public SchoolSubscription(UUID schoolId, UUID currentSubscriptionPlanId, Instant startDate, Instant endDate,
+    public SchoolSubscription(UUID schoolId, UUID subscriptionPlanId, Instant startDate, Instant endDate,
             SchoolSubscriptionStatus status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt) {
         this.schoolId = schoolId;
-        this.currentSubscriptionPlanId = currentSubscriptionPlanId;
+        this.subscriptionPlanId = subscriptionPlanId;
         this.startDate = startDate;
         this.endDate = endDate;
         this.status = status;
@@ -70,12 +70,12 @@ public class SchoolSubscription {
         this.schoolId = schoolId;
     }
 
-    public UUID getCurrentSubscriptionPlanId() {
-        return currentSubscriptionPlanId;
+    public UUID getSubscriptionPlanId() {
+        return subscriptionPlanId;
     }
 
-    public void setCurrentSubscriptionPlanId(UUID currentSubscriptionPlanId) {
-        this.currentSubscriptionPlanId = currentSubscriptionPlanId;
+    public void setSubscriptionPlanId(UUID subscriptionPlanId) {
+        this.subscriptionPlanId = subscriptionPlanId;
     }
 
     public Instant getStartDate() {

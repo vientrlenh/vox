@@ -62,7 +62,7 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
         """, nativeQuery = true)
     Optional<UUID> findActiveSubscriptionIdForUser(@Param("userId") UUID userId);
 
-    // Phải LEFT JOIN thêm subscription_quota_user_allocations và lấy LEAST(...): ConsumeQuotaUseCase
+    // Phải LEFT JOIN thêm school_subscription_quota_user_allocations và lấy LEAST(...): ConsumeQuotaUseCase
     // trừ CẢ hạn mức trường LẪN hạn mức cá nhân (khi có allocation row cho user) cho PRACTICE, nên
     // cửa chặn ở BuildPracticePaperUseCase phải soi đúng 2 thước đó -- trước đây chỉ soi hạn mức
     // trường, học sinh hết hạn mức cá nhân nhưng trường còn dư sẽ lọt cửa, dựng đề xong mới chết ở
@@ -80,10 +80,10 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
           ON subscription.school_id = school_user.school_id
          AND subscription.status = 'ACTIVE'
          AND CURRENT_DATE BETWEEN subscription.start_date AND subscription.end_date
-        JOIN subscription_quota quota
+        JOIN school_subscription_quota_records quota
           ON quota.subscription_id = subscription.id
          AND quota.quota_type = 'PRACTICE'
-        LEFT JOIN subscription_quota_user_allocations user_allocation
+        LEFT JOIN school_subscription_quota_user_allocations user_allocation
           ON user_allocation.subscription_id = subscription.id
          AND user_allocation.quota_type = 'PRACTICE'
          AND user_allocation.user_id = school_user.user_id

@@ -27,10 +27,10 @@ import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.TokenPurchase;
 import com.sep.vox.domain.repository.FinancialEventRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;
-import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.TokenPurchaseItemRepository;
 import com.sep.vox.domain.repository.TokenPurchaseRepository;
 
@@ -46,8 +46,8 @@ import com.sep.vox.domain.repository.TokenPurchaseRepository;
 class BuyTokensUseCaseGuardTests {
 
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private PlanQuotaRepository planQuotaRepository;
-    private SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private SubscriptionPlanQuotaRepository planQuotaRepository;
+    private SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private TokenPurchaseRepository tokenPurchaseRepository;
     private TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private InvoiceRepository invoiceRepository;
@@ -61,8 +61,8 @@ class BuyTokensUseCaseGuardTests {
     @BeforeEach
     void setUp() {
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
-        planQuotaRepository = mock(PlanQuotaRepository.class);
-        subscriptionQuotaRepository = mock(SubscriptionQuotaRepository.class);
+        planQuotaRepository = mock(SubscriptionPlanQuotaRepository.class);
+        subscriptionQuotaRepository = mock(SchoolSubscriptionQuotaRecordRepository.class);
         tokenPurchaseRepository = mock(TokenPurchaseRepository.class);
         tokenPurchaseItemRepository = mock(TokenPurchaseItemRepository.class);
         invoiceRepository = mock(InvoiceRepository.class);

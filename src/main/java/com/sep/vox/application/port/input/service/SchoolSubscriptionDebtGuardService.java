@@ -6,12 +6,12 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.domain.model.metering.QuotaType;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 
 /**
  * Trường "bị khóa" khi chi phí AI thật đã trừ (ConsumeQuotaUseCase, allowDebt=true) đẩy
  * usedQuantity vượt totalAllocated ở 1 trong 2 bucket cấp TRƯỜNG (GRADING hoặc CLASS_TEST) --
- * KHÔNG tính hạn mức cá nhân của từng giáo viên (SubscriptionQuotaUserAllocation), vì đó là do
+ * KHÔNG tính hạn mức cá nhân của từng giáo viên (SchoolSubscriptionQuotaUserAllocation), vì đó là do
  * trường tự chia nội bộ, không phải tiền thật trường đang thiếu.
  *
  * <p>Không có cờ/bảng riêng để lưu trạng thái khóa -- suy trực tiếp từ usedQuantity/totalAllocated
@@ -21,9 +21,9 @@ import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
 @Service
 public class SchoolSubscriptionDebtGuardService {
 
-    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
 
-    public SchoolSubscriptionDebtGuardService(SubscriptionQuotaRepository subscriptionQuotaRepository) {
+    public SchoolSubscriptionDebtGuardService(SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository) {
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
     }
 

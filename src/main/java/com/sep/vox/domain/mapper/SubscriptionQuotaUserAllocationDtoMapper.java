@@ -1,14 +1,14 @@
 package com.sep.vox.domain.mapper;
 
 import com.sep.vox.domain.dto.SubscriptionQuotaUserAllocationDto;
-import com.sep.vox.domain.model.subscription.SubscriptionQuotaUserAllocation;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation;
 
 public final class SubscriptionQuotaUserAllocationDtoMapper {
 
     private SubscriptionQuotaUserAllocationDtoMapper() {
     }
 
-    public static SubscriptionQuotaUserAllocationDto toDto(SubscriptionQuotaUserAllocation domain, String fullName) {
+    public static SubscriptionQuotaUserAllocationDto toDto(SchoolSubscriptionQuotaUserAllocation domain, String fullName) {
         return new SubscriptionQuotaUserAllocationDto(
             domain.getUserId(),
             fullName,

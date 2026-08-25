@@ -13,8 +13,8 @@ import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaUserAllocationRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 
 /**
  * Ước lượng worst-case chi phí AI theo USD (duration × số thí sinh × maxAttempt ×
@@ -38,16 +38,16 @@ import com.sep.vox.domain.repository.SubscriptionQuotaUserAllocationRepository;
 public class ClassTestTokenQuotaGuardService {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
-    private final SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
+    private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
+    private final SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
     private final ExamCandidateRepository examCandidateRepository;
     private final QuotaPricingPort quotaPricingPort;
     private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
 
     public ClassTestTokenQuotaGuardService(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionQuotaRepository subscriptionQuotaRepository,
-            SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
+            SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
+            SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
             ExamCandidateRepository examCandidateRepository,
             QuotaPricingPort quotaPricingPort,
             SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService) {

@@ -29,10 +29,10 @@ import com.sep.vox.domain.dto.TokenPurchaseDto;
 import com.sep.vox.domain.mapper.TokenPurchaseDtoMapper;
 import com.sep.vox.domain.repository.FinancialEventRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;
-import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.TokenPurchaseItemRepository;
 import com.sep.vox.domain.repository.TokenPurchaseRepository;
 
@@ -41,9 +41,9 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final PlanQuotaRepository planQuotaRepository;
+    private final SubscriptionPlanQuotaRepository planQuotaRepository;
     private final QuotaPricingPort quotaPricingService;
-    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private final TokenPurchaseRepository tokenPurchaseRepository;
     private final TokenPurchaseItemRepository tokenPurchaseItemRepository;
     private final InvoiceRepository invoiceRepository;
@@ -55,9 +55,9 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
     public BuyTokensUseCase(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
-            PlanQuotaRepository planQuotaRepository,
+            SubscriptionPlanQuotaRepository planQuotaRepository,
             QuotaPricingPort quotaPricingService,
-            SubscriptionQuotaRepository subscriptionQuotaRepository,
+            SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
             TokenPurchaseRepository tokenPurchaseRepository,
             TokenPurchaseItemRepository tokenPurchaseItemRepository,
             InvoiceRepository invoiceRepository,

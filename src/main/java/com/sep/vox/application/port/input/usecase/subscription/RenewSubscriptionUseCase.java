@@ -22,21 +22,21 @@ import com.sep.vox.domain.model.subscription.FinancialEvent;
 import com.sep.vox.domain.model.subscription.FinancialEventType;
 import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.model.subscription.SubscriptionStatus;
 import com.sep.vox.domain.repository.FinancialEventRepository;
-import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 
 @Service
 public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionCommand, SchoolSubscriptionDto> {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final PlanQuotaRepository planQuotaRepository;
-    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private final SubscriptionPlanQuotaRepository planQuotaRepository;
+    private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private final FinancialEventRepository financialEventRepository;
     private final UserContextPort userContextPort;
     private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
@@ -45,8 +45,8 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
     public RenewSubscriptionUseCase(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
-            PlanQuotaRepository planQuotaRepository,
-            SubscriptionQuotaRepository subscriptionQuotaRepository,
+            SubscriptionPlanQuotaRepository planQuotaRepository,
+            SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
             FinancialEventRepository financialEventRepository,
             UserContextPort userContextPort,
             SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService,
@@ -83,7 +83,7 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
         var now = Instant.now();
 
         // Chụp bucket nào của gói CŨ đang vượt hạn mức trước khi expire nó -- gói mới tạo bên dưới
-        // luôn có SubscriptionQuota tinh khôi nên chắc chắn không khóa.
+        // luôn có SchoolSubscriptionQuotaRecord tinh khôi nên chắc chắn không khóa.
         var wasOverGrading = schoolSubscriptionDebtGuardService.isQuotaOverLimit(current.getId(), QuotaType.GRADING);
         var wasOverClassTest = schoolSubscriptionDebtGuardService.isQuotaOverLimit(current.getId(), QuotaType.CLASS_TEST);
 
@@ -104,7 +104,7 @@ public class RenewSubscriptionUseCase implements IUseCase<RenewSubscriptionComma
         var savedSubscription = schoolSubscriptionRepository.save(renewed);
 
         planQuotaRepository.findAllByPlanId(plan.getId()).forEach(planQuota ->
-            subscriptionQuotaRepository.save(new SubscriptionQuota(
+            subscriptionQuotaRepository.save(new SchoolSubscriptionQuotaRecord(
                 savedSubscription.getId(),
                 planQuota.getQuotaType(),
                 planQuota.getIncludedQuantity(),

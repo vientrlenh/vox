@@ -20,12 +20,12 @@ import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
-import com.sep.vox.domain.model.subscription.SubscriptionQuotaUserAllocation;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaUserAllocationRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 
 /**
  * Ước lượng worst-case (duration × số thí sinh × maxAttempt) phải soi đủ 3 chỗ trừ quota thật của
@@ -36,8 +36,8 @@ import com.sep.vox.domain.repository.SubscriptionQuotaUserAllocationRepository;
 class ClassTestTokenQuotaGuardServiceTests {
 
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private SubscriptionQuotaRepository subscriptionQuotaRepository;
-    private SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
+    private SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
+    private SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
     private ExamCandidateRepository examCandidateRepository;
     private ClassTestTokenQuotaGuardService guard;
 
@@ -49,8 +49,8 @@ class ClassTestTokenQuotaGuardServiceTests {
     @BeforeEach
     void setUp() {
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
-        subscriptionQuotaRepository = mock(SubscriptionQuotaRepository.class);
-        subscriptionQuotaUserAllocationRepository = mock(SubscriptionQuotaUserAllocationRepository.class);
+        subscriptionQuotaRepository = mock(SchoolSubscriptionQuotaRecordRepository.class);
+        subscriptionQuotaUserAllocationRepository = mock(SchoolSubscriptionQuotaUserAllocationRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
         var quotaPricingPort = mock(QuotaPricingPort.class);
         // Hệ số quy đổi = 1 để estimatedCostUsd trùng số với "estimatedTokens" cũ (duration × số thí
@@ -144,7 +144,7 @@ class ClassTestTokenQuotaGuardServiceTests {
     void should_reject_when_teacher_personal_allocation_exceeded() {
         when(subscriptionQuotaUserAllocationRepository
             .findBySubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.CLASS_TEST, teacherId))
-            .thenReturn(Optional.of(new SubscriptionQuotaUserAllocation(
+            .thenReturn(Optional.of(new SchoolSubscriptionQuotaUserAllocation(
                 subscriptionId, QuotaType.CLASS_TEST, teacherId, BigDecimal.valueOf(100), BigDecimal.ZERO)));
         var exam = classTest(3600);
 
@@ -193,7 +193,7 @@ class ClassTestTokenQuotaGuardServiceTests {
 
     private void givenSchoolQuota(QuotaType type, int totalAllocated, int usedQuantity) {
         when(subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, type))
-            .thenReturn(Optional.of(new SubscriptionQuota(
+            .thenReturn(Optional.of(new SchoolSubscriptionQuotaRecord(
                 subscriptionId, type, BigDecimal.valueOf(totalAllocated), BigDecimal.valueOf(usedQuantity))));
     }
 

@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record PlanQuotaItemRequest(
     @NotNull QuotaType quotaType,
-    // Cột plan_quota.included_quantity là numeric(18,6) -- chỉ chứa được giá trị tuyệt đối < 10^12,
+    // Cột subscription_plan_quotas.included_quantity là numeric(18,6) -- chỉ chứa được giá trị tuyệt đối < 10^12,
     // vượt quá sẽ tràn số ở DB (numeric field overflow) thay vì báo lỗi rõ ràng ở đây.
     @NotNull @DecimalMax(value = "999999999999.999999") BigDecimal includedQuantity
 ) {

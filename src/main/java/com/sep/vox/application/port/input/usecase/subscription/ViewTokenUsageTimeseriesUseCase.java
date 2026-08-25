@@ -18,7 +18,7 @@ import com.sep.vox.domain.dto.TokenUsageTimeseriesPointDto;
 import com.sep.vox.domain.mapper.SubscriptionQuotaDtoMapper;
 import com.sep.vox.domain.model.subscription.TokenUsageGranularity;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 
 @Service
 public class ViewTokenUsageTimeseriesUseCase implements IUseCase<ViewTokenUsageTimeseriesQuery, TokenUsageTimeseriesDto> {
@@ -27,13 +27,13 @@ public class ViewTokenUsageTimeseriesUseCase implements IUseCase<ViewTokenUsageT
     private static final int MAX_RANGE_DAYS = 366;
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private final TokenUsageTimeseriesQueryRepository tokenUsageTimeseriesQueryRepository;
     private final UserContextPort userContextPort;
 
     public ViewTokenUsageTimeseriesUseCase(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionQuotaRepository subscriptionQuotaRepository,
+            SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
             TokenUsageTimeseriesQueryRepository tokenUsageTimeseriesQueryRepository,
             UserContextPort userContextPort) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;

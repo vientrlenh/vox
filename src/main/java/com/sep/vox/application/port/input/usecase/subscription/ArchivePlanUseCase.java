@@ -11,7 +11,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.mapper.SubscriptionPlanDtoMapper;
 import com.sep.vox.domain.model.subscription.PlanStatus;
-import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
@@ -19,13 +19,13 @@ import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 public class ArchivePlanUseCase implements IUseCase<ArchivePlanCommand, SubscriptionPlanDto> {
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final PlanQuotaRepository planQuotaRepository;
+    private final SubscriptionPlanQuotaRepository planQuotaRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final UserContextPort userContextPort;
 
     public ArchivePlanUseCase(
             SubscriptionPlanRepository subscriptionPlanRepository,
-            PlanQuotaRepository planQuotaRepository,
+            SubscriptionPlanQuotaRepository planQuotaRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             UserContextPort userContextPort) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;

@@ -36,8 +36,7 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * 1 Rubric Version chỉ được gắn với đúng 1 Assessment Policy -- trước đây không có gì chặn việc cùng
- * 1 Rubric Version bị 2 Policy khác scope (ngôn ngữ/framework) dùng chung.
+ * 1 Rubric Version được phép gắn với nhiều Assessment Policy khác scope (ngôn ngữ/framework).
  */
 class CreateSystemAssessmentPolicyUseCaseTests {
 
@@ -109,7 +108,16 @@ class CreateSystemAssessmentPolicyUseCaseTests {
     }
 
     @Test
-    void allowsSharingOneRubricVersionAcrossDifferentScopes() {
+    void succeeds_whenRubricVersionNotYetUsed() {
+        when(assessmentPolicyRepository.findMaxVersionForScope(any(), any(), any(), any(), any(), any())).thenReturn(0);
+
+        List<UUID> ids = useCase.execute(List.of(command(UUID.randomUUID())));
+
+        org.assertj.core.api.Assertions.assertThat(ids).hasSize(1);
+    }
+
+    @Test
+    void allows_whenSameBatchReusesRubricVersionAcrossDifferentScopes() {
         when(assessmentPolicyRepository.findMaxVersionForScope(any(), any(), any(), any(), any(), any())).thenReturn(0);
 
         List<CreateAssessmentPolicyCommand> commands = List.of(
@@ -128,14 +136,5 @@ class CreateSystemAssessmentPolicyUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(List.of(command(languageId), command(languageId))))
                 .isInstanceOf(DuplicatedException.class)
                 .hasMessageContaining("trùng ngôn ngữ và Khung");
-    }
-
-    @Test
-    void succeeds_whenRubricVersionNotYetUsed() {
-        when(assessmentPolicyRepository.findMaxVersionForScope(any(), any(), any(), any(), any(), any())).thenReturn(0);
-
-        List<UUID> ids = useCase.execute(List.of(command(UUID.randomUUID())));
-
-        org.assertj.core.api.Assertions.assertThat(ids).hasSize(1);
     }
 }

@@ -138,7 +138,7 @@ class InvoiceSettlementServiceTests {
         return new Invoice(
             invoiceId, "INV-2026-ABCD1234", schoolId, subscriptionId, sourceType, sourceId,
             LocalDate.of(2026, 8, 5), amount, status, paymentProvider, "1754380800000", "link-id",
-            "https://pay.test/checkout", null, null
+            "https://pay.test/checkout", null, null, null
         );
     }
 
@@ -180,7 +180,7 @@ class InvoiceSettlementServiceTests {
         return new Invoice(
             invoiceId, "INV-2026-ABCD1234", schoolId, subscriptionId, InvoiceSourceType.SUBSCRIPTION, existingSubscriptionId,
             LocalDate.of(2026, 8, 5), amount, InvoiceStatus.PENDING, PaymentMethod.PAYOS, "1754380800000", "link-id",
-            "https://pay.test/checkout", null, planId
+            "https://pay.test/checkout", null, planId, null
         );
     }
 
@@ -423,6 +423,35 @@ class InvoiceSettlementServiceTests {
         assertThat(pending.getStatus()).isEqualTo(InvoiceStatus.CANCELLED);
         assertThat(pending.getPaidAt()).isNotNull();
         verify(outboxRepository, never()).save(any());
+    }
+
+    @Test
+    void rejectsAbandonedSubscriptionRequestOnFailure() {
+        var pending = invoice(InvoiceSourceType.SUBSCRIPTION_REQUEST, InvoiceStatus.PENDING);
+        lockedInvoiceIs(pending);
+        givenPendingSubscriptionRequest();
+
+        service.settle(pending, false, InvoiceStatus.CANCELLED);
+
+        var requestCaptor = ArgumentCaptor.forClass(SubscriptionRequest.class);
+        verify(subscriptionRequestRepository).save(requestCaptor.capture());
+        assertThat(requestCaptor.getValue().getStatus()).isEqualTo(RequestStatus.REJECTED);
+        // Tự động đóng bởi hệ thống (không phải admin duyệt) -- không được đụng 2 field này.
+        assertThat(requestCaptor.getValue().getReviewedBy()).isNull();
+        assertThat(requestCaptor.getValue().getReviewedAt()).isNull();
+    }
+
+    @Test
+    void failsAbandonedTokenPurchaseOnFailure() {
+        var pending = invoice(InvoiceSourceType.TOKEN_PURCHASE, InvoiceStatus.PENDING);
+        lockedInvoiceIs(pending);
+        givenPendingTokenPurchase();
+
+        service.settle(pending, false, InvoiceStatus.CANCELLED);
+
+        var purchaseCaptor = ArgumentCaptor.forClass(TokenPurchase.class);
+        verify(tokenPurchaseRepository).save(purchaseCaptor.capture());
+        assertThat(purchaseCaptor.getValue().getStatus()).isEqualTo(PurchaseStatus.FAILED);
     }
 
     @Test

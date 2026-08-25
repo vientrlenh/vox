@@ -38,6 +38,8 @@ public final class PracticeSessionResponses {
             boolean evaluationQueued,
             List<TurnCorrection> corrections,
             boolean quotaExhausted,
+            /** Ví nào cạn khi quotaExhausted=true -- "SCHOOL" hay "PERSONAL". Null khi quotaExhausted=false. */
+            String quotaExhaustedScope,
             /**
              * Tổng số giây học sinh ĐÃ NÓI trong phiên (đã cộng cả lượt này) và ngân sách nói
              * của phiên. Client hiện "đã nói / ngân sách" từ hai số này.

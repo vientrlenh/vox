@@ -69,12 +69,10 @@ public class ArchivePlanUseCase implements IUseCase<ArchivePlanCommand, Subscrip
             if (replacement.getStatus() != PlanStatus.ACTIVE) {
                 throw new IllegalArgumentException("Gói thay thế phải đang ở trạng thái hoạt động");
             }
-            // Trường bị ép đổi gói khi gia hạn (SubscriptionPlanResolver.resolveActivePlan) không có
-            // cơ hội từ chối giá mới -- bắt buộc gói thay thế phải cùng giá để không đổi mức thu của
-            // trường theo quyết định 1 phía của System Admin.
-            if (replacement.getPricePerYear().compareTo(plan.getPricePerYear()) != 0) {
-                throw new IllegalArgumentException("Gói thay thế phải có giá bằng đúng giá gói đang lưu trữ");
-            }
+            // Không bắt buộc cùng giá gói cũ: trường bị ép đổi gói khi gia hạn (xem
+            // SubscriptionPlanResolver.resolveActivePlan) vẫn được bảo vệ ở PreviewRenewalUseCase +
+            // CreatePaymentLinkForRenewalUseCase -- 2 nơi đó bắt trường xem trước giá gói thay thế và
+            // xác nhận đúng acceptedPlanId trước khi bị thu tiền, nên không cần chặn cứng giá ở đây.
             plan.setReplacedByPlanId(replacement.getId());
         }
 

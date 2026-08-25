@@ -66,7 +66,7 @@ public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, Subscr
         } else {
             var consumed = subscriptionQuotaRepository.tryConsume(quota.getId(), input.amount());
             if (!consumed) {
-                throw new QuotaExceededException("Đã vượt quá hạn mức sử dụng");
+                throw new QuotaExceededException("Đã vượt quá hạn mức sử dụng", QuotaExceededException.Scope.SCHOOL);
             }
         }
 
@@ -79,7 +79,7 @@ public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, Subscr
                     } else {
                         var consumedByUser = subscriptionQuotaUserAllocationRepository.tryConsume(allocation.getId(), input.amount());
                         if (!consumedByUser) {
-                            throw new QuotaExceededException("Đã vượt quá hạn mức cá nhân");
+                            throw new QuotaExceededException("Đã vượt quá hạn mức cá nhân", QuotaExceededException.Scope.PERSONAL);
                         }
                     }
                 });

@@ -25,12 +25,17 @@ public class Invoice {
     private String checkoutUrl;
     private Instant paidAt;
     private UUID resolvedPlanId;
+    // Người thật sự khởi tạo đơn (bấm "Mua gói"/"Gia hạn"/"Mua thêm token"). InvoiceSettlementService
+    // dùng field này làm actorId cho FinancialEvent, vì lúc chốt thanh toán (webhook) không có user
+    // nào đang đăng nhập. Null với hóa đơn tạo trước khi field này tồn tại.
+    private UUID createdBy;
 
     public Invoice() {}
 
     public Invoice(UUID id, String invoiceNumber, UUID schoolId, UUID subscriptionId, InvoiceSourceType sourceType, UUID sourceId,
             LocalDate issueDate, BigDecimal amount, InvoiceStatus status, PaymentMethod paymentProvider,
-            String providerOrderRef, String paymentLinkId, String checkoutUrl, Instant paidAt, UUID resolvedPlanId) {
+            String providerOrderRef, String paymentLinkId, String checkoutUrl, Instant paidAt, UUID resolvedPlanId,
+            UUID createdBy) {
         this.id = id;
         this.invoiceNumber = invoiceNumber;
         this.schoolId = schoolId;
@@ -46,11 +51,13 @@ public class Invoice {
         this.checkoutUrl = checkoutUrl;
         this.paidAt = paidAt;
         this.resolvedPlanId = resolvedPlanId;
+        this.createdBy = createdBy;
     }
 
     public Invoice(String invoiceNumber, UUID schoolId, UUID subscriptionId, InvoiceSourceType sourceType, UUID sourceId,
             LocalDate issueDate, BigDecimal amount, InvoiceStatus status, PaymentMethod paymentProvider,
-            String providerOrderRef, String paymentLinkId, String checkoutUrl, Instant paidAt, UUID resolvedPlanId) {
+            String providerOrderRef, String paymentLinkId, String checkoutUrl, Instant paidAt, UUID resolvedPlanId,
+            UUID createdBy) {
         this.invoiceNumber = invoiceNumber;
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
@@ -65,6 +72,7 @@ public class Invoice {
         this.checkoutUrl = checkoutUrl;
         this.paidAt = paidAt;
         this.resolvedPlanId = resolvedPlanId;
+        this.createdBy = createdBy;
     }
 
     public UUID getId() {
@@ -185,5 +193,13 @@ public class Invoice {
 
     public void setResolvedPlanId(UUID resolvedPlanId) {
         this.resolvedPlanId = resolvedPlanId;
+    }
+
+    public UUID getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(UUID createdBy) {
+        this.createdBy = createdBy;
     }
 }

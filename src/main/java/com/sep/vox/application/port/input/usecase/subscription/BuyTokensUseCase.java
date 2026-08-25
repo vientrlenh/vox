@@ -164,7 +164,8 @@ public class BuyTokensUseCase implements IUseCase<BuyTokensCommand, TokenPurchas
             null,
             null,
             now,
-            null
+            null,
+            userContextPort.getCurrentAuthenticatedUserId()
         ));
 
         financialEventRepository.save(new FinancialEvent(

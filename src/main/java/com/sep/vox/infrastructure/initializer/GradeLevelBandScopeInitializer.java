@@ -29,33 +29,24 @@ import com.sep.vox.domain.repository.GradeLevelRepository;
  * thấy dòng cấu hình nào thì nó cho qua mọi bậc. Nghĩa là trần chỉ thực sự có hiệu lực kể từ khi
  * initializer này chạy; trước đó trường vẫn đặt được Bậc 6 cho Khối 10 như cũ.
  *
- * <h2>Vì sao cả ba khối cùng một cấu hình</h2>
+ * <h2>Hai loại bài kiểm tra, hai trần khác nhau</h2>
  *
- * <p>Chương trình GDPT 2018 môn Tiếng Anh (Thông tư 32/2018/TT-BGDĐT) chốt chuẩn đầu ra theo CẤP
- * HỌC chứ không theo từng lớp: hết tiểu học đạt Bậc 1, hết THCS đạt Bậc 2, hết THPT đạt Bậc 3. Cả
- * Khối 10, 11 lẫn 12 vì thế cùng nhắm Bậc 3.
+ * <p>{@code BAND_CODE_DEFAULT_TARGET} là trần cho bài **CENTRALIZE** (kiểm tra tập trung -- policy
+ * áp cho cả Khối hoặc cả Niên khóa, không neo vào 1 Lớp cụ thể): Khối 10/11/12 chỉ được chọn Bậc 3
+ * hoặc Bậc 4. {@code BAND_CODE_HARD_MAX} là trần cho bài **CLASS_TEST** (lớp chuyên có bài kiểm
+ * tra riêng -- policy neo đúng vào 1 {@code schoolClassId} cụ thể): được nới thêm tới Bậc 5. Xem
+ * {@link GradeLevelBandScopeGuardService.Batch#effectiveCeilingBand} cho phần chọn trần theo
+ * phạm vi lúc canh.
  *
- * <p>Chỗ ba khối thực sự khác nhau là ở TRONG Bậc 3: sách giáo khoa viết theo chương trình này ghi
- * hết lớp 10 đạt trình độ 3.1, hết lớp 11 đạt 3.2, hết lớp 12 hoàn thành Bậc 3. Khung năng lực
- * trong hệ chỉ có 6 bậc nguyên nên 3.1/3.2/3.3 đều quy về {@code BAC_3} -- không có cách nào phân
- * biệt ba khối bằng bảng này. Muốn phân biệt thật thì phải thêm bậc phụ vào chính khung năng lực
- * (số bậc không bị đóng cứng ở đâu, xem {@link FrameworkInitializer}), và khi đó bảng này biểu diễn
- * được ngay vì nó lưu ID bậc chứ không lưu thứ tự.
+ * <p>Cả ba khối dùng chung một cặp trần vì Chương trình GDPT 2018 môn Tiếng Anh (Thông tư
+ * 32/2018/TT-BGDĐT) chốt chuẩn đầu ra theo CẤP HỌC chứ không theo từng lớp (hết THPT đạt Bậc 3),
+ * và không có văn bản nào phân biệt CENTRALIZE/CLASS_TEST theo khối -- đây là quyết định nghiệp vụ
+ * của dự án, dễ mở rộng thêm khi catalog khối có thêm cấp THCS.
  *
- * <p>Cấu hình đồng nhất KHÔNG có nghĩa là bảng thừa: phần làm việc thật là TRẦN CỨNG, và nó thôi
- * đồng nhất ngay khi catalog khối có thêm cấp THCS (Khối 6-9 nhắm Bậc 2, trần Bậc 3).
- *
- * <h2>Vì sao trần là Bậc 4 chứ không phải Bậc 3</h2>
- *
- * <p>Siết đúng Bậc 3 sẽ chặn mọi lớp chuyên Anh, vốn thường lấy B2 làm chuẩn thực tế. Lưu ý là
- * chuẩn đó KHÔNG nằm trong quy chế trường chuyên (Thông tư 05/2023/TT-BGDĐT không quy định chuẩn
- * đầu ra ngoại ngữ nào cho lớp chuyên, dù nhiều nguồn thứ cấp nói vậy) -- nó là thông lệ của
- * trường, nên để trường tự chọn trong khoảng cho phép là đúng.
- *
- * <p>Điều cần chặn là Bậc 5 và Bậc 6. Trong giáo dục phổ thông không có văn bản nào đặt C1/C2 làm
- * đích cho HỌC SINH; chỗ C1 xuất hiện chính thức là chuẩn của GIÁO VIÊN tiếng Anh THPT theo Đề án
- * Ngoại ngữ Quốc gia. Nhầm hai chuẩn đó với nhau nhiều khả năng chính là nguồn gốc của việc trường
- * đặt bậc mục tiêu cao quá sức học sinh.
+ * <p>Điều cần chặn tuyệt đối là Bậc 6 (ở cả hai loại bài kiểm tra). Trong giáo dục phổ thông không
+ * có văn bản nào đặt C2 làm đích cho HỌC SINH; C1/C2 chính thức là chuẩn của GIÁO VIÊN tiếng Anh
+ * THPT theo Đề án Ngoại ngữ Quốc gia. Nhầm hai chuẩn đó với nhau nhiều khả năng chính là nguồn gốc
+ * của việc trường đặt bậc mục tiêu cao quá sức học sinh.
  */
 @Component
 @Order(8)
@@ -67,8 +58,10 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
 
     // Phải trùng khít mã bậc mà FrameworkInitializer dựng ra. Sai một ký tự thì initializer này
     // không tìm thấy bậc và bỏ qua toàn bộ -- có log cảnh báo, không âm thầm.
-    private static final String BAND_CODE_DEFAULT_TARGET = "BAC_3";
-    private static final String BAND_CODE_HARD_MAX = "BAC_4";
+    // BAND_CODE_DEFAULT_TARGET = trần CENTRALIZE, BAND_CODE_HARD_MAX = trần CLASS_TEST -- xem
+    // Javadoc lớp.
+    private static final String BAND_CODE_DEFAULT_TARGET = "BAC_4";
+    private static final String BAND_CODE_HARD_MAX = "BAC_5";
 
     private static final List<String> GRADE_LEVEL_CODES = List.of(
         GradeLevelInitializer.GRADE_10,
@@ -167,7 +160,7 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
             LOGGER.info("Trần bậc theo khối trên phiên bản khung {} đã đầy đủ. Bỏ qua", frameworkVersion.getCode());
             return;
         }
-        LOGGER.info("Đã khởi tạo {} trần bậc theo khối trên phiên bản khung {} (mặc định {}, trần {})",
+        LOGGER.info("Đã khởi tạo {} trần bậc theo khối trên phiên bản khung {} (CENTRALIZE {}, CLASS_TEST {})",
             created, frameworkVersion.getCode(), BAND_CODE_DEFAULT_TARGET, BAND_CODE_HARD_MAX);
     }
 

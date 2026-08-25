@@ -18,6 +18,9 @@ public record SubmitTurnResultDto(
      * chuyện của phiên tiếp theo, không phải lý do xoá công sức vừa bỏ ra.
      */
     boolean quotaExhausted,
+    /** Ví nào cạn khi quotaExhausted=true -- "SCHOOL" (hạn mức chung của trường) hay "PERSONAL"
+     * (phần trường cấp riêng cho học sinh này). Null khi quotaExhausted=false. */
+    String quotaExhaustedScope,
     /** Đã nói bao nhiêu giây trong phiên (kể cả lượt này) -- xem SubmitTurnResult. */
     int sessionSpokenSeconds,
     /** Ngân sách nói của phiên: chỗ hẹp hơn giữa hạn mức gói và trần bậc. */

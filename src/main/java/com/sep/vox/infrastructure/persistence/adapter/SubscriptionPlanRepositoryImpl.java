@@ -52,4 +52,9 @@ public class SubscriptionPlanRepositoryImpl implements SubscriptionPlanRepositor
     public void deleteById(UUID id) {
         springDataSubscriptionPlanRepository.deleteById(id);
     }
+
+    @Override
+    public boolean existsByNameIgnoreCase(String name) {
+        return springDataSubscriptionPlanRepository.existsByNameIgnoreCase(name);
+    }
 }

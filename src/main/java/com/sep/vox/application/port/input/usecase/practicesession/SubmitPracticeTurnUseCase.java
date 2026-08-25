@@ -119,6 +119,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
         var spokenSeconds = session.getGradedSeconds();
         var quotaExhausted = false;
+        String quotaExhaustedScope = null;
         if (turn.getDurationSeconds() > 0) {
             try {
                 // Chi phí AI thật (USD) của turn này, Python tính đồng bộ từ realtimeCorrectionGraph
@@ -155,6 +156,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
                     turn.getTurnOrder()
                 );
                 quotaExhausted = true;
+                quotaExhaustedScope = exception.getScope() != null ? exception.getScope().name() : null;
             }
             spokenSeconds += turn.getDurationSeconds();
             practiceSessionRepository.save(
@@ -168,6 +170,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             turn.isQuestionComplete(),
             corrections,
             quotaExhausted,
+            quotaExhaustedScope,
             spokenSeconds,
             enrichmentService.sessionBudgetSeconds(
                 studentId, enrichmentService.bandOrder(session.getTargetFrameworkBandId())

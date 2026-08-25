@@ -9,4 +9,5 @@ import com.sep.vox.infrastructure.persistence.entity.SubscriptionPlanJpaEntity;
 
 public interface SpringDataSubscriptionPlanRepository extends JpaRepository<SubscriptionPlanJpaEntity, UUID> {
     List<SubscriptionPlanJpaEntity> findAllByStatus(String status);
+    boolean existsByNameIgnoreCase(String name);
 }

@@ -203,6 +203,11 @@ type TokenPurchase {
     items: [TokenPurchaseItem!]!
 }
 
+type InvoiceQuotaItem {
+    quotaType: QuotaType!
+    amount: Float!
+}
+
 type Invoice {
     id: ID!
     invoiceNumber: String!
@@ -217,6 +222,12 @@ type Invoice {
     paymentLinkId: String
     checkoutUrl: String
     paidAt: String
+    # Plan đã áp dụng cho hóa đơn (SUBSCRIPTION/SUBSCRIPTION_REQUEST) — null nếu chưa resolve được
+    # (vd hóa đơn PENDING/FAILED) hoặc hóa đơn loại TOKEN_PURCHASE (không gắn với 1 plan).
+    resolvedPlanId: ID
+    # Hạn mức USD từng loại quota gắn với hóa đơn: lấy từ plan_quota (SUBSCRIPTION/SUBSCRIPTION_REQUEST)
+    # hoặc token_purchase_item (TOKEN_PURCHASE) — xem JpaInvoiceQueryRepository.withQuotaItems.
+    quotaItems: [InvoiceQuotaItem!]!
 }
 
 type InvoicePage {

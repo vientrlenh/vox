@@ -16,7 +16,7 @@ import com.sep.vox.application.port.output.QuotaDebtConfigPort;
 import com.sep.vox.domain.dto.SubscriptionQuotaDto;
 import com.sep.vox.domain.mapper.SubscriptionQuotaDtoMapper;
 import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
-import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SubscriptionQuota;
 import com.sep.vox.domain.model.subscription.TokenUsageEvent;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;

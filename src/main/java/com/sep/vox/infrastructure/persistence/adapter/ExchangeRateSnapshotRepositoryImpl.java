@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.model.subscription.ExchangeRateSnapshot;
+import com.sep.vox.domain.model.financial.ExchangeRateSnapshot;
 import com.sep.vox.domain.repository.ExchangeRateSnapshotRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExchangeRateSnapshotMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataExchangeRateSnapshotRepository;

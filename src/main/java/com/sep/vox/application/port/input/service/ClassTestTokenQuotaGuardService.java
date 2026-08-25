@@ -10,7 +10,7 @@ import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.domain.dto.ExamTokenEstimateDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionQuotaRepository;

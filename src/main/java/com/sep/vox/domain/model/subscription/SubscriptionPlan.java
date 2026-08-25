@@ -13,19 +13,18 @@ public class SubscriptionPlan {
     private Integer periodCount;
     private Integer maxTimePerAttemptMin;
     private SubscriptionPlanStatus status;
-    private Integer version;
+    private Long version;
     private Instant createdAt;
     private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
     private UUID replacedByPlanId;
-    private BigDecimal serviceFeeRatio;
 
     public SubscriptionPlan() {}
 
     public SubscriptionPlan(UUID id, String name, String tagline, BigDecimal priceVnd, SubscriptionPlanPeriod periodType, Integer periodCount,
-            Integer maxTimePerAttemptMin, SubscriptionPlanStatus status, Integer version,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy, UUID replacedByPlanId, BigDecimal serviceFeeRatio) {
+            Integer maxTimePerAttemptMin, SubscriptionPlanStatus status, Long version,
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy, UUID replacedByPlanId) {
         this.id = id;
         this.name = name;
         this.tagline = tagline;
@@ -40,12 +39,11 @@ public class SubscriptionPlan {
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
         this.replacedByPlanId = replacedByPlanId;
-        this.serviceFeeRatio = serviceFeeRatio;
     }
 
     public SubscriptionPlan(String name, String tagline, BigDecimal priceVnd, SubscriptionPlanPeriod periodType, Integer periodCount,
-            Integer maxTimePerAttemptMin, SubscriptionPlanStatus status, Integer version,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy, BigDecimal serviceFeeRatio) {
+            Integer maxTimePerAttemptMin, SubscriptionPlanStatus status, Long version,
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.name = name;
         this.tagline = tagline;
         this.priceVnd = priceVnd;
@@ -58,7 +56,6 @@ public class SubscriptionPlan {
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
-        this.serviceFeeRatio = serviceFeeRatio;
     }
 
     public UUID getId() {
@@ -125,11 +122,11 @@ public class SubscriptionPlan {
         this.status = status;
     }
 
-    public Integer getVersion() {
+    public Long getVersion() {
         return version;
     }
 
-    public void setVersion(Integer version) {
+    public void setVersion(Long version) {
         this.version = version;
     }
 
@@ -171,14 +168,6 @@ public class SubscriptionPlan {
 
     public void setReplacedByPlanId(UUID replacedByPlanId) {
         this.replacedByPlanId = replacedByPlanId;
-    }
-
-    public BigDecimal getServiceFeeRatio() {
-        return serviceFeeRatio;
-    }
-
-    public void setServiceFeeRatio(BigDecimal serviceFeeRatio) {
-        this.serviceFeeRatio = serviceFeeRatio;
     }
 
 }

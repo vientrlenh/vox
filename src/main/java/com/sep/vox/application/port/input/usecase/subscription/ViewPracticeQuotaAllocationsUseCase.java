@@ -7,7 +7,7 @@ import com.sep.vox.application.port.input.query.ViewQuotaAllocationsQuery;
 import com.sep.vox.application.port.input.service.DistributeQuotaToUsersService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.QuotaUserAllocationSummaryDto;
-import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 
 @Service

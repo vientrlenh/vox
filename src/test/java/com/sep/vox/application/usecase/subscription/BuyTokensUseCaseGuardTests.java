@@ -23,7 +23,7 @@ import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardSer
 import com.sep.vox.application.port.input.usecase.subscription.BuyTokensUseCase;
 import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.TokenPurchase;
 import com.sep.vox.domain.repository.FinancialEventRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;

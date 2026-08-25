@@ -19,9 +19,9 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.usecase.dashboard.ViewSystemAdminDashboardUseCase;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.model.subscription.Invoice;
-import com.sep.vox.domain.model.subscription.InvoiceSourceType;
-import com.sep.vox.domain.model.subscription.InvoiceStatus;
+import com.sep.vox.domain.model.invoice.Invoice;
+import com.sep.vox.domain.model.invoice.InvoiceSourceType;
+import com.sep.vox.domain.model.invoice.InvoiceStatus;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.domain.repository.RegisterFormRepository;

@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.domain.model.subscription.ExchangeRateSnapshot;
+import com.sep.vox.domain.model.financial.ExchangeRateSnapshot;
 import com.sep.vox.domain.repository.ExchangeRateSnapshotRepository;
 import com.sep.vox.infrastructure.client.ExchangeRateApiClient;
 import com.sep.vox.infrastructure.properties.ExchangeRateApiProperties;

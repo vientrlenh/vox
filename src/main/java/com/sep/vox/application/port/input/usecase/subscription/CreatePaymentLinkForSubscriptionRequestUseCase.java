@@ -4,6 +4,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.invoice.Invoice;
+import com.sep.vox.domain.model.invoice.InvoiceSourceType;
+import com.sep.vox.domain.model.invoice.InvoiceStatus;
 import com.sep.vox.domain.model.subscription.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

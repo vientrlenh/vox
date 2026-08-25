@@ -1,7 +1,7 @@
 package com.sep.vox.domain.mapper;
 
 import com.sep.vox.domain.dto.InvoiceDto;
-import com.sep.vox.domain.model.subscription.Invoice;
+import com.sep.vox.domain.model.invoice.Invoice;
 
 public final class InvoiceDtoMapper {
 

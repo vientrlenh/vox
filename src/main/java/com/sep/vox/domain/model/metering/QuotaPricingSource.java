@@ -1,4 +1,4 @@
-package com.sep.vox.domain.model.subscription;
+package com.sep.vox.domain.model.metering;
 
 /**
  * Nguồn dữ liệu dùng để calibrate estimatedCostPerSecondUsd (xem QuotaPricingCalibrationService).

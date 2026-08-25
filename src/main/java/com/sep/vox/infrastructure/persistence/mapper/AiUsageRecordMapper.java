@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.subscription.AiUsageRecord;
-import com.sep.vox.domain.model.subscription.AiUsageType;
+import com.sep.vox.domain.model.aimodel.AiUsageRecord;
+import com.sep.vox.domain.model.aimodel.AiUsageType;
 import com.sep.vox.infrastructure.persistence.entity.AiUsageRecordJpaEntity;
 
 public final class AiUsageRecordMapper {

@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SubscriptionQuota;
 import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SubscriptionQuotaMapper;

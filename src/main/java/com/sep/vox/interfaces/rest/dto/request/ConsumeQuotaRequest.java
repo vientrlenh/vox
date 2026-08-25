@@ -3,7 +3,7 @@ package com.sep.vox.interfaces.rest.dto.request;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.domain.model.metering.QuotaType;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

@@ -2,7 +2,7 @@ package com.sep.vox.domain.repository;
 
 import java.util.Optional;
 
-import com.sep.vox.domain.model.subscription.ExchangeRateSnapshot;
+import com.sep.vox.domain.model.financial.ExchangeRateSnapshot;
 
 public interface ExchangeRateSnapshotRepository {
     ExchangeRateSnapshot save(ExchangeRateSnapshot snapshot);

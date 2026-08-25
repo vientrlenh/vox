@@ -1,8 +1,10 @@
-package com.sep.vox.domain.model.subscription;
+package com.sep.vox.domain.model.school;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+
+import com.sep.vox.domain.model.metering.QuotaType;
 
 /**
  * Sổ audit "nguyên nhân nợ hạn mức AI" -- mỗi dòng là ĐÚNG 1 bucket quota (GRADING/CLASS_TEST) của 1
@@ -13,7 +15,7 @@ import java.util.UUID;
 public class SchoolDebtEvent {
     private UUID id;
     private UUID schoolId;
-    private UUID subscriptionId;
+    private UUID subscriptionPlanId;
     private SchoolDebtEventType eventType;
     private QuotaType quotaType;
     private UUID triggerExamSessionId;
@@ -25,12 +27,12 @@ public class SchoolDebtEvent {
 
     public SchoolDebtEvent() {}
 
-    public SchoolDebtEvent(UUID id, UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType,
+    public SchoolDebtEvent(UUID id, UUID schoolId, UUID subscriptionPlanId, SchoolDebtEventType eventType,
             QuotaType quotaType, UUID triggerExamSessionId, BigDecimal triggerAmountUsd,
             BigDecimal totalAllocatedUsd, BigDecimal usedQuantityUsd, BigDecimal overageUsd, Instant occurredAt) {
         this.id = id;
         this.schoolId = schoolId;
-        this.subscriptionId = subscriptionId;
+        this.subscriptionPlanId = subscriptionPlanId;
         this.eventType = eventType;
         this.quotaType = quotaType;
         this.triggerExamSessionId = triggerExamSessionId;
@@ -41,11 +43,11 @@ public class SchoolDebtEvent {
         this.occurredAt = occurredAt;
     }
 
-    public SchoolDebtEvent(UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType,
+    public SchoolDebtEvent(UUID schoolId, UUID subscriptionPlanId, SchoolDebtEventType eventType,
             QuotaType quotaType, UUID triggerExamSessionId, BigDecimal triggerAmountUsd,
             BigDecimal totalAllocatedUsd, BigDecimal usedQuantityUsd, BigDecimal overageUsd, Instant occurredAt) {
         this.schoolId = schoolId;
-        this.subscriptionId = subscriptionId;
+        this.subscriptionPlanId = subscriptionPlanId;
         this.eventType = eventType;
         this.quotaType = quotaType;
         this.triggerExamSessionId = triggerExamSessionId;
@@ -72,12 +74,12 @@ public class SchoolDebtEvent {
         this.schoolId = schoolId;
     }
 
-    public UUID getSubscriptionId() {
-        return subscriptionId;
+    public UUID getSubscriptionPlanId() {
+        return subscriptionPlanId;
     }
 
-    public void setSubscriptionId(UUID subscriptionId) {
-        this.subscriptionId = subscriptionId;
+    public void setSubscriptionPlanId(UUID subscriptionPlanId) {
+        this.subscriptionPlanId = subscriptionPlanId;
     }
 
     public SchoolDebtEventType getEventType() {

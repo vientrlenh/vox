@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.domain.model.subscription.QuotaPricingCalibration;
-import com.sep.vox.domain.model.subscription.QuotaPricingSource;
+import com.sep.vox.domain.model.metering.QuotaPricingCalibration;
+import com.sep.vox.domain.model.metering.QuotaPricingSource;
 import com.sep.vox.application.port.output.QuotaPricingCalibrationConfigPort;
 import com.sep.vox.application.port.output.QuotaPricingConfigPort;
 

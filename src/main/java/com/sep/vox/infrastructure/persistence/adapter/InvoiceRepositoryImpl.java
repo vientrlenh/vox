@@ -8,8 +8,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.model.subscription.Invoice;
-import com.sep.vox.domain.model.subscription.InvoiceStatus;
+import com.sep.vox.domain.model.invoice.Invoice;
+import com.sep.vox.domain.model.invoice.InvoiceStatus;
 import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.infrastructure.persistence.mapper.InvoiceMapper;

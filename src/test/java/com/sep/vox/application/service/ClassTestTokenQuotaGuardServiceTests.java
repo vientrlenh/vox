@@ -18,7 +18,7 @@ import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardSer
 import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionQuota;
 import com.sep.vox.domain.model.subscription.SubscriptionQuotaUserAllocation;

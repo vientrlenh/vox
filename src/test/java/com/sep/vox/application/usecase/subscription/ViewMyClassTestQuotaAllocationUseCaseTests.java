@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.usecase.subscription.ViewMyClassTestQuotaAllocationUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionQuotaUserAllocation;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;

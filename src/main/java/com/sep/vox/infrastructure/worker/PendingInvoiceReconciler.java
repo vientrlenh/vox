@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 import com.sep.vox.application.port.input.service.InvoiceSettlementService;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
-import com.sep.vox.domain.model.subscription.Invoice;
-import com.sep.vox.domain.model.subscription.InvoiceStatus;
+import com.sep.vox.domain.model.invoice.Invoice;
+import com.sep.vox.domain.model.invoice.InvoiceStatus;
 import com.sep.vox.domain.repository.InvoiceRepository;
 
 // Lưới an toàn cho các invoice PENDING mà cổng thanh toán không bao giờ gọi callback tới (vd: user tự

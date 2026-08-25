@@ -11,7 +11,7 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.service.InvoiceSettlementService;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
-import com.sep.vox.domain.model.subscription.InvoiceStatus;
+import com.sep.vox.domain.model.invoice.InvoiceStatus;
 import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.domain.repository.InvoiceRepository;
 

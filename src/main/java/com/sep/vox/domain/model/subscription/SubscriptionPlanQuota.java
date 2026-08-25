@@ -3,25 +3,27 @@ package com.sep.vox.domain.model.subscription;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-public class PlanQuota {
+import com.sep.vox.domain.model.metering.QuotaType;
+
+public class SubscriptionPlanQuota {
     private UUID id;
-    private UUID planId;
+    private UUID subscriptionPlanId;
     private QuotaType quotaType;
     private BigDecimal includedQuantity;
     private BigDecimal tokenUnitPrice;
 
-    public PlanQuota() {}
+    public SubscriptionPlanQuota() {}
 
-    public PlanQuota(UUID id, UUID planId, QuotaType quotaType, BigDecimal includedQuantity, BigDecimal tokenUnitPrice) {
+    public SubscriptionPlanQuota(UUID id, UUID subscriptionPlanId, QuotaType quotaType, BigDecimal includedQuantity, BigDecimal tokenUnitPrice) {
         this.id = id;
-        this.planId = planId;
+        this.subscriptionPlanId = subscriptionPlanId;
         this.quotaType = quotaType;
         this.includedQuantity = includedQuantity;
         this.tokenUnitPrice = tokenUnitPrice;
     }
 
-    public PlanQuota(UUID planId, QuotaType quotaType, BigDecimal includedQuantity, BigDecimal tokenUnitPrice) {
-        this.planId = planId;
+    public SubscriptionPlanQuota(UUID subscriptionPlanId, QuotaType quotaType, BigDecimal includedQuantity, BigDecimal tokenUnitPrice) {
+        this.subscriptionPlanId = subscriptionPlanId;
         this.quotaType = quotaType;
         this.includedQuantity = includedQuantity;
         this.tokenUnitPrice = tokenUnitPrice;
@@ -35,12 +37,12 @@ public class PlanQuota {
         this.id = id;
     }
 
-    public UUID getPlanId() {
-        return planId;
+    public UUID getSubscriptionPlanId() {
+        return subscriptionPlanId;
     }
 
-    public void setPlanId(UUID planId) {
-        this.planId = planId;
+    public void setSubscriptionPlanId(UUID subscriptionPlanId) {
+        this.subscriptionPlanId = subscriptionPlanId;
     }
 
     public QuotaType getQuotaType() {

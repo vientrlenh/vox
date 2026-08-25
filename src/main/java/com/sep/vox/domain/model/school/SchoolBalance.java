@@ -7,23 +7,26 @@ import java.util.UUID;
 public class SchoolBalance {
     private UUID id;
     private UUID schoolId;
-    private BigDecimal amountVnd;
+    private BigDecimal grantedVnd;
+    private BigDecimal purchasedVnd;
     private Instant createdAt;
     private Instant updatedAt;
 
     public SchoolBalance() {}
 
-    public SchoolBalance(UUID id, UUID schoolId, BigDecimal amountVnd, Instant createdAt, Instant updatedAt) {
+    public SchoolBalance(UUID id, UUID schoolId, BigDecimal grantedVnd, BigDecimal purchasedVnd, Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.schoolId = schoolId;
-        this.amountVnd = amountVnd;
+        this.grantedVnd = grantedVnd;
+        this.purchasedVnd = purchasedVnd;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
 
-    public SchoolBalance(UUID schoolId, BigDecimal amountVnd, Instant createdAt, Instant updatedAt) {
+    public SchoolBalance(UUID schoolId, BigDecimal grantedVnd, BigDecimal purchasedVnd, Instant createdAt, Instant updatedAt) {
         this.schoolId = schoolId;
-        this.amountVnd = amountVnd;
+        this.grantedVnd = grantedVnd;
+        this.purchasedVnd = purchasedVnd;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -44,12 +47,12 @@ public class SchoolBalance {
         this.schoolId = schoolId;
     }
 
-    public BigDecimal getAmountVnd() {
-        return amountVnd;
+    public BigDecimal getGrantedVnd() {
+        return grantedVnd;
     }
 
-    public void setAmountVnd(BigDecimal amountVnd) {
-        this.amountVnd = amountVnd;
+    public void setGrantedVnd(BigDecimal grantedVnd) {
+        this.grantedVnd = grantedVnd;
     }
 
     public Instant getCreatedAt() {
@@ -68,5 +71,15 @@ public class SchoolBalance {
         this.updatedAt = updatedAt;
     }
 
-    
+    public BigDecimal getPurchasedVnd() {
+        return purchasedVnd;
+    }
+
+    public void setPurchasedVnd(BigDecimal purchasedVnd) {
+        this.purchasedVnd = purchasedVnd;
+    }
+
+    public BigDecimal getAvailableAmountVnd() {
+        return grantedVnd.subtract(purchasedVnd);
+    }
 }

@@ -3,29 +3,31 @@ package com.sep.vox.domain.model.subscription;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-public class SubscriptionQuotaUserAllocation {
+import com.sep.vox.domain.model.metering.QuotaType;
+
+public class SchoolSubscriptionQuotaUserAllocation {
     private UUID id;
-    private UUID subscriptionId;
+    private UUID schoolSubscriptionId;
     private QuotaType quotaType;
     private UUID userId;
     private BigDecimal allocatedQuantity;
     private BigDecimal usedQuantity;
 
-    public SubscriptionQuotaUserAllocation() {}
+    public SchoolSubscriptionQuotaUserAllocation() {}
 
-    public SubscriptionQuotaUserAllocation(UUID id, UUID subscriptionId, QuotaType quotaType, UUID userId,
+    public SchoolSubscriptionQuotaUserAllocation(UUID id, UUID schoolSubscriptionId, QuotaType quotaType, UUID userId,
             BigDecimal allocatedQuantity, BigDecimal usedQuantity) {
         this.id = id;
-        this.subscriptionId = subscriptionId;
+        this.schoolSubscriptionId = schoolSubscriptionId;
         this.quotaType = quotaType;
         this.userId = userId;
         this.allocatedQuantity = allocatedQuantity;
         this.usedQuantity = usedQuantity;
     }
 
-    public SubscriptionQuotaUserAllocation(UUID subscriptionId, QuotaType quotaType, UUID userId,
+    public SchoolSubscriptionQuotaUserAllocation(UUID schoolSubscriptionId, QuotaType quotaType, UUID userId,
             BigDecimal allocatedQuantity, BigDecimal usedQuantity) {
-        this.subscriptionId = subscriptionId;
+        this.schoolSubscriptionId = schoolSubscriptionId;
         this.quotaType = quotaType;
         this.userId = userId;
         this.allocatedQuantity = allocatedQuantity;
@@ -40,12 +42,12 @@ public class SubscriptionQuotaUserAllocation {
         this.id = id;
     }
 
-    public UUID getSubscriptionId() {
-        return subscriptionId;
+    public UUID getSchoolSubscriptionId() {
+        return schoolSubscriptionId;
     }
 
-    public void setSubscriptionId(UUID subscriptionId) {
-        this.subscriptionId = subscriptionId;
+    public void setSchoolSubscriptionId(UUID schoolSubscriptionId) {
+        this.schoolSubscriptionId = schoolSubscriptionId;
     }
 
     public QuotaType getQuotaType() {

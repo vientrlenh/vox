@@ -4,8 +4,8 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.model.subscription.QuotaPricingCalibration;
-import com.sep.vox.domain.model.subscription.QuotaPricingSource;
+import com.sep.vox.domain.model.metering.QuotaPricingCalibration;
+import com.sep.vox.domain.model.metering.QuotaPricingSource;
 import com.sep.vox.domain.repository.QuotaPricingCalibrationRepository;
 import com.sep.vox.infrastructure.persistence.mapper.QuotaPricingCalibrationMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuotaPricingCalibrationRepository;

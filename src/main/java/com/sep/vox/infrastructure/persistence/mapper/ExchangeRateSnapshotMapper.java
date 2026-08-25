@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.subscription.ExchangeRateSnapshot;
+import com.sep.vox.domain.model.financial.ExchangeRateSnapshot;
 import com.sep.vox.infrastructure.persistence.entity.ExchangeRateSnapshotJpaEntity;
 
 public final class ExchangeRateSnapshotMapper {

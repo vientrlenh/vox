@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.subscription;
 
-public enum SubscriptionStatus {
+public enum SchoolSubscriptionStatus {
     ACTIVE,
     EXPIRED,
     CANCELLED,

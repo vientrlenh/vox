@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.PlanQuota;
-import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.infrastructure.persistence.entity.PlanQuotaJpaEntity;
 
 public final class PlanQuotaMapper {

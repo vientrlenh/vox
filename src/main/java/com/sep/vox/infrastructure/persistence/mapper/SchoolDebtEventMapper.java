@@ -1,8 +1,8 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.subscription.QuotaType;
-import com.sep.vox.domain.model.subscription.SchoolDebtEvent;
-import com.sep.vox.domain.model.subscription.SchoolDebtEventType;
+import com.sep.vox.domain.model.metering.QuotaType;
+import com.sep.vox.domain.model.school.SchoolDebtEvent;
+import com.sep.vox.domain.model.school.SchoolDebtEventType;
 import com.sep.vox.infrastructure.persistence.entity.SchoolDebtEventJpaEntity;
 
 public final class SchoolDebtEventMapper {

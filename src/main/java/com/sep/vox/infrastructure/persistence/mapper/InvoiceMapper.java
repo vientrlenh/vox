@@ -1,8 +1,8 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.subscription.Invoice;
-import com.sep.vox.domain.model.subscription.InvoiceSourceType;
-import com.sep.vox.domain.model.subscription.InvoiceStatus;
+import com.sep.vox.domain.model.invoice.Invoice;
+import com.sep.vox.domain.model.invoice.InvoiceSourceType;
+import com.sep.vox.domain.model.invoice.InvoiceStatus;
 import com.sep.vox.domain.model.subscription.PaymentMethod;
 import com.sep.vox.infrastructure.persistence.entity.InvoiceJpaEntity;
 

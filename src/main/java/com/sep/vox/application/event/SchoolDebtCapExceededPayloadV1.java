@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.domain.model.metering.QuotaType;
 
 /**
  * Nợ hạn mức AI của 1 trường vừa vượt trần cảnh báo (xem QuotaDebtProperties/ConsumeQuotaUseCase).

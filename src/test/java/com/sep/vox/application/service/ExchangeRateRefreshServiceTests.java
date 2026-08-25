@@ -13,7 +13,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.domain.model.subscription.ExchangeRateSnapshot;
+import com.sep.vox.domain.model.financial.ExchangeRateSnapshot;
 import com.sep.vox.domain.repository.ExchangeRateSnapshotRepository;
 import com.sep.vox.infrastructure.client.ExchangeRateApiClient;
 import com.sep.vox.infrastructure.properties.ExchangeRateApiProperties;

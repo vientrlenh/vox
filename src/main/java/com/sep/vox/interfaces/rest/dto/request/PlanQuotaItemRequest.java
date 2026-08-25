@@ -2,7 +2,7 @@ package com.sep.vox.interfaces.rest.dto.request;
 
 import java.math.BigDecimal;
 
-import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.domain.model.metering.QuotaType;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.NotNull;

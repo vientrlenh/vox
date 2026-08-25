@@ -1,4 +1,4 @@
-package com.sep.vox.domain.model.subscription;
+package com.sep.vox.domain.model.invoice;
 
 public enum InvoiceSourceType {
     SUBSCRIPTION,

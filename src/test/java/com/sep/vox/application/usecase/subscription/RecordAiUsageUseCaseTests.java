@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.RecordAiUsageCommand;
 import com.sep.vox.application.port.input.usecase.subscription.RecordAiUsageUseCase;
-import com.sep.vox.domain.model.subscription.AiUsageRecord;
-import com.sep.vox.domain.model.subscription.AiUsageType;
+import com.sep.vox.domain.model.aimodel.AiUsageRecord;
+import com.sep.vox.domain.model.aimodel.AiUsageType;
 import com.sep.vox.domain.repository.AiUsageRecordRepository;
 
 /**

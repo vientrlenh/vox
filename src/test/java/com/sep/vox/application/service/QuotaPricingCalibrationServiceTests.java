@@ -20,8 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.service.QuotaPricingCalibrationService;
-import com.sep.vox.domain.model.subscription.QuotaPricingCalibration;
-import com.sep.vox.domain.model.subscription.QuotaPricingSource;
+import com.sep.vox.domain.model.metering.QuotaPricingCalibration;
+import com.sep.vox.domain.model.metering.QuotaPricingSource;
 import com.sep.vox.domain.repository.AiUsageRecordRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.PracticeResponseTurnRepository;

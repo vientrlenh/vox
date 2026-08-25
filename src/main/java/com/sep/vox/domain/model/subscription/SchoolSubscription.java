@@ -1,17 +1,16 @@
 package com.sep.vox.domain.model.subscription;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.Instant;
 import java.util.UUID;
 
 public class SchoolSubscription {
     private UUID id;
     private UUID schoolId;
-    private UUID planId;
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private SubscriptionStatus status;
+    private UUID currentSubscriptionPlanId;
+    private Instant startDate;
+    private Instant endDate;
+    private SchoolSubscriptionStatus status;
     private BigDecimal pricePaidSnapshot;
     private Instant cancelledAt;
     private Instant createdAt;
@@ -25,12 +24,12 @@ public class SchoolSubscription {
 
     public SchoolSubscription() {}
 
-    public SchoolSubscription(UUID id, UUID schoolId, UUID planId, LocalDate startDate, LocalDate endDate,
-            SubscriptionStatus status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt,
+    public SchoolSubscription(UUID id, UUID schoolId, UUID currentSubscriptionPlanId, Instant startDate, Instant endDate,
+            SchoolSubscriptionStatus status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt,
             Long version, Instant suspendedAt, String suspendedReason, UUID suspendedBy) {
         this.id = id;
         this.schoolId = schoolId;
-        this.planId = planId;
+        this.currentSubscriptionPlanId = currentSubscriptionPlanId;
         this.startDate = startDate;
         this.endDate = endDate;
         this.status = status;
@@ -43,10 +42,10 @@ public class SchoolSubscription {
         this.suspendedBy = suspendedBy;
     }
 
-    public SchoolSubscription(UUID schoolId, UUID planId, LocalDate startDate, LocalDate endDate,
-            SubscriptionStatus status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt) {
+    public SchoolSubscription(UUID schoolId, UUID currentSubscriptionPlanId, Instant startDate, Instant endDate,
+            SchoolSubscriptionStatus status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt) {
         this.schoolId = schoolId;
-        this.planId = planId;
+        this.currentSubscriptionPlanId = currentSubscriptionPlanId;
         this.startDate = startDate;
         this.endDate = endDate;
         this.status = status;
@@ -71,35 +70,35 @@ public class SchoolSubscription {
         this.schoolId = schoolId;
     }
 
-    public UUID getPlanId() {
-        return planId;
+    public UUID getCurrentSubscriptionPlanId() {
+        return currentSubscriptionPlanId;
     }
 
-    public void setPlanId(UUID planId) {
-        this.planId = planId;
+    public void setCurrentSubscriptionPlanId(UUID currentSubscriptionPlanId) {
+        this.currentSubscriptionPlanId = currentSubscriptionPlanId;
     }
 
-    public LocalDate getStartDate() {
+    public Instant getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(LocalDate startDate) {
+    public void setStartDate(Instant startDate) {
         this.startDate = startDate;
     }
 
-    public LocalDate getEndDate() {
+    public Instant getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(LocalDate endDate) {
+    public void setEndDate(Instant endDate) {
         this.endDate = endDate;
     }
 
-    public SubscriptionStatus getStatus() {
+    public SchoolSubscriptionStatus getStatus() {
         return status;
     }
 
-    public void setStatus(SubscriptionStatus status) {
+    public void setStatus(SchoolSubscriptionStatus status) {
         this.status = status;
     }
 

@@ -3,10 +3,10 @@ package com.sep.vox.infrastructure.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-import com.sep.vox.domain.model.subscription.QuotaPricingSource;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.QuotaPricingPort;
+import com.sep.vox.domain.model.metering.QuotaPricingSource;
 import com.sep.vox.domain.repository.ExchangeRateSnapshotRepository;
 import com.sep.vox.domain.repository.QuotaPricingCalibrationRepository;
 import com.sep.vox.infrastructure.properties.QuotaPricingProperties;

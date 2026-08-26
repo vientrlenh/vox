@@ -75,6 +75,11 @@ public class SubscriptionPlanRepositoryImpl implements SubscriptionPlanRepositor
     }
 
     @Override
+    public boolean existsByReplacedByPlanId(UUID replacedByPlanId) {
+        return springDataSubscriptionPlanRepository.existsByReplacedByPlanId(replacedByPlanId);
+    }
+
+    @Override
     public PageResult<SubscriptionPlan> findByStatus(SubscriptionPlanStatus status, int page, int size) {
         return toPageResult(
             springDataSubscriptionPlanRepository.findByStatus(status.name(), PageRequest.of(page, size, NEWEST_FIRST)),

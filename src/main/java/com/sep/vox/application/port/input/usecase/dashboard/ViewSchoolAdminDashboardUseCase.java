@@ -113,7 +113,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
         if (subscriptionIds.isEmpty()) {
             return List.of();
         }
-        return invoiceRepository.findAllBySubscriptionIdIn(subscriptionIds).stream()
+        return invoiceRepository.findBySubscriptionIdIn(subscriptionIds).stream()
             .filter(invoice -> invoice.getStatus() == InvoiceStatus.PAID)
             .toList();
     }

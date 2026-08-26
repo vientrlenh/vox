@@ -205,6 +205,24 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
         return new PaymentLinkStatusResult(status);
     }
 
+    /**
+     * SePay KHÔNG có API hủy một phiên chưa trả, nên luôn trả false.
+     *
+     * <p>Thứ gần nhất là {@code POST /v1/order/voidTransaction}, nhưng nó là nghiệp vụ KHÁC hẳn:
+     * chỉ nhận giao dịch THẺ ({@code payment_method = CARD}) đã ở trạng thái {@code CAPTURED} và
+     * chưa tới giờ đối soát -- tức là hoàn lại một khoản ĐÃ THU, không phải đóng một phiên chưa
+     * trả. Dùng nó ở đây thì hoặc lỗi (chưa CAPTURED), hoặc tệ hơn: hoàn một giao dịch mà hệ thống
+     * chưa kịp ghi nhận là đã trả.
+     *
+     * <p>Hệ quả: đơn SePay chỉ đóng được sau khi phiên tự hết hạn. Xem CancelOrderUseCase.
+     */
+    @Override
+    public boolean cancelPaymentLink(String providerOrderRef, String reason) {
+        LOGGER.info("SePay không hỗ trợ hủy phiên thanh toán chưa trả, bỏ qua lệnh hủy cho orderRef={}",
+            providerOrderRef);
+        return false;
+    }
+
     // Response bọc dữ liệu trong "data", nhưng chấp nhận cả dạng phẳng để một thay đổi nhỏ bên
     // SePay không làm chết luôn job đối soát.
     private String extractOrderStatus(Map<?, ?> response) {

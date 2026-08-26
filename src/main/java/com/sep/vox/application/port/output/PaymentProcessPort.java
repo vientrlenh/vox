@@ -35,6 +35,21 @@ public interface PaymentProcessPort {
 
     PaymentLinkStatusResult getPaymentLinkStatus(String providerOrderRef);
 
+    /**
+     * Đóng hẳn một phiên thanh toán CHƯA trả ở phía cổng, để không ai trả vào nó được nữa.
+     *
+     * <p>Trả về {@code true} chỉ khi cổng đã XÁC NHẬN phiên chết. {@code false} nghĩa là "không đảm
+     * bảo được" -- có thể vì cổng không có API hủy, hoặc lần gọi vừa rồi hỏng. Chỗ gọi phải coi
+     * false là "link vẫn có thể ra tiền" và KHÔNG được đóng đơn (xem CancelOrderUseCase).
+     *
+     * <p>Hai cổng KHÔNG đối xứng ở đây, và đó là lý do hàm này trả boolean chứ không phải void:
+     * PayOS có POST /v2/payment-requests/{id}/cancel cho đúng việc này, còn SePay Payment Gateway
+     * chỉ có voidTransaction -- vốn là hủy một giao dịch THẺ ĐÃ THU (order status = CAPTURED,
+     * payment_method = CARD, trước giờ đối soát), tức là nghiệp vụ hoàn tiền chứ không phải đóng
+     * một phiên chưa trả. Không có cách nào hủy sớm một phiên SePay; nó chỉ chết khi hết hạn.
+     */
+    boolean cancelPaymentLink(String providerOrderRef, String reason);
+
     // Nhận raw bytes chứ không phải Map đã parse: nhiều cổng ký HMAC trên đúng chuỗi byte của
     // body, nên chỉ cần đi qua một vòng parse/serialize là chữ ký không còn khớp. headers để
     // phục vụ các cổng đặt chữ ký ở header thay vì trong body.

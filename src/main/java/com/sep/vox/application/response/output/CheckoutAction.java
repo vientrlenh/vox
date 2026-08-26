@@ -18,7 +18,7 @@ public enum CheckoutAction {
 
     /**
      * Không cần thanh toán gì thêm — hóa đơn đã được chốt PAID ngay (amountDue = 0 sau khi bù trừ
-     * ngày chưa dùng, xem RenewalProrationService), FE không cần điều hướng sang cổng nào.
+     * ngày chưa dùng, xem SubscriptionUpgradePolicyService), FE không cần điều hướng sang cổng nào.
      */
     NONE
 }

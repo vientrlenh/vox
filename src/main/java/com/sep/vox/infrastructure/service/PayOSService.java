@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.service;
 
-import java.time.Instant;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -9,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -107,6 +105,28 @@ public class PayOSService implements PaymentProcessPort {
     public PaymentLinkStatusResult getPaymentLinkStatus(String providerOrderRef) {
         var paymentLink = payOSClient.paymentRequests().get(Long.parseLong(providerOrderRef));
         return new PaymentLinkStatusResult(toRemoteStatus(paymentLink.getStatus()));
+    }
+
+    @Override
+    public boolean cancelPaymentLink(String providerOrderRef, String reason) {
+        try {
+            var cancelled = payOSClient.paymentRequests().cancel(Long.parseLong(providerOrderRef), reason);
+            // Tin vào trạng thái PayOS TRẢ VỀ chứ không tin vào việc "gọi không ném lỗi": nếu vì lý do
+            // nào đó link không thật sự chuyển sang CANCELLED thì nó vẫn thu tiền được, mà chỗ gọi lại
+            // đang chờ một câu trả lời dứt khoát để dám đóng đơn.
+            var confirmed = toRemoteStatus(cancelled.getStatus()) == PaymentLinkRemoteStatus.CANCELLED;
+            if (!confirmed) {
+                LOGGER.warn("PayOS nhận lệnh hủy link {} nhưng trạng thái trả về là {}",
+                    providerOrderRef, cancelled.getStatus());
+            }
+            return confirmed;
+        } catch (Exception e) {
+            // Không ném ra ngoài: với chỗ gọi thì "hủy hỏng" và "cổng không hỗ trợ hủy" dẫn tới cùng
+            // một quyết định -- không đóng đơn. Ném lỗi ở đây chỉ biến một trường hợp xử lý được
+            // thành lỗi 500 cho người dùng.
+            LOGGER.warn("Không hủy được link thanh toán PayOS {}", providerOrderRef, e);
+            return false;
+        }
     }
 
     @Override

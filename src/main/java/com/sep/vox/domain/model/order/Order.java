@@ -223,6 +223,25 @@ public class Order {
     }
 
     /**
+     * Đơn NÂNG CẤP: mua gói mới có hiệu lực ngay, trừ đi phần chưa dùng của kỳ đang chạy.
+     *
+     * <p>Khoản bù đi vào {@code discountAmountVnd} chứ không phải trừ thẳng vào subtotal: subtotal
+     * phải giữ nguyên giá niêm yết của gói mới thì hóa đơn mới đọc được -- "gói 12.000.000, trừ
+     * 700.000 phần chưa dùng của gói cũ, còn phải trả 11.300.000". Trừ thẳng vào subtotal sẽ ghi lại
+     * một mức giá gói chưa từng tồn tại.
+     *
+     * <p>Tách factory riêng thay vì thêm tham số discount vào {@link #forSubscription}: đăng ký và
+     * gia hạn KHÔNG BAO GIỜ có giảm giá loại này (kỳ mới nối tiếp nên không mất ngày nào), nên để
+     * chúng nhận một tham số luôn bằng 0 là mời gọi có ngày ai đó truyền nhầm.
+     */
+    public static Order forSubscriptionUpgrade(UUID schoolId, String description, BigDecimal planPriceVnd,
+            BigDecimal unusedCreditVnd, Instant now, UUID createdBy) {
+        return new Order(schoolId, OrderType.SUBSCRIPTION_UPGRADE, description, planPriceVnd,
+            planPriceVnd.subtract(unusedCreditVnd), BigDecimal.ZERO, unusedCreditVnd,
+            OrderStatus.PENDING, null, now, now, now.plus(PENDING_TTL), createdBy, createdBy);
+    }
+
+    /**
      * Đơn nạp thêm vào số dư. Phí dịch vụ cộng THÊM chứ không trích ra: trường nhận đúng
      * creditAmountVnd vào ví và trả creditAmountVnd + serviceFeeVnd.
      *

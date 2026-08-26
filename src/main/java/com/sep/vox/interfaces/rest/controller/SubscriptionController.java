@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.ApproveRequestCommand;
 import com.sep.vox.application.port.input.command.ArchiveSubscriptionPlanCommand;
-import com.sep.vox.application.port.input.command.CancelSubscriptionCommand;
+import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanReplacementCommand;
 import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
 import com.sep.vox.application.port.input.command.ForceSuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.command.UnsuspendSubscriptionCommand;
@@ -27,14 +27,14 @@ import com.sep.vox.application.port.input.command.CreatePaymentLinkForSubscripti
 import com.sep.vox.application.port.input.command.DeleteDraftSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.PublishSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.RejectRequestCommand;
-import com.sep.vox.application.port.input.command.RenewSubscriptionCommand;
 import com.sep.vox.application.port.input.query.PreviewRenewalQuery;
 import com.sep.vox.application.port.input.query.ViewQuotaAllocationsQuery;
 import com.sep.vox.application.port.input.usecase.subscription.AllocateExamQuotaToTeachersUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.AllocatePracticeQuotaToStudentsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ApproveRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ArchiveSubscriptionPlanUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.CancelSubscriptionUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.UpdateSubscriptionPlanReplacementUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.CancelSchoolSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ConsumeQuotaUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForRenewalUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForSubscriptionRequestUseCase;
@@ -42,15 +42,12 @@ import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLink
 import com.sep.vox.application.port.input.usecase.subscription.CreateSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.DeleteDraftSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ForceSuspendSubscriptionUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.PreviewRenewalUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.PublishSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.RejectRequestUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.RenewSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.UnsuspendSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewExamQuotaAllocationsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewPracticeQuotaAllocationsUseCase;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;
-import com.sep.vox.domain.dto.RenewalPreviewDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.dto.SubscriptionRequestDto;
@@ -74,10 +71,10 @@ public class SubscriptionController {
 
     private final CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase;
     private final ArchiveSubscriptionPlanUseCase archiveSubscriptionPlanUseCase;
+    private final UpdateSubscriptionPlanReplacementUseCase updateSubscriptionPlanReplacementUseCase;
     private final PublishSubscriptionPlanUseCase publishSubscriptionPlanUseCase;
     private final DeleteDraftSubscriptionPlanUseCase deleteDraftSubscriptionPlanUseCase;
-    private final RenewSubscriptionUseCase renewSubscriptionUseCase;
-    private final CancelSubscriptionUseCase cancelSubscriptionUseCase;
+    private final CancelSchoolSubscriptionUseCase cancelSchoolSubscriptionUseCase;
     private final ForceSuspendSubscriptionUseCase forceSuspendSubscriptionUseCase;
     private final UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase;
     private final ApproveRequestUseCase approveRequestUseCase;
@@ -86,7 +83,6 @@ public class SubscriptionController {
     private final CreatePaymentLinkForSubscriptionRequestUseCase createPaymentLinkForSubscriptionRequestUseCase;
     private final CreatePaymentLinkForTokenPurchaseUseCase createPaymentLinkForTokenPurchaseUseCase;
     private final CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase;
-    private final PreviewRenewalUseCase previewRenewalUseCase;
     private final AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase;
     private final AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase;
     private final ViewExamQuotaAllocationsUseCase viewExamQuotaAllocationsUseCase;
@@ -95,10 +91,10 @@ public class SubscriptionController {
     public SubscriptionController(
             CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase,
             ArchiveSubscriptionPlanUseCase archiveSubscriptionPlanUseCase,
+            UpdateSubscriptionPlanReplacementUseCase updateSubscriptionPlanReplacementUseCase,
             PublishSubscriptionPlanUseCase publishSubscriptionPlanUseCase,
             DeleteDraftSubscriptionPlanUseCase deleteDraftSubscriptionPlanUseCase,
-            RenewSubscriptionUseCase renewSubscriptionUseCase,
-            CancelSubscriptionUseCase cancelSubscriptionUseCase,
+            CancelSchoolSubscriptionUseCase cancelSchoolSubscriptionUseCase,
             ForceSuspendSubscriptionUseCase forceSuspendSubscriptionUseCase,
             UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase,
             ApproveRequestUseCase approveRequestUseCase,
@@ -107,17 +103,16 @@ public class SubscriptionController {
             CreatePaymentLinkForSubscriptionRequestUseCase createPaymentLinkForSubscriptionRequestUseCase,
             CreatePaymentLinkForTokenPurchaseUseCase createPaymentLinkForTokenPurchaseUseCase,
             CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase,
-            PreviewRenewalUseCase previewRenewalUseCase,
             AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase,
             AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase,
             ViewExamQuotaAllocationsUseCase viewExamQuotaAllocationsUseCase,
             ViewPracticeQuotaAllocationsUseCase viewPracticeQuotaAllocationsUseCase) {
         this.createSubscriptionPlanUseCase = createSubscriptionPlanUseCase;
         this.archiveSubscriptionPlanUseCase = archiveSubscriptionPlanUseCase;
+        this.updateSubscriptionPlanReplacementUseCase = updateSubscriptionPlanReplacementUseCase;
         this.publishSubscriptionPlanUseCase = publishSubscriptionPlanUseCase;
         this.deleteDraftSubscriptionPlanUseCase = deleteDraftSubscriptionPlanUseCase;
-        this.renewSubscriptionUseCase = renewSubscriptionUseCase;
-        this.cancelSubscriptionUseCase = cancelSubscriptionUseCase;
+        this.cancelSchoolSubscriptionUseCase = cancelSchoolSubscriptionUseCase;
         this.forceSuspendSubscriptionUseCase = forceSuspendSubscriptionUseCase;
         this.unsuspendSubscriptionUseCase = unsuspendSubscriptionUseCase;
         this.approveRequestUseCase = approveRequestUseCase;
@@ -126,7 +121,6 @@ public class SubscriptionController {
         this.createPaymentLinkForSubscriptionRequestUseCase = createPaymentLinkForSubscriptionRequestUseCase;
         this.createPaymentLinkForTokenPurchaseUseCase = createPaymentLinkForTokenPurchaseUseCase;
         this.createPaymentLinkForRenewalUseCase = createPaymentLinkForRenewalUseCase;
-        this.previewRenewalUseCase = previewRenewalUseCase;
         this.allocateExamQuotaToTeachersUseCase = allocateExamQuotaToTeachersUseCase;
         this.allocatePracticeQuotaToStudentsUseCase = allocatePracticeQuotaToStudentsUseCase;
         this.viewExamQuotaAllocationsUseCase = viewExamQuotaAllocationsUseCase;
@@ -149,6 +143,23 @@ public class SubscriptionController {
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ gói đăng ký thành công", data));
     }
 
+    /**
+     * Chỉ (hoặc chỉ lại) gói thay thế cho một gói ĐÃ lưu trữ -- đường sửa cho những gói bị lưu trữ
+     * mà quên chọn gói thay thế. Xem UpdateSubscriptionPlanReplacementUseCase.
+     *
+     * <p>replacedByPlanId BẮT BUỘC ở đây, khác với endpoint lưu trữ nơi nó tùy chọn: gọi vào đây mà
+     * không kèm gói thay thế thì không có việc gì để làm.
+     */
+    @PatchMapping("/{id}/replacement")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<UUID>> updatePlanReplacement(
+            @PathVariable(name = "id") UUID id,
+            @RequestParam(name = "replacedByPlanId") UUID replacedByPlanId) {
+        var data = updateSubscriptionPlanReplacementUseCase.execute(
+            new UpdateSubscriptionPlanReplacementCommand(id, replacedByPlanId));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật gói thay thế thành công", data));
+    }
+
     // PATCH chứ không phải POST: xuất bản là đổi MỘT trường status của gói đã tồn tại (DRAFT ->
     // ACTIVE), không tạo ra tài nguyên mới nào. Cũng vì thế mà idempotent theo nghĩa người dùng
     // quan tâm -- bấm hai lần thì lần sau báo "chỉ xuất bản được gói nháp" chứ không sinh thêm gì.
@@ -166,23 +177,7 @@ public class SubscriptionController {
         return ResponseEntity.ok(ApiResponse.success("Xóa gói nháp thành công"));
     }
 
-    @PostMapping("/schools/{schoolId}/subscriptions/{id}/renew")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<SchoolSubscriptionDto>> renewSubscription(
-            @PathVariable(name = "schoolId") UUID schoolId,
-            @PathVariable(name = "id") UUID id) {
-        var data = renewSubscriptionUseCase.execute(new RenewSubscriptionCommand(schoolId, id));
-        return ResponseEntity.ok(ApiResponse.success("Gia hạn gói đăng ký thành công", data));
-    }
 
-    @GetMapping("/schools/{schoolId}/subscriptions/{id}/renewal-preview")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<RenewalPreviewDto>> previewRenewal(
-            @PathVariable(name = "schoolId") UUID schoolId,
-            @PathVariable(name = "id") UUID id) {
-        var data = previewRenewalUseCase.execute(new PreviewRenewalQuery(schoolId, id));
-        return ResponseEntity.ok(ApiResponse.success("Xem trước gia hạn thành công", data));
-    }
 
     @PostMapping("/schools/{schoolId}/subscriptions/{id}/renew/payment-link")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
@@ -197,35 +192,40 @@ public class SubscriptionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo link thanh toán thành công", data));
     }
 
-    @PostMapping("/schools/{schoolId}/subscriptions/{id}/cancel")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<SchoolSubscriptionDto>> cancelSubscription(
-            @PathVariable(name = "schoolId") UUID schoolId,
-            @PathVariable(name = "id") UUID id) {
-        var data = cancelSubscriptionUseCase.execute(new CancelSubscriptionCommand(schoolId, id));
-        return ResponseEntity.ok(ApiResponse.success("Hủy gói đăng ký thành công", data));
+    /**
+     * Trường báo sẽ không mua tiếp sau khi kỳ hiện tại kết thúc. KHÔNG cắt quyền dùng và không hoàn
+     * tiền -- xem CancelSchoolSubscriptionUseCase. Không nhận id nào: kỳ đang chạy của trường suy ra
+     * từ token.
+     */
+    @PatchMapping("/subscriptions/cancellation")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<UUID>> cancelSubscription() {
+        var data = cancelSchoolSubscriptionUseCase.execute(null);
+        return ResponseEntity.ok(ApiResponse.success("Đã ghi nhận yêu cầu không gia hạn gói", data));
     }
 
     // Chỉ SYSTEM_ADMIN -- khác cancel/renew, đây là hành động cưỡng chế, School Admin không được tự làm.
-    @PostMapping("/schools/{schoolId}/subscriptions/{id}/suspend")
+    /**
+     * Cưỡng chế cắt quyền dùng NGAY. PATCH vì đây là đổi trạng thái của một gói đã tồn tại, không
+     * tạo tài nguyên mới. Không nhận schoolId: gói đã biết nó thuộc trường nào.
+     */
+    @PatchMapping("/subscriptions/{id}/suspension")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<SchoolSubscriptionDto>> suspendSubscription(
-            @PathVariable(name = "schoolId") UUID schoolId,
+    public ResponseEntity<ApiResponse<UUID>> suspendSubscription(
             @PathVariable(name = "id") UUID id,
             @RequestBody @Valid SuspendSubscriptionRequest request) {
         var data = forceSuspendSubscriptionUseCase.execute(
-            new ForceSuspendSubscriptionCommand(schoolId, id, request.reason()));
+            new ForceSuspendSubscriptionCommand(id, request.reason()));
         return ResponseEntity.ok(ApiResponse.success("Đình chỉ gói đăng ký thành công", data));
     }
 
-    @PostMapping("/schools/{schoolId}/subscriptions/{id}/unsuspend")
+    @DeleteMapping("/subscriptions/{id}/suspension")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<SchoolSubscriptionDto>> unsuspendSubscription(
-            @PathVariable(name = "schoolId") UUID schoolId,
+    public ResponseEntity<ApiResponse<UUID>> unsuspendSubscription(
             @PathVariable(name = "id") UUID id,
             @RequestBody @Valid UnsuspendSubscriptionRequest request) {
         var data = unsuspendSubscriptionUseCase.execute(
-            new UnsuspendSubscriptionCommand(schoolId, id, request.note()));
+            new UnsuspendSubscriptionCommand(id, request.note()));
         return ResponseEntity.ok(ApiResponse.success("Gỡ đình chỉ gói đăng ký thành công", data));
     }
 

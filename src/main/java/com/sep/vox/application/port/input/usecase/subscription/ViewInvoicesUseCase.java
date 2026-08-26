@@ -11,25 +11,20 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.InvoiceQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.InvoiceDto;
+import com.sep.vox.domain.repository.InvoiceRepository;
 
 @Service
 public class ViewInvoicesUseCase implements IUseCase<ViewInvoicesQuery, PageResult<InvoiceDto>> {
 
-    private final InvoiceQueryRepository invoiceQueryRepository;
-    private final UserContextPort userContextPort;
+    private final InvoiceRepository invoiceRepository;
 
-    public ViewInvoicesUseCase(InvoiceQueryRepository invoiceQueryRepository, UserContextPort userContextPort) {
-        this.invoiceQueryRepository = invoiceQueryRepository;
-        this.userContextPort = userContextPort;
+    public ViewInvoicesUseCase(InvoiceRepository invoiceRepository) {
+        this.invoiceRepository = invoiceRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResult<InvoiceDto> execute(ViewInvoicesQuery input) {
-        if (!userContextPort.isSystemAdmin() && !input.schoolId().equals(userContextPort.getCurrentSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-
         var page = invoiceQueryRepository.findAllBySchoolId(input.schoolId(), PageRequest.of(input.page(), input.size()));
 
         return new PageResult<>(page.getContent(), input.page(), input.size(), page.getTotalElements(), page.getTotalPages());

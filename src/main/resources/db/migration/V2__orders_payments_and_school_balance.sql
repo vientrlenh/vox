@@ -471,3 +471,50 @@ ALTER TABLE token_usage_event
     ADD CONSTRAINT chk_token_usage_event_quota_type_valid CHECK (((quota_type)::text = ANY (ARRAY[
         ('EXAM'::character varying)::text,
         ('PRACTICE'::character varying)::text])));
+
+
+-- -----------------------------------------------------------------------------
+-- 12. school_subscription_events -- sổ audit cho những lần System Admin can thiệp
+--     vào vòng đời một gói (đình chỉ / gỡ đình chỉ).
+--
+--     Ba cột suspended_at/suspended_reason/suspended_by trên school_subscription là TRẠNG THÁI,
+--     không phải LỊCH SỬ: gỡ đình chỉ xóa cả ba về null nên sau đó không còn dấu vết nào cho thấy
+--     trường từng bị đình chỉ, ai làm, vì sao. Đây là thao tác cưỡng chế nhắm vào khách hàng đang
+--     trả tiền, mất dấu vết là không chấp nhận được.
+--
+--     KHÔNG dùng lại financial_event: bảng đó sinh ra cho TIỀN (amount_signed / currency /
+--     payment_method đều NOT NULL), nên mỗi lần đình chỉ phải nhét vào một khoản 0 VND trả bằng
+--     "MANUAL" -- ba giá trị vô nghĩa chỉ để thỏa ràng buộc. Phần tiền của bảng đó giờ thuộc về
+--     orders/payment_records/invoices/school_balance_entries.
+-- -----------------------------------------------------------------------------
+CREATE TABLE school_subscription_events (
+    occurred_at timestamp(6) with time zone NOT NULL,
+    id uuid DEFAULT uuidv7() NOT NULL,
+    school_id uuid NOT NULL,
+    subscription_id uuid NOT NULL,
+    -- Người thực hiện luôn có: cả hai loại sự kiện đều là hành động của System Admin, không phải
+    -- thứ hệ thống tự sinh ra.
+    actor_id uuid NOT NULL,
+    event_type character varying(20) NOT NULL,
+    reason character varying(2048),
+    CONSTRAINT chk_school_subscription_events_event_type_valid CHECK (((event_type)::text = ANY (ARRAY[
+        ('SUSPENDED'::character varying)::text,
+        ('UNSUSPENDED'::character varying)::text]))),
+    -- Đình chỉ BẮT BUỘC nêu lý do; gỡ đình chỉ thì ghi chú là tùy chọn. Cắt quyền dùng của một
+    -- trường mà không ghi lại vì sao là đúng thứ sổ audit này sinh ra để ngăn.
+    CONSTRAINT chk_school_subscription_events_suspend_has_reason CHECK (
+        ((event_type)::text <> 'SUSPENDED' OR reason IS NOT NULL))
+);
+
+ALTER TABLE ONLY school_subscription_events
+    ADD CONSTRAINT school_subscription_events_pkey PRIMARY KEY (id);
+
+CREATE INDEX idx_school_subscription_events_school ON school_subscription_events
+    USING btree (school_id, occurred_at DESC);
+
+ALTER TABLE ONLY school_subscription_events
+    ADD CONSTRAINT fk_school_subscription_events_school FOREIGN KEY (school_id) REFERENCES schools(id);
+
+ALTER TABLE ONLY school_subscription_events
+    ADD CONSTRAINT fk_school_subscription_events_subscription
+    FOREIGN KEY (subscription_id) REFERENCES school_subscription(id);

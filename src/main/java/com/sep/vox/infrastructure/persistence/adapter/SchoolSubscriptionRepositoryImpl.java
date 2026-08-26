@@ -41,8 +41,26 @@ public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepos
     @Override
     public Optional<SchoolSubscription> findActiveBySchoolId(UUID schoolId) {
         return springDataSchoolSubscriptionRepository
-            .findFirstBySchoolIdAndStatus(schoolId, SchoolSubscriptionStatus.ACTIVE.name())
+            .findInForceBySchoolId(schoolId, Instant.now())
+            .stream()
+            .findFirst()
             .map(SchoolSubscriptionMapper::toDomain);
+    }
+
+    @Override
+    public Optional<SchoolSubscription> findMostRecentBySchoolId(UUID schoolId) {
+        return springDataSchoolSubscriptionRepository
+            .findMostRecentBySchoolId(schoolId)
+            .stream()
+            .findFirst()
+            .map(SchoolSubscriptionMapper::toDomain);
+    }
+
+    @Override
+    public List<SchoolSubscription> findUnfinishedBySchoolId(UUID schoolId, Instant at) {
+        return springDataSchoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, at).stream()
+            .map(SchoolSubscriptionMapper::toDomain)
+            .toList();
     }
 
     @Override

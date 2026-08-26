@@ -14,11 +14,13 @@ import com.sep.vox.domain.model.invoice.Invoice;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderItemType;
 import com.sep.vox.domain.model.order.OrderStatus;
+import com.sep.vox.domain.model.order.OrderType;
 import com.sep.vox.domain.model.payment.PaymentRecord;
 import com.sep.vox.domain.model.payment.PaymentStatus;
 import com.sep.vox.domain.model.school.SchoolBalance;
 import com.sep.vox.domain.model.school.SchoolBalanceEntry;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.domain.repository.OrderItemRepository;
@@ -99,9 +101,22 @@ public class OrderSettlementService {
         var order = orderRepository.findByIdForUpdate(payment.getOrderId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng của lần thanh toán"));
 
+        if (order.getStatus() == OrderStatus.SUCCESS) {
+            LOGGER.info("Đơn {} đã SUCCESS -- bỏ qua lần chốt lặp cho payment {}",
+                order.getId(), payment.getId());
+            return;
+        }
         if (order.getStatus() != OrderStatus.PENDING) {
-            LOGGER.info("Đơn {} đã ở trạng thái {} -- bỏ qua lần chốt lặp cho payment {}",
-                order.getId(), order.getStatus(), payment.getId());
+            // Tiền về cho một đơn ĐÃ ĐÓNG. Đây KHÔNG phải callback lặp vô hại: trường đã trả nhưng
+            // sẽ không nhận được gì, và hệ thống chưa có luồng hoàn tiền nào. Phải kêu to để có
+            // người xử lý tay, thay vì lặng lẽ return như nhánh SUCCESS ở trên.
+            //
+            // Đường vào ca này: trường hủy đơn trong lúc còn phiên SePay sống (cổng không cho hủy
+            // sớm nên CancelOrderUseCase chặn, nhưng nếu chặn đó bị nới thì đây là hậu quả), hoặc
+            // đơn hết hạn đúng lúc trường đang trả.
+            LOGGER.error(
+                "TIỀN VỀ CHO ĐƠN ĐÃ ĐÓNG -- cần hoàn tiền thủ công: orderId={} orderStatus={} paymentId={} amountVnd={}",
+                order.getId(), order.getStatus(), payment.getId(), payment.getAmountVnd());
             return;
         }
 
@@ -211,6 +226,11 @@ public class OrderSettlementService {
      *
      * <p>Gói lấy từ order_items chứ không phải từ một cột trên orders: đơn đăng ký mang đúng một
      * dòng SUBSCRIPTION và chính dòng đó đã đóng băng đơn giá lúc đặt.
+     *
+     * <p>Kỳ mới NỐI TIẾP kỳ cũ nếu kỳ cũ còn hạn (gia hạn sớm), chứ không đè lên nó và cũng không
+     * đóng nó lại. Hai dòng cùng ACTIVE là trạng thái BÌNH THƯỜNG ở đây -- một dòng đang chạy, một
+     * dòng đã trả tiền và xếp hàng phía sau; findActiveBySchoolId lọc theo ngày nên luôn chỉ ra
+     * đúng một kỳ đang hiệu lực. Xem SchoolSubscription.activate.
      */
     private void activateSubscription(Order order, Instant now) {
         var planId = orderItemRepository.findByOrderId(order.getId()).stream()
@@ -223,15 +243,71 @@ public class OrderSettlementService {
         var plan = subscriptionPlanRepository.findById(planId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói dịch vụ của đơn đăng ký"));
 
+        var startsAt = order.getType() == OrderType.SUBSCRIPTION_UPGRADE
+            ? cutOverToUpgrade(order.getSchoolId(), now)
+            : nextPeriodStart(order.getSchoolId(), now);
+
         // Giá đã trả lấy từ ĐƠN chứ không đọc lại plan.getPriceVnd(): gói có thể đổi giá trong lúc
-        // đơn nằm chờ, mà thứ phải lưu lại là con số trường thật sự trả.
-        var subscription = schoolSubscriptionRepository.save(
-            SchoolSubscription.activate(order.getSchoolId(), plan, order.getSubtotalAmountVnd(), now));
+        // đơn nằm chờ, mà thứ phải lưu lại là con số trường thật sự trả. Dùng subtotal (giá niêm yết)
+        // chứ không phải total: khoản bù nâng cấp là chuyện của LẦN MUA này, không phải giá trị của
+        // kỳ -- ghi total thì lần nâng cấp sau lại bù dựa trên một con số đã bị bù một lần rồi.
+        var subscription = schoolSubscriptionRepository.save(SchoolSubscription.activate(
+            order.getSchoolId(), plan, order.getSubtotalAmountVnd(), startsAt, now));
 
         seedQuotaRecords(subscription.getId(), planId);
 
-        LOGGER.info("Kích hoạt gói {} cho trường {} từ đơn {} -- hạn tới {}",
-            planId, order.getSchoolId(), order.getId(), subscription.getEndDate());
+        if (startsAt.isAfter(now)) {
+            LOGGER.info("Gia hạn sớm gói {} cho trường {} từ đơn {} -- kỳ mới chạy {} tới {}",
+                planId, order.getSchoolId(), order.getId(), startsAt, subscription.getEndDate());
+        } else {
+            LOGGER.info("Kích hoạt gói {} cho trường {} từ đơn {} -- hạn tới {}",
+                planId, order.getSchoolId(), order.getId(), subscription.getEndDate());
+        }
+    }
+
+    /**
+     * Mốc bắt đầu cho đăng ký mới / gia hạn: nối vào sau kỳ xa nhất còn hạn, không có kỳ nào thì chạy
+     * ngay.
+     *
+     * <p>Lấy theo endDate LỚN NHẤT chứ không phải kỳ đang chạy: trường gia hạn hai lần liên tiếp thì
+     * lần sau phải xếp sau lần trước, nếu bám vào kỳ đang chạy thì hai lần gia hạn sẽ trùng nhau và
+     * mất một chu kỳ.
+     */
+    private Instant nextPeriodStart(UUID schoolId, Instant now) {
+        return schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now).stream()
+            .findFirst()
+            .map(s -> s.getEndDate())
+            .orElse(now);
+    }
+
+    /**
+     * Nâng cấp: gói mới có hiệu lực NGAY, nên mọi kỳ chưa kết thúc của trường bị đóng lại tại đây.
+     *
+     * <p>Đóng bằng cách kéo endDate về {@code now} chứ không chỉ đổi status: hai truy vấn phân biệt
+     * "kỳ nào đang chạy" đều soi khoảng ngày (findInForceBySchoolId) hoặc endDate
+     * (findUnfinishedBySchoolId), nên một dòng EXPIRED mà endDate vẫn ở tương lai sẽ tiếp tục
+     * được tính là "kỳ chưa kết thúc" ở chỗ thứ hai -- và lần gia hạn kế tiếp sẽ xếp hàng sau một kỳ
+     * đã chết. Kéo endDate về hiện tại cũng là ghi đúng sự thật: kỳ đó kết thúc thật vào lúc này.
+     *
+     * <p>Đóng TẤT CẢ chứ không chỉ kỳ đang chạy: trường có thể vừa gia hạn (kỳ tương lai đang xếp
+     * hàng) rồi đổi ý nâng cấp. Bỏ sót kỳ xếp hàng thì sau khi gói mới hết hạn, trường tụt về đúng
+     * gói cũ mà họ vừa trả tiền để rời khỏi.
+     *
+     * <p>Hạn mức của các kỳ bị đóng KHÔNG được chuyển sang kỳ mới: phần chưa dùng đã được quy ra
+     * tiền và trừ vào chính đơn nâng cấp này (xem SubscriptionUpgradePolicyService), cộng thêm
+     * lần nữa là bù hai lần cho cùng một thứ.
+     */
+    private Instant cutOverToUpgrade(UUID schoolId, Instant now) {
+        var unfinished = schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now);
+        for (var previous : unfinished) {
+            previous.setStatus(SchoolSubscriptionStatus.EXPIRED);
+            previous.setEndDate(now);
+            schoolSubscriptionRepository.save(previous);
+        }
+        if (!unfinished.isEmpty()) {
+            LOGGER.info("Nâng cấp trường {}: đóng {} kỳ chưa kết thúc tại {}", schoolId, unfinished.size(), now);
+        }
+        return now;
     }
 
     /**

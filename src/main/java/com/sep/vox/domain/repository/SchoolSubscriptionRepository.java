@@ -13,7 +13,26 @@ import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
 public interface SchoolSubscriptionRepository {
     Optional<SchoolSubscription> findById(UUID id);
     SchoolSubscription save(SchoolSubscription subscription);
+    /**
+     * Kỳ thuê bao đang CÓ HIỆU LỰC ngay lúc này -- lọc theo ngày, không chỉ theo status. Trường gia
+     * hạn sớm sẽ có một kỳ đã trả tiền nhưng chưa tới ngày chạy; kỳ đó KHÔNG được trả về ở đây.
+     */
     Optional<SchoolSubscription> findActiveBySchoolId(UUID schoolId);
+
+    /**
+     * MỌI kỳ chưa kết thúc tại {@code at}, sắp xếp endDate GIẢM DẦN -- gồm cả kỳ đang chạy lẫn kỳ đã
+     * trả tiền và đang xếp hàng chờ.
+     *
+     * <p>Trả cả danh sách chứ không chỉ kỳ xa nhất vì nâng cấp phải đóng TẤT CẢ và bù tiền cho TẤT
+     * CẢ -- bỏ sót kỳ xếp hàng là đóng một kỳ trường đã trả tiền mà không hoàn lại đồng nào.
+     * Chỗ chỉ cần mốc nối tiếp thì lấy phần tử đầu.
+     */
+    List<SchoolSubscription> findUnfinishedBySchoolId(UUID schoolId, Instant at);
+
+    /**
+     * Kỳ gần đây nhất của trường bất kể trạng thái -- gồm cả kỳ đã hết hạn, để phục vụ gia hạn muộn.
+     */
+    Optional<SchoolSubscription> findMostRecentBySchoolId(UUID schoolId);
     List<SchoolSubscription> findBySchoolId(UUID schoolId);
     PageResult<SchoolSubscription> findForAdmin(UUID planId, SchoolSubscriptionStatus status, String keyword, int page, int size);
     boolean existsActiveByPlanId(UUID planId);

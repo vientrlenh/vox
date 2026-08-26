@@ -159,17 +159,31 @@ public class SchoolSubscription {
     }
 
     /**
-     * Kỳ thuê bao MỚI, kích hoạt ngay khi tiền của đơn đã về.
+     * Kỳ thuê bao MỚI, tạo ngay khi tiền của đơn đã về.
      *
-     * <p>startDate = {@code now} chứ không phải lúc đặt đơn: đơn có thể nằm chờ tới 24 tiếng
-     * (Order.PENDING_TTL), tính hạn từ lúc đặt là ăn mất của trường đúng quãng chờ đó.
+     * <p>{@code startsAt} là chỗ phân biệt mua mới và gia hạn sớm:
+     *
+     * <ul>
+     *   <li>Trường chưa có kỳ nào còn hiệu lực -> {@code startsAt = now}. KHÔNG lấy lúc đặt đơn: đơn
+     *       có thể nằm chờ tới 24 tiếng (Order.PENDING_TTL), tính hạn từ lúc đặt là ăn mất của
+     *       trường đúng quãng chờ đó.
+     *   <li>Trường gia hạn khi kỳ cũ còn chạy -> {@code startsAt = endDate của kỳ cũ}. Kỳ mới NỐI
+     *       TIẾP chứ không đè lên: trường đã trả cho đủ một chu kỳ thì phải nhận đủ một chu kỳ.
+     *       Đây là lý do hệ thống không cần tính bù trừ ngày thừa (proration) -- không có ngày nào
+     *       bị mất để mà phải bù.
+     * </ul>
+     *
+     * <p>Kỳ tương lai vẫn mang status ACTIVE ngay từ đầu, và điều đó KHÔNG làm nó có hiệu lực sớm:
+     * mọi chỗ hỏi "kỳ hiện tại" đều đi qua findActiveBySchoolId, vốn lọc theo ngày. Trạng thái ở đây
+     * trả lời "đã trả tiền chưa", còn khoảng ngày trả lời "đang chạy chưa" -- tách hai câu hỏi đó ra
+     * là thứ giữ cho gia hạn sớm không cần thêm một status SCHEDULED và một job để lật nó.
      *
      * <p>pricePaidSnapshot đóng băng giá tại thời điểm mua -- gói có thể đổi giá hoặc bị ARCHIVED
-     * sau đó, nhưng hóa đơn đã phát và kỳ đang chạy phải giữ nguyên con số trường thật sự đã trả.
+     * sau đó, nhưng hóa đơn đã phát và kỳ đã bán phải giữ nguyên con số trường thật sự đã trả.
      */
     public static SchoolSubscription activate(UUID schoolId, SubscriptionPlan plan, BigDecimal pricePaidVnd,
-            Instant now) {
-        return new SchoolSubscription(schoolId, plan.getId(), now, plan.endDateFrom(now),
+            Instant startsAt, Instant now) {
+        return new SchoolSubscription(schoolId, plan.getId(), startsAt, plan.endDateFrom(startsAt),
             SchoolSubscriptionStatus.ACTIVE, pricePaidVnd, null, now);
     }
 }

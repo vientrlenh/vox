@@ -147,6 +147,25 @@ quotaType = EXAM chỉ có ở giáo viên (trần cho bài kiểm tra trên l�
 sinh. Thay cho cặp MyClassTestQuotaAllocation/MyPracticeQuotaAllocation cũ -- cùng một khái niệm thì
 một kiểu là đủ.
 """
+"""
+Gia hạn ngay bây giờ thì trường nhận được gì -- xem TRƯỚC khi đặt đơn.
+
+KHÔNG có phần bù trừ ngày thừa: kỳ mới NỐI TIẾP kỳ đang chạy chứ không đè lên, nên trường gia hạn
+sớm không mất ngày nào và cũng không có gì để bù. startsAt nói rõ kỳ mới bắt đầu lúc nào.
+"""
+type SchoolSubscriptionRenewalPreview {
+    "true = gói gia hạn khác gói đang dùng, tức trường đang bị chuyển sang gói thay thế. FE nên làm nổi bật."
+    planChanged: Boolean!
+    "Gói trường đang/vừa dùng"
+    currentPlan: SubscriptionPlan!
+    "Gói sẽ được mua khi gia hạn -- id của nó chính là acceptedPlanId phải gửi lên khi đặt đơn"
+    renewalPlan: SubscriptionPlan!
+    "Kỳ mới bắt đầu chạy khi nào: ngay bây giờ nếu không còn kỳ nào hiệu lực, hoặc ngày hết hạn của kỳ hiện tại"
+    startsAt: String!
+    "Giá gói gia hạn, CHƯA gồm phí dịch vụ -- phí cộng vào lúc đặt đơn"
+    amountDue: Float!
+}
+
 type SchoolSubscriptionQuotaUserAllocation {
     id: ID!
     userId: ID!
@@ -227,6 +246,16 @@ extend type Query {
     myExamQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
     "null = học sinh không có hạn mức cá nhân riêng, tức chỉ ví PRACTICE của trường áp dụng"
     myPracticeQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
+
+    """
+    Gia hạn ngay bây giờ thì trường nhận được gì. KHÔNG nhận tham số: gói cần gia hạn là gói gần nhất
+    của chính trường đang đăng nhập.
+
+    Phải gọi query này TRƯỚC khi đặt đơn gia hạn: renewalPlan.id chính là acceptedPlanId phải gửi lên
+    ở POST /api/v1/orders/renewal. Gói đang dùng có thể đã bị lưu trữ và được gán gói thay thế, khi đó
+    gia hạn tự chuyển sang gói mới -- trường phải nhìn thấy và đồng ý trước.
+    """
+    schoolSubscriptionRenewalPreview: SchoolSubscriptionRenewalPreview!
 
     schoolDebtEvents(schoolId: ID!, page: Int = 0, size: Int = 20): SchoolDebtEventPage!
 }

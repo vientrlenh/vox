@@ -16,6 +16,13 @@ public interface SubscriptionPlanRepository {
     List<SubscriptionPlan> findByIdIn(Collection<UUID> ids);
     void deleteById(UUID id);
 
+    /**
+     * Gói này có đang là ĐÍCH của một chuỗi thay thế không (có gói khác trỏ replacedByPlanId vào
+     * đây). Lưu trữ một gói như vậy mà không chỉ định gói thay thế tiếp theo sẽ cắt cụt chuỗi, và
+     * những trường ở đầu chuỗi mất luôn đường gia hạn -- xem SubscriptionPlanResolver.
+     */
+    boolean existsByReplacedByPlanId(UUID replacedByPlanId);
+
     /** Danh sách gói cho trường/khách vãng lai -- chỉ những gói còn bán được. */
     PageResult<SubscriptionPlan> findByStatus(SubscriptionPlanStatus status, int page, int size);
 

@@ -17,6 +17,62 @@ import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionJpaEntity
 
 public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<SchoolSubscriptionJpaEntity, UUID> {
     Optional<SchoolSubscriptionJpaEntity> findFirstBySchoolIdAndStatus(UUID schoolId, String status);
+
+    /**
+     * Kỳ thuê bao ĐANG CÓ HIỆU LỰC tại {@code at} -- lọc theo NGÀY chứ không chỉ theo status.
+     *
+     * <p>Bắt buộc phải lọc theo ngày kể từ khi cho phép gia hạn sớm: lúc đó trường có HAI dòng cùng
+     * ACTIVE, một dòng đang chạy và một dòng đã trả tiền nhưng chỉ bắt đầu khi dòng kia hết hạn.
+     * {@code findFirstBySchoolIdAndStatus} sẽ trả về một trong hai một cách tùy ý, và mọi thứ đọc từ
+     * nó -- hạn mức, guard kỳ thi, trừ tiêu dùng -- sẽ bám vào nhầm kỳ.
+     *
+     * <p>Cũng vá luôn khe hở của SubscriptionExpiryJob: job chạy mỗi giờ nên ngay sau thời điểm hết
+     * hạn vẫn còn một quãng dòng cũ mang status ACTIVE. Lọc theo ngày thì quãng đó không tồn tại --
+     * cùng lý do SubscriptionPeriodGuardService đã cố ý so thẳng start_date/end_date.
+     *
+     * <p>ORDER BY start_date DESC: nếu vì lỗi dữ liệu mà có hai dòng cùng phủ {@code at} thì lấy
+     * dòng mới nhất, thay vì để thứ tự phụ thuộc vào cách Postgres trả về.
+     */
+    @Query("""
+        SELECT s FROM SchoolSubscriptionJpaEntity s
+        WHERE s.schoolId = :schoolId
+          AND s.status = 'ACTIVE'
+          AND s.startDate <= :at
+          AND s.endDate > :at
+        ORDER BY s.startDate DESC
+        """)
+    List<SchoolSubscriptionJpaEntity> findInForceBySchoolId(
+        @Param("schoolId") UUID schoolId, @Param("at") Instant at);
+
+    /**
+     * Kỳ có endDate xa nhất còn chưa kết thúc -- mốc để một lần gia hạn mới nối tiếp vào.
+     *
+     * <p>Lấy theo endDate lớn nhất chứ không phải kỳ đang chạy: trường gia hạn hai lần liên tiếp thì
+     * lần thứ hai phải nối sau lần thứ nhất, không phải chồng lên nó.
+     */
+    @Query("""
+        SELECT s FROM SchoolSubscriptionJpaEntity s
+        WHERE s.schoolId = :schoolId
+          AND s.status = 'ACTIVE'
+          AND s.endDate > :at
+        ORDER BY s.endDate DESC
+        """)
+    List<SchoolSubscriptionJpaEntity> findUnfinishedBySchoolId(
+        @Param("schoolId") UUID schoolId, @Param("at") Instant at);
+
+    /**
+     * Kỳ gần đây nhất của trường, KHÔNG lọc theo trạng thái hay ngày -- để biết trường đang/từng
+     * dùng gói nào mà đề xuất gia hạn.
+     *
+     * <p>Phải nhận cả kỳ đã EXPIRED: gia hạn muộn (gói hết hạn tuần trước, giờ trường mới quay lại)
+     * là đường đi phổ biến nhất, và ở đó không còn kỳ nào ACTIVE để mà hỏi.
+     */
+    @Query("""
+        SELECT s FROM SchoolSubscriptionJpaEntity s
+        WHERE s.schoolId = :schoolId
+        ORDER BY s.endDate DESC
+        """)
+    List<SchoolSubscriptionJpaEntity> findMostRecentBySchoolId(@Param("schoolId") UUID schoolId);
     List<SchoolSubscriptionJpaEntity> findBySchoolId(UUID schoolId);
     boolean existsBySubscriptionPlanIdAndStatus(UUID subscriptionPlanId, String status);
 

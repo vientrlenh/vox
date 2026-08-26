@@ -1,13 +1,11 @@
 package com.sep.vox.application.port.input.service;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
@@ -25,8 +23,6 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
  */
 @Service
 public class SubscriptionPeriodGuardService {
-
-    private static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
 
@@ -55,15 +51,14 @@ public class SubscriptionPeriodGuardService {
             return;
         }
 
-        var lowerBound = startDate.atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
         // end_date INCLUSIVE (khớp "CURRENT_DATE BETWEEN start_date AND end_date" ở các native
         // query): cận trên thật sự là hết ngày end_date, nên lấy 00:00 hôm sau làm mốc EXCLUSIVE.
-        var upperBoundExclusive = endDate.plusDays(1).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
+        var upperBoundExclusive = endDate.plus(1, ChronoUnit.DAYS);
 
-        if (openAt != null && isOutside(openAt, lowerBound, upperBoundExclusive)) {
+        if (openAt != null && isOutside(openAt, startDate, upperBoundExclusive)) {
             throw new IllegalStateException(outsidePeriodMessage("Thời gian mở bài", subscription));
         }
-        if (closeAt != null && isOutside(closeAt, lowerBound, upperBoundExclusive)) {
+        if (closeAt != null && isOutside(closeAt, startDate, upperBoundExclusive)) {
             throw new IllegalStateException(outsidePeriodMessage("Thời gian đóng bài", subscription));
         }
     }
@@ -79,11 +74,8 @@ public class SubscriptionPeriodGuardService {
     private String outsidePeriodMessage(String fieldLabel, SchoolSubscription subscription) {
         return "%s phải nằm trong hạn gói dịch vụ của trường (từ %s đến %s)".formatted(
             fieldLabel,
-            format(subscription.getStartDate()),
-            format(subscription.getEndDate()));
+            subscription.getStartDate().toString(),
+            subscription.getEndDate().toString());
     }
 
-    private String format(LocalDate date) {
-        return date.format(DISPLAY_DATE);
-    }
 }

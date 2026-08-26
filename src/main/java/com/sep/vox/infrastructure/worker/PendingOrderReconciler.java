@@ -43,9 +43,10 @@ public class PendingOrderReconciler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PendingOrderReconciler.class);
 
-    // 400ms giữa hai lần hỏi (~2.5 req/s). Cả PayOS lẫn SePay đều KHÔNG công bố hạn mức gọi API cụ
-    // thể, nên con số này là lựa chọn thủ thế chứ không phải bám theo ngưỡng nào: job chạy nền,
-    // chậm thêm vài giây một lượt không ai thấy, còn bị cổng chặn vì dội thì mất hẳn đường đối soát.
+    // 400ms giữa hai lần hỏi (~2.5 req/s). SePay giới hạn vài request/giây và trả 429 kèm header
+    // X-SePay-UserApi-Retry-After (xem SePayPaymentProcessService.getPaymentLinkStatus); PayOS không
+    // công bố ngưỡng cụ thể nên con số này lấy theo bên chặt hơn. Job chạy nền, chậm thêm vài giây
+    // một lượt không ai thấy, còn bị cổng chặn vì dội thì mất hẳn đường đối soát.
     private static final long THROTTLE_MILLIS = 400L;
 
     // Chặn trên số lần gọi cổng mỗi lượt để một đợt tồn đọng bất thường không biến job thành cuộc

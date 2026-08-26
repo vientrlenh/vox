@@ -175,7 +175,7 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
     }
 
     private long countUsedAttempts(UUID candidateId) {
-        return examSessionRepository.findAllByCandidateId(candidateId).stream()
+        return examSessionRepository.findByCandidateId(candidateId).stream()
             .filter(session -> session.getStatus() != ExamSessionStatus.IN_PROGRESS)
             .filter(session -> session.getStatus() != ExamSessionStatus.INTERRUPTED)
             .filter(session -> examCandidateResultRepository.findBySessionId(session.getId())

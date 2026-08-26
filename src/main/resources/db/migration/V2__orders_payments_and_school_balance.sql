@@ -368,7 +368,11 @@ CREATE INDEX idx_orders_pending_expires_at ON orders USING btree (expires_at)
     WHERE ((status)::text = 'PENDING');
 CREATE INDEX idx_order_items_order ON order_items USING btree (order_id);
 CREATE INDEX idx_payment_records_order ON payment_records USING btree (order_id);
-CREATE INDEX idx_invoices_order ON invoices USING btree (order_id);
+-- UNIQUE chứ không phải index thường: "một đơn đúng một hóa đơn" là bất biến nghiệp vụ, mà chốt duy
+-- nhất hiện chỉ nằm ở existsByOrderId trong OrderSettlementService -- tức ở tầng ứng dụng. Đường đọc
+-- (Order.invoice) gom 1-1 bằng Collectors.toMap nên một dòng thừa không hỏng riêng một đơn, nó ném
+-- lỗi cả trang lịch sử. Unique index vừa chặn ở đúng chỗ, vừa thay được index tra cứu cũ.
+CREATE UNIQUE INDEX uq_invoices_order ON invoices USING btree (order_id);
 CREATE INDEX idx_school_balance_entries_school_occurred
     ON school_balance_entries USING btree (school_id, occurred_at DESC);
 

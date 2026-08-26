@@ -18,8 +18,10 @@ import com.sep.vox.application.port.input.usecase.order.ViewMySchoolOrdersUseCas
 import com.sep.vox.application.port.input.usecase.order.ViewOrderDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.order.ViewOrdersUseCase;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.InvoiceDto;
 import com.sep.vox.domain.dto.OrderDto;
 import com.sep.vox.domain.dto.OrderItemDto;
+import com.sep.vox.domain.dto.PaymentDto;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -77,6 +79,33 @@ public class OrderController {
         DataLoader<UUID, List<OrderItemDto>> loader = env.getDataLoader("itemsByOrderId");
         if (loader == null) {
             throw new IllegalStateException("Không tìm thấy data loader itemsByOrderId");
+        }
+        return loader.load(order.id());
+    }
+
+    /**
+     * Hóa đơn là TRƯỜNG của đơn chứ không phải một danh sách riêng để hỏi. Nó quan hệ 1-1 với đơn và
+     * tự nó chỉ biết đúng hai dữ kiện (số, ngày phát hành) -- tiền, mua gì, trả thế nào đều nằm ở
+     * chính đơn này. Hỏi riêng thì client phải tự ghép lại, mà myOrders vốn đã là lịch sử giao dịch
+     * với đúng phân trang và phân quyền cần có.
+     *
+     * <p>Không cần kiểm quyền lại ở đây: muốn tới được trường này thì phải qua myOrders/orders/order,
+     * và cả ba đều đã chặn ở @PreAuthorize cùng kiểm chủ sở hữu trong use case.
+     */
+    @SchemaMapping(typeName = "Order", field = "invoice")
+    public CompletableFuture<InvoiceDto> invoice(OrderDto order, DataFetchingEnvironment env) {
+        DataLoader<UUID, InvoiceDto> loader = env.getDataLoader("invoiceByOrderId");
+        if (loader == null) {
+            throw new IllegalStateException("Không tìm thấy data loader invoiceByOrderId");
+        }
+        return loader.load(order.id());
+    }
+
+    @SchemaMapping(typeName = "Order", field = "payments")
+    public CompletableFuture<List<PaymentDto>> payments(OrderDto order, DataFetchingEnvironment env) {
+        DataLoader<UUID, List<PaymentDto>> loader = env.getDataLoader("paymentsByOrderId");
+        if (loader == null) {
+            throw new IllegalStateException("Không tìm thấy data loader paymentsByOrderId");
         }
         return loader.load(order.id());
     }

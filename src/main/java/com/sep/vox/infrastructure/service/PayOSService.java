@@ -48,10 +48,6 @@ public class PayOSService implements PaymentProcessPort {
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final String SUCCESS_CODE = "00";
 
-    // Đủ ngắn để đưa hóa đơn PENDING treo mãi về trạng thái cuối trong một khoảng thời gian xác định,
-    // và ngắn hơn chu kỳ quét của PendingOrderReconciler (5 phút) để lần quét kế tiếp bắt kịp ngay.
-    private static final long PAYMENT_LINK_EXPIRATION_MINUTES = 3;
-
     private final PayOS payOSClient;
     private final JsonMapper jsonMapper;
     private final String checksumKey;

@@ -140,14 +140,6 @@ type SchoolSubscriptionQuotaRecord {
 }
 
 """
-Hạn mức CÁ NHÂN của một người dùng trong một ví cấp trường -- trần chi nhà trường đặt lên phần ví
-người này được tiêu, KHÔNG phải một ví riêng: tiền vẫn nằm ở ví cấp trường.
-
-quotaType = EXAM chỉ có ở giáo viên (trần cho bài kiểm tra trên lớp họ ra đề), PRACTICE chỉ có ở học
-sinh. Thay cho cặp MyClassTestQuotaAllocation/MyPracticeQuotaAllocation cũ -- cùng một khái niệm thì
-một kiểu là đủ.
-"""
-"""
 Gia hạn ngay bây giờ thì trường nhận được gì -- xem TRƯỚC khi đặt đơn.
 
 KHÔNG có phần bù trừ ngày thừa: kỳ mới NỐI TIẾP kỳ đang chạy chứ không đè lên, nên trường gia hạn
@@ -166,6 +158,14 @@ type SchoolSubscriptionRenewalPreview {
     amountDue: Float!
 }
 
+"""
+Hạn mức CÁ NHÂN của một người dùng trong một ví cấp trường -- trần chi nhà trường đặt lên phần ví
+người này được tiêu, KHÔNG phải một ví riêng: tiền vẫn nằm ở ví cấp trường.
+
+quotaType = EXAM chỉ có ở giáo viên (trần cho bài kiểm tra trên lớp họ ra đề), PRACTICE chỉ có ở học
+sinh. Thay cho cặp MyClassTestQuotaAllocation/MyPracticeQuotaAllocation cũ -- cùng một khái niệm thì
+một kiểu là đủ.
+"""
 type SchoolSubscriptionQuotaUserAllocation {
     id: ID!
     userId: ID!

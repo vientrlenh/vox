@@ -13,40 +13,34 @@ import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.QuotaDebtConfigPort;
-import com.sep.vox.domain.dto.SubscriptionQuotaDto;
-import com.sep.vox.domain.mapper.SubscriptionQuotaDtoMapper;
+import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
-import com.sep.vox.domain.model.subscription.TokenUsageEvent;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
-import com.sep.vox.domain.repository.TokenUsageEventRepository;
 
 // Internal service-to-service use case (called from the exam-session flow), not end-user-facing —
 // no UserContextPort school-scoping check here
 @Service
-public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, SubscriptionQuotaDto> {
+public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, SchoolSubscriptionQuotaRecordDto> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumeQuotaUseCase.class);
 
-    private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
+    private final SchoolSubscriptionQuotaRecordRepository schoolSubscriptionQuotaRecordRepository;
     private final SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
-    private final TokenUsageEventRepository tokenUsageEventRepository;
     private final QuotaDebtConfigPort quotaDebtConfig;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolDebtNotificationService schoolDebtNotificationService;
 
     public ConsumeQuotaUseCase(
-            SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
+            SchoolSubscriptionQuotaRecordRepository schoolSubscriptionQuotaRecordRepository,
             SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
-            TokenUsageEventRepository tokenUsageEventRepository,
             QuotaDebtConfigPort quotaDebtConfig,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SchoolDebtNotificationService schoolDebtNotificationService) {
-        this.subscriptionQuotaRepository = subscriptionQuotaRepository;
+        this.schoolSubscriptionQuotaRecordRepository = schoolSubscriptionQuotaRecordRepository;
         this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
-        this.tokenUsageEventRepository = tokenUsageEventRepository;
         this.quotaDebtConfig = quotaDebtConfig;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.schoolDebtNotificationService = schoolDebtNotificationService;
@@ -54,16 +48,16 @@ public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, Subscr
 
     @Override
     @Transactional
-    public SubscriptionQuotaDto execute(ConsumeQuotaCommand input) {
-        var quota = subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(input.subscriptionId(), input.quotaType())
+    public SchoolSubscriptionQuotaRecordDto execute(ConsumeQuotaCommand input) {
+        var quota = schoolSubscriptionQuotaRecordRepository.findBySchoolSubscriptionIdAndQuotaType(input.subscriptionId(), input.quotaType())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
 
         if (input.allowDebt()) {
             // Chi phí AI thật đã phát sinh -- luôn ghi nhận đủ, chấp nhận usedQuantity vượt
             // totalAllocated (ghi nợ) thay vì throw + rollback cả CompleteExamSessionGradingUseCase.
-            subscriptionQuotaRepository.addUsage(quota.getId(), input.amount());
+            schoolSubscriptionQuotaRecordRepository.addUsage(quota.getId(), input.amount());
         } else {
-            var consumed = subscriptionQuotaRepository.tryConsume(quota.getId(), input.amount());
+            var consumed = schoolSubscriptionQuotaRecordRepository.tryConsume(quota.getId(), input.amount());
             if (!consumed) {
                 throw new QuotaExceededException("Đã vượt quá hạn mức sử dụng");
             }
@@ -89,18 +83,14 @@ public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, Subscr
                 });
         }
 
-        tokenUsageEventRepository.save(new TokenUsageEvent(
-            input.subscriptionId(), input.examSessionId(), input.quotaType(), input.amount(), Instant.now()
-        ));
-
-        var updated = subscriptionQuotaRepository.findById(quota.getId())
+        var updated = schoolSubscriptionQuotaRecordRepository.findById(quota.getId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
 
         if (input.allowDebt()) {
             checkDebtCapTransition(input, quota, updated);
         }
 
-        return SubscriptionQuotaDtoMapper.toDto(updated);
+        return SchoolSubscriptionQuotaRecordDto.toDto(updated);
     }
 
     // Chỉ CẢNH BÁO (log + notification SYSTEM_ADMIN), KHÔNG chặn -- chi phí thật đã được ghi nhận đủ

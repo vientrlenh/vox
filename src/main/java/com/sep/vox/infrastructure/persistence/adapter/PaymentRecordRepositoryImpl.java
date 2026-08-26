@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,6 +38,13 @@ public class PaymentRecordRepositoryImpl implements PaymentRecordRepository {
     @Override
     public List<PaymentRecord> findByOrderId(UUID orderId) {
         return springDataPaymentRecordRepository.findByOrderId(orderId).stream()
+            .map(PaymentRecordMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public List<PaymentRecord> findByOrderIdIn(Collection<UUID> orderIds) {
+        return springDataPaymentRecordRepository.findByOrderIdInOrderByIdDesc(orderIds).stream()
             .map(PaymentRecordMapper::toDomain)
             .toList();
     }

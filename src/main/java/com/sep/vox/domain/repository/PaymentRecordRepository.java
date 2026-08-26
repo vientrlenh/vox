@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,6 +19,12 @@ public interface PaymentRecordRepository {
     PaymentRecord save(PaymentRecord paymentRecord);
 
     List<PaymentRecord> findByOrderId(UUID orderId);
+
+    /**
+     * Các lần thử của NHIỀU đơn cùng lúc, mới nhất trước. Sinh ra cho batch loader của GraphQL: một
+     * trang 20 đơn mà hỏi lần lượt từng đơn là 20 lượt truy vấn cho một màn hình lịch sử.
+     */
+    List<PaymentRecord> findByOrderIdIn(Collection<UUID> orderIds);
 
     /**
      * Đường tra của WEBHOOK: cả hai cổng đều chỉ gửi về mã đơn của chính họ

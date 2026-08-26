@@ -14,23 +14,13 @@ import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
 
-import com.sep.vox.application.common.DateMapper;
-import com.sep.vox.application.port.input.query.ViewCurrentSubscriptionQuery;
-import com.sep.vox.application.port.input.query.ViewFinancialEventsQuery;
-import com.sep.vox.application.port.input.query.ViewInvoicesQuery;
 import com.sep.vox.application.port.input.query.ViewSubscriptionPlanDetailQuery;
-import com.sep.vox.application.port.input.query.ViewRequestsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolDebtEventsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolSubscriptionQuotaRecordsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolSubscriptionsQuery;
-import com.sep.vox.application.port.input.query.ViewSubscriptionHistoryQuery;
 import com.sep.vox.application.port.input.query.ViewSubscriptionPlansQuery;
-import com.sep.vox.application.port.input.query.ViewTokenPurchasesQuery;
-import com.sep.vox.application.port.input.query.ViewUsageQuery;
 import com.sep.vox.application.port.input.usecase.subscription.UpdateSubscriptionPlanUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.ViewCurrentSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewFinancialEventsUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.ViewInvoicesUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.PreviewSchoolSubscriptionRenewalUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewMyExamQuotaAllocationUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewMyPracticeQuotaAllocationUseCase;
@@ -39,20 +29,16 @@ import com.sep.vox.application.port.input.usecase.subscription.ViewSubscriptionP
 import com.sep.vox.application.port.input.usecase.subscription.ViewSchoolDebtEventsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSchoolSubscriptionQuotaRecordsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSchoolSubscriptionsUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.ViewSubscriptionHistoryUseCase;
 import com.sep.vox.application.port.output.QuotaPricingPort;
+import com.sep.vox.application.response.input.subscription.SchoolSubscriptionRenewalPreviewResponse;
 import com.sep.vox.application.response.input.subscription.ViewSubscriptionPlansResponse;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.dto.FinancialEventDto;
-import com.sep.vox.domain.dto.InvoiceDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
-import com.sep.vox.domain.dto.QuotaPricingDto;
 import com.sep.vox.domain.dto.SchoolDebtEventDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.dto.SubscriptionPlanQuotaDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
-import com.sep.vox.domain.dto.SubscriptionRequestDto;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSubscriptionPlanInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSubscriptionPlanCommandMapper;
@@ -64,28 +50,21 @@ public class SubscriptionController {
     private final ViewSubscriptionPlanDetailUseCase viewSubscriptionPlanDetailUseCase;
     private final UpdateSubscriptionPlanUseCase updateSubscriptionPlanUseCase;
     private final ViewSchoolSubscriptionsUseCase viewSchoolSubscriptionsUseCase;
-    private final ViewCurrentSubscriptionUseCase viewCurrentSubscriptionUseCase;
-    private final ViewSubscriptionHistoryUseCase viewSubscriptionHistoryUseCase;
     private final ViewSchoolSubscriptionQuotaRecordsUseCase viewSchoolSubscriptionQuotaRecordsUseCase;
     private final ViewMyExamQuotaAllocationUseCase viewMyExamQuotaAllocationUseCase;
     private final PreviewSchoolSubscriptionRenewalUseCase previewSchoolSubscriptionRenewalUseCase;
     private final ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase;
     private final ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase;
-    private final QuotaPricingPort quotaPricingPort;
 
     public SubscriptionController(
             ViewSubscriptionPlansUseCase viewSubscriptionPlansUseCase,
             ViewSubscriptionPlanDetailUseCase viewSubscriptionPlanDetailUseCase,
             UpdateSubscriptionPlanUseCase updateSubscriptionPlanUseCase,
             ViewSchoolSubscriptionsUseCase viewSchoolSubscriptionsUseCase,
-            ViewCurrentSubscriptionUseCase viewCurrentSubscriptionUseCase,
-            ViewSubscriptionHistoryUseCase viewSubscriptionHistoryUseCase,
             ViewSchoolSubscriptionQuotaRecordsUseCase viewSchoolSubscriptionQuotaRecordsUseCase,
-            ViewTokenUsageTimeseriesUseCase viewTokenUsageTimeseriesUseCase,
             ViewMyExamQuotaAllocationUseCase viewMyExamQuotaAllocationUseCase,
             PreviewSchoolSubscriptionRenewalUseCase previewSchoolSubscriptionRenewalUseCase,
             ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase,
-            ViewInvoicesUseCase viewInvoicesUseCase,
             ViewFinancialEventsUseCase viewFinancialEventsUseCase,
             ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase,
             QuotaPricingPort quotaPricingPort) {
@@ -93,17 +72,11 @@ public class SubscriptionController {
         this.viewSubscriptionPlanDetailUseCase = viewSubscriptionPlanDetailUseCase;
         this.updateSubscriptionPlanUseCase = updateSubscriptionPlanUseCase;
         this.viewSchoolSubscriptionsUseCase = viewSchoolSubscriptionsUseCase;
-        this.viewCurrentSubscriptionUseCase = viewCurrentSubscriptionUseCase;
-        this.viewSubscriptionHistoryUseCase = viewSubscriptionHistoryUseCase;
         this.viewSchoolSubscriptionQuotaRecordsUseCase = viewSchoolSubscriptionQuotaRecordsUseCase;
-        this.viewTokenUsageTimeseriesUseCase = viewTokenUsageTimeseriesUseCase;
         this.viewMyExamQuotaAllocationUseCase = viewMyExamQuotaAllocationUseCase;
         this.previewSchoolSubscriptionRenewalUseCase = previewSchoolSubscriptionRenewalUseCase;
         this.viewMyPracticeQuotaAllocationUseCase = viewMyPracticeQuotaAllocationUseCase;
-        this.viewInvoicesUseCase = viewInvoicesUseCase;
-        this.viewFinancialEventsUseCase = viewFinancialEventsUseCase;
         this.viewSchoolDebtEventsUseCase = viewSchoolDebtEventsUseCase;
-        this.quotaPricingPort = quotaPricingPort;
     }
 
     @QueryMapping(name = "subscriptionPlans")
@@ -119,15 +92,6 @@ public class SubscriptionController {
         return viewSubscriptionPlanDetailUseCase.execute(new ViewSubscriptionPlanDetailQuery(id));
     }
 
-    @QueryMapping(name = "quotaPricing")
-    public QuotaPricingDto quotaPricing() {
-        return new QuotaPricingDto(
-            quotaPricingPort.currentEstimatedCostPerExamSecondUsd(),
-            quotaPricingPort.currentEstimatedCostPerPracticeSecondUsd(),
-            quotaPricingPort.usdToVndRate()
-        );
-    }
-
     @QueryMapping(name = "schoolSubscriptions")
     public PageResult<SchoolSubscriptionDto> schoolSubscriptions(
             @Argument(name = "keyword") String keyword,
@@ -137,17 +101,7 @@ public class SubscriptionController {
             @Argument(name = "size") Integer size) {
         validatePageSize(page, size);
         return viewSchoolSubscriptionsUseCase.execute(new ViewSchoolSubscriptionsQuery(keyword, planId, status, page, size));
-    }
-
-    @QueryMapping(name = "schoolSubscription")
-    public SchoolSubscriptionDto schoolSubscription(@Argument(name = "schoolId") UUID schoolId) {
-        return viewCurrentSubscriptionUseCase.execute(new ViewCurrentSubscriptionQuery(schoolId));
-    }
-
-    @QueryMapping(name = "schoolSubscriptionHistory")
-    public List<SchoolSubscriptionDto> schoolSubscriptionHistory(@Argument(name = "schoolId") UUID schoolId) {
-        return viewSubscriptionHistoryUseCase.execute(new ViewSubscriptionHistoryQuery(schoolId));
-    }   
+    } 
 
     @QueryMapping(name = "subscriptionUsage")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
@@ -192,7 +146,7 @@ public class SubscriptionController {
     @SchemaMapping(typeName = "SchoolSubscription", field = "plan")
     public CompletableFuture<SubscriptionPlanDto> plan(SchoolSubscriptionDto source, DataFetchingEnvironment env) {
         DataLoader<UUID, SubscriptionPlanDto> loader = env.getDataLoader("subscriptionPlanById");
-        return loader.load(source.planId());
+        return loader.load(source.subscriptionPlanId());
     }
 
     @SchemaMapping(typeName = "SubscriptionPlan", field = "quotas")
@@ -203,6 +157,9 @@ public class SubscriptionController {
         return loader.load(plan.id());
     }
 
-
-
+    private void validatePageSize(Integer page, Integer size) {
+        if (page == null || size == null || page <= 0 || size <= 0) {
+            throw new IllegalArgumentException("Trang hoặc kích thước yêu cầu phải lớn hơn 0");
+        }
+    }
 }

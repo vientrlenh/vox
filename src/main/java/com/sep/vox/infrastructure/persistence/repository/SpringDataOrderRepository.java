@@ -26,6 +26,35 @@ public interface SpringDataOrderRepository extends JpaRepository<OrderJpaEntity,
 
     List<OrderJpaEntity> findByStatus(String status);
 
+    /**
+     * Danh sách đơn cho System Admin: lọc theo trường/trạng thái/loại, tìm theo tên trường.
+     *
+     * <p>Mỗi bộ lọc đều bỏ qua được bằng cách truyền null -- gộp vào một câu thay vì tách nhiều method
+     * vì tổ hợp bật/tắt của bốn bộ lọc là 16 biến thể.
+     *
+     * <p>Sắp thêm theo id DESC sau createdAt: hai đơn tạo trong cùng một tick (trường bấm nhanh, hoặc
+     * import) mà chỉ sắp theo createdAt thì Postgres trả về thứ tự tùy ý, phân trang sẽ lặp hoặc bỏ
+     * sót dòng giữa các trang. id là uuidv7 nên "id DESC" chính là "mới nhất trước".
+     */
+    @Query("""
+        SELECT o FROM OrderJpaEntity o
+        WHERE (:schoolId IS NULL OR o.schoolId = :schoolId)
+          AND (:status IS NULL OR o.status = :status)
+          AND (:type IS NULL OR o.type = :type)
+          AND (:keywordPattern IS NULL OR EXISTS (
+                SELECT 1 FROM SchoolJpaEntity sc
+                WHERE sc.id = o.schoolId AND LOWER(sc.name) LIKE :keywordPattern
+              ))
+        ORDER BY o.createdAt DESC, o.id DESC
+        """)
+    Page<OrderJpaEntity> findForAdmin(
+        @Param("schoolId") UUID schoolId,
+        @Param("status") String status,
+        @Param("type") String type,
+        @Param("keywordPattern") String keywordPattern,
+        Pageable pageable
+    );
+
     boolean existsBySchoolIdAndTypeInAndStatus(UUID schoolId, Collection<String> types, String status);
 
     // Soi đúng điều kiện của uq_orders_one_open_subscription_order. Trả Optional được vì unique
@@ -50,7 +79,7 @@ public interface SpringDataOrderRepository extends JpaRepository<OrderJpaEntity,
         @Param("to") Instant to);
 
     // PESSIMISTIC_WRITE: chặn hai lần chốt thanh toán song song trên cùng một đơn (webhook cổng đua
-    // với PendingInvoiceReconciler). @Version trên entity chỉ phát hiện xung đột SAU khi cả hai đã
+    // với PendingOrderReconciler). @Version trên entity chỉ phát hiện xung đột SAU khi cả hai đã
     // làm việc thừa; khóa ở đây chặn ngay từ đầu.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<OrderJpaEntity> findWithLockById(UUID id);

@@ -56,14 +56,14 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     }
 
     @Override
-    public List<ExamSession> findAllByCandidateId(UUID candidateId) {
+    public List<ExamSession> findByCandidateId(UUID candidateId) {
         return springDataExamSessionRepository.findByCandidateId(candidateId).stream()
             .map(ExamSessionMapper::toDomain)
             .toList();
     }
 
     @Override
-    public List<ExamSession> findAllByCandidateIdIn(Collection<UUID> candidateIds) {
+    public List<ExamSession> findByCandidateIdIn(Collection<UUID> candidateIds) {
         return springDataExamSessionRepository.findByCandidateIdIn(candidateIds).stream()
             .map(ExamSessionMapper::toDomain)
             .toList();

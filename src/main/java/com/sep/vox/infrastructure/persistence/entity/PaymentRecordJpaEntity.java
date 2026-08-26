@@ -68,12 +68,21 @@ public class PaymentRecordJpaEntity {
     private String status;
 
     // Khóa đối soát ngược với dashboard cổng. Unique cùng provider: cùng một giao dịch phía cổng
-    // không được ghi nhận hai lần khi webhook và PendingInvoiceReconciler cùng xử lý.
+    // không được ghi nhận hai lần khi webhook và PendingOrderReconciler cùng xử lý.
     @Column(name = "provider_order_ref", nullable = false, updatable = false, length = 100)
     private String providerOrderRef;
 
     // Thời điểm CỔNG ghi nhận giao dịch, khác created_at (lúc mình PHÁT LINK). Null tới khi lần thử
     // này ra tiền, nên phải updatable -- điền cùng lúc với status = PAID.
+    // Link đã phát cho lần thử này -- trường bấm lại thì trả về đúng link cũ thay vì phát link mới,
+    // vì uq_payment_records_one_pending_per_order chỉ cho phép một lần thử treo.
+    @Column(name = "checkout_url", updatable = false, length = 2048)
+    private String checkoutUrl;
+
+    // Dữ liệu riêng của từng cổng dạng JSON (vd PayOS paymentLinkId). KHÔNG chứa chữ ký.
+    @Column(name = "provider_payload_json", updatable = false)
+    private String providerPayloadJson;
+
     @Column(name = "paid_at")
     private Instant paidAt;
 
@@ -83,7 +92,7 @@ public class PaymentRecordJpaEntity {
     protected PaymentRecordJpaEntity() {}
 
     public PaymentRecordJpaEntity(UUID id, UUID orderId, BigDecimal amountVnd, String method, String provider,
-            String status, String providerOrderRef, Instant paidAt, Instant createdAt) {
+            String status, String providerOrderRef, String checkoutUrl, String providerPayloadJson, Instant paidAt, Instant createdAt) {
         this.id = id;
         this.orderId = orderId;
         this.amountVnd = amountVnd;
@@ -91,6 +100,8 @@ public class PaymentRecordJpaEntity {
         this.provider = provider;
         this.status = status;
         this.providerOrderRef = providerOrderRef;
+        this.checkoutUrl = checkoutUrl;
+        this.providerPayloadJson = providerPayloadJson;
         this.paidAt = paidAt;
         this.createdAt = createdAt;
     }
@@ -149,6 +160,22 @@ public class PaymentRecordJpaEntity {
 
     public void setProviderOrderRef(String providerOrderRef) {
         this.providerOrderRef = providerOrderRef;
+    }
+
+    public String getCheckoutUrl() {
+        return checkoutUrl;
+    }
+
+    public void setCheckoutUrl(String checkoutUrl) {
+        this.checkoutUrl = checkoutUrl;
+    }
+
+    public String getProviderPayloadJson() {
+        return providerPayloadJson;
+    }
+
+    public void setProviderPayloadJson(String providerPayloadJson) {
+        this.providerPayloadJson = providerPayloadJson;
     }
 
     public Instant getPaidAt() {

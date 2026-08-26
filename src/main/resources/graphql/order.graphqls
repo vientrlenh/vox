@@ -1,0 +1,77 @@
+type Order {
+    id: ID! 
+    schoolId: ID 
+    type: String!
+    description: String 
+    subtotalAmountVnd: Float 
+    totalAmountVnd: Float 
+    chargedFeeVnd: Float 
+    discountAmountVnd: Float 
+    status: String
+    createdAt: String
+    updatedAt: String
+    """
+    Hạn chót trả tiền, chốt lúc tạo đơn. FE dùng để đếm ngược cho đơn PENDING -- KHÔNG tự tính từ
+    updatedAt + hằng số: updatedAt đổi khi admin sửa ghi chú, và đây còn là hạn đã gửi sang cổng.
+    """
+    expiresAt: String
+    "Rỗng với đơn TOPUP -- nạp tiền không mua món nào để liệt kê."
+    items: [OrderItem!]
+}
+
+type OrderItem {
+    id: ID! 
+    orderId: ID! 
+    type: String 
+    itemId: ID! 
+    unitPriceVnd: Float 
+    amountVnd: Float 
+    quantity: Int
+}
+
+type OrderPage {
+    content: [Order!]!
+    page: Int! 
+    size: Int!
+    totalElements: Int! 
+    totalPages: Int!
+}
+
+enum OrderType {
+    SUBSCRIPTION_REQUEST
+    "Đơn đăng ký của trường đang dùng một gói KHÁC. Gia hạn đúng gói cũ vẫn là SUBSCRIPTION_REQUEST."
+    SUBSCRIPTION_UPGRADE
+    TOPUP
+}
+
+enum OrderStatus {
+    PENDING
+    SUCCESS
+    FAILED
+    CANCELLED
+    EXPIRED
+}
+
+extend type Query {
+    """
+    Lịch sử đơn của chính trường đang đăng nhập (SCHOOL_ADMIN). Không nhận schoolId -- lấy từ token.
+
+    GỒM CẢ đơn PENDING và đó là bắt buộc, không phải lựa chọn hiển thị: đặt đơn đăng ký mới bị từ
+    chối khi trường còn một đơn treo, nên giấu đơn treo đi là bảo trường hủy một thứ họ không thấy.
+    """
+    myOrders(page: Int! = 1, size: Int! = 20): OrderPage!
+
+    "Đơn toàn hệ thống (SYSTEM_ADMIN). Bỏ trống bộ lọc nào thì không lọc theo tiêu chí đó."
+    orders(
+        schoolId: ID,
+        status: OrderStatus,
+        type: OrderType,
+        "Tìm theo TÊN TRƯỜNG."
+        keyword: String,
+        page: Int! = 1,
+        size: Int! = 20
+    ): OrderPage!
+
+    order(id: ID!): Order
+}
+

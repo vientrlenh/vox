@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.output.QuotaPricingPort;
-import com.sep.vox.domain.dto.ExamTokenEstimateDto;
+import com.sep.vox.application.response.input.exam.ExamTokenEstimateResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -18,11 +18,14 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationReposi
 
 /**
  * Ước lượng worst-case chi phí AI theo USD (duration × số thí sinh × maxAttempt ×
- * estimatedCostPerExamSecondUsd) và chặn khi vượt hạn mức GRADING của trường, và
- * với bài trên lớp thì thêm hạn mức CLASS_TEST của trường và (nếu có) hạn mức cá
- * nhân của giáo viên chủ bài -- vì CompleteExamSessionGradingUseCase trừ thật vào
- * cả 3 chỗ này khi chấm xong, nên publish/sửa bài phải soi trước cả 3 chứ không chỉ
- * GRADING.
+ * estimatedCostPerExamSecondUsd) và chặn khi vượt ví EXAM của trường, và với bài trên lớp thì
+ * thêm (nếu có) hạn mức cá nhân của giáo viên chủ bài -- vì CompleteExamSessionGradingUseCase trừ
+ * thật vào đúng 2 chỗ này khi chấm xong, nên publish/sửa bài phải soi trước cả 2.
+ *
+ * <p>Trước đây soi 3 chỗ, trong đó có ví CLASS_TEST cấp trường. Ví đó đã bị bỏ: nó là trần chi nằm
+ * trong ví thi chứ không phải túi tiền thứ ba, và soi nó ở đây tức là bắt cùng một khoản chi phải
+ * lọt qua hai lần kiểm tra trên cùng một số dư. Trần chi theo GIÁO VIÊN thì vẫn còn -- xem
+ * requireWithinUserAllocation và QuotaType.
  *
  * <p>estimatedCostPerExamSecondUsd lấy qua QuotaPricingPort -- ưu tiên giá đã tự calibrate từ
  * dữ liệu thật (QuotaPricingCalibrationJob), fallback về hằng số tĩnh .env
@@ -77,10 +80,11 @@ public class ClassTestTokenQuotaGuardService {
         // khi soi ước lượng worst-case -- xem SchoolSubscriptionDebtGuardService.
         schoolSubscriptionDebtGuardService.requireSchoolNotLocked(subscription.getId());
 
-        requireSchoolQuota(subscription.getId(), QuotaType.GRADING, estimatedCostUsd);
+        requireSchoolQuota(subscription.getId(), QuotaType.EXAM, estimatedCostUsd);
 
+        // Kỳ thi tập trung do nhà trường tổ chức nên không tính vào túi riêng của ai; chỉ bài kiểm
+        // tra trên lớp mới đụng tới hạn mức cá nhân mà trường cấp cho giáo viên ra đề.
         if (exam.getKind() == ExamKind.CLASS_TEST) {
-            requireSchoolQuota(subscription.getId(), QuotaType.CLASS_TEST, estimatedCostUsd);
             requireWithinUserAllocation(subscription.getId(), exam.getCreatedBy(), estimatedCostUsd);
         }
     }
@@ -101,37 +105,51 @@ public class ClassTestTokenQuotaGuardService {
      * publish) -- KHÔNG throw, kể cả khi trường chưa có subscription active hoặc chưa cấu hình
      * hạn mức (trả về remaining = null cho trường hợp đó thay vì lỗi).
      */
-    public ExamTokenEstimateDto estimateTokenQuota(Exam exam) {
+    public ExamTokenEstimateResponse estimateTokenQuota(Exam exam) {
         var estimatedCostUsd = computeEstimatedCostUsd(exam);
         var subscription = schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId());
         if (subscription.isEmpty()) {
-            return new ExamTokenEstimateDto(estimatedCostUsd, null, null, false, false);
+            return new ExamTokenEstimateResponse(estimatedCostUsd, null, null, false, false);
         }
 
         var subscriptionId = subscription.get().getId();
-        var remainingGrading = remainingSchoolQuota(subscriptionId, QuotaType.GRADING);
-        var wouldExceedGrading = remainingGrading != null && estimatedCostUsd.compareTo(remainingGrading) > 0;
+        var remainingExam = remainingSchoolQuota(subscriptionId, QuotaType.EXAM);
+        var wouldExceedExam = remainingExam != null && estimatedCostUsd.compareTo(remainingExam) > 0;
 
-        BigDecimal remainingClassTest = null;
-        var wouldExceedClassTest = false;
+        // Cặp thứ hai giờ là hạn mức CÁ NHÂN của giáo viên chủ bài, không còn là ví CLASS_TEST cấp
+        // trường. Vẫn giữ hai cảnh báo riêng vì hai bên chặn vì hai lý do khác nhau và cách xử lý
+        // cũng khác: hết ví trường thì phải nạp tiền/nâng gói, còn hết hạn mức cá nhân thì chỉ cần
+        // xin quản trị trường cấp thêm.
+        BigDecimal remainingMyClassTest = null;
+        var wouldExceedMyClassTest = false;
         if (exam.getKind() == ExamKind.CLASS_TEST) {
-            remainingClassTest = remainingSchoolQuota(subscriptionId, QuotaType.CLASS_TEST);
-            wouldExceedClassTest = remainingClassTest != null && estimatedCostUsd.compareTo(remainingClassTest) > 0;
+            remainingMyClassTest = remainingUserAllocation(subscriptionId, exam.getCreatedBy());
+            wouldExceedMyClassTest = remainingMyClassTest != null
+                && estimatedCostUsd.compareTo(remainingMyClassTest) > 0;
         }
 
-        return new ExamTokenEstimateDto(estimatedCostUsd, remainingGrading, remainingClassTest, wouldExceedGrading, wouldExceedClassTest);
+        return new ExamTokenEstimateResponse(
+            estimatedCostUsd, remainingExam, remainingMyClassTest, wouldExceedExam, wouldExceedMyClassTest);
     }
 
     private BigDecimal remainingSchoolQuota(UUID subscriptionId, QuotaType quotaType) {
-        return subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, quotaType)
-            .map(quota -> quota.getTotalAllocated().subtract(quota.getUsedQuantity()))
+        return subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, quotaType)
+            .map(quota -> quota.getTotalAllocatedAmountVnd().subtract(quota.getUsedAmountVnd()))
+            .orElse(null);
+    }
+
+    /** null = giáo viên không có hạn mức cá nhân riêng, tức chỉ ví của trường áp dụng. */
+    private BigDecimal remainingUserAllocation(UUID subscriptionId, UUID teacherId) {
+        return subscriptionQuotaUserAllocationRepository
+            .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.EXAM, teacherId)
+            .map(allocation -> allocation.getAllocatedAmountVnd().subtract(allocation.getUsedAmountVnd()))
             .orElse(null);
     }
 
     private void requireSchoolQuota(UUID subscriptionId, QuotaType quotaType, BigDecimal estimatedCostUsd) {
-        var quota = subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, quotaType)
+        var quota = subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, quotaType)
             .orElseThrow(() -> new PlanLimitExceededException("Không tìm thấy hạn mức " + quotaType + " của gói đăng ký"));
-        var remaining = quota.getTotalAllocated().subtract(quota.getUsedQuantity());
+        var remaining = quota.getTotalAllocatedAmountVnd().subtract(quota.getUsedAmountVnd());
         if (estimatedCostUsd.compareTo(remaining) > 0) {
             throw new PlanLimitExceededException(
                 "Chi phí ước tính cần dùng (" + estimatedCostUsd + " USD) vượt quá hạn mức " + quotaType
@@ -142,9 +160,9 @@ public class ClassTestTokenQuotaGuardService {
 
     private void requireWithinUserAllocation(UUID subscriptionId, UUID teacherId, BigDecimal estimatedCostUsd) {
         subscriptionQuotaUserAllocationRepository
-            .findBySubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.CLASS_TEST, teacherId)
+            .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.EXAM, teacherId)
             .ifPresent(allocation -> {
-                var remaining = allocation.getAllocatedQuantity().subtract(allocation.getUsedQuantity());
+                var remaining = allocation.getAllocatedAmountVnd().subtract(allocation.getUsedAmountVnd());
                 if (estimatedCostUsd.compareTo(remaining) > 0) {
                     throw new PlanLimitExceededException(
                         "Chi phí ước tính cần dùng (" + estimatedCostUsd

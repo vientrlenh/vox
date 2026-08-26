@@ -42,7 +42,7 @@ public class SchoolSubscriptionQuotaUserAllocationJpaEntity {
     @Column(name = "quota_type", nullable = false, updatable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_school_subscription_quota_user_allocations_quota_type_valid",
-            constraint = "quota_type IN ('CLASS_TEST', 'PRACTICE')"
+            constraint = "quota_type IN ('EXAM', 'PRACTICE')"
         )
     })
     private String quotaType;

@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -16,42 +17,39 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.ApproveRequestCommand;
-import com.sep.vox.application.port.input.command.ArchivePlanCommand;
+import com.sep.vox.application.port.input.command.ArchiveSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.CancelSubscriptionCommand;
 import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
 import com.sep.vox.application.port.input.command.ForceSuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.command.UnsuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.command.CreatePaymentLinkForRenewalCommand;
 import com.sep.vox.application.port.input.command.CreatePaymentLinkForSubscriptionRequestCommand;
-import com.sep.vox.application.port.input.command.DeleteDraftPlanCommand;
-import com.sep.vox.application.port.input.command.PublishPlanCommand;
+import com.sep.vox.application.port.input.command.DeleteDraftSubscriptionPlanCommand;
+import com.sep.vox.application.port.input.command.PublishSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.RejectRequestCommand;
 import com.sep.vox.application.port.input.command.RenewSubscriptionCommand;
-import com.sep.vox.application.port.input.command.SubmitRequestCommand;
 import com.sep.vox.application.port.input.query.PreviewRenewalQuery;
 import com.sep.vox.application.port.input.query.ViewQuotaAllocationsQuery;
-import com.sep.vox.application.port.input.usecase.subscription.AllocateClassTestQuotaToTeachersUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.AllocateExamQuotaToTeachersUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.AllocatePracticeQuotaToStudentsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ApproveRequestUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.ArchivePlanUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.BuyTokensUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ArchiveSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CancelSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ConsumeQuotaUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForRenewalUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForSubscriptionRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForTokenPurchaseUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreateSubscriptionPlanUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.DeleteDraftPlanUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.DeleteDraftSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ForceSuspendSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.PreviewRenewalUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.PublishPlanUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.PublishSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.RejectRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.RenewSubscriptionUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.SubmitRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.UnsuspendSubscriptionUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.ViewClassTestQuotaAllocationsUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ViewExamQuotaAllocationsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewPracticeQuotaAllocationsUseCase;
-import com.sep.vox.domain.dto.QuotaUserAllocationSummaryDto;
+import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;
 import com.sep.vox.domain.dto.RenewalPreviewDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
@@ -75,69 +73,63 @@ import jakarta.validation.Valid;
 public class SubscriptionController {
 
     private final CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase;
-    private final ArchivePlanUseCase archivePlanUseCase;
-    private final PublishPlanUseCase publishPlanUseCase;
-    private final DeleteDraftPlanUseCase deleteDraftPlanUseCase;
+    private final ArchiveSubscriptionPlanUseCase archiveSubscriptionPlanUseCase;
+    private final PublishSubscriptionPlanUseCase publishSubscriptionPlanUseCase;
+    private final DeleteDraftSubscriptionPlanUseCase deleteDraftSubscriptionPlanUseCase;
     private final RenewSubscriptionUseCase renewSubscriptionUseCase;
     private final CancelSubscriptionUseCase cancelSubscriptionUseCase;
     private final ForceSuspendSubscriptionUseCase forceSuspendSubscriptionUseCase;
     private final UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase;
-    private final SubmitRequestUseCase submitRequestUseCase;
     private final ApproveRequestUseCase approveRequestUseCase;
     private final RejectRequestUseCase rejectRequestUseCase;
-    private final BuyTokensUseCase buyTokensUseCase;
     private final ConsumeQuotaUseCase consumeQuotaUseCase;
     private final CreatePaymentLinkForSubscriptionRequestUseCase createPaymentLinkForSubscriptionRequestUseCase;
     private final CreatePaymentLinkForTokenPurchaseUseCase createPaymentLinkForTokenPurchaseUseCase;
     private final CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase;
     private final PreviewRenewalUseCase previewRenewalUseCase;
-    private final AllocateClassTestQuotaToTeachersUseCase allocateClassTestQuotaToTeachersUseCase;
+    private final AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase;
     private final AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase;
-    private final ViewClassTestQuotaAllocationsUseCase viewClassTestQuotaAllocationsUseCase;
+    private final ViewExamQuotaAllocationsUseCase viewExamQuotaAllocationsUseCase;
     private final ViewPracticeQuotaAllocationsUseCase viewPracticeQuotaAllocationsUseCase;
 
     public SubscriptionController(
             CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase,
-            ArchivePlanUseCase archivePlanUseCase,
-            PublishPlanUseCase publishPlanUseCase,
-            DeleteDraftPlanUseCase deleteDraftPlanUseCase,
+            ArchiveSubscriptionPlanUseCase archiveSubscriptionPlanUseCase,
+            PublishSubscriptionPlanUseCase publishSubscriptionPlanUseCase,
+            DeleteDraftSubscriptionPlanUseCase deleteDraftSubscriptionPlanUseCase,
             RenewSubscriptionUseCase renewSubscriptionUseCase,
             CancelSubscriptionUseCase cancelSubscriptionUseCase,
             ForceSuspendSubscriptionUseCase forceSuspendSubscriptionUseCase,
             UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase,
-            SubmitRequestUseCase submitRequestUseCase,
             ApproveRequestUseCase approveRequestUseCase,
             RejectRequestUseCase rejectRequestUseCase,
-            BuyTokensUseCase buyTokensUseCase,
             ConsumeQuotaUseCase consumeQuotaUseCase,
             CreatePaymentLinkForSubscriptionRequestUseCase createPaymentLinkForSubscriptionRequestUseCase,
             CreatePaymentLinkForTokenPurchaseUseCase createPaymentLinkForTokenPurchaseUseCase,
             CreatePaymentLinkForRenewalUseCase createPaymentLinkForRenewalUseCase,
             PreviewRenewalUseCase previewRenewalUseCase,
-            AllocateClassTestQuotaToTeachersUseCase allocateClassTestQuotaToTeachersUseCase,
+            AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase,
             AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase,
-            ViewClassTestQuotaAllocationsUseCase viewClassTestQuotaAllocationsUseCase,
+            ViewExamQuotaAllocationsUseCase viewExamQuotaAllocationsUseCase,
             ViewPracticeQuotaAllocationsUseCase viewPracticeQuotaAllocationsUseCase) {
         this.createSubscriptionPlanUseCase = createSubscriptionPlanUseCase;
-        this.archivePlanUseCase = archivePlanUseCase;
-        this.publishPlanUseCase = publishPlanUseCase;
-        this.deleteDraftPlanUseCase = deleteDraftPlanUseCase;
+        this.archiveSubscriptionPlanUseCase = archiveSubscriptionPlanUseCase;
+        this.publishSubscriptionPlanUseCase = publishSubscriptionPlanUseCase;
+        this.deleteDraftSubscriptionPlanUseCase = deleteDraftSubscriptionPlanUseCase;
         this.renewSubscriptionUseCase = renewSubscriptionUseCase;
         this.cancelSubscriptionUseCase = cancelSubscriptionUseCase;
         this.forceSuspendSubscriptionUseCase = forceSuspendSubscriptionUseCase;
         this.unsuspendSubscriptionUseCase = unsuspendSubscriptionUseCase;
-        this.submitRequestUseCase = submitRequestUseCase;
         this.approveRequestUseCase = approveRequestUseCase;
         this.rejectRequestUseCase = rejectRequestUseCase;
-        this.buyTokensUseCase = buyTokensUseCase;
         this.consumeQuotaUseCase = consumeQuotaUseCase;
         this.createPaymentLinkForSubscriptionRequestUseCase = createPaymentLinkForSubscriptionRequestUseCase;
         this.createPaymentLinkForTokenPurchaseUseCase = createPaymentLinkForTokenPurchaseUseCase;
         this.createPaymentLinkForRenewalUseCase = createPaymentLinkForRenewalUseCase;
         this.previewRenewalUseCase = previewRenewalUseCase;
-        this.allocateClassTestQuotaToTeachersUseCase = allocateClassTestQuotaToTeachersUseCase;
+        this.allocateExamQuotaToTeachersUseCase = allocateExamQuotaToTeachersUseCase;
         this.allocatePracticeQuotaToStudentsUseCase = allocatePracticeQuotaToStudentsUseCase;
-        this.viewClassTestQuotaAllocationsUseCase = viewClassTestQuotaAllocationsUseCase;
+        this.viewExamQuotaAllocationsUseCase = viewExamQuotaAllocationsUseCase;
         this.viewPracticeQuotaAllocationsUseCase = viewPracticeQuotaAllocationsUseCase;
     }
 
@@ -148,26 +140,29 @@ public class SubscriptionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo gói đăng ký thành công", data));
     }
 
-    @DeleteMapping("/plans/{id}")
+    @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<SubscriptionPlanDto>> archivePlan(
+    public ResponseEntity<ApiResponse<UUID>> archivePlan(
             @PathVariable(name = "id") UUID id,
-            @RequestParam(required = false) UUID replacedByPlanId) {
-        var data = archivePlanUseCase.execute(new ArchivePlanCommand(id, replacedByPlanId));
+            @RequestParam(name = "replacedByPlanId", required = false) UUID replacedByPlanId) {
+        var data = archiveSubscriptionPlanUseCase.execute(new ArchiveSubscriptionPlanCommand(id, replacedByPlanId));
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ gói đăng ký thành công", data));
     }
 
-    @PostMapping("/plans/{id}/publish")
+    // PATCH chứ không phải POST: xuất bản là đổi MỘT trường status của gói đã tồn tại (DRAFT ->
+    // ACTIVE), không tạo ra tài nguyên mới nào. Cũng vì thế mà idempotent theo nghĩa người dùng
+    // quan tâm -- bấm hai lần thì lần sau báo "chỉ xuất bản được gói nháp" chứ không sinh thêm gì.
+    @PatchMapping("/{id}/publish")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<SubscriptionPlanDto>> publishPlan(@PathVariable(name = "id") UUID id) {
-        var data = publishPlanUseCase.execute(new PublishPlanCommand(id));
+    public ResponseEntity<ApiResponse<UUID>> publishPlan(@PathVariable(name = "id") UUID id) {
+        var data = publishSubscriptionPlanUseCase.execute(new PublishSubscriptionPlanCommand(id));
         return ResponseEntity.ok(ApiResponse.success("Xuất bản gói đăng ký thành công", data));
     }
 
-    @DeleteMapping("/plans/{id}/draft")
+    @DeleteMapping("/{id}/draft")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteDraftPlan(@PathVariable(name = "id") UUID id) {
-        deleteDraftPlanUseCase.execute(new DeleteDraftPlanCommand(id));
+        deleteDraftSubscriptionPlanUseCase.execute(new DeleteDraftSubscriptionPlanCommand(id));
         return ResponseEntity.ok(ApiResponse.success("Xóa gói nháp thành công"));
     }
 
@@ -234,16 +229,8 @@ public class SubscriptionController {
         return ResponseEntity.ok(ApiResponse.success("Gỡ đình chỉ gói đăng ký thành công", data));
     }
 
-    @PostMapping("/schools/{schoolId}/subscription-requests")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<SubscriptionRequestDto>> submitRequest(
-            @PathVariable(name = "schoolId") UUID schoolId,
-            @Valid @RequestBody SubmitRequestRequest request) {
-        var data = submitRequestUseCase.execute(new SubmitRequestCommand(
-            schoolId, request.requestType(), request.currentPlanId(), request.requestedPlanId()
-        ));
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Gửi yêu cầu thành công", data));
-    }
+    // Đặt đơn đăng ký gói đã chuyển sang POST /api/v1/orders/subscription (OrderController): yêu cầu
+    // đăng ký giờ là một Order chứ không còn là SubscriptionRequest riêng.
 
     @PostMapping("/subscription-requests/{id}/approve")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
@@ -260,14 +247,8 @@ public class SubscriptionController {
         return ResponseEntity.ok(ApiResponse.success("Từ chối yêu cầu thành công", data));
     }
 
-    @PostMapping("/schools/{schoolId}/token-purchases")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<TokenPurchaseDto>> buyTokens(
-            @PathVariable(name = "schoolId") UUID schoolId,
-            @Valid @RequestBody BuyTokensRequest request) {
-        var data = buyTokensUseCase.execute(BuyTokensCommandMapper.fromRequest(schoolId, request));
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Mua token thành công", data));
-    }
+    // Nạp thêm số dư đã chuyển sang POST /api/v1/orders/topup (OrderController). Khác hẳn endpoint cũ:
+    // nó chỉ đặt đơn PENDING chứ không cộng hạn mức ngay, nên không còn phải cấm phương thức online.
 
     @PostMapping("/subscription-requests/{id}/payment-link")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
@@ -286,27 +267,27 @@ public class SubscriptionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo link thanh toán thành công", data));
     }
 
-    @PutMapping("/schools/{schoolId}/teachers/class-test-quota")
+    @PutMapping("/schools/{schoolId}/teachers/exam-quota")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryDto>> allocateClassTestQuotaToTeachers(
+    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> allocateExamQuotaToTeachers(
             @PathVariable(name = "schoolId") UUID schoolId,
             @Valid @RequestBody AllocateQuotaRequest request) {
-        var data = allocateClassTestQuotaToTeachersUseCase.execute(
-            AllocateQuotaCommandMapper.toClassTestCommand(schoolId, request));
-        return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức kiểm tra lớp cho giáo viên thành công", data));
+        var data = allocateExamQuotaToTeachersUseCase.execute(
+            AllocateQuotaCommandMapper.toExamCommand(schoolId, request));
+        return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức thi cho giáo viên thành công", data));
     }
 
-    @GetMapping("/schools/{schoolId}/teachers/class-test-quota")
+    @GetMapping("/schools/{schoolId}/teachers/exam-quota")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryDto>> viewClassTestQuotaAllocations(
+    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> viewExamQuotaAllocations(
             @PathVariable(name = "schoolId") UUID schoolId) {
-        var data = viewClassTestQuotaAllocationsUseCase.execute(new ViewQuotaAllocationsQuery(schoolId));
-        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách hạn mức kiểm tra lớp thành công", data));
+        var data = viewExamQuotaAllocationsUseCase.execute(new ViewQuotaAllocationsQuery(schoolId));
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách hạn mức thi của giáo viên thành công", data));
     }
 
     @PutMapping("/schools/{schoolId}/students/practice-quota")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryDto>> allocatePracticeQuotaToStudents(
+    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> allocatePracticeQuotaToStudents(
             @PathVariable(name = "schoolId") UUID schoolId,
             @Valid @RequestBody AllocateQuotaRequest request) {
         var data = allocatePracticeQuotaToStudentsUseCase.execute(
@@ -316,7 +297,7 @@ public class SubscriptionController {
 
     @GetMapping("/schools/{schoolId}/students/practice-quota")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryDto>> viewPracticeQuotaAllocations(
+    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> viewPracticeQuotaAllocations(
             @PathVariable(name = "schoolId") UUID schoolId) {
         var data = viewPracticeQuotaAllocationsUseCase.execute(new ViewQuotaAllocationsQuery(schoolId));
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách hạn mức luyện tập thành công", data));

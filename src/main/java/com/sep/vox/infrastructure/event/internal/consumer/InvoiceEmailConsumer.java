@@ -154,7 +154,7 @@ public class InvoiceEmailConsumer {
         var subscription = schoolSubscriptionRepository.findById(payload.subscriptionId())
             .orElseThrow(() -> new IllegalStateException(
                 "Không tìm thấy gói đăng ký: eventId=" + eventId));
-        var plan = subscriptionPlanRepository.findById(subscription.getPlanId())
+        var plan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
             .orElseThrow(() -> new IllegalStateException("Không tìm thấy gói: eventId=" + eventId));
 
         String itemTitle = payload.sourceType() == InvoiceSourceType.TOKEN_PURCHASE

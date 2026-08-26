@@ -21,21 +21,23 @@ import com.sep.vox.application.port.input.query.ViewInvoicesQuery;
 import com.sep.vox.application.port.input.query.ViewSubscriptionPlanDetailQuery;
 import com.sep.vox.application.port.input.query.ViewRequestsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolDebtEventsQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolSubscriptionQuotaRecordsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolSubscriptionsQuery;
 import com.sep.vox.application.port.input.query.ViewSubscriptionHistoryQuery;
 import com.sep.vox.application.port.input.query.ViewSubscriptionPlansQuery;
 import com.sep.vox.application.port.input.query.ViewTokenPurchasesQuery;
 import com.sep.vox.application.port.input.query.ViewUsageQuery;
-import com.sep.vox.application.port.input.usecase.subscription.UpdatePlanUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.UpdateSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewCurrentSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewFinancialEventsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewInvoicesUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.ViewMyClassTestQuotaAllocationUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ViewMyExamQuotaAllocationUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewMyPracticeQuotaAllocationUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSubscriptionPlanDetailUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSubscriptionPlansUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewRequestsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSchoolDebtEventsUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ViewSchoolSubscriptionQuotaRecordsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSchoolSubscriptionsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSubscriptionHistoryUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewTokenPurchasesUseCase;
@@ -46,8 +48,7 @@ import com.sep.vox.application.response.input.subscription.ViewSubscriptionPlans
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.FinancialEventDto;
 import com.sep.vox.domain.dto.InvoiceDto;
-import com.sep.vox.domain.dto.MyClassTestQuotaAllocationDto;
-import com.sep.vox.domain.dto.MyPracticeQuotaAllocationDto;
+import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
 import com.sep.vox.domain.dto.QuotaPricingDto;
 import com.sep.vox.domain.dto.SchoolDebtEventDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
@@ -64,15 +65,13 @@ public class SubscriptionController {
 
     private final ViewSubscriptionPlansUseCase viewSubscriptionPlansUseCase;
     private final ViewSubscriptionPlanDetailUseCase viewSubscriptionPlanDetailUseCase;
-    private final UpdatePlanUseCase updatePlanUseCase;
+    private final UpdateSubscriptionPlanUseCase updateSubscriptionPlanUseCase;
     private final ViewSchoolSubscriptionsUseCase viewSchoolSubscriptionsUseCase;
     private final ViewCurrentSubscriptionUseCase viewCurrentSubscriptionUseCase;
     private final ViewSubscriptionHistoryUseCase viewSubscriptionHistoryUseCase;
-    private final ViewRequestsUseCase viewRequestsUseCase;
-    private final ViewTokenPurchasesUseCase viewTokenPurchasesUseCase;
-    private final ViewUsageUseCase viewUsageUseCase;
+    private final ViewSchoolSubscriptionQuotaRecordsUseCase viewSchoolSubscriptionQuotaRecordsUseCase;
     private final ViewTokenUsageTimeseriesUseCase viewTokenUsageTimeseriesUseCase;
-    private final ViewMyClassTestQuotaAllocationUseCase viewMyClassTestQuotaAllocationUseCase;
+    private final ViewMyExamQuotaAllocationUseCase viewMyExamQuotaAllocationUseCase;
     private final ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase;
     private final ViewInvoicesUseCase viewInvoicesUseCase;
     private final ViewFinancialEventsUseCase viewFinancialEventsUseCase;
@@ -82,15 +81,13 @@ public class SubscriptionController {
     public SubscriptionController(
             ViewSubscriptionPlansUseCase viewSubscriptionPlansUseCase,
             ViewSubscriptionPlanDetailUseCase viewSubscriptionPlanDetailUseCase,
-            UpdatePlanUseCase updatePlanUseCase,
+            UpdateSubscriptionPlanUseCase updateSubscriptionPlanUseCase,
             ViewSchoolSubscriptionsUseCase viewSchoolSubscriptionsUseCase,
             ViewCurrentSubscriptionUseCase viewCurrentSubscriptionUseCase,
             ViewSubscriptionHistoryUseCase viewSubscriptionHistoryUseCase,
-            ViewRequestsUseCase viewRequestsUseCase,
-            ViewTokenPurchasesUseCase viewTokenPurchasesUseCase,
-            ViewUsageUseCase viewUsageUseCase,
+            ViewSchoolSubscriptionQuotaRecordsUseCase viewSchoolSubscriptionQuotaRecordsUseCase,
             ViewTokenUsageTimeseriesUseCase viewTokenUsageTimeseriesUseCase,
-            ViewMyClassTestQuotaAllocationUseCase viewMyClassTestQuotaAllocationUseCase,
+            ViewMyExamQuotaAllocationUseCase viewMyExamQuotaAllocationUseCase,
             ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase,
             ViewInvoicesUseCase viewInvoicesUseCase,
             ViewFinancialEventsUseCase viewFinancialEventsUseCase,
@@ -98,15 +95,13 @@ public class SubscriptionController {
             QuotaPricingPort quotaPricingPort) {
         this.viewSubscriptionPlansUseCase = viewSubscriptionPlansUseCase;
         this.viewSubscriptionPlanDetailUseCase = viewSubscriptionPlanDetailUseCase;
-        this.updatePlanUseCase = updatePlanUseCase;
+        this.updateSubscriptionPlanUseCase = updateSubscriptionPlanUseCase;
         this.viewSchoolSubscriptionsUseCase = viewSchoolSubscriptionsUseCase;
         this.viewCurrentSubscriptionUseCase = viewCurrentSubscriptionUseCase;
         this.viewSubscriptionHistoryUseCase = viewSubscriptionHistoryUseCase;
-        this.viewRequestsUseCase = viewRequestsUseCase;
-        this.viewTokenPurchasesUseCase = viewTokenPurchasesUseCase;
-        this.viewUsageUseCase = viewUsageUseCase;
+        this.viewSchoolSubscriptionQuotaRecordsUseCase = viewSchoolSubscriptionQuotaRecordsUseCase;
         this.viewTokenUsageTimeseriesUseCase = viewTokenUsageTimeseriesUseCase;
-        this.viewMyClassTestQuotaAllocationUseCase = viewMyClassTestQuotaAllocationUseCase;
+        this.viewMyExamQuotaAllocationUseCase = viewMyExamQuotaAllocationUseCase;
         this.viewMyPracticeQuotaAllocationUseCase = viewMyPracticeQuotaAllocationUseCase;
         this.viewInvoicesUseCase = viewInvoicesUseCase;
         this.viewFinancialEventsUseCase = viewFinancialEventsUseCase;
@@ -141,8 +136,9 @@ public class SubscriptionController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "planId") UUID planId,
             @Argument(name = "status") SchoolSubscriptionStatus status,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        validatePageSize(page, size);
         return viewSchoolSubscriptionsUseCase.execute(new ViewSchoolSubscriptionsQuery(keyword, planId, status, page, size));
     }
 
@@ -154,24 +150,12 @@ public class SubscriptionController {
     @QueryMapping(name = "schoolSubscriptionHistory")
     public List<SchoolSubscriptionDto> schoolSubscriptionHistory(@Argument(name = "schoolId") UUID schoolId) {
         return viewSubscriptionHistoryUseCase.execute(new ViewSubscriptionHistoryQuery(schoolId));
-    }
-
-    @QueryMapping(name = "subscriptionRequests")
-    public PageResult<SubscriptionRequestDto> subscriptionRequests(
-            @Argument(name = "status") RequestStatus status,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
-        return viewRequestsUseCase.execute(new ViewRequestsQuery(status, page, size));
-    }
-
-    @QueryMapping(name = "tokenPurchases")
-    public List<TokenPurchaseDto> tokenPurchases(@Argument(name = "schoolId") UUID schoolId) {
-        return viewTokenPurchasesUseCase.execute(new ViewTokenPurchasesQuery(schoolId));
-    }
+    }   
 
     @QueryMapping(name = "subscriptionUsage")
-    public List<SubscriptionQuotaDto> subscriptionUsage(@Argument(name = "schoolId") UUID schoolId) {
-        return viewUsageUseCase.execute(new ViewUsageQuery(schoolId));
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public List<SchoolSubscriptionQuotaRecordDto> subscriptionUsage(@Argument(name = "schoolId") UUID schoolId) {
+        return viewSchoolSubscriptionQuotaRecordsUseCase.execute(new ViewSchoolSubscriptionQuotaRecordsQuery(schoolId));
     }
 
     @QueryMapping(name = "schoolTokenUsageTimeseries")
@@ -188,13 +172,13 @@ public class SubscriptionController {
         ));
     }
 
-    @QueryMapping(name = "myClassTestQuotaAllocation")
-    public MyClassTestQuotaAllocationDto myClassTestQuotaAllocation() {
-        return viewMyClassTestQuotaAllocationUseCase.execute(null);
+    @QueryMapping(name = "myExamQuotaAllocation")
+    public SchoolSubscriptionQuotaUserAllocationDto myExamQuotaAllocation() {
+        return viewMyExamQuotaAllocationUseCase.execute(null);
     }
 
     @QueryMapping(name = "myPracticeQuotaAllocation")
-    public MyPracticeQuotaAllocationDto myPracticeQuotaAllocation() {
+    public SchoolSubscriptionQuotaUserAllocationDto myPracticeQuotaAllocation() {
         return viewMyPracticeQuotaAllocationUseCase.execute(null);
     }
 
@@ -224,10 +208,10 @@ public class SubscriptionController {
 
     @MutationMapping(name = "updateSubscriptionPlan")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public SubscriptionPlanDto updateSubscriptionPlan(
+    public UUID updateSubscriptionPlan(
             @Argument(name = "id") UUID id,
             @Argument(name = "input") UpdateSubscriptionPlanInput input) {
-        return updatePlanUseCase.execute(UpdateSubscriptionPlanCommandMapper.fromInput(id, input));
+        return updateSubscriptionPlanUseCase.execute(UpdateSubscriptionPlanCommandMapper.fromInput(id, input));
     }
 
     @SchemaMapping(typeName = "SchoolSubscription", field = "plan")

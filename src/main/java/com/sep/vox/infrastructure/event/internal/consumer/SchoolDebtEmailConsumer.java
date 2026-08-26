@@ -186,8 +186,7 @@ public class SchoolDebtEmailConsumer {
             return "--";
         }
         return switch (quotaType) {
-            case GRADING -> "Bài thi cần chấm";
-            case CLASS_TEST -> "Bài kiểm tra trên lớp";
+            case EXAM -> "Bài kiểm tra";
             case PRACTICE -> "Lượt ôn luyện cá nhân";
         };
     }

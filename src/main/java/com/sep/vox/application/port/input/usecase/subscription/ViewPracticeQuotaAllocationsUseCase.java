@@ -6,12 +6,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.ViewQuotaAllocationsQuery;
 import com.sep.vox.application.port.input.service.DistributeQuotaToUsersService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.dto.QuotaUserAllocationSummaryDto;
+import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 
 @Service
-public class ViewPracticeQuotaAllocationsUseCase implements IUseCase<ViewQuotaAllocationsQuery, QuotaUserAllocationSummaryDto> {
+public class ViewPracticeQuotaAllocationsUseCase implements IUseCase<ViewQuotaAllocationsQuery, QuotaUserAllocationSummaryResponse> {
 
     private final DistributeQuotaToUsersService distributeQuotaToUsersService;
 
@@ -21,7 +21,7 @@ public class ViewPracticeQuotaAllocationsUseCase implements IUseCase<ViewQuotaAl
 
     @Override
     @Transactional(readOnly = true)
-    public QuotaUserAllocationSummaryDto execute(ViewQuotaAllocationsQuery input) {
+    public QuotaUserAllocationSummaryResponse execute(ViewQuotaAllocationsQuery input) {
         return distributeQuotaToUsersService.view(input.schoolId(), QuotaType.PRACTICE, SchoolRoleCodes.STUDENT);
     }
 }

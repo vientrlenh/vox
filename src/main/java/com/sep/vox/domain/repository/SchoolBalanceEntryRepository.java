@@ -28,7 +28,7 @@ public interface SchoolBalanceEntryRepository {
 
     /**
      * Chốt chặn idempotent cho đường cộng tiền, soi đúng cặp cột của
-     * uq_school_balance_entries_order (order_id, entry_type): webhook cổng và PendingInvoiceReconciler
+     * uq_school_balance_entries_order (order_id, entry_type): webhook cổng và PendingOrderReconciler
      * có thể cùng chốt một đơn, không có guard này thì tiền vào số dư hai lần.
      */
     boolean existsByOrderIdAndEntryType(UUID orderId, SchoolBalanceEntryType entryType);

@@ -97,4 +97,26 @@ public class SchoolBalance {
     public boolean isInDebt() {
         return balanceVnd.compareTo(BigDecimal.ZERO) < 0;
     }
+
+    /**
+     * Ví rỗng cho trường chưa từng nạp. Tạo lúc nạp lần đầu chứ không tạo sẵn cùng lúc với School:
+     * ví không có dòng nào và ví có số dư 0 là cùng một nghĩa, nên tạo sẵn chỉ thêm một bảng phải
+     * dọn khi xóa trường.
+     */
+    public static SchoolBalance emptyFor(UUID schoolId, Instant now) {
+        return new SchoolBalance(schoolId, BigDecimal.ZERO, now, now);
+    }
+
+    /**
+     * Cộng/trừ số dư và trả về số dư MỚI. Trả ra để chỗ gọi ghi thẳng vào
+     * {@code SchoolBalanceEntry.balanceAfterVnd} -- hai con số đó buộc phải là một, nếu tự tính lại
+     * ở chỗ gọi thì sao kê và số dư tổng hợp sẽ trôi khỏi nhau.
+     *
+     * @param amountVnd dương = nạp/hoàn, âm = trừ
+     */
+    public BigDecimal apply(BigDecimal amountVnd, Instant now) {
+        this.balanceVnd = this.balanceVnd.add(amountVnd);
+        this.updatedAt = now;
+        return this.balanceVnd;
+    }
 }

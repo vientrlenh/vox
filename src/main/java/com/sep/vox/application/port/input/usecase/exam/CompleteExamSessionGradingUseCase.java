@@ -85,16 +85,19 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
             // allowDebt=true: chi phí AI thật đã phát sinh, phải ghi nhận đủ dù vượt hạn mức --
             // xem SchoolSubscriptionDebtGuardService cho phần khóa trường khi rơi vào nợ.
             //
-            // So sánh TỪNG bucket riêng (không gộp OR như trước) -- gộp sẽ bỏ sót trường hợp GRADING
-            // đã nợ sẵn từ trước (wasLocked đã = true) nhưng CLASS_TEST mới thật sự transition ở lần
-            // trừ này, khiến notification/audit log không được ghi dù CLASS_TEST vừa vượt hạn mức.
-            checkAndReportLockTransition(subscription.getId(), exam.getSchoolId(), QuotaType.GRADING,
-                session.getId(), totalCostUsd, null, now);
-
-            if (exam.getKind() == ExamKind.CLASS_TEST) {
-                checkAndReportLockTransition(subscription.getId(), exam.getSchoolId(), QuotaType.CLASS_TEST,
-                    session.getId(), totalCostUsd, exam.getCreatedBy(), now);
-            }
+            // ĐÚNG MỘT lần trừ cho một phiên thi. Trước đây chỗ này gọi hai lần với cùng
+            // totalCostUsd (một lần GRADING, một lần CLASS_TEST) vì CLASS_TEST bị coi là ví thứ hai
+            // -- nó vốn chỉ là trần chi nằm trong ví thi, nên lần trừ thứ hai là trừ trùng: đẩy
+            // used_amount_vnd của trường lên gấp đôi tiền thật cho mọi bài kiểm tra trên lớp. Xem
+            // QuotaType.
+            //
+            // userId chỉ truyền với bài kiểm tra trên lớp: đó là khoản chi tiêu vào hạn mức CÁ NHÂN
+            // mà nhà trường cấp cho chính giáo viên ra đề. Kỳ thi tập trung do nhà trường tổ chức,
+            // không thuộc túi riêng của ai nên để null -- ConsumeQuotaUseCase sẽ bỏ qua bước trừ
+            // hạn mức cá nhân.
+            var chargedUserId = exam.getKind() == ExamKind.CLASS_TEST ? exam.getCreatedBy() : null;
+            checkAndReportLockTransition(subscription.getId(), exam.getSchoolId(), QuotaType.EXAM,
+                session.getId(), totalCostUsd, chargedUserId, now);
         }
         return null;
     }

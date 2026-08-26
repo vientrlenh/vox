@@ -26,9 +26,18 @@ enum SchoolSubscriptionStatus {
     SUSPENDED
 }
 
+"""
+Hai VÍ hạn mức cấp trường, đều tính bằng VND. Mỗi hoạt động chỉ trừ vào ĐÚNG MỘT ví, và tiêu hết ví
+này không đụng tới ví kia -- để một tuần luyện nói nhiều bất thường không ăn mất ngân sách kỳ thi.
+
+CLASS_TEST đã bị bỏ: nó là TRẦN CHI nằm trong ví EXAM chứ không phải ví thứ ba, và bị trừ trùng
+cùng một khoản với EXAM cho mỗi bài kiểm tra trên lớp. Trần theo từng giáo viên vẫn còn, ở
+SchoolSubscriptionQuotaUserAllocation với quotaType = EXAM.
+"""
 enum QuotaType {
-    GRADING
-    CLASS_TEST
+    "Chấm thi -- cả kỳ thi tập trung lẫn bài kiểm tra trên lớp đều trừ vào đây"
+    EXAM
+    "Học sinh tự luyện nói"
     PRACTICE
 }
 
@@ -123,21 +132,26 @@ type SchoolSubscriptionQuotaRecord {
     "Đã dùng bao nhiêu VND trong định mức trên"
     usedAmountVnd: Float!
     """
-    usedAmountVnd > totalAllocatedAmountVnd -- với GRADING/CLASS_TEST đây là điều kiện khóa cấp
-    trường (không cho publish/sửa bài, không cho vào thi mới cho tới khi hết nợ). Với PRACTICE chỉ
-    mang tính thông tin vì ConsumeQuotaUseCase đã chặn cứng từ trước.
+    usedAmountVnd > totalAllocatedAmountVnd -- với EXAM đây là điều kiện khóa cấp trường (không cho
+    publish/sửa bài, không cho vào thi mới cho tới khi hết nợ). Với PRACTICE chỉ mang tính thông tin
+    vì ConsumeQuotaUseCase đã chặn cứng từ trước.
     """
     isLocked: Boolean!
 }
 
-# null = giáo viên gọi query không có hạn mức CLASS_TEST cá nhân riêng, chỉ pool của trường áp dụng.
-type MyClassTestQuotaAllocation {
-    allocatedAmountVnd: Float!
-    usedAmountVnd: Float!
-}
+"""
+Hạn mức CÁ NHÂN của một người dùng trong một ví cấp trường -- trần chi nhà trường đặt lên phần ví
+người này được tiêu, KHÔNG phải một ví riêng: tiền vẫn nằm ở ví cấp trường.
 
-# null = học sinh gọi query không có hạn mức PRACTICE cá nhân riêng, chỉ pool của trường áp dụng.
-type MyPracticeQuotaAllocation {
+quotaType = EXAM chỉ có ở giáo viên (trần cho bài kiểm tra trên lớp họ ra đề), PRACTICE chỉ có ở học
+sinh. Thay cho cặp MyClassTestQuotaAllocation/MyPracticeQuotaAllocation cũ -- cùng một khái niệm thì
+một kiểu là đủ.
+"""
+type SchoolSubscriptionQuotaUserAllocation {
+    id: ID!
+    userId: ID!
+    schoolSubscriptionId: ID!
+    quotaType: QuotaType!
     allocatedAmountVnd: Float!
     usedAmountVnd: Float!
 }
@@ -178,7 +192,7 @@ type QuotaPricing {
     usdToVndRate: Float!
 }
 
-input SubscriptionPlanQuotaItemInput {
+input SubscriptionPlanQuotaInput {
     quotaType: QuotaType!
     includedAmountVnd: Float!
 }
@@ -190,7 +204,7 @@ input UpdateSubscriptionPlanInput {
     "periodType KHÔNG sửa được sau khi tạo (cột period_type là updatable = false) -- muốn đổi thì tạo gói mới rồi trỏ replacedByPlanId"
     periodCount: Int
     maxTimePerAttemptMin: Int
-    quotas: [SubscriptionPlanQuotaItemInput!]
+    quotas: [SubscriptionPlanQuotaInput!]
 }
 
 extend type Query {
@@ -209,12 +223,15 @@ extend type Query {
     schoolSubscriptionHistory(schoolId: ID!): [SchoolSubscription!]!
 
     subscriptionUsage(schoolId: ID!): [SchoolSubscriptionQuotaRecord!]!
-    myClassTestQuotaAllocation: MyClassTestQuotaAllocation
-    myPracticeQuotaAllocation: MyPracticeQuotaAllocation
+    "null = giáo viên không có hạn mức cá nhân riêng, tức chỉ ví EXAM của trường áp dụng"
+    myExamQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
+    "null = học sinh không có hạn mức cá nhân riêng, tức chỉ ví PRACTICE của trường áp dụng"
+    myPracticeQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
 
     schoolDebtEvents(schoolId: ID!, page: Int = 0, size: Int = 20): SchoolDebtEventPage!
 }
 
 extend type Mutation {
-    updateSubscriptionPlan(id: ID!, input: UpdateSubscriptionPlanInput!): SubscriptionPlan!
+    "Trả id gói vừa sửa, không trả cả object: client tự query lại nếu cần -- xem UpdateSubscriptionPlanUseCase."
+    updateSubscriptionPlan(id: ID!, input: UpdateSubscriptionPlanInput!): ID!
 }

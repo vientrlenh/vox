@@ -29,7 +29,7 @@ import com.sep.vox.application.response.output.CallbackVerificationResult;
 import com.sep.vox.application.response.output.CreatePaymentLinkCommand;
 import com.sep.vox.application.response.output.PaymentCheckoutResult;
 import com.sep.vox.application.response.output.PaymentLinkStatusResult;
-import com.sep.vox.domain.model.subscription.PaymentMethod;
+import com.sep.vox.domain.model.payment.PaymentProvider;
 
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
@@ -51,7 +51,7 @@ public class PayOSService implements PaymentProcessPort {
     private static final String SUCCESS_CODE = "00";
 
     // Đủ ngắn để đưa hóa đơn PENDING treo mãi về trạng thái cuối trong một khoảng thời gian xác định,
-    // và ngắn hơn chu kỳ quét của PendingInvoiceReconciler (5 phút) để lần quét kế tiếp bắt kịp ngay.
+    // và ngắn hơn chu kỳ quét của PendingOrderReconciler (5 phút) để lần quét kế tiếp bắt kịp ngay.
     private static final long PAYMENT_LINK_EXPIRATION_MINUTES = 3;
 
     private final PayOS payOSClient;
@@ -74,8 +74,8 @@ public class PayOSService implements PaymentProcessPort {
     }
 
     @Override
-    public PaymentMethod provider() {
-        return PaymentMethod.PAYOS;
+    public PaymentProvider provider() {
+        return PaymentProvider.PAYOS;
     }
 
     /**
@@ -84,7 +84,7 @@ public class PayOSService implements PaymentProcessPort {
      * phần ngẫu nhiên chặn hai hóa đơn tạo trong cùng một mili giây trùng mã.
      */
     @Override
-    public String newOrderRef(String invoiceNumber) {
+    public String newOrderRef() {
         return String.valueOf(System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000));
     }
 
@@ -96,7 +96,8 @@ public class PayOSService implements PaymentProcessPort {
             .description(command.description())
             .returnUrl(returnUrl)
             .cancelUrl(cancelUrl)
-            .expiredAt(Instant.now().plus(PAYMENT_LINK_EXPIRATION_MINUTES, ChronoUnit.MINUTES).getEpochSecond())
+            // Hạn lấy từ ĐƠN chứ không phải hằng số của adapter -- xem CreatePaymentLinkCommand.expiresAt.
+            .expiredAt(command.expiresAt().getEpochSecond())
             .build();
         var response = payOSClient.paymentRequests().create(paymentLinkRequest);
         return PaymentCheckoutResult.redirect(response.getCheckoutUrl(), response.getPaymentLinkId());

@@ -3,6 +3,8 @@ package com.sep.vox.domain.model.invoice;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.domain.common.ZoneConstant;
+
 /**
  * Chỉ có các đơn hoàn thành mới xuất hóa đơn (chuẩn hóa nghiệp vụ)
  * Loại bỏ việc sử dụng hóa đơn để ghi quá trình thực hiện thanh toán đơn hàng (trước đây fix cứng trong một đơn đăng ký)
@@ -74,5 +76,20 @@ public class Invoice {
         this.issueDate = issueDate;
     }
 
-    
+    /**
+     * Phát hành chứng từ cho một đơn đã thu đủ tiền.
+     *
+     * <p>Số hóa đơn sinh THEO NĂM CỦA NGÀY PHÁT HÀNH, lấy theo múi giờ nghiệp vụ: phát hành lúc
+     * 23:30 ngày 31/12 giờ Việt Nam vẫn còn là năm cũ, trong khi cùng khoảnh khắc đó ở UTC đã sang
+     * năm mới -- lấy nhầm sẽ ra hóa đơn số INV-2027-... nhưng ngày ghi 31/12/2026.
+     *
+     * <p>Phần đuôi lấy từ UUID ngẫu nhiên chứ không phải bộ đếm tăng dần: bộ đếm cần một dòng khóa
+     * chung cho cả hệ thống, mà đây là đường chạy trong transaction của webhook -- khóa ở đó biến
+     * mọi callback thành xếp hàng sau nhau. Trùng số vẫn bị chặn bởi ràng buộc duy nhất trên cột.
+     */
+    public static Invoice issueFor(UUID orderId, UUID paymentId, Instant issuedAt) {
+        var year = issuedAt.atZone(ZoneConstant.BUSINESS_ZONE).getYear();
+        var suffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        return new Invoice(orderId, paymentId, "INV-" + year + "-" + suffix, issuedAt);
+    }
 }

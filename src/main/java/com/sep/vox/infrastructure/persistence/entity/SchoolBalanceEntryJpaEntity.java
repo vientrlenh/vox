@@ -63,7 +63,7 @@ public class SchoolBalanceEntryJpaEntity {
     @Column(name = "quota_type", updatable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_school_balance_entries_quota_type_valid",
-            constraint = "quota_type IS NULL OR quota_type IN ('GRADING', 'CLASS_TEST', 'PRACTICE')"
+            constraint = "quota_type IS NULL OR quota_type IN ('EXAM', 'PRACTICE')"
         )
     })
     private String quotaType;

@@ -5,8 +5,14 @@ import java.math.BigDecimal;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Hai tham số để ra giá bán hạn mức: tokenUnitPriceVnd = usdToVndRate × (1 + serviceFeeRatio) -- xem
- * QuotaPricingService/CreateSubscriptionPlanUseCase/UpdatePlanUseCase.
+ * Hai tham số để ra giá bán hạn mức, đọc ĐỘC LẬP với nhau qua QuotaPricingPort -- xem
+ * QuotaPricingService.
+ *
+ * <p>Trước đây hai số này bị nhân sẵn thành MỘT đơn giá (tokenUnitPriceVnd = usdToVndRate ×
+ * (1 + serviceFeeRatio)) đóng băng trên từng dòng hạn mức của gói. Đã bỏ hẳn: gộp lại thì trường
+ * thấy "1 USD = 31.200đ" trong khi tỷ giá thật là 26.000đ, không đối chiếu được với bất kỳ tỷ giá
+ * nào ngoài thị trường. Giờ phí dịch vụ đứng thành một dòng riêng trên đơn hàng, còn quy đổi
+ * USD->VND ghi theo từng lượt dùng ở SchoolBalanceEntry (costUsd + fxRateUsed).
  *
  * <p>usdToVndRate chỉ còn là FALLBACK TĨNH: nguồn đọc chính là snapshot mới nhất do
  * ExchangeRateRefreshJob tự fetch từ API tỷ giá thật (xem ExchangeRateApiProperties /

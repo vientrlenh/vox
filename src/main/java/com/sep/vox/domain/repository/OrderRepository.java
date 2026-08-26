@@ -20,7 +20,7 @@ public interface OrderRepository {
 
     /**
      * Khóa đơn tới hết transaction trước khi chốt kết quả thanh toán. Webhook cổng và
-     * PendingInvoiceReconciler có thể cùng chốt một đơn: không khóa thì cả hai đọc thấy PENDING
+     * PendingOrderReconciler có thể cùng chốt một đơn: không khóa thì cả hai đọc thấy PENDING
      * trước khi bên kia commit và cấp gói/cộng tiền hai lần.
      */
     Optional<Order> findByIdForUpdate(UUID id);
@@ -29,6 +29,9 @@ public interface OrderRepository {
 
     List<Order> findBySchoolId(UUID schoolId);
     PageResult<Order> findBySchoolId(UUID schoolId, int page, int size);
+
+    /** Danh sách đơn cho System Admin -- mọi bộ lọc đều bỏ qua được bằng null. */
+    PageResult<Order> findForAdmin(UUID schoolId, OrderStatus status, OrderType type, String keyword, int page, int size);
     List<Order> findByStatus(OrderStatus status);
 
     /**

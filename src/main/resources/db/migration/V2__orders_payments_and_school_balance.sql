@@ -13,8 +13,12 @@
 --
 --  3. Đổi tên 3 bảng quota cho khớp domain model mới, đồng thời chuyển sang dạng số nhiều.
 --
+--  4. QuotaType còn 2 giá trị: EXAM (đổi tên từ GRADING) và PRACTICE. CLASS_TEST bị bỏ vì nó là
+--     TRẦN CHI trong ví chấm thi chứ không phải ví thứ ba -- xem mục 11.
+--
 -- CẢNH BÁO: script này XÓA DỮ LIỆU (drop invoice / token_purchase / token_purchase_item /
--- subscription_request). Chỉ chạy được vì hệ thống chưa có dữ liệu thật.
+-- subscription_request; xóa các dòng quota CLASS_TEST ở mục 11). Chỉ chạy được vì hệ thống chưa
+-- có dữ liệu thật.
 -- =============================================================================
 
 
@@ -69,11 +73,25 @@ DROP TABLE IF EXISTS subscription_request;
 --    Tên bảng BẮT BUỘC số nhiều: `order` là từ khóa SQL.
 -- -----------------------------------------------------------------------------
 CREATE TABLE orders (
+    -- Tiền hàng TRƯỚC phí và giảm giá. Phải ghi thẳng chứ không suy ra được từ tổng: đơn nạp thêm
+    -- không có order_items nào để mà cộng lại, nên nếu thiếu cột này thì "trường mua bao nhiêu số dư"
+    -- chỉ còn cách tính ngược total - fee -- sai ngay khi discount khác 0, và sai về phía cộng dư
+    -- tiền cho trường.
+    subtotal_amount_vnd numeric(15,0) NOT NULL,
     total_amount_vnd numeric(15,0) NOT NULL,
     charged_fee_vnd numeric(15,0) DEFAULT 0 NOT NULL,
     discount_amount_vnd numeric(15,0) DEFAULT 0 NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
+    -- Hạn chót trả tiền, CHỐT LÚC TẠO ĐƠN. Cột riêng chứ không suy từ updated_at vì ba lý do:
+    --   * updated_at đổi khi System Admin sửa notes (cột duy nhất được sửa sau khi tạo) -- hạn thanh
+    --     toán sẽ tự lùi ra chỉ vì có người ghi chú.
+    --   * lúc job chuyển sang EXPIRED thì updated_at thành "lúc mình expire", mất hẳn thông tin "đáng
+    --     lẽ hết hạn lúc nào".
+    --   * đây là hạn ĐÃ GỬI CHO CỔNG (PayOS expiredAt). Link không được sống lâu hơn đơn, nếu không
+    --     trường trả tiền cho một đơn đã chết; đơn cũng không được sống lâu hơn link, nếu không trường
+    --     bị khóa mà không còn cách nào trả. Phải lưu đúng con số đã thỏa thuận với cổng.
+    expires_at timestamp(6) with time zone NOT NULL,
     id uuid DEFAULT uuidv7() NOT NULL,
     school_id uuid NOT NULL,
     created_by uuid,
@@ -92,7 +110,25 @@ CREATE TABLE orders (
         ('SUCCESS'::character varying)::text,
         ('FAILED'::character varying)::text,
         ('CANCELLED'::character varying)::text,
-        ('EXPIRED'::character varying)::text])))
+        ('EXPIRED'::character varying)::text]))),
+    -- Số học của đơn phải đóng. Đây là bất biến DUY NHẤT cho cả ba loại đơn, và là thứ chặn được lỗi
+    -- "cấp số dư nhiều hơn số tiền đã thu": settlement lấy subtotal làm số dư cộng vào ví, còn cổng
+    -- thu đúng total -- hai số đó chỉ khớp nhau khi phép cộng này đúng.
+    CONSTRAINT chk_orders_total_amount_vnd_matches_amount_combination CHECK (
+        total_amount_vnd = subtotal_amount_vnd + charged_fee_vnd - discount_amount_vnd),
+    -- Tách từng cột thay vì gộp một CHECK cho cả bốn: Postgres chỉ báo TÊN ràng buộc bị vi phạm, nên
+    -- gộp lại thì lỗi chỉ nói "có một số nào đó âm" mà không nói số nào.
+    CONSTRAINT chk_orders_subtotal_amount_vnd_non_negative CHECK (subtotal_amount_vnd >= 0),
+    -- Suy ra được từ hai ràng buộc kia (total = subtotal + fee - discount, mà discount <= subtotal +
+    -- fee thì total >= 0), giữ lại vì nó tự nói ra ý định thay vì bắt người đọc tự chứng minh.
+    CONSTRAINT chk_orders_total_amount_vnd_non_negative CHECK (total_amount_vnd >= 0),
+    CONSTRAINT chk_orders_charged_fee_vnd_non_negative CHECK (charged_fee_vnd >= 0),
+    CONSTRAINT chk_orders_discount_amount_vnd_non_negative CHECK (discount_amount_vnd >= 0),
+    -- Giảm giá không được vượt tiền hàng cộng phí -- nếu không, tổng âm và cổng nhận một đơn thu tiền
+    -- ngược về phía trường.
+    CONSTRAINT chk_orders_discount_amount_vnd_lower_or_equals_than_subtotal_and_charged_fee CHECK (
+        discount_amount_vnd <= subtotal_amount_vnd + charged_fee_vnd),
+    CONSTRAINT chk_orders_expires_at_after_created_at CHECK (expires_at > created_at)
 );
 
 CREATE TABLE order_items (
@@ -136,6 +172,21 @@ CREATE TABLE payment_records (
     provider character varying(20) NOT NULL,
     status character varying(20) NOT NULL,
     provider_order_ref character varying(100) NOT NULL,
+    -- Link đã phát cho lần thử này. Lưu lại để trường bấm "thanh toán" lần nữa thì nhận LẠI ĐÚNG link
+    -- cũ, thay vì phải phát link mới: uq_payment_records_one_pending_per_order chỉ cho một lần thử
+    -- treo, nên không lưu thì lựa chọn duy nhất còn lại là bỏ link cũ đi -- mà link cũ vẫn trả được,
+    -- trường trả vào đó là tiền vào tài khoản nhưng không còn dòng nào đang chờ nó.
+    checkout_url character varying(2048),
+    -- Mọi thứ CHỈ RIÊNG một cổng mới có, dạng JSON (vd PayOS paymentLinkId). Không tách thành cột
+    -- riêng cho từng cổng: paymentLinkId là khái niệm của PayOS, SePay định danh đơn bằng chính
+    -- order_invoice_number nên cột đó sẽ NULL vĩnh viễn với một nửa số cổng -- và cổng thứ ba lại
+    -- thêm một cột NULL nữa. PaymentProcessPort đã đặt luật "không rò rỉ quy ước riêng của một cổng
+    -- qua hợp đồng chung"; một cột mang hình dạng PayOS trong bảng dùng chung chính là rò rỉ đó.
+    --
+    -- KHÔNG chứa chữ ký: bộ field FORM_POST của SePay có HMAC, lưu lại là ai đọc được DB cũng dựng
+    -- lại được một checkout hợp lệ. Chúng cũng tính lại được từ (ref, amount, description) nên lưu
+    -- không được thêm gì.
+    provider_payload_json text,
     CONSTRAINT chk_payment_records_method_valid CHECK (((method)::text = ANY (ARRAY[
         ('E_BANKING'::character varying)::text,
         ('CARD'::character varying)::text]))),
@@ -174,7 +225,7 @@ CREATE TABLE invoices (
 -- 6. school_balances -- ví tiền TỰ NẠP của trường. MỘT cột duy nhất.
 --
 --    CỐ TÌNH không có cột "hạn mức kèm gói" ở đây: gói cấp hạn mức theo TỪNG QuotaType
---    (GRADING / CLASS_TEST / PRACTICE) và đã được school_subscription_quota_records theo dõi
+--    (EXAM / PRACTICE) và đã được school_subscription_quota_records theo dõi
 --    đầy đủ (total_allocated_amount_vnd + used_amount_vnd). Một số dư cấp trường duy nhất
 --    không diễn đạt được "còn 300.000 nhưng không được dùng để chấm bài", nên nhân đôi số tiền
 --    đó ra đây là tạo hai nguồn sự thật chắc chắn sẽ lệch nhau.
@@ -229,8 +280,7 @@ CREATE TABLE school_balance_entries (
         ('REFUND'::character varying)::text,
         ('ADJUSTMENT'::character varying)::text]))),
     CONSTRAINT chk_school_balance_entries_quota_type_valid CHECK ((quota_type IS NULL OR (quota_type)::text = ANY (ARRAY[
-        ('GRADING'::character varying)::text,
-        ('CLASS_TEST'::character varying)::text,
+        ('EXAM'::character varying)::text,
         ('PRACTICE'::character varying)::text]))),
     -- Nạp/hoàn tiền BẮT BUỘC gắn với một đơn hàng -- không cho cộng tiền "từ hư không".
     CONSTRAINT chk_school_balance_entries_credit_from_order CHECK (
@@ -240,11 +290,10 @@ CREATE TABLE school_balance_entries (
         ((entry_type)::text <> 'OVERAGE_CHARGE' OR (
             exam_session_id IS NOT NULL AND quota_type IS NOT NULL
             AND cost_usd IS NOT NULL AND fx_rate_used IS NOT NULL AND amount_vnd < (0)::numeric))),
-    -- CLASS_TEST là hạn mức TRẦN, không phải ví: chi phí đã bị trừ một lần dưới GRADING rồi.
-    -- Thiếu ràng buộc này, mỗi bài kiểm tra trên lớp sẽ bị trừ TIỀN hai lần -- xem
-    -- CompleteExamSessionGradingUseCase (trừ cùng totalCostUsd cho cả GRADING lẫn CLASS_TEST).
-    CONSTRAINT chk_school_balance_entries_no_class_test_charge CHECK (
-        ((entry_type)::text <> 'OVERAGE_CHARGE' OR (quota_type)::text <> 'CLASS_TEST')),
+    -- KHÔNG còn chk_school_balance_entries_no_class_test_charge: nó tồn tại chỉ để chặn khoản trừ
+    -- TRÙNG do CLASS_TEST bị coi là ví thứ hai bên cạnh GRADING (một bài kiểm tra trên lớp bị trừ
+    -- cùng totalCostUsd hai lần). CLASS_TEST giờ không còn là QuotaType nữa nên nguồn gây trùng đã
+    -- mất -- giữ lại một ràng buộc canh giá trị không thể tồn tại là canh một cánh cửa đã xây bịt.
     -- Điều chỉnh tay luôn phải có người thực hiện + lý do, cùng chuẩn ForceSuspendSubscriptionUseCase.
     CONSTRAINT chk_school_balance_entries_adjustment_audited CHECK (
         ((entry_type)::text <> 'ADJUSTMENT' OR (actor_id IS NOT NULL AND reason IS NOT NULL)))
@@ -283,7 +332,7 @@ ALTER TABLE ONLY school_balance_entries
 CREATE UNIQUE INDEX uq_school_balances_school ON school_balances USING btree (school_id);
 
 -- Cùng một giao dịch phía cổng không được ghi nhận hai lần khi webhook và
--- PendingInvoiceReconciler cùng xử lý.
+-- PendingOrderReconciler cùng xử lý.
 CREATE UNIQUE INDEX uq_payment_records_provider_ref
     ON payment_records USING btree (provider, provider_order_ref);
 
@@ -312,6 +361,11 @@ CREATE UNIQUE INDEX uq_orders_one_open_subscription_order
     WHERE (((status)::text = 'PENDING') AND ((type)::text IN ('SUBSCRIPTION_REQUEST', 'SUBSCRIPTION_UPGRADE')));
 
 CREATE INDEX idx_orders_school_created ON orders USING btree (school_id, created_at DESC);
+
+-- Job quét đơn quá hạn chỉ quan tâm đơn còn treo, mà đơn treo luôn là thiểu số so với đơn đã chốt --
+-- index từng phần để nó không phải đi qua toàn bộ lịch sử đơn hàng mỗi lần chạy.
+CREATE INDEX idx_orders_pending_expires_at ON orders USING btree (expires_at)
+    WHERE ((status)::text = 'PENDING');
 CREATE INDEX idx_order_items_order ON order_items USING btree (order_id);
 CREATE INDEX idx_payment_records_order ON payment_records USING btree (order_id);
 CREATE INDEX idx_invoices_order ON invoices USING btree (order_id);
@@ -351,3 +405,69 @@ ALTER TABLE ONLY school_balance_entries
 
 ALTER TABLE ONLY school_balance_entries
     ADD CONSTRAINT fk_school_balance_entries_subscription FOREIGN KEY (subscription_id) REFERENCES school_subscription(id);
+
+
+-- -----------------------------------------------------------------------------
+-- 11. QuotaType: bỏ CLASS_TEST, đổi GRADING -> EXAM.
+--
+--     CLASS_TEST không phải một ví thứ ba mà là TRẦN CHI nằm trong ví chấm thi: mỗi bài kiểm tra
+--     trên lớp bị trừ CÙNG MỘT khoản totalCostUsd hai lần -- một lần dưới GRADING, một lần dưới
+--     CLASS_TEST -- nên used_amount_vnd cấp trường luôn cao hơn tiền thật, và phải dựng riêng
+--     chk_school_balance_entries_no_class_test_charge để chặn khoản trùng đó chạm vào tiền.
+--
+--     Trần chi theo GIÁO VIÊN thì vẫn là tính năng thật và được giữ nguyên: nó sống ở
+--     school_subscription_quota_user_allocations, chỉ đổi quota_type sang EXAM. Việc trần đó chỉ
+--     áp cho bài kiểm tra trên lớp là do phía soi quyết định (chỉ truyền userId khi kind =
+--     CLASS_TEST), không phải do quota_type.
+--
+--     Đổi GRADING -> EXAM để hai ví trùng tên với QuotaPricingSource (EXAM / PRACTICE) -- cùng một
+--     ranh giới thì nên cùng một tên, vì đây chính là ranh giới hai pipeline AI khác nhau.
+-- -----------------------------------------------------------------------------
+
+-- Thứ tự bắt buộc: nới CHECK ra trước, sửa dữ liệu, rồi mới siết lại. Sửa dữ liệu khi CHECK cũ còn
+-- hiệu lực sẽ vỡ ngay ở dòng UPDATE đầu tiên vì 'EXAM' không nằm trong danh sách cũ.
+ALTER TABLE subscription_plan_quotas DROP CONSTRAINT chk_subscription_plan_quotas_quota_type_valid;
+ALTER TABLE school_subscription_quota_records DROP CONSTRAINT chk_school_subscription_quota_records_quota_type_valid;
+ALTER TABLE school_subscription_quota_user_allocations
+    DROP CONSTRAINT chk_school_subscription_quota_user_allocations_quota_type_valid;
+ALTER TABLE school_debt_event DROP CONSTRAINT chk_school_debt_event_quota_type_valid;
+ALTER TABLE token_usage_event DROP CONSTRAINT chk_token_usage_event_quota_type_valid;
+
+UPDATE subscription_plan_quotas SET quota_type = 'EXAM' WHERE quota_type = 'GRADING';
+UPDATE school_subscription_quota_records SET quota_type = 'EXAM' WHERE quota_type = 'GRADING';
+UPDATE school_subscription_quota_user_allocations SET quota_type = 'EXAM' WHERE quota_type = 'CLASS_TEST';
+UPDATE school_balance_entries SET quota_type = 'EXAM' WHERE quota_type IN ('GRADING', 'CLASS_TEST');
+-- school_debt_event và token_usage_event là sổ APPEND-ONLY: map sang EXAM chứ không xóa. Dòng
+-- CLASS_TEST ở đây ghi lại một sự kiện CÓ THẬT (trường từng vượt trần loại đó), xóa đi là sửa lịch
+-- sử; để lại dưới tên ví mới thì vẫn tra ngược được.
+UPDATE school_debt_event SET quota_type = 'EXAM' WHERE quota_type IN ('GRADING', 'CLASS_TEST');
+UPDATE token_usage_event SET quota_type = 'EXAM' WHERE quota_type = 'GRADING';
+
+-- Ví CLASS_TEST cấp trường thì XÓA hẳn, không map: nó không mang tiền riêng nào. included_amount_vnd
+-- của nó là một con số TRẦN, còn used_amount_vnd là bản sao của phần đã tính dưới GRADING -- map
+-- sang EXAM sẽ cộng dồn vào ví thật và nhân đôi cả định mức lẫn số đã dùng.
+DELETE FROM subscription_plan_quotas WHERE quota_type = 'CLASS_TEST';
+DELETE FROM school_subscription_quota_records WHERE quota_type = 'CLASS_TEST';
+-- Cùng lý do: dòng CLASS_TEST ở đây là lần trừ TRÙNG của chính khoản đã trừ dưới GRADING.
+DELETE FROM token_usage_event WHERE quota_type = 'CLASS_TEST';
+
+ALTER TABLE subscription_plan_quotas
+    ADD CONSTRAINT chk_subscription_plan_quotas_quota_type_valid CHECK (((quota_type)::text = ANY (ARRAY[
+        ('EXAM'::character varying)::text,
+        ('PRACTICE'::character varying)::text])));
+ALTER TABLE school_subscription_quota_records
+    ADD CONSTRAINT chk_school_subscription_quota_records_quota_type_valid CHECK (((quota_type)::text = ANY (ARRAY[
+        ('EXAM'::character varying)::text,
+        ('PRACTICE'::character varying)::text])));
+ALTER TABLE school_subscription_quota_user_allocations
+    ADD CONSTRAINT chk_school_subscription_quota_user_allocations_quota_type_valid CHECK (((quota_type)::text = ANY (ARRAY[
+        ('EXAM'::character varying)::text,
+        ('PRACTICE'::character varying)::text])));
+ALTER TABLE school_debt_event
+    ADD CONSTRAINT chk_school_debt_event_quota_type_valid CHECK (((quota_type)::text = ANY (ARRAY[
+        ('EXAM'::character varying)::text,
+        ('PRACTICE'::character varying)::text])));
+ALTER TABLE token_usage_event
+    ADD CONSTRAINT chk_token_usage_event_quota_type_valid CHECK (((quota_type)::text = ANY (ARRAY[
+        ('EXAM'::character varying)::text,
+        ('PRACTICE'::character varying)::text])));

@@ -157,4 +157,19 @@ public class SchoolSubscription {
     public void setSuspendedBy(UUID suspendedBy) {
         this.suspendedBy = suspendedBy;
     }
+
+    /**
+     * Kỳ thuê bao MỚI, kích hoạt ngay khi tiền của đơn đã về.
+     *
+     * <p>startDate = {@code now} chứ không phải lúc đặt đơn: đơn có thể nằm chờ tới 24 tiếng
+     * (Order.PENDING_TTL), tính hạn từ lúc đặt là ăn mất của trường đúng quãng chờ đó.
+     *
+     * <p>pricePaidSnapshot đóng băng giá tại thời điểm mua -- gói có thể đổi giá hoặc bị ARCHIVED
+     * sau đó, nhưng hóa đơn đã phát và kỳ đang chạy phải giữ nguyên con số trường thật sự đã trả.
+     */
+    public static SchoolSubscription activate(UUID schoolId, SubscriptionPlan plan, BigDecimal pricePaidVnd,
+            Instant now) {
+        return new SchoolSubscription(schoolId, plan.getId(), now, plan.endDateFrom(now),
+            SchoolSubscriptionStatus.ACTIVE, pricePaidVnd, null, now);
+    }
 }

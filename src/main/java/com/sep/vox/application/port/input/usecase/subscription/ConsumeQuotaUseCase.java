@@ -16,7 +16,6 @@ import com.sep.vox.application.port.output.QuotaDebtConfigPort;
 import com.sep.vox.domain.dto.SubscriptionQuotaDto;
 import com.sep.vox.domain.mapper.SubscriptionQuotaDtoMapper;
 import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
-import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.model.subscription.TokenUsageEvent;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
@@ -56,7 +55,7 @@ public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, Subscr
     @Override
     @Transactional
     public SubscriptionQuotaDto execute(ConsumeQuotaCommand input) {
-        var quota = subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(input.subscriptionId(), input.quotaType())
+        var quota = subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(input.subscriptionId(), input.quotaType())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
 
         if (input.allowDebt()) {
@@ -70,9 +69,14 @@ public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, Subscr
             }
         }
 
-        if (input.userId() != null && (input.quotaType() == QuotaType.CLASS_TEST || input.quotaType() == QuotaType.PRACTICE)) {
+        // Không còn lọc theo quotaType: cả hai ví giờ đều có thể có hạn mức cá nhân (EXAM cho giáo
+        // viên ra đề kiểm tra trên lớp, PRACTICE cho học sinh). Chỗ gọi quyết định khoản này có
+        // thuộc túi riêng của ai không bằng cách truyền/không truyền userId -- xem
+        // CompleteExamSessionGradingUseCase. .ifPresent bên dưới vẫn giữ nghĩa "không có allocation
+        // riêng thì không bị chặn theo cá nhân".
+        if (input.userId() != null) {
             subscriptionQuotaUserAllocationRepository
-                .findBySubscriptionIdAndQuotaTypeAndUserId(input.subscriptionId(), input.quotaType(), input.userId())
+                .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(input.subscriptionId(), input.quotaType(), input.userId())
                 .ifPresent(allocation -> {
                     if (input.allowDebt()) {
                         subscriptionQuotaUserAllocationRepository.addUsage(allocation.getId(), input.amount());
@@ -105,12 +109,12 @@ public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, Subscr
     // fetch cuối) để chỉ báo đúng 1 lần lúc CHUYỂN từ dưới trần sang vượt trần, không báo lặp lại mỗi
     // lần trừ thêm trong lúc đã vượt trần từ trước.
     private void checkDebtCapTransition(ConsumeQuotaCommand input, SchoolSubscriptionQuotaRecord before, SchoolSubscriptionQuotaRecord after) {
-        var overageBefore = before.getUsedQuantity().subtract(before.getTotalAllocated());
-        var overageAfter = after.getUsedQuantity().subtract(after.getTotalAllocated());
+        var overageBefore = before.getUsedAmountVnd().subtract(before.getTotalAllocatedAmountVnd());
+        var overageAfter = after.getUsedAmountVnd().subtract(after.getTotalAllocatedAmountVnd());
         if (overageAfter.compareTo(BigDecimal.ZERO) <= 0) {
             return;
         }
-        var cap = after.getTotalAllocated().multiply(quotaDebtConfig.capRatio());
+        var cap = after.getTotalAllocatedAmountVnd().multiply(quotaDebtConfig.capRatio());
         if (overageAfter.compareTo(cap) <= 0) {
             return;
         }
@@ -125,7 +129,7 @@ public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, Subscr
             if (schoolId != null) {
                 schoolDebtNotificationService.publishDebtCapExceeded(
                     input.subscriptionId(), schoolId, input.quotaType(), input.examSessionId(), input.amount(),
-                    after.getTotalAllocated(), after.getUsedQuantity(), overageAfter, cap, Instant.now()
+                    after.getTotalAllocatedAmountVnd(), after.getUsedAmountVnd(), overageAfter, cap, Instant.now()
                 );
             }
         }

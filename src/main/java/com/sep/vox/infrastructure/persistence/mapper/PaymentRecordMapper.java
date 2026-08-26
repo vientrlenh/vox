@@ -19,6 +19,8 @@ public final class PaymentRecordMapper {
             providerFromString(jpa.getProvider()),
             statusFromString(jpa.getStatus()),
             jpa.getProviderOrderRef(),
+            jpa.getCheckoutUrl(),
+            jpa.getProviderPayloadJson(),
             jpa.getPaidAt(),
             jpa.getCreatedAt()
         );
@@ -33,6 +35,8 @@ public final class PaymentRecordMapper {
             valueOf(domain.getProvider()),
             valueOf(domain.getStatus()),
             domain.getProviderOrderRef(),
+            domain.getCheckoutUrl(),
+            domain.getProviderPayloadJson(),
             domain.getPaidAt(),
             domain.getCreatedAt()
         );

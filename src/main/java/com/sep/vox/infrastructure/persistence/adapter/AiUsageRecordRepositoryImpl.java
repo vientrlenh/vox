@@ -8,7 +8,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.model.aimodel.AiUsageRecord;
+import com.sep.vox.domain.model.metering.AiUsageRecord;
 import com.sep.vox.domain.repository.AiUsageRecordRepository;
 import com.sep.vox.domain.repository.SessionCostAggregate;
 import com.sep.vox.infrastructure.persistence.mapper.AiUsageRecordMapper;

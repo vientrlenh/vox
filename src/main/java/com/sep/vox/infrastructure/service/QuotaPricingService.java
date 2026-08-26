@@ -1,12 +1,13 @@
 package com.sep.vox.infrastructure.service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.QuotaPricingPort;
+import com.sep.vox.application.port.output.ServiceFeePort;
 import com.sep.vox.domain.model.metering.QuotaPricingSource;
+import com.sep.vox.domain.model.financial.CurrencyCode;
 import com.sep.vox.domain.repository.ExchangeRateSnapshotRepository;
 import com.sep.vox.domain.repository.QuotaPricingCalibrationRepository;
 import com.sep.vox.infrastructure.properties.QuotaPricingProperties;
@@ -24,7 +25,7 @@ import com.sep.vox.infrastructure.properties.QuotaSellingPriceProperties;
  * qua QuotaPricingPort để không phụ thuộc ngược lên tầng này.
  */
 @Service
-public class QuotaPricingService implements QuotaPricingPort {
+public class QuotaPricingService implements QuotaPricingPort, ServiceFeePort {
 
     private final QuotaPricingCalibrationRepository quotaPricingCalibrationRepository;
     private final ExchangeRateSnapshotRepository exchangeRateSnapshotRepository;
@@ -58,14 +59,14 @@ public class QuotaPricingService implements QuotaPricingPort {
 
     @Override
     public BigDecimal usdToVndRate() {
-        return exchangeRateSnapshotRepository.findLatest()
-            .map(snapshot -> snapshot.getUsdToVndRate())
+        return exchangeRateSnapshotRepository.findLatest(CurrencyCode.USD)
+            .map(snapshot -> snapshot.getExchangeRateToVnd())
             .orElseGet(quotaSellingPriceProperties::usdToVndRate);
     }
 
     /**
      * Phí dịch vụ đọc thẳng từ config, KHÔNG nhân sẵn vào tỷ giá -- đơn hàng tự cộng thành một dòng
-     * riêng. Xem QuotaPricingPort#serviceFeeRatio.
+     * riêng. Xem ServiceFeePort#serviceFeeRatio.
      */
     @Override
     public BigDecimal serviceFeeRatio() {

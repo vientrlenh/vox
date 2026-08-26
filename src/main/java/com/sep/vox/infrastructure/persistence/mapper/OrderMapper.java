@@ -15,6 +15,7 @@ public final class OrderMapper {
             jpa.getSchoolId(),
             typeFromString(jpa.getType()),
             jpa.getDescription(),
+            jpa.getSubtotalAmountVnd(),
             jpa.getTotalAmountVnd(),
             jpa.getChargedFeeVnd(),
             jpa.getDiscountAmountVnd(),
@@ -22,6 +23,7 @@ public final class OrderMapper {
             jpa.getNotes(),
             jpa.getCreatedAt(),
             jpa.getUpdatedAt(),
+            jpa.getExpiresAt(),
             jpa.getCreatedBy(),
             jpa.getUpdatedBy(),
             jpa.getVersion()
@@ -34,6 +36,7 @@ public final class OrderMapper {
             domain.getSchoolId(),
             valueOf(domain.getType()),
             domain.getDescription(),
+            domain.getSubtotalAmountVnd(),
             domain.getTotalAmountVnd(),
             domain.getChargedFeeVnd(),
             domain.getDiscountAmountVnd(),
@@ -41,6 +44,7 @@ public final class OrderMapper {
             domain.getNotes(),
             domain.getCreatedAt(),
             domain.getUpdatedAt(),
+            domain.getExpiresAt(),
             domain.getCreatedBy(),
             domain.getUpdatedBy(),
             domain.getVersion()

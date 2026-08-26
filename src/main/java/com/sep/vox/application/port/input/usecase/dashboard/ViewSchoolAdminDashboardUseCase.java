@@ -72,8 +72,8 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
             buildAppealStats(schoolId),
             sumAmount(paidInvoices),
             buildMonthlySpending(paidInvoices),
-            gradingQuota.map(quota -> quota.getTotalAllocated()).orElse(BigDecimal.ZERO),
-            gradingQuota.map(quota -> quota.getUsedQuantity()).orElse(BigDecimal.ZERO),
+            gradingQuota.map(quota -> quota.getTotalAllocatedAmountVnd()).orElse(BigDecimal.ZERO),
+            gradingQuota.map(quota -> quota.getUsedAmountVnd()).orElse(BigDecimal.ZERO),
             buildSubscriptionRenewal(activeSubscription)
         );
     }
@@ -167,7 +167,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
 
     private Optional<SchoolSubscriptionQuotaRecord> activeGradingQuota(Optional<SchoolSubscription> activeSubscription) {
         return activeSubscription.flatMap(subscription -> subscriptionQuotaRepository
-            .findBySubscriptionIdAndQuotaType(subscription.getId(), QuotaType.GRADING));
+            .findBySchoolSubscriptionIdAndQuotaType(subscription.getId(), QuotaType.EXAM));
     }
 
     private SubscriptionRenewalDto buildSubscriptionRenewal(Optional<SchoolSubscription> activeSubscription) {

@@ -5,7 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.command.RecordAiUsageCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.model.aimodel.AiUsageRecord;
+import com.sep.vox.domain.model.metering.AiUsageRecord;
 import com.sep.vox.domain.repository.AiUsageRecordRepository;
 
 // Internal service-to-service use case (Kafka consumer nhận usage report từ Agentic AI sau mỗi turn),

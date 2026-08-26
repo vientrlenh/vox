@@ -35,13 +35,19 @@ public class PaymentRecord {
     /** Mã giao dịch phía cổng -- duy nhất theo từng lần thử, khóa tra ngược dashboard PayOS/SePay. */
     private String providerOrderRef;
     /** Thời điểm cổng ghi nhận giao dịch, KHÁC createdAt (lúc mình phát link). Null khi chưa trả. */
+    // Link đã phát cho lần thử này -- giữ lại để trường bấm lại thì nhận đúng link cũ.
+    private String checkoutUrl;
+    // Dữ liệu CHỈ RIÊNG một cổng mới có (vd PayOS paymentLinkId), dạng JSON. Không tách cột riêng
+    // cho từng cổng -- xem cột provider_payload_json trong V2. KHÔNG chứa chữ ký.
+    private String providerPayloadJson;
     private Instant paidAt;
     private Instant createdAt;
 
     public PaymentRecord() {}
 
     public PaymentRecord(UUID id, UUID orderId, BigDecimal amountVnd, PaymentMethod method, PaymentProvider provider,
-            PaymentStatus status, String providerOrderRef, Instant paidAt, Instant createdAt) {
+            PaymentStatus status, String providerOrderRef, String checkoutUrl, String providerPayloadJson,
+            Instant paidAt, Instant createdAt) {
         this.id = id;
         this.orderId = orderId;
         this.amountVnd = amountVnd;
@@ -49,20 +55,41 @@ public class PaymentRecord {
         this.provider = provider;
         this.status = status;
         this.providerOrderRef = providerOrderRef;
+        this.checkoutUrl = checkoutUrl;
+        this.providerPayloadJson = providerPayloadJson;
         this.paidAt = paidAt;
         this.createdAt = createdAt;
     }
 
     public PaymentRecord(UUID orderId, BigDecimal amountVnd, PaymentMethod method, PaymentProvider provider,
-            PaymentStatus status, String providerOrderRef, Instant paidAt, Instant createdAt) {
+            PaymentStatus status, String providerOrderRef, String checkoutUrl, String providerPayloadJson,
+            Instant paidAt, Instant createdAt) {
         this.orderId = orderId;
         this.amountVnd = amountVnd;
         this.method = method;
         this.provider = provider;
         this.status = status;
         this.providerOrderRef = providerOrderRef;
+        this.checkoutUrl = checkoutUrl;
+        this.providerPayloadJson = providerPayloadJson;
         this.paidAt = paidAt;
         this.createdAt = createdAt;
+    }
+
+    /**
+     * Một lần thử thanh toán VỪA MỞ: chưa có tiền, chưa có link, chưa có mốc trả.
+     *
+     * <p>method đóng cứng E_BANKING vì hiện chỉ nhận thanh toán qua cổng thứ ba (PayOS/SePay) --
+     * CARD là thanh toán thẻ trực tiếp, chưa hỗ trợ. Ghi sẵn một method mà chưa chắc đúng rồi chờ
+     * callback đính chính là tạo ra một quãng thời gian mà số liệu theo phương thức bị sai; ở đây
+     * E_BANKING đúng với mọi đơn đi qua cổng nên không có gì phải đoán.
+     *
+     * <p>checkoutUrl để null: chỉ có sau khi cổng trả về, chỗ gọi tự set rồi lưu lại.
+     */
+    public static PaymentRecord forEBankingCheckout(UUID orderId, BigDecimal amountVnd, PaymentProvider provider,
+            String providerOrderRef, Instant now) {
+        return new PaymentRecord(orderId, amountVnd, PaymentMethod.E_BANKING, provider, PaymentStatus.PENDING,
+            providerOrderRef, null, null, null, now);
     }
 
     public UUID getId() {
@@ -119,6 +146,22 @@ public class PaymentRecord {
 
     public void setProviderOrderRef(String providerOrderRef) {
         this.providerOrderRef = providerOrderRef;
+    }
+
+    public String getCheckoutUrl() {
+        return checkoutUrl;
+    }
+
+    public void setCheckoutUrl(String checkoutUrl) {
+        this.checkoutUrl = checkoutUrl;
+    }
+
+    public String getProviderPayloadJson() {
+        return providerPayloadJson;
+    }
+
+    public void setProviderPayloadJson(String providerPayloadJson) {
+        this.providerPayloadJson = providerPayloadJson;
     }
 
     public Instant getPaidAt() {

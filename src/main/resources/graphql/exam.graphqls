@@ -729,12 +729,16 @@ thí sinh, không phải ở query này.
 """
 type ExamTokenEstimate {
     estimatedCostUsd: Float!
-    "null nếu trường chưa có subscription active hoặc chưa cấu hình hạn mức GRADING"
-    remainingGradingUsd: Float
-    "null nếu bài không phải CLASS_TEST, hoặc trường chưa có subscription/hạn mức CLASS_TEST"
-    remainingClassTestUsd: Float
-    wouldExceedGrading: Boolean!
-    wouldExceedClassTest: Boolean!
+    "null nếu trường chưa có subscription active hoặc chưa cấu hình ví EXAM"
+    remainingExamUsd: Float
+    """
+    Hạn mức CÁ NHÂN còn lại của giáo viên ra đề -- KHÔNG phải một ví cấp trường thứ hai (ví
+    CLASS_TEST đã bị bỏ, xem QuotaType). null nếu bài không phải CLASS_TEST, hoặc giáo viên không
+    được cấp hạn mức riêng nên chỉ ví của trường áp dụng.
+    """
+    remainingMyClassTestUsd: Float
+    wouldExceedExam: Boolean!
+    wouldExceedMyClassTest: Boolean!
 }
 
 extend type Query {

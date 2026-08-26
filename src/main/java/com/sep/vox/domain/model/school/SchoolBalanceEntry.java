@@ -190,4 +190,19 @@ public class SchoolBalanceEntry {
     public void setOccurredAt(Instant occurredAt) {
         this.occurredAt = occurredAt;
     }
+
+    /**
+     * Bút toán NẠP TIỀN từ một đơn đã thu đủ.
+     *
+     * <p>Số cộng vào ví là {@code subtotalAmountVnd} của đơn, KHÔNG phải total: phần phí dịch vụ
+     * (charged_fee_vnd) là tiền công của mình, trường không được tiêu lại. Xem Order.forTopUp.
+     *
+     * <p>quotaType/costUsd/fxRateUsed đều null: đây là tiền vào, chưa gắn với lượt dùng nào -- ba
+     * cột đó chỉ có nghĩa với OVERAGE_CHARGE.
+     */
+    public static SchoolBalanceEntry forTopUp(UUID schoolId, UUID subscriptionId, UUID orderId,
+            BigDecimal creditedAmountVnd, BigDecimal balanceAfterVnd, Instant now) {
+        return new SchoolBalanceEntry(schoolId, subscriptionId, SchoolBalanceEntryType.TOP_UP,
+            creditedAmountVnd, balanceAfterVnd, orderId, null, null, null, null, null, null, now);
+    }
 }

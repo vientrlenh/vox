@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.domain.common.ZoneConstant;
+
 public class SubscriptionPlan {
     private UUID id;
     private String name;
@@ -172,6 +174,29 @@ public class SubscriptionPlan {
 
     public static SubscriptionPlan create(String name, String tagline, BigDecimal priceVnd, SubscriptionPlanPeriod periodType, Integer periodCount, Integer maxTimePerAttemptMin, Instant now, UUID createdBy) {
         return new SubscriptionPlan(name, tagline, priceVnd, periodType, periodCount, maxTimePerAttemptMin, SubscriptionPlanStatus.DRAFT, null, now, now, createdBy, createdBy);
+    }
+
+    /**
+     * Thời điểm hết hạn nếu gói bắt đầu chạy từ {@code start}.
+     *
+     * <p>Cộng theo LỊCH chứ không theo số ngày cố định: gói 1 tháng mua ngày 31/01 phải hết hạn
+     * 28/02, còn cộng 30 ngày thì ra 02/03 -- trường dùng thừa hai ngày ở mỗi tháng ngắn. Đây cũng
+     * chính là lý do periodType/periodCount thay cho validityDays cũ.
+     *
+     * <p>Quy về múi giờ nghiệp vụ trước khi cộng vì "một tháng" là khái niệm theo lịch địa phương:
+     * cộng trên UTC sẽ lệch ngày với mọi mốc rơi vào 17:00-23:59 giờ Việt Nam.
+     */
+    public Instant endDateFrom(Instant start) {
+        if (start == null || periodType == null || periodCount == null) {
+            throw new IllegalStateException("Gói thiếu chu kỳ (periodType/periodCount), không tính được hạn dùng");
+        }
+        var local = start.atZone(ZoneConstant.BUSINESS_ZONE);
+        var end = switch (periodType) {
+            case DAY -> local.plusDays(periodCount);
+            case MONTH -> local.plusMonths(periodCount);
+            case YEAR -> local.plusYears(periodCount);
+        };
+        return end.toInstant();
     }
 
 }

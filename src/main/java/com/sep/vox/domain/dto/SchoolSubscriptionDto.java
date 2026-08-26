@@ -7,11 +7,12 @@ import java.util.UUID;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
 
 public record SchoolSubscriptionDto(
     UUID id,
     UUID schoolId,
-    UUID planId,
+    UUID subscriptionPlanId,
     String startDate,
     String endDate,
     String status,
@@ -29,7 +30,7 @@ public record SchoolSubscriptionDto(
             domain.getSubscriptionPlanId(),
             valueOf(domain.getStartDate()),
             valueOf(domain.getEndDate()),
-            domain.getStatus().name(),
+            valueOf(domain.getStatus()),
             domain.getPricePaidSnapshot(),
             valueOf(domain.getCancelledAt()),
             valueOf(domain.getCreatedAt()),
@@ -56,5 +57,9 @@ public record SchoolSubscriptionDto(
 
     private static String valueOf(Instant value) {
         return value == null ? null : value.toString();
+    }
+
+    private static String valueOf(SchoolSubscriptionStatus status) {
+        return status == null ? null : status.name();
     }
 }

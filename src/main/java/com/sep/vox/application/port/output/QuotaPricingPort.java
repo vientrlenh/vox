@@ -22,9 +22,14 @@ public interface QuotaPricingPort {
     BigDecimal usdToVndRate();
 
     /**
-     * Giá bán mỗi $1 hạn mức cho CreatePlanUseCase/UpdatePlanUseCase -- tính từ usdToVndRate() ×
-     * (1 + serviceFeeRatio), làm tròn HALF_UP về số nguyên (khớp cột subscription_plan_quotas.token_unit_price
-     * NUMERIC(15,0)).
+     * Tỷ lệ phí dịch vụ (vd. 0.20 = 20%) mà đơn hàng cộng thêm vào phần tiền hạn mức.
+     *
+     * <p>CỐ Ý không gộp sẵn vào tỷ giá: gộp thì ra "1 USD = 31.200đ" trong khi tỷ giá thật là
+     * 26.000đ, trường không đối chiếu được với bất kỳ tỷ giá nào ngoài thị trường. Phí phải đứng
+     * thành một dòng riêng trên đơn để nhìn là biết mình đang trả cái gì.
+     *
+     * <p>Là config TOÀN HỆ THỐNG chứ không lưu theo từng gói (cột service_fee_ratio đã bị bỏ khỏi
+     * SubscriptionPlan) -- xem QuotaSellingPriceProperties.
      */
-    BigDecimal tokenUnitPriceFor(BigDecimal serviceFeeRatio);
+    BigDecimal serviceFeeRatio();
 }

@@ -8,18 +8,17 @@ import com.sep.vox.domain.model.subscription.SubscriptionPlanQuota;
 
 public record SubscriptionPlanQuotaDto(
     UUID id,
-    UUID subscriptionPlanId, 
+    UUID subscriptionPlanId,
     String quotaType,
-    BigDecimal includedAmountVnd,
-    BigDecimal tokenUnitPriceVnd
+    BigDecimal includedAmountVnd
 ) {
 
     public static SubscriptionPlanQuotaDto toDto(SubscriptionPlanQuota quota) {
         return new SubscriptionPlanQuotaDto(
-            quota.getId(), 
-            quota.getSubscriptionPlanId(), 
-            valueOf(quota.getQuotaType()), 
-            quota.getIncludedAmountVnd(), quota.getTokenUnitPriceVnd()
+            quota.getId(),
+            quota.getSubscriptionPlanId(),
+            valueOf(quota.getQuotaType()),
+            quota.getIncludedAmountVnd()
         );
     }
 

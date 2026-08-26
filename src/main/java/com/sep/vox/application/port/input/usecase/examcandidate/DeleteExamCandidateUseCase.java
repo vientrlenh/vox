@@ -69,7 +69,7 @@ public class DeleteExamCandidateUseCase implements IUseCase<DeleteExamCandidateC
             throw new NotFoundException("Không tìm thấy thí sinh");
         }
 
-        if (!examSessionRepository.findAllByCandidateId(candidate.getId()).isEmpty()) {
+        if (!examSessionRepository.findByCandidateId(candidate.getId()).isEmpty()) {
             throw new IllegalStateException("Thí sinh đã có bài thi — không thể xóa khỏi kỳ thi");
         }
 

@@ -40,7 +40,7 @@ import com.sep.vox.application.port.input.usecase.subscription.ConsumeQuotaUseCa
 import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForRenewalUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForSubscriptionRequestUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreatePaymentLinkForTokenPurchaseUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.CreatePlanUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.CreateSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.DeleteDraftPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ForceSuspendSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.PreviewRenewalUseCase;
@@ -51,19 +51,16 @@ import com.sep.vox.application.port.input.usecase.subscription.SubmitRequestUseC
 import com.sep.vox.application.port.input.usecase.subscription.UnsuspendSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewClassTestQuotaAllocationsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewPracticeQuotaAllocationsUseCase;
-import com.sep.vox.domain.dto.PaymentLinkDto;
 import com.sep.vox.domain.dto.QuotaUserAllocationSummaryDto;
 import com.sep.vox.domain.dto.RenewalPreviewDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.dto.SubscriptionRequestDto;
-import com.sep.vox.domain.dto.TokenPurchaseDto;
 import com.sep.vox.interfaces.rest.dto.request.AllocateQuotaRequest;
 import com.sep.vox.interfaces.rest.dto.request.BuyTokensRequest;
 import com.sep.vox.interfaces.rest.dto.request.ConsumeQuotaRequest;
-import com.sep.vox.interfaces.rest.dto.request.CreatePlanRequest;
+import com.sep.vox.interfaces.rest.dto.request.CreateSubscriptionPlanRequest;
 import com.sep.vox.interfaces.rest.dto.request.PaymentMethodRequest;
-import com.sep.vox.interfaces.rest.dto.request.SubmitRequestRequest;
 import com.sep.vox.interfaces.rest.dto.request.SuspendSubscriptionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UnsuspendSubscriptionRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
@@ -74,10 +71,10 @@ import com.sep.vox.interfaces.rest.mapper.CreatePlanCommandMapper;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/subscriptions")
 public class SubscriptionController {
 
-    private final CreatePlanUseCase createPlanUseCase;
+    private final CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase;
     private final ArchivePlanUseCase archivePlanUseCase;
     private final PublishPlanUseCase publishPlanUseCase;
     private final DeleteDraftPlanUseCase deleteDraftPlanUseCase;
@@ -100,7 +97,7 @@ public class SubscriptionController {
     private final ViewPracticeQuotaAllocationsUseCase viewPracticeQuotaAllocationsUseCase;
 
     public SubscriptionController(
-            CreatePlanUseCase createPlanUseCase,
+            CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase,
             ArchivePlanUseCase archivePlanUseCase,
             PublishPlanUseCase publishPlanUseCase,
             DeleteDraftPlanUseCase deleteDraftPlanUseCase,
@@ -121,7 +118,7 @@ public class SubscriptionController {
             AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase,
             ViewClassTestQuotaAllocationsUseCase viewClassTestQuotaAllocationsUseCase,
             ViewPracticeQuotaAllocationsUseCase viewPracticeQuotaAllocationsUseCase) {
-        this.createPlanUseCase = createPlanUseCase;
+        this.createSubscriptionPlanUseCase = createSubscriptionPlanUseCase;
         this.archivePlanUseCase = archivePlanUseCase;
         this.publishPlanUseCase = publishPlanUseCase;
         this.deleteDraftPlanUseCase = deleteDraftPlanUseCase;
@@ -144,10 +141,10 @@ public class SubscriptionController {
         this.viewPracticeQuotaAllocationsUseCase = viewPracticeQuotaAllocationsUseCase;
     }
 
-    @PostMapping("/plans")
+    @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<SubscriptionPlanDto>> createPlan(@Valid @RequestBody CreatePlanRequest request) {
-        var data = createPlanUseCase.execute(CreatePlanCommandMapper.fromRequest(request));
+    public ResponseEntity<ApiResponse<UUID>> createPlan(@Valid @RequestBody CreateSubscriptionPlanRequest request) {
+        var data = createSubscriptionPlanUseCase.execute(CreatePlanCommandMapper.fromRequest(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo gói đăng ký thành công", data));
     }
 

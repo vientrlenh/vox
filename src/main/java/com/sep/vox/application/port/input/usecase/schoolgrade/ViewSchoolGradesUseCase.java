@@ -58,7 +58,7 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
         // 1. Gọi DB lấy danh sách phân trang (PageResult<SchoolGrade>)
         //    status null/blank → mặc định ẩn Năm học đã xóa mềm (ARCHIVED).
         //    Truyền status=ARCHIVED để lấy đúng bản đã xóa mềm.
-        PageResult<SchoolGrade> pageResult = schoolGradeRepository.findAllBySchoolId(
+        PageResult<SchoolGrade> pageResult = schoolGradeRepository.findBySchoolId(
                 query.schoolId(),
                 query.gradeLevelId(),
                 parseStatus(query.status()),

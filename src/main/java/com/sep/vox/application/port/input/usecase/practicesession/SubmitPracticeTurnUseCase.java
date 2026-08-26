@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -38,8 +40,8 @@ import com.sep.vox.domain.repository.TurnCorrectionRepository;
 @Service
 public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCommand, SubmitTurnResult> {
 
-    private static final org.slf4j.Logger LOGGER =
-        org.slf4j.LoggerFactory.getLogger(SubmitPracticeTurnUseCase.class);
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger(SubmitPracticeTurnUseCase.class);
 
     private final PracticeSessionRepository practiceSessionRepository;
     private final PracticeItemResponseRepository practiceItemResponseRepository;

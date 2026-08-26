@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -94,7 +96,7 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
      * {@link #moveToPendingReviewWithoutScores}).
      */
     private void recomputeInvalidatedSessions(java.util.UUID candidateId) {
-        for (var session : examSessionRepository.findAllByCandidateId(candidateId)) {
+        for (var session : examSessionRepository.findByCandidateId(candidateId)) {
             var result = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
             if (result == null || result.getStatus() != ExamCandidateResultStatus.INVALID) {
                 continue;
@@ -137,7 +139,7 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
      * đó sinh evaluation, và từ đó mọi đường tính điểm thông thường chạy lại bình thường.
      */
     private void moveToPendingReviewWithoutScores(
-            com.sep.vox.domain.model.exam.ExamCandidateResult result, java.util.UUID sessionId) {
+            ExamCandidateResult result, UUID sessionId) {
         var now = Instant.now();
         result.setStatus(ExamCandidateResultStatus.PENDING_REVIEW);
         result.setUpdatedAt(now);

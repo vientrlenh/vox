@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.query;
 
-public record ViewPlansQuery(
+public record ViewSubscriptionPlansQuery(
     int page, 
     int size
 ) {

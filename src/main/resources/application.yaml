@@ -436,6 +436,10 @@ vox:
       # Fallback tĩnh khi chưa có snapshot nào từ ExchangeRateRefreshJob (mới deploy) -- xem
       # QuotaSellingPriceProperties/QuotaPricingService.
       usd-to-vnd-rate: ${VOX_QUOTA_USD_TO_VND_RATE:}
+      # Phí dịch vụ cộng vào phần tiền hạn mức trên ĐƠN HÀNG (0.20 = 20%). Cố ý KHÔNG nhân sẵn vào
+      # tỷ giá: gộp thì trường thấy "1 USD = 31.200đ" không khớp tỷ giá thật nào -- xem
+      # QuotaPricingPort.serviceFeeRatio.
+      service-fee-ratio: ${VOX_QUOTA_SERVICE_FEE_RATIO:}
     exchange-rate-api:
       # API tỷ giá USD->VND thật, miễn phí, không cần key -- ExchangeRateRefreshJob gọi định kỳ để
       # lưu snapshot mới, xem ExchangeRateApiProperties/ExchangeRateApiClient.

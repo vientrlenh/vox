@@ -26,6 +26,16 @@ ALTER TABLE plan_quota RENAME TO subscription_plan_quotas;
 ALTER TABLE subscription_plan_quotas RENAME CONSTRAINT plan_quota_pkey TO subscription_plan_quotas_pkey;
 ALTER TABLE subscription_plan_quotas
     RENAME CONSTRAINT chk_plan_quota_quota_type_valid TO chk_subscription_plan_quotas_quota_type_valid;
+ALTER TABLE subscription_plan_quotas RENAME COLUMN included_quantity TO included_amount_vnd;
+-- token_unit_price (VND cho mỗi $1 hạn mức) mất lý do tồn tại:
+--   * Nó là fx x (1 + service_fee_ratio), tức MỘT TỶ GIÁ ĐÃ CỘNG LÃI -- trường nhìn thấy "1 USD =
+--     31.200đ" trong khi tỷ giá thật là 26.000đ. Phần lãi giờ nằm thành một dòng riêng trên đơn hàng.
+--   * Nó là cầu nối giữa ví hạn mức tính bằng USD và tiền thu bằng VND. Cả hai đầu đều đã đổi:
+--     ví chuyển sang school_balances.balance_vnd, còn quy đổi USD->VND ghi theo từng lượt dùng ở
+--     school_balance_entries (cost_usd + fx_rate_used) và ai_usage_record.
+--   * Trong code cũ nó vốn đã là cột CHỈ GHI: BuyTokensUseCase/CreatePaymentLinkForTokenPurchaseUseCase
+--     đều tự tính lại từ tỷ giá hiện tại chứ không đọc giá trị đóng băng này.
+ALTER TABLE subscription_plan_quotas DROP COLUMN token_unit_price;
 
 ALTER TABLE subscription_quota RENAME TO school_subscription_quota_records;
 ALTER TABLE school_subscription_quota_records

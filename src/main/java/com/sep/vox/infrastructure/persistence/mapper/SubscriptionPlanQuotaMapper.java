@@ -13,8 +13,7 @@ public final class SubscriptionPlanQuotaMapper {
             jpa.getId(),
             jpa.getSubscriptionPlanId(),
             fromString(jpa.getQuotaType()),
-            jpa.getIncludedAmountVnd(),
-            jpa.getTokenUnitPriceVnd()
+            jpa.getIncludedAmountVnd()
         );
     }
 
@@ -23,8 +22,7 @@ public final class SubscriptionPlanQuotaMapper {
             domain.getId(),
             domain.getSubscriptionPlanId(),
             valueOf(domain.getQuotaType()),
-            domain.getIncludedAmountVnd(),
-            domain.getTokenUnitPriceVnd()
+            domain.getIncludedAmountVnd()
         );
     }
 

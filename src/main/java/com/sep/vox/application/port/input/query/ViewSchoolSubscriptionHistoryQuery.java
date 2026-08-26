@@ -2,5 +2,7 @@ package com.sep.vox.application.port.input.query;
 
 import java.util.UUID;
 
-public record ViewPlanDetailQuery(UUID planId) {
+public record ViewSchoolSubscriptionHistoryQuery(
+    UUID schoolId
+) {
 }

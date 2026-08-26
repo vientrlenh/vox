@@ -38,20 +38,18 @@ public class SubscriptionPlanQuotaJpaEntity {
     })
     private String quotaType;
 
+    // scale 6 chứ không phải 0 như tiền thu qua cổng: định mức được trừ dần theo từng lượt dùng, mà
+    // một lượt luyện nói có thể chỉ tốn vài phần trăm đồng.
     @Column(name = "included_amount_vnd", nullable = false, precision = 18, scale = 6)
     private BigDecimal includedAmountVnd;
 
-    @Column(name = "token_unit_price_vnd", nullable = false, precision = 15, scale = 0)
-    private BigDecimal tokenUnitPriceVnd;
-
     protected SubscriptionPlanQuotaJpaEntity() {}
 
-    public SubscriptionPlanQuotaJpaEntity(UUID id, UUID subscriptionPlanId, String quotaType, BigDecimal includedAmountVnd, BigDecimal tokenUnitPriceVnd) {
+    public SubscriptionPlanQuotaJpaEntity(UUID id, UUID subscriptionPlanId, String quotaType, BigDecimal includedAmountVnd) {
         this.id = id;
         this.subscriptionPlanId = subscriptionPlanId;
         this.quotaType = quotaType;
         this.includedAmountVnd = includedAmountVnd;
-        this.tokenUnitPriceVnd = tokenUnitPriceVnd;
     }
 
     public UUID getId() {
@@ -84,13 +82,5 @@ public class SubscriptionPlanQuotaJpaEntity {
 
     public void setIncludedAmountVnd(BigDecimal includedAmountVnd) {
         this.includedAmountVnd = includedAmountVnd;
-    }
-
-    public BigDecimal getTokenUnitPriceVnd() {
-        return tokenUnitPriceVnd;
-    }
-
-    public void setTokenUnitPriceVnd(BigDecimal tokenUnitPriceVnd) {
-        this.tokenUnitPriceVnd = tokenUnitPriceVnd;
     }
 }

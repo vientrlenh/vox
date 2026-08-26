@@ -51,4 +51,11 @@ public class SubscriptionPlanQuotaRepositoryImpl implements SubscriptionPlanQuot
     public void deleteBySubscriptionPlanId(UUID subscriptionPlanId) {
         springDataSubscriptionPlanQuotaRepository.deleteBySubscriptionPlanId(subscriptionPlanId);
     }
+
+    @Override
+    public List<SubscriptionPlanQuota> saveAll(Collection<SubscriptionPlanQuota> quotas) {
+        var entities = quotas.stream().map(SubscriptionPlanQuotaMapper::toJpa).toList();
+        var saved = springDataSubscriptionPlanQuotaRepository.saveAll(entities);
+        return saved.stream().map(SubscriptionPlanQuotaMapper::toDomain).toList();
+    }
 }

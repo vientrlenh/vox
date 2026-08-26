@@ -29,10 +29,10 @@ public class SubscriptionPlanJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", length = 255, nullable = false)
     private String name;
 
-    @Column(name = "tagline")
+    @Column(name = "tagline", nullable = false, length = 2048)
     private String tagline;
 
     // VND không có đơn vị lẻ (hào/xu đã ngừng lưu hành) và PayOS/SePay chỉ nhận số nguyên -- giá gói
@@ -49,10 +49,20 @@ public class SubscriptionPlanJpaEntity {
     })
     private String periodType;
 
-    @Column(name = "period_count", nullable = false)
+    @Column(name = "period_count", nullable = false, check = {
+        @CheckConstraint(
+            name = "chk_subscription_plans_period_count_positive", 
+            constraint = "period_count > 0"
+        )
+    })
     private Integer periodCount;
 
-    @Column(name = "max_time_per_attempt_min", nullable = false)
+    @Column(name = "max_time_per_attempt_min", nullable = false, check = {
+        @CheckConstraint(
+            name = "chk_subscription_plans_max_time_per_attempt_min_positive", 
+            constraint = "max_time_per_attempt_min > 0"
+        )
+    })
     private Integer maxTimePerAttemptMin;
 
     @Column(name = "status", nullable = false, length = 20, check = {

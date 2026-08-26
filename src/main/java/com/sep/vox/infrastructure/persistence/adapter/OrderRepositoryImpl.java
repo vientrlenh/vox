@@ -79,7 +79,7 @@ public class OrderRepositoryImpl implements OrderRepository {
     public boolean existsBySchoolIdAndTypeInAndStatus(UUID schoolId, List<OrderType> types, OrderStatus status) {
         return springDataOrderRepository.existsBySchoolIdAndTypeInAndStatus(
             schoolId,
-            types.stream().map(OrderType::name).toList(),
+            types.stream().map(type -> type.name()).toList(),
             status.name()
         );
     }

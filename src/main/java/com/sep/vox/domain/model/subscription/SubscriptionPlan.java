@@ -170,4 +170,8 @@ public class SubscriptionPlan {
         this.replacedByPlanId = replacedByPlanId;
     }
 
+    public static SubscriptionPlan create(String name, String tagline, BigDecimal priceVnd, SubscriptionPlanPeriod periodType, Integer periodCount, Integer maxTimePerAttemptMin, Instant now, UUID createdBy) {
+        return new SubscriptionPlan(name, tagline, priceVnd, periodType, periodCount, maxTimePerAttemptMin, SubscriptionPlanStatus.DRAFT, null, now, now, createdBy, createdBy);
+    }
+
 }

@@ -1,35 +1,38 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
-import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.query.ViewPlansQuery;
+import com.sep.vox.application.port.input.query.ViewSubscriptionPlansQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.SubscriptionPlanQueryRepository;
+import com.sep.vox.application.response.input.subscription.ViewSubscriptionPlansResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
-import com.sep.vox.domain.model.subscription.PlanStatus;
+import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
+import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 @Service
-public class ViewPlansUseCase implements IUseCase<ViewPlansQuery, PageResult<SubscriptionPlanDto>> {
+public class ViewSubscriptionPlansUseCase implements IUseCase<ViewSubscriptionPlansQuery, PageResult<ViewSubscriptionPlansResponse>> {
 
+    private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanQueryRepository subscriptionPlanQueryRepository;
     private final UserContextPort userContextPort;
 
-    public ViewPlansUseCase(
+    public ViewSubscriptionPlansUseCase(
+            SubscriptionPlanRepository subscriptionPlanRepository,
             SubscriptionPlanQueryRepository subscriptionPlanQueryRepository,
             UserContextPort userContextPort) {
+        this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.subscriptionPlanQueryRepository = subscriptionPlanQueryRepository;
         this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PageResult<SubscriptionPlanDto> execute(ViewPlansQuery input) {
-        var pageRequest = PageRequest.of(input.page(), input.size());
+    public PageResult<ViewSubscriptionPlansResponse> execute(ViewSubscriptionPlansQuery input) {
         // System admin quản lý gói nên cần thấy cả ARCHIVED (để biết gói nào đã ngừng bán, xem
         // replacedByPlanId...). Trường chỉ dùng danh sách này để đăng ký/gia hạn nên chỉ thấy
         // ACTIVE — gói archived không mua được thì không cần hiện ra.
@@ -48,9 +51,19 @@ public class ViewPlansUseCase implements IUseCase<ViewPlansQuery, PageResult<Sub
         }
 
         var page = isSystemAdmin
-            ? subscriptionPlanQueryRepository.findAll(pageRequest)
-            : subscriptionPlanQueryRepository.findAllByStatus(PlanStatus.ACTIVE, pageRequest);
+            ? subscriptionPlanRepository.findAll(input.page(), input.size())
+            : subscriptionPlanRepository.findByStatus(SubscriptionPlanStatus.ACTIVE, input.page(), input.size());
 
-        return new PageResult<>(page.getContent(), input.page(), input.size(), page.getTotalElements(), page.getTotalPages());
+        // Tính một lần cho cả trang, và tính TOÀN CỤC chứ không phải trong phạm vi trang -- xem
+        // SubscriptionPlanQueryRepository#findMostPopularPlanId. Rỗng nghĩa là chưa trường nào đăng
+        // ký, khi đó không gói nào được gắn nhãn.
+        var mostPopularPlanId = subscriptionPlanQueryRepository.findMostPopularPlanId().orElse(null);
+
+        var content = page.content().stream()
+            .map(SubscriptionPlanDto::toDto)
+            .map(plan -> new ViewSubscriptionPlansResponse(plan, plan.id().equals(mostPopularPlanId)))
+            .toList();
+
+        return new PageResult<>(content, page.page(), page.size(), page.totalElements(), page.totalPages());
     }
 }

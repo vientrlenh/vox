@@ -7,7 +7,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ReportAiUsageCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.RecordAiUsageUseCase;
+import com.sep.vox.application.port.input.usecase.metering.RecordAiUsageUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;

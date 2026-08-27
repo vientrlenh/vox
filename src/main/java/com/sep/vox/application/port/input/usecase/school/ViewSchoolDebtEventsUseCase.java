@@ -1,4 +1,4 @@
-package com.sep.vox.application.port.input.usecase.subscription;
+package com.sep.vox.application.port.input.usecase.school;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;

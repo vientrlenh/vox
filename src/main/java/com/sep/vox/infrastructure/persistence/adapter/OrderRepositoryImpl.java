@@ -111,4 +111,12 @@ public class OrderRepositoryImpl implements OrderRepository {
     public BigDecimal sumTotalAmountByStatusInRange(OrderStatus status, Instant from, Instant to) {
         return springDataOrderRepository.sumTotalAmountByStatusInRange(status.name(), from, to);
     }
+
+    @Override
+    public List<Order> findByStatusInRange(OrderStatus status, Instant from, Instant to) {
+        return springDataOrderRepository
+            .findByStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(status.name(), from, to).stream()
+            .map(OrderMapper::toDomain)
+            .toList();
+    }
 }

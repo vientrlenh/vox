@@ -102,6 +102,14 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
         return null;
     }
 
+    /**
+     * Trừ hạn mức, rồi báo cáo nếu chính lần trừ này là lần đẩy trường vào nợ.
+     *
+     * <p>Hỏi {@code isQuotaOverLimit} ở CẢ HAI phía thay vì tự so hai cột của bản ghi vừa trả về:
+     * "đang nợ hay không" không phải một cột của ví mà là một phép so hai cột, nên nó chỉ được có
+     * MỘT chỗ định nghĩa -- xem {@link SchoolSubscriptionDebtGuardService}. Hai vế trước/sau dùng
+     * chung một thước cũng là thứ khiến so sánh này không thể lệch.
+     */
     private void checkAndReportLockTransition(UUID subscriptionId, UUID schoolId,
             QuotaType quotaType, UUID examSessionId, BigDecimal totalCostUsd, UUID userId, Instant now) {
         var wasOver = schoolSubscriptionDebtGuardService.isQuotaOverLimit(subscriptionId, quotaType);
@@ -110,11 +118,17 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
             subscriptionId, examSessionId, quotaType, totalCostUsd, userId, true
         ));
 
-        if (!wasOver && after.isLocked()) {
-            schoolDebtNotificationService.publishSchoolLockedDueToDebt(
-                subscriptionId, schoolId, quotaType, examSessionId, totalCostUsd,
-                after.totalAllocated(), after.usedQuantity(), now
-            );
+        // Chỉ báo đúng lần CHUYỂN từ trong hạn mức sang nợ. Đang nợ sẵn thì những lần trừ tiếp theo
+        // không sinh thêm sự kiện nào -- và nhánh đó cũng thoát trước khi phải hỏi lại lần thứ hai.
+        if (wasOver || !schoolSubscriptionDebtGuardService.isQuotaOverLimit(subscriptionId, quotaType)) {
+            return;
         }
+
+        // Số liệu cho sự kiện lấy từ bản ghi ConsumeQuotaUseCase vừa trả về: đó đúng là trạng thái
+        // ví SAU khi trừ, không phải đọc thêm một lần nữa.
+        schoolDebtNotificationService.publishSchoolLockedDueToDebt(
+            subscriptionId, schoolId, quotaType, examSessionId, totalCostUsd,
+            after.totalAllocatedAmountVnd(), after.usedAmountVnd(), now
+        );
     }
 }

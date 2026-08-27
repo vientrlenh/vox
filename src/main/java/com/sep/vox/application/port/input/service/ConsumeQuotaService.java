@@ -1,7 +1,8 @@
-package com.sep.vox.application.port.input.usecase.subscription;
+package com.sep.vox.application.port.input.service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,52 +13,57 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.QuotaDebtConfigPort;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
-import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
+import com.sep.vox.domain.repository.SchoolBalanceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 
 // Internal service-to-service use case (called from the exam-session flow), not end-user-facing —
 // no UserContextPort school-scoping check here
 @Service
-public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, SchoolSubscriptionQuotaRecordDto> {
+public class ConsumeQuotaService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConsumeQuotaUseCase.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConsumeQuotaService.class);
 
     private final SchoolSubscriptionQuotaRecordRepository schoolSubscriptionQuotaRecordRepository;
-    private final SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
-    private final QuotaDebtConfigPort quotaDebtConfig;
+    private final SchoolSubscriptionQuotaUserAllocationRepository schoolSubscriptionQuotaUserAllocationRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
+    private final SchoolBalanceRepository schoolBalanceRepository; 
+    private final SchoolBalanceEntryRepository schoolBalanceEntryRepository;
     private final SchoolDebtNotificationService schoolDebtNotificationService;
 
-    public ConsumeQuotaUseCase(
+    public ConsumeQuotaService(
             SchoolSubscriptionQuotaRecordRepository schoolSubscriptionQuotaRecordRepository,
-            SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
-            QuotaDebtConfigPort quotaDebtConfig,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
+            SchoolSubscriptionQuotaUserAllocationRepository schoolSubscriptionQuotaUserAllocationRepository,
+            SchoolSubscriptionRepository schoolSubscriptionRepository, 
+            SchoolBalanceRepository schoolBalanceRepository, 
+            SchoolBalanceEntryRepository schoolBalanceEntryRepository, 
             SchoolDebtNotificationService schoolDebtNotificationService) {
         this.schoolSubscriptionQuotaRecordRepository = schoolSubscriptionQuotaRecordRepository;
-        this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
-        this.quotaDebtConfig = quotaDebtConfig;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
+        this.schoolSubscriptionQuotaUserAllocationRepository = schoolSubscriptionQuotaUserAllocationRepository;
+        this.schoolSubscriptionRepository = schoolSubscriptionRepository; 
+        this.schoolBalanceRepository = schoolBalanceRepository; 
+        this.schoolBalanceEntryRepository = schoolBalanceEntryRepository;
         this.schoolDebtNotificationService = schoolDebtNotificationService;
     }
 
-    @Override
     @Transactional
-    public SchoolSubscriptionQuotaRecordDto execute(ConsumeQuotaCommand input) {
-        var quota = schoolSubscriptionQuotaRecordRepository.findBySchoolSubscriptionIdAndQuotaType(input.subscriptionId(), input.quotaType())
+    public SchoolSubscriptionQuotaRecordDto execute(UUID subscriptionId, UUID examSessionId, QuotaType quotaType, BigDecimal amountVnd, UUID userId, boolean allowDebt) {
+        var quota = schoolSubscriptionQuotaRecordRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, quotaType)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
 
-        if (input.allowDebt()) {
+        if (allowDebt) {
             // Chi phí AI thật đã phát sinh -- luôn ghi nhận đủ, chấp nhận usedQuantity vượt
             // totalAllocated (ghi nợ) thay vì throw + rollback cả CompleteExamSessionGradingUseCase.
-            schoolSubscriptionQuotaRecordRepository.addUsage(quota.getId(), input.amount());
+            schoolSubscriptionQuotaRecordRepository.addUsage(quota.getId(), amountVnd);
+
+
         } else {
-            var consumed = schoolSubscriptionQuotaRecordRepository.tryConsume(quota.getId(), input.amount());
+            var consumed = schoolSubscriptionQuotaRecordRepository.tryConsume(quota.getId(), amountVnd);
             if (!consumed) {
                 throw new QuotaExceededException("Đã vượt quá hạn mức sử dụng");
             }
@@ -69,13 +75,13 @@ public class ConsumeQuotaUseCase implements IUseCase<ConsumeQuotaCommand, School
         // CompleteExamSessionGradingUseCase. .ifPresent bên dưới vẫn giữ nghĩa "không có allocation
         // riêng thì không bị chặn theo cá nhân".
         if (input.userId() != null) {
-            subscriptionQuotaUserAllocationRepository
+            schoolSubscriptionQuotaUserAllocationRepository
                 .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(input.subscriptionId(), input.quotaType(), input.userId())
                 .ifPresent(allocation -> {
                     if (input.allowDebt()) {
-                        subscriptionQuotaUserAllocationRepository.addUsage(allocation.getId(), input.amount());
+                        schoolSubscriptionQuotaUserAllocationRepository.addUsage(allocation.getId(), input.amount());
                     } else {
-                        var consumedByUser = subscriptionQuotaUserAllocationRepository.tryConsume(allocation.getId(), input.amount());
+                        var consumedByUser = schoolSubscriptionQuotaUserAllocationRepository.tryConsume(allocation.getId(), input.amount());
                         if (!consumedByUser) {
                             throw new QuotaExceededException("Đã vượt quá hạn mức cá nhân");
                         }

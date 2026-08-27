@@ -1,4 +1,4 @@
-package com.sep.vox.application.port.input.usecase.subscription;
+package com.sep.vox.application.port.input.usecase.metering;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

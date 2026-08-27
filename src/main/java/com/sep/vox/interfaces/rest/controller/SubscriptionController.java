@@ -61,7 +61,7 @@ public class SubscriptionController {
     private final CancelSchoolSubscriptionUseCase cancelSchoolSubscriptionUseCase;
     private final ForceSuspendSubscriptionUseCase forceSuspendSubscriptionUseCase;
     private final UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase;
-    private final ConsumeQuotaUseCase consumeQuotaUseCase;
+    private final 0ConsumeQuotaUseCase consumeQuotaUseCase;
     private final AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase;
     private final AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase;
     private final ViewExamQuotaAllocationsUseCase viewExamQuotaAllocationsUseCase;

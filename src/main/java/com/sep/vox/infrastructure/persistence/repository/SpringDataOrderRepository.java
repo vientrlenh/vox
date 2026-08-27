@@ -78,6 +78,19 @@ public interface SpringDataOrderRepository extends JpaRepository<OrderJpaEntity,
         @Param("from") Instant from,
         @Param("to") Instant to);
 
+    /**
+     * Đơn theo trạng thái trong một khoảng, cùng khoảng NỬA MỞ [from, to) với
+     * {@link #sumTotalAmountByStatusInRange} -- hai câu này phải soi cùng một mốc thời gian, nếu
+     * không thì tổng doanh thu và biểu đồ theo tháng trên cùng một màn hình sẽ không cộng lại bằng
+     * nhau.
+     *
+     * <p>Có mặt riêng thay vì dùng {@code findByStatus}: dashboard chỉ vẽ 12-24 tháng gần nhất, mà
+     * findByStatus nạp MỌI đơn thành công từ trước tới nay -- một danh sách chỉ có tăng, không bao
+     * giờ giảm.
+     */
+    List<OrderJpaEntity> findByStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+        String status, Instant from, Instant to);
+
     // PESSIMISTIC_WRITE: chặn hai lần chốt thanh toán song song trên cùng một đơn (webhook cổng đua
     // với PendingOrderReconciler). @Version trên entity chỉ phát hiện xung đột SAU khi cả hai đã
     // làm việc thừa; khóa ở đây chặn ngay từ đầu.

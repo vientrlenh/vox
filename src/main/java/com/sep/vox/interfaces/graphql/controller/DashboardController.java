@@ -11,9 +11,9 @@ import com.sep.vox.application.port.input.usecase.dashboard.ViewQuestionBankStat
 import com.sep.vox.application.port.input.usecase.dashboard.ViewTeacherDashboardUseCase;
 import com.sep.vox.application.query.dto.NearestCentralizedExamDto;
 import com.sep.vox.application.query.dto.QuestionBankStatsDto;
-import com.sep.vox.domain.dto.SchoolAdminDashboardSummaryDto;
-import com.sep.vox.domain.dto.SystemAdminDashboardSummaryDto;
-import com.sep.vox.domain.dto.TeacherDashboardSummaryDto;
+import com.sep.vox.application.response.input.dashboard.SchoolAdminDashboardSummaryResponse;
+import com.sep.vox.application.response.input.dashboard.SystemAdminDashboardSummaryResponse;
+import com.sep.vox.application.response.input.dashboard.TeacherDashboardSummaryResponse;
 
 @Controller
 public class DashboardController {
@@ -38,19 +38,19 @@ public class DashboardController {
 
     @QueryMapping(name = "systemAdminDashboard")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public SystemAdminDashboardSummaryDto systemAdminDashboard() {
+    public SystemAdminDashboardSummaryResponse systemAdminDashboard() {
         return viewSystemAdminDashboardUseCase.execute(null);
     }
 
     @QueryMapping(name = "schoolAdminDashboard")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public SchoolAdminDashboardSummaryDto schoolAdminDashboard() {
+    public SchoolAdminDashboardSummaryResponse schoolAdminDashboard() {
         return viewSchoolAdminDashboardUseCase.execute(null);
     }
 
     @QueryMapping(name = "teacherDashboard")
     @PreAuthorize("hasRole('TEACHER')")
-    public TeacherDashboardSummaryDto teacherDashboard() {
+    public TeacherDashboardSummaryResponse teacherDashboard() {
         return viewTeacherDashboardUseCase.execute(null);
     }
 

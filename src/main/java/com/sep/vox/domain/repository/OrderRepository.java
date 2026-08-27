@@ -45,4 +45,11 @@ public interface OrderRepository {
 
     /** Doanh thu đã thu trong kỳ. {@code from} bao gồm, {@code to} KHÔNG bao gồm. */
     BigDecimal sumTotalAmountByStatusInRange(OrderStatus status, Instant from, Instant to);
+
+    /**
+     * Đơn theo trạng thái trong một kỳ, cùng quy ước khoảng với
+     * {@link #sumTotalAmountByStatusInRange}. Dùng cho các màn thống kê cần TÁCH NHÓM số tiền (theo
+     * tháng, theo loại đơn) chứ không chỉ cần một tổng.
+     */
+    List<Order> findByStatusInRange(OrderStatus status, Instant from, Instant to);
 }

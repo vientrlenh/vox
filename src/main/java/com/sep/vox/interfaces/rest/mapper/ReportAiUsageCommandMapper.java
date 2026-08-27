@@ -7,7 +7,7 @@ import java.util.UUID;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.command.RecordAiUsageCommand;
 import com.sep.vox.application.port.input.command.ReportAiUsageCommand;
-import com.sep.vox.domain.model.subscription.AiUsageType;
+import com.sep.vox.domain.model.metering.AiUsageType;
 import com.sep.vox.interfaces.rest.dto.request.ReportAiUsageRequest;
 
 import tools.jackson.databind.json.JsonMapper;

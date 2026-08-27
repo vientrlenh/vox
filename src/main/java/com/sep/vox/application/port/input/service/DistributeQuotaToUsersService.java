@@ -13,24 +13,23 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.command.UserQuotaAmount;
+import com.sep.vox.application.port.input.command.AllocateUserQuotaAmountCommand;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.QuotaUserAllocationSummaryDto;
-import com.sep.vox.domain.mapper.SubscriptionQuotaDtoMapper;
-import com.sep.vox.domain.mapper.SubscriptionQuotaUserAllocationDtoMapper;
-import com.sep.vox.domain.model.subscription.DistributionMode;
-import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;
+import com.sep.vox.domain.common.DistributionMode;
+import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
+import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
-import com.sep.vox.domain.model.subscription.SubscriptionQuotaUserAllocation;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaUserAllocationRepository;
-import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 
 @Service
 public class DistributeQuotaToUsersService {
@@ -45,31 +44,28 @@ public class DistributeQuotaToUsersService {
 
     private final UserContextPort userContextPort;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
-    private final SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
+    private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
+    private final SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
     private final RoleRepository roleRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRepository userRepository;
 
     public DistributeQuotaToUsersService(
             UserContextPort userContextPort,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionQuotaRepository subscriptionQuotaRepository,
-            SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
+            SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
+            SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
             RoleRepository roleRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRepository userRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.userContextPort = userContextPort;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
         this.roleRepository = roleRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRepository = userRepository;
     }
 
-    public QuotaUserAllocationSummaryDto distribute(UUID schoolId, QuotaType quotaType, String roleCode,
-            DistributionMode mode, List<UserQuotaAmount> allocations) {
+    public QuotaUserAllocationSummaryResponse distribute(UUID schoolId, QuotaType quotaType, String roleCode,
+            DistributionMode mode, List<AllocateUserQuotaAmountCommand> allocations) {
         requireSchoolAdminAccess(schoolId);
 
         var subscription = findActiveSubscription(schoolId);
@@ -82,7 +78,7 @@ public class DistributeQuotaToUsersService {
 
         var existing = fetchExistingAllocationsByUserId(subscription.getId(), quotaType);
 
-        var totalAllocated = orZero(pool.getTotalAllocated());
+        var totalAllocated = orZero(pool.getTotalAllocatedAmountVnd());
         var targetAmounts = mode == DistributionMode.AUTO
             ? computeAutoSplit(eligibleUserIds, totalAllocated, existing)
             : computeManualAmounts(allocations, eligibleUserIds, existing, totalAllocated);
@@ -93,7 +89,7 @@ public class DistributeQuotaToUsersService {
         return buildSummary(subscription.getId(), quotaType, pool, eligibleUserIds);
     }
 
-    public QuotaUserAllocationSummaryDto view(UUID schoolId, QuotaType quotaType, String roleCode) {
+    public QuotaUserAllocationSummaryResponse view(UUID schoolId, QuotaType quotaType, String roleCode) {
         requireSchoolAdminAccess(schoolId);
 
         var subscription = findActiveSubscription(schoolId);
@@ -105,7 +101,7 @@ public class DistributeQuotaToUsersService {
     }
 
     private Map<UUID, BigDecimal> computeAutoSplit(List<UUID> eligibleUserIds, BigDecimal totalAllocated,
-            Map<UUID, SubscriptionQuotaUserAllocation> existing) {
+            Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing) {
         var count = eligibleUserIds.size();
         var base = totalAllocated.divide(BigDecimal.valueOf(count), 6, RoundingMode.DOWN);
         // Phần dư sau khi chia đều (không hết vì DOWN), quy đổi sang số đơn vị SMALLEST_UNIT để rải
@@ -128,8 +124,8 @@ public class DistributeQuotaToUsersService {
         return result;
     }
 
-    private Map<UUID, BigDecimal> computeManualAmounts(List<UserQuotaAmount> allocations, List<UUID> eligibleUserIds,
-            Map<UUID, SubscriptionQuotaUserAllocation> existing, BigDecimal totalAllocated) {
+    private Map<UUID, BigDecimal> computeManualAmounts(List<AllocateUserQuotaAmountCommand> allocations, List<UUID> eligibleUserIds,
+            Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing, BigDecimal totalAllocated) {
         if (allocations == null || allocations.isEmpty()) {
             throw new IllegalArgumentException("Danh sách phân bổ không được để trống");
         }
@@ -144,20 +140,20 @@ public class DistributeQuotaToUsersService {
             if (result.containsKey(item.userId())) {
                 throw new IllegalArgumentException("Danh sách phân bổ chứa userId trùng lặp: " + item.userId());
             }
-            if (item.amount() == null || item.amount().compareTo(BigDecimal.ZERO) < 0) {
+            if (item.amountVnd() == null || item.amountVnd().compareTo(BigDecimal.ZERO) < 0) {
                 throw new IllegalArgumentException("Số lượng phân bổ không hợp lệ");
             }
             var used = usedQuantityOrZero(existing.get(item.userId()));
-            if (item.amount().compareTo(used) < 0) {
+            if (item.amountVnd().compareTo(used) < 0) {
                 throw new IllegalArgumentException("Không thể đặt hạn mức nhỏ hơn số lượng đã sử dụng");
             }
-            result.put(item.userId(), item.amount());
+            result.put(item.userId(), item.amountVnd());
         }
 
         var sumInRequest = result.values().stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         var sumOthers = existing.entrySet().stream()
             .filter(e -> !result.containsKey(e.getKey()))
-            .map(e -> orZero(e.getValue().getAllocatedQuantity()))
+            .map(e -> orZero(e.getValue().getAllocatedAmountVnd()))
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (sumInRequest.add(sumOthers).compareTo(totalAllocated) > 0) {
             throw new IllegalArgumentException("Tổng hạn mức phân bổ vượt quá hạn mức của trường");
@@ -166,36 +162,35 @@ public class DistributeQuotaToUsersService {
         return result;
     }
 
-    private static BigDecimal usedQuantityOrZero(SubscriptionQuotaUserAllocation allocation) {
-        if (allocation == null || allocation.getUsedQuantity() == null) {
+    private static BigDecimal usedQuantityOrZero(SchoolSubscriptionQuotaUserAllocation allocation) {
+        if (allocation == null || allocation.getUsedAmountVnd() == null) {
             return BigDecimal.ZERO;
         }
-        return allocation.getUsedQuantity();
+        return allocation.getUsedAmountVnd();
     }
 
     private static BigDecimal orZero(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
     }
 
-    private QuotaUserAllocationSummaryDto buildSummary(UUID subscriptionId, QuotaType quotaType,
-            SubscriptionQuota pool, List<UUID> eligibleUserIds) {
+    private QuotaUserAllocationSummaryResponse buildSummary(UUID subscriptionId, QuotaType quotaType,
+            SchoolSubscriptionQuotaRecord pool, List<UUID> eligibleUserIds) {
         var existing = fetchExistingAllocationsByUserId(subscriptionId, quotaType);
-        var names = userRepository.findByIdIn(eligibleUserIds).stream()
-            .collect(Collectors.toMap(u -> u.getId(), u -> u.getFullName().value()));
 
+        // Trả về ĐỦ mọi người đủ điều kiện, kể cả người chưa được cấp gì (allocation ZERO ảo, không
+        // ghi xuống DB): màn chia hạn mức phải hiện được cả người đang có 0 thì quản trị trường mới
+        // biết còn ai chưa chia.
         var allocationDtos = eligibleUserIds.stream()
-            .map(userId -> {
-                var allocation = existing.getOrDefault(userId,
-                    new SubscriptionQuotaUserAllocation(subscriptionId, quotaType, userId, BigDecimal.ZERO, BigDecimal.ZERO));
-                return SubscriptionQuotaUserAllocationDtoMapper.toDto(allocation, names.get(userId));
-            })
+            .map(userId -> existing.getOrDefault(userId, new SchoolSubscriptionQuotaUserAllocation(
+                subscriptionId, quotaType, userId, BigDecimal.ZERO, BigDecimal.ZERO)))
+            .map(SchoolSubscriptionQuotaUserAllocationDto::toDto)
             .toList();
 
-        return new QuotaUserAllocationSummaryDto(SubscriptionQuotaDtoMapper.toDto(pool), allocationDtos);
+        return new QuotaUserAllocationSummaryResponse(SchoolSubscriptionQuotaRecordDto.toDto(pool), allocationDtos);
     }
 
-    private Map<UUID, SubscriptionQuotaUserAllocation> fetchExistingAllocationsByUserId(UUID subscriptionId, QuotaType quotaType) {
-        return subscriptionQuotaUserAllocationRepository.findAllBySubscriptionIdAndQuotaType(subscriptionId, quotaType).stream()
+    private Map<UUID, SchoolSubscriptionQuotaUserAllocation> fetchExistingAllocationsByUserId(UUID subscriptionId, QuotaType quotaType) {
+        return subscriptionQuotaUserAllocationRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, quotaType).stream()
             .collect(Collectors.toMap(allocation -> allocation.getUserId(), allocation -> allocation));
     }
 
@@ -216,8 +211,8 @@ public class DistributeQuotaToUsersService {
             .orElseThrow(() -> new NotFoundException("Trường chưa có gói subscription đang hoạt động"));
     }
 
-    private SubscriptionQuota findPool(UUID subscriptionId, QuotaType quotaType) {
-        return subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, quotaType)
+    private SchoolSubscriptionQuotaRecord findPool(UUID subscriptionId, QuotaType quotaType) {
+        return subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, quotaType)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
     }
 

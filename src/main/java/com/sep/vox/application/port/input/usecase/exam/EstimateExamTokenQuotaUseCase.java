@@ -9,7 +9,7 @@ import com.sep.vox.application.port.input.query.EstimateExamTokenQuotaQuery;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.ExamTokenEstimateDto;
+import com.sep.vox.application.response.input.exam.ExamTokenEstimateResponse;
 import com.sep.vox.domain.repository.ExamRepository;
 
 /**
@@ -18,7 +18,7 @@ import com.sep.vox.domain.repository.ExamRepository;
  * gọi lúc publish/sửa/thêm thí sinh.
  */
 @Service
-public class EstimateExamTokenQuotaUseCase implements IUseCase<EstimateExamTokenQuotaQuery, ExamTokenEstimateDto> {
+public class EstimateExamTokenQuotaUseCase implements IUseCase<EstimateExamTokenQuotaQuery, ExamTokenEstimateResponse> {
 
     private final ExamRepository examRepository;
     private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
@@ -35,7 +35,7 @@ public class EstimateExamTokenQuotaUseCase implements IUseCase<EstimateExamToken
 
     @Override
     @Transactional(readOnly = true)
-    public ExamTokenEstimateDto execute(EstimateExamTokenQuotaQuery input) {
+    public ExamTokenEstimateResponse execute(EstimateExamTokenQuotaQuery input) {
         var exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 

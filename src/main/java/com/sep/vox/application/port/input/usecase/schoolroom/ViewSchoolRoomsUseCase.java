@@ -32,7 +32,7 @@ public class ViewSchoolRoomsUseCase implements IUseCase<ViewSchoolRoomsQuery, Pa
         // danh sách phòng để chọn phòng cho bài kiểm tra trên lớp).
         myClassAccessGuard.requireSchoolMembership(query.schoolId());
 
-        PageResult<SchoolRoom> pageResult = schoolRoomRepository.findAllBySchoolId(
+        PageResult<SchoolRoom> pageResult = schoolRoomRepository.findBySchoolId(
                 query.schoolId(),
                 query.page(), 
                 query.size()

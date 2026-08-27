@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.model.subscription.SchoolDebtEvent;
+import com.sep.vox.domain.model.school.SchoolDebtEvent;
 import com.sep.vox.domain.repository.SchoolDebtEventRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolDebtEventMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolDebtEventRepository;
@@ -27,8 +27,8 @@ public class SchoolDebtEventRepositoryImpl implements SchoolDebtEventRepository 
     }
 
     @Override
-    public List<SchoolDebtEvent> findAllBySchoolId(UUID schoolId) {
-        return springDataSchoolDebtEventRepository.findAllBySchoolId(schoolId).stream()
+    public List<SchoolDebtEvent> findBySchoolId(UUID schoolId) {
+        return springDataSchoolDebtEventRepository.findBySchoolId(schoolId).stream()
             .map(SchoolDebtEventMapper::toDomain)
             .toList();
     }

@@ -12,7 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "interest_quiz_item")
+@Table(name = "interest_quiz_items")
 public class InterestQuizItemJpaEntity {
 
     @Id
@@ -33,7 +33,7 @@ public class InterestQuizItemJpaEntity {
     private String statementsJson;
 
     // TEXT: chữ do LLM sinh, không có trần độ dài -- xem chú thích ở V15__personalize.sql
-    // (mục 18. interest_quiz_item).
+    // (mục 18. interest_quiz_items).
     @Column(name = "desirability_note", columnDefinition = "TEXT")
     private String desirabilityNote;
 

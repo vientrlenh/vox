@@ -70,21 +70,21 @@ public interface SpringDataCriterionScoreAverageRepository
             -- chỉ khiến điểm luyện lấn át điểm thi và Q1 chọn sai tiêu chí mãi mãi.
             SELECT UPPER(TRIM(pcs.criterion_code)) AS criterion_code,
                    pcs.final_score / 100.0 AS normalized
-            FROM practice_criterion_score pcs
-            JOIN practice_item_evaluation pe ON pe.id = pcs.practice_evaluation_id
-            JOIN practice_item_response pr ON pr.id = pe.practice_response_id
-            JOIN practice_session ps ON ps.id = pr.practice_session_id
+            FROM practice_criterion_scores pcs
+            JOIN practice_item_evaluations pe ON pe.id = pcs.practice_evaluation_id
+            JOIN practice_item_responses pr ON pr.id = pe.practice_response_id
+            JOIN practice_sessions ps ON ps.id = pr.practice_session_id
             WHERE ps.student_id = :studentId
               AND pe.marked_invalid = false
               AND pcs.final_score IS NOT NULL
               AND EXISTS (
                   SELECT 1
-                  FROM practice_response_turn pt
+                  FROM practice_response_turns pt
                   WHERE pt.practice_response_id = pr.id
               )
         )
         -- UPPER ở đây vì ba nguồn trên có thể khác kiểu chữ: framework_criteria.code
-        -- và practice_criterion_score.criterion_code không cùng quy ước.
+        -- và practice_criterion_scores.criterion_code không cùng quy ước.
         SELECT UPPER(criterion_code) AS criterion_code
         FROM scores
         WHERE normalized IS NOT NULL

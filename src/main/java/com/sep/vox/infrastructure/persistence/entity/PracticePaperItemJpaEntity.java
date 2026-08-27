@@ -11,7 +11,7 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(
-    name = "practice_paper_item",
+    name = "practice_paper_items",
     uniqueConstraints = @UniqueConstraint(
         name = "uq_practice_paper_item_slot",
         columnNames = {"practice_paper_id", "slot_order"}

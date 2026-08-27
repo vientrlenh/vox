@@ -15,9 +15,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.RecordAiUsageCommand;
-import com.sep.vox.application.port.input.usecase.subscription.RecordAiUsageUseCase;
-import com.sep.vox.domain.model.subscription.AiUsageRecord;
-import com.sep.vox.domain.model.subscription.AiUsageType;
+import com.sep.vox.application.port.input.usecase.metering.RecordAiUsageUseCase;
+import com.sep.vox.domain.model.metering.AiUsageRecord;
+import com.sep.vox.domain.model.metering.AiUsageType;
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.domain.repository.AiUsageRecordRepository;
 
 /**
@@ -28,6 +29,7 @@ import com.sep.vox.domain.repository.AiUsageRecordRepository;
 class RecordAiUsageUseCaseTests {
 
     private AiUsageRecordRepository aiUsageRecordRepository;
+    private QuotaPricingPort quotaPricingPort;
     private RecordAiUsageUseCase useCase;
 
     private final UUID examSessionId = UUID.randomUUID();
@@ -37,7 +39,10 @@ class RecordAiUsageUseCaseTests {
     @BeforeEach
     void setUp() {
         aiUsageRecordRepository = mock(AiUsageRecordRepository.class);
-        useCase = new RecordAiUsageUseCase(aiUsageRecordRepository);
+        quotaPricingPort = mock(QuotaPricingPort.class);
+        // Use case chốt tỷ giá ngay lúc ghi để cost_vnd không đổi khi Kafka retry sang hôm sau.
+        when(quotaPricingPort.usdToVndRate()).thenReturn(new BigDecimal("26000"));
+        useCase = new RecordAiUsageUseCase(aiUsageRecordRepository, quotaPricingPort);
     }
 
     private RecordAiUsageCommand llmCommand() {

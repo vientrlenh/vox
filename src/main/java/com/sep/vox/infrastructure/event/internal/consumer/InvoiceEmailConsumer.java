@@ -23,8 +23,8 @@ import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.port.output.MailSendingPort;
 import com.sep.vox.application.port.output.MailTemplatePort;
+import com.sep.vox.domain.model.invoice.InvoiceSourceType;
 import com.sep.vox.domain.model.outbox.ProcessedEvent;
-import com.sep.vox.domain.model.subscription.InvoiceSourceType;
 import com.sep.vox.domain.repository.ProcessedEventRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
@@ -154,7 +154,7 @@ public class InvoiceEmailConsumer {
         var subscription = schoolSubscriptionRepository.findById(payload.subscriptionId())
             .orElseThrow(() -> new IllegalStateException(
                 "Không tìm thấy gói đăng ký: eventId=" + eventId));
-        var plan = subscriptionPlanRepository.findById(subscription.getPlanId())
+        var plan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
             .orElseThrow(() -> new IllegalStateException("Không tìm thấy gói: eventId=" + eventId));
 
         String itemTitle = payload.sourceType() == InvoiceSourceType.TOKEN_PURCHASE

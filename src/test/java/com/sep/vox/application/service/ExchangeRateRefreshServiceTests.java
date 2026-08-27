@@ -13,7 +13,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.domain.model.subscription.ExchangeRateSnapshot;
+import com.sep.vox.domain.model.financial.ExchangeRateSnapshot;
 import com.sep.vox.domain.repository.ExchangeRateSnapshotRepository;
 import com.sep.vox.infrastructure.client.ExchangeRateApiClient;
 import com.sep.vox.infrastructure.properties.ExchangeRateApiProperties;
@@ -34,8 +34,8 @@ class ExchangeRateRefreshServiceTests {
 
         var captor = ArgumentCaptor.forClass(ExchangeRateSnapshot.class);
         verify(repository).save(captor.capture());
-        assertThat(captor.getValue().getUsdToVndRate()).isEqualByComparingTo(new BigDecimal("26777"));
-        assertThat(captor.getValue().getSource()).isEqualTo(properties.baseUrl());
+        assertThat(captor.getValue().getExchangeRateToVnd()).isEqualByComparingTo(new BigDecimal("26777"));
+        assertThat(captor.getValue().getSourceUrl()).isEqualTo(properties.baseUrl());
     }
 
     @Test

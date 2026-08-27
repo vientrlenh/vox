@@ -23,10 +23,10 @@ public interface SpringDataPracticeCriterionScoreRepository
     @Query(value = """
         SELECT score.criterion_code AS code,
                score.final_score AS finalScore
-        FROM practice_criterion_score score
-        JOIN practice_item_evaluation evaluation
+        FROM practice_criterion_scores score
+        JOIN practice_item_evaluations evaluation
           ON evaluation.id = score.practice_evaluation_id
-        JOIN practice_item_response response
+        JOIN practice_item_responses response
           ON response.id = evaluation.practice_response_id
         WHERE response.practice_session_id = :sessionId
         ORDER BY score.criterion_code

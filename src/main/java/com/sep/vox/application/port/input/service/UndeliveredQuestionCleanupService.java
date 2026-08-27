@@ -19,10 +19,10 @@ import com.sep.vox.domain.repository.StudentQuestionExposureRepository;
  * <p><b>Vì sao cần.</b> Chọn một câu ghi ba thứ, không phải một:
  *
  * <ol>
- *   <li>{@code practice_paper_item} -- câu đã vào đề</li>
- *   <li>{@code student_question_exposure} -- <b>dấu "đã gặp"</b>, và mọi truy vấn chọn câu đều
+ *   <li>{@code practice_paper_items} -- câu đã vào đề</li>
+ *   <li>{@code student_question_exposures} -- <b>dấu "đã gặp"</b>, và mọi truy vấn chọn câu đều
  *       lọc {@code exposure.id IS NULL}</li>
- *   <li>{@code practice_question.usage_count += 1}</li>
+ *   <li>{@code practice_questions.usage_count += 1}</li>
  * </ol>
  *
  * Thứ hai mới là thứ đau: một câu chỉ được chọn rồi bỏ dở sẽ <b>biến mất vĩnh viễn</b> khỏi kho

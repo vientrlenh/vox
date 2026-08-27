@@ -63,7 +63,7 @@ class ViewSchoolRoomsUseCaseTests {
     @Test
     void should_return_rooms_of_the_school_the_caller_belongs_to() {
         when(schoolUserRepository.existsBySchoolIdAndUserId(SCHOOL_ID, CALLER_ID)).thenReturn(true);
-        when(schoolRoomRepository.findAllBySchoolId(SCHOOL_ID, 1, 10))
+        when(schoolRoomRepository.findBySchoolId(SCHOOL_ID, 1, 10))
             .thenReturn(new PageResult<>(List.of(room()), 1, 10, 1, 1));
 
         var result = useCase.execute(new ViewSchoolRoomsQuery(SCHOOL_ID, 1, 10));
@@ -78,7 +78,7 @@ class ViewSchoolRoomsUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(new ViewSchoolRoomsQuery(OTHER_SCHOOL_ID, 1, 10)))
             .isInstanceOf(ForbiddenException.class);
 
-        verify(schoolRoomRepository, never()).findAllBySchoolId(OTHER_SCHOOL_ID, 1, 10);
+        verify(schoolRoomRepository, never()).findBySchoolId(OTHER_SCHOOL_ID, 1, 10);
     }
 
     private SchoolRoom room() {

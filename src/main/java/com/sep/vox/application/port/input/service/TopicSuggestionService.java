@@ -102,7 +102,7 @@ public class TopicSuggestionService {
         // gõ một từ khoá trỏ đúng vào chủ đề đã có sẵn cũng mất một lượt trong ba.
         //
         // Chi phí thật đã có nơi kiểm soát đúng chỗ của nó: quota PRACTICE tính theo giây nói
-        // (SubmitPracticeTurnUseCase -> ConsumeQuotaUseCase). Chặn thêm ở đây là siết hai lần
+        // (SubmitPracticeTurnUseCase -> ConsumeQuotaService). Chặn thêm ở đây là siết hai lần
         // vào cùng một túi tiền, bằng một đơn vị không liên quan.
         if (unsuitable(normalized)) {
             recordKeywordRequest(studentId, keyword, "REJECTED_UNSUITABLE");
@@ -179,7 +179,7 @@ public class TopicSuggestionService {
     // Cả luồng duyệt gợi ý đã xoá theo (pendingSuggestions / respond / GraphQL / thẻ bên Flutter):
     // không còn nguồn tạo dòng PENDING thì không còn gì để duyệt.
     //
-    // Bảng topic_suggestion VẪN CÒN, nhưng nay chỉ là nhật ký yêu cầu theo từ khoá
+    // Bảng topic_suggestions VẪN CÒN, nhưng nay chỉ là nhật ký yêu cầu theo từ khoá
     // (recordKeywordRequest) -- ghi để xem lại học sinh đã tìm gì, không chi phối gì cả.
 
     // Not @Transactional -- same reason as generateFromKeyword above. This one is the hottest

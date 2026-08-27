@@ -33,7 +33,7 @@ type SchoolMonthlySpending {
 
 type SubscriptionRenewal {
     planName: String
-    status: SubscriptionStatus!
+    status: SchoolSubscriptionStatus!
     "Ngày hết hạn / gia hạn gói, định dạng YYYY-MM-DD"
     endDate: String!
 }

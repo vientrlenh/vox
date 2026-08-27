@@ -9,7 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
-import com.sep.vox.domain.model.subscription.PaymentMethod;
+import com.sep.vox.domain.model.payment.PaymentProvider;
 import com.sep.vox.infrastructure.properties.SePayPaymentProperties;
 
 import tools.jackson.databind.json.JsonMapper;
@@ -84,7 +84,7 @@ class SePayPaymentProcessServiceTests {
 
     @Test
     void reportsItselfAsTheSepayAdapter() {
-        assertThat(service.provider()).isEqualTo(PaymentMethod.SEPAY);
+        assertThat(service.provider()).isEqualTo(PaymentProvider.SEPAY);
     }
 
     @Test

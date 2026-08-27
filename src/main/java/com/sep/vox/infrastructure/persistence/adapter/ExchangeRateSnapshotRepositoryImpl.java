@@ -4,7 +4,8 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.model.subscription.ExchangeRateSnapshot;
+import com.sep.vox.domain.model.financial.CurrencyCode;
+import com.sep.vox.domain.model.financial.ExchangeRateSnapshot;
 import com.sep.vox.domain.repository.ExchangeRateSnapshotRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExchangeRateSnapshotMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataExchangeRateSnapshotRepository;
@@ -26,8 +27,9 @@ public class ExchangeRateSnapshotRepositoryImpl implements ExchangeRateSnapshotR
     }
 
     @Override
-    public Optional<ExchangeRateSnapshot> findLatest() {
-        return springDataExchangeRateSnapshotRepository.findFirstByOrderByFetchedAtDesc()
+    public Optional<ExchangeRateSnapshot> findLatest(CurrencyCode currencyCode) {
+        return springDataExchangeRateSnapshotRepository
+            .findFirstByCurrencyCodeOrderByFetchedAtDescIdDesc(currencyCode.name())
             .map(ExchangeRateSnapshotMapper::toDomain);
     }
 }

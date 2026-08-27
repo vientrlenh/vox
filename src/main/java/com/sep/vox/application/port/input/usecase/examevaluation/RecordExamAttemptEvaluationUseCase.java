@@ -23,7 +23,7 @@ import com.sep.vox.application.port.input.command.examevaluation.CriterionScoreI
 import com.sep.vox.application.port.input.command.examevaluation.RecordExamAttemptEvaluationCommand;
 import com.sep.vox.application.port.input.command.examevaluation.ValidityResultInput;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.input.usecase.exam.CompleteExamSessionGradingUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.CompleteExamSessionGradingUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
 import com.sep.vox.domain.model.exam.ExamItemCriterionScore;

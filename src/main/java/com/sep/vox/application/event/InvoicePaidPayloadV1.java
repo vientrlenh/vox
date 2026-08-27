@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.subscription.InvoiceSourceType;
+import com.sep.vox.domain.model.invoice.InvoiceSourceType;
 
 /**
  * Hóa đơn đã thu tiền. Người nhận là mọi SCHOOL_ADMIN của trường.

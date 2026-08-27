@@ -7,7 +7,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.PaymentProcessPort;
-import com.sep.vox.domain.model.subscription.PaymentMethod;
+import com.sep.vox.domain.model.payment.PaymentProvider;
 
 // Chọn đúng adapter theo PaymentMethod, thay vì use case inject thẳng 1 implementation cụ thể.
 // Lập chỉ mục theo PaymentProcessPort.provider() chứ không theo tên bean dạng chuỗi: gõ sai tên
@@ -16,10 +16,10 @@ import com.sep.vox.domain.model.subscription.PaymentMethod;
 @Service
 public class PaymentProcessResolver {
 
-    private final Map<PaymentMethod, PaymentProcessPort> paymentProcessors;
+    private final Map<PaymentProvider, PaymentProcessPort> paymentProcessors;
 
     public PaymentProcessResolver(List<PaymentProcessPort> paymentProcessors) {
-        this.paymentProcessors = new EnumMap<>(PaymentMethod.class);
+        this.paymentProcessors = new EnumMap<>(PaymentProvider.class);
         for (var processor : paymentProcessors) {
             var existing = this.paymentProcessors.put(processor.provider(), processor);
             if (existing != null) {
@@ -30,10 +30,10 @@ public class PaymentProcessResolver {
         }
     }
 
-    public PaymentProcessPort resolve(PaymentMethod selectedMethod) {
-        var port = paymentProcessors.get(selectedMethod);
+    public PaymentProcessPort resolve(PaymentProvider provider) {
+        var port = paymentProcessors.get(provider);
         if (port == null) {
-            throw new IllegalArgumentException("Chưa hỗ trợ cổng thanh toán: " + selectedMethod);
+            throw new IllegalArgumentException("Chưa hỗ trợ cổng thanh toán: " + provider);
         }
         return port;
     }

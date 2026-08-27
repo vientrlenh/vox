@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+
+import com.sep.vox.domain.common.ZoneConstant;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -56,8 +58,12 @@ public final class DateMapper {
      *
      * <p>Dùng {@link ZoneId} thay vì {@code ZoneOffset.ofHours(7)} vì {@code atStartOfDay} cần
      * ZoneId, và offset cứng sẽ sai ở những vùng có giờ mùa hè.
+     *
+     * <p>Giá trị thật nằm ở {@link ZoneConstant#BUSINESS_ZONE}: domain model cũng cần đúng múi này
+     * (vd {@code SubscriptionPlan.endDateFrom}) mà domain không được phụ thuộc lên application, nên
+     * nguồn sự thật phải nằm ở tầng trong. Giữ tên cũ ở đây để không phải sửa mọi call site.
      */
-    public static final ZoneId DEFAULT_INPUT_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    public static final ZoneId DEFAULT_INPUT_ZONE = ZoneConstant.BUSINESS_ZONE;
 
     public static LocalDate toLocalDate(String localDateString) {
         if (localDateString == null || localDateString.isBlank()) {

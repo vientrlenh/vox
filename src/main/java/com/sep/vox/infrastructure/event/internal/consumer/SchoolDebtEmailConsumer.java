@@ -2,8 +2,11 @@ package com.sep.vox.infrastructure.event.internal.consumer;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -24,8 +27,8 @@ import com.sep.vox.application.event.SchoolLockedDueToDebtPayloadV1;
 import com.sep.vox.application.port.output.MailSendingPort;
 import com.sep.vox.application.port.output.MailTemplatePort;
 import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.outbox.ProcessedEvent;
-import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.repository.ProcessedEventRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -44,6 +47,10 @@ public class SchoolDebtEmailConsumer {
     private static final Logger LOGGER = LoggerFactory.getLogger(SchoolDebtEmailConsumer.class);
 
     private static final String CONSUMER_GROUP = "school-debt-email";
+
+    /** DecimalFormat KHÔNG thread-safe, nên đây phải là ThreadLocal chứ không phải field dùng chung. */
+    private static final ThreadLocal<DecimalFormat> AMOUNT_FORMAT = ThreadLocal.withInitial(
+        () -> new DecimalFormat("#,###", DecimalFormatSymbols.getInstance(Locale.of("vi", "VN"))));
 
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
@@ -169,8 +176,8 @@ public class SchoolDebtEmailConsumer {
         return mailTemplatePort.renderDebtCapExceededEmail(
             schoolNameOf(payload.schoolId(), eventId),
             quotaLabel(payload.quotaType()),
-            formatUsd(payload.overageUsd()),
-            formatUsd(payload.capUsd())
+            formatVnd(payload.overageVnd()),
+            formatVnd(payload.capVnd())
         );
     }
 
@@ -186,14 +193,17 @@ public class SchoolDebtEmailConsumer {
             return "--";
         }
         return switch (quotaType) {
-            case GRADING -> "Bài thi cần chấm";
-            case CLASS_TEST -> "Bài kiểm tra trên lớp";
+            case EXAM -> "Bài kiểm tra";
             case PRACTICE -> "Lượt ôn luyện cá nhân";
         };
     }
 
-    private String formatUsd(BigDecimal amountUsd) {
-        return amountUsd == null ? "--" : "$" + amountUsd.setScale(2, RoundingMode.HALF_UP).toPlainString();
+    // Làm tròn về ĐỒNG trước khi hiện: nợ được lưu ở scale 6 để không mất khoản lẻ lúc cộng dồn,
+    // nhưng "12.345,678901 ₫" trong email gửi admin thì chỉ gây khó đọc.
+    private String formatVnd(BigDecimal amountVnd) {
+        return amountVnd == null
+            ? "--"
+            : AMOUNT_FORMAT.get().format(amountVnd.setScale(0, RoundingMode.HALF_UP)) + " ₫";
     }
 
     private <T> T parse(String value, Class<T> type, UUID eventId) {

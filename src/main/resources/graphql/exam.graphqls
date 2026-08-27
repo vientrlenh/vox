@@ -723,18 +723,31 @@ input UpdateExamScheduleInput {
 }
 
 """
-Cảnh báo (KHÔNG chặn) ước lượng worst-case chi phí AI + hạn mức còn lại -- xem
+Cảnh báo (KHÔNG chặn) ước lượng worst-case chi phí AI + khả năng chi trả còn lại -- xem
 ClassTestTokenQuotaGuardService.estimateTokenQuota. Việc CHẶN thật vẫn xảy ra lúc publish/sửa/thêm
 thí sinh, không phải ở query này.
+
+Mọi số đều là VND theo GIÁ VỐN, không cộng phí dịch vụ: phí đã thu một lần lúc trường đặt đơn, còn
+ví hạn mức lẫn ví tự nạp đều ghi bằng giá vốn.
 """
 type ExamTokenEstimate {
-    estimatedCostUsd: Float!
-    "null nếu trường chưa có subscription active hoặc chưa cấu hình hạn mức GRADING"
-    remainingGradingUsd: Float
-    "null nếu bài không phải CLASS_TEST, hoặc trường chưa có subscription/hạn mức CLASS_TEST"
-    remainingClassTestUsd: Float
-    wouldExceedGrading: Boolean!
-    wouldExceedClassTest: Boolean!
+    estimatedCostVnd: Float!
+    """
+    Tiền trường CÒN CHI ĐƯỢC cho ví EXAM = hạn mức kèm gói còn lại + số dư ví tự nạp (phần không
+    âm). Cộng cả số dư vì ConsumeQuotaService trừ phần vượt hạn mức sang ví tự nạp, nên một trường
+    cạn hạn mức mà đã nạp tiền thì vẫn chi trả được. null nếu trường chưa có subscription active
+    hoặc chưa cấu hình ví EXAM.
+    """
+    remainingExamVnd: Float
+    """
+    Hạn mức CÁ NHÂN còn lại của giáo viên ra đề -- KHÔNG phải một ví cấp trường thứ hai (ví
+    CLASS_TEST đã bị bỏ, xem QuotaType), và KHÔNG cộng số dư ví trường vì đây là trần chi nội bộ
+    chứ không phải túi tiền. null nếu bài không phải CLASS_TEST, hoặc giáo viên không được cấp hạn
+    mức riêng nên chỉ tiền của trường áp dụng.
+    """
+    remainingMyClassTestVnd: Float
+    wouldExceedExam: Boolean!
+    wouldExceedMyClassTest: Boolean!
 }
 
 extend type Query {

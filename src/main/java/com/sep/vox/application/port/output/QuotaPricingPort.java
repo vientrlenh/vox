@@ -21,10 +21,6 @@ public interface QuotaPricingPort {
     /** Tỷ giá USD->VND thị trường đang áp dụng, dùng chung cho mọi gói. */
     BigDecimal usdToVndRate();
 
-    /**
-     * Giá bán mỗi $1 hạn mức cho CreatePlanUseCase/UpdatePlanUseCase -- tính từ usdToVndRate() ×
-     * (1 + serviceFeeRatio), làm tròn HALF_UP về số nguyên (khớp cột plan_quota.token_unit_price
-     * NUMERIC(15,0)).
-     */
-    BigDecimal tokenUnitPriceFor(BigDecimal serviceFeeRatio);
+    // serviceFeeRatio() đã chuyển sang ServiceFeePort: mọi method còn lại ở đây là GIÁ VỐN và được
+    // phơi nguyên vẹn ra query GraphQL quotaPricing, còn phí dịch vụ là biên lãi của mình.
 }

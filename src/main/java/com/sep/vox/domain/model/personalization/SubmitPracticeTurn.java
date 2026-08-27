@@ -15,7 +15,7 @@ public class SubmitPracticeTurn {
     private String transcript;
     private int durationSeconds;
     // Chi phí AI thật (USD) của turn này -- xem SubmitPracticeTurnUseCase, dùng số này để trừ
-    // SubscriptionQuota(PRACTICE) thay vì durationSeconds. Nullable: client Python cũ chưa gửi.
+    // SchoolSubscriptionQuotaRecord(PRACTICE) thay vì durationSeconds. Nullable: client Python cũ chưa gửi.
     private BigDecimal turnCostUsd;
     private String wordFeedbackJson;
     private Double turnScore;

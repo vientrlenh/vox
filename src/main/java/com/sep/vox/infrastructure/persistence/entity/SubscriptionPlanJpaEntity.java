@@ -12,9 +12,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 @Entity
-@Table(name = "subscription_plan")
+@Table(name = "subscription_plans")
 public class SubscriptionPlanJpaEntity {
 
     @Id
@@ -28,19 +29,40 @@ public class SubscriptionPlanJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", length = 255, nullable = false)
     private String name;
 
-    @Column(name = "tagline")
+    @Column(name = "tagline", nullable = false, length = 2048)
     private String tagline;
 
-    @Column(name = "price_per_year", nullable = false, precision = 15, scale = 0)
-    private BigDecimal pricePerYear;
+    // VND không có đơn vị lẻ (hào/xu đã ngừng lưu hành) và PayOS/SePay chỉ nhận số nguyên -- giá gói
+    // là tiền PHẢI THU nên để scale 0. Phải trùng orders.total_amount_vnd numeric(15,0): rộng hơn ở
+    // đây thì Postgres LÀM TRÒN IM LẶNG lúc tạo đơn, gói niêm yết một giá mà thu một giá khác.
+    @Column(name = "price_vnd", nullable = false, precision = 15, scale = 0)
+    private BigDecimal priceVnd;
 
-    @Column(name = "validity_days", nullable = false)
-    private Integer validityDays;
+    @Column(name = "period_type", nullable = false, updatable = false, check = {
+        @CheckConstraint(
+            name = "chk_subscription_plans_period_type_valid", 
+            constraint = "period_type IN ('DAY', 'MONTH', 'YEAR')"
+        )
+    })
+    private String periodType;
 
-    @Column(name = "max_time_per_attempt_min", nullable = false)
+    @Column(name = "period_count", nullable = false, check = {
+        @CheckConstraint(
+            name = "chk_subscription_plans_period_count_positive", 
+            constraint = "period_count > 0"
+        )
+    })
+    private Integer periodCount;
+
+    @Column(name = "max_time_per_attempt_min", nullable = false, check = {
+        @CheckConstraint(
+            name = "chk_subscription_plans_max_time_per_attempt_min_positive", 
+            constraint = "max_time_per_attempt_min > 0"
+        )
+    })
     private Integer maxTimePerAttemptMin;
 
     @Column(name = "status", nullable = false, length = 20, check = {
@@ -52,37 +74,43 @@ public class SubscriptionPlanJpaEntity {
     private String status;
 
     @Column(name = "version", nullable = false)
-    private Integer version;
+    @Version
+    private Long version;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
     @Column(name = "created_by", updatable = false)
     private UUID createdBy;
+
+    @Column(name = "updated_by")
+    private UUID updatedBy;
 
     @Column(name = "replaced_by_plan_id")
     private UUID replacedByPlanId;
 
-    @Column(name = "service_fee_ratio", nullable = false, precision = 5, scale = 4)
-    private BigDecimal serviceFeeRatio;
-
     protected SubscriptionPlanJpaEntity() {}
 
-    public SubscriptionPlanJpaEntity(UUID id, String name, String tagline, BigDecimal pricePerYear, Integer validityDays,
-            Integer maxTimePerAttemptMin, String status, Integer version,
-            Instant createdAt, UUID createdBy, UUID replacedByPlanId, BigDecimal serviceFeeRatio) {
+    public SubscriptionPlanJpaEntity(UUID id, String name, String tagline, BigDecimal priceVnd, String periodType, Integer periodCount,
+            Integer maxTimePerAttemptMin, String status, Long version,
+            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy, UUID replacedByPlanId) {
         this.id = id;
         this.name = name;
         this.tagline = tagline;
-        this.pricePerYear = pricePerYear;
-        this.validityDays = validityDays;
+        this.priceVnd = priceVnd;
+        this.periodType = periodType;
+        this.periodCount = periodCount;
         this.maxTimePerAttemptMin = maxTimePerAttemptMin;
         this.status = status;
         this.version = version;
         this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
         this.createdBy = createdBy;
+        this.updatedBy = updatedBy;
         this.replacedByPlanId = replacedByPlanId;
-        this.serviceFeeRatio = serviceFeeRatio;
     }
 
     public UUID getId() {
@@ -109,20 +137,28 @@ public class SubscriptionPlanJpaEntity {
         this.tagline = tagline;
     }
 
-    public BigDecimal getPricePerYear() {
-        return pricePerYear;
+    public BigDecimal getPriceVnd() {
+        return priceVnd;
     }
 
-    public void setPricePerYear(BigDecimal pricePerYear) {
-        this.pricePerYear = pricePerYear;
+    public void setPriceVnd(BigDecimal priceVnd) {
+        this.priceVnd = priceVnd;
     }
 
-    public Integer getValidityDays() {
-        return validityDays;
+    public String getPeriodType() {
+        return periodType;
     }
 
-    public void setValidityDays(Integer validityDays) {
-        this.validityDays = validityDays;
+    public void setPeriodType(String periodType) {
+        this.periodType = periodType;
+    }
+
+    public Integer getPeriodCount() {
+        return periodCount;
+    }
+
+    public void setPeriodCount(Integer periodCount) {
+        this.periodCount = periodCount;
     }
 
     public Integer getMaxTimePerAttemptMin() {
@@ -141,11 +177,11 @@ public class SubscriptionPlanJpaEntity {
         this.status = status;
     }
 
-    public Integer getVersion() {
+    public Long getVersion() {
         return version;
     }
 
-    public void setVersion(Integer version) {
+    public void setVersion(Long version) {
         this.version = version;
     }
 
@@ -157,12 +193,28 @@ public class SubscriptionPlanJpaEntity {
         this.createdAt = createdAt;
     }
 
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     public UUID getCreatedBy() {
         return createdBy;
     }
 
     public void setCreatedBy(UUID createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public UUID getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(UUID updatedBy) {
+        this.updatedBy = updatedBy;
     }
 
     public UUID getReplacedByPlanId() {
@@ -173,11 +225,4 @@ public class SubscriptionPlanJpaEntity {
         this.replacedByPlanId = replacedByPlanId;
     }
 
-    public BigDecimal getServiceFeeRatio() {
-        return serviceFeeRatio;
-    }
-
-    public void setServiceFeeRatio(BigDecimal serviceFeeRatio) {
-        this.serviceFeeRatio = serviceFeeRatio;
-    }
 }

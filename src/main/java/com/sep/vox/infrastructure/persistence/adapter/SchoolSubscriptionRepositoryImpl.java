@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
-import com.sep.vox.domain.model.subscription.SubscriptionStatus;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolSubscriptionMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolSubscriptionRepository;
@@ -41,24 +41,44 @@ public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepos
     @Override
     public Optional<SchoolSubscription> findActiveBySchoolId(UUID schoolId) {
         return springDataSchoolSubscriptionRepository
-            .findFirstBySchoolIdAndStatus(schoolId, SubscriptionStatus.ACTIVE.name())
+            .findInForceBySchoolId(schoolId, Instant.now())
+            .stream()
+            .findFirst()
             .map(SchoolSubscriptionMapper::toDomain);
     }
 
     @Override
-    public List<SchoolSubscription> findAllBySchoolId(UUID schoolId) {
-        return springDataSchoolSubscriptionRepository.findAllBySchoolId(schoolId).stream()
+    public Optional<SchoolSubscription> findMostRecentBySchoolId(UUID schoolId) {
+        return springDataSchoolSubscriptionRepository
+            .findMostRecentBySchoolId(schoolId)
+            .stream()
+            .findFirst()
+            .map(SchoolSubscriptionMapper::toDomain);
+    }
+
+    @Override
+    public List<SchoolSubscription> findUnfinishedBySchoolId(UUID schoolId, Instant at) {
+        return springDataSchoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, at).stream()
             .map(SchoolSubscriptionMapper::toDomain)
             .toList();
     }
 
     @Override
-    public PageResult<SchoolSubscription> findAllForAdmin(UUID planId, SubscriptionStatus status, String keyword, int page, int size) {
-        var result = springDataSchoolSubscriptionRepository.findAllForAdmin(
+    public List<SchoolSubscription> findBySchoolId(UUID schoolId) {
+        return springDataSchoolSubscriptionRepository.findBySchoolId(schoolId).stream()
+            .map(SchoolSubscriptionMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public PageResult<SchoolSubscription> findForAdmin(
+            UUID planId, SchoolSubscriptionStatus status, String keyword, int page, int size) {
+        var result = springDataSchoolSubscriptionRepository.findForAdmin(
             planId,
             status == null ? null : status.name(),
             StringNormalization.toLikePattern(keyword),
-            PageRequest.of(page, size)
+            // 1-based vào, 0-based xuống PageRequest -- xem OrderRepositoryImpl.findBySchoolId.
+            PageRequest.of(page - 1, size)
         );
         return new PageResult<>(
             result.getContent().stream().map(SchoolSubscriptionMapper::toDomain).toList(),
@@ -71,12 +91,13 @@ public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepos
 
     @Override
     public boolean existsActiveByPlanId(UUID planId) {
-        return springDataSchoolSubscriptionRepository.existsByPlanIdAndStatus(planId, SubscriptionStatus.ACTIVE.name());
+        return springDataSchoolSubscriptionRepository
+            .existsBySubscriptionPlanIdAndStatus(planId, SchoolSubscriptionStatus.ACTIVE.name());
     }
 
     @Override
-    public int expireOverdue(LocalDate today) {
-        return springDataSchoolSubscriptionRepository.expireOverdue(today);
+    public int expireOverdue(Instant cutoff) {
+        return springDataSchoolSubscriptionRepository.expireOverdue(cutoff);
     }
 
     @Override
@@ -85,8 +106,8 @@ public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepos
     }
 
     @Override
-    public BigDecimal findPracticeQuotaRemaining(UUID userId) {
-        return springDataSchoolSubscriptionRepository.findPracticeQuotaRemaining(userId)
+    public BigDecimal findPracticeSpendableFundsVnd(UUID userId) {
+        return springDataSchoolSubscriptionRepository.findPracticeSpendableFundsVnd(userId)
             .stream()
             .findFirst()
             .orElse(BigDecimal.ZERO);

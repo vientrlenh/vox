@@ -47,7 +47,7 @@ public class InterestQuizGenerationClient implements InterestQuizGenerationPort 
     }
 
     /**
-     * @param dimensions danh mục chiều sở thích hiện hành (đọc từ interest_dimension). Gửi
+     * @param dimensions danh mục chiều sở thích hiện hành (đọc từ interest_dimensions). Gửi
      *                   xuống thay vì để Python gắn cứng, nhờ vậy SYSTEM_ADMIN thêm chiều mới
      *                   là có hiệu lực ngay, không phải deploy lại service Python.
      */

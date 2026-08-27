@@ -15,7 +15,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "ai_usage_record", uniqueConstraints = {
+@Table(name = "ai_usage_records", uniqueConstraints = {
     @UniqueConstraint(name = "uk_ai_usage_record_usage_event_id", columnNames = "usage_event_id")
 })
 public class AiUsageRecordJpaEntity {
@@ -75,15 +75,38 @@ public class AiUsageRecordJpaEntity {
     @Column(name = "cost_usd", nullable = false, updatable = false, precision = 12, scale = 6)
     private BigDecimal costUsd;
 
+    // Chi phí MỘT lời gọi AI quy sang VND -- giá trị lẻ nhất trong cả hệ thống (một lượt nói có thể
+    // chỉ tốn vài phần trăm đồng). Đây là đầu vào cộng dồn cho school_subscription_quota_records
+    // .used_amount_vnd nên phải giữ nguyên numeric(18,6): làm tròn từng dòng về 2 chữ số là mất
+    // trắng khoản trừ, và sai số làm tròn HALF_UP tích lũy lệch một chiều qua hàng nghìn lượt.
+    @Column(name = "cost_vnd", nullable = false, updatable = false, precision = 18, scale = 6)
+    private BigDecimal costVnd;
+
+    // Tỷ giá đã dùng lúc quy đổi -- numeric(12,4), trùng school_balance_entries.fx_rate_used.
+    @Column(name = "fx_rate_used", nullable = false, updatable = false, precision = 12, scale = 4)
+    private BigDecimal fxRateUsed;
+
     @Column(name = "occurred_at", nullable = false, updatable = false)
     private Instant occurredAt;
+
+    // NULL = khoản chi này chưa được trừ vào ví trường. Cột DUY NHẤT của bảng không updatable=false,
+    // vì nó là thứ duy nhất thay đổi sau khi dòng đã ghi -- và cố ý KHÔNG nằm trong constructor: dòng
+    // mới luôn bắt đầu ở trạng thái chưa thu, không có chỗ nào được dựng sẵn một dòng "đã thu".
+    // Đóng dấu bằng bulk UPDATE (markChargedByExamSessionId), không qua save entity.
+    //
+    // CẢNH BÁO nếu sau này có đường ghi lại một dòng ĐÃ TỒN TẠI: AiUsageRecord (domain) không mang cột
+    // này, nên mapper dựng entity mới với chargedAt = null và một lần merge sẽ XÓA dấu đã thu -- phiên
+    // đó bị thu tiền lần nữa ở lần chấm kế tiếp. Hiện an toàn vì save() chỉ được gọi với dòng mới
+    // (RecordAiUsageUseCase); thêm đường cập nhật thì phải mang cột này vào domain model trước.
+    @Column(name = "charged_at")
+    private Instant chargedAt;
 
     protected AiUsageRecordJpaEntity() {}
 
     public AiUsageRecordJpaEntity(UUID id, UUID examSessionId, UUID turnId, UUID usageEventId, String usageType,
             String provider, String modelName, Integer inputTokens, Integer outputTokens,
             Integer cacheCreationInputTokens, Integer cacheReadInputTokens, Long durationMs, String unitPriceJson,
-            BigDecimal costUsd, Instant occurredAt) {
+            BigDecimal costUsd, BigDecimal costVnd, BigDecimal fxRateUsed, Instant occurredAt) {
         this.id = id;
         this.examSessionId = examSessionId;
         this.turnId = turnId;
@@ -97,8 +120,18 @@ public class AiUsageRecordJpaEntity {
         this.cacheReadInputTokens = cacheReadInputTokens;
         this.durationMs = durationMs;
         this.unitPriceJson = unitPriceJson;
-        this.costUsd = costUsd;
+        this.costUsd = costUsd; 
+        this.costVnd = costVnd;
+        this.fxRateUsed = fxRateUsed;
         this.occurredAt = occurredAt;
+    }
+
+    public Instant getChargedAt() {
+        return chargedAt;
+    }
+
+    public void setChargedAt(Instant chargedAt) {
+        this.chargedAt = chargedAt;
     }
 
     public UUID getId() {
@@ -220,4 +253,22 @@ public class AiUsageRecordJpaEntity {
     public void setOccurredAt(Instant occurredAt) {
         this.occurredAt = occurredAt;
     }
+
+    public BigDecimal getCostVnd() {
+        return costVnd;
+    }
+
+    public void setCostVnd(BigDecimal costVnd) {
+        this.costVnd = costVnd;
+    }
+
+    public BigDecimal getFxRateUsed() {
+        return fxRateUsed;
+    }
+
+    public void setFxRateUsed(BigDecimal fxRateUsed) {
+        this.fxRateUsed = fxRateUsed;
+    }
+
+    
 }

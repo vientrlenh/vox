@@ -6,7 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.domain.model.subscription.ExchangeRateSnapshot;
+import com.sep.vox.domain.model.financial.CurrencyCode;
+import com.sep.vox.domain.model.financial.ExchangeRateSnapshot;
 import com.sep.vox.domain.repository.ExchangeRateSnapshotRepository;
 import com.sep.vox.infrastructure.client.ExchangeRateApiClient;
 import com.sep.vox.infrastructure.properties.ExchangeRateApiProperties;
@@ -42,7 +43,11 @@ public class ExchangeRateRefreshService {
             return;
         }
 
-        var snapshot = new ExchangeRateSnapshot(Instant.now(), rate.get(), exchangeRateApiProperties.baseUrl());
+        // Job này chỉ fetch tỷ giá USD (ExchangeRateApiProperties.baseUrl trỏ .../latest/USD), nên
+        // currency_code đóng cứng USD -- thêm đồng tiền thứ hai thì phải fetch riêng chứ không gắn
+        // nhãn khác cho cùng một con số.
+        var snapshot = new ExchangeRateSnapshot(
+            CurrencyCode.USD, rate.get(), Instant.now(), exchangeRateApiProperties.baseUrl());
         exchangeRateSnapshotRepository.save(snapshot);
         LOGGER.info("[exchange-rate] Đã lưu snapshot tỷ giá mới: {}", rate.get());
     }

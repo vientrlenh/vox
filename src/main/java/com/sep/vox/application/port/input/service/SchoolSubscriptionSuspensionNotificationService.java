@@ -23,7 +23,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * tự chịu trách nhiệm @Transactional).
  *
  * <p>Không có bảng audit riêng như SchoolDebtEvent -- lịch sử "ai đình chỉ/gỡ lúc nào/vì sao" đã có
- * FinancialEvent(SUB_SUSPENDED/SUB_UNSUSPENDED) làm sổ bền vững, xem ForceSuspendSubscriptionUseCase.
+ * SchoolSubscriptionEvent(SUSPENDED/UNSUSPENDED) làm sổ bền vững, xem ForceSuspendSubscriptionUseCase.
  */
 @Service
 public class SchoolSubscriptionSuspensionNotificationService {

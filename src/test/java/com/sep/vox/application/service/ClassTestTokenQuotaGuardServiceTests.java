@@ -1,11 +1,13 @@
 package com.sep.vox.application.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,27 +20,45 @@ import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardSer
 import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.domain.model.metering.QuotaType;
+import com.sep.vox.domain.model.school.SchoolBalance;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
-import com.sep.vox.domain.model.subscription.SubscriptionQuota;
-import com.sep.vox.domain.model.subscription.SubscriptionQuotaUserAllocation;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.SchoolBalanceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
-import com.sep.vox.domain.repository.SubscriptionQuotaUserAllocationRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 
 /**
- * Ước lượng worst-case (duration × số thí sinh × maxAttempt) phải soi đủ 3 chỗ trừ quota thật của
- * CompleteExamSessionGradingUseCase/ConsumeQuotaUseCase: GRADING của trường, CLASS_TEST của trường,
- * và hạn mức cá nhân giáo viên (nếu có) -- chỉ 2 chỗ sau mới áp cho CLASS_TEST, không áp cho
- * CENTRALIZED vì CompleteExamSessionGradingUseCase chỉ trừ CLASS_TEST khi exam.getKind() là vậy.
+ * Ước lượng worst-case (duration × số thí sinh × maxAttempt × giá/giây) phải soi đúng những chỗ mà
+ * CompleteExamSessionGradingUseCase/ConsumeQuotaService sẽ trừ thật khi chấm xong: tiền cấp TRƯỜNG
+ * (hạn mức kèm gói + ví tự nạp) và -- chỉ với bài trên lớp -- trần chi CÁ NHÂN của giáo viên ra đề.
+ *
+ * <p>Hai bất biến mà bộ test này giữ, vì cả hai đều đã từng sai:
+ * <ul>
+ *   <li>Ước lượng phải quy sang VND TRƯỚC khi so. So thẳng số USD với cột VND thì vế trái nhỏ hơn
+ *       khoảng 26.000 lần, cửa chặn vẫn đứng đó nhưng không bao giờ đóng.</li>
+ *   <li>Số dư ví tự nạp được cộng vào phần của TRƯỜNG (ConsumeQuotaService trừ phần vượt hạn mức
+ *       sang đó) nhưng KHÔNG cộng vào trần cá nhân -- trần đó là giới hạn nội bộ, không phải túi
+ *       tiền.</li>
+ * </ul>
  */
 class ClassTestTokenQuotaGuardServiceTests {
 
+    // costPerExamSecondUsd = 1 nên "USD ước tính" bằng đúng số giây; tỷ giá 1.000 để một lần quên
+    // quy đổi là lệch hẳn 3 chữ số chứ không trốn được sau một phép nhân với 1.
+    private static final BigDecimal USD_TO_VND_RATE = BigDecimal.valueOf(1_000);
+    private static final int EXAM_SECONDS = 3_600;
+    // 3.600 giây × 1 thí sinh × 1 lượt × 1 USD/giây × 1.000 = 3.600.000đ cho mọi test bên dưới.
+    private static final BigDecimal ESTIMATE_VND = BigDecimal.valueOf(3_600_000);
+
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private SubscriptionQuotaRepository subscriptionQuotaRepository;
-    private SubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
+    private SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
+    private SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
     private ExamCandidateRepository examCandidateRepository;
+    private SchoolBalanceRepository schoolBalanceRepository;
     private ClassTestTokenQuotaGuardService guard;
 
     private final UUID examId = UUID.randomUUID();
@@ -49,152 +69,217 @@ class ClassTestTokenQuotaGuardServiceTests {
     @BeforeEach
     void setUp() {
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
-        subscriptionQuotaRepository = mock(SubscriptionQuotaRepository.class);
-        subscriptionQuotaUserAllocationRepository = mock(SubscriptionQuotaUserAllocationRepository.class);
+        subscriptionQuotaRepository = mock(SchoolSubscriptionQuotaRecordRepository.class);
+        subscriptionQuotaUserAllocationRepository = mock(SchoolSubscriptionQuotaUserAllocationRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
+        schoolBalanceRepository = mock(SchoolBalanceRepository.class);
         var quotaPricingPort = mock(QuotaPricingPort.class);
-        // Hệ số quy đổi = 1 để estimatedCostUsd trùng số với "estimatedTokens" cũ (duration × số thí
-        // sinh × maxAttempt) -- giữ nguyên các giá trị test bên dưới thay vì phải tính lại theo USD thật.
         when(quotaPricingPort.currentEstimatedCostPerExamSecondUsd()).thenReturn(BigDecimal.ONE);
+        when(quotaPricingPort.usdToVndRate()).thenReturn(USD_TO_VND_RATE);
+
         guard = new ClassTestTokenQuotaGuardService(
             schoolSubscriptionRepository,
             subscriptionQuotaRepository,
             subscriptionQuotaUserAllocationRepository,
             examCandidateRepository,
+            schoolBalanceRepository,
             quotaPricingPort,
-            new SchoolSubscriptionDebtGuardService(subscriptionQuotaRepository));
+            new SchoolSubscriptionDebtGuardService(schoolBalanceRepository));
 
         var subscription = new SchoolSubscription();
         subscription.setId(subscriptionId);
+        subscription.setSchoolId(schoolId);
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(subscription));
         when(examCandidateRepository.countByExamId(examId)).thenReturn(1L);
-        // 3600s × 1 thí sinh × 1 lượt = 3600 token ước tính cho mọi test bên dưới.
-        givenSchoolQuota(QuotaType.GRADING, 10_000, 0);
-        givenSchoolQuota(QuotaType.CLASS_TEST, 10_000, 0);
-        when(subscriptionQuotaUserAllocationRepository
-            .findBySubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.CLASS_TEST, teacherId))
-            .thenReturn(Optional.empty());
+        givenSchoolQuota(10_000_000, 0);
+        givenNoBalanceRow();
+        givenNoUserAllocation();
     }
 
     @Test
     void should_skip_when_duration_not_set() {
-        var exam = classTest(null);
-
-        assertThatCode(() -> guard.requireWithinTokenQuota(exam)).doesNotThrowAnyException();
+        assertThatCode(() -> guard.requireWithinTokenQuota(classTest(null))).doesNotThrowAnyException();
     }
 
     /**
      * Kỳ thi chưa có mã đề nào được RecalculateExamTimeDurationService ghi 0 (không phải null). Ước
-     * tính 0 token thì không có gì để soi -- đi tiếp sẽ ném "Không tìm thấy hạn mức" chỉ vì trường
-     * chưa cấu hình quota, tức là chặn lên lịch vì một con số bằng 0. Cố ý bỏ hạn mức GRADING để
-     * test đỏ nếu guard chỉ chấp null.
+     * tính 0 thì không có gì để soi -- đi tiếp sẽ ném "Không tìm thấy hạn mức" chỉ vì trường chưa cấu
+     * hình quota, tức là chặn lên lịch vì một con số bằng 0. Cố ý bỏ hạn mức để test đỏ nếu guard chỉ
+     * chấp null.
      */
     @Test
     void should_skip_when_duration_is_zero() {
-        when(subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, QuotaType.GRADING))
+        when(subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.EXAM))
             .thenReturn(Optional.empty());
-        var exam = classTest(0);
 
-        assertThatCode(() -> guard.requireWithinTokenQuota(exam)).doesNotThrowAnyException();
+        assertThatCode(() -> guard.requireWithinTokenQuota(classTest(0))).doesNotThrowAnyException();
     }
 
     @Test
     void should_skip_when_duration_is_zero_and_school_has_no_active_subscription() {
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.empty());
-        var exam = classTest(0);
 
-        assertThatCode(() -> guard.requireWithinTokenQuota(exam)).doesNotThrowAnyException();
+        assertThatCode(() -> guard.requireWithinTokenQuota(classTest(0))).doesNotThrowAnyException();
     }
 
     @Test
-    void should_pass_when_all_quotas_have_headroom() {
-        var exam = classTest(3600);
-
-        assertThatCode(() -> guard.requireWithinTokenQuota(exam)).doesNotThrowAnyException();
+    void should_pass_when_school_quota_covers_the_estimate() {
+        assertThatCode(() -> guard.requireWithinTokenQuota(classTest(EXAM_SECONDS))).doesNotThrowAnyException();
     }
 
+    /**
+     * Hạn mức 100.000đ nằm GIỮA ước lượng tính bằng USD (3.600) và tính bằng VND (3.600.000). Bản cũ
+     * so thẳng 3.600 với 100.000 nên cho qua; chỉ khi quy đổi trước lúc so thì mới chặn. Đây là con số
+     * duy nhất phân biệt được hai hành vi, nên đừng đổi nó thành một hạn mức "rõ ràng là thiếu".
+     */
     @Test
-    void should_reject_when_grading_quota_exceeded_even_for_centralized_exam() {
-        givenSchoolQuota(QuotaType.GRADING, 100, 0);
-        var exam = centralizedExam(3600);
+    void should_convert_estimate_to_vnd_before_comparing_with_quota() {
+        givenSchoolQuota(100_000, 0);
 
-        assertThatThrownBy(() -> guard.requireWithinTokenQuota(exam))
+        assertThatThrownBy(() -> guard.requireWithinTokenQuota(classTest(EXAM_SECONDS)))
             .isInstanceOf(PlanLimitExceededException.class);
     }
 
     @Test
-    void should_not_check_class_test_quota_for_centralized_exam() {
-        // CLASS_TEST quota trống hạn mức, nhưng exam là CENTRALIZED nên không được check tới.
-        givenSchoolQuota(QuotaType.CLASS_TEST, 0, 0);
-        var exam = centralizedExam(3600);
+    void should_reject_when_estimate_exceeds_quota_and_school_has_no_balance() {
+        givenSchoolQuota(1_000_000, 0);
 
-        assertThatCode(() -> guard.requireWithinTokenQuota(exam)).doesNotThrowAnyException();
-    }
-
-    @Test
-    void should_reject_when_class_test_school_quota_exceeded() {
-        givenSchoolQuota(QuotaType.CLASS_TEST, 100, 0);
-        var exam = classTest(3600);
-
-        assertThatThrownBy(() -> guard.requireWithinTokenQuota(exam))
+        assertThatThrownBy(() -> guard.requireWithinTokenQuota(classTest(EXAM_SECONDS)))
             .isInstanceOf(PlanLimitExceededException.class);
     }
 
+    /**
+     * Cạn hạn mức nhưng đã nạp tiền thì vẫn publish được: ConsumeQuotaService sẽ trừ phần vượt sang ví
+     * tự nạp (bút toán OVERAGE_CHARGE), nên chặn ở đây là từ chối đúng khoản mà lúc chấm xong mình sẽ
+     * thu tiền.
+     */
     @Test
-    void should_reject_when_teacher_personal_allocation_exceeded() {
-        when(subscriptionQuotaUserAllocationRepository
-            .findBySubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.CLASS_TEST, teacherId))
-            .thenReturn(Optional.of(new SubscriptionQuotaUserAllocation(
-                subscriptionId, QuotaType.CLASS_TEST, teacherId, BigDecimal.valueOf(100), BigDecimal.ZERO)));
-        var exam = classTest(3600);
+    void should_pass_when_top_up_balance_covers_the_part_beyond_quota() {
+        givenSchoolQuota(1_000_000, 0);
+        givenBalance(5_000_000);
 
-        assertThatThrownBy(() -> guard.requireWithinTokenQuota(exam))
+        assertThatCode(() -> guard.requireWithinTokenQuota(classTest(EXAM_SECONDS))).doesNotThrowAnyException();
+    }
+
+    @Test
+    void should_reject_when_estimate_exceeds_quota_and_balance_combined() {
+        givenSchoolQuota(1_000_000, 0);
+        givenBalance(1_000_000);
+
+        assertThatThrownBy(() -> guard.requireWithinTokenQuota(classTest(EXAM_SECONDS)))
             .isInstanceOf(PlanLimitExceededException.class);
+    }
+
+    /**
+     * Số dư âm = trường đang NỢ = bị khóa, chặn ngay cả khi hạn mức còn thừa dư (khoản nợ chẳng liên
+     * quan gì tới ước lượng lần này). Khóa ở cấp TRƯỜNG nên áp cho cả bài tập trung.
+     *
+     * <p>Kiểm cả THÔNG ĐIỆP chứ không chỉ loại exception: nợ phải được báo là "đang bị khóa" với cách
+     * gỡ riêng (thanh toán bù), không được rơi xuống cửa dưới rồi báo thành "hết hạn mức". Đó cũng là
+     * lý do spendableSchoolFundsVnd kẹp số dư âm về 0 thay vì cộng thẳng -- cộng thẳng thì khoản nợ bị
+     * trừ lần thứ hai vào hạn mức và người dùng được chỉ sai cách khắc phục.
+     */
+    @Test
+    void should_reject_with_lock_reason_when_balance_is_negative() {
+        givenSchoolQuota(10_000_000, 0);
+        givenBalance(-9_000_000);
+
+        assertThatThrownBy(() -> guard.requireWithinTokenQuota(centralizedExam(EXAM_SECONDS)))
+            .isInstanceOf(PlanLimitExceededException.class)
+            .hasMessageContaining("khóa");
+    }
+
+    /**
+     * Trần cá nhân là GIỚI HẠN nội bộ trường tự đặt, không phải túi tiền -- cộng số dư ví trường vào
+     * đó sẽ xóa sạch chính cái trần vừa đặt ra. Ví trường thừa sức trả, giáo viên vẫn bị chặn.
+     */
+    @Test
+    void should_not_add_school_balance_to_personal_allocation_ceiling() {
+        givenBalance(50_000_000);
+        givenUserAllocation(100_000, 0);
+
+        assertThatThrownBy(() -> guard.requireWithinTokenQuota(classTest(EXAM_SECONDS)))
+            .isInstanceOf(PlanLimitExceededException.class)
+            .hasMessageContaining("cá nhân");
     }
 
     @Test
     void should_pass_when_teacher_has_no_personal_allocation_row() {
-        // Không có allocation riêng = không bị chặn theo cá nhân, chỉ cần đủ pool của trường.
-        var exam = classTest(3600);
-
-        assertThatCode(() -> guard.requireWithinTokenQuota(exam)).doesNotThrowAnyException();
+        // Không có allocation riêng = không bị chặn theo cá nhân, chỉ cần trường đủ tiền.
+        assertThatCode(() -> guard.requireWithinTokenQuota(classTest(EXAM_SECONDS))).doesNotThrowAnyException();
     }
 
     @Test
-    void should_reject_when_school_already_in_debt_on_grading_bucket() {
-        // usedQuantity > totalAllocated = trường đang nợ -- chặn ngay trước khi soi ước lượng,
-        // kể cả khi ước lượng lần này thừa dư (không liên quan gì đến lần trừ đã gây ra nợ).
-        givenSchoolQuota(QuotaType.GRADING, 100, 150);
-        var exam = centralizedExam(3600);
+    void should_not_check_personal_allocation_for_centralized_exam() {
+        // Kỳ thi tập trung do nhà trường tổ chức, không thuộc túi riêng của ai.
+        givenUserAllocation(0, 0);
 
-        assertThatThrownBy(() -> guard.requireWithinTokenQuota(exam))
-            .isInstanceOf(PlanLimitExceededException.class);
-    }
-
-    @Test
-    void should_reject_when_school_already_in_debt_on_class_test_bucket_even_for_centralized_exam() {
-        // Nợ ở bucket CLASS_TEST vẫn khóa CẢ TRƯỜNG (kể cả publish bài CENTRALIZED không đụng
-        // bucket này) -- khóa là ở cấp trường, không phải theo loại bài đang publish.
-        givenSchoolQuota(QuotaType.CLASS_TEST, 100, 150);
-        var exam = centralizedExam(3600);
-
-        assertThatThrownBy(() -> guard.requireWithinTokenQuota(exam))
-            .isInstanceOf(PlanLimitExceededException.class);
+        assertThatCode(() -> guard.requireWithinTokenQuota(centralizedExam(EXAM_SECONDS))).doesNotThrowAnyException();
     }
 
     @Test
     void should_reject_when_no_active_subscription() {
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.empty());
-        var exam = classTest(3600);
 
-        assertThatThrownBy(() -> guard.requireWithinTokenQuota(exam))
+        assertThatThrownBy(() -> guard.requireWithinTokenQuota(classTest(EXAM_SECONDS)))
             .isInstanceOf(PlanLimitExceededException.class);
     }
 
-    private void givenSchoolQuota(QuotaType type, int totalAllocated, int usedQuantity) {
-        when(subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, type))
-            .thenReturn(Optional.of(new SubscriptionQuota(
-                subscriptionId, type, BigDecimal.valueOf(totalAllocated), BigDecimal.valueOf(usedQuantity))));
+    /** Chưa cấu hình ví EXAM khác hẳn "đã cấu hình nhưng còn 0đ" -- số dư ví tự nạp không lấp chỗ đó. */
+    @Test
+    void should_reject_when_quota_record_is_missing_even_with_balance() {
+        when(subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.EXAM))
+            .thenReturn(Optional.empty());
+        givenBalance(50_000_000);
+
+        assertThatThrownBy(() -> guard.requireWithinTokenQuota(classTest(EXAM_SECONDS)))
+            .isInstanceOf(PlanLimitExceededException.class)
+            .hasMessageContaining("Không tìm thấy hạn mức");
+    }
+
+    /** Ước lượng phải là VND: cùng con số đó xuất hiện trên cảnh báo không chặn của estimateTokenQuota. */
+    @Test
+    void should_report_estimate_and_spendable_funds_in_vnd() {
+        givenSchoolQuota(1_000_000, 0);
+        givenBalance(5_000_000);
+
+        var estimate = guard.estimateTokenQuota(classTest(EXAM_SECONDS));
+
+        assertThat(estimate.estimatedCostVnd()).isEqualByComparingTo(ESTIMATE_VND);
+        // 1.000.000 hạn mức + 5.000.000 số dư -- cảnh báo phải dùng chung thước với cửa chặn, nếu
+        // không thì hoặc dọa người dùng về một bài vẫn publish được, hoặc để họ bấm rồi mới ăn lỗi.
+        assertThat(estimate.remainingExamVnd()).isEqualByComparingTo(BigDecimal.valueOf(6_000_000));
+        assertThat(estimate.wouldExceedExam()).isFalse();
+    }
+
+    private void givenSchoolQuota(long totalAllocatedVnd, long usedVnd) {
+        when(subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.EXAM))
+            .thenReturn(Optional.of(new SchoolSubscriptionQuotaRecord(
+                subscriptionId, QuotaType.EXAM, BigDecimal.valueOf(totalAllocatedVnd), BigDecimal.valueOf(usedVnd))));
+    }
+
+    private void givenUserAllocation(long allocatedVnd, long usedVnd) {
+        when(subscriptionQuotaUserAllocationRepository
+            .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.EXAM, teacherId))
+            .thenReturn(Optional.of(new SchoolSubscriptionQuotaUserAllocation(
+                subscriptionId, QuotaType.EXAM, teacherId,
+                BigDecimal.valueOf(allocatedVnd), BigDecimal.valueOf(usedVnd))));
+    }
+
+    private void givenNoUserAllocation() {
+        when(subscriptionQuotaUserAllocationRepository
+            .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.EXAM, teacherId))
+            .thenReturn(Optional.empty());
+    }
+
+    private void givenBalance(long balanceVnd) {
+        when(schoolBalanceRepository.findBySchoolId(schoolId)).thenReturn(Optional.of(
+            new SchoolBalance(schoolId, BigDecimal.valueOf(balanceVnd), Instant.now(), Instant.now())));
+    }
+
+    /** Chưa từng nạp = chưa có dòng số dư, cùng nghĩa với số dư 0 -- xem SchoolBalance.emptyFor. */
+    private void givenNoBalanceRow() {
+        when(schoolBalanceRepository.findBySchoolId(schoolId)).thenReturn(Optional.empty());
     }
 
     private Exam classTest(Integer examTimeDurationSecond) {

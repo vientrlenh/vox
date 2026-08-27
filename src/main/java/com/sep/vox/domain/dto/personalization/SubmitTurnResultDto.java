@@ -12,7 +12,7 @@ public record SubmitTurnResultDto(
     /**
      * Lượt này đã tiêu nốt phần hạn mức còn lại -- phiên phải đóng sau khi trả kết quả.
      *
-     * Báo bằng CỜ chứ không bằng lỗi: trước đây hết quota thì ConsumeQuotaUseCase ném
+     * Báo bằng CỜ chứ không bằng lỗi: trước đây hết quota thì ConsumeQuotaService ném
      * QuotaExceededException, mà method này có @Transactional nên cả lượt nói vừa lưu ở trên
      * bị rollback theo. Học sinh đã nói thì lượt đó phải được ghi và chấm; hết hạn mức là
      * chuyện của phiên tiếp theo, không phải lý do xoá công sức vừa bỏ ra.

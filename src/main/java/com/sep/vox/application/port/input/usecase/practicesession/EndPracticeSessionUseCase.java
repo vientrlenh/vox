@@ -75,7 +75,7 @@ public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCom
         // status='COMPLETED' (số buổi và điểm trung bình luôn 0).
         //
         // Trạng thái phải mô tả HÀNH VI NGƯỜI HỌC, không mô tả độ trễ hạ tầng. Kết quả chấm
-        // về sau vẫn ghi vào practice_item_evaluation và overall_score tính lại từ đó -- học
+        // về sau vẫn ghi vào practice_item_evaluations và overall_score tính lại từ đó -- học
         // sinh vào Lịch sử xem lại là thấy.
         //
         // gradedSeconds là giây VAD nghe thấy tiếng, cùng con số quota trừ. Mở phiên rồi

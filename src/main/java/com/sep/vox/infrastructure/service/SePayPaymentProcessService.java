@@ -9,6 +9,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Set;
 
 import javax.crypto.Mac;
@@ -30,7 +31,7 @@ import com.sep.vox.application.response.output.CreatePaymentLinkCommand;
 import com.sep.vox.application.response.output.PaymentCheckoutResult;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
 import com.sep.vox.application.response.output.PaymentLinkStatusResult;
-import com.sep.vox.domain.model.subscription.PaymentMethod;
+import com.sep.vox.domain.model.payment.PaymentProvider;
 import com.sep.vox.infrastructure.properties.SePayPaymentProperties;
 
 import tools.jackson.databind.json.JsonMapper;
@@ -113,18 +114,18 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
     }
 
     @Override
-    public PaymentMethod provider() {
-        return PaymentMethod.SEPAY;
+    public PaymentProvider provider() {
+        return PaymentProvider.SEPAY;
     }
 
     /**
-     * Dùng thẳng số hóa đơn: SePay định danh đơn bằng {@code order_invoice_number} dạng chuỗi và
-     * chỉ đòi nó duy nhất, nên sinh thêm một mã thứ hai chỉ tạo ra một lớp phải đối chiếu tay giữa
-     * hóa đơn của ta và dashboard SePay.
+     * SePay định danh đơn bằng {@code order_invoice_number} dạng chuỗi và chỉ đòi nó duy nhất.
+     * Trước đây dùng thẳng số hóa đơn, nhưng hóa đơn giờ chỉ phát SAU khi tiền về nên lúc phát link
+     * chưa có số nào -- sinh tại chỗ, tiền tố VOX để nhìn dashboard SePay là biết đơn của mình.
      */
     @Override
-    public String newOrderRef(String invoiceNumber) {
-        return invoiceNumber;
+    public String newOrderRef() {
+        return "VOX-" + UUID.randomUUID().toString().replace("-", "").substring(0, 24).toUpperCase();
     }
 
     @Override
@@ -186,7 +187,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
     public PaymentLinkStatusResult getPaymentLinkStatus(String providerOrderRef) {
         requireConfigured();
         // Rate limit của SePay chỉ vài request/giây (429 kèm header X-SePay-UserApi-Retry-After),
-        // nên phía gọi — PendingInvoiceReconciler — phải tự giãn nhịp, xem throttle ở đó.
+        // nên phía gọi — PendingOrderReconciler — phải tự giãn nhịp, xem throttle ở đó.
         var response = restClient.get()
             .uri("/order/detail/{orderInvoiceNumber}", providerOrderRef)
             .retrieve()
@@ -202,6 +203,24 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
             return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.PENDING);
         }
         return new PaymentLinkStatusResult(status);
+    }
+
+    /**
+     * SePay KHÔNG có API hủy một phiên chưa trả, nên luôn trả false.
+     *
+     * <p>Thứ gần nhất là {@code POST /v1/order/voidTransaction}, nhưng nó là nghiệp vụ KHÁC hẳn:
+     * chỉ nhận giao dịch THẺ ({@code payment_method = CARD}) đã ở trạng thái {@code CAPTURED} và
+     * chưa tới giờ đối soát -- tức là hoàn lại một khoản ĐÃ THU, không phải đóng một phiên chưa
+     * trả. Dùng nó ở đây thì hoặc lỗi (chưa CAPTURED), hoặc tệ hơn: hoàn một giao dịch mà hệ thống
+     * chưa kịp ghi nhận là đã trả.
+     *
+     * <p>Hệ quả: đơn SePay chỉ đóng được sau khi phiên tự hết hạn. Xem CancelOrderUseCase.
+     */
+    @Override
+    public boolean cancelPaymentLink(String providerOrderRef, String reason) {
+        LOGGER.info("SePay không hỗ trợ hủy phiên thanh toán chưa trả, bỏ qua lệnh hủy cho orderRef={}",
+            providerOrderRef);
+        return false;
     }
 
     // Response bọc dữ liệu trong "data", nhưng chấp nhận cả dạng phẳng để một thay đổi nhỏ bên

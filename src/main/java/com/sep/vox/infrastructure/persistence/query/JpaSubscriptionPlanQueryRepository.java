@@ -1,22 +1,13 @@
 package com.sep.vox.infrastructure.persistence.query;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.PlanQuotaRowDto;
-import com.sep.vox.application.query.dto.SubscriptionPlanRowDto;
 import com.sep.vox.application.query.repository.SubscriptionPlanQueryRepository;
-import com.sep.vox.domain.dto.PlanQuotaDto;
-import com.sep.vox.domain.dto.SubscriptionPlanDto;
-import com.sep.vox.domain.model.subscription.PlanStatus;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
+import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -28,100 +19,37 @@ public class JpaSubscriptionPlanQueryRepository implements SubscriptionPlanQuery
     private EntityManager em;
 
     @Override
-    public Page<SubscriptionPlanDto> findAllByStatus(PlanStatus status, Pageable pageable) {
-        return queryPlans(status.name(), pageable);
-    }
-
-    @Override
-    public Page<SubscriptionPlanDto> findAll(Pageable pageable) {
-        return queryPlans(null, pageable);
-    }
-
-    private Page<SubscriptionPlanDto> queryPlans(String status, Pageable pageable) {
-        var plans = em.createQuery("""
-            SELECT new com.sep.vox.application.query.dto.SubscriptionPlanRowDto(
-                p.id,
-                p.name,
-                p.tagline,
-                p.pricePerYear,
-                p.validityDays,
-                p.maxTimePerAttemptMin,
-                p.status,
-                p.version,
-                str(p.createdAt),
-                p.createdBy,
-                p.replacedByPlanId,
-                p.serviceFeeRatio)
+    public Optional<UUID> findMostPopularPlanId() {
+        // Đếm SỐ TRƯỜNG đang dùng, không đếm số lần thanh toán: gói được thay thế (replacedByPlanId)
+        // sinh ra một id mới, nên lịch sử thanh toán vĩnh viễn nằm ở gói cũ đã ARCHIVED -- gói mới dù
+        // ai cũng mua vẫn đếm ra 0. Còn đếm trường đang dùng thì khi gia hạn sang gói mới, con số tự
+        // chuyển theo. Gia hạn cũng không bị đếm hai lần như khi đếm giao dịch.
+        //
+        // DISTINCT phòng trường hợp một trường lỡ có hai dòng ACTIVE trên cùng gói -- vẫn tính là một
+        // khách. Chỉ tính s.status = ACTIVE: trường bị SUSPENDED đã mất quyền dùng nên không còn là
+        // bằng chứng cho việc gói đó đang được ưa chuộng.
+        //
+        // ORDER BY phải VÉT CẠN tới mức duy nhất (số trường -> giá -> id): nếu chỉ sắp theo số trường
+        // thì lúc mới chạy, các gói cùng có 1 trường sẽ hòa nhau và Postgres trả về thứ tự tùy ý --
+        // nhãn "phổ biến nhất" nhảy sang gói khác sau mỗi lần tải trang. Hòa số trường thì ưu tiên gói
+        // RẺ HƠN, rồi tới gói ra đời trước; id là uuidv7 nên "id ASC" chính là "cũ nhất trước" và vì
+        // nó duy nhất nên thứ tự chốt hoàn toàn ở đây.
+        //
+        // JOIN (không phải LEFT JOIN) là cố ý: gói chưa có trường nào dùng bị loại thẳng, và khi cả
+        // hệ thống chưa ai đăng ký thì không gói nào được gắn nhãn.
+        return em.createQuery("""
+            SELECT p.id
             FROM SubscriptionPlanJpaEntity p
-            WHERE (:status IS NULL OR p.status = :status)
-            ORDER BY p.createdAt DESC
-        """, SubscriptionPlanRowDto.class)
-            .setParameter("status", status)
-            .setFirstResult((int) pageable.getOffset())
-            .setMaxResults(pageable.getPageSize())
-            .getResultList();
-
-        var total = em.createQuery("""
-            SELECT COUNT(p) FROM SubscriptionPlanJpaEntity p WHERE (:status IS NULL OR p.status = :status)
-        """, Long.class)
-            .setParameter("status", status)
-            .getSingleResult();
-
-        List<PlanQuotaRowDto> quotas = plans.isEmpty() ? List.of() : em.createQuery("""
-            SELECT new com.sep.vox.application.query.dto.PlanQuotaRowDto(q.id,
-            q.planId,
-            q.quotaType,
-            q.includedQuantity,
-            q.tokenUnitPrice)
-            FROM PlanQuotaJpaEntity q
-            WHERE q.planId IN :planIds
-        """, PlanQuotaRowDto.class)
-            .setParameter("planIds", plans.stream().map(p -> p.id()).toList())
-            .getResultList();
-
-        var quotasByPlanId = quotas.stream().collect(Collectors.groupingBy(q -> q.planId()));
-
-        // popular được tính live: đếm số trường đang ACTIVE trên từng gói, rồi đánh dấu popular
-        // cho (các) gói ACTIVE có số trường cao nhất — không còn là cờ admin tự set (xem
-        // JpaSubscriptionPlanQueryRepository / kế hoạch "bỏ cờ phổ biến thủ công").
-        Map<UUID, Long> activeSchoolCountByPlanId = plans.isEmpty() ? Map.of() : em.createQuery("""
-            SELECT s.planId, COUNT(DISTINCT s.schoolId) FROM SchoolSubscriptionJpaEntity s
-            WHERE s.planId IN :planIds AND s.status = 'ACTIVE'
-            GROUP BY s.planId
-        """, Object[].class)
-            .setParameter("planIds", plans.stream().map(p -> p.id()).toList())
+                JOIN SchoolSubscriptionJpaEntity s ON s.subscriptionPlanId = p.id
+            WHERE p.status = :planStatus AND s.status = :subscriptionStatus
+            GROUP BY p.id, p.priceVnd
+            ORDER BY COUNT(DISTINCT s.schoolId) DESC, p.priceVnd ASC, p.id ASC
+        """, UUID.class)
+            .setParameter("planStatus", SubscriptionPlanStatus.ACTIVE.name())
+            .setParameter("subscriptionStatus", SchoolSubscriptionStatus.ACTIVE.name())
+            .setMaxResults(1)
             .getResultList()
             .stream()
-            .collect(Collectors.toMap(
-                row -> (UUID) row[0],
-                row -> (Long) row[1],
-                (a, b) -> Long.sum(a, b),
-                HashMap::new
-            ));
-
-        var maxActiveSchoolCountAmongActivePlans = plans.stream()
-            .filter(row -> PlanStatus.ACTIVE.name().equals(row.status()))
-            .mapToLong(row -> activeSchoolCountByPlanId.getOrDefault(row.id(), 0L))
-            .max()
-            .orElse(0L);
-
-        var content = plans.stream()
-            .map(row -> {
-                var activeSchoolCount = activeSchoolCountByPlanId.getOrDefault(row.id(), 0L);
-                var popular = PlanStatus.ACTIVE.name().equals(row.status())
-                    && maxActiveSchoolCountAmongActivePlans > 0
-                    && activeSchoolCount == maxActiveSchoolCountAmongActivePlans;
-
-                return new SubscriptionPlanDto(
-                    row.id(), row.name(), row.tagline(), row.pricePerYear(), row.validityDays(),
-                    row.maxTimePerAttemptMin(), popular, row.status(), row.version(),
-                    row.createdAt(), row.createdBy(), row.replacedByPlanId(), row.serviceFeeRatio(),
-                    quotasByPlanId.getOrDefault(row.id(), List.of()).stream()
-                        .map(q -> new PlanQuotaDto(q.id(), q.quotaType(), q.includedQuantity(), q.tokenUnitPrice()))
-                        .toList());
-            })
-            .toList();
-
-        return new PageImpl<>(content, pageable, total);
+            .findFirst();
     }
 }

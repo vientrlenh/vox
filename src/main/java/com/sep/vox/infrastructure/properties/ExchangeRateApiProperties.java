@@ -10,8 +10,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * <p>minRateBound/maxRateBound là chặn an toàn: nếu API trả về giá trị ngoài khoảng này (lỗi
  * provider, response dị dạng, ...) thì ExchangeRateApiClient coi như fetch thất bại và KHÔNG lưu
- * snapshot -- tránh 1 lần API trả rác làm hỏng giá bán quota thật (xem CreatePlanUseCase/
- * UpdatePlanUseCase tự tính tokenUnitPrice từ tỷ giá này).
+ * snapshot -- tránh 1 lần API trả rác làm hỏng giá bán quota thật (tỷ giá này đi vào tiền hạn mức
+ * trên đơn hàng và vào SchoolBalanceEntry.fxRateUsed của từng lượt dùng -- xem
+ * QuotaPricingPort.usdToVndRate).
  */
 @ConfigurationProperties(prefix = "vox.quota.exchange-rate-api")
 public record ExchangeRateApiProperties(String baseUrl, BigDecimal minRateBound, BigDecimal maxRateBound) {

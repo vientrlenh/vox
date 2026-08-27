@@ -62,23 +62,23 @@ class ViewSchoolGradesUseCaseTests {
     @Test
     void should_pass_archived_status_to_repository() {
         grantAccess();
-        when(schoolGradeRepository.findAllBySchoolId(eq(schoolId), isNull(), eq("ARCHIVED"), eq(1), eq(20)))
+        when(schoolGradeRepository.findBySchoolId(eq(schoolId), isNull(), eq("ARCHIVED"), eq(1), eq(20)))
             .thenReturn(new PageResult<>(List.<SchoolGrade>of(), 1, 20, 0, 0));
 
         useCase.execute(new ViewSchoolGradesQuery(schoolId, null, "  archived ", 1, 20));
 
-        verify(schoolGradeRepository).findAllBySchoolId(eq(schoolId), isNull(), eq("ARCHIVED"), eq(1), eq(20));
+        verify(schoolGradeRepository).findBySchoolId(eq(schoolId), isNull(), eq("ARCHIVED"), eq(1), eq(20));
     }
 
     @Test
     void should_pass_null_status_when_blank() {
         grantAccess();
-        when(schoolGradeRepository.findAllBySchoolId(eq(schoolId), isNull(), isNull(), eq(1), eq(20)))
+        when(schoolGradeRepository.findBySchoolId(eq(schoolId), isNull(), isNull(), eq(1), eq(20)))
             .thenReturn(new PageResult<>(List.<SchoolGrade>of(), 1, 20, 0, 0));
 
         useCase.execute(new ViewSchoolGradesQuery(schoolId, null, "  ", 1, 20));
 
-        verify(schoolGradeRepository).findAllBySchoolId(eq(schoolId), isNull(), isNull(), eq(1), eq(20));
+        verify(schoolGradeRepository).findBySchoolId(eq(schoolId), isNull(), isNull(), eq(1), eq(20));
     }
 
     @Test
@@ -89,7 +89,7 @@ class ViewSchoolGradesUseCaseTests {
             .isInstanceOf(IllegalArgumentException.class);
 
         verify(schoolGradeRepository, never())
-            .findAllBySchoolId(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+            .findBySchoolId(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyInt(),
                 org.mockito.ArgumentMatchers.anyInt());
     }
@@ -131,12 +131,12 @@ class ViewSchoolGradesUseCaseTests {
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
         when(userContextPort.isSystemAdmin()).thenReturn(true);
         when(schoolRepository.existsById(schoolId)).thenReturn(true);
-        when(schoolGradeRepository.findAllBySchoolId(eq(schoolId), isNull(), isNull(), eq(1), eq(20)))
+        when(schoolGradeRepository.findBySchoolId(eq(schoolId), isNull(), isNull(), eq(1), eq(20)))
             .thenReturn(new PageResult<>(List.<SchoolGrade>of(), 1, 20, 0, 0));
 
         useCase.execute(new ViewSchoolGradesQuery(schoolId, null, null, 1, 20));
 
-        verify(schoolGradeRepository).findAllBySchoolId(eq(schoolId), isNull(), isNull(), eq(1), eq(20));
+        verify(schoolGradeRepository).findBySchoolId(eq(schoolId), isNull(), isNull(), eq(1), eq(20));
     }
 
     @Test

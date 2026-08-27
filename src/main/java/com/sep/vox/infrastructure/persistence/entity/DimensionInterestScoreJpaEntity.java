@@ -14,7 +14,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(
-    name = "dimension_interest_score",
+    name = "dimension_interest_scores",
     indexes = @Index(
         name = "idx_dimension_interest_profile_dimension",
         columnList = "learner_profile_id, dimension",

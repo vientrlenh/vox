@@ -243,7 +243,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         var activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId())
             .orElseThrow(() -> new PlanLimitExceededException(
                 "Trường chưa có gói subscription đang hoạt động, không thể lên lịch kỳ thi"));
-        var plan = subscriptionPlanRepository.findById(activeSubscription.getPlanId())
+        var plan = subscriptionPlanRepository.findById(activeSubscription.getSubscriptionPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói subscription"));
 
         if (exam.getExamTimeDurationSecond() != null && plan.getMaxTimePerAttemptMin() != null
@@ -404,7 +404,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     private void requirePublishReadiness(UUID examId) {
         var missingResultCount = examCandidateRepository.findByExamId(examId).stream()
             .filter(candidate -> !ExamCandidateStatus.isNonScorable(candidate.getStatus()))
-            .flatMap(candidate -> examSessionRepository.findAllByCandidateId(candidate.getId()).stream())
+            .flatMap(candidate -> examSessionRepository.findByCandidateId(candidate.getId()).stream())
             .filter(session -> examId.equals(session.getExamId()))
             .filter(session -> session.getStatus() != ExamSessionStatus.IN_PROGRESS
                 && session.getStatus() != ExamSessionStatus.INTERRUPTED)

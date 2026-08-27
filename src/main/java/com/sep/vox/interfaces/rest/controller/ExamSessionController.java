@@ -3,7 +3,7 @@ package com.sep.vox.interfaces.rest.controller;
 import java.util.UUID;
 
 import com.sep.vox.application.port.input.command.*;
-import com.sep.vox.application.port.input.usecase.exam.CompleteExamSessionGradingUseCase;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.query.ViewExamSessionPaperQuery;
 import com.sep.vox.application.port.input.usecase.exam.GetExamSessionPaperUseCase;
+import com.sep.vox.application.port.input.usecase.examsession.CompleteExamSessionGradingUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.DeleteExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.FlagExamSessionUseCase;

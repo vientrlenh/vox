@@ -27,6 +27,7 @@ import com.sep.vox.application.port.input.query.ViewSchoolTeachersBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolUseCase;
+import com.sep.vox.application.port.input.usecase.school.ViewSchoolDebtEventsUseCase;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
@@ -91,6 +92,7 @@ class SchoolControllerTests {
     private ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase;
     private ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
     private ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
+    private ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase;
     private SchoolController controller;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -124,6 +126,7 @@ class SchoolControllerTests {
         viewSchoolDirectoryCursorPageUseCase = mock(ViewSchoolDirectoryCursorPageUseCase.class);
         viewSchoolDirectoryPageUseCase = mock(ViewSchoolDirectoryPageUseCase.class);
         viewSchoolDirectoryDetailsUseCase = mock(ViewSchoolDirectoryDetailsUseCase.class);
+        viewSchoolDebtEventsUseCase = mock(ViewSchoolDebtEventsUseCase.class);
 
         controller = new SchoolController(
             viewSchoolsUseCase,
@@ -151,7 +154,8 @@ class SchoolControllerTests {
             updateGradeLevelUseCase,
             viewSchoolDirectoryCursorPageUseCase,
             viewSchoolDirectoryPageUseCase, 
-            viewSchoolDirectoryDetailsUseCase
+            viewSchoolDirectoryDetailsUseCase,
+            viewSchoolDebtEventsUseCase
         );
     }
 

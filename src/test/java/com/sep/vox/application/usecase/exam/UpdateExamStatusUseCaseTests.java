@@ -646,7 +646,7 @@ class UpdateExamStatusUseCaseTests {
     private void givenGenerousPlan() {
         var subscription = mock(SchoolSubscription.class);
         when(subscription.getId()).thenReturn(subscriptionId);
-        when(subscription.getPlanId()).thenReturn(planId);
+        when(subscription.getSubscriptionPlanId()).thenReturn(planId);
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(subscription));
 
         var plan = mock(SubscriptionPlan.class);

@@ -1,9 +1,9 @@
 package com.sep.vox.domain.model.personalization;
 
 /**
- * Vòng đời chấm của MỘT câu trả lời luyện tập ({@code practice_item_response.grading_status}).
+ * Vòng đời chấm của MỘT câu trả lời luyện tập ({@code practice_item_responses.grading_status}).
  *
- * <p>Khác hẳn tầng phiên: {@code practice_session.status} (IN_PROGRESS / COMPLETED / ABANDONED)
+ * <p>Khác hẳn tầng phiên: {@code practice_sessions.status} (IN_PROGRESS / COMPLETED / ABANDONED)
  * tả HÀNH VI NGƯỜI HỌC -- "em có nói không" -- chứ không tả tiến độ chấm. Hai thứ cố ý tách rời,
  * xem chú thích dài ở {@code EndPracticeSessionUseCase}.
  *

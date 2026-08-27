@@ -78,7 +78,7 @@ public class ClassTestTokenQuotaGuardService {
 
         // Trường đang nợ (chi phí AI thật đã vượt hạn mức cấp trường) thì chặn luôn ở đây, trước cả
         // khi soi ước lượng worst-case -- xem SchoolSubscriptionDebtGuardService.
-        schoolSubscriptionDebtGuardService.requireSchoolNotLocked(subscription.getId());
+        schoolSubscriptionDebtGuardService.requireSchoolNotLocked(subscription.getSchoolId());
 
         requireSchoolQuota(subscription.getId(), QuotaType.EXAM, estimatedCostUsd);
 

@@ -99,7 +99,7 @@ public class PracticeSessionClosedHandler {
         //
         // Hai nguồn sinh ra câu thừa: học sinh đóng app ngay khi vừa nhận câu, và -- từ khi
         // Python nạp trước câu tiếp theo trong lúc còn follow-up -- một câu sinh sẵn chưa kịp
-        // dùng. Không dọn thì `student_question_exposure` đánh dấu "đã gặp" vĩnh viễn và câu đó
+        // dùng. Không dọn thì `student_question_exposures` đánh dấu "đã gặp" vĩnh viễn và câu đó
         // biến mất khỏi kho của em ấy dù chưa từng nhìn thấy.
         try {
             undeliveredQuestionCleanupService.releaseUndeliveredQuestion(

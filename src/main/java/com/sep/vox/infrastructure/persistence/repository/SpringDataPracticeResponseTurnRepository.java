@@ -25,8 +25,8 @@ public interface SpringDataPracticeResponseTurnRepository
 
     @Query(value = """
         SELECT turn.*
-        FROM practice_response_turn turn
-        JOIN practice_item_response response
+        FROM practice_response_turns turn
+        JOIN practice_item_responses response
           ON response.id = turn.practice_response_id
         WHERE response.practice_session_id = :sessionId
         ORDER BY turn.turn_order
@@ -41,11 +41,11 @@ public interface SpringDataPracticeResponseTurnRepository
             question.max_response_seconds
             - COALESCE(SUM(turn.duration_seconds), 0)
         )::int
-        FROM practice_question question
-        LEFT JOIN practice_item_response response
+        FROM practice_questions question
+        LEFT JOIN practice_item_responses response
           ON response.practice_question_id = question.id
          AND response.practice_session_id = :sessionId
-        LEFT JOIN practice_response_turn turn
+        LEFT JOIN practice_response_turns turn
           ON turn.practice_response_id = response.id
         WHERE question.id = :questionId
         GROUP BY question.id
@@ -60,8 +60,8 @@ public interface SpringDataPracticeResponseTurnRepository
     // JpaTokenUsageTimeseriesQueryRepository map row native query.
     @Query(value = """
         SELECT response.practice_session_id AS session_id, COALESCE(SUM(turn.duration_seconds), 0) AS total_seconds
-        FROM practice_response_turn turn
-        JOIN practice_item_response response
+        FROM practice_response_turns turn
+        JOIN practice_item_responses response
           ON response.id = turn.practice_response_id
         WHERE response.practice_session_id IN :sessionIds
         GROUP BY response.practice_session_id

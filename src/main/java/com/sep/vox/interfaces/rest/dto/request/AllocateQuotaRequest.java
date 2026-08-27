@@ -15,6 +15,6 @@ public record AllocateQuotaRequest(
 
     @NotEmpty(message = "Danh sách phân bổ không được để trống")
     @Valid
-    List<UserQuotaAmountRequest> allocations
+    List<AllocateUserQuotaAmountRequest> allocations
 ) {
 }

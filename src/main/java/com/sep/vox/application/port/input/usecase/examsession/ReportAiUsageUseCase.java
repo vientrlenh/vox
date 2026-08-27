@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -42,8 +41,19 @@ public class ReportAiUsageUseCase implements IUseCase<ReportAiUsageCommand, Void
         this.recordAiUsageUseCase = recordAiUsageUseCase;
     }
 
+    /**
+     * CỐ Ý KHÔNG @Transactional: mỗi usage event phải đứng độc lập, đúng như đường Kafka
+     * (AiUsageRecordedConsumer không @Transactional nên vòng lặp của nó cũng cho mỗi event một
+     * transaction riêng của RecordAiUsageUseCase).
+     *
+     * <p>Gói cả lô vào một transaction thì một event hỏng sẽ kéo theo những event ĐÃ GHI ĐƯỢC trong
+     * cùng request. Nguồn gọi đường này là desktop app, báo cáo kiểu best-effort và KHÔNG retry
+     * (LocalAvatarSpeaker.ReportTtsUsageBestEffortAsync nuốt lỗi rồi thôi) -- lô bị loại là chi phí
+     * thật biến mất vĩnh viễn, không có lần thử thứ hai nào.
+     *
+     * <p>Hai bước kiểm tra quyền bên dưới chỉ ĐỌC nên không cần transaction bao ngoài.
+     */
     @Override
-    @Transactional
     public Void execute(ReportAiUsageCommand input) {
         var userId = userContextPort.getCurrentAuthenticatedUserId();
 

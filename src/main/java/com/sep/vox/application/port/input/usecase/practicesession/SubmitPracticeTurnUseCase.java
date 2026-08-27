@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,20 +16,18 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
-import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
 import com.sep.vox.application.port.input.command.SubmitPracticeTurnCommand;
+import com.sep.vox.application.port.input.service.ConsumeQuotaService;
 import com.sep.vox.application.port.input.service.PracticeEvaluationRequestFactory;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.ConsumeQuotaUseCase;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
+import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.SubmitTurnResult;
 import com.sep.vox.domain.dto.personalization.SubmitTurnResultDto;
 import com.sep.vox.domain.dto.personalization.TurnCorrectionDto;
-import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.personalization.SubmitPracticeTurn;
 import com.sep.vox.domain.model.personalization.TurnCorrectionSubmission;
 import com.sep.vox.domain.repository.PracticeItemResponseRepository;
@@ -43,6 +42,9 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
     private static final Logger LOGGER =
         LoggerFactory.getLogger(SubmitPracticeTurnUseCase.class);
 
+    // Trùng scale của school_subscription_quota_records.used_amount_vnd numeric(18,6).
+    private static final int COST_VND_SCALE = 6;
+
     private final PracticeSessionRepository practiceSessionRepository;
     private final PracticeItemResponseRepository practiceItemResponseRepository;
     private final PracticeResponseTurnRepository practiceResponseTurnRepository;
@@ -50,10 +52,11 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final PracticeEvaluationRequestFactory evaluationRequestFactory;
     private final PracticeTopicOfferEnrichmentService enrichmentService;
-    private final ConsumeQuotaUseCase consumeQuotaUseCase;
+    private final ConsumeQuotaService consumeQuotaService;
     private final ExternalEventPublisherPort eventPublisher;
     private final UserContextPort userContextPort;
-    // REQUIRES_NEW riêng cho lời gọi ConsumeQuotaUseCase -- xem lý do đầy đủ tại chỗ dùng bên dưới.
+    private final QuotaPricingPort quotaPricingPort;
+    // REQUIRES_NEW riêng cho lời gọi ConsumeQuotaService -- xem lý do đầy đủ tại chỗ dùng bên dưới.
     private final TransactionTemplate consumeQuotaTransactionTemplate;
 
     public SubmitPracticeTurnUseCase(
@@ -64,9 +67,10 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             PracticeEvaluationRequestFactory evaluationRequestFactory,
             PracticeTopicOfferEnrichmentService enrichmentService,
-            ConsumeQuotaUseCase consumeQuotaUseCase,
+            ConsumeQuotaService consumeQuotaService,
             ExternalEventPublisherPort eventPublisher,
             UserContextPort userContextPort,
+            QuotaPricingPort quotaPricingPort,
             PlatformTransactionManager transactionManager) {
         this.practiceSessionRepository = practiceSessionRepository;
         this.practiceItemResponseRepository = practiceItemResponseRepository;
@@ -75,13 +79,19 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.evaluationRequestFactory = evaluationRequestFactory;
         this.enrichmentService = enrichmentService;
-        this.consumeQuotaUseCase = consumeQuotaUseCase;
+        this.consumeQuotaService = consumeQuotaService;
         this.eventPublisher = eventPublisher;
         this.userContextPort = userContextPort;
+        this.quotaPricingPort = quotaPricingPort;
         this.consumeQuotaTransactionTemplate = new TransactionTemplate(transactionManager);
         this.consumeQuotaTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
+    // CẢNH BÁO: lời gọi execute(...) bên dưới là SELF-INVOCATION -- không đi qua proxy, nên
+    // @Transactional trên overload kia KHÔNG có tác dụng ở đường này; transaction đang chạy là
+    // transaction của CHÍNH method này. Hiện vô hại vì hai annotation cùng cấu hình, nhưng đổi
+    // overload kia sang REQUIRES_NEW/readOnly thì thay đổi đó chỉ có hiệu lực ở đường gọi trực tiếp
+    // (/internal/practice-sessions/{id}/turns) và im lặng không xảy ra gì ở đây.
     @Override
     @Transactional
     public SubmitTurnResult execute(SubmitPracticeTurnCommand input) {
@@ -122,41 +132,53 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         var spokenSeconds = session.getGradedSeconds();
         var quotaExhausted = false;
         if (turn.getDurationSeconds() > 0) {
-            try {
-                // Chi phí AI thật (USD) của turn này, Python tính đồng bộ từ realtimeCorrectionGraph
-                // ngay trong request submit_turn (không đợi được ai_usage_record qua Kafka như exam,
-                // vì PRACTICE trừ quota NGAY trong request này) -- xem
-                // PracticeAttemptConnection._flush_turn_usage bên Agentic AI,
-                // AI_USAGE_QUOTA_USD_MIGRATION.md mục 5/7. Fallback ZERO cho client Python cũ chưa gửi.
-                var costUsd = turn.getTurnCostUsd() != null ? turn.getTurnCostUsd() : BigDecimal.ZERO;
-                var subscriptionId = activeSubscriptionId(studentId);
-                // ConsumeQuotaUseCase cũng @Transactional (REQUIRED mặc định) -- gọi thẳng thì nó
-                // tham gia CHUNG transaction với response/turn/corrections vừa lưu ở trên. Khi nó
-                // ném QuotaExceededException, transaction interceptor của lời gọi đó đánh dấu
-                // rollback-only lên transaction DÙNG CHUNG ngay lập tức, TRƯỚC khi exception bay
-                // tới catch bên dưới -- bắt được và chạy tiếp bình thường không cứu được gì, tới
-                // lúc method này commit Spring vẫn ném UnexpectedRollbackException (500), cuốn theo
-                // cả response/turn/corrections đã lưu. Bọc lời gọi trong transaction RIÊNG
-                // (REQUIRES_NEW) thì lúc nó throw chỉ transaction cô lập đó bị rollback -- transaction
-                // ngoài (của method này) không hề bị đụng tới, vẫn commit sạch ở cuối như bình
-                // thường. Xem QuestionStatusTransition/PracticeSessionClosedHandler cho các chỗ khác
-                // trong repo đã từng dính đúng cái bẫy UnexpectedRollbackException này.
-                consumeQuotaTransactionTemplate.execute(status -> consumeQuotaUseCase.execute(new ConsumeQuotaCommand(
+            // Chi phí AI thật (USD) của turn này, Python tính đồng bộ từ realtimeCorrectionGraph
+            // ngay trong request submit_turn (không đợi được ai_usage_record qua Kafka như exam,
+            // vì PRACTICE trừ quota NGAY trong request này) -- xem
+            // PracticeAttemptConnection._flush_turn_usage bên Agentic AI,
+            // AI_USAGE_QUOTA_USD_MIGRATION.md mục 5/7. Fallback ZERO cho client Python cũ chưa gửi.
+            var costUsd = turn.getTurnCostUsd() != null ? turn.getTurnCostUsd() : BigDecimal.ZERO;
+            // Quy sang VND NGAY tại đây vì hạn mức tính bằng VND. Khác đường thi: bên đó cộng
+            // cost_vnd đã chốt sẵn từng dòng ai_usage_records, còn ở đây chi phí do Python gửi
+            // thẳng trong request nên chưa có dòng nào để cộng -- tỷ giá hiện hành là tỷ giá
+            // đúng, vì khoản chi vừa phát sinh xong.
+            var fxRateUsed = quotaPricingPort.usdToVndRate();
+            var costVnd = costUsd
+                .multiply(fxRateUsed)
+                .setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
+            var subscriptionId = activeSubscriptionId(studentId);
+            // ConsumeQuotaService cũng @Transactional (REQUIRED mặc định) -- gọi thẳng thì nó
+            // tham gia CHUNG transaction với response/turn/corrections vừa lưu ở trên. Nếu nó
+            // ném (giờ chỉ còn các lỗi thật như không tìm thấy hạn mức/gói, không còn
+            // QuotaExceededException), transaction interceptor của lời gọi đó đánh dấu
+            // rollback-only lên transaction DÙNG CHUNG ngay lập tức, TRƯỚC khi exception bay tới
+            // chỗ bắt -- tới lúc method này commit Spring vẫn ném UnexpectedRollbackException
+            // (500), cuốn theo cả response/turn/corrections đã lưu. Bọc trong transaction RIÊNG
+            // (REQUIRES_NEW) thì chỉ transaction cô lập đó bị rollback. Xem
+            // QuestionStatusTransition/PracticeSessionClosedHandler cho các chỗ khác trong repo
+            // đã từng dính đúng cái bẫy này.
+            //
+            // consumePracticeAllowingDebt chứ KHÔNG chặn cứng: lúc chạy tới đây Azure đã tính
+            // tiền xong rồi (costUsd là chi phí THẬT của lượt vừa nói), nên từ chối không giữ
+            // lại được đồng nào mà chỉ làm khoản chi biến mất khỏi sổ sách. Hết tiền hay chưa
+            // giờ đọc từ cờ fundsExhausted của kết quả, không còn qua exception.
+            var consumeResult = consumeQuotaTransactionTemplate.execute(
+                status -> consumeQuotaService.consumePracticeAllowingDebt(
                     subscriptionId,
                     turn.getSessionId(),
-                    QuotaType.PRACTICE,
+                    costVnd,
                     costUsd,
+                    fxRateUsed,
                     studentId
-                )));
-            } catch (QuotaExceededException exception) {
-                // Đã nói thì phải được ghi. Hết hạn mức chỉ có nghĩa là phiên dừng SAU lượt
-                // này, nên báo bằng cờ để tầng gọi đóng phiên một cách tử tế.
+                ));
+            quotaExhausted = consumeResult != null && consumeResult.fundsExhausted();
+            if (quotaExhausted) {
+                // Đã nói thì phải được ghi. Hết tiền chỉ có nghĩa là phiên dừng SAU lượt này.
                 LOGGER.info(
-                    "Hết hạn mức PRACTICE ở phiên {} -- vẫn ghi lượt {} rồi đóng phiên.",
+                    "Hết hạn mức lẫn số dư PRACTICE ở phiên {} -- vẫn ghi lượt {} rồi đóng phiên.",
                     turn.getSessionId(),
                     turn.getTurnOrder()
                 );
-                quotaExhausted = true;
             }
             spokenSeconds += turn.getDurationSeconds();
             practiceSessionRepository.save(

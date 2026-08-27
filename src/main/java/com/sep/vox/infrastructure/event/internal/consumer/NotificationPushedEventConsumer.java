@@ -418,7 +418,7 @@ public class NotificationPushedEventConsumer {
                 yield fanOut(payload.systemAdminIds(), category,
                     "Cảnh báo: nợ hạn mức AI vượt trần",
                     "%s -- nợ %s vượt trần cảnh báo %s".formatted(quotaLabel(payload.quotaType()),
-                        formatUsd(payload.overageUsd()), formatUsd(payload.capUsd())),
+                        formatAmount(payload.overageVnd()), formatAmount(payload.capVnd())),
                     data(eventType, "schoolId", payload.schoolId()));
             }
 
@@ -534,10 +534,6 @@ public class NotificationPushedEventConsumer {
 
     private String formatAmount(BigDecimal amount) {
         return amount == null ? "--" : AMOUNT_FORMAT.get().format(amount) + " ₫";
-    }
-
-    private String formatUsd(BigDecimal amountUsd) {
-        return amountUsd == null ? "--" : "$" + amountUsd.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
     }
 
     private String quotaLabel(QuotaType quotaType) {

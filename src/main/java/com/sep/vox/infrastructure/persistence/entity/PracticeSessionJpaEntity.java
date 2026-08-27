@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(
-    name = "practice_session",
+    name = "practice_sessions",
     indexes = {
         @Index(name = "idx_practice_session_student_started", columnList = "student_id, started_at"),
         @Index(name = "idx_practice_session_heartbeat", columnList = "status, last_heartbeat_at")

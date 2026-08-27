@@ -24,6 +24,13 @@ public interface SpringDataAiUsageRecordRepository extends JpaRepository<AiUsage
     BigDecimal sumCostUsdByExamSessionId(@Param("examSessionId") UUID examSessionId);
 
     @Query("""
+        SELECT COALESCE(SUM(r.costVnd), 0)
+        FROM AiUsageRecordJpaEntity r
+        WHERE r.examSessionId = :examSessionId
+    """)
+    BigDecimal sumCostVndByExamSessionId(@Param("examSessionId") UUID examSessionId);
+
+    @Query("""
         SELECT new com.sep.vox.domain.repository.SessionCostAggregate(r.examSessionId, COALESCE(SUM(r.costUsd), 0))
         FROM AiUsageRecordJpaEntity r
         WHERE r.occurredAt >= :since

@@ -8,7 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "interest_dimension")
+@Table(name = "interest_dimensions")
 public class InterestDimensionJpaEntity {
 
     @Id

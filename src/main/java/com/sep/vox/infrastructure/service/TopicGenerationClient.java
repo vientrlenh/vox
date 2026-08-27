@@ -101,7 +101,7 @@ public class TopicGenerationClient implements TopicGenerationPort {
             for (var node : root.path("proposals")) {
                 proposals.add(new TopicProposal(
                     node.path("name").asString(),
-                    node.path("interest_dimension").asString(),
+                    node.path("interest_dimensions").asString(),
                     node.path("curriculum_group").asString(),
                     node.path("temporal_affordance").asString(TensePolicy.AFFORDANCE_MIXED),
                     node.path("confidence").asDouble(),

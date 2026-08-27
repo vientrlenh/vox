@@ -1,6 +1,7 @@
-package com.sep.vox.application.port.input.usecase.exam;
+package com.sep.vox.application.port.input.usecase.examsession;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,11 +11,11 @@ import java.util.UUID;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CompleteExamSessionGradingCommand;
-import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
+import com.sep.vox.application.port.input.service.ConsumeQuotaService;
 import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
-import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.ConsumeQuotaUseCase;
+import com.sep.vox.application.port.output.QuotaPricingPort;
+import com.sep.vox.application.response.input.subscription.ConsumeQuotaResponse;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -27,29 +28,32 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 @Service
 public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamSessionGradingCommand, Void> {
 
+    // Trùng scale của school_balance_entries.fx_rate_used numeric(12,4).
+    private static final int FX_RATE_SCALE = 4;
+
     private final ExamSessionRepository examSessionRepository;
     private final ExamRepository examRepository;
     private final AiUsageRecordRepository aiUsageRecordRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
-    private final ConsumeQuotaUseCase consumeQuotaUseCase;
-    private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
+    private final ConsumeQuotaService consumeQuotaService;
     private final SchoolDebtNotificationService schoolDebtNotificationService;
+    private final QuotaPricingPort quotaPricingPort;
 
     public CompleteExamSessionGradingUseCase(
             ExamSessionRepository examSessionRepository,
             ExamRepository examRepository,
             AiUsageRecordRepository aiUsageRecordRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
-            ConsumeQuotaUseCase consumeQuotaUseCase,
-            SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService,
-            SchoolDebtNotificationService schoolDebtNotificationService) {
+            ConsumeQuotaService consumeQuotaService,
+            SchoolDebtNotificationService schoolDebtNotificationService,
+            QuotaPricingPort quotaPricingPort) {
         this.examSessionRepository = examSessionRepository;
         this.examRepository = examRepository;
         this.aiUsageRecordRepository = aiUsageRecordRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.consumeQuotaUseCase = consumeQuotaUseCase;
-        this.schoolSubscriptionDebtGuardService = schoolSubscriptionDebtGuardService;
+        this.consumeQuotaService = consumeQuotaService;
         this.schoolDebtNotificationService = schoolDebtNotificationService;
+        this.quotaPricingPort = quotaPricingPort;
     }
 
     @Override
@@ -76,10 +80,15 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
             return null;
         }
 
-        // Nguồn trừ quota là tổng cost_usd thật từ ai_usage_record (LLM token + STT/TTS/avatar
-        // duration do Agentic AI báo cáo), KHÔNG phải số giây câu trả lời -- xem V22__quota_unit_to_usd.sql.
+        // Nguồn trừ quota là tổng cost_vnd thật từ ai_usage_records (LLM token + STT/TTS/avatar
+        // duration), KHÔNG phải số giây câu trả lời. Cộng cột VND đã chốt tỷ giá từng dòng chứ không
+        // quy đổi tổng USD theo tỷ giá hôm nay -- xem AiUsageRecordRepository.sumCostVndByExamSessionId.
+        //
+        // Vẫn lấy thêm tổng USD vì school_balance_entries.cost_usd giữ nguyên tệ gốc để đối soát
+        // ngược với hóa đơn nhà cung cấp (V2 mục 7).
+        var totalCostVnd = aiUsageRecordRepository.sumCostVndByExamSessionId(session.getId());
         var totalCostUsd = aiUsageRecordRepository.sumCostUsdByExamSessionId(session.getId());
-        if (totalCostUsd.compareTo(BigDecimal.ZERO) > 0) {
+        if (totalCostVnd.compareTo(BigDecimal.ZERO) > 0) {
             var now = Instant.now();
 
             // allowDebt=true: chi phí AI thật đã phát sinh, phải ghi nhận đủ dù vượt hạn mức --
@@ -97,7 +106,7 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
             // hạn mức cá nhân.
             var chargedUserId = exam.getKind() == ExamKind.CLASS_TEST ? exam.getCreatedBy() : null;
             checkAndReportLockTransition(subscription.getId(), exam.getSchoolId(), QuotaType.EXAM,
-                session.getId(), totalCostUsd, chargedUserId, now);
+                session.getId(), totalCostVnd, totalCostUsd, chargedUserId, now);
         }
         return null;
     }
@@ -105,30 +114,47 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
     /**
      * Trừ hạn mức, rồi báo cáo nếu chính lần trừ này là lần đẩy trường vào nợ.
      *
-     * <p>Hỏi {@code isQuotaOverLimit} ở CẢ HAI phía thay vì tự so hai cột của bản ghi vừa trả về:
-     * "đang nợ hay không" không phải một cột của ví mà là một phép so hai cột, nên nó chỉ được có
-     * MỘT chỗ định nghĩa -- xem {@link SchoolSubscriptionDebtGuardService}. Hai vế trước/sau dùng
-     * chung một thước cũng là thứ khiến so sánh này không thể lệch.
+     * <p>KHÔNG còn hỏi {@code isQuotaOverLimit} hai lần quanh lời gọi trừ. Nợ giờ là
+     * {@code balance_vnd < 0} chứ không phải phép so hai cột của ví hạn mức, và
+     * {@link ConsumeQuotaResponse#crossedIntoDebt()} được tính TRONG transaction đang giữ khóa dòng
+     * số dư -- hai lần đọc rời nhau bên ngoài khóa đó có thể không khớp với chính cái vừa xảy ra bên
+     * trong nó.
      */
-    private void checkAndReportLockTransition(UUID subscriptionId, UUID schoolId,
-            QuotaType quotaType, UUID examSessionId, BigDecimal totalCostUsd, UUID userId, Instant now) {
-        var wasOver = schoolSubscriptionDebtGuardService.isQuotaOverLimit(subscriptionId, quotaType);
+    private void checkAndReportLockTransition(UUID subscriptionId, UUID schoolId, QuotaType quotaType,
+            UUID examSessionId, BigDecimal totalCostVnd, BigDecimal totalCostUsd, UUID userId, Instant now) {
 
-        var after = consumeQuotaUseCase.execute(new ConsumeQuotaCommand(
-            subscriptionId, examSessionId, quotaType, totalCostUsd, userId, true
-        ));
+        var result = consumeQuotaService.consumeExamAllowingDebt(
+            subscriptionId, examSessionId, totalCostVnd,
+            totalCostUsd, effectiveFxRate(totalCostVnd, totalCostUsd), userId
+        );
 
         // Chỉ báo đúng lần CHUYỂN từ trong hạn mức sang nợ. Đang nợ sẵn thì những lần trừ tiếp theo
-        // không sinh thêm sự kiện nào -- và nhánh đó cũng thoát trước khi phải hỏi lại lần thứ hai.
-        if (wasOver || !schoolSubscriptionDebtGuardService.isQuotaOverLimit(subscriptionId, quotaType)) {
+        // không sinh thêm sự kiện nào.
+        if (!result.crossedIntoDebt()) {
             return;
         }
 
-        // Số liệu cho sự kiện lấy từ bản ghi ConsumeQuotaUseCase vừa trả về: đó đúng là trạng thái
-        // ví SAU khi trừ, không phải đọc thêm một lần nữa.
         schoolDebtNotificationService.publishSchoolLockedDueToDebt(
-            subscriptionId, schoolId, quotaType, examSessionId, totalCostUsd,
-            after.totalAllocatedAmountVnd(), after.usedAmountVnd(), now
+            subscriptionId, schoolId, quotaType, examSessionId, totalCostVnd,
+            result.quota().totalAllocatedAmountVnd(), result.quota().usedAmountVnd(), now
         );
+    }
+
+    /**
+     * Tỷ giá THỰC TẾ đã áp cho cả phiên = tổng VND / tổng USD.
+     *
+     * <p>Một phiên thi gồm nhiều lượt gọi AI, mỗi lượt đã chốt fx_rate_used riêng lúc phát sinh, nên
+     * phiên vắt qua ngày đổi tỷ giá sẽ có nhiều tỷ giá khác nhau. Bút toán trên sổ cái chỉ có MỘT cột
+     * fx_rate_used, và tỷ giá bình quân gia quyền này là con số duy nhất khiến
+     * {@code cost_usd * fx_rate_used} khớp lại đúng {@code amount_vnd} của chính bút toán đó -- lấy
+     * bừa tỷ giá của một lượt, hay tỷ giá mới nhất, đều làm phép đối soát ngược không ra.
+     */
+    private BigDecimal effectiveFxRate(BigDecimal totalCostVnd, BigDecimal totalCostUsd) {
+        if (totalCostUsd.compareTo(BigDecimal.ZERO) <= 0) {
+            // Có cost_vnd mà không có cost_usd là dữ liệu hỏng, nhưng khoản chi vẫn phải được ghi
+            // nhận -- lấy tỷ giá hiện hành để bút toán có số hợp lệ thay vì chia cho 0.
+            return quotaPricingPort.usdToVndRate();
+        }
+        return totalCostVnd.divide(totalCostUsd, FX_RATE_SCALE, RoundingMode.HALF_UP);
     }
 }

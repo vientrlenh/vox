@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(
-    name = "topic_suggestion",
+    name = "topic_suggestions",
     indexes = {
         @Index(name = "idx_topic_suggestion_student_status", columnList = "student_id, status"),
         @Index(name = "idx_topic_suggestion_student_name", columnList = "student_id, suggested_topic_name")
@@ -29,7 +29,7 @@ public class TopicSuggestionJpaEntity {
     private String suggestedTopicName;
     @Column(name = "keyword", length = 200, updatable = false)
     private String keyword;
-    @Column(name = "interest_dimension", nullable = false, length = 32, updatable = false)
+    @Column(name = "interest_dimensions", nullable = false, length = 32, updatable = false)
     private String interestDimension;
     @Column(name = "curriculum_group", length = 24, updatable = false)
     private String curriculumGroup;

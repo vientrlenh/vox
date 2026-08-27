@@ -60,12 +60,12 @@ public class SchoolDebtNotificationService {
 
     public void publishDebtCapExceeded(
             UUID subscriptionId, UUID schoolId, QuotaType quotaType, UUID triggerExamSessionId,
-            BigDecimal triggerAmountUsd, BigDecimal totalAllocatedUsd, BigDecimal usedQuantityUsd,
-            BigDecimal overageUsd, BigDecimal capUsd, Instant now) {
+            BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd,
+            BigDecimal overageVnd, BigDecimal capVnd, Instant now) {
         var systemAdminIds = userRoleRepository.findActiveUserIdsByRoleCode(RoleConstant.SYSTEM_ADMIN_ROLE);
 
         var payload = jsonSerializationPort.toJson(new SchoolDebtCapExceededPayloadV1(
-            systemAdminIds, schoolId, subscriptionId, quotaType, overageUsd, capUsd, now
+            systemAdminIds, schoolId, subscriptionId, quotaType, overageVnd, capVnd, now
         ));
 
         outboxRepository.save(Outbox.create(
@@ -74,12 +74,12 @@ public class SchoolDebtNotificationService {
         ));
 
         logDebtEvent(schoolId, subscriptionId, SchoolDebtEventType.CAP_EXCEEDED, quotaType,
-            triggerExamSessionId, triggerAmountUsd, totalAllocatedUsd, usedQuantityUsd, overageUsd, now);
+            triggerExamSessionId, triggerAmountVnd, totalAllocatedVnd, usedAmountVnd, overageVnd, now);
     }
 
     public void publishSchoolLockedDueToDebt(
             UUID subscriptionId, UUID schoolId, QuotaType quotaType, UUID triggerExamSessionId,
-            BigDecimal triggerAmountUsd, BigDecimal totalAllocatedUsd, BigDecimal usedQuantityUsd, Instant now) {
+            BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, Instant now) {
         var schoolAdminIds = schoolAdminIdsOf(schoolId);
 
         var payload = jsonSerializationPort.toJson(new SchoolLockedDueToDebtPayloadV1(
@@ -92,12 +92,12 @@ public class SchoolDebtNotificationService {
         ));
 
         logDebtEvent(schoolId, subscriptionId, SchoolDebtEventType.LOCKED, quotaType, triggerExamSessionId,
-            triggerAmountUsd, totalAllocatedUsd, usedQuantityUsd, usedQuantityUsd.subtract(totalAllocatedUsd), now);
+            triggerAmountVnd, totalAllocatedVnd, usedAmountVnd, usedAmountVnd.subtract(totalAllocatedVnd), now);
     }
 
     public void publishSchoolDebtCleared(
             UUID subscriptionId, UUID schoolId, QuotaType quotaType,
-            BigDecimal totalAllocatedUsd, BigDecimal usedQuantityUsd, Instant now) {
+            BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, Instant now) {
         var schoolAdminIds = schoolAdminIdsOf(schoolId);
 
         var payload = jsonSerializationPort.toJson(new SchoolDebtClearedPayloadV1(
@@ -110,16 +110,16 @@ public class SchoolDebtNotificationService {
         ));
 
         logDebtEvent(schoolId, subscriptionId, SchoolDebtEventType.CLEARED, quotaType, null, null,
-            totalAllocatedUsd, usedQuantityUsd, usedQuantityUsd.subtract(totalAllocatedUsd), now);
+            totalAllocatedVnd, usedAmountVnd, usedAmountVnd.subtract(totalAllocatedVnd), now);
     }
 
     private void logDebtEvent(
             UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType, QuotaType quotaType,
-            UUID triggerExamSessionId, BigDecimal triggerAmountUsd, BigDecimal totalAllocatedUsd,
-            BigDecimal usedQuantityUsd, BigDecimal overageUsd, Instant now) {
+            UUID triggerExamSessionId, BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd,
+            BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant now) {
         schoolDebtEventRepository.save(new SchoolDebtEvent(
-            schoolId, subscriptionId, eventType, quotaType, triggerExamSessionId, triggerAmountUsd,
-            totalAllocatedUsd, usedQuantityUsd, overageUsd, now
+            schoolId, subscriptionId, eventType, quotaType, triggerExamSessionId, triggerAmountVnd,
+            totalAllocatedVnd, usedAmountVnd, overageVnd, now
         ));
     }
 

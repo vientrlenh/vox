@@ -10,7 +10,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(
-    name = "turn_correction",
+    name = "turn_corrections",
     indexes = @Index(name = "idx_turn_correction_turn", columnList = "turn_id")
 )
 public class TurnCorrectionJpaEntity {

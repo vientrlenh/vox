@@ -33,7 +33,7 @@ import com.sep.vox.application.port.output.QuotaPricingConfigPort;
  * (evalGraph chấm exam nặng hơn hẳn realtimeCorrectionGraph của PRACTICE) -- gộp chung sẽ làm lệch
  * rate của cả 2 bên tùy khối lượng dữ liệu bên nào nhiều hơn. 2 nguồn dùng CHUNG 1 bộ ngưỡng tuning
  * (windowDays/minSampleSessions/maxChangeRatio/min-maxRateBound) -- chỉ khác bảng JOIN để lấy giây
- * trả lời thật (exam_item_responses vs practice_response_turn) và rate mặc định fallback.
+ * trả lời thật (exam_item_responses vs practice_response_turns) và rate mặc định fallback.
  *
  * <p>Dùng giây TRẢ LỜI THẬT làm mẫu số (không phải examTimeDurationSecond cấu hình) -- quyết
  * định nghiệp vụ đã chốt: cho margin an toàn lớn hơn vì học sinh luôn dùng ít hơn thời gian được
@@ -79,7 +79,7 @@ public class QuotaPricingCalibrationService {
         );
     }
 
-    /** Calibrate estimatedCostPerPracticeSecondUsd -- giây trả lời thật lấy từ practice_response_turn. */
+    /** Calibrate estimatedCostPerPracticeSecondUsd -- giây trả lời thật lấy từ practice_response_turns. */
     @Transactional
     public void recalibratePractice() {
         recalibrate(
@@ -118,7 +118,7 @@ public class QuotaPricingCalibrationService {
             var duration = durationsBySession.get(cost.sessionId());
             if (duration == null || duration <= 0) {
                 // Session có usage AI nhưng không khớp được giây trả lời thật ở nguồn này (vd
-                // session thuộc nguồn kia -- exam session không có row practice_response_turn và
+                // session thuộc nguồn kia -- exam session không có row practice_response_turns và
                 // ngược lại, hoặc lỗi transcribe) -- loại khỏi mẫu, không thể tính rate cho session này.
                 continue;
             }

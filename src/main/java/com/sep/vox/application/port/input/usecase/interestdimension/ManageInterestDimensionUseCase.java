@@ -17,7 +17,7 @@ import com.sep.vox.domain.repository.InterestDimensionRepository;
 
 /**
  * Quản lý danh mục chiều sở thích (SYSTEM_ADMIN). Xem V15__personalize.sql, mục
- * 19. interest_dimension, để biết vì sao danh mục này phải là dữ liệu chứ không phải hằng số
+ * 19. interest_dimensions, để biết vì sao danh mục này phải là dữ liệu chứ không phải hằng số
  * cứng trong code.
  */
 @Service
@@ -74,7 +74,7 @@ public class ManageInterestDimensionUseCase {
         var code = normalizeCode(input.code());
         var existing = repository.findByCode(code)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chiều sở thích: " + code));
-        // Mã là khoá và đã được gán vào practice_topic/dimension_interest_score -- không cho
+        // Mã là khoá và đã được gán vào practice_topics/dimension_interest_scores -- không cho
         // đổi, chỉ sửa phần hiển thị và cờ. Muốn đổi mã thì tạo mới rồi tắt cái cũ.
         var saved = toResponse(repository.save(new InterestDimension(
             existing.getCode(),

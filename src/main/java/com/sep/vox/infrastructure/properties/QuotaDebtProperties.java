@@ -7,10 +7,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import com.sep.vox.application.port.output.QuotaDebtConfigPort;
 
 /**
- * Trần cảnh báo cho nợ hạn mức AI (usedQuantity vượt totalAllocated -- xem
- * SchoolSubscriptionDebtGuardService). CHỈ để cảnh báo sớm khi pipeline đo chi phí AI có bug làm
+ * Trần cảnh báo cho nợ của trường (số dư ví tự nạp âm -- xem ConsumeQuotaService.checkDebtCapTransition
+ * và SchoolSubscriptionDebtGuardService). CHỈ để cảnh báo sớm khi pipeline đo chi phí AI có bug làm
  * nợ tăng bất thường -- KHÔNG chặn việc trừ quota (chi phí thật luôn phải được ghi nhận đúng) và
- * KHÔNG ảnh hưởng cơ chế tự mở khóa khi trường trả hết nợ.
+ * KHÔNG ảnh hưởng cơ chế tự mở khóa khi trường nạp bù đưa số dư về không âm.
  */
 @ConfigurationProperties(prefix = "vox.quota.debt")
 public record QuotaDebtProperties(

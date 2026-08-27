@@ -29,10 +29,10 @@ public class JpaSchoolDebtEventQueryRepository implements SchoolDebtEventQueryRe
                 e.eventType,
                 e.quotaType,
                 e.triggerExamSessionId,
-                e.triggerAmountUsd,
-                e.totalAllocatedUsd,
-                e.usedQuantityUsd,
-                e.overageUsd,
+                e.triggerAmountVnd,
+                e.totalAllocatedVnd,
+                e.usedAmountVnd,
+                e.overageVnd,
                 str(e.occurredAt))
             FROM SchoolDebtEventJpaEntity e
             WHERE e.schoolId = :schoolId

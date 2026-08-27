@@ -15,7 +15,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(
-    name = "practice_question",
+    name = "practice_questions",
     indexes = {
         @Index(
             name = "idx_practice_question_lookup",

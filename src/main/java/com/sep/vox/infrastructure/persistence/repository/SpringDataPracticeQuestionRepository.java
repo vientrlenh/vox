@@ -23,8 +23,8 @@ public interface SpringDataPracticeQuestionRepository
                question.max_response_seconds AS maxResponseSeconds,
                topic.name AS topicName,
                topic.description AS topicDescription
-        FROM practice_question question
-        JOIN practice_topic topic
+        FROM practice_questions question
+        JOIN practice_topics topic
           ON topic.id = question.practice_topic_id
         WHERE question.id = :questionId
         """, nativeQuery = true)
@@ -32,7 +32,7 @@ public interface SpringDataPracticeQuestionRepository
 
     @Query(value = """
         SELECT question.*
-        FROM practice_question question
+        FROM practice_questions question
         WHERE question.practice_topic_id = :topicId
           AND question.active = true
           AND (:criterion IS NULL OR question.target_criterion_code = :criterion)
@@ -50,7 +50,7 @@ public interface SpringDataPracticeQuestionRepository
           -- Bỏ cả luật lẫn join.
           AND NOT EXISTS (
               SELECT 1
-              FROM student_question_exposure exposure
+              FROM student_question_exposures exposure
               WHERE exposure.student_id = :studentId
                 AND exposure.practice_question_id = question.id
           )
@@ -71,8 +71,8 @@ public interface SpringDataPracticeQuestionRepository
     // chủ đề bị coi là còn câu trong khi thang leo không tìm ra câu nào, hoặc ngược lại.
     @Query(value = """
         SELECT question.id
-        FROM practice_question question
-        JOIN student_question_exposure exposure
+        FROM practice_questions question
+        JOIN student_question_exposures exposure
           ON exposure.practice_question_id = question.id
          AND exposure.student_id = :studentId
         WHERE question.practice_topic_id = :topicId
@@ -84,13 +84,13 @@ public interface SpringDataPracticeQuestionRepository
     );
 
     @Modifying
-    @Query(value = "UPDATE practice_question SET usage_count = usage_count + 1 WHERE id = :id", nativeQuery = true)
+    @Query(value = "UPDATE practice_questions SET usage_count = usage_count + 1 WHERE id = :id", nativeQuery = true)
     void incrementUsageCount(@Param("id") UUID id);
 
     
     @Modifying
     @Query(
-        value = "UPDATE practice_question SET usage_count = GREATEST(0, usage_count - 1) WHERE id = :id",
+        value = "UPDATE practice_questions SET usage_count = GREATEST(0, usage_count - 1) WHERE id = :id",
         nativeQuery = true
     )
     void decrementUsageCount(@Param("id") UUID id);
@@ -106,12 +106,12 @@ public interface SpringDataPracticeQuestionRepository
      * (`question.target_tense IS NULL OR = :tense`) luôn rơi vào vế đầu và cả cơ chế ép thì
      * chưa từng chạy.
      *
-     * Thêm cột mới vào practice_question thì PHẢI sửa cả đây -- đây là đường ghi duy nhất của
+     * Thêm cột mới vào practice_questions thì PHẢI sửa cả đây -- đây là đường ghi duy nhất của
      * câu do AI sinh, và nó không dùng entity nên Hibernate không nhắc.
      */
     @Modifying
     @Query(value = """
-        INSERT INTO practice_question (
+        INSERT INTO practice_questions (
             id, practice_topic_id, question_text,
             target_criterion_code, target_sub_attribute, target_tense,
             difficulty_rank, difficulty_features_json,

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.command.UserQuotaAmount;
+import com.sep.vox.application.port.input.command.AllocateUserQuotaAmountCommand;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;
 import com.sep.vox.application.response.input.subscription.SchoolSubscriptionQuotaRecordResponse;
@@ -65,7 +65,7 @@ public class DistributeQuotaToUsersService {
     }
 
     public QuotaUserAllocationSummaryResponse distribute(UUID schoolId, QuotaType quotaType, String roleCode,
-            DistributionMode mode, List<UserQuotaAmount> allocations) {
+            DistributionMode mode, List<AllocateUserQuotaAmountCommand> allocations) {
         requireSchoolAdminAccess(schoolId);
 
         var subscription = findActiveSubscription(schoolId);
@@ -124,7 +124,7 @@ public class DistributeQuotaToUsersService {
         return result;
     }
 
-    private Map<UUID, BigDecimal> computeManualAmounts(List<UserQuotaAmount> allocations, List<UUID> eligibleUserIds,
+    private Map<UUID, BigDecimal> computeManualAmounts(List<AllocateUserQuotaAmountCommand> allocations, List<UUID> eligibleUserIds,
             Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing, BigDecimal totalAllocated) {
         if (allocations == null || allocations.isEmpty()) {
             throw new IllegalArgumentException("Danh sách phân bổ không được để trống");
@@ -140,14 +140,14 @@ public class DistributeQuotaToUsersService {
             if (result.containsKey(item.userId())) {
                 throw new IllegalArgumentException("Danh sách phân bổ chứa userId trùng lặp: " + item.userId());
             }
-            if (item.amount() == null || item.amount().compareTo(BigDecimal.ZERO) < 0) {
+            if (item.amountVnd() == null || item.amountVnd().compareTo(BigDecimal.ZERO) < 0) {
                 throw new IllegalArgumentException("Số lượng phân bổ không hợp lệ");
             }
             var used = usedQuantityOrZero(existing.get(item.userId()));
-            if (item.amount().compareTo(used) < 0) {
+            if (item.amountVnd().compareTo(used) < 0) {
                 throw new IllegalArgumentException("Không thể đặt hạn mức nhỏ hơn số lượng đã sử dụng");
             }
-            result.put(item.userId(), item.amount());
+            result.put(item.userId(), item.amountVnd());
         }
 
         var sumInRequest = result.values().stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b));

@@ -60,6 +60,17 @@ public class SchoolBalanceEntryJpaEntity {
     @Column(name = "exam_session_id", updatable = false)
     private UUID examSessionId;
 
+    // Cột RIÊNG chứ không dùng chung exam_session_id cho cả hai loại phiên: mỗi cột ở đây là một khóa
+    // ngoại được thật (fk_..._exam_session -> exam_sessions), nên nhét practice session id vào cột
+    // exam sẽ vi phạm FK. Đây cũng đúng lựa chọn "cột CÓ KIỂU" mà bảng này đã cố ý dùng thay cho cặp
+    // (source_type, source_id) đa hình kiểu invoice cũ -- xem javadoc SchoolBalanceEntry.
+    //
+    // Ràng buộc chk_school_balance_entries_overage_traceable phải đòi ĐÚNG MỘT trong hai cột được set
+    // với OVERAGE_CHARGE (num_nonnulls(exam_session_id, practice_session_id) = 1), không phải chỉ
+    // riêng exam_session_id NOT NULL như trước.
+    @Column(name = "practice_session_id", updatable = false)
+    private UUID practiceSessionId;
+
     @Column(name = "quota_type", updatable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_school_balance_entries_quota_type_valid",
@@ -89,7 +100,8 @@ public class SchoolBalanceEntryJpaEntity {
     protected SchoolBalanceEntryJpaEntity() {}
 
     public SchoolBalanceEntryJpaEntity(UUID id, UUID schoolId, UUID subscriptionId, String entryType,
-            BigDecimal amountVnd, BigDecimal balanceAfterVnd, UUID orderId, UUID examSessionId, String quotaType,
+            BigDecimal amountVnd, BigDecimal balanceAfterVnd, UUID orderId, UUID examSessionId,
+            UUID practiceSessionId, String quotaType,
             BigDecimal costUsd, BigDecimal fxRateUsed, UUID actorId, String reason, Instant occurredAt) {
         this.id = id;
         this.schoolId = schoolId;
@@ -99,6 +111,7 @@ public class SchoolBalanceEntryJpaEntity {
         this.balanceAfterVnd = balanceAfterVnd;
         this.orderId = orderId;
         this.examSessionId = examSessionId;
+        this.practiceSessionId = practiceSessionId;
         this.quotaType = quotaType;
         this.costUsd = costUsd;
         this.fxRateUsed = fxRateUsed;
@@ -169,6 +182,14 @@ public class SchoolBalanceEntryJpaEntity {
 
     public void setExamSessionId(UUID examSessionId) {
         this.examSessionId = examSessionId;
+    }
+
+    public UUID getPracticeSessionId() {
+        return practiceSessionId;
+    }
+
+    public void setPracticeSessionId(UUID practiceSessionId) {
+        this.practiceSessionId = practiceSessionId;
     }
 
     public String getQuotaType() {

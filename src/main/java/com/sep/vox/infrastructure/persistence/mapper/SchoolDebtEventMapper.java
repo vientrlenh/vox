@@ -13,14 +13,14 @@ public final class SchoolDebtEventMapper {
         return new SchoolDebtEvent(
             jpa.getId(),
             jpa.getSchoolId(),
-            jpa.getSubscriptionPlanId(),
+            jpa.getSubscriptionId(),
             SchoolDebtEventType.valueOf(jpa.getEventType()),
             QuotaType.valueOf(jpa.getQuotaType()),
             jpa.getTriggerExamSessionId(),
-            jpa.getTriggerAmountUsd(),
-            jpa.getTotalAllocatedUsd(),
-            jpa.getUsedQuantityUsd(),
-            jpa.getOverageUsd(),
+            jpa.getTriggerAmountVnd(),
+            jpa.getTotalAllocatedVnd(),
+            jpa.getUsedAmountVnd(),
+            jpa.getOverageVnd(),
             jpa.getOccurredAt()
         );
     }
@@ -29,14 +29,14 @@ public final class SchoolDebtEventMapper {
         return new SchoolDebtEventJpaEntity(
             domain.getId(),
             domain.getSchoolId(),
-            domain.getSubscriptionPlanId(),
+            domain.getSubscriptionId(),
             domain.getEventType().name(),
             domain.getQuotaType().name(),
             domain.getTriggerExamSessionId(),
-            domain.getTriggerAmountUsd(),
-            domain.getTotalAllocatedUsd(),
-            domain.getUsedQuantityUsd(),
-            domain.getOverageUsd(),
+            domain.getTriggerAmountVnd(),
+            domain.getTotalAllocatedVnd(),
+            domain.getUsedAmountVnd(),
+            domain.getOverageVnd(),
             domain.getOccurredAt()
         );
     }

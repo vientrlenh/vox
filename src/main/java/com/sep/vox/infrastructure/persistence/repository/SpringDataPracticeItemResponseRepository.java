@@ -23,13 +23,13 @@ public interface SpringDataPracticeItemResponseRepository
 
     @Query(value = """
         SELECT session.rubric_version_id
-        FROM practice_item_response response
-        JOIN practice_session session ON session.id = response.practice_session_id
+        FROM practice_item_responses response
+        JOIN practice_sessions session ON session.id = response.practice_session_id
         WHERE response.id = :responseId
         """, nativeQuery = true)
     UUID findRubricVersionIdByResponseId(@Param("responseId") UUID responseId);
 
-    @Query(value = "SELECT practice_session_id FROM practice_item_response WHERE id = :responseId",
+    @Query(value = "SELECT practice_session_id FROM practice_item_responses WHERE id = :responseId",
            nativeQuery = true)
     UUID findSessionIdByResponseId(@Param("responseId") UUID responseId);
 
@@ -38,22 +38,22 @@ public interface SpringDataPracticeItemResponseRepository
     // theo bac hien tai cua hoc sinh. "6.5 o bac 3" va "6.5 o bac 4" la hai chuyen khac han.
     @Query(value = """
         SELECT AVG(question.difficulty_rank)
-        FROM practice_item_response response
-        JOIN practice_question question ON question.id = response.practice_question_id
+        FROM practice_item_responses response
+        JOIN practice_questions question ON question.id = response.practice_question_id
         WHERE response.practice_session_id = :sessionId
         """, nativeQuery = true)
     Double findAverageDifficultyRank(@Param("sessionId") UUID sessionId);
 
-    // "Chưa chấm" = có response (tức đã có người nói) mà chưa có practice_item_evaluation.
+    // "Chưa chấm" = có response (tức đã có người nói) mà chưa có practice_item_evaluations.
     // Chấm là bất đồng bộ nên con số này tự tụt về 0 khi kết quả lần lượt về -- màn tổng kết
     // poll đúng con số này để biết khi nào thôi chờ.
     @Query(value = """
         SELECT COUNT(*)::int
-        FROM practice_item_response response
+        FROM practice_item_responses response
         WHERE response.practice_session_id = :sessionId
           AND NOT EXISTS (
               SELECT 1
-              FROM practice_item_evaluation evaluation
+              FROM practice_item_evaluations evaluation
               WHERE evaluation.practice_response_id = response.id
           )
         """, nativeQuery = true)
@@ -85,7 +85,7 @@ public interface SpringDataPracticeItemResponseRepository
      */
     @Query(value = """
         SELECT response.id AS responseId, response.practice_question_id AS questionId
-        FROM practice_item_response response
+        FROM practice_item_responses response
         WHERE response.practice_session_id = :sessionId
           AND response.question_complete = false
           AND (
@@ -98,7 +98,7 @@ public interface SpringDataPracticeItemResponseRepository
           )
           AND NOT EXISTS (
               SELECT 1
-              FROM practice_item_evaluation evaluation
+              FROM practice_item_evaluations evaluation
               WHERE evaluation.practice_response_id = response.id
           )
         """, nativeQuery = true)
@@ -118,7 +118,7 @@ public interface SpringDataPracticeItemResponseRepository
      */
     @Modifying
     @Query(value = """
-        UPDATE practice_item_response
+        UPDATE practice_item_responses
         SET grading_status = 'GRADING',
             grading_requested_at = :requestedAt,
             grading_attempts = grading_attempts + 1
@@ -129,9 +129,9 @@ public interface SpringDataPracticeItemResponseRepository
         @Param("requestedAt") Instant requestedAt
     );
 
-    /** Bản chấm đã về. Gọi CÙNG TRANSACTION với lúc ghi practice_item_evaluation. */
+    /** Bản chấm đã về. Gọi CÙNG TRANSACTION với lúc ghi practice_item_evaluations. */
     @Modifying
-    @Query(value = "UPDATE practice_item_response SET grading_status = 'GRADED' WHERE id = :responseId",
+    @Query(value = "UPDATE practice_item_responses SET grading_status = 'GRADED' WHERE id = :responseId",
            nativeQuery = true)
     void markGraded(@Param("responseId") UUID responseId);
 
@@ -141,7 +141,7 @@ public interface SpringDataPracticeItemResponseRepository
      */
     @Query(value = """
         SELECT COUNT(*)::int
-        FROM practice_item_response response
+        FROM practice_item_responses response
         WHERE response.practice_session_id = :sessionId
           AND response.grading_status = 'GRADING_FAILED'
           AND response.grading_attempts >= :maxAttempts
@@ -150,7 +150,7 @@ public interface SpringDataPracticeItemResponseRepository
 
     /** Agents báo chấm hỏng. Số lần thử đã cộng lúc gửi nên ở đây chỉ đổi trạng thái. */
     @Modifying
-    @Query(value = "UPDATE practice_item_response SET grading_status = 'GRADING_FAILED' WHERE id = :responseId",
+    @Query(value = "UPDATE practice_item_responses SET grading_status = 'GRADING_FAILED' WHERE id = :responseId",
            nativeQuery = true)
     void markGradingFailed(@Param("responseId") UUID responseId);
 
@@ -166,13 +166,13 @@ public interface SpringDataPracticeItemResponseRepository
     // và màn tổng kết nói thẳng là chấm không xong thay vì quay tiếp.
     @Query(value = """
         SELECT DISTINCT response.practice_session_id
-        FROM practice_item_response response
-        JOIN practice_session session ON session.id = response.practice_session_id
+        FROM practice_item_responses response
+        JOIN practice_sessions session ON session.id = response.practice_session_id
         WHERE session.ended_at IS NOT NULL
           AND session.ended_at >= :since
           AND NOT EXISTS (
               SELECT 1
-              FROM practice_item_evaluation evaluation
+              FROM practice_item_evaluations evaluation
               WHERE evaluation.practice_response_id = response.id
           )
         """, nativeQuery = true)

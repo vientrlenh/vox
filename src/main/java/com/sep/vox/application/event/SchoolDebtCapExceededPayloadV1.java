@@ -17,8 +17,8 @@ public record SchoolDebtCapExceededPayloadV1(
     UUID schoolId,
     UUID subscriptionId,
     QuotaType quotaType,
-    BigDecimal overageUsd,
-    BigDecimal capUsd,
+    BigDecimal overageVnd,
+    BigDecimal capVnd,
     Instant occurredAt
 ) {
 }

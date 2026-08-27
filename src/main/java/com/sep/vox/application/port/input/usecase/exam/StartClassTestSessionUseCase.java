@@ -146,7 +146,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         // ngang thí sinh đang thi dở. Không throw nếu trường không có subscription active (giữ
         // nguyên hành vi cũ cho case đó, ngoài phạm vi sửa lần này).
         schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId())
-            .ifPresent(subscription -> schoolSubscriptionDebtGuardService.requireSchoolNotLocked(subscription.getId()));
+            .ifPresent(subscription -> schoolSubscriptionDebtGuardService.requireSchoolNotLocked(subscription.getSchoolId()));
 
         var session = createExamSessionUseCase.execute(new CreateExamSessionCommand(
             input.examId(),

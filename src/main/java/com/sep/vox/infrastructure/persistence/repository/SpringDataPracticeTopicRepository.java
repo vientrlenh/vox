@@ -47,8 +47,8 @@ public interface SpringDataPracticeTopicRepository
      * tắt vẫn phải được tính vào điểm chiều. Thêm lọc là đổi kết quả một cách âm thầm.
      */
     @Query(value = """
-        SELECT topic.id AS id, topic.interest_dimension AS interestDimension
-        FROM practice_topic topic
+        SELECT topic.id AS id, topic.interest_dimensions AS interestDimension
+        FROM practice_topics topic
         WHERE topic.id IN (:topicIds)
         """, nativeQuery = true)
     List<TopicDimensionInfo> findDimensionsByIds(@Param("topicIds") Collection<UUID> topicIds);
@@ -67,8 +67,8 @@ public interface SpringDataPracticeTopicRepository
      */
     @Query(value = """
         SELECT topic.id AS id, topic.name AS name,
-               topic.interest_dimension AS interestDimension
-        FROM practice_topic topic
+               topic.interest_dimensions AS interestDimension
+        FROM practice_topics topic
         WHERE topic.active = true
         """, nativeQuery = true)
     List<TopicNameCardInfo> findActiveNameCards();
@@ -79,13 +79,13 @@ public interface SpringDataPracticeTopicRepository
             -- idx_learner_profile_student), nên chỉ có đúng một dòng để lấy. LIMIT 1 giữ lại
             -- làm chốt chặn cho LEFT JOIN bên dưới -- hai dòng ở đây sẽ nhân đôi mọi chủ đề.
             SELECT id
-            FROM learner_profile
+            FROM learner_profiles
             WHERE student_id = :studentId
             LIMIT 1
         )
         SELECT topic.id AS id,
                topic.name AS name,
-               topic.interest_dimension AS interestDimension,
+               topic.interest_dimensions AS interestDimension,
                topic.curriculum_group AS curriculumGroup,
                COALESCE(topic_score.score, 0.5) AS topicScore,
                COALESCE(topic_score.sessions_mentioned, 0) AS mentions,
@@ -100,18 +100,18 @@ public interface SpringDataPracticeTopicRepository
                END AS recency,
                EXISTS (
                    SELECT 1
-                   FROM saved_topic saved
+                   FROM saved_topics saved
                    WHERE saved.student_id = :studentId
                      AND saved.practice_topic_id = topic.id
                ) AS savedByMe
-        FROM practice_topic topic
-        LEFT JOIN topic_interest_score topic_score
+        FROM practice_topics topic
+        LEFT JOIN topic_interest_scores topic_score
           ON topic_score.student_id = :studentId
          AND topic_score.practice_topic_id = topic.id
         LEFT JOIN profile ON true
-        LEFT JOIN dimension_interest_score dimension_score
+        LEFT JOIN dimension_interest_scores dimension_score
           ON dimension_score.learner_profile_id = profile.id
-         AND dimension_score.dimension = topic.interest_dimension
+         AND dimension_score.dimension = topic.interest_dimensions
         WHERE topic.active = true
           AND topic.source IS DISTINCT FROM 'EXAM_QUESTION_BANK'
         """, nativeQuery = true)
@@ -121,23 +121,23 @@ public interface SpringDataPracticeTopicRepository
     );
 
     @Query(value = """
-        SELECT topic.id AS id, topic.name AS name, topic.interest_dimension AS interestDimension,
+        SELECT topic.id AS id, topic.name AS name, topic.interest_dimensions AS interestDimension,
                true AS savedByMe
-        FROM practice_topic topic
-        JOIN saved_topic saved ON saved.practice_topic_id = topic.id
+        FROM practice_topics topic
+        JOIN saved_topics saved ON saved.practice_topic_id = topic.id
         WHERE saved.student_id = :studentId AND topic.active = true
         ORDER BY saved.saved_at DESC
         """, nativeQuery = true)
     List<TopicSearchRowInfo> findSavedTopics(@Param("studentId") UUID studentId);
 
     @Query(value = """
-        SELECT topic.id AS id, topic.name AS name, topic.interest_dimension AS interestDimension,
+        SELECT topic.id AS id, topic.name AS name, topic.interest_dimensions AS interestDimension,
                EXISTS (
-                   SELECT 1 FROM saved_topic saved
+                   SELECT 1 FROM saved_topics saved
                    WHERE saved.student_id = :studentId
                      AND saved.practice_topic_id = topic.id
                ) AS savedByMe
-        FROM practice_topic topic
+        FROM practice_topics topic
         WHERE topic.active = true
           AND (
               LOWER(topic.name) LIKE :pattern
@@ -162,13 +162,13 @@ public interface SpringDataPracticeTopicRepository
      * lọc luôn chủ đề không còn dùng được.
      */
     @Query(value = """
-        SELECT topic.id AS id, topic.name AS name, topic.interest_dimension AS interestDimension,
+        SELECT topic.id AS id, topic.name AS name, topic.interest_dimensions AS interestDimension,
                EXISTS (
-                   SELECT 1 FROM saved_topic saved
+                   SELECT 1 FROM saved_topics saved
                    WHERE saved.student_id = :studentId
                      AND saved.practice_topic_id = topic.id
                ) AS savedByMe
-        FROM practice_topic topic
+        FROM practice_topics topic
         WHERE topic.active = true AND topic.id IN (:topicIds)
         """, nativeQuery = true)
     List<TopicSearchRowInfo> findActiveByIds(
@@ -177,13 +177,13 @@ public interface SpringDataPracticeTopicRepository
     );
 
     @Query(value = """
-        SELECT topic.id AS id, topic.name AS name, topic.interest_dimension AS interestDimension,
+        SELECT topic.id AS id, topic.name AS name, topic.interest_dimensions AS interestDimension,
                EXISTS (
-                   SELECT 1 FROM saved_topic saved
+                   SELECT 1 FROM saved_topics saved
                    WHERE saved.student_id = :studentId
                      AND saved.practice_topic_id = topic.id
                ) AS savedByMe
-        FROM practice_topic topic
+        FROM practice_topics topic
         WHERE topic.active = true
         ORDER BY RANDOM()
         LIMIT 1
@@ -192,24 +192,24 @@ public interface SpringDataPracticeTopicRepository
 
     @Query(value = """
         SELECT topic.name
-        FROM practice_topic topic
+        FROM practice_topics topic
         WHERE topic.active = true
           AND EXISTS (
               SELECT 1
-              FROM student_question_exposure exposure
-              JOIN practice_question question
+              FROM student_question_exposures exposure
+              JOIN practice_questions question
                 ON question.id = exposure.practice_question_id
               WHERE exposure.student_id = :studentId
                 AND question.practice_topic_id = topic.id
           )
           AND NOT EXISTS (
               SELECT 1
-              FROM practice_question question
+              FROM practice_questions question
               WHERE question.practice_topic_id = topic.id
                 AND question.active = true
                 AND NOT EXISTS (
                     SELECT 1
-                    FROM student_question_exposure exposure
+                    FROM student_question_exposures exposure
                     WHERE exposure.student_id = :studentId
                       AND exposure.practice_question_id = question.id
                 )
@@ -246,12 +246,12 @@ public interface SpringDataPracticeTopicRepository
 
     @Query(value = """
         SELECT score.dimension AS dimension, score.score AS score
-        FROM dimension_interest_score score
-        JOIN learner_profile profile
+        FROM dimension_interest_scores score
+        JOIN learner_profiles profile
           ON profile.id = score.learner_profile_id
         WHERE profile.id = (
             SELECT id
-            FROM learner_profile
+            FROM learner_profiles
             WHERE student_id = :studentId
             LIMIT 1
         )

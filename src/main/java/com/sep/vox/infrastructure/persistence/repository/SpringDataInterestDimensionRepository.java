@@ -20,7 +20,7 @@ public interface SpringDataInterestDimensionRepository
 
     @Modifying
     @Query(value = """
-        UPDATE interest_dimension
+        UPDATE interest_dimensions
         SET active = FALSE, updated_at = CURRENT_TIMESTAMP
         WHERE code = :code
         """, nativeQuery = true)

@@ -17,8 +17,8 @@ public interface SpringDataPracticeItemEvaluationRepository
 
     @Query(value = """
         SELECT COUNT(*)::int
-        FROM practice_item_response response
-        JOIN practice_item_evaluation evaluation
+        FROM practice_item_responses response
+        JOIN practice_item_evaluations evaluation
           ON evaluation.practice_response_id = response.id
         WHERE response.practice_session_id = :sessionId
           AND evaluation.marked_invalid = false
@@ -27,8 +27,8 @@ public interface SpringDataPracticeItemEvaluationRepository
 
     @Query(value = """
         SELECT evaluation.item_score / 100.0
-        FROM practice_item_response response
-        JOIN practice_item_evaluation evaluation
+        FROM practice_item_responses response
+        JOIN practice_item_evaluations evaluation
           ON evaluation.practice_response_id = response.id
         WHERE response.practice_session_id = :sessionId
           AND evaluation.marked_invalid = false
@@ -57,8 +57,8 @@ public interface SpringDataPracticeItemEvaluationRepository
     // cho câu quá ngắn hoặc lạc đề.
     @Query(value = """
         SELECT AVG(evaluation.item_score)
-        FROM practice_item_response response
-        JOIN practice_item_evaluation evaluation
+        FROM practice_item_responses response
+        JOIN practice_item_evaluations evaluation
           ON evaluation.practice_response_id = response.id
         WHERE response.practice_session_id = :sessionId
           AND evaluation.marked_invalid = false

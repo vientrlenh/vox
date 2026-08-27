@@ -44,8 +44,8 @@ public class JpaLearnerProfileQueryRepository
      *
      * <p><b>Ném sai chỗ.</b> Bốn use case gọi hàm này đều theo dạng "GHI xong rồi ĐỌC lại để dựng
      * phản hồi", và cả bốn đều {@code @Transactional}. Ném ở bước đọc là rollback luôn bước ghi.
-     * Đo thực tế: học sinh THPT Trần Thông nộp quiz sở thích xong, {@code interest_quiz_item} còn
-     * 7 dòng nhưng {@code learner_profile} 0 dòng. Nguyên nhân chỉ là chính sách của trường trỏ
+     * Đo thực tế: học sinh THPT Trần Thông nộp quiz sở thích xong, {@code interest_quiz_items} còn
+     * 7 dòng nhưng {@code learner_profiles} 0 dòng. Nguyên nhân chỉ là chính sách của trường trỏ
      * vào một niên khoá không có lớp nào -- một cấu hình sót của quản trị nuốt mất bài làm của
      * học sinh, và kéo theo cả sinh chủ đề, xem lịch, xem kết quả đứng theo.
      *

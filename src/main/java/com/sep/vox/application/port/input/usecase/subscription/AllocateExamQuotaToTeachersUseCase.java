@@ -7,6 +7,7 @@ import com.sep.vox.application.port.input.command.AllocateExamQuotaCommand;
 import com.sep.vox.application.port.input.service.DistributeQuotaToUsersService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;
+import com.sep.vox.domain.common.DistributionMode;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 
@@ -33,7 +34,17 @@ public class AllocateExamQuotaToTeachersUseCase implements IUseCase<AllocateExam
     @Transactional
     public QuotaUserAllocationSummaryResponse execute(AllocateExamQuotaCommand input) {
         return distributeQuotaToUsersService.distribute(
-                input.schoolId(), QuotaType.EXAM, SchoolRoleCodes.TEACHER, input.mode(), input.allocations()
+                input.schoolId(), QuotaType.EXAM, SchoolRoleCodes.TEACHER, fromString(input.mode()), input.allocations()
         );
+    }
+
+    private static DistributionMode fromString(String mode) {
+        if (mode == null) 
+            return null;
+        try {
+            return DistributionMode.valueOf(mode);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Loại phân bổ yêu cầu không hợp lệ: " + mode);
+        }
     }
 }

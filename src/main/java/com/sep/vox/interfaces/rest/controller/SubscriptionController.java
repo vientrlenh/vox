@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.ArchiveSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanReplacementCommand;
-import com.sep.vox.application.port.input.command.ConsumeQuotaCommand;
 import com.sep.vox.application.port.input.command.ForceSuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.command.UnsuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.command.DeleteDraftSubscriptionPlanCommand;
@@ -29,7 +28,6 @@ import com.sep.vox.application.port.input.usecase.subscription.AllocatePracticeQ
 import com.sep.vox.application.port.input.usecase.subscription.ArchiveSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.UpdateSubscriptionPlanReplacementUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CancelSchoolSubscriptionUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.ConsumeQuotaUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreateSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.DeleteDraftSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ForceSuspendSubscriptionUseCase;
@@ -39,7 +37,6 @@ import com.sep.vox.application.port.input.usecase.subscription.ViewExamQuotaAllo
 import com.sep.vox.application.port.input.usecase.subscription.ViewPracticeQuotaAllocationsUseCase;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;
 import com.sep.vox.interfaces.rest.dto.request.AllocateQuotaRequest;
-import com.sep.vox.interfaces.rest.dto.request.ConsumeQuotaRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSubscriptionPlanRequest;
 import com.sep.vox.interfaces.rest.dto.request.SuspendSubscriptionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UnsuspendSubscriptionRequest;
@@ -61,7 +58,6 @@ public class SubscriptionController {
     private final CancelSchoolSubscriptionUseCase cancelSchoolSubscriptionUseCase;
     private final ForceSuspendSubscriptionUseCase forceSuspendSubscriptionUseCase;
     private final UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase;
-    private final 0ConsumeQuotaUseCase consumeQuotaUseCase;
     private final AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase;
     private final AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase;
     private final ViewExamQuotaAllocationsUseCase viewExamQuotaAllocationsUseCase;
@@ -76,7 +72,6 @@ public class SubscriptionController {
             CancelSchoolSubscriptionUseCase cancelSchoolSubscriptionUseCase,
             ForceSuspendSubscriptionUseCase forceSuspendSubscriptionUseCase,
             UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase,
-            ConsumeQuotaUseCase consumeQuotaUseCase,
             AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase,
             AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase,
             ViewExamQuotaAllocationsUseCase viewExamQuotaAllocationsUseCase,
@@ -89,7 +84,6 @@ public class SubscriptionController {
         this.cancelSchoolSubscriptionUseCase = cancelSchoolSubscriptionUseCase;
         this.forceSuspendSubscriptionUseCase = forceSuspendSubscriptionUseCase;
         this.unsuspendSubscriptionUseCase = unsuspendSubscriptionUseCase;
-        this.consumeQuotaUseCase = consumeQuotaUseCase;
         this.allocateExamQuotaToTeachersUseCase = allocateExamQuotaToTeachersUseCase;
         this.allocatePracticeQuotaToStudentsUseCase = allocatePracticeQuotaToStudentsUseCase;
         this.viewExamQuotaAllocationsUseCase = viewExamQuotaAllocationsUseCase;
@@ -219,12 +213,4 @@ public class SubscriptionController {
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách hạn mức luyện tập thành công", data));
     }
 
-    @PostMapping("/internal/subscriptions/consume")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> consumeQuota(@Valid @RequestBody ConsumeQuotaRequest request) {
-        consumeQuotaUseCase.execute(new ConsumeQuotaCommand(
-            request.subscriptionId(), request.examSessionId(), request.quotaType(), request.amount(), request.userId()
-        ));
-        return ResponseEntity.ok(ApiResponse.success("Ghi nhận sử dụng hạn mức thành công"));
-    }
 }

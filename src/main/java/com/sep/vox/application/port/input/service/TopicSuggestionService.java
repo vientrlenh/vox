@@ -179,7 +179,7 @@ public class TopicSuggestionService {
     // Cả luồng duyệt gợi ý đã xoá theo (pendingSuggestions / respond / GraphQL / thẻ bên Flutter):
     // không còn nguồn tạo dòng PENDING thì không còn gì để duyệt.
     //
-    // Bảng topic_suggestion VẪN CÒN, nhưng nay chỉ là nhật ký yêu cầu theo từ khoá
+    // Bảng topic_suggestions VẪN CÒN, nhưng nay chỉ là nhật ký yêu cầu theo từ khoá
     // (recordKeywordRequest) -- ghi để xem lại học sinh đã tìm gì, không chi phối gì cả.
 
     // Not @Transactional -- same reason as generateFromKeyword above. This one is the hottest

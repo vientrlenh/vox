@@ -11,7 +11,7 @@ import java.util.UUID;
  * đó không còn dấu vết nào cho thấy trường từng bị đình chỉ, ai làm, vì sao. Với một thao tác cưỡng
  * chế nhắm vào khách hàng đang trả tiền thì mất dấu vết là không chấp nhận được.
  *
- * <p>KHÔNG dùng lại financial_event: bảng đó sinh ra cho tiền, có amount_signed/currency/payment_method
+ * <p>KHÔNG dùng lại financial_events: bảng đó sinh ra cho tiền, có amount_signed/currency/payment_method
  * đều NOT NULL, nên mỗi lần đình chỉ phải nhét vào đó một khoản 0 VND trả bằng "MANUAL" -- ba con số
  * vô nghĩa chỉ để thỏa mãn ràng buộc. Phần TIỀN của bảng đó giờ đã thuộc về orders/payment_records/
  * invoices/school_balance_entries; phần vòng đời thì thuộc về đây.

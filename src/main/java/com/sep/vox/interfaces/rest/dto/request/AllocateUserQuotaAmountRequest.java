@@ -6,7 +6,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 
-public record UserQuotaAmountRequest(
+public record AllocateUserQuotaAmountRequest(
     @NotNull(message = "Người dùng yêu cầu không được để trống")
     UUID userId,
 

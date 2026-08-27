@@ -14,7 +14,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(
-    name = "learner_profile",
+    name = "learner_profiles",
     // Phải khớp V16: chỉ mục nay chỉ trên student_id (bất biến 1-1). Khai còn cột `version` ở
     // đây là bảo Hibernate tạo chỉ mục trên một cột không tồn tại.
     indexes = @Index(

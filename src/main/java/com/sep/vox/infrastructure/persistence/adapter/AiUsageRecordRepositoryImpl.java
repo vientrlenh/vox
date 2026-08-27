@@ -53,6 +53,11 @@ public class AiUsageRecordRepositoryImpl implements AiUsageRecordRepository {
     }
 
     @Override
+    public BigDecimal sumCostVndByExamSessionId(UUID examSessionId) {
+        return springDataAiUsageRecordRepository.sumCostVndByExamSessionId(examSessionId);
+    }
+
+    @Override
     public List<SessionCostAggregate> sumCostUsdGroupedBySessionSince(Instant since) {
         return springDataAiUsageRecordRepository.sumCostUsdGroupedBySessionSince(since);
     }

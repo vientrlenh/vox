@@ -36,7 +36,7 @@ import com.sep.vox.application.response.input.practiceplanning.PracticePlanningR
  * tầng use case -- service này chỉ lo vòng đời draft + chạy nền, việc dựng đề do caller đưa vào.
  *
  * Lưu draft ở REDIS, không xuống DB: mất khi Redis mất là chấp nhận được (học sinh bấm lại là
- * xong, bản thân practice_paper đã nằm trong DB với hạn giữ chỗ 10 phút), đổi lại không phải thêm
+ * xong, bản thân practice_papers đã nằm trong DB với hạn giữ chỗ 10 phút), đổi lại không phải thêm
  * bảng + migration cho một thứ sống vài chục giây.
  *
  * <p>SỬA 2026-08-11 -- trước đây là {@code ConcurrentHashMap} trong RAM. Với 3 replica sau ALB

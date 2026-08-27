@@ -7,54 +7,58 @@ import java.util.UUID;
 import com.sep.vox.domain.model.metering.QuotaType;
 
 /**
- * Sổ audit "nguyên nhân nợ hạn mức AI" -- mỗi dòng là ĐÚNG 1 bucket quota (GRADING/CLASS_TEST) của 1
- * trường vừa đổi trạng thái (vượt hạn mức lần đầu / vượt trần cảnh báo / hết nợ), kèm session/số USD
- * đã gây ra transition đó. Khác với notification (chỉ tồn tại tạm qua outbox/Kafka), bảng này là ledger
+ * Sổ audit "nguyên nhân nợ hạn mức AI" -- mỗi dòng là ĐÚNG 1 ví quota (EXAM/PRACTICE) của 1 trường
+ * vừa đổi trạng thái (rơi vào nợ / vượt trần cảnh báo / hết nợ), kèm session và số tiền VND đã gây ra
+ * transition đó. Khác với notification (chỉ tồn tại tạm qua outbox/Kafka), bảng này là ledger
  * append-only để system admin tra lại lịch sử bất kỳ lúc nào -- mirror FinancialEvent/TokenUsageEvent.
+ *
+ * <p>Mọi cột tiền ở đây là VND, cùng đơn vị với school_balances/school_subscription_quota_records --
+ * KHÔNG còn USD. Tệ gốc của nhà cung cấp chỉ còn sống ở ai_usage_records.cost_usd và
+ * school_balance_entries.cost_usd, là hai chỗ thật sự cần đối soát ngược với hóa đơn Azure.
  */
 public class SchoolDebtEvent {
     private UUID id;
     private UUID schoolId;
-    private UUID subscriptionPlanId;
+    private UUID subscriptionId;
     private SchoolDebtEventType eventType;
     private QuotaType quotaType;
     private UUID triggerExamSessionId;
-    private BigDecimal triggerAmountUsd;
-    private BigDecimal totalAllocatedUsd;
-    private BigDecimal usedQuantityUsd;
-    private BigDecimal overageUsd;
+    private BigDecimal triggerAmountVnd;
+    private BigDecimal totalAllocatedVnd;
+    private BigDecimal usedAmountVnd;
+    private BigDecimal overageVnd;
     private Instant occurredAt;
 
     public SchoolDebtEvent() {}
 
-    public SchoolDebtEvent(UUID id, UUID schoolId, UUID subscriptionPlanId, SchoolDebtEventType eventType,
-            QuotaType quotaType, UUID triggerExamSessionId, BigDecimal triggerAmountUsd,
-            BigDecimal totalAllocatedUsd, BigDecimal usedQuantityUsd, BigDecimal overageUsd, Instant occurredAt) {
+    public SchoolDebtEvent(UUID id, UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType,
+            QuotaType quotaType, UUID triggerExamSessionId, BigDecimal triggerAmountVnd,
+            BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant occurredAt) {
         this.id = id;
         this.schoolId = schoolId;
-        this.subscriptionPlanId = subscriptionPlanId;
+        this.subscriptionId = subscriptionId;
         this.eventType = eventType;
         this.quotaType = quotaType;
         this.triggerExamSessionId = triggerExamSessionId;
-        this.triggerAmountUsd = triggerAmountUsd;
-        this.totalAllocatedUsd = totalAllocatedUsd;
-        this.usedQuantityUsd = usedQuantityUsd;
-        this.overageUsd = overageUsd;
+        this.triggerAmountVnd = triggerAmountVnd;
+        this.totalAllocatedVnd = totalAllocatedVnd;
+        this.usedAmountVnd = usedAmountVnd;
+        this.overageVnd = overageVnd;
         this.occurredAt = occurredAt;
     }
 
-    public SchoolDebtEvent(UUID schoolId, UUID subscriptionPlanId, SchoolDebtEventType eventType,
-            QuotaType quotaType, UUID triggerExamSessionId, BigDecimal triggerAmountUsd,
-            BigDecimal totalAllocatedUsd, BigDecimal usedQuantityUsd, BigDecimal overageUsd, Instant occurredAt) {
+    public SchoolDebtEvent(UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType,
+            QuotaType quotaType, UUID triggerExamSessionId, BigDecimal triggerAmountVnd,
+            BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant occurredAt) {
         this.schoolId = schoolId;
-        this.subscriptionPlanId = subscriptionPlanId;
+        this.subscriptionId = subscriptionId;
         this.eventType = eventType;
         this.quotaType = quotaType;
         this.triggerExamSessionId = triggerExamSessionId;
-        this.triggerAmountUsd = triggerAmountUsd;
-        this.totalAllocatedUsd = totalAllocatedUsd;
-        this.usedQuantityUsd = usedQuantityUsd;
-        this.overageUsd = overageUsd;
+        this.triggerAmountVnd = triggerAmountVnd;
+        this.totalAllocatedVnd = totalAllocatedVnd;
+        this.usedAmountVnd = usedAmountVnd;
+        this.overageVnd = overageVnd;
         this.occurredAt = occurredAt;
     }
 
@@ -74,12 +78,12 @@ public class SchoolDebtEvent {
         this.schoolId = schoolId;
     }
 
-    public UUID getSubscriptionPlanId() {
-        return subscriptionPlanId;
+    public UUID getSubscriptionId() {
+        return subscriptionId;
     }
 
-    public void setSubscriptionPlanId(UUID subscriptionPlanId) {
-        this.subscriptionPlanId = subscriptionPlanId;
+    public void setSubscriptionId(UUID subscriptionId) {
+        this.subscriptionId = subscriptionId;
     }
 
     public SchoolDebtEventType getEventType() {
@@ -106,36 +110,36 @@ public class SchoolDebtEvent {
         this.triggerExamSessionId = triggerExamSessionId;
     }
 
-    public BigDecimal getTriggerAmountUsd() {
-        return triggerAmountUsd;
+    public BigDecimal getTriggerAmountVnd() {
+        return triggerAmountVnd;
     }
 
-    public void setTriggerAmountUsd(BigDecimal triggerAmountUsd) {
-        this.triggerAmountUsd = triggerAmountUsd;
+    public void setTriggerAmountVnd(BigDecimal triggerAmountVnd) {
+        this.triggerAmountVnd = triggerAmountVnd;
     }
 
-    public BigDecimal getTotalAllocatedUsd() {
-        return totalAllocatedUsd;
+    public BigDecimal getTotalAllocatedVnd() {
+        return totalAllocatedVnd;
     }
 
-    public void setTotalAllocatedUsd(BigDecimal totalAllocatedUsd) {
-        this.totalAllocatedUsd = totalAllocatedUsd;
+    public void setTotalAllocatedVnd(BigDecimal totalAllocatedVnd) {
+        this.totalAllocatedVnd = totalAllocatedVnd;
     }
 
-    public BigDecimal getUsedQuantityUsd() {
-        return usedQuantityUsd;
+    public BigDecimal getUsedAmountVnd() {
+        return usedAmountVnd;
     }
 
-    public void setUsedQuantityUsd(BigDecimal usedQuantityUsd) {
-        this.usedQuantityUsd = usedQuantityUsd;
+    public void setUsedAmountVnd(BigDecimal usedAmountVnd) {
+        this.usedAmountVnd = usedAmountVnd;
     }
 
-    public BigDecimal getOverageUsd() {
-        return overageUsd;
+    public BigDecimal getOverageVnd() {
+        return overageVnd;
     }
 
-    public void setOverageUsd(BigDecimal overageUsd) {
-        this.overageUsd = overageUsd;
+    public void setOverageVnd(BigDecimal overageVnd) {
+        this.overageVnd = overageVnd;
     }
 
     public Instant getOccurredAt() {

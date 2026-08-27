@@ -13,7 +13,7 @@ import com.sep.vox.domain.repository.InterestDimensionRepository;
  *
  * Danh sách chiều đọc từ {@link InterestDimensionRepository} chứ không còn là hằng số cứng:
  * SYSTEM_ADMIN thêm chiều mới là hệ thống nhận ngay, không phải deploy lại (xem
- * V15__personalize.sql, mục 19. interest_dimension, để biết vì sao phải bỏ hằng số cứng).
+ * V15__personalize.sql, mục 19. interest_dimensions, để biết vì sao phải bỏ hằng số cứng).
  *
  * Chấm theo kiểu ipsative (so sánh nội bộ trong chính học sinh đó, đúng bản chất forced-choice):
  * min-max hoá nên LUÔN có một chiều = 0.0 và một chiều = 1.0. Nó trả lời "trong các chiều này em

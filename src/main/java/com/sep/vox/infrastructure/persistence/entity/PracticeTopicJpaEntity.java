@@ -14,7 +14,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(
-    name = "practice_topic",
+    name = "practice_topics",
     indexes = {
         @Index(
             name = "idx_practice_topic_normalized_name",
@@ -23,7 +23,7 @@ import jakarta.persistence.Table;
         ),
         @Index(
             name = "idx_practice_topic_dimension_active",
-            columnList = "interest_dimension, active"
+            columnList = "interest_dimensions, active"
         )
     }
 )
@@ -52,7 +52,7 @@ public class PracticeTopicJpaEntity {
     @Column(name = "source", nullable = false, length = 24)
     private String source;
 
-    @Column(name = "interest_dimension", nullable = false, length = 32)
+    @Column(name = "interest_dimensions", nullable = false, length = 32)
     private String interestDimension;
 
     @Column(name = "curriculum_group", nullable = false, length = 24)

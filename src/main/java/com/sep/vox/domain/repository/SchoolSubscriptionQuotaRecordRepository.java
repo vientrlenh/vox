@@ -18,6 +18,11 @@ public interface SchoolSubscriptionQuotaRecordRepository {
     /** returns false if usedAmountVnd + amount would exceed totalAllocatedAmountVnd. */
     boolean tryConsume(UUID quotaId, BigDecimal amount);
 
-    /** Unconditional -- always succeeds, can push usedAmountVnd above totalAllocatedAmountVnd (debt). */
+    /**
+     * Unconditional -- always succeeds. Chỉ dùng để tiêu NỐT phần hạn mức còn lại cho đầy khi một
+     * khoản chi vắt qua trần (ConsumeQuotaService.chargeOverage); chỗ gọi tự kẹp amount về đúng phần
+     * còn lại. KHÔNG dùng để ghi nợ nữa: nợ giờ là balance_vnd âm, và usedAmountVnd vượt
+     * totalAllocatedAmountVnd là dữ liệu hỏng chứ không còn là một trạng thái hợp lệ.
+     */
     void addUsage(UUID quotaId, BigDecimal amount);
 }

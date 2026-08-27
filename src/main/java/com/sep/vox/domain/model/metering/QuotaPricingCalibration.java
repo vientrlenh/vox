@@ -29,7 +29,7 @@ public class QuotaPricingCalibration {
     // điều chỉnh gì.
     private String note;
     // Nguồn dữ liệu đã dùng để calibrate row này -- EXAM (join exam_item_responses) hay PRACTICE
-    // (join practice_response_turn), xem QuotaPricingSource.
+    // (join practice_response_turns), xem QuotaPricingSource.
     private QuotaPricingSource pricingSource;
 
     public QuotaPricingCalibration() {}

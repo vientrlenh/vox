@@ -522,3 +522,264 @@ ALTER TABLE ONLY school_subscription_events
 ALTER TABLE ONLY school_subscription_events
     ADD CONSTRAINT fk_school_subscription_events_subscription
     FOREIGN KEY (subscription_id) REFERENCES school_subscription(id);
+
+
+-- -----------------------------------------------------------------------------
+-- 13. Đổi tên 6 bảng còn sót sang số nhiều cho khớp entity.
+--
+--     Postgres tự cập nhật mọi FK đang trỏ tới bảng bị đổi tên, nên các ràng buộc dựng ở mục 10/12
+--     (còn viết `REFERENCES school_subscription(id)`) vẫn đúng sau bước này -- chúng chạy TRƯỚC, lúc
+--     tên cũ còn hiệu lực. Chỉ TÊN CONSTRAINT là không tự đổi theo, phải sửa tay từng cái như mục 1.
+--
+--     Tên constraint bên dưới bám theo đúng cái entity khai báo, kể cả khi entity vẫn giữ dạng số ít
+--     (vd chk_ai_usage_record_usage_type_valid): đổi cho "đẹp" mà lệch khỏi entity thì Hibernate sẽ
+--     dựng lại constraint trùng nội dung dưới tên khác ở mọi môi trường tạo schema từ entity.
+-- -----------------------------------------------------------------------------
+ALTER TABLE ai_usage_record RENAME TO ai_usage_records;
+ALTER TABLE ai_usage_records RENAME CONSTRAINT ai_usage_record_pkey TO ai_usage_records_pkey;
+
+ALTER TABLE school_debt_event RENAME TO school_debt_events;
+ALTER TABLE school_debt_events RENAME CONSTRAINT school_debt_event_pkey TO school_debt_events_pkey;
+ALTER TABLE school_debt_events
+    RENAME CONSTRAINT chk_school_debt_event_quota_type_valid TO chk_school_debt_events_quota_type_valid;
+
+ALTER TABLE exchange_rate_snapshot RENAME TO exchange_rate_snapshots;
+ALTER TABLE exchange_rate_snapshots RENAME CONSTRAINT exchange_rate_snapshot_pkey TO exchange_rate_snapshots_pkey;
+
+ALTER TABLE quota_pricing_calibration RENAME TO quota_pricing_calibrations;
+ALTER TABLE quota_pricing_calibrations
+    RENAME CONSTRAINT quota_pricing_calibration_pkey TO quota_pricing_calibrations_pkey;
+
+ALTER TABLE subscription_plan RENAME TO subscription_plans;
+ALTER TABLE subscription_plans RENAME CONSTRAINT subscription_plan_pkey TO subscription_plans_pkey;
+
+ALTER TABLE school_subscription RENAME TO school_subscriptions;
+ALTER TABLE school_subscriptions RENAME CONSTRAINT school_subscription_pkey TO school_subscriptions_pkey;
+ALTER TABLE school_subscriptions
+    RENAME CONSTRAINT chk_school_subscription_status_valid TO chk_school_subscriptions_status_valid;
+
+
+-- -----------------------------------------------------------------------------
+-- 14. ai_usage_records: ghi thêm chi phí đã quy sang VND.
+--
+--     cost_usd Ở LẠI: đó là hóa đơn nhà cung cấp tính cho mình, cần để đối soát ngược và làm đầu vào
+--     cho QuotaPricingCalibrationService (calibrate theo chi phí thật, không theo tỷ giá).
+--
+--     cost_vnd numeric(18,6) chứ không phải (15,0): đây là giá trị lẻ nhất trong hệ thống -- một lượt
+--     nói có thể chỉ tốn vài phần trăm đồng -- và nó là đầu vào cộng dồn cho
+--     school_subscription_quota_records.used_amount_vnd. Làm tròn từng dòng về số nguyên là mất trắng
+--     khoản trừ, và sai số HALF_UP tích lũy lệch một chiều qua hàng nghìn lượt.
+--
+--     fx_rate_used numeric(12,4) trùng school_balance_entries.fx_rate_used: tỷ giá là HỆ SỐ NHÂN, không
+--     phải tiền, nên một khái niệm chỉ có đúng một hình dạng số. Chốt theo TỪNG DÒNG chứ không quy đổi
+--     lại lúc đọc: retry Kafka/DLT có thể đẩy một sự kiện sang hôm sau, và một phiên thi vắt qua ngày
+--     đổi tỷ giá phải cộng ra đúng số tiền thật -- xem RecordAiUsageUseCase.
+-- -----------------------------------------------------------------------------
+ALTER TABLE ai_usage_records ADD COLUMN cost_vnd numeric(18,6);
+ALTER TABLE ai_usage_records ADD COLUMN fx_rate_used numeric(12,4);
+
+-- Bảng chưa có dữ liệu thật (xem cảnh báo đầu file); backfill 0 chỉ để NOT NULL bên dưới không vỡ nếu
+-- có vài dòng rác từ lần chạy thử.
+UPDATE ai_usage_records SET cost_vnd = 0 WHERE cost_vnd IS NULL;
+UPDATE ai_usage_records SET fx_rate_used = 0 WHERE fx_rate_used IS NULL;
+
+ALTER TABLE ai_usage_records ALTER COLUMN cost_vnd SET NOT NULL;
+ALTER TABLE ai_usage_records ALTER COLUMN fx_rate_used SET NOT NULL;
+
+
+-- -----------------------------------------------------------------------------
+-- 15. school_debt_events: mọi cột tiền chuyển sang VND.
+--
+--     Chỉ đổi TÊN, không đổi kiểu: numeric(18,6) vốn đã đúng cho VND ở mức đo lường (cùng nhóm với
+--     school_balances.balance_vnd). Giá trị cũ tính bằng USD không cần quy đổi vì bảng chưa có dữ liệu
+--     thật -- nếu có, đây sẽ phải là một bước UPDATE nhân tỷ giá chứ không phải rename.
+--
+--     used_quantity_usd -> used_amount_vnd chứ không phải used_quantity_vnd: "quantity" là tàn dư từ
+--     thời hạn mức đếm theo ĐƠN VỊ token. Giờ nó là tiền, và tên phải trùng
+--     school_subscription_quota_records.used_amount_vnd -- cùng một đại lượng thì cùng một tên.
+-- -----------------------------------------------------------------------------
+ALTER TABLE school_debt_events RENAME COLUMN trigger_amount_usd TO trigger_amount_vnd;
+ALTER TABLE school_debt_events RENAME COLUMN total_allocated_usd TO total_allocated_vnd;
+ALTER TABLE school_debt_events RENAME COLUMN used_quantity_usd TO used_amount_vnd;
+ALTER TABLE school_debt_events RENAME COLUMN overage_usd TO overage_vnd;
+
+
+-- -----------------------------------------------------------------------------
+-- 16. school_balance_entries: cho phép khoản trừ đến từ một phiên LUYỆN NÓI.
+--
+--     Cột RIÊNG chứ không dùng chung exam_session_id: cột đó mang khóa ngoại thật tới exam_sessions,
+--     nên nhét practice session id vào sẽ vi phạm FK. Đây cũng đúng lựa chọn "cột CÓ KIỂU" mà bảng này
+--     đã cố ý dùng thay cho cặp (source_type, source_id) đa hình kiểu invoice cũ -- xem mục 7.
+--
+--     Vì sao PRACTICE giờ được tiêu vào số dư: lúc trừ thì Azure đã tính tiền xong rồi (chi phí thật
+--     của lượt vừa nói, Python gửi kèm ngay trong request submit_turn). Chặn ở đó không giữ lại được
+--     đồng nào, chỉ làm khoản chi biến mất khỏi sổ sách. Việc học sinh có được nói tiếp hay không là
+--     câu hỏi khác, trả lời bằng cờ fundsExhausted -- xem ConsumeQuotaService.
+-- -----------------------------------------------------------------------------
+ALTER TABLE school_balance_entries ADD COLUMN practice_session_id uuid;
+
+ALTER TABLE ONLY school_balance_entries
+    ADD CONSTRAINT fk_school_balance_entries_practice_session
+    FOREIGN KEY (practice_session_id) REFERENCES practice_session(id);
+
+-- ĐÚNG MỘT trong hai cột session được set, không phải "exam_session_id NOT NULL" như bản cũ.
+-- num_nonnulls đọc thẳng ra ý định; viết bằng OR/AND lồng nhau thì lần sửa sau rất dễ nới thành
+-- "ít nhất một", và một bút toán mang cả hai id là một khoản trừ không biết thuộc về phiên nào.
+ALTER TABLE school_balance_entries DROP CONSTRAINT chk_school_balance_entries_overage_traceable;
+ALTER TABLE school_balance_entries
+    ADD CONSTRAINT chk_school_balance_entries_overage_traceable CHECK (
+        ((entry_type)::text <> 'OVERAGE_CHARGE' OR (
+            num_nonnulls(exam_session_id, practice_session_id) = 1
+            AND quota_type IS NOT NULL
+            AND cost_usd IS NOT NULL AND fx_rate_used IS NOT NULL AND amount_vnd < (0)::numeric)));
+
+CREATE INDEX idx_school_balance_entries_practice_session ON school_balance_entries
+    USING btree (practice_session_id) WHERE practice_session_id IS NOT NULL;
+
+
+-- -----------------------------------------------------------------------------
+-- 17. exchange_rate_snapshots: nói rõ đang chốt tỷ giá của ĐỒNG TIỀN NÀO.
+--
+--     Bảng cũ ngầm định "chỉ có USD" ngay trong tên cột (usd_to_vnd_rate). Thêm currency_code để
+--     findLatest lọc được theo đồng tiền -- không có nó, thêm đồng thứ hai là "mới nhất" trả về bản
+--     ghi của đồng nào vừa chạy job sau cùng, và giá bán quota lặng lẽ nhảy sang tỷ giá đó mà không
+--     có lỗi nào báo ra. CHECK tạm khóa ở 'USD' vì hôm nay mới nuôi đúng một đồng; nới CHECK là bước
+--     có ý thức, khác hẳn việc lặng lẽ đọc nhầm.
+-- -----------------------------------------------------------------------------
+ALTER TABLE exchange_rate_snapshots RENAME COLUMN usd_to_vnd_rate TO exchange_rate_to_vnd;
+ALTER TABLE exchange_rate_snapshots RENAME COLUMN source TO source_url;
+
+ALTER TABLE exchange_rate_snapshots
+    ADD COLUMN currency_code character varying(20) DEFAULT 'USD' NOT NULL;
+ALTER TABLE exchange_rate_snapshots
+    ADD CONSTRAINT chk_exchange_rate_snapshots_currency_code_valid CHECK (
+        ((currency_code)::text = 'USD'));
+
+
+-- -----------------------------------------------------------------------------
+-- 18. subscription_plans: giá theo VND + kỳ hạn linh hoạt.
+--
+--     price_per_year -> price_vnd: gói không còn buộc phải là một NĂM, nên tên cột không được khoá
+--     cứng kỳ hạn vào giá. Kiểu numeric(15,0) giữ nguyên và phải TRÙNG orders.total_amount_vnd --
+--     rộng hơn ở đây thì Postgres làm tròn im lặng lúc tạo đơn, gói niêm yết một giá mà thu một giá.
+--
+--     validity_days -> (period_type, period_count): chuyển thẳng sang DAY/n nên không mất thông tin;
+--     gói mới có thể khai MONTH/3 hay YEAR/1 cho đúng ngôn ngữ nghiệp vụ.
+--
+--     service_fee_ratio BỎ khỏi gói: phí dịch vụ giờ là một DÒNG RIÊNG trên đơn hàng
+--     (orders.charged_fee_vnd) chứ không phải hệ số nhân giấu trong giá -- xem mục 1, chỗ bỏ
+--     token_unit_price vì cùng một lý do.
+-- -----------------------------------------------------------------------------
+ALTER TABLE subscription_plans RENAME COLUMN price_per_year TO price_vnd;
+
+ALTER TABLE subscription_plans
+    ADD COLUMN period_type character varying(255) DEFAULT 'DAY' NOT NULL;
+ALTER TABLE subscription_plans ADD COLUMN period_count integer;
+UPDATE subscription_plans SET period_count = validity_days WHERE period_count IS NULL;
+ALTER TABLE subscription_plans ALTER COLUMN period_count SET NOT NULL;
+ALTER TABLE subscription_plans DROP COLUMN validity_days;
+ALTER TABLE subscription_plans DROP COLUMN service_fee_ratio;
+
+ALTER TABLE subscription_plans
+    ADD CONSTRAINT chk_subscription_plans_period_type_valid CHECK (((period_type)::text = ANY (ARRAY[
+        ('DAY'::character varying)::text,
+        ('MONTH'::character varying)::text,
+        ('YEAR'::character varying)::text])));
+ALTER TABLE subscription_plans
+    ADD CONSTRAINT chk_subscription_plans_period_count_positive CHECK ((period_count > 0));
+ALTER TABLE subscription_plans
+    ADD CONSTRAINT chk_subscription_plans_max_time_per_attempt_min_positive CHECK (
+        (max_time_per_attempt_min > 0));
+
+-- @Version của Hibernate map sang Long; integer tràn ở 2.1 tỷ lần cập nhật thì xa, nhưng kiểu ở DB
+-- lệch kiểu ở entity là thứ ddl-auto: validate sẽ chặn ngay lúc khởi động.
+ALTER TABLE subscription_plans ALTER COLUMN version TYPE bigint;
+
+-- tagline là câu mô tả bán hàng, 255 ký tự chật cho tiếng Việt có dấu.
+ALTER TABLE subscription_plans ALTER COLUMN tagline TYPE character varying(2048);
+UPDATE subscription_plans SET tagline = '' WHERE tagline IS NULL;
+ALTER TABLE subscription_plans ALTER COLUMN tagline SET NOT NULL;
+
+-- Gói ĐÃ published thì bị khoá sửa (xem UpdateSubscriptionPlanUseCase), nhưng bản nháp vẫn sửa được
+-- và ai sửa/lúc nào là thông tin phải giữ.
+ALTER TABLE subscription_plans ADD COLUMN updated_at timestamp(6) with time zone;
+ALTER TABLE subscription_plans ADD COLUMN updated_by uuid;
+UPDATE subscription_plans SET updated_at = created_at WHERE updated_at IS NULL;
+ALTER TABLE subscription_plans ALTER COLUMN updated_at SET NOT NULL;
+
+
+-- -----------------------------------------------------------------------------
+-- 19. school_subscriptions: khoá ngoại gọi đúng tên, mốc thời gian thành thời điểm.
+--
+--     plan_id -> subscription_plan_id: trùng subscription_plan_quotas.subscription_plan_id, để cùng
+--     một khoá ngoại không mang hai tên trong cùng một domain.
+--
+--     date -> timestamptz: gói hết hạn vào một THỜI ĐIỂM, không phải một ngày. Với `date`, câu hỏi
+--     "hết hạn lúc 0h hay 24h theo múi giờ nào" không có chỗ nào trả lời, và job expireOverdue phải
+--     so một Instant với một LocalDate -- so sai một chiều là cắt dịch vụ sớm cả ngày.
+-- -----------------------------------------------------------------------------
+ALTER TABLE school_subscriptions RENAME COLUMN plan_id TO subscription_plan_id;
+
+ALTER TABLE school_subscriptions
+    ALTER COLUMN start_date TYPE timestamp(6) with time zone
+    USING start_date::timestamp with time zone;
+ALTER TABLE school_subscriptions
+    ALTER COLUMN end_date TYPE timestamp(6) with time zone
+    USING end_date::timestamp with time zone;
+
+ALTER TABLE school_subscriptions
+    ALTER COLUMN suspended_reason TYPE character varying(255);
+
+
+-- -----------------------------------------------------------------------------
+-- 20. Đổi nốt các bảng còn ở dạng số ít sang số nhiều.
+--
+--     Đặt ở CUỐI file là có chủ đích: mọi DDL phía trên (index, khóa ngoại, CHECK ở V1 lẫn V2, kể cả
+--     fk_school_balance_entries_practice_session ở mục 16) đều chạy khi tên cũ còn hiệu lực. Postgres
+--     tự chuyển index/khóa ngoại/ràng buộc theo bảng khi RENAME, nên không cần dựng lại cái nào --
+--     chỉ TÊN của chúng là giữ nguyên dạng cũ, và đó là thứ Hibernate không soi.
+--
+--     framework_criteria KHÔNG nằm trong danh sách: 'criteria' đã là số nhiều của 'criterion'.
+-- -----------------------------------------------------------------------------
+ALTER TABLE dimension_interest_score RENAME TO dimension_interest_scores;
+ALTER TABLE dimension_interest_scores RENAME CONSTRAINT dimension_interest_score_pkey TO dimension_interest_scores_pkey;
+ALTER TABLE financial_event RENAME TO financial_events;
+ALTER TABLE financial_events RENAME CONSTRAINT financial_event_pkey TO financial_events_pkey;
+ALTER TABLE interest_dimension RENAME TO interest_dimensions;
+ALTER TABLE interest_dimensions RENAME CONSTRAINT interest_dimension_pkey TO interest_dimensions_pkey;
+ALTER TABLE interest_quiz_item RENAME TO interest_quiz_items;
+ALTER TABLE interest_quiz_items RENAME CONSTRAINT interest_quiz_item_pkey TO interest_quiz_items_pkey;
+ALTER TABLE learner_profile RENAME TO learner_profiles;
+ALTER TABLE learner_profiles RENAME CONSTRAINT learner_profile_pkey TO learner_profiles_pkey;
+ALTER TABLE practice_criterion_score RENAME TO practice_criterion_scores;
+ALTER TABLE practice_criterion_scores RENAME CONSTRAINT practice_criterion_score_pkey TO practice_criterion_scores_pkey;
+ALTER TABLE practice_item_evaluation RENAME TO practice_item_evaluations;
+ALTER TABLE practice_item_evaluations RENAME CONSTRAINT practice_item_evaluation_pkey TO practice_item_evaluations_pkey;
+ALTER TABLE practice_item_response RENAME TO practice_item_responses;
+ALTER TABLE practice_item_responses RENAME CONSTRAINT practice_item_response_pkey TO practice_item_responses_pkey;
+ALTER TABLE practice_paper_item RENAME TO practice_paper_items;
+ALTER TABLE practice_paper_items RENAME CONSTRAINT practice_paper_item_pkey TO practice_paper_items_pkey;
+ALTER TABLE practice_paper RENAME TO practice_papers;
+ALTER TABLE practice_papers RENAME CONSTRAINT practice_paper_pkey TO practice_papers_pkey;
+ALTER TABLE practice_question RENAME TO practice_questions;
+ALTER TABLE practice_questions RENAME CONSTRAINT practice_question_pkey TO practice_questions_pkey;
+ALTER TABLE practice_response_turn RENAME TO practice_response_turns;
+ALTER TABLE practice_response_turns RENAME CONSTRAINT practice_response_turn_pkey TO practice_response_turns_pkey;
+ALTER TABLE practice_session RENAME TO practice_sessions;
+ALTER TABLE practice_sessions RENAME CONSTRAINT practice_session_pkey TO practice_sessions_pkey;
+ALTER TABLE practice_topic RENAME TO practice_topics;
+ALTER TABLE practice_topics RENAME CONSTRAINT practice_topic_pkey TO practice_topics_pkey;
+ALTER TABLE saved_topic RENAME TO saved_topics;
+ALTER TABLE saved_topics RENAME CONSTRAINT saved_topic_pkey TO saved_topics_pkey;
+ALTER TABLE student_question_exposure RENAME TO student_question_exposures;
+ALTER TABLE student_question_exposures RENAME CONSTRAINT student_question_exposure_pkey TO student_question_exposures_pkey;
+ALTER TABLE token_usage_event RENAME TO token_usage_events;
+ALTER TABLE token_usage_events RENAME CONSTRAINT token_usage_event_pkey TO token_usage_events_pkey;
+ALTER TABLE topic_interest_event RENAME TO topic_interest_events;
+ALTER TABLE topic_interest_events RENAME CONSTRAINT topic_interest_event_pkey TO topic_interest_events_pkey;
+ALTER TABLE topic_interest_score RENAME TO topic_interest_scores;
+ALTER TABLE topic_interest_scores RENAME CONSTRAINT topic_interest_score_pkey TO topic_interest_scores_pkey;
+ALTER TABLE topic_suggestion RENAME TO topic_suggestions;
+ALTER TABLE topic_suggestions RENAME CONSTRAINT topic_suggestion_pkey TO topic_suggestions_pkey;
+ALTER TABLE turn_correction RENAME TO turn_corrections;
+ALTER TABLE turn_corrections RENAME CONSTRAINT turn_correction_pkey TO turn_corrections_pkey;

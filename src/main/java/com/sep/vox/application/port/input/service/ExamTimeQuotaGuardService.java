@@ -30,7 +30,7 @@ public class ExamTimeQuotaGuardService {
         var subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
             .orElseThrow(() -> new PlanLimitExceededException(
                 "Trường chưa có gói subscription đang hoạt động, không thể gắn cấu trúc đề này."));
-        var plan = subscriptionPlanRepository.findById(subscription.getPlanId())
+        var plan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói subscription"));
 
         var maxMinutes = plan.getMaxTimePerAttemptMin();

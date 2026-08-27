@@ -36,6 +36,14 @@ public class SubscriptionUpgradePolicyService {
     /** Phải dùng ít nhất 20% kỳ hiện tại mới được nâng cấp -- xem javadoc lớp. */
     private static final BigDecimal MIN_ELAPSED_RATIO = new BigDecimal("0.20");
 
+    /**
+     * Số tiền tối thiểu một đơn nâng cấp phải còn lại để trả -- xem {@link #calculateUnusedCredit}.
+     *
+     * <p>Con số cụ thể không mang ý nghĩa nghiệp vụ, nó chỉ cần nằm trên mức tối thiểu THẬT của cổng
+     * thanh toán. Chỉnh lại theo hạn mức của PayOS/SePay nếu mức đó cao hơn.
+     */
+    private static final BigDecimal MIN_PAYABLE_VND = new BigDecimal("1000");
+
     private static final DateTimeFormatter DISPLAY_DATE =
         DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneConstant.BUSINESS_ZONE);
 
@@ -73,7 +81,18 @@ public class SubscriptionUpgradePolicyService {
      * <p>Lấy {@code pricePaidSnapshot} chứ không phải giá hiện tại của gói: hoàn lại phải dựa trên số
      * tiền trường THẬT SỰ đã trả, mà gói thì có thể đã đổi giá từ lúc đó.
      *
-     * @param cap trần của tổng khoản bù -- giá gói mới. Ràng buộc
+     * <p>Trần thật là {@code cap - MIN_PAYABLE_VND}, không phải {@code cap}: đơn 0đ cũng không thanh
+     * toán được y như đơn âm tiền. Trần bằng đúng cap là chuyện CÓ THẬT chứ không phải giả định -- một
+     * trường có kỳ đang chạy CỘNG kỳ đã trả tiền đang xếp hàng thì tổng phần chưa dùng vượt giá một
+     * gói lẻ dễ dàng, và khi đó đơn ra đúng 0đ rồi nằm PENDING tới lúc hết hạn: nâng cấp không có
+     * đường nào đi tới.
+     *
+     * <p>Chọn kẹp bớt khoản bù thay vì cho đơn 0đ tự settle: settlePaid nhận vào một PaymentRecord,
+     * nên đường kia bắt buộc phải bịa ra một bản ghi thanh toán không có thật, làm hỏng chính chỗ dùng
+     * để đối soát với cổng. Và việc "bù thừa thì mất phần thừa" vốn đã là luật ở đây rồi -- đó chính
+     * là {@code min(cap)} -- nên giữ lại một khoản nhỏ phải trả là cùng một luật, không phải luật mới.
+     *
+     * @param cap trần danh nghĩa của tổng khoản bù -- giá gói mới. Ràng buộc
      *            chk_orders_discount_amount_vnd_lower_or_equals_than_subtotal_and_charged_fee không
      *            cho giảm giá lớn hơn tiền hàng, và đơn âm tiền thì cổng nào cũng từ chối.
      */
@@ -81,7 +100,10 @@ public class SubscriptionUpgradePolicyService {
         var total = unfinished.stream()
             .map(subscription -> unusedValueOf(subscription, at))
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
-        return total.min(cap);
+        // max(ZERO) cho trường hợp gói rẻ hơn cả mức tối thiểu: khi đó không bù đồng nào và trường trả
+        // trọn giá, vẫn tốt hơn một đơn không thể thanh toán.
+        var payableCap = cap.subtract(MIN_PAYABLE_VND).max(BigDecimal.ZERO);
+        return total.min(payableCap);
     }
 
     private BigDecimal unusedValueOf(SchoolSubscription subscription, Instant at) {

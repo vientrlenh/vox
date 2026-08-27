@@ -28,7 +28,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record QuotaSellingPriceProperties(BigDecimal usdToVndRate, BigDecimal serviceFeeRatio) {
 
     private static final BigDecimal DEFAULT_USD_TO_VND_RATE = new BigDecimal("26000");
-    private static final BigDecimal DEFAULT_SERVICE_FEE_RATIO = new BigDecimal("0.20");
+    private static final BigDecimal DEFAULT_SERVICE_FEE_RATIO = new BigDecimal("0.05"); // chỉnh thành default 5%, 20% ở thời điểm hiện tại đang quá nhiều so với ước tính
 
     public QuotaSellingPriceProperties {
         usdToVndRate = usdToVndRate == null ? DEFAULT_USD_TO_VND_RATE : usdToVndRate;

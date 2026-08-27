@@ -36,9 +36,9 @@ public class SchoolBalanceJpaEntity {
     @Column(name = "school_id", nullable = false, updatable = false)
     private UUID schoolId;
 
-    // Tiền trường TỰ NẠP: không hết hạn. CỐ Ý không có CHECK >= 0 -- phần âm ở đây CHÍNH LÀ nợ
-    // (thay cho điều kiện used_quantity > total_allocated cũ), phát sinh khi QuotaType cho phép ghi
-    // nợ (GRADING/CLASS_TEST) tiêu vượt số dư.
+    // Tiền trường TỰ NẠP: không hết hạn. CỐ Ý không có CHECK >= 0 -- phần âm ở đây CHÍNH LÀ nợ, thay
+    // cho điều kiện used_quantity > total_allocated cũ. Nợ là chuyện của TRƯỜNG, không tách theo
+    // QuotaType nữa -- xem SchoolBalance / SchoolSubscriptionDebtGuardService.
     @Column(name = "balance_vnd", nullable = false, precision = 18, scale = 6)
     private BigDecimal balanceVnd;
 
@@ -48,9 +48,10 @@ public class SchoolBalanceJpaEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    // Cả trường dồn vào ĐÚNG MỘT dòng này, nên mọi lần trừ số dư đều tranh chấp nhau. @Version là
-    // lớp bảo vệ cho đường ghi qua JPA; đường trừ quota nóng phải dùng UPDATE ... WHERE có điều kiện
-    // (xem SpringDataSchoolBalanceRepository.tryDebit) chứ KHÔNG đọc-rồi-ghi.
+    // Cả trường dồn vào ĐÚNG MỘT dòng này, nên mọi lần trừ số dư đều tranh chấp nhau. @Version chỉ là
+    // lớp bảo vệ cuối; thứ thật sự tuần tự hóa các lần ghi là khóa hàng của
+    // SchoolBalanceRepository.findBySchoolIdForUpdateOrCreate -- CỐ Ý không có UPDATE ... WHERE kiểu
+    // trừ tại chỗ, vì bút toán đi kèm cần balance_after_vnd mà một câu như vậy không trả ra được.
     @Version
     @Column(name = "version", nullable = false)
     private Long version;

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
+import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
@@ -138,12 +139,19 @@ class SubscriptionPeriodGuardServiceTests {
             .doesNotThrowAnyException();
     }
 
+    /** null = gói chưa có hạn -- guard phải bỏ qua chứ không nổ. */
+    private static Instant atStartOfDayVn(LocalDate date) {
+        return date == null ? null : date.atStartOfDay(ZoneConstant.BUSINESS_ZONE).toInstant();
+    }
+
     private void givenSubscription(LocalDate startDate, LocalDate endDate) {
         var subscription = new SchoolSubscription();
         subscription.setId(UUID.randomUUID());
         subscription.setSchoolId(schoolId);
-        subscription.setStartDate(startDate);
-        subscription.setEndDate(endDate);
+        // V2 mục 19: hai cột này là THỜI ĐIỂM chứ không còn là ngày. Quy đổi ở đúng zone mà guard
+        // dùng, nếu không thì các mốc biên trong test lệch đi 7 tiếng.
+        subscription.setStartDate(atStartOfDayVn(startDate));
+        subscription.setEndDate(atStartOfDayVn(endDate));
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(subscription));
     }
 

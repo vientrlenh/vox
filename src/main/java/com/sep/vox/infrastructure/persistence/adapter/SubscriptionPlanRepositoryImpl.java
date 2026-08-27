@@ -82,7 +82,9 @@ public class SubscriptionPlanRepositoryImpl implements SubscriptionPlanRepositor
     @Override
     public PageResult<SubscriptionPlan> findByStatus(SubscriptionPlanStatus status, int page, int size) {
         return toPageResult(
-            springDataSubscriptionPlanRepository.findByStatus(status.name(), PageRequest.of(page, size, NEWEST_FIRST)),
+            // page vào theo lối 1-BASED như mọi repository khác trong dự án (xem OrderRepositoryImpl),
+            // còn PageRequest đếm từ 0 -- thiếu phép trừ này thì trang đầu không cách nào lấy được.
+            springDataSubscriptionPlanRepository.findByStatus(status.name(), PageRequest.of(page - 1, size, NEWEST_FIRST)),
             page,
             size
         );
@@ -91,7 +93,8 @@ public class SubscriptionPlanRepositoryImpl implements SubscriptionPlanRepositor
     @Override
     public PageResult<SubscriptionPlan> findAll(int page, int size) {
         return toPageResult(
-            springDataSubscriptionPlanRepository.findAll(PageRequest.of(page, size, NEWEST_FIRST)),
+            // 1-based vào, 0-based xuống PageRequest -- xem findByStatus.
+            springDataSubscriptionPlanRepository.findAll(PageRequest.of(page - 1, size, NEWEST_FIRST)),
             page,
             size
         );

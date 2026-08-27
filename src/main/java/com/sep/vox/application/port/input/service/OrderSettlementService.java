@@ -17,7 +17,6 @@ import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.model.order.OrderType;
 import com.sep.vox.domain.model.payment.PaymentRecord;
 import com.sep.vox.domain.model.payment.PaymentStatus;
-import com.sep.vox.domain.model.school.SchoolBalance;
 import com.sep.vox.domain.model.school.SchoolBalanceEntry;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
@@ -200,9 +199,7 @@ public class OrderSettlementService {
         // Khóa ví: một trường có thể có nhiều đơn nạp cùng lúc (uq_orders_one_open_subscription_order
         // cố ý KHÔNG chặn TOPUP), nên hai callback về gần nhau sẽ cùng đọc một số dư cũ rồi cùng ghi
         // đè -- mất hẳn một lần nạp mà không có lỗi nào nổi lên.
-        var balance = schoolBalanceRepository.findBySchoolIdForUpdate(order.getSchoolId())
-            .orElseGet(() -> schoolBalanceRepository.save(
-                SchoolBalance.emptyFor(order.getSchoolId(), now)));
+        var balance = schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(order.getSchoolId(), now);
 
         var credited = order.getSubtotalAmountVnd();
         var balanceAfter = balance.apply(credited, now);

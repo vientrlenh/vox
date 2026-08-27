@@ -16,7 +16,13 @@ public interface SpringDataSchoolSubscriptionQuotaRecordRepository extends JpaRe
     List<SchoolSubscriptionQuotaRecordJpaEntity> findBySchoolSubscriptionId(UUID schoolSubscriptionId);
     Optional<SchoolSubscriptionQuotaRecordJpaEntity> findBySchoolSubscriptionIdAndQuotaType(UUID schoolSubscriptionId, String quotaType);
 
-    @Modifying
+    // clearAutomatically=true vì lý do y hệt addUsage bên dưới, và nó áp cho CẢ HAI kết quả của câu
+    // này: ConsumeQuotaService đọc lại chính dòng vừa đụng tới trong cùng transaction -- lọt qua thì
+    // buildResponse đọc để trả về ví SAU khi trừ, hỏng thì chargeOverage đọc lại để tính phần hạn mức
+    // còn lại. Thiếu cờ, cả hai lần đọc đó trúng entity CACHE từ lần load đầu method: nhánh lọt qua
+    // trả về used CŨ (fundsExhausted vì thế trượt đúng lượt tiêu vừa vặn hết hạn mức), còn nhánh hỏng
+    // thì lần đọc lại thành vô nghĩa vì không bao giờ thấy được gì mới.
+    @Modifying(clearAutomatically = true)
     @Query("""
         UPDATE SchoolSubscriptionQuotaRecordJpaEntity q
         SET q.usedAmountVnd = q.usedAmountVnd + :amount

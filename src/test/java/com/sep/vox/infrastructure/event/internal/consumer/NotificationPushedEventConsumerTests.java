@@ -418,7 +418,7 @@ class NotificationPushedEventConsumerTests {
 
             // Ba event fan-out mới, cũng cố tình chỉ một người nhận cho vòng lặp assertion phía trên.
             new TestCase(EventTypeConstant.SCHOOL_DEBT_CAP_EXCEEDED, new SchoolDebtCapExceededPayloadV1(
-                List.of(userId), id, id, QuotaType.GRADING, new BigDecimal("30"), new BigDecimal("20"),
+                List.of(userId), id, id, QuotaType.EXAM, new BigDecimal("30"), new BigDecimal("20"),
                 Instant.parse("2026-09-01T03:00:00Z"))),
             new TestCase(EventTypeConstant.SCHOOL_LOCKED_DUE_TO_DEBT, new SchoolLockedDueToDebtPayloadV1(
                 List.of(userId), id, id, Instant.parse("2026-09-01T03:00:00Z"))),

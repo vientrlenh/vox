@@ -89,6 +89,18 @@ public class AiUsageRecordJpaEntity {
     @Column(name = "occurred_at", nullable = false, updatable = false)
     private Instant occurredAt;
 
+    // NULL = khoản chi này chưa được trừ vào ví trường. Cột DUY NHẤT của bảng không updatable=false,
+    // vì nó là thứ duy nhất thay đổi sau khi dòng đã ghi -- và cố ý KHÔNG nằm trong constructor: dòng
+    // mới luôn bắt đầu ở trạng thái chưa thu, không có chỗ nào được dựng sẵn một dòng "đã thu".
+    // Đóng dấu bằng bulk UPDATE (markChargedByExamSessionId), không qua save entity.
+    //
+    // CẢNH BÁO nếu sau này có đường ghi lại một dòng ĐÃ TỒN TẠI: AiUsageRecord (domain) không mang cột
+    // này, nên mapper dựng entity mới với chargedAt = null và một lần merge sẽ XÓA dấu đã thu -- phiên
+    // đó bị thu tiền lần nữa ở lần chấm kế tiếp. Hiện an toàn vì save() chỉ được gọi với dòng mới
+    // (RecordAiUsageUseCase); thêm đường cập nhật thì phải mang cột này vào domain model trước.
+    @Column(name = "charged_at")
+    private Instant chargedAt;
+
     protected AiUsageRecordJpaEntity() {}
 
     public AiUsageRecordJpaEntity(UUID id, UUID examSessionId, UUID turnId, UUID usageEventId, String usageType,
@@ -112,6 +124,14 @@ public class AiUsageRecordJpaEntity {
         this.costVnd = costVnd;
         this.fxRateUsed = fxRateUsed;
         this.occurredAt = occurredAt;
+    }
+
+    public Instant getChargedAt() {
+        return chargedAt;
+    }
+
+    public void setChargedAt(Instant chargedAt) {
+        this.chargedAt = chargedAt;
     }
 
     public UUID getId() {

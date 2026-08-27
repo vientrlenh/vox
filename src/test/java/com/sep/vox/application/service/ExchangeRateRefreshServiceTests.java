@@ -34,8 +34,8 @@ class ExchangeRateRefreshServiceTests {
 
         var captor = ArgumentCaptor.forClass(ExchangeRateSnapshot.class);
         verify(repository).save(captor.capture());
-        assertThat(captor.getValue().getUsdToVndRate()).isEqualByComparingTo(new BigDecimal("26777"));
-        assertThat(captor.getValue().getSource()).isEqualTo(properties.baseUrl());
+        assertThat(captor.getValue().getExchangeRateToVnd()).isEqualByComparingTo(new BigDecimal("26777"));
+        assertThat(captor.getValue().getSourceUrl()).isEqualTo(properties.baseUrl());
     }
 
     @Test

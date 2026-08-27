@@ -2,6 +2,7 @@ package com.sep.vox.application.response.input.subscription;
 
 import java.util.List;
 
+import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
 
 /**
@@ -18,7 +19,7 @@ import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
  *                    không bị chặn theo cá nhân, chỉ ví của trường áp dụng
  */
 public record QuotaUserAllocationSummaryResponse(
-    SchoolSubscriptionQuotaRecordResponse pool,
+    SchoolSubscriptionQuotaRecordDto pool,
     List<SchoolSubscriptionQuotaUserAllocationDto> allocations
 ) {
 }

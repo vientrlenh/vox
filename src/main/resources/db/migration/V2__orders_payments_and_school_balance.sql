@@ -783,3 +783,77 @@ ALTER TABLE topic_suggestion RENAME TO topic_suggestions;
 ALTER TABLE topic_suggestions RENAME CONSTRAINT topic_suggestion_pkey TO topic_suggestions_pkey;
 ALTER TABLE turn_correction RENAME TO turn_corrections;
 ALTER TABLE turn_corrections RENAME CONSTRAINT turn_correction_pkey TO turn_corrections_pkey;
+
+
+-- -----------------------------------------------------------------------------
+-- 21. ai_usage_records.charged_at -- đánh dấu dòng chi phí NÀO đã được trừ vào ví.
+--
+--     Trước đây CompleteExamSessionGradingUseCase trừ SUM(cost_vnd) của cả phiên, mỗi lần chấm xong.
+--     Nhưng một phiên được phép chấm LẠI: UpdateExamSessionStatusUseCase cho GRADED -> GRADING (và
+--     GRADING_FAILED -> GRADING). Lần chấm thứ hai sinh thêm chi phí thật, nên nó PHẢI được trừ --
+--     nhưng tổng lúc đó đã bao gồm cả chi phí lần chấm đầu, tức phần đó bị thu tiền hai lần.
+--
+--     Vì vậy KHÔNG dùng ràng buộc duy nhất trên school_balance_entries(exam_session_id) để chống
+--     trùng: nó sẽ chặn đúng khoản trừ hợp lệ của lần chấm lại. Cái cần định danh là TỪNG DÒNG CHI
+--     PHÍ, không phải phiên thi -- một dòng chỉ được thu tiền đúng một lần, còn một phiên thì thu bao
+--     nhiêu lần cũng được, miễn mỗi lần chỉ thu phần chưa thu.
+--
+--     Cách dùng (xem CompleteExamSessionGradingUseCase): UPDATE ... SET charged_at = :now WHERE
+--     charged_at IS NULL để GIÀNH các dòng, rồi SUM đúng những dòng vừa mang mốc :now. Giành trước --
+--     cộng sau, nên một dòng usage do Kafka chèn vào giữa chừng vẫn còn charged_at NULL và sẽ được
+--     lần chấm sau thu, thay vì bị đóng dấu đã thu mà không thu.
+--
+--     NULL = chưa thu, nên cột phải nullable -- và đó cũng là backfill đúng cho dữ liệu cũ: bảng chưa
+--     có dữ liệu thật (xem cảnh báo đầu file), còn nếu có thì để NULL nghĩa là "sẽ thu ở lần chấm tới"
+--     chứ không âm thầm bỏ qua một khoản tiền.
+-- -----------------------------------------------------------------------------
+ALTER TABLE ai_usage_records ADD COLUMN charged_at timestamp(6) with time zone;
+
+-- Partial index: câu chạy nóng là "còn dòng nào của phiên này chưa thu không", và các dòng đã thu chỉ
+-- lớn dần lên mãi mãi. Đánh chỉ mục lên phần chưa thu giữ index nhỏ bằng đúng phần việc còn lại.
+CREATE INDEX idx_ai_usage_records_uncharged
+    ON ai_usage_records USING btree (exam_session_id) WHERE charged_at IS NULL;
+
+-- Đọc lại theo mốc vừa giành, ngay sau câu UPDATE ở trên.
+CREATE INDEX idx_ai_usage_records_charged_at
+    ON ai_usage_records USING btree (exam_session_id, charged_at);
+
+
+-- -----------------------------------------------------------------------------
+-- 22. Đổi tên cột cho khớp entity: 3 bảng quota + 2 cột interest_dimension.
+--
+--     Mục 1-2 mới đổi TÊN BẢNG của nhóm quota, cột thì vẫn mang tên từ thời hạn mức đếm bằng TOKEN.
+--     Đây là phần còn lại đó. Native query không được Hibernate soi lúc khởi động, nên tới trước bước
+--     này thì entity và schema đang nói hai thứ khác nhau mà không chỗ nào báo.
+--
+--     *_quantity -> *_amount_vnd: "quantity" là tàn dư của thời đếm token. Giờ mọi cột này là TIỀN,
+--     cùng đơn vị và cùng cách gọi với school_balances.balance_vnd và school_debt_events.used_amount_vnd
+--     (mục 15) -- cùng một đại lượng thì cùng một tên, nếu không thì mỗi lần đọc lại phải nhớ cột nào
+--     đang đếm cái gì.
+--
+--     subscription_id -> school_subscription_id: gọi đúng tên bảng nó trỏ tới (school_subscriptions,
+--     mục 13), đồng bộ với subscription_plan_quotas.subscription_plan_id ngay bên dưới và với
+--     school_subscriptions.subscription_plan_id (mục 19).
+--
+--     KHÔNG đổi tên các ràng buộc NOT NULL đi kèm (subscription_quota_total_allocated_not_null...):
+--     không có gì tham chiếu tới chúng -- Hibernate validate chỉ soi bảng/cột/kiểu, còn V2 chỉ gọi
+--     đích danh các ràng buộc CHECK và pkey. Đổi thì tên tự nhiên mới ("school_subscription_quota_
+--     records_school_subscription_id_not_null" = 65 ký tự) vượt giới hạn 63 ký tự của Postgres và bị
+--     cắt âm thầm, tức viết một đằng ra một nẻo -- xem NOTICE ở mục 3.
+-- -----------------------------------------------------------------------------
+ALTER TABLE school_subscription_quota_records RENAME COLUMN subscription_id TO school_subscription_id;
+ALTER TABLE school_subscription_quota_records RENAME COLUMN total_allocated TO total_allocated_amount_vnd;
+ALTER TABLE school_subscription_quota_records RENAME COLUMN used_quantity TO used_amount_vnd;
+
+ALTER TABLE school_subscription_quota_user_allocations RENAME COLUMN subscription_id TO school_subscription_id;
+ALTER TABLE school_subscription_quota_user_allocations RENAME COLUMN allocated_quantity TO allocated_amount_vnd;
+ALTER TABLE school_subscription_quota_user_allocations RENAME COLUMN used_quantity TO used_amount_vnd;
+
+ALTER TABLE subscription_plan_quotas RENAME COLUMN plan_id TO subscription_plan_id;
+
+-- Hai cột dưới đây KHÔNG thuộc refactor thanh toán: entity đã để số nhiều từ trước (kèm cả
+-- @Index(columnList = "interest_dimensions, active")), còn V1 tạo ra dạng số ít. Sai lệch này có sẵn từ
+-- phần personalization, chỉ là chưa ai chạy ddl-auto=validate trên một DB sạch nên chưa lộ. Đổi luôn ở
+-- đây vì cùng một loại lỗi và cùng một lần sửa; index/ràng buộc tự đi theo cột.
+ALTER TABLE practice_topics RENAME COLUMN interest_dimension TO interest_dimensions;
+ALTER TABLE topic_suggestions RENAME COLUMN interest_dimension TO interest_dimensions;

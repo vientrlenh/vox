@@ -17,7 +17,7 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationReposi
  * trước khi publish/sửa/thêm học sinh, cùng công thức với ClassTestTokenQuotaGuardService.
  *
  * <p>null = không có allocation riêng, tức không bị chặn theo cá nhân (chỉ pool của trường áp dụng),
- * khớp đúng {@code .ifPresent} trong ConsumeQuotaUseCase và requireWithinUserAllocation.
+ * khớp đúng {@code .ifPresent} trong ConsumeQuotaService và requireWithinUserAllocation.
  */
 @Service
 public class ViewMyExamQuotaAllocationUseCase implements IUseCase<Void, SchoolSubscriptionQuotaUserAllocationDto> {

@@ -77,7 +77,8 @@ public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepos
             planId,
             status == null ? null : status.name(),
             StringNormalization.toLikePattern(keyword),
-            PageRequest.of(page, size)
+            // 1-based vào, 0-based xuống PageRequest -- xem OrderRepositoryImpl.findBySchoolId.
+            PageRequest.of(page - 1, size)
         );
         return new PageResult<>(
             result.getContent().stream().map(SchoolSubscriptionMapper::toDomain).toList(),
@@ -105,8 +106,8 @@ public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepos
     }
 
     @Override
-    public BigDecimal findPracticeQuotaRemaining(UUID userId) {
-        return springDataSchoolSubscriptionRepository.findPracticeQuotaRemaining(userId)
+    public BigDecimal findPracticeSpendableFundsVnd(UUID userId) {
+        return springDataSchoolSubscriptionRepository.findPracticeSpendableFundsVnd(userId)
             .stream()
             .findFirst()
             .orElse(BigDecimal.ZERO);

@@ -48,21 +48,21 @@ class ViewMyPracticeQuotaAllocationUseCaseTests {
     @Test
     void should_return_allocation_when_row_exists() {
         when(subscriptionQuotaUserAllocationRepository
-            .findBySubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.PRACTICE, userId))
+            .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.PRACTICE, userId))
             .thenReturn(Optional.of(new SchoolSubscriptionQuotaUserAllocation(
                 subscriptionId, QuotaType.PRACTICE, userId, BigDecimal.valueOf(1200), BigDecimal.valueOf(300))));
 
         var result = useCase.execute(null);
 
         assertThat(result).isNotNull();
-        assertThat(result.allocatedQuantity()).isEqualByComparingTo(BigDecimal.valueOf(1200));
-        assertThat(result.usedQuantity()).isEqualByComparingTo(BigDecimal.valueOf(300));
+        assertThat(result.allocatedAmountVnd()).isEqualByComparingTo(BigDecimal.valueOf(1200));
+        assertThat(result.usedAmountVnd()).isEqualByComparingTo(BigDecimal.valueOf(300));
     }
 
     @Test
     void should_return_null_when_no_allocation_row() {
         when(subscriptionQuotaUserAllocationRepository
-            .findBySubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.PRACTICE, userId))
+            .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.PRACTICE, userId))
             .thenReturn(Optional.empty());
 
         assertThat(useCase.execute(null)).isNull();

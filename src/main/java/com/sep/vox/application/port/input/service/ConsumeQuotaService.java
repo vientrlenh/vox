@@ -10,14 +10,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.port.output.QuotaDebtConfigPort;
 import com.sep.vox.application.response.input.subscription.ConsumeQuotaResponse;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolBalance;
 import com.sep.vox.domain.model.school.SchoolBalanceEntry;
-import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
 import com.sep.vox.domain.repository.SchoolBalanceRepository;
@@ -123,7 +121,7 @@ public class ConsumeQuotaService {
             : chargeOverage(subscriptionId, examSessionId, practiceSessionId, quotaType, quota,
                 amountVnd, costUsd, fxRateUsed);
 
-        consumeUserAllocation(subscriptionId, quotaType, userId, amountVnd, true);
+        consumeUserAllocation(subscriptionId, quotaType, userId, amountVnd);
         return buildResponse(subscriptionId, quota.getId(), split);
     }
 
@@ -145,8 +143,7 @@ public class ConsumeQuotaService {
 
         var schoolId = requireSchoolId(subscriptionId);
         var now = Instant.now();
-        var balance = schoolBalanceRepository.findBySchoolIdForUpdate(schoolId)
-            .orElseGet(() -> SchoolBalance.emptyFor(schoolId, now));
+        var balance = schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(schoolId, now);
 
         var current = requireQuota(subscriptionId, quotaType);
         var remainingVnd = current.getTotalAllocatedAmountVnd()
@@ -192,23 +189,25 @@ public class ConsumeQuotaService {
      * nói). Không có allocation row = trường không chia riêng cho ai = không bị chặn theo cá nhân.
      *
      * <p>Đây là một GIỚI HẠN, không phải một số dư: nó không giữ tiền và không bao giờ sinh bút toán
-     * -- vượt trần cá nhân trên đường ghi nợ chỉ làm used vượt allocated ở đúng dòng allocation đó,
-     * không đụng tới ví trường. Xem QuotaType.
+     * -- vượt trần cá nhân chỉ làm used vượt allocated ở đúng dòng allocation đó, không đụng tới ví
+     * trường. Xem QuotaType.
+     *
+     * <p>Chỉ GHI NHẬN, KHÔNG chặn -- và không còn tham số allowDebt để chọn giữa hai kiểu. Cả hai
+     * đường gọi tới đây (thi và luyện nói) đều chạy SAU khi Azure đã tính tiền, nên "từ chối vì vượt
+     * trần cá nhân" ở bước này không giữ lại được đồng nào mà chỉ làm khoản chi thật biến mất khỏi
+     * bộ đếm của chính người đã tiêu nó. Việc CHẶN theo trần cá nhân xảy ra ở cửa trước khi tốn tiền:
+     * ClassTestTokenQuotaGuardService.requireWithinUserAllocation cho bài kiểm tra trên lớp, và
+     * SchoolSubscriptionRepository.findPracticeSpendableFundsVnd cho luyện nói.
      */
     private void consumeUserAllocation(UUID subscriptionId, QuotaType quotaType, UUID userId,
-            BigDecimal amountVnd, boolean allowDebt) {
+            BigDecimal amountVnd) {
         if (userId == null) {
             return;
         }
         schoolSubscriptionQuotaUserAllocationRepository
             .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(subscriptionId, quotaType, userId)
-            .ifPresent(allocation -> {
-                if (allowDebt) {
-                    schoolSubscriptionQuotaUserAllocationRepository.addUsage(allocation.getId(), amountVnd);
-                } else if (!schoolSubscriptionQuotaUserAllocationRepository.tryConsume(allocation.getId(), amountVnd)) {
-                    throw new QuotaExceededException("Đã vượt quá hạn mức cá nhân");
-                }
-            });
+            .ifPresent(allocation ->
+                schoolSubscriptionQuotaUserAllocationRepository.addUsage(allocation.getId(), amountVnd));
     }
 
     /**
@@ -236,9 +235,6 @@ public class ConsumeQuotaService {
             subscriptionId, quotaType, examSessionId, debtAfterVnd, cap
         );
 
-        // TODO: tham số của SchoolDebtNotificationService vẫn mang tên ...Usd (và SchoolDebtEvent vẫn
-        // lưu USD) trong khi mọi số truyền vào đây đã là VND. Đổi tên/đổi đơn vị bên đó là một pass
-        // riêng -- xem lại cùng lúc với quyết định có giữ bảng school_debt_event hay không.
         schoolDebtNotificationService.publishDebtCapExceeded(
             subscriptionId, schoolId, quotaType, examSessionId, overageVnd,
             totalAllocatedVnd, totalAllocatedVnd.add(debtAfterVnd), debtAfterVnd, cap, now
@@ -285,14 +281,14 @@ public class ConsumeQuotaService {
 
     private UUID requireSchoolId(UUID subscriptionId) {
         return schoolSubscriptionRepository.findById(subscriptionId)
-            .map(SchoolSubscription::getSchoolId)
+            .map(s -> s.getSchoolId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
     }
 
     /** Bản CHỈ ĐỌC -- chỉ dùng cho đường KHÔNG ghi số dư (xem javadoc SchoolBalanceRepository). */
     private BigDecimal currentBalanceVnd(UUID subscriptionId) {
         return schoolBalanceRepository.findBySchoolId(requireSchoolId(subscriptionId))
-            .map(SchoolBalance::getBalanceVnd)
+            .map(b -> b.getBalanceVnd())
             .orElse(BigDecimal.ZERO);
     }
 }

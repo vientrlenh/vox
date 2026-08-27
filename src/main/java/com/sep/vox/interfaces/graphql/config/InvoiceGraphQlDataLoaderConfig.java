@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.dataloader.BatchLoaderEnvironment;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
 import com.sep.vox.domain.dto.InvoiceDto;
@@ -12,6 +13,7 @@ import com.sep.vox.domain.repository.InvoiceRepository;
 
 import reactor.core.publisher.Mono;
 
+@Configuration
 public class InvoiceGraphQlDataLoaderConfig {
     
     public InvoiceGraphQlDataLoaderConfig(

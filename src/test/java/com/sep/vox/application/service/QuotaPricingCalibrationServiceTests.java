@@ -22,11 +22,11 @@ import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.port.input.service.QuotaPricingCalibrationService;
 import com.sep.vox.domain.model.metering.QuotaPricingCalibration;
 import com.sep.vox.domain.model.metering.QuotaPricingSource;
-import com.sep.vox.domain.repository.AiUsageRecordRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
 import com.sep.vox.domain.repository.QuotaPricingCalibrationRepository;
-import com.sep.vox.domain.repository.SessionCostAggregate;
+import com.sep.vox.application.query.dto.SessionCostDto;
+import com.sep.vox.application.query.repository.SessionCostQueryRepository;
 import com.sep.vox.domain.repository.SessionDurationAggregate;
 import com.sep.vox.infrastructure.properties.QuotaPricingCalibrationProperties;
 import com.sep.vox.infrastructure.properties.QuotaPricingProperties;
@@ -41,7 +41,7 @@ import com.sep.vox.infrastructure.properties.QuotaPricingProperties;
  */
 class QuotaPricingCalibrationServiceTests {
 
-    private AiUsageRecordRepository aiUsageRecordRepository;
+    private SessionCostQueryRepository sessionCostQueryRepository;
     private ExamItemResponseRepository examItemResponseRepository;
     private PracticeResponseTurnRepository practiceResponseTurnRepository;
     private QuotaPricingCalibrationRepository quotaPricingCalibrationRepository;
@@ -49,7 +49,7 @@ class QuotaPricingCalibrationServiceTests {
 
     @BeforeEach
     void setUp() {
-        aiUsageRecordRepository = mock(AiUsageRecordRepository.class);
+        sessionCostQueryRepository = mock(SessionCostQueryRepository.class);
         examItemResponseRepository = mock(ExamItemResponseRepository.class);
         practiceResponseTurnRepository = mock(PracticeResponseTurnRepository.class);
         quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
@@ -58,7 +58,7 @@ class QuotaPricingCalibrationServiceTests {
         var quotaPricingProperties = new QuotaPricingProperties(new BigDecimal("0.01"), new BigDecimal("0.01"));
 
         service = new QuotaPricingCalibrationService(
-            aiUsageRecordRepository,
+            sessionCostQueryRepository,
             examItemResponseRepository,
             practiceResponseTurnRepository,
             quotaPricingCalibrationRepository,
@@ -68,8 +68,8 @@ class QuotaPricingCalibrationServiceTests {
 
     @Test
     void should_skip_when_not_enough_sessions_with_cost() {
-        when(aiUsageRecordRepository.sumCostUsdGroupedBySessionSince(any()))
-            .thenReturn(List.of(new SessionCostAggregate(UUID.randomUUID(), BigDecimal.ONE)));
+        when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any()))
+            .thenReturn(List.of(new SessionCostDto(UUID.randomUUID(), BigDecimal.ONE)));
 
         service.recalibrateExam();
 
@@ -80,9 +80,9 @@ class QuotaPricingCalibrationServiceTests {
     void should_skip_when_sessions_have_cost_but_no_matching_duration() {
         var sessionA = UUID.randomUUID();
         var sessionB = UUID.randomUUID();
-        when(aiUsageRecordRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
-            new SessionCostAggregate(sessionA, BigDecimal.TEN),
-            new SessionCostAggregate(sessionB, BigDecimal.TEN)
+        when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
+            new SessionCostDto(sessionA, BigDecimal.TEN),
+            new SessionCostDto(sessionB, BigDecimal.TEN)
         ));
         // Chỉ 1 session có duration khớp -- dưới minSampleSessions=2 nên vẫn phải bỏ qua.
         when(examItemResponseRepository.sumDurationSecondsGroupedBySessionIds(anyCollection()))
@@ -97,9 +97,9 @@ class QuotaPricingCalibrationServiceTests {
     void should_save_raw_rate_unchanged_when_within_smoothing_and_bounds() {
         var sessionA = UUID.randomUUID();
         var sessionB = UUID.randomUUID();
-        when(aiUsageRecordRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
-            new SessionCostAggregate(sessionA, new BigDecimal("1.00")),
-            new SessionCostAggregate(sessionB, new BigDecimal("1.00"))
+        when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
+            new SessionCostDto(sessionA, new BigDecimal("1.00")),
+            new SessionCostDto(sessionB, new BigDecimal("1.00"))
         ));
         when(examItemResponseRepository.sumDurationSecondsGroupedBySessionIds(anyCollection())).thenReturn(List.of(
             new SessionDurationAggregate(sessionA, 100L),
@@ -125,9 +125,9 @@ class QuotaPricingCalibrationServiceTests {
         var sessionA = UUID.randomUUID();
         var sessionB = UUID.randomUUID();
         // rawRate = 20.00/200 = 0.10 -- gấp 10 lần previousApplied (0.01), vượt xa maxChangeRatio=20%.
-        when(aiUsageRecordRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
-            new SessionCostAggregate(sessionA, new BigDecimal("10.00")),
-            new SessionCostAggregate(sessionB, new BigDecimal("10.00"))
+        when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
+            new SessionCostDto(sessionA, new BigDecimal("10.00")),
+            new SessionCostDto(sessionB, new BigDecimal("10.00"))
         ));
         when(examItemResponseRepository.sumDurationSecondsGroupedBySessionIds(anyCollection())).thenReturn(List.of(
             new SessionDurationAggregate(sessionA, 100L),
@@ -152,9 +152,9 @@ class QuotaPricingCalibrationServiceTests {
     void should_clamp_to_max_rate_bound_even_after_smoothing() {
         var sessionA = UUID.randomUUID();
         var sessionB = UUID.randomUUID();
-        when(aiUsageRecordRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
-            new SessionCostAggregate(sessionA, new BigDecimal("500.00")),
-            new SessionCostAggregate(sessionB, new BigDecimal("500.00"))
+        when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
+            new SessionCostDto(sessionA, new BigDecimal("500.00")),
+            new SessionCostDto(sessionB, new BigDecimal("500.00"))
         ));
         when(examItemResponseRepository.sumDurationSecondsGroupedBySessionIds(anyCollection())).thenReturn(List.of(
             new SessionDurationAggregate(sessionA, 100L),
@@ -176,9 +176,9 @@ class QuotaPricingCalibrationServiceTests {
     void should_use_practice_duration_source_and_tag_pricing_source() {
         var sessionA = UUID.randomUUID();
         var sessionB = UUID.randomUUID();
-        when(aiUsageRecordRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
-            new SessionCostAggregate(sessionA, new BigDecimal("1.00")),
-            new SessionCostAggregate(sessionB, new BigDecimal("1.00"))
+        when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
+            new SessionCostDto(sessionA, new BigDecimal("1.00")),
+            new SessionCostDto(sessionB, new BigDecimal("1.00"))
         ));
         when(practiceResponseTurnRepository.sumDurationSecondsGroupedBySessionIds(anyCollection())).thenReturn(List.of(
             new SessionDurationAggregate(sessionA, 100L),
@@ -200,8 +200,8 @@ class QuotaPricingCalibrationServiceTests {
     @Test
     void should_skip_practice_when_only_exam_side_has_matching_duration() {
         var examOnlySession = UUID.randomUUID();
-        when(aiUsageRecordRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
-            new SessionCostAggregate(examOnlySession, BigDecimal.TEN)
+        when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
+            new SessionCostDto(examOnlySession, BigDecimal.TEN)
         ));
         // practiceResponseTurnRepository không trả về gì cho session này (nó là session EXAM,
         // không có row practice_response_turn) -- đúng hành vi thật của join, không phải mock hoá đơn giản.

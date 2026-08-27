@@ -11,7 +11,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.usecase.subscription.ViewMyClassTestQuotaAllocationUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ViewMyExamQuotaAllocationUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
@@ -19,12 +19,12 @@ import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocati
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 
-class ViewMyClassTestQuotaAllocationUseCaseTests {
+class ViewMyExamQuotaAllocationUseCaseTests {
 
     private UserContextPort userContextPort;
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
     private SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
-    private ViewMyClassTestQuotaAllocationUseCase useCase;
+    private ViewMyExamQuotaAllocationUseCase useCase;
 
     private final UUID userId = UUID.randomUUID();
     private final UUID schoolId = UUID.randomUUID();
@@ -35,7 +35,7 @@ class ViewMyClassTestQuotaAllocationUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         subscriptionQuotaUserAllocationRepository = mock(SchoolSubscriptionQuotaUserAllocationRepository.class);
-        useCase = new ViewMyClassTestQuotaAllocationUseCase(
+        useCase = new ViewMyExamQuotaAllocationUseCase(
             userContextPort, schoolSubscriptionRepository, subscriptionQuotaUserAllocationRepository);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
@@ -48,21 +48,21 @@ class ViewMyClassTestQuotaAllocationUseCaseTests {
     @Test
     void should_return_allocation_when_row_exists() {
         when(subscriptionQuotaUserAllocationRepository
-            .findBySubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.CLASS_TEST, userId))
+            .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.EXAM, userId))
             .thenReturn(Optional.of(new SchoolSubscriptionQuotaUserAllocation(
-                subscriptionId, QuotaType.CLASS_TEST, userId, BigDecimal.valueOf(1800), BigDecimal.valueOf(600))));
+                subscriptionId, QuotaType.EXAM, userId, BigDecimal.valueOf(1800), BigDecimal.valueOf(600))));
 
         var result = useCase.execute(null);
 
         assertThat(result).isNotNull();
-        assertThat(result.allocatedQuantity()).isEqualByComparingTo(BigDecimal.valueOf(1800));
-        assertThat(result.usedQuantity()).isEqualByComparingTo(BigDecimal.valueOf(600));
+        assertThat(result.allocatedAmountVnd()).isEqualByComparingTo(BigDecimal.valueOf(1800));
+        assertThat(result.usedAmountVnd()).isEqualByComparingTo(BigDecimal.valueOf(600));
     }
 
     @Test
     void should_return_null_when_no_allocation_row() {
         when(subscriptionQuotaUserAllocationRepository
-            .findBySubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.CLASS_TEST, userId))
+            .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.EXAM, userId))
             .thenReturn(Optional.empty());
 
         assertThat(useCase.execute(null)).isNull();

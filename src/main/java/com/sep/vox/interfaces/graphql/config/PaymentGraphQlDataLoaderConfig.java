@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.dataloader.BatchLoaderEnvironment;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
 import com.sep.vox.domain.dto.PaymentDto;
@@ -15,6 +16,7 @@ import com.sep.vox.domain.repository.PaymentRecordRepository;
 
 import reactor.core.publisher.Mono;
 
+@Configuration
 public class PaymentGraphQlDataLoaderConfig {
     public PaymentGraphQlDataLoaderConfig(
         BatchLoaderRegistry registry,

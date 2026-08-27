@@ -135,9 +135,10 @@ public class ResolveNextPracticeQuestionClaimService {
         //
         // Bản trước so sumPlannedSecondsForPaper (tổng max_response_seconds) với trần.
         // Trên dữ liệu thật dự trù cao hơn thực tế 40-70% (60 vs 29, 45 vs 27), nên phiên
-        // báo hết ngân sách khi quota còn dư gần nửa. Mà quota thì trừ theo giây nói thật
-        // (ConsumeQuotaUseCase ăn durationSeconds) -- hai đồng hồ đo hai đại lượng khác
-        // nhau thì sớm muộn cũng lệch.
+        // báo hết ngân sách khi quota còn dư gần nửa. Mà quota thì trừ theo chi phí THẬT của
+        // lượt đã nói (SubmitPracticeTurnUseCase quy turnCostUsd sang VND rồi đưa cho
+        // ConsumeQuotaService), tức tỉ lệ với thời gian nói thật chứ không với ngân sách dự
+        // trù -- hai đồng hồ đo hai đại lượng khác nhau thì sớm muộn cũng lệch.
         //
         // Chốt này nằm TRƯỚC lúc chọn/sinh câu, và đó là điểm chính: bản trước kiểm SAU
         // khi resolveNextQuestion đã chạy, tức có thể trả 10-40 giây gọi LLM để sinh ra

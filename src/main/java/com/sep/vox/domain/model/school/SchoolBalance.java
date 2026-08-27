@@ -9,17 +9,17 @@ import java.util.UUID;
  * hạn mức kèm gói nằm ở school_subscription_quota_records, tách theo từng QuotaType và có bộ đếm
  * used riêng.
  *
- * <p>Cố tình KHÔNG gộp hai thứ đó vào một con số: gói cấp hạn mức theo TỪNG loại (GRADING /
- * CLASS_TEST / PRACTICE), nên một số dư cấp trường duy nhất không diễn đạt được "còn 300.000 nhưng
+ * <p>Cố tình KHÔNG gộp hai thứ đó vào một con số: gói cấp hạn mức theo TỪNG loại (EXAM /
+ * PRACTICE), nên một số dư cấp trường duy nhất không diễn đạt được "còn 300.000 nhưng
  * không được dùng để chấm bài". Gộp lại là âm thầm xóa mất giới hạn theo loại.
  *
- * <p>Ví này chỉ được đụng tới KHI hạn mức của loại tương ứng đã cạn -- xem ConsumeQuotaUseCase.
+ * <p>Ví này chỉ được đụng tới KHI hạn mức của loại tương ứng đã cạn -- xem ConsumeQuotaService.
  */
 public class SchoolBalance {
     private UUID id;
     private UUID schoolId;
-    // Không có CHECK >= 0 ở tầng DB: phần âm ở đây CHÍNH LÀ nợ, phát sinh khi QuotaType cho phép ghi
-    // nợ (GRADING/CLASS_TEST) tiêu vượt số dư.
+    // Không có CHECK >= 0 ở tầng DB: phần âm ở đây CHÍNH LÀ nợ, phát sinh khi một khoản chi THẬT
+    // (đường thi, xem ConsumeQuotaService) vượt quá cả hạn mức kèm gói lẫn số dư đã nạp.
     private BigDecimal balanceVnd;
     private Instant createdAt;
     private Instant updatedAt;
@@ -99,9 +99,14 @@ public class SchoolBalance {
     }
 
     /**
-     * Ví rỗng cho trường chưa từng nạp. Tạo lúc nạp lần đầu chứ không tạo sẵn cùng lúc với School:
-     * ví không có dòng nào và ví có số dư 0 là cùng một nghĩa, nên tạo sẵn chỉ thêm một bảng phải
-     * dọn khi xóa trường.
+     * Ví rỗng cho trường chưa từng nạp. Tạo lúc chạm vào ví lần đầu chứ không tạo sẵn cùng lúc với
+     * School: ví không có dòng nào và ví có số dư 0 là cùng một nghĩa, nên tạo sẵn chỉ thêm một bảng
+     * phải dọn khi xóa trường.
+     *
+     * <p>KHÔNG dùng cái này để dựng dòng rồi save: dòng số dư phải do
+     * {@code SchoolBalanceRepository.findBySchoolIdForUpdateOrCreate} tạo, vì chỉ ở đó việc tạo mới
+     * nằm chung một câu INSERT ... ON CONFLICT với việc khóa hàng. Dựng ở tầng Java rồi save là mở lại
+     * đúng cửa sổ tranh chấp mà method kia sinh ra để đóng.
      */
     public static SchoolBalance emptyFor(UUID schoolId, Instant now) {
         return new SchoolBalance(schoolId, BigDecimal.ZERO, now, now);

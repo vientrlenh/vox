@@ -113,7 +113,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             turn.getTranscript(),
             turn.isQuestionComplete()
         );
-        var turnId = practiceResponseTurnRepository.save(
+        var turnWrite = practiceResponseTurnRepository.save(
             responseId,
             turn.getTurnOrder(),
             turn.getTurnType(),
@@ -124,14 +124,29 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             turn.getWordFeedbackJson(),
             turn.getTurnScore()
         );
-        var corrections = storeCorrections(turnId, turn.getCorrections());
+        var turnId = turnWrite.turnId();
+        // Bản gửi LẠI thì KHÔNG ghi thêm dòng sửa lỗi: turn_corrections không có ràng buộc duy nhất
+        // nào, nên mỗi lần Python retry sẽ nhân đôi số thẻ sửa lỗi học sinh thấy khi xem lại buổi.
+        // Vẫn dựng danh sách để trả về -- payload retry chính là payload lần đầu, nên lọc lại cho ra
+        // đúng những dòng đã lưu.
+        var corrections = collectCorrections(turnId, turn.getCorrections(), turnWrite.created());
         // Nạp phiên KỂ CẢ khi lượt này im lặng: client vẫn phải thấy đúng tổng "đã nói" trên
         // thanh tiến độ, chứ không phải một ô trống mỗi lần học sinh bấm mic rồi không nói gì.
         var session = practiceSessionRepository.findById(turn.getSessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
         var spokenSeconds = session.getGradedSeconds();
         var quotaExhausted = false;
-        if (turn.getDurationSeconds() > 0) {
+        // turnWrite.created() gác CẢ khối: bảng lượt nói tự chống trùng được (uq_practice_response_turn_order),
+        // nhưng hai việc bên trong đây thì không -- trừ tiền vào ví trường, và cộng giây đã nói vào
+        // phiên. Trước khi có cờ này, một lần Python retry sau khi mất response HTTP sẽ trừ tiền THẬT
+        // lần thứ hai cho cùng một lượt, và sổ cái vẫn cân (bút toán + số dư cùng bị trừ đôi) nên bất
+        // biến SUM(entries) = balance không bắt được. Đúng cái bảng được bảo vệ lại là cái khiến chỗ
+        // này trông như đã an toàn.
+        //
+        // Bỏ qua lần trừ cũng có nghĩa là không biết quỹ đã cạn chưa, nên trả false: phiên sẽ đóng ở
+        // lượt THẬT tiếp theo. Đây vẫn nằm trong đúng khoảng trễ mà thiết kế đã chấp nhận -- phiên
+        // vốn đóng SAU lượt làm cạn quỹ, không phải trước.
+        if (turnWrite.created() && turn.getDurationSeconds() > 0) {
             // Chi phí AI thật (USD) của turn này, Python tính đồng bộ từ realtimeCorrectionGraph
             // ngay trong request submit_turn (không đợi được ai_usage_record qua Kafka như exam,
             // vì PRACTICE trừ quota NGAY trong request này) -- xem
@@ -197,7 +212,11 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
                 studentId, enrichmentService.bandOrder(session.getTargetFrameworkBandId())
             )
         );
-        if (result.evaluationQueued()) {
+        // Cũng gác bằng created(): lần gửi đầu đã đẩy yêu cầu chấm đi rồi (ExternalEventPublisherPort
+        // bắn thẳng Kafka, không qua outbox), nên bắn lại là một lượt chấm AI thứ hai cho đúng một
+        // câu trả lời -- lại tốn tiền thật, đúng như lần trừ quota vừa bỏ qua ở trên. Cờ trả về cho
+        // client vẫn để nguyên: câu này ĐÃ được xếp hàng chấm, chỉ là từ lần gửi trước.
+        if (turnWrite.created() && result.evaluationQueued()) {
             eventPublisher.publish(evaluationRequestFactory.build(
                 turn.getSessionId(),
                 result.responseId(),
@@ -240,7 +259,15 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
      */
     private static final int MAX_STORED_CORRECTIONS = 8;
 
-    private List<TurnCorrectionDto> storeCorrections(UUID turnId, List<TurnCorrectionSubmission> inputs) {
+    /**
+     * Lọc rồi (tùy {@code persist}) ghi các dòng sửa lỗi của một lượt.
+     *
+     * <p>Lọc và ghi CỐ Ý nằm chung một vòng lặp: danh sách trả về cho client phải là đúng những dòng
+     * đã lưu, nên tách đôi là dựng sẵn hai bộ tiêu chí sẽ lệch nhau. {@code persist=false} (bản gửi
+     * lại) đi qua đúng bộ lọc đó nhưng bỏ lời gọi save, nên client vẫn nhận lại y hệt lần đầu.
+     */
+    private List<TurnCorrectionDto> collectCorrections(UUID turnId,
+            List<TurnCorrectionSubmission> inputs, boolean persist) {
         var result = new ArrayList<TurnCorrectionDto>();
         for (var correction : inputs == null ? List.<TurnCorrectionSubmission>of() : inputs) {
             var measured = MEASURED_CATEGORY.equalsIgnoreCase(correction.getCategory());
@@ -248,14 +275,16 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
                     || (!measured && correction.getConfidence() < MIN_JUDGED_CONFIDENCE)) {
                 continue;
             }
-            turnCorrectionRepository.save(
-                turnId,
-                correction.getCategory(),
-                correction.getOriginalText(),
-                correction.getCorrectedText(),
-                correction.getExplanation(),
-                correction.getCorrectAudioUrl()
-            );
+            if (persist) {
+                turnCorrectionRepository.save(
+                    turnId,
+                    correction.getCategory(),
+                    correction.getOriginalText(),
+                    correction.getCorrectedText(),
+                    correction.getExplanation(),
+                    correction.getCorrectAudioUrl()
+                );
+            }
             result.add(new TurnCorrectionDto(
                 correction.getCategory(),
                 correction.getOriginalText(),

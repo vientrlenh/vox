@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,9 +30,17 @@ public class SchoolBalanceRepositoryImpl implements SchoolBalanceRepository {
         return springDataSchoolBalanceRepository.findBySchoolId(schoolId).map(SchoolBalanceMapper::toDomain);
     }
 
+    /**
+     * INSERT ... ON CONFLICT DO NOTHING rồi mới khóa: hai câu, nhưng câu đầu chỉ ghi đúng một lần cho
+     * cả đời của trường và các lần sau chỉ tốn một lần kiểm ràng buộc duy nhất.
+     */
     @Override
-    public Optional<SchoolBalance> findBySchoolIdForUpdate(UUID schoolId) {
-        return springDataSchoolBalanceRepository.findWithLockBySchoolId(schoolId).map(SchoolBalanceMapper::toDomain);
+    public SchoolBalance findBySchoolIdForUpdateOrCreate(UUID schoolId, Instant now) {
+        springDataSchoolBalanceRepository.insertIfAbsent(schoolId, now);
+        return springDataSchoolBalanceRepository.findWithLockBySchoolId(schoolId)
+            .map(SchoolBalanceMapper::toDomain)
+            .orElseThrow(() -> new IllegalStateException(
+                "Không đọc được ví trường " + schoolId + " ngay sau khi đã bảo đảm dòng tồn tại"));
     }
 
     @Override

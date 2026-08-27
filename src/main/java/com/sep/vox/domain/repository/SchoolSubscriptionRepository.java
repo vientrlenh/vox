@@ -49,8 +49,16 @@ public interface SchoolSubscriptionRepository {
     // Id gói đang hoạt động của trường mà 1 user đang trực thuộc (dùng để trừ quota)
     Optional<UUID> findActiveSubscriptionIdForUser(UUID userId);
 
-    // Hạn mức PRACTICE còn lại (USD) của user (ZERO nếu không có gói đang hoạt động)
-    BigDecimal findPracticeQuotaRemaining(UUID userId);
+    /**
+     * Số tiền (VND) còn chi được cho một lượt luyện của user: nhỏ hơn giữa "hạn mức PRACTICE của
+     * trường còn lại + số dư ví tự nạp" và "hạn mức cá nhân của chính user còn lại" (nếu trường có
+     * chia riêng cho em). ZERO nếu không có gói đang hoạt động.
+     *
+     * <p>Gọi là FUNDS chứ không phải QUOTA vì con số này gộp cả ví tự nạp: từ khi ConsumeQuotaService
+     * trừ phần vượt hạn mức sang ví đó, "còn hạn mức không" không còn là câu hỏi quyết định được
+     * việc cho luyện tiếp hay không.
+     */
+    BigDecimal findPracticeSpendableFundsVnd(UUID userId);
 
     // Số phút tối đa mỗi lượt luyện của gói đang hoạt động (null nếu không có gói)
     Integer findMaxTimePerAttemptMinForUser(UUID userId);

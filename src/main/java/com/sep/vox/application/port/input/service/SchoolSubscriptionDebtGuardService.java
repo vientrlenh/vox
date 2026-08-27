@@ -41,7 +41,7 @@ public class SchoolSubscriptionDebtGuardService {
      */
     public boolean isSchoolLocked(UUID schoolId) {
         return schoolBalanceRepository.findBySchoolId(schoolId)
-            .map(SchoolBalance::isInDebt)
+            .map(b -> b.isInDebt())
             .orElse(false);
     }
 

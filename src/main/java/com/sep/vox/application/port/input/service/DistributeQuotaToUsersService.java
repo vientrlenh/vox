@@ -16,8 +16,8 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AllocateUserQuotaAmountCommand;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;
-import com.sep.vox.application.response.input.subscription.SchoolSubscriptionQuotaRecordResponse;
 import com.sep.vox.domain.common.DistributionMode;
+import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
@@ -186,7 +186,7 @@ public class DistributeQuotaToUsersService {
             .map(SchoolSubscriptionQuotaUserAllocationDto::toDto)
             .toList();
 
-        return new QuotaUserAllocationSummaryResponse(SchoolSubscriptionQuotaRecordResponse.toResponse(pool), allocationDtos);
+        return new QuotaUserAllocationSummaryResponse(SchoolSubscriptionQuotaRecordDto.toDto(pool), allocationDtos);
     }
 
     private Map<UUID, SchoolSubscriptionQuotaUserAllocation> fetchExistingAllocationsByUserId(UUID subscriptionId, QuotaType quotaType) {

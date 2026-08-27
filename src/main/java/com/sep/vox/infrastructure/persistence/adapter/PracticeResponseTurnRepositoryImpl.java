@@ -22,7 +22,7 @@ public class PracticeResponseTurnRepositoryImpl implements PracticeResponseTurnR
     }
 
     @Override
-    public UUID save(
+    public TurnWrite save(
             UUID practiceResponseId,
             int turnOrder,
             String turnType,
@@ -36,7 +36,7 @@ public class PracticeResponseTurnRepositoryImpl implements PracticeResponseTurnR
         if (existing.isPresent()) {
             // Same turn already recorded -- a Python retry after a lost HTTP response, not a
             // real second turn (turn_order is client-driven and monotonic per question).
-            return existing.get().getId();
+            return new TurnWrite(existing.get().getId(), false);
         }
         var saved = repository.save(new PracticeResponseTurnJpaEntity(
             UUID.randomUUID(),
@@ -50,7 +50,7 @@ public class PracticeResponseTurnRepositoryImpl implements PracticeResponseTurnR
             wordFeedbackJson,
             turnScore == null ? null : BigDecimal.valueOf(turnScore)
         ));
-        return saved.getId();
+        return new TurnWrite(saved.getId(), true);
     }
 
     @Override

@@ -102,7 +102,7 @@ public class TopicSuggestionService {
         // gõ một từ khoá trỏ đúng vào chủ đề đã có sẵn cũng mất một lượt trong ba.
         //
         // Chi phí thật đã có nơi kiểm soát đúng chỗ của nó: quota PRACTICE tính theo giây nói
-        // (SubmitPracticeTurnUseCase -> ConsumeQuotaUseCase). Chặn thêm ở đây là siết hai lần
+        // (SubmitPracticeTurnUseCase -> ConsumeQuotaService). Chặn thêm ở đây là siết hai lần
         // vào cùng một túi tiền, bằng một đơn vị không liên quan.
         if (unsuitable(normalized)) {
             recordKeywordRequest(studentId, keyword, "REJECTED_UNSUITABLE");

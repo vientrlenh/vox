@@ -17,7 +17,7 @@ public class SchoolSubscription {
     private Long version;
     // System Admin cưỡng chế đình chỉ (SUSPENDED) -- khác cancelledAt (chỉ tắt gia hạn). Cả 3 null khi
     // không bị đình chỉ, và bị xóa về null lại khi gỡ đình chỉ (UnsuspendSubscriptionUseCase) -- lịch sử
-    // ai đình chỉ/gỡ lúc nào/vì sao được lưu bền ở FinancialEvent, không phải 3 cột này.
+    // ai đình chỉ/gỡ lúc nào/vì sao được lưu bền ở SchoolSubscriptionEvent, không phải 3 cột này.
     private Instant suspendedAt;
     private String suspendedReason;
     private UUID suspendedBy;

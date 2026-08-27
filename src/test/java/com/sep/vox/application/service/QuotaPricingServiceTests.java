@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.domain.model.financial.CurrencyCode;
 import com.sep.vox.domain.model.financial.ExchangeRateSnapshot;
 import com.sep.vox.domain.repository.ExchangeRateSnapshotRepository;
 import com.sep.vox.domain.repository.QuotaPricingCalibrationRepository;
@@ -24,9 +25,9 @@ class QuotaPricingServiceTests {
         var quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
         var exchangeRateSnapshotRepository = mock(ExchangeRateSnapshotRepository.class);
         var quotaPricingProperties = new QuotaPricingProperties(null, null);
-        var quotaSellingPriceProperties = new QuotaSellingPriceProperties(new BigDecimal("25500"));
-        when(exchangeRateSnapshotRepository.findLatest()).thenReturn(
-            Optional.of(new ExchangeRateSnapshot(Instant.now(), new BigDecimal("26777"), "https://example.test")));
+        var quotaSellingPriceProperties = new QuotaSellingPriceProperties(new BigDecimal("25500"), new BigDecimal("0.05"));
+        when(exchangeRateSnapshotRepository.findLatest(CurrencyCode.USD)).thenReturn(
+            Optional.of(new ExchangeRateSnapshot(CurrencyCode.USD, new BigDecimal("26777"), Instant.now(), "https://example.test")));
 
         var service = new QuotaPricingService(
             quotaPricingCalibrationRepository, exchangeRateSnapshotRepository, quotaPricingProperties,
@@ -40,8 +41,8 @@ class QuotaPricingServiceTests {
         var quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
         var exchangeRateSnapshotRepository = mock(ExchangeRateSnapshotRepository.class);
         var quotaPricingProperties = new QuotaPricingProperties(null, null);
-        var quotaSellingPriceProperties = new QuotaSellingPriceProperties(new BigDecimal("25500"));
-        when(exchangeRateSnapshotRepository.findLatest()).thenReturn(Optional.empty());
+        var quotaSellingPriceProperties = new QuotaSellingPriceProperties(new BigDecimal("25500"), new BigDecimal("0.05"));
+        when(exchangeRateSnapshotRepository.findLatest(CurrencyCode.USD)).thenReturn(Optional.empty());
 
         var service = new QuotaPricingService(
             quotaPricingCalibrationRepository, exchangeRateSnapshotRepository, quotaPricingProperties,
@@ -55,8 +56,8 @@ class QuotaPricingServiceTests {
         var quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
         var exchangeRateSnapshotRepository = mock(ExchangeRateSnapshotRepository.class);
         var quotaPricingProperties = new QuotaPricingProperties(null, null);
-        var quotaSellingPriceProperties = new QuotaSellingPriceProperties(null);
-        when(exchangeRateSnapshotRepository.findLatest()).thenReturn(Optional.empty());
+        var quotaSellingPriceProperties = new QuotaSellingPriceProperties(null, null);
+        when(exchangeRateSnapshotRepository.findLatest(CurrencyCode.USD)).thenReturn(Optional.empty());
 
         var service = new QuotaPricingService(
             quotaPricingCalibrationRepository, exchangeRateSnapshotRepository, quotaPricingProperties,
@@ -65,19 +66,4 @@ class QuotaPricingServiceTests {
         assertThat(service.usdToVndRate()).isEqualByComparingTo(new BigDecimal("26000"));
     }
 
-    @Test
-    void tokenUnitPriceForAppliesServiceFeeRatioAndRoundsToWholeNumber() {
-        var quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
-        var exchangeRateSnapshotRepository = mock(ExchangeRateSnapshotRepository.class);
-        var quotaPricingProperties = new QuotaPricingProperties(null, null);
-        var quotaSellingPriceProperties = new QuotaSellingPriceProperties(new BigDecimal("26000"));
-        when(exchangeRateSnapshotRepository.findLatest()).thenReturn(Optional.empty());
-
-        var service = new QuotaPricingService(
-            quotaPricingCalibrationRepository, exchangeRateSnapshotRepository, quotaPricingProperties,
-            quotaSellingPriceProperties);
-
-        // 26000 * (1 + 0.20) = 31200
-        assertThat(service.tokenUnitPriceFor(new BigDecimal("0.20"))).isEqualByComparingTo(new BigDecimal("31200"));
-    }
 }

@@ -1,12 +1,14 @@
 package com.sep.vox.application.port.input.service;
 
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
@@ -23,6 +25,12 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
  */
 @Service
 public class SubscriptionPeriodGuardService {
+
+    // Instant.toString() in ra UTC kèm hậu tố Z, nên hạn gói bắt đầu 01/01 hiện thành
+    // "2025-12-31T17:00:00Z" -- lệch một ngày so với chính con số trên màn quản lý thuê bao, đúng
+    // vào lúc người đọc đang cố đối chiếu hai chỗ với nhau.
+    private static final DateTimeFormatter DISPLAY_DATE =
+        DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneConstant.BUSINESS_ZONE);
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
 
@@ -74,8 +82,8 @@ public class SubscriptionPeriodGuardService {
     private String outsidePeriodMessage(String fieldLabel, SchoolSubscription subscription) {
         return "%s phải nằm trong hạn gói dịch vụ của trường (từ %s đến %s)".formatted(
             fieldLabel,
-            subscription.getStartDate().toString(),
-            subscription.getEndDate().toString());
+            DISPLAY_DATE.format(subscription.getStartDate()),
+            DISPLAY_DATE.format(subscription.getEndDate()));
     }
 
 }

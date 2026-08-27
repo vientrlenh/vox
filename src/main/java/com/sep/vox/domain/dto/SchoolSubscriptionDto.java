@@ -20,7 +20,13 @@ public record SchoolSubscriptionDto(
     String cancelledAt,
     String createdAt,
     String suspendedAt,
-    String suspendedReason
+    String suspendedReason,
+    /**
+     * System Admin đã ra lệnh đình chỉ. Đi cùng bộ ba suspended_* nên phải có mặt ở đây: schema
+     * GraphQL vẫn khai suspendedBy, và thiếu component thì PropertyDataFetcher trả null vĩnh viễn --
+     * màn quản trị hiển thị "không rõ ai đình chỉ" cho mọi kỳ, không có lỗi nào nổi lên.
+     */
+    UUID suspendedBy
 ) {
 
     public static SchoolSubscriptionDto toDto(SchoolSubscription domain) {
@@ -35,7 +41,8 @@ public record SchoolSubscriptionDto(
             valueOf(domain.getCancelledAt()),
             valueOf(domain.getCreatedAt()),
             valueOf(domain.getSuspendedAt()),
-            domain.getSuspendedReason()
+            domain.getSuspendedReason(),
+            domain.getSuspendedBy()
         );
     }
 

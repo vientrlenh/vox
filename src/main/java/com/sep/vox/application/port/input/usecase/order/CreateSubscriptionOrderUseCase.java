@@ -66,6 +66,11 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
         // Trường đang bị System Admin cưỡng chế đình chỉ (gian lận...) thì không cho đặt đơn mới cho
         // tới khi được gỡ đình chỉ tường minh: settlement sẽ tạo một subscription ACTIVE mới mà không
         // đụng tới bản ghi SUSPENDED, tức là đi vòng qua UnsuspendSubscriptionUseCase.
+        //
+        // Soi TOÀN BỘ lịch sử là cố ý -- không được lách bằng cách đợi kỳ bị đình chỉ trôi qua. Chế
+        // tài vẫn có điểm dừng: SubscriptionExpiryJob chuyển kỳ SUSPENDED đã qua endDate sang EXPIRED
+        // (xem SpringDataSchoolSubscriptionRepository.expireOverdue), nên cửa này khóa tối đa tới hết
+        // kỳ đã trả tiền chứ không khóa vĩnh viễn.
         var hasSuspended = schoolSubscriptionRepository.findBySchoolId(schoolId).stream()
             .anyMatch(subscription -> subscription.getStatus() == SchoolSubscriptionStatus.SUSPENDED);
         if (hasSuspended) {

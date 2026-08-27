@@ -145,7 +145,7 @@ public class SubscriptionController {
      * tiền -- xem CancelSchoolSubscriptionUseCase. Không nhận id nào: kỳ đang chạy của trường suy ra
      * từ token.
      */
-    @PatchMapping("/subscriptions/cancellation")
+    @PatchMapping("/cancellation")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> cancelSubscription() {
         var data = cancelSchoolSubscriptionUseCase.execute(null);
@@ -157,7 +157,7 @@ public class SubscriptionController {
      * Cưỡng chế cắt quyền dùng NGAY. PATCH vì đây là đổi trạng thái của một gói đã tồn tại, không
      * tạo tài nguyên mới. Không nhận schoolId: gói đã biết nó thuộc trường nào.
      */
-    @PatchMapping("/subscriptions/{id}/suspension")
+    @PatchMapping("/{id}/suspension")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> suspendSubscription(
             @PathVariable(name = "id") UUID id,
@@ -167,7 +167,7 @@ public class SubscriptionController {
         return ResponseEntity.ok(ApiResponse.success("Đình chỉ gói đăng ký thành công", data));
     }
 
-    @DeleteMapping("/subscriptions/{id}/suspension")
+    @DeleteMapping("/{id}/suspension")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> unsuspendSubscription(
             @PathVariable(name = "id") UUID id,

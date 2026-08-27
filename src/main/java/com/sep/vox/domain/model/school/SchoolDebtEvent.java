@@ -10,7 +10,7 @@ import com.sep.vox.domain.model.metering.QuotaType;
  * Sổ audit "nguyên nhân nợ hạn mức AI" -- mỗi dòng là ĐÚNG 1 ví quota (EXAM/PRACTICE) của 1 trường
  * vừa đổi trạng thái (rơi vào nợ / vượt trần cảnh báo / hết nợ), kèm session và số tiền VND đã gây ra
  * transition đó. Khác với notification (chỉ tồn tại tạm qua outbox/Kafka), bảng này là ledger
- * append-only để system admin tra lại lịch sử bất kỳ lúc nào -- mirror FinancialEvent/TokenUsageEvent.
+ * append-only để system admin tra lại lịch sử bất kỳ lúc nào -- mirror SchoolSubscriptionEvent.
  *
  * <p>Mọi cột tiền ở đây là VND, cùng đơn vị với school_balances/school_subscription_quota_records --
  * KHÔNG còn USD. Tệ gốc của nhà cung cấp chỉ còn sống ở ai_usage_records.cost_usd và
@@ -19,6 +19,9 @@ import com.sep.vox.domain.model.metering.QuotaType;
 public class SchoolDebtEvent {
     private UUID id;
     private UUID schoolId;
+    // Kỳ ĐĂNG KÝ đã phát sinh khoản nợ, không phải gói. Tên cũ subscriptionPlanId là sai và sai một
+    // chiều nguy hiểm: cột DB là subscription_id, JpaEntity cũng là subscriptionId, nên chỉ mỗi domain
+    // model gọi khác -- đọc code ở tầng này sẽ tưởng đang cầm id của gói.
     private UUID subscriptionId;
     private SchoolDebtEventType eventType;
     private QuotaType quotaType;

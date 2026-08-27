@@ -5,7 +5,7 @@ public enum SchoolBalanceEntryType {
     TOP_UP,
     /**
      * Trừ phần VƯỢT hạn mức kèm gói. Tiêu dùng còn nằm trong hạn mức đã được ghi ở
-     * school_subscription_quota_records + token_usage_events, KHÔNG lặp lại ở sổ cái này.
+     * school_subscription_quota_records + ai_usage_records, KHÔNG lặp lại ở sổ cái này.
      */
     OVERAGE_CHARGE,
     /** Hoàn tiền (vd trường trả trùng một đơn) -- luôn gắn với Order gốc. */

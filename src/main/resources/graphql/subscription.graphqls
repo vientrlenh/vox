@@ -41,12 +41,6 @@ enum QuotaType {
     PRACTICE
 }
 
-enum SchoolDebtEventType {
-    LOCKED
-    CAP_EXCEEDED
-    CLEARED
-}
-
 type SubscriptionPlanQuota {
     id: ID!
     subscriptionPlanId: ID!
@@ -79,21 +73,32 @@ type SubscriptionPlan {
     updatedBy: ID
     "Gói thay thế khi gói này đã ARCHIVED -- theo dây chuyền này để tìm gói còn bán được"
     replacedByPlanId: ID
-    """
-    Gói đang có nhiều trường dùng nhất TOÀN HỆ THỐNG (không phải nhiều nhất trong trang hiện tại),
-    và không đếm theo số lần thanh toán: gói được thay thế sinh ra id mới nên lịch sử giao dịch nằm
-    lại ở gói cũ đã ARCHIVED. Rỗng ở mọi gói khi chưa trường nào đăng ký.
-    """
-    isMostPopular: Boolean!
     quotas: [SubscriptionPlanQuota!]!
 }
 
 type SubscriptionPlanPage {
-    content: [SubscriptionPlan!]!
+    content: [SubscriptionPlanListItem!]!
     page: Int!
     size: Int!
     totalElements: Int!
     totalPages: Int!
+}
+
+"""
+Một dòng trong danh sách gói: chính gói, kèm nhãn "phổ biến nhất".
+
+Nhãn đó nằm ở ĐÂY chứ không phải trên SubscriptionPlan vì nó không phải thuộc tính của gói -- nó là
+kết quả so gói này với mọi gói khác, chỉ có nghĩa trong ngữ cảnh một danh sách. Hỏi một gói lẻ
+(subscriptionPlan) thì câu hỏi "có phải phổ biến nhất không" không có ngữ cảnh để trả lời.
+"""
+type SubscriptionPlanListItem {
+    subscription: SubscriptionPlan!
+    """
+    Gói đang có nhiều trường dùng nhất TOÀN HỆ THỐNG (không phải nhiều nhất trong trang hiện tại),
+    và không đếm theo số lần thanh toán: gói được thay thế sinh ra id mới nên lịch sử giao dịch nằm
+    lại ở gói cũ đã ARCHIVED. false ở mọi gói khi chưa trường nào đăng ký.
+    """
+    isMostPopular: Boolean!
 }
 
 type SchoolSubscription {
@@ -108,7 +113,8 @@ type SchoolSubscription {
     cancelledAt: String
     createdAt: String
     # 3 cột suspended_* bị xóa trắng khi gỡ đình chỉ nên chỉ phản ánh lần đình chỉ ĐANG hiệu lực,
-    # không phải lịch sử. Nơi lưu lịch sử bền vững hiện chưa có (FinancialEvent đã bị bỏ).
+    # không phải lịch sử. Lịch sử bền vững nằm ở school_subscription_events (V2 mục 12), do
+    # ForceSuspend/UnsuspendSubscriptionUseCase ghi -- không phải FinancialEvent, thứ đã bị bỏ.
     suspendedAt: String
     suspendedReason: String
     suspendedBy: ID
@@ -129,14 +135,16 @@ type SchoolSubscriptionQuotaRecord {
     quotaType: QuotaType!
     "Định mức được cấp cho kỳ này, quy ra VND"
     totalAllocatedAmountVnd: Float!
-    "Đã dùng bao nhiêu VND trong định mức trên"
+    """
+    Đã dùng bao nhiêu VND trong định mức trên. KHÔNG BAO GIỜ vượt totalAllocatedAmountVnd: phần chi
+    vượt hạn mức được ConsumeQuotaService chuyển sang ví tự nạp của trường thành một bút toán
+    OVERAGE_CHARGE, chứ không đẩy con số này lên quá trần.
+    """
     usedAmountVnd: Float!
-    """
-    usedAmountVnd > totalAllocatedAmountVnd -- với EXAM đây là điều kiện khóa cấp trường (không cho
-    publish/sửa bài, không cho vào thi mới cho tới khi hết nợ). Với PRACTICE chỉ mang tính thông tin
-    vì ConsumeQuotaUseCase đã chặn cứng từ trước.
-    """
-    isLocked: Boolean!
+    # KHÔNG còn isLocked ở đây. Nó từng là phép so usedAmountVnd > totalAllocatedAmountVnd, mà điều
+    # kiện đó giờ không thể xảy ra nữa (xem trên). "Trường có đang bị khóa không" là một sự thật cấp
+    # TRƯỜNG -- số dư ví tự nạp âm, xem SchoolSubscriptionDebtGuardService -- chứ không phải thuộc
+    # tính của từng ví hạn mức, nên không có chỗ đúng cho nó trên type này.
 }
 
 """
@@ -175,36 +183,6 @@ type SchoolSubscriptionQuotaUserAllocation {
     usedAmountVnd: Float!
 }
 
-"""
-Sổ audit "nguyên nhân nợ hạn mức AI" -- mỗi dòng là đúng 1 bucket quota của trường vừa đổi trạng
-thái (vượt hạn mức / vượt trần cảnh báo / hết nợ), kèm session và số USD đã gây ra transition đó.
-Xem SchoolDebtEvent (domain model) / SchoolDebtNotificationService.
-"""
-type SchoolDebtEvent {
-    id: ID!
-    schoolId: ID!
-    # CỐ Ý giữ tên subscriptionId: cột này đang chứa id của ĐĂNG KÝ, dù domain model đặt tên trường
-    # là subscriptionPlanId. Model mới là chỗ sai; đừng đổi tên ở đây trước khi model được sửa,
-    # không thì phải đổi hai lần theo hai hướng ngược nhau.
-    subscriptionId: ID!
-    eventType: SchoolDebtEventType!
-    quotaType: QuotaType!
-    triggerExamSessionId: ID
-    triggerAmountUsd: Float
-    totalAllocatedUsd: Float!
-    usedQuantityUsd: Float!
-    overageUsd: Float!
-    occurredAt: String
-}
-
-type SchoolDebtEventPage {
-    content: [SchoolDebtEvent!]!
-    page: Int!
-    size: Int!
-    totalElements: Int!
-    totalPages: Int!
-}
-
 type QuotaPricing {
     estimatedCostPerExamSecondUsd: Float!
     estimatedCostPerPracticeSecondUsd: Float!
@@ -227,7 +205,7 @@ input UpdateSubscriptionPlanInput {
 }
 
 extend type Query {
-    subscriptionPlans(page: Int = 0, size: Int = 20): SubscriptionPlanPage!
+    subscriptionPlans(page: Int = 1, size: Int = 20): SubscriptionPlanPage!
     subscriptionPlan(id: ID!): SubscriptionPlan
     quotaPricing: QuotaPricing!
 
@@ -235,7 +213,7 @@ extend type Query {
         keyword: String,
         subscriptionPlanId: ID,
         status: SchoolSubscriptionStatus,
-        page: Int = 0,
+        page: Int = 1,
         size: Int = 20
     ): SchoolSubscriptionPage!
     schoolSubscription(schoolId: ID!): SchoolSubscription
@@ -256,8 +234,6 @@ extend type Query {
     gia hạn tự chuyển sang gói mới -- trường phải nhìn thấy và đồng ý trước.
     """
     schoolSubscriptionRenewalPreview: SchoolSubscriptionRenewalPreview!
-
-    schoolDebtEvents(schoolId: ID!, page: Int = 0, size: Int = 20): SchoolDebtEventPage!
 }
 
 extend type Mutation {

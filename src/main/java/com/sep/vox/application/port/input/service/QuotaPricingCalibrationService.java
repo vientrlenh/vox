@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.metering.QuotaPricingCalibration;
 import com.sep.vox.domain.model.metering.QuotaPricingSource;
+import com.sep.vox.application.query.repository.SessionCostQueryRepository;
 import com.sep.vox.application.port.output.QuotaPricingCalibrationConfigPort;
 import com.sep.vox.application.port.output.QuotaPricingConfigPort;
 
@@ -47,7 +48,7 @@ public class QuotaPricingCalibrationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QuotaPricingCalibrationService.class);
 
-    private final AiUsageRecordRepository aiUsageRecordRepository;
+    private final SessionCostQueryRepository sessionCostQueryRepository;
     private final ExamItemResponseRepository examItemResponseRepository;
     private final PracticeResponseTurnRepository practiceResponseTurnRepository;
     private final QuotaPricingCalibrationRepository quotaPricingCalibrationRepository;
@@ -55,13 +56,13 @@ public class QuotaPricingCalibrationService {
     private final QuotaPricingConfigPort quotaPricingConfig;
 
     public QuotaPricingCalibrationService(
-            AiUsageRecordRepository aiUsageRecordRepository,
+            SessionCostQueryRepository sessionCostQueryRepository,
             ExamItemResponseRepository examItemResponseRepository,
             PracticeResponseTurnRepository practiceResponseTurnRepository,
             QuotaPricingCalibrationRepository quotaPricingCalibrationRepository,
             QuotaPricingCalibrationConfigPort calibrationConfig,
             QuotaPricingConfigPort quotaPricingConfig) {
-        this.aiUsageRecordRepository = aiUsageRecordRepository;
+        this.sessionCostQueryRepository = sessionCostQueryRepository;
         this.examItemResponseRepository = examItemResponseRepository;
         this.practiceResponseTurnRepository = practiceResponseTurnRepository;
         this.quotaPricingCalibrationRepository = quotaPricingCalibrationRepository;
@@ -97,7 +98,7 @@ public class QuotaPricingCalibrationService {
         var minSampleSessions = calibrationConfig.minSampleSessions();
         var since = Instant.now().minus(windowDays, ChronoUnit.DAYS);
 
-        var costs = aiUsageRecordRepository.sumCostUsdGroupedBySessionSince(since);
+        var costs = sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(since);
         if (costs.size() < minSampleSessions) {
             LOGGER.info(
                 "[quota-pricing-calibration] {} bỏ qua: chỉ có {} session phát sinh usage trong {} ngày gần nhất, "

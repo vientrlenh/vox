@@ -33,7 +33,7 @@ public class ViewSchoolDebtEventsUseCase implements IUseCase<ViewSchoolDebtEvent
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var page = schoolDebtEventQueryRepository.findAllBySchoolId(input.schoolId(), PageRequest.of(input.page(), input.size()));
+        var page = schoolDebtEventQueryRepository.findAllBySchoolId(input.schoolId(), PageRequest.of(input.page() - 1, input.size()));
 
         return new PageResult<>(page.getContent(), input.page(), input.size(), page.getTotalElements(), page.getTotalPages());
     }

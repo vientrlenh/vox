@@ -82,15 +82,26 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
 
         // Nguồn trừ quota là tổng cost_vnd thật từ ai_usage_records (LLM token + STT/TTS/avatar
         // duration), KHÔNG phải số giây câu trả lời. Cộng cột VND đã chốt tỷ giá từng dòng chứ không
-        // quy đổi tổng USD theo tỷ giá hôm nay -- xem AiUsageRecordRepository.sumCostVndByExamSessionId.
+        // quy đổi tổng USD theo tỷ giá hôm nay -- xem AiUsageRecordRepository.
         //
-        // Vẫn lấy thêm tổng USD vì school_balance_entries.cost_usd giữ nguyên tệ gốc để đối soát
-        // ngược với hóa đơn nhà cung cấp (V2 mục 7).
-        var totalCostVnd = aiUsageRecordRepository.sumCostVndByExamSessionId(session.getId());
-        var totalCostUsd = aiUsageRecordRepository.sumCostUsdByExamSessionId(session.getId());
+        // GIÀNH các dòng chưa thu trước, rồi chỉ cộng đúng những dòng mang mốc vừa đóng: một phiên
+        // ĐƯỢC PHÉP chấm lại (UpdateExamSessionStatusUseCase cho GRADED -> GRADING), và lần chấm sau
+        // sinh chi phí thật mới nên phải được thu. Cộng cả phiên như trước thì phần của lần chấm đầu
+        // bị thu tiền lần thứ hai -- 100k + (100k + 40k) cho 140k chi phí thật.
+        //
+        // Chốt chặn "một dòng chỉ thu một lần" nằm ở chính cột charged_at, KHÔNG phải ở một ràng buộc
+        // duy nhất trên school_balance_entries(exam_session_id): ràng buộc đó sẽ chặn nhầm đúng khoản
+        // trừ hợp lệ của lần chấm lại.
+        var now = Instant.now();
+        var claimedRows = aiUsageRecordRepository.markChargedByExamSessionId(session.getId(), now);
+        // Vẫn lấy thêm tổng USD vì school_balance_entries.cost_usd giữ nguyên tệ gốc để đối soát ngược
+        // với hóa đơn nhà cung cấp (V2 mục 7) -- cùng mốc chargedAt để hai cột của một bút toán mô tả
+        // đúng cùng một tập dòng.
+        var totalCostVnd = claimedRows == 0 ? BigDecimal.ZERO : aiUsageRecordRepository
+            .sumCostVndByExamSessionIdAndChargedAt(session.getId(), now);
+        var totalCostUsd = claimedRows == 0 ? BigDecimal.ZERO : aiUsageRecordRepository
+            .sumCostUsdByExamSessionIdAndChargedAt(session.getId(), now);
         if (totalCostVnd.compareTo(BigDecimal.ZERO) > 0) {
-            var now = Instant.now();
-
             // allowDebt=true: chi phí AI thật đã phát sinh, phải ghi nhận đủ dù vượt hạn mức --
             // xem SchoolSubscriptionDebtGuardService cho phần khóa trường khi rơi vào nợ.
             //
@@ -102,7 +113,7 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
             //
             // userId chỉ truyền với bài kiểm tra trên lớp: đó là khoản chi tiêu vào hạn mức CÁ NHÂN
             // mà nhà trường cấp cho chính giáo viên ra đề. Kỳ thi tập trung do nhà trường tổ chức,
-            // không thuộc túi riêng của ai nên để null -- ConsumeQuotaUseCase sẽ bỏ qua bước trừ
+            // không thuộc túi riêng của ai nên để null -- ConsumeQuotaService sẽ bỏ qua bước trừ
             // hạn mức cá nhân.
             var chargedUserId = exam.getKind() == ExamKind.CLASS_TEST ? exam.getCreatedBy() : null;
             checkAndReportLockTransition(subscription.getId(), exam.getSchoolId(), QuotaType.EXAM,

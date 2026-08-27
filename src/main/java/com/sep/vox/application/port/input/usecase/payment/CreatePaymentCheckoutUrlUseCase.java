@@ -134,6 +134,15 @@ public class CreatePaymentCheckoutUrlUseCase
     }
 
     private PaymentCheckoutResponse issueNewCheckout(Order order, PaymentProvider provider, Instant now) {
+        // Không đưa số tiền <= 0 sang cổng. Không cổng nào nhận, nên nếu lọt qua thì trường nhận một
+        // lỗi của nhà cung cấp không đọc được, còn đơn thì nằm PENDING tới lúc hết hạn. Đường sinh ra
+        // đơn 0đ đã được bịt ở SubscriptionUpgradePolicyService.calculateUnusedCredit; chốt chặn này ở
+        // đây để mọi đường TƯƠNG LAI dẫn tới cùng chỗ đều dừng lại với câu nói người đọc hiểu được,
+        // chứ không phải để sửa lại lần nữa cùng một lỗi.
+        if (order.getTotalAmountVnd() == null || order.getTotalAmountVnd().signum() <= 0) {
+            throw new IllegalStateException(
+                "Đơn hàng không có số tiền cần thanh toán, không thể tạo phiên thanh toán. Vui lòng liên hệ hỗ trợ.");
+        }
         var paymentProcessPort = paymentProcessResolver.resolve(provider);
 
         // Mã đơn do adapter sinh và LUÔN MỚI, kể cả khi đây là lần trả lại của cùng một đơn: PayOS từ

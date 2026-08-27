@@ -91,6 +91,16 @@ public interface SpringDataOrderRepository extends JpaRepository<OrderJpaEntity,
     List<OrderJpaEntity> findByStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
         String status, Instant from, Instant to);
 
+    /**
+     * Bản LỌC THEO TRƯỜNG của câu trên, cho màn quản trị của chính trường đó.
+     *
+     * <p>Phải là một câu riêng chứ không dùng lại câu trên rồi lọc ở Java: câu trên KHÔNG có điều kiện
+     * school_id, nên gọi nó từ màn của một trường là đưa doanh thu của MỌI trường vào tổng chi và biểu
+     * đồ 12 tháng của trường đang đăng nhập -- rò rỉ số liệu giữa các trường chứ không chỉ là nạp thừa.
+     */
+    List<OrderJpaEntity> findBySchoolIdAndStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+        UUID schoolId, String status, Instant from, Instant to);
+
     // PESSIMISTIC_WRITE: chặn hai lần chốt thanh toán song song trên cùng một đơn (webhook cổng đua
     // với PendingOrderReconciler). @Version trên entity chỉ phát hiện xung đột SAU khi cả hai đã
     // làm việc thừa; khóa ở đây chặn ngay từ đầu.

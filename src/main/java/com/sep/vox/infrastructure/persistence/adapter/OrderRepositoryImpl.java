@@ -119,4 +119,14 @@ public class OrderRepositoryImpl implements OrderRepository {
             .map(OrderMapper::toDomain)
             .toList();
     }
+
+    @Override
+    public List<Order> findBySchoolIdAndStatusInRange(
+            UUID schoolId, OrderStatus status, Instant from, Instant to) {
+        return springDataOrderRepository
+            .findBySchoolIdAndStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                schoolId, status.name(), from, to).stream()
+            .map(OrderMapper::toDomain)
+            .toList();
+    }
 }

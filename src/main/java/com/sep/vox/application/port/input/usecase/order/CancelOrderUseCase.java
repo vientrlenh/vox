@@ -126,9 +126,21 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
     }
 
     /**
-     * Đọc lại dòng thanh toán rồi mới ghi, thay vì dùng lại bản đã nạp ở trên: giữa lúc đọc và lúc
-     * này ta đã đi gọi ra mạng ngoài hai lần, đủ lâu để callback của cổng chốt xong dòng đó thành
-     * PAID. Ghi đè bằng bản cũ trong tay sẽ xóa mất kết quả ấy.
+     * Đóng dòng thanh toán của đơn đang bị hủy.
+     *
+     * <p>ĐIỀU GIỮ CHO CHỖ NÀY AN TOÀN là khóa đơn ở {@code execute}, KHÔNG phải lần đọc lại dưới đây.
+     * {@code OrderSettlementService.settlePaid} -- đường DUY NHẤT đẩy một lần thử sang PAID -- mở đầu
+     * bằng {@code findByIdForUpdate} trên chính đơn này, nên suốt lúc ta còn giữ khóa thì nó nằm chờ,
+     * không thể chốt xen vào giữa hai lần gọi mạng ở trên.
+     *
+     * <p>Lần đọc lại ở đây KHÔNG tự nó chống được gì: {@code findPendingByOrderId} phía trên đã nạp
+     * đúng dòng này vào persistence context, nên {@code findById} lấy lại bản trong bộ nhớ chứ không
+     * chạm DB -- hai chốt bên dưới vì thế luôn nhìn thấy trạng thái của lần đọc đầu. Giữ lại vì chúng
+     * rẻ và vì chúng nói đúng ý định, nhưng ĐỪNG dựa vào chúng: ai thêm một đường ghi payment_records
+     * mà không đi qua khóa đơn thì phải khóa lại ở đây, không phải trông vào lần đọc này.
+     *
+     * <p>({@code failAttempt} có ghi payment_records mà không giữ khóa đơn, nhưng nó chỉ chuyển sang
+     * trạng thái thất bại -- trùng đúng thứ ta sắp ghi, nên vô hại.)
      */
     private void markAttemptFailed(Order order, UUID attemptId) {
         var current = paymentRecordRepository.findById(attemptId)

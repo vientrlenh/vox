@@ -11,6 +11,12 @@ public record PaymentCallbackResponse(
         UNKNOWN_PAYMENT,
         /** Lần thử này đã được chốt từ trước -- callback lặp, không làm gì thêm. */
         ALREADY_SETTLED,
+        /**
+         * Cổng báo ĐÃ TRẢ cho một lần thử mình đã ghi thất bại: tiền về thật nhưng không còn dòng nào
+         * nhận nó. Tách khỏi ALREADY_SETTLED vì hai ca này ngược hẳn nhau về mức nghiêm trọng --
+         * một bên là callback lặp vô hại, một bên là tiền của trường đang treo lơ lửng.
+         */
+        PAID_AFTER_WRITE_OFF,
         /** Số tiền báo về lệch với lần thử: dừng lại, cần người xem. */
         AMOUNT_MISMATCH,
         /** Trạng thái chưa phải trạng thái cuối (hoặc chưa ánh xạ được) -- chưa chốt gì. */

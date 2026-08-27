@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.dashboard;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.YearMonth;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -121,9 +122,24 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
      * là ý định mua, còn FAILED/CANCELLED/EXPIRED thì không đồng nào về (xem OrderSettlementService).
      */
     private List<Order> fetchPaidOrders(UUID schoolId) {
-        return orderRepository.findBySchoolId(schoolId).stream()
-            .filter(order -> order.getStatus() == OrderStatus.SUCCESS)
-            .toList();
+        var now = Instant.now();
+        // Mốc đầu = 00:00 ngày 1 của tháng CŨ NHẤT mà biểu đồ vẽ, tính theo giờ VN -- giống hệt
+        // ViewSystemAdminDashboardUseCase.
+        //
+        // KHÔNG dùng now.minus(SPENDING_MONTHS, ChronoUnit.MONTHS): Instant chỉ nhận đơn vị tới DAYS
+        // nên câu đó ném UnsupportedTemporalTypeException, tức là màn quản trị của trường 500 ở mọi
+        // lượt gọi. Mà kể cả nếu chạy được thì nó cũng sai: cửa sổ trượt bắt đầu từ giữa tháng sẽ cắt
+        // mất phần đầu của tháng cũ nhất, trong khi buildMonthlySpending gom theo NGUYÊN tháng -- cột
+        // xa nhất của biểu đồ vì thế thiếu tiền so với chính nó.
+        var from = YearMonth.now(ZoneConstant.BUSINESS_ZONE)
+            .minusMonths(SPENDING_MONTHS - 1L)
+            .atDay(1)
+            .atStartOfDay(ZoneConstant.BUSINESS_ZONE)
+            .toInstant();
+        // findBySchoolIdAndStatusInRange chứ KHÔNG phải findByStatusInRange: bản kia không lọc trường
+        // nào cả (nó sinh ra cho màn System Admin), nên dùng ở đây là đưa đơn của mọi trường vào tổng
+        // chi và biểu đồ 12 tháng của đúng một trường đang đăng nhập.
+        return orderRepository.findBySchoolIdAndStatusInRange(schoolId, OrderStatus.SUCCESS, from, now);
     }
 
     /**

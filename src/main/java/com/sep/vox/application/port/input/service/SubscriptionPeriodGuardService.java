@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.service;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -59,14 +58,18 @@ public class SubscriptionPeriodGuardService {
             return;
         }
 
-        // end_date INCLUSIVE (khớp "CURRENT_DATE BETWEEN start_date AND end_date" ở các native
-        // query): cận trên thật sự là hết ngày end_date, nên lấy 00:00 hôm sau làm mốc EXCLUSIVE.
-        var upperBoundExclusive = endDate.plus(1, ChronoUnit.DAYS);
-
-        if (openAt != null && isOutside(openAt, startDate, upperBoundExclusive)) {
+        // end_date là mốc EXCLUSIVE, đúng bằng thời điểm kỳ kết thúc -- khớp "end_date >
+        // CURRENT_TIMESTAMP" ở các native query và "endDate > :at" ở findInForceBySchoolId.
+        //
+        // KHÔNG cộng thêm một ngày nữa. Bản cũ cộng vì end_date từng là LocalDate, tức mốc theo NGÀY
+        // nên cận trên thật sự là hết ngày hôm đó. V2 đổi cột sang timestamptz và model sang Instant,
+        // nên end_date giờ đã là chính xác lúc kỳ hết hạn; cộng thêm 24 giờ là mở cửa cho lịch thi
+        // nằm NGOÀI hạn gói -- bài xếp lịch trót lọt rồi chết lúc chạy thật ở
+        // ClassTestTokenQuotaGuardService, đúng cái lỗi muộn mà guard này sinh ra để chặn.
+        if (openAt != null && isOutside(openAt, startDate, endDate)) {
             throw new IllegalStateException(outsidePeriodMessage("Thời gian mở bài", subscription));
         }
-        if (closeAt != null && isOutside(closeAt, startDate, upperBoundExclusive)) {
+        if (closeAt != null && isOutside(closeAt, startDate, endDate)) {
             throw new IllegalStateException(outsidePeriodMessage("Thời gian đóng bài", subscription));
         }
     }

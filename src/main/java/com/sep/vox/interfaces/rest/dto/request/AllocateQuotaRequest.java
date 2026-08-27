@@ -4,7 +4,6 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
 
 
@@ -15,7 +14,8 @@ public record AllocateQuotaRequest(
     @Pattern(regexp = "^(AUTO|MANUAL)$", message = "Cách phân bổ chỉ chấp nhận giá trị AUTO/MANUAL")
     String mode,
 
-    @NotEmpty(message = "Danh sách phân bổ không được để trống")
+    // Bỏ @NotEmpty, do mode auto không cần list này
+    // Vẫn giữ @Valid, dùng cho validate các trường trong record nếu có xuất hiện 
     @Valid
     List<AllocateUserQuotaAmountRequest> allocations
 ) {

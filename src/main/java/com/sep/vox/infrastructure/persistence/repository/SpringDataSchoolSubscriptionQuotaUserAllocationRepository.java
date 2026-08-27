@@ -26,7 +26,14 @@ public interface SpringDataSchoolSubscriptionQuotaUserAllocationRepository exten
 
     // clearAutomatically=true -- cùng lý do với SpringDataSchoolSubscriptionQuotaRecordRepository.addUsage:
     // tránh Hibernate trả về entity cache cũ nếu có chỗ nào sau này đọc lại trong cùng transaction.
-    @Modifying(clearAutomatically = true)
+    //
+    // flushAutomatically=true BẮT BUỘC đi kèm, không phải cho gọn đôi: ConsumeQuotaService gọi
+    // consumeUserAllocation SAU chargeOverage, mà chargeOverage vừa merge SchoolBalance đã bị trừ và
+    // persist bút toán OVERAGE_CHARGE -- cả hai còn nằm chờ trong persistence context. Hibernate chỉ
+    // tự flush cho những query space mà câu UPDATE này chạm tới (bảng allocation), KHÔNG gồm
+    // school_balances / school_balance_entries, nên em.clear() sau đó vứt thẳng khoản ghi nợ: chi phí
+    // AI biến mất khỏi ví trường mà không lỗi nào nổi lên, và bất biến SUM(entries) = balance_vnd vỡ.
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE SchoolSubscriptionQuotaUserAllocationJpaEntity a SET a.usedAmountVnd = a.usedAmountVnd + :amount WHERE a.id = :id")
     void addUsage(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 }

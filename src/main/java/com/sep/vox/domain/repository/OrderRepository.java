@@ -52,4 +52,12 @@ public interface OrderRepository {
      * tháng, theo loại đơn) chứ không chỉ cần một tổng.
      */
     List<Order> findByStatusInRange(OrderStatus status, Instant from, Instant to);
+
+    /**
+     * Như {@link #findByStatusInRange} nhưng CHỈ của một trường -- dùng cho màn quản trị cấp trường.
+     *
+     * <p>Có mặt riêng vì bản không lọc trường ở trên đọc đơn của toàn hệ thống: gọi nhầm bản đó từ
+     * màn của một trường thì tổng chi và biểu đồ chi tiêu của họ thành số liệu gộp của mọi trường.
+     */
+    List<Order> findBySchoolIdAndStatusInRange(UUID schoolId, OrderStatus status, Instant from, Instant to);
 }

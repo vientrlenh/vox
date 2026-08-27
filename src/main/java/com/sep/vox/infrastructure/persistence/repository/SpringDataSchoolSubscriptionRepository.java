@@ -121,17 +121,23 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
     // query không được Hibernate soi lúc khởi động nên sai tên ở đây chỉ nổ vào đúng request đầu tiên
     // chạm tới -- mà findActiveSubscriptionIdForUser thì chạy ở MỌI lượt nói luyện tập.
     //
-    // Phần rename CỘT của 2 bảng quota hiện VẪN CÒN THIẾU trong V2 (V1 tạo ra subscription_id /
-    // total_allocated / used_quantity / allocated_quantity, V2 mới chỉ đổi tên bảng). Ba query này
-    // cùng với các entity sẽ chạy được khi V2 bổ sung nốt phần đó -- cố tình viết theo tên đích thay
-    // vì tên cũ để chỉ còn ĐÚNG MỘT chỗ phải sửa, thay vì hai chỗ đang nói hai thứ khác nhau.
+    // Khoảng hiệu lực so bằng CURRENT_TIMESTAMP, KHÔNG phải CURRENT_DATE. V2 (mục 19) đã đổi
+    // start_date/end_date sang timestamptz, mà Postgres nâng CURRENT_DATE thành nửa đêm ĐẦU ngày --
+    // nên "CURRENT_DATE BETWEEN start AND end" trả false suốt phần còn lại của ngày kích hoạt: trường
+    // vừa trả tiền lúc 15h thì tới nửa đêm mới luyện nói được. Đầu kia thì ngược lại, kỳ đã hết hạn
+    // lúc 15h vẫn được tính sống hết ngày hôm đó.
+    //
+    // Nửa mở (start <= now < end) để khớp ĐÚNG findInForceBySchoolId ở trên. Hai vế này là hai cửa
+    // song song cho cùng một câu hỏi "kỳ nào đang hiệu lực" -- đường thi hỏi bằng JPQL, đường luyện
+    // tập hỏi bằng native query -- nên chúng lệch nhau là hệ thống tự mâu thuẫn với chính mình.
     @Query(value = """
         SELECT subscription.id
         FROM school_users school_user
         JOIN school_subscriptions subscription
           ON subscription.school_id = school_user.school_id
          AND subscription.status = 'ACTIVE'
-         AND CURRENT_DATE BETWEEN subscription.start_date AND subscription.end_date
+         AND subscription.start_date <= CURRENT_TIMESTAMP
+         AND subscription.end_date > CURRENT_TIMESTAMP
         WHERE school_user.user_id = :userId
           AND (school_user.end_date IS NULL OR school_user.end_date >= CURRENT_TIMESTAMP)
         ORDER BY subscription.end_date DESC
@@ -166,7 +172,8 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
         JOIN school_subscriptions subscription
           ON subscription.school_id = school_user.school_id
          AND subscription.status = 'ACTIVE'
-         AND CURRENT_DATE BETWEEN subscription.start_date AND subscription.end_date
+         AND subscription.start_date <= CURRENT_TIMESTAMP
+         AND subscription.end_date > CURRENT_TIMESTAMP
         JOIN school_subscription_quota_records quota
           ON quota.school_subscription_id = subscription.id
          AND quota.quota_type = 'PRACTICE'
@@ -193,7 +200,8 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
         JOIN school_subscriptions subscription
           ON subscription.school_id = school_user.school_id
          AND subscription.status = 'ACTIVE'
-         AND CURRENT_DATE BETWEEN subscription.start_date AND subscription.end_date
+         AND subscription.start_date <= CURRENT_TIMESTAMP
+         AND subscription.end_date > CURRENT_TIMESTAMP
         JOIN subscription_plans plan
           ON plan.id = subscription.subscription_plan_id
         WHERE school_user.user_id = :userId

@@ -466,11 +466,6 @@ private final ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase;
 
 
     //=======================SCHOOL USER=======================
-    @QueryMapping(name = "schoolUsers")
-    public PageResult<SchoolUserDto> schoolUsers(@Argument(name = "schoolId") UUID schoolId, @Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
-        return null;
-    }
-
     //========================SCHOOL GRADE =======================
     @MutationMapping(name = "updateSchoolGrade")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")

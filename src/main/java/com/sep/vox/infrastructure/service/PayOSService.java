@@ -33,6 +33,7 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 import vn.payos.PayOS;
+import vn.payos.exception.NotFoundException;
 import vn.payos.exception.WebhookException;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.PaymentLinkStatus;
@@ -99,8 +100,18 @@ public class PayOSService implements PaymentProcessPort {
 
     @Override
     public PaymentLinkStatusResult getPaymentLinkStatus(String providerOrderRef) {
-        var paymentLink = payOSClient.paymentRequests().get(Long.parseLong(providerOrderRef));
-        return new PaymentLinkStatusResult(toRemoteStatus(paymentLink.getStatus()));
+        try {
+            var paymentLink = payOSClient.paymentRequests().get(Long.parseLong(providerOrderRef));
+            return new PaymentLinkStatusResult(toRemoteStatus(paymentLink.getStatus()));
+        } catch (NotFoundException e) {
+            // CHỈ bắt đúng 404. Mọi lỗi khác (mất mạng, 5xx, hết hạn mức gọi) vẫn ném ra ngoài: chỗ
+            // gọi phải phân biệt được "cổng nói không có phiên nào" với "không hỏi được cổng" -- quy
+            // cái sau về NOT_FOUND là tự cho phép mình đánh hỏng một lần thử có thể đang sống và sắp
+            // ra tiền.
+            LOGGER.warn("PayOS không có phiên thanh toán nào mang mã {} -- coi như lần thử đã chết",
+                providerOrderRef, e);
+            return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND);
+        }
     }
 
     @Override

@@ -22,6 +22,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -188,10 +189,19 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
         requireConfigured();
         // Rate limit của SePay chỉ vài request/giây (429 kèm header X-SePay-UserApi-Retry-After),
         // nên phía gọi — PendingOrderReconciler — phải tự giãn nhịp, xem throttle ở đó.
-        var response = restClient.get()
-            .uri("/order/detail/{orderInvoiceNumber}", providerOrderRef)
-            .retrieve()
-            .body(Map.class);
+        Map<?, ?> response;
+        try {
+            response = restClient.get()
+                .uri("/order/detail/{orderInvoiceNumber}", providerOrderRef)
+                .retrieve()
+                .body(Map.class);
+        } catch (HttpClientErrorException.NotFound e) {
+            // CHỈ bắt đúng 404. Các lỗi khác -- 429 quá nhịp, 5xx, mất mạng -- vẫn ném ra ngoài: chỗ
+            // gọi phải phân biệt "SePay nói không có đơn nào mang mã này" với "không hỏi được SePay",
+            // vì cái sau mà quy về NOT_FOUND là tự cho phép đánh hỏng một lần thử đang sống.
+            LOGGER.warn("SePay không có đơn nào mang mã {} -- coi như lần thử đã chết", providerOrderRef, e);
+            return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND);
+        }
 
         var orderStatus = extractOrderStatus(response);
         var status = toRemoteStatus(orderStatus);

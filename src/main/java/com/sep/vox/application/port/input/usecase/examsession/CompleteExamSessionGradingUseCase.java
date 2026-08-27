@@ -145,9 +145,14 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
             return;
         }
 
+        // Số nợ = phần số dư đã âm, KHÔNG phải result.quota().usedAmountVnd(): ví hạn mức luôn bị kẹp
+        // tại totalAllocated nên nó không mang thông tin nợ nào cả. balanceAfterVnd là con số vừa được
+        // tính bên trong transaction đang giữ khóa dòng số dư, tức đúng cái vừa thực sự xảy ra.
+        var debtVnd = result.balanceAfterVnd().negate().max(BigDecimal.ZERO);
+
         schoolDebtNotificationService.publishSchoolLockedDueToDebt(
             subscriptionId, schoolId, quotaType, examSessionId, totalCostVnd,
-            result.quota().totalAllocatedAmountVnd(), result.quota().usedAmountVnd(), now
+            result.quota().totalAllocatedAmountVnd(), debtVnd, now
         );
     }
 

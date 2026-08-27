@@ -23,9 +23,14 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
  * Khung mở/đóng bài phải nằm trong phiên thuê bao của trường. Điểm dễ sai nhất là biên trên:
- * {@code school_subscription.end_date} là kiểu {@code date} và INCLUSIVE (các native query dùng
- * {@code CURRENT_DATE BETWEEN start_date AND end_date}), nên cận trên thật sự là HẾT ngày end_date
- * chứ không phải 00:00 của ngày đó -- so sai một nhịp là chặn oan toàn bộ ngày cuối của gói.
+ * {@code school_subscriptions.end_date} là {@code timestamptz} và EXCLUSIVE -- nó là ĐÚNG THỜI ĐIỂM
+ * kỳ kết thúc, không phải "ngày cuối còn dùng được".
+ *
+ * <p>Trước V2 cột này là {@code date} và được soi bằng {@code CURRENT_DATE BETWEEN start_date AND
+ * end_date}, tức INCLUSIVE theo NGÀY, nên guard phải cộng thêm một ngày để lấy cận trên. Cộng thêm
+ * đó giờ là sai: nó cho lịch thi tràn ra ngoài hạn gói đúng 24 tiếng, và bài chỉ chết lúc chạy thật.
+ * Các native query trong {@code SpringDataSchoolSubscriptionRepository} cũng đã đổi sang
+ * {@code end_date > CURRENT_TIMESTAMP} cho khớp.
  */
 class SubscriptionPeriodGuardServiceTests {
 
@@ -38,7 +43,12 @@ class SubscriptionPeriodGuardServiceTests {
     void setUp() {
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         guard = new SubscriptionPeriodGuardService(schoolSubscriptionRepository);
-        givenSubscription(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31));
+        // end_date là mốc KẾT THÚC THẬT và EXCLUSIVE, không phải "ngày cuối còn dùng được": gói một
+        // năm mua lúc 01/01/2026 00:00 có endDate = 01/01/2027 00:00, vì SubscriptionPlan.endDateFrom
+        // cộng thẳng chu kỳ vào mốc bắt đầu và GIỮ NGUYÊN giờ. Fixture cũ đặt endDate = 31/12 00:00,
+        // tức là mô phỏng thời LocalDate khi cột này còn là mốc theo NGÀY -- hình dạng đó không còn
+        // sinh ra được từ luồng mua thật nữa.
+        givenSubscription(LocalDate.of(2026, 1, 1), LocalDate.of(2027, 1, 1));
     }
 
     @Test
@@ -56,9 +66,9 @@ class SubscriptionPeriodGuardServiceTests {
             .doesNotThrowAnyException();
     }
 
-    /** Biên trên INCLUSIVE: cả ngày end_date vẫn nằm trong hạn gói. */
+    /** Biên trên EXCLUSIVE: sát ngay trước mốc kết thúc vẫn phải qua. */
     @Test
-    void should_pass_when_close_at_is_last_moment_of_end_date() {
+    void should_pass_when_close_at_is_last_moment_before_end() {
         assertThatCode(() -> guard.requireWithinSubscriptionPeriod(
             schoolId, at("2026-12-31T07:00"), at("2026-12-31T23:59")))
             .doesNotThrowAnyException();
@@ -71,7 +81,7 @@ class SubscriptionPeriodGuardServiceTests {
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("Thời gian mở bài")
             .hasMessageContaining("01/01/2026")
-            .hasMessageContaining("31/12/2026");
+            .hasMessageContaining("01/01/2027");
     }
 
     @Test
@@ -80,12 +90,12 @@ class SubscriptionPeriodGuardServiceTests {
             schoolId, at("2026-06-01T07:00"), at("2027-01-05T09:00")))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("Thời gian đóng bài")
-            .hasMessageContaining("31/12/2026");
+            .hasMessageContaining("01/01/2027");
     }
 
-    /** Sang ngày kế tiếp end_date là ra ngoài hạn, dù chỉ hơn một phút. */
+    /** Đúng mốc kết thúc đã là ra ngoài hạn -- biên trên EXCLUSIVE. */
     @Test
-    void should_reject_when_close_at_is_first_moment_after_end_date() {
+    void should_reject_when_close_at_is_exactly_end_instant() {
         assertThatThrownBy(() -> guard.requireWithinSubscriptionPeriod(
             schoolId, at("2026-12-31T07:00"), at("2027-01-01T00:00")))
             .isInstanceOf(IllegalStateException.class)

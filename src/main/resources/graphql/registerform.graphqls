@@ -33,6 +33,6 @@ type RegisterFormDocument {
 }
 
 extend type Query {
-    registerForms(page: Int = 0, size: Int = 20): RegisterFormPage!
+    registerForms(page: Int! = 0, size: Int! = 20): RegisterFormPage!
     registerForm(id: ID!): RegisterForm
 }

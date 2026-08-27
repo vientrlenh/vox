@@ -85,11 +85,26 @@ public class Invoice {
      *
      * <p>Phần đuôi lấy từ UUID ngẫu nhiên chứ không phải bộ đếm tăng dần: bộ đếm cần một dòng khóa
      * chung cho cả hệ thống, mà đây là đường chạy trong transaction của webhook -- khóa ở đó biến
-     * mọi callback thành xếp hàng sau nhau. Trùng số vẫn bị chặn bởi ràng buộc duy nhất trên cột.
+     * mọi callback thành xếp hàng sau nhau.
+     *
+     * <p>ĐỦ DÀI để không bao giờ phải dựa vào ràng buộc duy nhất. Ràng buộc đó vẫn còn và vẫn chặn,
+     * nhưng nó nổ BÊN TRONG transaction của {@code OrderSettlementService.settlePaid} -- kéo theo cả
+     * lần thử đã PAID, trạng thái SUCCESS của đơn và phần giao hàng (cộng ví hoặc kích hoạt gói) cùng
+     * rollback, cho một đơn mà tiền đã về thật. Không có vòng thử lại nào ở đây, nên trùng số nghĩa
+     * là chờ PendingOrderReconciler quay lại gieo xúc xắc hộ.
+     *
+     * <p>Vì thế lấy 48 bit (12 ký tự hex) thay vì 8 ký tự như bản đầu. Theo nghịch lý ngày sinh, 8 ký
+     * tự (~4,3 tỷ giá trị) đã có ~1% khả năng trùng ở mức 10.000 hóa đơn một năm và 50% ở khoảng
+     * 77.000 -- hoàn toàn nằm trong tầm với. 48 bit (~2,8 x 10^14) đẩy mốc 50% đó lên khoảng 20 triệu
+     * hóa đơn mỗi năm, tức là ca rollback trên thực tế không còn xảy ra.
+     *
+     * <p>Lấy từ {@code getLeastSignificantBits}: 2 bit variant của UUID v4 nằm ở đỉnh nửa thấp, còn 4
+     * bit version nằm trong nửa cao -- mặt nạ 48 bit dưới đây vì thế giữ được 48 bit NGẪU NHIÊN THẬT,
+     * trong khi cắt từ nửa cao sẽ dính 4 bit cố định.
      */
     public static Invoice issueFor(UUID orderId, UUID paymentId, Instant issuedAt) {
         var year = issuedAt.atZone(ZoneConstant.BUSINESS_ZONE).getYear();
-        var suffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        var suffix = "%012X".formatted(UUID.randomUUID().getLeastSignificantBits() & 0xFFFF_FFFF_FFFFL);
         return new Invoice(orderId, paymentId, "INV-" + year + "-" + suffix, issuedAt);
     }
 }

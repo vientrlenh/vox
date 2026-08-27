@@ -216,8 +216,8 @@ extend type Query {
         schoolId: ID,
         schoolGradeId: ID,
         keyword: String,
-        page: Int = 0,
-        size: Int = 20
+        page: Int! = 0,
+        size: Int! = 20
     ): QuestionBankPage!
     questionBank(id: ID!): QuestionBank
 
@@ -225,8 +225,8 @@ extend type Query {
         questionBankId: ID,
         status: QuestionTopicStatus,
         keyword: String,
-        page: Int = 0,
-        size: Int = 20
+        page: Int! = 0,
+        size: Int! = 20
     ): QuestionTopicPage!
     questionTopic(id: ID!): QuestionTopic
 
@@ -239,8 +239,8 @@ extend type Query {
         sharing: QuestionSharing,
         scope: QuestionScope = ALL,
         keyword: String,
-        page: Int = 0,
-        size: Int = 20
+        page: Int! = 0,
+        size: Int! = 20
     ): QuestionPage!
     questionsForExamPaper(
         questionBankId: ID,
@@ -251,8 +251,8 @@ extend type Query {
         sharing: QuestionSharing,
         scope: QuestionScope = ALL,
         keyword: String,
-        page: Int = 0,
-        size: Int = 20
+        page: Int! = 0,
+        size: Int! = 20
     ): QuestionPage!
     question(id: ID!): Question
 

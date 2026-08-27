@@ -40,7 +40,11 @@ public class SchoolBalanceEntryRepositoryImpl implements SchoolBalanceEntryRepos
     @Override
     public PageResult<SchoolBalanceEntry> findBySchoolId(UUID schoolId, int page, int size) {
         var result = springDataSchoolBalanceEntryRepository
-            .findBySchoolIdOrderByOccurredAtDesc(schoolId, PageRequest.of(page, size));
+            // page vào theo lối 1-BASED như mọi repository khác trong dự án, PageRequest đếm từ 0 --
+            // xem OrderRepositoryImpl.findBySchoolId. Thiếu phép trừ này thì người gọi theo đúng quy
+            // ước chung sẽ nhảy mất trang mới nhất của sao kê, còn page = 0 thì đã bị các controller
+            // chặn từ ngoài (validatePaging đòi page >= 1) nên trang đầu không cách nào lấy được.
+            .findBySchoolIdOrderByOccurredAtDesc(schoolId, PageRequest.of(page - 1, size));
         return new PageResult<>(
             result.getContent().stream().map(SchoolBalanceEntryMapper::toDomain).toList(),
             page,

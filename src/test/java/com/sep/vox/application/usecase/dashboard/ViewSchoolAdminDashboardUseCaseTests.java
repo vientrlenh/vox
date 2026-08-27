@@ -4,7 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -67,7 +70,8 @@ class ViewSchoolAdminDashboardUseCaseTests {
         when(schoolSubscriptionRepository.findActiveBySchoolId(SCHOOL_ID)).thenReturn(Optional.empty());
         when(subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(any(), any()))
             .thenReturn(Optional.empty());
-        when(orderRepository.findBySchoolId(SCHOOL_ID)).thenReturn(List.of());
+        when(orderRepository.findBySchoolIdAndStatusInRange(
+            eq(SCHOOL_ID), eq(OrderStatus.SUCCESS), any(), any())).thenReturn(List.of());
 
         useCase = new ViewSchoolAdminDashboardUseCase(
             userContextPort, examRepository, examResultAppealRepository,
@@ -80,7 +84,8 @@ class ViewSchoolAdminDashboardUseCaseTests {
         var now = Instant.now();
         var fiveMonthsAgo = now.minus(150, ChronoUnit.DAYS);
 
-        when(orderRepository.findBySchoolId(SCHOOL_ID)).thenReturn(List.of(
+        when(orderRepository.findBySchoolIdAndStatusInRange(
+            eq(SCHOOL_ID), eq(OrderStatus.SUCCESS), any(), any())).thenReturn(List.of(
             order(OrderType.SUBSCRIPTION_REQUEST, OrderStatus.SUCCESS, new BigDecimal("500000"), now),
             order(OrderType.TOPUP, OrderStatus.SUCCESS, new BigDecimal("200000"), fiveMonthsAgo)));
 
@@ -100,7 +105,8 @@ class ViewSchoolAdminDashboardUseCaseTests {
     void should_split_top_ups_from_subscription_spending() {
         var now = Instant.now();
 
-        when(orderRepository.findBySchoolId(SCHOOL_ID)).thenReturn(List.of(
+        when(orderRepository.findBySchoolIdAndStatusInRange(
+            eq(SCHOOL_ID), eq(OrderStatus.SUCCESS), any(), any())).thenReturn(List.of(
             order(OrderType.SUBSCRIPTION_REQUEST, OrderStatus.SUCCESS, new BigDecimal("500000"), now),
             order(OrderType.TOPUP, OrderStatus.SUCCESS, new BigDecimal("300000"), now)));
 
@@ -112,20 +118,24 @@ class ViewSchoolAdminDashboardUseCaseTests {
             .isEqualByComparingTo(bucket.subscriptionAmount().add(bucket.tokenTopUpAmount()));
     }
 
-    /** Đơn chưa thu được tiền không phải là chi tiêu -- chỉ SUCCESS mới được tính. */
+    /**
+     * Đơn chưa thu được tiền không phải là chi tiêu -- nhưng phép lọc đó giờ nằm trong CÂU TRUY VẤN
+     * chứ không còn lọc lại ở Java. Bản cũ của test này giả lập repository trả về đơn PENDING/FAILED
+     * rồi đòi use case bỏ qua chúng; với truy vấn đã lọc sẵn theo status thì tình huống đó không tồn
+     * tại, nên thứ đáng chốt là use case HỎI repository đúng cái gì.
+     *
+     * <p>Vế schoolId không thừa: {@code findByStatusInRange} (bản KHÔNG lọc trường, dành cho màn
+     * System Admin) vẫn còn đó, và gọi nhầm nó ở đây là đưa doanh thu của mọi trường vào tổng chi và
+     * biểu đồ của đúng một trường -- không test nào khác trong lớp này bắt được, vì mock nào cũng trả
+     * về đúng thứ mình dựng sẵn.
+     */
     @Test
-    void should_ignore_orders_that_never_completed() {
-        var now = Instant.now();
+    void should_only_ask_for_this_schools_successful_orders() {
+        useCase.execute(null);
 
-        when(orderRepository.findBySchoolId(SCHOOL_ID)).thenReturn(List.of(
-            order(OrderType.SUBSCRIPTION_REQUEST, OrderStatus.PENDING, new BigDecimal("500000"), now),
-            order(OrderType.TOPUP, OrderStatus.FAILED, new BigDecimal("300000"), now)));
-
-        var result = useCase.execute(null);
-
-        assertThat(result.revenue()).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat(result.monthlySpending())
-            .allSatisfy(m -> assertThat(m.amount()).isEqualByComparingTo(BigDecimal.ZERO));
+        verify(orderRepository).findBySchoolIdAndStatusInRange(
+            eq(SCHOOL_ID), eq(OrderStatus.SUCCESS), any(), any());
+        verify(orderRepository, never()).findByStatusInRange(any(), any(), any());
     }
 
     private static String month(Instant at) {

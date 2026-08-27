@@ -22,7 +22,12 @@ public interface SpringDataSchoolSubscriptionQuotaRecordRepository extends JpaRe
     // còn lại. Thiếu cờ, cả hai lần đọc đó trúng entity CACHE từ lần load đầu method: nhánh lọt qua
     // trả về used CŨ (fundsExhausted vì thế trượt đúng lượt tiêu vừa vặn hết hạn mức), còn nhánh hỏng
     // thì lần đọc lại thành vô nghĩa vì không bao giờ thấy được gì mới.
-    @Modifying(clearAutomatically = true)
+    //
+    // flushAutomatically=true đi kèm theo đúng quy tắc chung của repo này: hễ có clearAutomatically
+    // thì phải có flush, vì em.clear() vứt mọi thay đổi CHƯA đẩy xuống DB chứ không riêng của bảng
+    // này. Xem SpringDataSchoolSubscriptionQuotaUserAllocationRepository.addUsage để biết ca đã suýt
+    // mất tiền vì thiếu đúng cặp cờ này.
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         UPDATE SchoolSubscriptionQuotaRecordJpaEntity q
         SET q.usedAmountVnd = q.usedAmountVnd + :amount
@@ -34,11 +39,13 @@ public interface SpringDataSchoolSubscriptionQuotaRecordRepository extends JpaRe
     // transaction để so sánh trạng thái khóa/nợ (SchoolLockedDueToDebt/SchoolDebtCapExceeded/
     // SchoolDebtCleared) -- thiếu cờ này, Hibernate trả về entity CACHE cũ từ lần load trước thay vì
     // đọc lại DB sau bulk update, khiến so sánh trước/sau luôn sai (dù DB đã đúng).
-    @Modifying(clearAutomatically = true)
+    //
+    // flushAutomatically=true: cùng quy tắc cặp cờ như tryConsume ở trên.
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE SchoolSubscriptionQuotaRecordJpaEntity q SET q.totalAllocatedAmountVnd = q.totalAllocatedAmountVnd + :amount WHERE q.id = :id")
     void addAllocation(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE SchoolSubscriptionQuotaRecordJpaEntity q SET q.usedAmountVnd = q.usedAmountVnd + :amount WHERE q.id = :id")
     void addUsage(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 }

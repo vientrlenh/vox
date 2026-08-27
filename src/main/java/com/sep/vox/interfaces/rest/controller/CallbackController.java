@@ -66,6 +66,10 @@ public class CallbackController {
         return switch (outcome) {
             case SETTLED -> "OK";
             case ALREADY_SETTLED -> "Lần thanh toán đã được chốt trước đó";
+            // Vẫn là 200 như mọi nhánh đã xác thực khác: gọi lại cũng ra đúng kết quả này, và bắt cổng
+            // retry một ca cần người xử lý tay chỉ tạo thêm nhiễu. Cảnh báo nằm ở log ERROR của
+            // ProcessPaymentCallbackUseCase, không phải ở mã HTTP.
+            case PAID_AFTER_WRITE_OFF -> "Đã ghi nhận báo có cho lần thanh toán đã đóng, cần đối soát";
             case UNKNOWN_PAYMENT -> "Không tìm thấy lần thanh toán tương ứng";
             case AMOUNT_MISMATCH -> "Số tiền không khớp lần thanh toán";
             case NOT_FINAL -> "Giao dịch chưa ở trạng thái cuối";

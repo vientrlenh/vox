@@ -69,6 +69,25 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
         // 200. Thoát sớm ở đây thay vì để settlePaid tự chặn, để phân biệt được "vừa chốt xong" và
         // "chốt từ lần gọi trước" trong log đối soát.
         if (payment.isSettled()) {
+            // "Đã chốt" KHÔNG đồng nghĩa "vô hại". isSettled() chỉ là status != PENDING, nên một lần
+            // thử đã bị ghi FAILED cũng rơi vào đây -- và cổng báo PAID cho đúng lần thử đó nghĩa là
+            // TIỀN VỀ THẬT cho một lần thử mình đã xóa sổ.
+            //
+            // Đường vào phổ biến nhất là webhook tới KHÔNG ĐÚNG THỨ TỰ: cổng bắn EXPIRED trước, mình
+            // ghi FAILED, rồi PAID mới tới. CallbackController trả 200 cho mọi nhánh đã xác thực nên
+            // cổng sẽ KHÔNG gửi lại -- dòng log này là tín hiệu duy nhất còn lại.
+            //
+            // Cùng hạng với nhánh "TIỀN VỀ CHO ĐƠN ĐÃ ĐÓNG" của OrderSettlementService, và cũng cùng
+            // lý do: hệ thống chưa có luồng hoàn tiền nào, nên phải kêu to để có người đối soát tay.
+            if (verification.status() == PaymentLinkRemoteStatus.PAID
+                    && payment.getStatus() != PaymentStatus.PAID) {
+                LOGGER.error(
+                    "TIỀN VỀ CHO LẦN THỬ ĐÃ XÓA SỔ -- cần đối soát thủ công: provider={} orderRef={} paymentId={} orderId={} trạngTháiĐangLưu={} amountVnd={}",
+                    input.provider(), verification.providerOrderRef(), payment.getId(),
+                    payment.getOrderId(), payment.getStatus(), payment.getAmountVnd());
+                return PaymentCallbackResponse.toResponse(CallbackOutcome.PAID_AFTER_WRITE_OFF);
+            }
+
             LOGGER.info("Callback {} lặp cho orderRef={} -- lần thử đã ở trạng thái {}",
                 input.provider(), verification.providerOrderRef(), payment.getStatus());
             return PaymentCallbackResponse.toResponse(CallbackOutcome.ALREADY_SETTLED);

@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -18,8 +17,6 @@ import com.sep.vox.application.response.input.exam.StudentExamPaperQuestionRespo
 import com.sep.vox.application.response.input.exam.StudentExamPaperResponse;
 import com.sep.vox.application.response.input.exam.StudentQuestionResponse;
 import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
-import com.sep.vox.domain.model.exam.ExamPaperItem;
-import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
@@ -180,13 +177,13 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
      */
     private int estimateDurationSeconds(UUID paperId) {
         var questions = examPaperItemRepository.findByPaperId(paperId).stream()
-            .map(ExamPaperItem::getQuestionId)
+            .map(item -> item.getQuestionId())
             .filter(Objects::nonNull)
             .map(questionRepository::findById)
-            .flatMap(Optional::stream)
+            .flatMap(o -> o.stream())
             .toList();
         var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
-            .findByQuestionIdIn(questions.stream().map(Question::getId).distinct().toList()));
+            .findByQuestionIdIn(questions.stream().map(q -> q.getId()).distinct().toList()));
         return PaperTimeCalculator.breakdownOf(questions, assetByQuestionId).totalSeconds();
     }
 

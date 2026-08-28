@@ -58,7 +58,7 @@ public class RecalculateBlueprintVersionTimeLimitService {
         // (AttachExamBlueprint, ChangeClassTestBlueprint, Create/UpdateExamBlueprintVersion,
         // CreateExamPaper), tức nó là thước đo ĐỘ DÀI bài thi -- phải đo cả phần media.
         var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
-            .findByQuestionIdIn(fixedQuestions.stream().map(Question::getId).distinct().toList()));
+            .findByQuestionIdIn(fixedQuestions.stream().map(q -> q.getId()).distinct().toList()));
         var totalSeconds = PaperTimeCalculator.breakdownOf(fixedQuestions, assetByQuestionId).totalSeconds();
 
         if (version.getTotalTimeLimitSeconds() == null || version.getTotalTimeLimitSeconds() != totalSeconds) {

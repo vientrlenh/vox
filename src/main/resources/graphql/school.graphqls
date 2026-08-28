@@ -277,7 +277,6 @@ type SchoolDebtEventPage {
 
 extend type Query {
     schoolDebtEvents(schoolId: ID!, page: Int = 1, size: Int = 20): SchoolDebtEventPage!
-
     schoolRoom(id: ID!): SchoolRoom
     schoolRooms(schoolId: ID!, page: Int, size: Int): SchoolRoomPageResult
     schools(page: Int = 1, size: Int = 20, search: String, isActive: Boolean): SchoolPage!
@@ -299,6 +298,8 @@ extend type Query {
     schoolDirectoryCursorPage(cursor: ID, limit: Int! = 10): SchoolDirectoryCursorPage
     schoolDirectoryPage(page: Int! = 1, size: Int! = 20): SchoolDirectoryPage
     schoolDirectory(id: ID!): SchoolDirectory 
+    "Id các trường đang có ca thi diễn ra — dùng để chặn trước nút đình chỉ gói."
+    schoolsWithOngoingExam: [ID!]
 }
 
 extend type Mutation {

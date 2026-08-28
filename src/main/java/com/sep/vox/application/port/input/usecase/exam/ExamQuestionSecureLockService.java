@@ -6,8 +6,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.domain.model.exam.ExamSecurePool;
 import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
 import com.sep.vox.domain.model.exam.ExamSecurePoolStatus;
 import com.sep.vox.domain.model.question.QuestionConfidentiality;

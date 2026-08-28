@@ -279,7 +279,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         // Chiếu thời lượng TRƯỚC khi ghi để từ chối sớm -- mã đề chưa tồn tại nên không dùng lại được
         // RecalculateExamTimeDurationService. Phải là totalSeconds (đã gồm media) vì đây là thước đo
         // ĐỘ DÀI bài thi so với gói, xem PaperTimeCalculator.
-        var totalSeconds = paperTotalSeconds(questionsBySection.stream().flatMap(List::stream).toList());
+        var totalSeconds = paperTotalSeconds(questionsBySection.stream().flatMap(l -> l.stream()).toList());
         examTimeQuotaGuardService.requireWithinPlan(exam.getSchoolId(), totalSeconds, "Bài kiểm tra trên lớp");
 
         var sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(sections);
@@ -340,7 +340,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
     /** Thời gian thật của mã đề, gồm cả thời lượng phát AUDIO/VIDEO -- xem {@link PaperTimeCalculator}. */
     private int paperTotalSeconds(List<Question> questions) {
         var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
-            .findByQuestionIdIn(questions.stream().map(Question::getId).distinct().toList()));
+            .findByQuestionIdIn(questions.stream().map(q -> q.getId()).distinct().toList()));
         return PaperTimeCalculator.breakdownOf(questions, assetByQuestionId).totalSeconds();
     }
 

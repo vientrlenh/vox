@@ -35,6 +35,7 @@ import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolsQuery;
 import com.sep.vox.application.port.input.query.key.SchoolClassesKey;
 import com.sep.vox.application.port.input.query.key.SchoolUsersKey;
+import com.sep.vox.application.port.input.usecase.school.ListSchoolsWithOnGoingExamUseCase;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolDebtEventsUseCase;
 import com.sep.vox.domain.dto.SchoolDebtEventDto;
@@ -120,6 +121,7 @@ private final ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase;
     private final ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase;
     private final ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
     private final ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
+    private final ListSchoolsWithOnGoingExamUseCase listSchoolsWithOnGoingExamUseCase;
 
     public SchoolController(ViewSchoolsUseCase viewSchoolsUseCase,
                             ViewSchoolClassesUseCase viewSchoolClassesUseCase,
@@ -147,7 +149,7 @@ private final ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase;
                             ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase,
                             ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase,
                             ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase,
-            ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase) {
+            ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase, ListSchoolsWithOnGoingExamUseCase listSchoolsWithOnGoingExamUseCase) {
         this.viewSchoolsUseCase = viewSchoolsUseCase;
         this.viewSchoolClassesUseCase = viewSchoolClassesUseCase;
         this.viewSchoolClassesByUserUseCase = viewSchoolClassesByUserUseCase;
@@ -175,6 +177,7 @@ private final ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase;
         this.viewSchoolDirectoryPageUseCase = viewSchoolDirectoryPageUseCase;
         this.viewSchoolDirectoryDetailsUseCase = viewSchoolDirectoryDetailsUseCase;
         this.viewSchoolDebtEventsUseCase = viewSchoolDebtEventsUseCase;
+        this.listSchoolsWithOnGoingExamUseCase = listSchoolsWithOnGoingExamUseCase;
     }
 
 
@@ -557,5 +560,11 @@ private final ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase;
     public SchoolDirectoryDto schoolDirectory(@Argument(name = "id") UUID id) {
         var query = new ViewSchoolDirectoryDetailsQuery(id);
         return viewSchoolDirectoryDetailsUseCase.execute(query);
+    }
+
+    @QueryMapping(name = "schoolsWithOngoingExam")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public List<UUID> schoolsWithOngoingExam() {
+        return listSchoolsWithOnGoingExamUseCase.execute(null);
     }
 }

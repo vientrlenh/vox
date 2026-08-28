@@ -78,12 +78,11 @@ public class AssessmentPolicyController {
             @Argument(name = "effectiveTo") String effectiveTo,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        int validPage = (page != null && page > 0) ? page : 1;
-        int validSize = (size != null && size > 0) ? size : 10;
+        validatePageSize(page, size);
         return viewSystemAssessmentPoliciesUseCase
                 .execute(new ViewSystemAssessmentPoliciesQuery(status, languageId, rubricVersionId,
                         DateMapper.toInstant(effectiveFrom),
-                        DateMapper.toInstant(effectiveTo), validPage, validSize));
+                        DateMapper.toInstant(effectiveTo), page, size));
     }
 
     @QueryMapping(name = "viewSchoolAssessmentPolicies")
@@ -97,13 +96,12 @@ public class AssessmentPolicyController {
             @Argument(name = "effectiveTo") String effectiveTo,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        int validPage = (page != null && page > 0) ? page : 1;
-        int validSize = (size != null && size > 0) ? size : 10;
+        validatePageSize(page, size);
         return viewSchoolAssessmentPoliciesUseCase
                 .execute(new ViewSchoolAssessmentPoliciesQuery(schoolId, status, languageId, rubricVersionId,
                         DateMapper.toInstant(effectiveFrom),
                         DateMapper.toInstant(effectiveTo),
-                        validPage, validSize));
+                        page, size));
     }
 
     @QueryMapping(name = "viewTeacherAssessmentPolicies")
@@ -115,15 +113,14 @@ public class AssessmentPolicyController {
             @Argument(name = "effectiveTo") String effectiveTo,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        int validPage = (page != null && page > 0) ? page : 1;
-        int validSize = (size != null && size > 0) ? size : 10;
+        validatePageSize(page, size);
         return viewTeacherAssessmentPoliciesUseCase.execute(new ViewTeacherAssessmentPoliciesQuery(
                 languageId,
                 rubricVersionId,
                 DateMapper.toInstant(effectiveFrom),
                 DateMapper.toInstant(effectiveTo),
-                validPage,
-                validSize));
+                page,
+                size));
     }
 
     @QueryMapping(name = "viewSystemAssessmentPolicy")
@@ -223,5 +220,14 @@ public class AssessmentPolicyController {
             @Argument(name = "input") UpdateAssessmentPolicyInput input) {
         var command = UpdateAssessmentPolicyGraphQLMapper.fromSchoolInput(schoolId, policyId, input);
         return updateSchoolAssessmentPolicyUseCase.execute(command);
+    }
+
+    private void validatePageSize(Integer page, Integer size) {
+        if (page == null || page <= 0) {
+            throw new IllegalArgumentException("Số trang yêu cầu không hợp lệ");
+        }
+        if (size == null || size <= 0) {
+            throw new IllegalArgumentException("Kích cỡ trang yêu cầu không hợp lệ");
+        }
     }
 }

@@ -90,6 +90,14 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
         );
     }
 
+    /**
+     * findAccessible là 1-based: ExamRepositoryImpl trừ 1 trước khi dựng PageRequest, nên truyền 0
+     * vào là ra -1 và Spring Data ném "Page index must not be less than zero" -- hỏng nguyên
+     * request dashboard, không có đường vòng.
+     *
+     * <p>Đúng lỗi mà ViewSchoolAdminDashboardUseCase.countExamsByStatus đã dính và đã sửa; bản của
+     * giáo viên bị bỏ sót lúc đó. Đo thật 2026-08-28: dashboard giáo viên 500 mọi lần mở.
+     */
     private List<Exam> fetchTeacherClassTests(UUID teacherId, UUID schoolId) {
         var accessible = examRepository.findAccessible(
             teacherId, schoolId, false, false, schoolId, null, ExamKind.CLASS_TEST, null, null,

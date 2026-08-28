@@ -76,7 +76,7 @@ class ViewTeacherDashboardUseCaseTests {
         when(userContextPort.getCurrentSchoolId()).thenReturn(schoolId);
         when(examRepository.findAccessible(
             eq(teacherId), eq(schoolId), eq(false), eq(false), eq(schoolId), eq(null),
-            eq(ExamKind.CLASS_TEST), eq(null), eq(null), eq(0), eq(500)
+            eq(ExamKind.CLASS_TEST), eq(null), eq(null), eq(1), eq(500)
         )).thenReturn(new PageResult<>(List.of(), 0, 500, 0, 0));
         when(examMemberRepository.findByExamIdIn(any())).thenReturn(List.of());
         when(examGradingAssignmentRepository.countByTeacherIdAndStatus(any(), any())).thenReturn(0L);
@@ -118,7 +118,7 @@ class ViewTeacherDashboardUseCaseTests {
         var publishedExamId = UUID.randomUUID();
         when(examRepository.findAccessible(
             eq(teacherId), eq(schoolId), eq(false), eq(false), eq(schoolId), eq(null),
-            eq(ExamKind.CLASS_TEST), eq(null), eq(null), eq(0), eq(500)
+            eq(ExamKind.CLASS_TEST), eq(null), eq(null), eq(1), eq(500)
         )).thenReturn(new PageResult<>(
             List.of(classTest(draftExamId, ExamStatus.DRAFT), classTest(publishedExamId, ExamStatus.RESULTS_PUBLISHED)),
             0, 500, 2, 1
@@ -164,7 +164,7 @@ class ViewTeacherDashboardUseCaseTests {
 
         when(examRepository.findAccessible(
             eq(teacherId), eq(schoolId), eq(false), eq(false), eq(schoolId), eq(null),
-            eq(ExamKind.CLASS_TEST), eq(null), eq(null), eq(0), eq(500)
+            eq(ExamKind.CLASS_TEST), eq(null), eq(null), eq(1), eq(500)
         )).thenReturn(new PageResult<>(List.of(exam), 0, 500, 1, 1));
         when(examMemberRepository.findByExamIdIn(List.of(examId)))
             .thenReturn(List.of(membership(examId, teacherId)));
@@ -199,7 +199,7 @@ class ViewTeacherDashboardUseCaseTests {
 
         when(examRepository.findAccessible(
             eq(teacherId), eq(schoolId), eq(false), eq(false), eq(schoolId), eq(null),
-            eq(ExamKind.CLASS_TEST), eq(null), eq(null), eq(0), eq(500)
+            eq(ExamKind.CLASS_TEST), eq(null), eq(null), eq(1), eq(500)
         )).thenReturn(new PageResult<>(List.of(exam), 0, 500, 1, 1));
         when(examMemberRepository.findByExamIdIn(List.of(examId)))
             .thenReturn(List.of(membership(examId, teacherId)));
@@ -238,7 +238,7 @@ class ViewTeacherDashboardUseCaseTests {
 
         when(examRepository.findAccessible(
             eq(teacherId), eq(schoolId), eq(false), eq(false), eq(schoolId), eq(null),
-            eq(ExamKind.CLASS_TEST), eq(null), eq(null), eq(0), eq(500)
+            eq(ExamKind.CLASS_TEST), eq(null), eq(null), eq(1), eq(500)
         )).thenReturn(new PageResult<>(List.of(exam), 0, 500, 1, 1));
         when(examMemberRepository.findByExamIdIn(List.of(examId)))
             .thenReturn(List.of(membership(examId, teacherId)));
@@ -286,7 +286,7 @@ class ViewTeacherDashboardUseCaseTests {
 
         when(examRepository.findAccessible(
             eq(teacherId), eq(schoolId), eq(false), eq(false), eq(schoolId), eq(null),
-            eq(ExamKind.CLASS_TEST), eq(null), eq(null), eq(0), eq(500)
+            eq(ExamKind.CLASS_TEST), eq(null), eq(null), eq(1), eq(500)
         )).thenReturn(new PageResult<>(List.of(exam), 0, 500, 1, 1));
         when(examMemberRepository.findByExamIdIn(List.of(examId)))
             .thenReturn(List.of(membership(examId, teacherId)));

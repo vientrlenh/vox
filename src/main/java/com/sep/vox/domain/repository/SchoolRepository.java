@@ -19,7 +19,7 @@ public interface SchoolRepository {
      * là ngày nào đó nổ NonUniqueResultException ở chỗ không liên quan.
      */
     List<School> findByDomain(String domain);
-    PageResult<School> findAll(int pageNumber, int size);
+    PageResult<School> findAll(int pageNumber, int size, String search, Boolean isActive);
     School save(School school);
     boolean existsById(UUID id);
 

@@ -44,6 +44,8 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
+ * 1 Rubric Version được phép gắn với nhiều Assessment Policy, kể cả khi 2 Policy nằm ở 2 lớp
+ * (schoolClassId) khác nhau trong cùng trường.
  * Ranh giới sau V44: nhiều Assessment Policy ở các PHẠM VI khác nhau được dùng chung một Rubric
  * Version, nhưng mỗi phạm vi vẫn chỉ được đúng một chính sách còn hiệu lực.
  */
@@ -144,7 +146,7 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
     }
 
     @Test
-    void allowsSharingOneRubricVersionAcrossDifferentClasses() {
+    void allows_whenSameBatchReusesRubricVersionAcrossDifferentClasses() {
         // V44: lớp chuyên và lớp thường cần chính sách riêng theo phạm vi Lớp nhưng chấm bằng cùng
         // một bộ tiêu chí. Trước V44 mỗi chính sách buộc phải có phiên bản rubric riêng, nên trường
         // phải nhân bản y hệt bộ tiêu chí cho từng lớp.

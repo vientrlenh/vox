@@ -56,6 +56,7 @@ public class ViewQuestionsUseCase implements IUseCase<ViewQuestionsQuery, PageRe
             input.status(),
             input.type(),
             input.sharing(),
+            input.assetType(),
             input.scope(),
             input.keyword(),
             input.page(),

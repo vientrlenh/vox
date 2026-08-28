@@ -71,7 +71,7 @@ public class QuestionAssetAnalysisRequestPublisher {
         try {
             externalEventPublisherPort.publish(event);
         } catch (Exception ex) {
-            LOGGER.warn("KhÃ´ng thá»ƒ publish yÃªu cáº§u phÃ¢n tÃ­ch asset questionAssetId={}", asset.getId(), ex);
+            LOGGER.warn("Không thể publish yêu cầu phân tích asset questionAssetId={}", asset.getId(), ex);
         }
     }
 

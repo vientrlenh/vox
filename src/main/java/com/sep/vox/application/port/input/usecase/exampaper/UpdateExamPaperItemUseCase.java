@@ -1,6 +1,8 @@
 package com.sep.vox.application.port.input.usecase.exampaper;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,9 +32,11 @@ import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.service.exam.PaperTimeCalculator;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 
 @Service
@@ -44,6 +48,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
     private final ExamPaperAuthoringAccessService examPaperAuthoringAccessService;
     private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
     private final QuestionRepository questionRepository;
+    private final QuestionAssetRepository questionAssetRepository;
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
@@ -58,6 +63,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             ExamPaperAuthoringAccessService examPaperAuthoringAccessService,
             ExamBlueprintSlotRepository examBlueprintSlotRepository,
             QuestionRepository questionRepository,
+            QuestionAssetRepository questionAssetRepository,
             QuestionCollaboratorRepository questionCollaboratorRepository,
             SchoolUserRepository schoolUserRepository,
             ExamQuestionSecureLockService examQuestionSecureLockService,
@@ -70,6 +76,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
         this.examPaperAuthoringAccessService = examPaperAuthoringAccessService;
         this.examBlueprintSlotRepository = examBlueprintSlotRepository;
         this.questionRepository = questionRepository;
+        this.questionAssetRepository = questionAssetRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
@@ -196,23 +203,26 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
     }
 
     private int calculatePaperDurationAfterQuestionChange(
-            java.util.UUID paperId,
-            java.util.UUID itemId,
-            com.sep.vox.domain.model.question.Question replacementQuestion) {
-        var totalSeconds = 0;
+            UUID paperId,
+            UUID itemId,
+            Question replacementQuestion) {
+        // Chiếu thời lượng của mã đề SAU khi thay câu, TRƯỚC khi ghi -- nên không dùng lại được
+        // RecalculateExamTimeDurationService (nó đọc từ DB, mà thay đổi chưa nằm trong đó).
+        var questions = new ArrayList<Question>();
         for (var candidateItem : examPaperItemRepository.findByPaperId(paperId)) {
             if (candidateItem.getId().equals(itemId)) {
-                totalSeconds += replacementQuestion.getPreparationTimeSeconds() + replacementQuestion.getMaxResponseSeconds();
+                questions.add(replacementQuestion);
                 continue;
             }
             if (candidateItem.getQuestionId() == null) {
                 continue;
             }
-            var question = questionRepository.findById(candidateItem.getQuestionId()).orElse(null);
-            if (question != null) {
-                totalSeconds += question.getPreparationTimeSeconds() + question.getMaxResponseSeconds();
-            }
+            questionRepository.findById(candidateItem.getQuestionId()).ifPresent(questions::add);
         }
-        return totalSeconds;
+        // totalSeconds (đã gồm thời lượng phát AUDIO/VIDEO) vì đây là thước đo ĐỘ DÀI so với gói --
+        // xem PaperTimeCalculator để rõ vì sao ước tính CHI PHÍ lại dùng số khác.
+        var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
+            .findByQuestionIdIn(questions.stream().map(Question::getId).distinct().toList()));
+        return PaperTimeCalculator.breakdownOf(questions, assetByQuestionId).totalSeconds();
     }
 }

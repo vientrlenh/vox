@@ -7,32 +7,34 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CreateQuestionAssetRequest(
-    @Size(max = 255, message = "TiÃªu Ä‘á» tÃ i nguyÃªn khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 255 kÃ½ tá»±")
+    @Size(max = 255, message = "Tiêu đề tài nguyên không được vượt quá 255 ký tự")
     String title,
 
-    @Min(value = 0, message = "Thá»i lÆ°á»£ng tÃ i nguyÃªn pháº£i lá»›n hÆ¡n hoáº·c báº±ng 0")
+    @Min(value = 0, message = "Thời lượng tài nguyên phải lớn hơn hoặc bằng 0")
     Integer durationSeconds,
 
-    @Size(max = 255, message = "VÄƒn báº£n thay tháº¿ khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 255 kÃ½ tá»±")
+    @Size(max = 255, message = "Văn bản thay thế không được vượt quá 255 ký tự")
     String altText,
 
-    @NotBlank(message = "Loáº¡i tÃ i nguyÃªn khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotBlank(message = "Loại tài nguyên không được để trống")
     @Pattern(
         regexp = "AUDIO|IMAGE|VIDEO|TEXT_PASSAGE",
-        message = "Loáº¡i tÃ i nguyÃªn khÃ´ng há»£p lá»‡"
+        message = "Loại tài nguyên không hợp lệ"
     )
     String type,
 
-    @Size(max = 4096, message = "URL tÃ i nguyÃªn khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 4096 kÃ½ tá»±")
+    @Size(max = 4096, message = "URL tài nguyên không được vượt quá 4096 ký tự")
     String url,
 
     String transcript,
 
-    @Size(max = 2048, message = "MÃ´ táº£ tÃ i nguyÃªn khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 2048 kÃ½ tá»±")
+    // Không giới hạn độ dài, cùng lý do với transcript ngay trên: description là THỨ DUY NHẤT AI
+    // biết về tài nguyên (nó không nhìn được ảnh, không nghe được tệp), nên cắt ngắn là cắt đúng
+    // phần thông tin dùng để hỏi và chấm. Cột đã là TEXT từ V42.
     String description,
 
-    @NotNull(message = "Thá»© tá»± tÃ i nguyÃªn khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
-    @Min(value = 0, message = "Thá»© tá»± tÃ i nguyÃªn khÃ´ng Ä‘Æ°á»£c nhá» hÆ¡n 0")
+    @NotNull(message = "Thứ tự tài nguyên không được để trống")
+    @Min(value = 0, message = "Thứ tự tài nguyên không được nhỏ hơn 0")
     Integer order
 ) {
 }

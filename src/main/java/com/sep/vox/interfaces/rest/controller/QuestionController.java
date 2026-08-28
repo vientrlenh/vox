@@ -157,8 +157,10 @@ public class QuestionController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<PreviewQuestionImportResponse>> previewImport(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("questionBankId") UUID questionBankId,
-            @RequestParam("questionTopicId") UUID questionTopicId) throws IOException {
+            // Bỏ trống CẢ HAI = import hàng loạt: mỗi dòng trong tệp tự khai mã ngân hàng + mã
+            // chủ đề. Phạm vi trường vẫn do server chốt theo người đăng nhập.
+            @RequestParam(name = "questionBankId", required = false) UUID questionBankId,
+            @RequestParam(name = "questionTopicId", required = false) UUID questionTopicId) throws IOException {
         var uploadedFile = UploadedFile.upload(
             file.getOriginalFilename(),
             file.getContentType(),

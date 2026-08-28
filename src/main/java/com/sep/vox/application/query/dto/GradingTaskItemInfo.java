@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.dto.QuestionAssetDto;
+
 /**
  * MỘT CÂU HỎI cần chấm: lượt nói để nghe, điểm đang có hiệu lực để tham chiếu, và
  * bằng chứng của bản AI để giáo viên chấm trên cùng dữ liệu mà AI đã dùng.
@@ -34,6 +36,19 @@ public record GradingTaskItemInfo(
      * <p>{@code null} khi paper item không trỏ tới câu hỏi nào hoặc câu hỏi đã bị xoá.
      */
     String questionText,
+    /**
+     * Tài nguyên đi kèm câu hỏi (ảnh / audio / video / đoạn văn), {@code null} khi câu không có.
+     *
+     * <p>Thiếu trường này thì giáo viên chấm một câu tả tranh chỉ thấy đề bài
+     * "Describe the picture." cùng transcript của thí sinh, mà KHÔNG có tấm ảnh — không có cách
+     * nào biết thí sinh tả đúng hay bịa. Với câu nghe còn nặng hơn: không nghe được đoạn thí sinh
+     * đã nghe thì không chấm nổi phần nội dung.
+     *
+     * <p>Quan trọng hơn kể từ khi AI chỉ biết asset qua {@code transcript}/{@code description} do
+     * người soạn gõ: con người là lớp kiểm tra cuối cho đúng loại sai sót đó, mà lớp đó đang bị
+     * bịt mắt. Đây cũng là chỗ duy nhất phát hiện được ca asset hỏng không phát được ở máy thí sinh.
+     */
+    QuestionAssetDto asset,
     BigDecimal currentItemScore,
     String currentFeedbackSummary,
     List<GradingCriterionScoreInfo> currentScores,

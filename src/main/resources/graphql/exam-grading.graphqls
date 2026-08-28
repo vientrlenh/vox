@@ -136,6 +136,12 @@ type GradingTaskItem {
     KHÁC `GradingTurn.promptText`: cái đó là lời AI đọc lúc vào lượt, không phải đề bài.
     """
     questionText: String
+    """
+    Tài nguyên đi kèm câu hỏi (ảnh / audio / video / đoạn văn). Null khi câu không có.
+    Thiếu nó thì giáo viên chấm câu tả tranh chỉ thấy đề bài và transcript, không có tấm ảnh —
+    không đối chiếu nổi câu trả lời với thứ thí sinh thực sự nhìn/nghe.
+    """
+    asset: QuestionAsset
     "Điểm của bản chấm đang có hiệu lực (lần đầu là điểm AI) — mốc để đối chiếu"
     currentItemScore: Float
     currentFeedbackSummary: String

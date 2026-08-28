@@ -1,6 +1,7 @@
 package com.sep.vox.interfaces.rest.controller;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -10,15 +11,27 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.sep.vox.application.common.UploadedFile;
+import com.sep.vox.application.port.input.command.AcceptQuestionBankImportCommand;
 import com.sep.vox.application.port.input.command.DeleteQuestionBankCommand;
 import com.sep.vox.application.port.input.command.DeleteQuestionBankGradeCommand;
+import com.sep.vox.application.port.input.command.PreviewQuestionBankImportFromFileCommand;
+import com.sep.vox.application.port.input.usecase.questionbank.AcceptQuestionBankImportUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.CreateQuestionBankGradeUseCase;
+import com.sep.vox.application.port.input.usecase.questionbank.PreviewQuestionBankImportFromFileUseCase;
+import com.sep.vox.application.response.input.importfile.PreviewImportResponse;
+import com.sep.vox.interfaces.rest.dto.request.AcceptImportRequest;
 import com.sep.vox.application.port.input.usecase.questionbank.CreateSchoolQuestionBankUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.CreateSystemQuestionBankUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.DeleteQuestionBankGradeUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.DeleteQuestionBankUseCase;
+import com.sep.vox.application.port.input.command.BulkUpdateQuestionScopeStatusCommand;
+import com.sep.vox.application.response.input.question.BulkUpdateQuestionBankStatusResponse;
+import com.sep.vox.application.port.input.usecase.questionbank.BulkUpdateQuestionBankStatusUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.UpdateQuestionBankStatusUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.UpdateQuestionBankUseCase;
 import com.sep.vox.application.response.input.questionbank.CreateQuestionBankResponse;
@@ -29,6 +42,7 @@ import com.sep.vox.interfaces.rest.dto.request.CreateQuestionBankGradeRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolQuestionBankRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSystemQuestionBankRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionBankRequest;
+import com.sep.vox.interfaces.rest.dto.request.BulkUpdateQuestionScopeStatusRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionBankStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.CreateQuestionBankCommandMapper;
@@ -38,6 +52,7 @@ import com.sep.vox.interfaces.rest.mapper.UpdateQuestionBankStatusCommandMapper;
 
 import jakarta.validation.Valid;
 
+import java.io.IOException;
 import java.util.UUID;
 
 @RestController
@@ -48,25 +63,65 @@ public class QuestionBankController {
     private final CreateSchoolQuestionBankUseCase createSchoolQuestionBankUseCase;
     private final UpdateQuestionBankUseCase updateQuestionBankUseCase;
     private final UpdateQuestionBankStatusUseCase updateQuestionBankStatusUseCase;
+    private final BulkUpdateQuestionBankStatusUseCase bulkUpdateQuestionBankStatusUseCase;
     private final DeleteQuestionBankUseCase deleteQuestionBankUseCase;
     private final CreateQuestionBankGradeUseCase createQuestionBankGradeUseCase;
     private final DeleteQuestionBankGradeUseCase deleteQuestionBankGradeUseCase;
+    private final PreviewQuestionBankImportFromFileUseCase previewQuestionBankImportFromFileUseCase;
+    private final AcceptQuestionBankImportUseCase acceptQuestionBankImportUseCase;
 
     public QuestionBankController(
             CreateSystemQuestionBankUseCase createSystemQuestionBankUseCase,
             CreateSchoolQuestionBankUseCase createSchoolQuestionBankUseCase,
             UpdateQuestionBankUseCase updateQuestionBankUseCase,
             UpdateQuestionBankStatusUseCase updateQuestionBankStatusUseCase,
+            BulkUpdateQuestionBankStatusUseCase bulkUpdateQuestionBankStatusUseCase,
             DeleteQuestionBankUseCase deleteQuestionBankUseCase,
             CreateQuestionBankGradeUseCase createQuestionBankGradeUseCase,
-            DeleteQuestionBankGradeUseCase deleteQuestionBankGradeUseCase) {
+            DeleteQuestionBankGradeUseCase deleteQuestionBankGradeUseCase,
+            PreviewQuestionBankImportFromFileUseCase previewQuestionBankImportFromFileUseCase,
+            AcceptQuestionBankImportUseCase acceptQuestionBankImportUseCase) {
+        this.previewQuestionBankImportFromFileUseCase = previewQuestionBankImportFromFileUseCase;
+        this.acceptQuestionBankImportUseCase = acceptQuestionBankImportUseCase;
         this.createSystemQuestionBankUseCase = createSystemQuestionBankUseCase;
         this.createSchoolQuestionBankUseCase = createSchoolQuestionBankUseCase;
         this.updateQuestionBankUseCase = updateQuestionBankUseCase;
         this.updateQuestionBankStatusUseCase = updateQuestionBankStatusUseCase;
+        this.bulkUpdateQuestionBankStatusUseCase = bulkUpdateQuestionBankStatusUseCase;
         this.deleteQuestionBankUseCase = deleteQuestionBankUseCase;
         this.createQuestionBankGradeUseCase = createQuestionBankGradeUseCase;
         this.deleteQuestionBankGradeUseCase = deleteQuestionBankGradeUseCase;
+    }
+
+    /**
+     * Phạm vi (hệ thống hay trường nào) KHÔNG nhận từ client mà suy từ vai trò người đăng nhập —
+     * xem {@link PreviewQuestionBankImportFromFileUseCase}.
+     */
+    @PostMapping(value = "/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<PreviewImportResponse>> previewImport(
+            @RequestParam("file") MultipartFile file) throws IOException {
+        var uploadedFile = UploadedFile.upload(
+            file.getOriginalFilename(),
+            file.getContentType(),
+            file.getSize(),
+            file.getBytes()
+        );
+        var data = previewQuestionBankImportFromFileUseCase.execute(
+            new PreviewQuestionBankImportFromFileCommand(uploadedFile)
+        );
+        return ResponseEntity.ok(ApiResponse.success("Xem trước import ngân hàng câu hỏi thành công", data));
+    }
+
+    @PostMapping("/import/{sessionId}/accept")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<Object>> acceptImport(
+            @PathVariable(name = "sessionId") UUID sessionId,
+            @Valid @RequestBody AcceptImportRequest request) {
+        acceptQuestionBankImportUseCase.execute(
+            new AcceptQuestionBankImportCommand(sessionId, request.confirmedMapping())
+        );
+        return ResponseEntity.ok(ApiResponse.success("Đã tiếp nhận yêu cầu import ngân hàng câu hỏi, đang xử lý"));
     }
 
     @PostMapping("/system")
@@ -106,6 +161,17 @@ public class QuestionBankController {
         var command = UpdateQuestionBankStatusCommandMapper.fromRequest(id, request);
         var data = updateQuestionBankStatusUseCase.execute(command);
         var response = ApiResponse.success("Cập nhật trạng thái ngân hàng câu hỏi thành công", data);
+        return ResponseEntity.ok(response);
+    }
+
+    /** Thành công một phần: mục hợp lệ thì đổi, mục không thì nằm trong {@code failed} kèm lý do. */
+    @PatchMapping("/bulk/status")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<BulkUpdateQuestionBankStatusResponse>> bulkUpdateStatus(
+            @Valid @RequestBody BulkUpdateQuestionScopeStatusRequest request) {
+        var data = bulkUpdateQuestionBankStatusUseCase.execute(
+            new BulkUpdateQuestionScopeStatusCommand(request.ids(), request.action()));
+        var response = ApiResponse.success("Cập nhật trạng thái ngân hàng câu hỏi hàng loạt thành công", data);
         return ResponseEntity.ok(response);
     }
 

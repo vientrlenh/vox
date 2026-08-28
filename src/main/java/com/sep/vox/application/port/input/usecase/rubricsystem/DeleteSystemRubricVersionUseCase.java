@@ -68,7 +68,8 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
         // Từ V44 một phiên bản rubric dùng chung được cho nhiều chính sách, nên xóa nhầm không còn
         // chỉ làm treo một chính sách mà treo cả cụm. Bản thân việc thiếu chốt này đã sai từ trước
         // (không có khóa ngoại nào canh), chỉ là hậu quả nay lớn hơn nên phải chặn hẳn.
-        if (assessmentPolicyRepository.existsByRubricVersionId(version.getId())) {
+        if (assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())
+                || assessmentPolicyRepository.existsNotPublishedByRubricVersionId(version.getId())) {
             throw new IllegalStateException(
                     "Không thể xóa phiên bản này vì đang có Assessment Policy sử dụng. Hãy xóa hoặc lưu trữ các chính sách đó trước.");
         }

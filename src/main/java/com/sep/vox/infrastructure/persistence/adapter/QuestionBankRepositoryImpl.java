@@ -51,6 +51,13 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
     }
 
     @Override
+    public List<QuestionBank> findByOwnerScope(QuestionBankOwnerType ownerType, UUID schoolId) {
+        return springDataQuestionBankRepository.findByOwnerScope(ownerType.name(), schoolId).stream()
+            .map(QuestionBankMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public PageResult<QuestionBank> findAll(int pageNumber, int size) {
         var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataQuestionBankRepository.findAll(pageable);

@@ -55,15 +55,15 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         var question = questionRepository.findById(command.questionId())
-            .orElseThrow(() -> new NotFoundException("KhÃ´ng tÃ¬m tháº¥y cÃ¢u há»i"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
         var sourceAsset = questionAssetRepository.findById(command.assetId())
-            .orElseThrow(() -> new NotFoundException("KhÃ´ng tÃ¬m tháº¥y tÃ i nguyÃªn cÃ¢u há»i"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy tài nguyên câu hỏi"));
         if (!sourceAsset.getQuestionId().equals(question.getId())) {
-            throw new ForbiddenException("TÃ i nguyÃªn khÃ´ng thuá»™c cÃ¢u há»i nÃ y");
+            throw new ForbiddenException("Tài nguyên không thuộc câu hỏi này");
         }
 
         var bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("KhÃ´ng tÃ¬m tháº¥y ngÃ¢n hÃ ng cÃ¢u há»i"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         var owner = currentUserId.equals(question.getCreatedBy());
         var editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
@@ -72,7 +72,7 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
         var systemAdminOnSystemBank = userContextPort.isSystemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
         if (!systemAdminOnSystemBank && !owner && !editorCollaborator) {
-            throw new ForbiddenException("Quyá»n truy cáº­p bá»‹ tá»« chá»‘i");
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
         var immutable = question.getStatus() == QuestionStatus.PUBLISHED
@@ -83,7 +83,7 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
                 && !immutable
                 && question.getStatus() != QuestionStatus.DRAFT
                 && question.getStatus() != QuestionStatus.REVISION_REQUESTED) {
-            throw new ForbiddenException("Chá»‰ Ä‘Æ°á»£c sá»­a cÃ¢u há»i cá»§a mÃ¬nh khi á»Ÿ tráº¡ng thÃ¡i DRAFT hoáº·c REVISION_REQUESTED");
+            throw new ForbiddenException("Chỉ được sửa câu hỏi của mình khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
         }
 
         var targetQuestion = immutable
@@ -120,7 +120,12 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
         }
 
         sanitizeForType(targetAsset);
-        validateRequiredFields(targetAsset.getType(), targetAsset.getUrl(), targetAsset.getTranscript());
+        QuestionAssetContentValidator.validate(
+            targetAsset.getType(),
+            targetAsset.getUrl(),
+            targetAsset.getTranscript(),
+            targetAsset.getDescription(),
+            targetAsset.getAltText());
 
         // File/type replace no longer auto-clears transcript/description -- per the simplified
         // rule, existing content (whether AI-written or manually typed) always sticks unless the
@@ -136,14 +141,14 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
         return questionAssetRepository.findByQuestionId(questionId).stream()
             .filter(asset -> asset.getOrder() == order)
             .findFirst()
-            .orElseThrow(() -> new NotFoundException("KhÃ´ng tÃ¬m tháº¥y tÃ i nguyÃªn cÃ¢u há»i trong báº£n nhÃ¡p má»›i"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy tài nguyên câu hỏi trong bản nháp mới"));
     }
 
     private void validateAssetOrder(UUID questionId, int order, UUID currentAssetId) {
         var duplicated = questionAssetRepository.findByQuestionId(questionId).stream()
             .anyMatch(asset -> asset.getOrder() == order && !asset.getId().equals(currentAssetId));
         if (duplicated) {
-            throw new IllegalStateException("Thá»© tá»± tÃ i nguyÃªn cÃ¢u há»i khÃ´ng Ä‘Æ°á»£c trÃ¹ng láº·p");
+            throw new IllegalStateException("Thứ tự tài nguyên câu hỏi không được trùng lặp");
         }
     }
 
@@ -160,19 +165,6 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
             StringNormalization.trimAndCollapseSpaces(input.description()),
             input.order()
         );
-    }
-
-    private void validateRequiredFields(QuestionAssetType type, String url, String transcript) {
-        if (type == QuestionAssetType.TEXT_PASSAGE) {
-            if (transcript == null || transcript.isBlank()) {
-                throw new IllegalArgumentException("Transcript khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng vá»›i asset TEXT_PASSAGE");
-            }
-            return;
-        }
-
-        if (url == null || url.isBlank()) {
-            throw new IllegalArgumentException("URL tÃ i nguyÃªn khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng");
-        }
     }
 
     private void sanitizeForType(QuestionAsset asset) {

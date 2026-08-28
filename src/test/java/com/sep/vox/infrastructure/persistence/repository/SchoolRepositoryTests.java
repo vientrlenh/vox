@@ -100,13 +100,42 @@ class SchoolRepositoryTests extends ContainerTestConfig {
         schoolRepository.save(newSchool("VOX_PG_3", "Vox Page 3", "vox-pg-3.edu.vn", "school-pg3@example.com", "0987654307"));
 
 
-        var found = schoolRepository.findAll(1, 2);
+        var found = schoolRepository.findAll(1, 2, null, null);
 
         assertThat(found.content()).hasSize(2);
         assertThat(found.page()).isEqualTo(1);
         assertThat(found.size()).isEqualTo(2);
         assertThat(found.totalElements()).isGreaterThanOrEqualTo(3);
         assertThat(found.totalPages()).isGreaterThanOrEqualTo(2);
+    }
+
+    @Test
+    void whenFindAll_withSearch_thenMatchesCodeOrName() {
+        schoolRepository.save(newSchool("VOX_SEARCH_A", "Truong Alpha", "vox-search-a.edu.vn", "school-search-a@example.com", "0987654320"));
+        schoolRepository.save(newSchool("VOX_SEARCH_B", "Truong Beta", "vox-search-b.edu.vn", "school-search-b@example.com", "0987654321"));
+
+        var byCode = schoolRepository.findAll(1, 10, "search_a", null);
+        var byName = schoolRepository.findAll(1, 10, "beta", null);
+
+        assertThat(byCode.content()).extracting(school -> school.getCode().value()).containsExactly("VOX_SEARCH_A");
+        assertThat(byName.content()).extracting(school -> school.getCode().value()).containsExactly("VOX_SEARCH_B");
+    }
+
+    @Test
+    void whenFindAll_withIsActiveFilter_thenOnlyMatchingStatusReturned() {
+        var active = newSchool("VOX_ACTIVE_1", "Truong Dang Hoat Dong", "vox-active-1.edu.vn", "school-active1@example.com", "0987654322");
+        var inactive = newSchool("VOX_INACTIVE_1", "Truong Da Khoa", "vox-inactive-1.edu.vn", "school-inactive1@example.com", "0987654323");
+        inactive.setActive(false);
+        schoolRepository.save(active);
+        schoolRepository.save(inactive);
+
+        var activeOnly = schoolRepository.findAll(1, 50, null, true);
+        var inactiveOnly = schoolRepository.findAll(1, 50, null, false);
+
+        assertThat(activeOnly.content()).extracting(school -> school.getCode().value()).contains("VOX_ACTIVE_1");
+        assertThat(activeOnly.content()).extracting(school -> school.getCode().value()).doesNotContain("VOX_INACTIVE_1");
+        assertThat(inactiveOnly.content()).extracting(school -> school.getCode().value()).contains("VOX_INACTIVE_1");
+        assertThat(inactiveOnly.content()).extracting(school -> school.getCode().value()).doesNotContain("VOX_ACTIVE_1");
     }
 
     @Test

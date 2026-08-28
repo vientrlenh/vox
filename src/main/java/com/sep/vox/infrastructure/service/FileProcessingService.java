@@ -332,6 +332,16 @@ public class FileProcessingService implements FileProcessingPort {
             );
 
             case QUESTION -> Map.ofEntries(
+                // Đích của từng dòng, cho phép MỘT tệp rải câu hỏi sang nhiều ngân hàng/chủ đề.
+                // Bỏ trống thì rơi về ngân hàng/chủ đề đã chọn ở màn upload (luồng cũ).
+                //
+                // schoolCode CHỈ là đối chiếu, KHÔNG phải nguồn quyền: quyền suy từ người đăng
+                // nhập. Để một ô Excel quyết định trường nào là mở đường cho giáo viên gõ mã
+                // trường khác rồi đẩy câu hỏi vào ngân hàng của trường đó.
+                Map.entry("schoolCode", List.of("schoolCode", "school code", "mã trường", "ma truong")),
+                Map.entry("questionBankCode", List.of("questionBankCode", "bank code", "mã ngân hàng", "ma ngan hang", "mã ngân hàng câu hỏi")),
+                Map.entry("questionTopicCode", List.of("questionTopicCode", "topic code", "mã chủ đề", "ma chu de")),
+
                 Map.entry("code", List.of("code", "question code", "mã câu hỏi", "ma cau hoi")),
                 Map.entry("type", List.of("type", "question type", "loại câu hỏi", "loai cau hoi")),
                 Map.entry("questionText", List.of("questionText", "question text", "content", "nội dung câu hỏi", "noi dung cau hoi")),
@@ -347,7 +357,35 @@ public class FileProcessingService implements FileProcessingPort {
                 Map.entry("evaluationAcceptableResponses", List.of("acceptableResponses", "acceptable responses", "câu trả lời chấp nhận", "cau tra loi chap nhan")),
                 Map.entry("evaluationOffTopicExamples", List.of("offTopicExamples", "off topic examples", "ví dụ lạc đề", "vi du lac de")),
                 Map.entry("evaluationScoringHints", List.of("scoringHints", "scoring hints", "gợi ý chấm điểm", "goi y cham diem")),
-                Map.entry("evaluationCommonMistakes", List.of("commonMistakes", "common mistakes", "lỗi thường gặp", "loi thuong gap"))
+                Map.entry("evaluationCommonMistakes", List.of("commonMistakes", "common mistakes", "lỗi thường gặp", "loi thuong gap")),
+
+                // Tài nguyên đi kèm câu hỏi. Bỏ trống assetType thì câu hỏi không có tài nguyên.
+                // transcript/description là THỨ DUY NHẤT AI biết về tài nguyên (nó không nhìn được
+                // ảnh, không nghe được tệp), nên chúng bắt buộc theo đúng luật của
+                // QuestionAssetContentValidator.
+                Map.entry("assetType", List.of("assetType", "asset type", "loại tài nguyên", "loai tai nguyen")),
+                Map.entry("assetUrl", List.of("assetUrl", "asset url", "đường dẫn tài nguyên", "duong dan tai nguyen")),
+                Map.entry("assetTitle", List.of("assetTitle", "asset title", "tiêu đề tài nguyên", "tieu de tai nguyen")),
+                Map.entry("assetAltText", List.of("assetAltText", "alt text", "văn bản thay thế", "van ban thay the")),
+                Map.entry("assetTranscript", List.of("assetTranscript", "asset transcript", "bản chép lời", "ban chep loi")),
+                Map.entry("assetDescription", List.of("assetDescription", "asset description", "mô tả tài nguyên", "mo ta tai nguyen")),
+                Map.entry("assetDurationSeconds", List.of("assetDurationSeconds", "asset duration", "thời lượng tài nguyên", "thoi luong tai nguyen"))
+            );
+
+            case QUESTION_BANK -> Map.ofEntries(
+                Map.entry("code", List.of("code", "bank code", "mã ngân hàng", "ma ngan hang", "mã ngân hàng câu hỏi")),
+                Map.entry("name", List.of("name", "bank name", "tên ngân hàng", "ten ngan hang", "tên ngân hàng câu hỏi")),
+                Map.entry("description", List.of("description", "mô tả", "mo ta")),
+                // Ngân hàng câu hỏi buộc phải có ngôn ngữ (questionBank.languageId not null), mà mỗi
+                // dòng có thể một ngôn ngữ khác nhau nên phải đọc từ FILE chứ không nhận từ tham số
+                // upload như questionBankId của luồng import câu hỏi.
+                Map.entry("language", List.of("language", "ngôn ngữ", "ngon ngu", "mã ngôn ngữ", "ma ngon ngu"))
+            );
+
+            case QUESTION_TOPIC -> Map.ofEntries(
+                Map.entry("code", List.of("code", "topic code", "mã chủ đề", "ma chu de")),
+                Map.entry("name", List.of("name", "topic name", "tên chủ đề", "ten chu de")),
+                Map.entry("description", List.of("description", "mô tả", "mo ta"))
             );
         };
     }

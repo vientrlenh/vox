@@ -115,11 +115,6 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     }
 
     @Override
-    public boolean existsByRubricVersionId(UUID rubricVersionId) {
-        return springDataAssessmentPolicyRepository.existsByRubricVersionId(rubricVersionId);
-    }
-
-    @Override
     public boolean existsNotPublishedByRubricVersionId(UUID rubricVersionId) {
         return springDataAssessmentPolicyRepository.existsByRubricVersionIdAndStatusNot(rubricVersionId, "PUBLISHED");
     }
@@ -127,6 +122,11 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     @Override
     public boolean existsOtherActiveByRubricVersionId(UUID rubricVersionId, UUID excludedPolicyId) {
         return springDataAssessmentPolicyRepository.existsOtherActiveByRubricVersionId(rubricVersionId, excludedPolicyId);
+    }
+
+    @Override
+    public boolean existsActiveByRubricVersionId(UUID rubricVersionId) {
+        return springDataAssessmentPolicyRepository.existsActiveByRubricVersionId(rubricVersionId);
     }
 
     @Override

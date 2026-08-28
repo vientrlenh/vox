@@ -25,7 +25,7 @@ public record UpdateQuestionAssetRequest(
 
     String transcript,
 
-    @Size(max = 2048, message = "Mô tả tài nguyên không được vượt quá 2048 ký tự")
+    // Không giới hạn độ dài -- xem CreateQuestionAssetRequest. Cột đã là TEXT từ V42.
     String description,
 
     @Min(value = 0, message = "Thứ tự tài nguyên không được nhỏ hơn 0")

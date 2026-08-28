@@ -24,6 +24,8 @@ import org.springframework.stereotype.Component;
 import com.sep.vox.application.event.SchoolDebtCapExceededPayloadV1;
 import com.sep.vox.application.event.SchoolDebtClearedPayloadV1;
 import com.sep.vox.application.event.SchoolLockedDueToDebtPayloadV1;
+import com.sep.vox.application.event.SchoolSubscriptionSuspendedPayloadV1;
+import com.sep.vox.application.event.SchoolSubscriptionUnsuspendedPayloadV1;
 import com.sep.vox.application.port.output.MailSendingPort;
 import com.sep.vox.application.port.output.MailTemplatePort;
 import com.sep.vox.domain.common.EventTypeConstant;
@@ -123,6 +125,23 @@ public class SchoolDebtEmailConsumer {
                     payload.schoolAdminIds(),
                     "Trường đã hết nợ hạn mức AI",
                     mailTemplatePort.renderSchoolDebtClearedEmail(schoolNameOf(payload.schoolId(), eventId))
+                );
+            }
+            case EventTypeConstant.SCHOOL_SUBSCRIPTION_SUSPENDED -> {
+                var payload = parse(record.value(), SchoolSubscriptionSuspendedPayloadV1.class, eventId);
+                yield new Mail(
+                    payload.schoolAdminIds(),
+                    "Gói subscription bị đình chỉ",
+                    mailTemplatePort.renderSchoolSubscriptionSuspendedEmail(
+                        schoolNameOf(payload.schoolId(), eventId), payload.reason())
+                );
+            }
+            case EventTypeConstant.SCHOOL_SUBSCRIPTION_UNSUSPENDED -> {
+                var payload = parse(record.value(), SchoolSubscriptionUnsuspendedPayloadV1.class, eventId);
+                yield new Mail(
+                    payload.schoolAdminIds(),
+                    "Gói subscription đã được gỡ đình chỉ",
+                    mailTemplatePort.renderSchoolSubscriptionUnsuspendedEmail(schoolNameOf(payload.schoolId(), eventId))
                 );
             }
             default -> throw new IllegalStateException(

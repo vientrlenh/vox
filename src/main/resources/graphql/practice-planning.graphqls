@@ -1,4 +1,4 @@
-extend type Query {
+    extend type Query {
     practiceTopicOffers(excludeTopicIds: [ID!], round: Int = 1, bucket: TopicOfferBucket = FOR_YOU): [PracticeTopicOffer!]!
     searchPracticeTopics(keyword: String!): TopicSearchResult!
 
@@ -43,6 +43,8 @@ type PracticePaperDraft {
     reason: String
     "Chỉ có khi status=READY."
     paper: PracticePaper
+    "Chỉ có khi status=FAILED. Mã lỗi máy đọc được (vd QUOTA_EXCEEDED) để client phân biệt lỗi tạm thời với lỗi nghiệp vụ không đáng cho thử lại."
+    errorCode: String
 }
 
 enum PracticePaperDraftStatus {

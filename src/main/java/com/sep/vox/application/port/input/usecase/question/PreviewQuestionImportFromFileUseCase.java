@@ -75,8 +75,13 @@ public class PreviewQuestionImportFromFileUseCase
         if (input == null || input.file() == null) {
             throw new IllegalArgumentException("File import không được để trống");
         }
-        if (input.questionBankId() == null || input.questionTopicId() == null) {
-            throw new IllegalArgumentException("Question bank và topic không được để trống");
+        // Bỏ trống CẢ HAI = chế độ hàng loạt: mỗi dòng trong tệp tự khai mã ngân hàng + mã chủ đề,
+        // nên một tệp rải được sang nhiều chủ đề. Khai một cái mà thiếu cái kia thì không rõ ý định,
+        // chặn luôn thay vì đoán.
+        var bulkMode = input.questionBankId() == null && input.questionTopicId() == null;
+        if (!bulkMode && (input.questionBankId() == null || input.questionTopicId() == null)) {
+            throw new IllegalArgumentException(
+                "Phải chọn cả ngân hàng câu hỏi và chủ đề, hoặc bỏ trống cả hai để import hàng loạt");
         }
 
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
@@ -86,30 +91,48 @@ public class PreviewQuestionImportFromFileUseCase
         var teacher = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "TEACHER".equals(role.roleCode()));
 
-        var questionBank = questionBankRepository.findById(input.questionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
-        var questionTopic = questionTopicRepository.findById(input.questionTopicId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
+        UUID sessionSchoolId;
+        if (bulkMode) {
+            // Phạm vi chốt Ở ĐÂY theo người đăng nhập, KHÔNG lấy từ tệp: quản trị hệ thống nhập
+            // vào ngân hàng SYSTEM, người của trường nhập vào ngân hàng của chính trường mình.
+            // QuestionImportCommitHandler đọc lại session.schoolId để giới hạn vùng tra mã ngân
+            // hàng, nên một dòng không thể trỏ sang trường khác dù có gõ mã trường khác.
+            if (userContextPort.isSystemAdmin()) {
+                sessionSchoolId = null;
+            } else if (currentSchoolId == null) {
+                throw new ForbiddenException("Quyền truy cập bị từ chối");
+            } else {
+                sessionSchoolId = currentSchoolId;
+            }
+        } else {
+            var questionBank = questionBankRepository.findById(input.questionBankId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            var questionTopic = questionTopicRepository.findById(input.questionTopicId())
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
 
-        if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
-            throw new IllegalStateException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
-        }
-        if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ có thể import câu hỏi vào chủ đề đang ở trạng thái PUBLISHED");
-        }
-        if (questionBank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
-            if (!userContextPort.isSystemAdmin()) {
+            if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
+                throw new IllegalStateException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
+            }
+            if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
+                throw new IllegalStateException("Chỉ có thể import câu hỏi vào chủ đề đang ở trạng thái PUBLISHED");
+            }
+            if (questionBank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
+                if (!userContextPort.isSystemAdmin()) {
+                    throw new ForbiddenException("Quyền truy cập bị từ chối");
+                }
+            } else if (!teacher || currentSchoolId == null || !currentSchoolId.equals(questionBank.getSchoolId())) {
                 throw new ForbiddenException("Quyền truy cập bị từ chối");
             }
-        } else if (!teacher || currentSchoolId == null || !currentSchoolId.equals(questionBank.getSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            sessionSchoolId = questionBank.getOwnerType() == QuestionBankOwnerType.SCHOOL
+                ? questionBank.getSchoolId()
+                : null;
         }
 
         var parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION);
         var now = Instant.now();
         var expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
         var savedSession = importSessionRepository.save(new ImportSession(
-            questionBank.getOwnerType() == QuestionBankOwnerType.SCHOOL ? questionBank.getSchoolId() : null,
+            sessionSchoolId,
             ImportType.QUESTION,
             safeFileName(input.file().fileName()),
             jsonSerializationPort.toJson(parsed.originalHeaders()),
@@ -158,8 +181,18 @@ public class PreviewQuestionImportFromFileUseCase
         long rowNumber = 1L;
         for (var row : rows) {
             var rawData = new LinkedHashMap<String, String>(row);
-            rawData.put("questionBankId", questionBankId.toString());
-            rawData.put("questionTopicId", questionTopicId.toString());
+            // Ghim ĐỘC LẬP từng cái: chọn được ngân hàng mà chưa chọn chủ đề thì vẫn ghim ngân
+            // hàng, phần còn lại QuestionImportCommitHandler lấy theo mã trong file. Trước đây chỉ
+            // ghim khi có ĐỦ cả hai, nên "chọn ngân hàng, để trống chủ đề" rơi hết về chế độ hàng
+            // loạt và bắt file khai lại cả mã ngân hàng vừa chọn ngay trên màn hình.
+            //
+            // Để trống cả hai vẫn là chế độ hàng loạt như cũ: mỗi dòng tự khai đủ hai mã.
+            if (questionBankId != null) {
+                rawData.put("questionBankId", questionBankId.toString());
+            }
+            if (questionTopicId != null) {
+                rawData.put("questionTopicId", questionTopicId.toString());
+            }
             importRows.add(new ImportRow(
                 sessionId,
                 rowNumber,

@@ -22,7 +22,7 @@ public class RecordAnswerTerminationReasonUseCase implements IUseCase<RecordAnsw
     @Transactional
     public Void execute(Command input) {
         var response = examItemResponseRepository.findById(input.answerId())
-            .orElseThrow(() -> new NotFoundException("KhÃ´ng tÃ¬m tháº¥y cÃ¢u tráº£ lá»i Ä‘á»ƒ lÆ°u lÃ½ do káº¿t thÃºc"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu trả lời để lưu lý do kết thúc"));
         response.setTerminationReason(input.reason());
         examItemResponseRepository.save(response);
         return null;

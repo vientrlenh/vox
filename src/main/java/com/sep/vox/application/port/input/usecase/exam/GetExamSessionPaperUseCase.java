@@ -3,6 +3,9 @@ package com.sep.vox.application.port.input.usecase.exam;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
@@ -15,6 +18,8 @@ import com.sep.vox.application.response.input.exam.StudentExamPaperQuestionRespo
 import com.sep.vox.application.response.input.exam.StudentExamPaperResponse;
 import com.sep.vox.application.response.input.exam.StudentQuestionResponse;
 import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
+import com.sep.vox.domain.model.exam.ExamPaperItem;
+import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
@@ -25,6 +30,7 @@ import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.service.exam.PaperTimeCalculator;
 
 @Service
 public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaperQuery, StudentExamPaperResponse> {
@@ -135,9 +141,8 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
         var schedule = candidate.getScheduleId() == null
             ? null
             : examScheduleRepository.findById(candidate.getScheduleId()).orElse(null);
-        var calculatedDurationSeconds = estimateDurationSeconds(paperQuestions);
         var durationSeconds = paper.getTimeDurationSeconds() == null
-            ? calculatedDurationSeconds
+            ? estimateDurationSeconds(session.getPaperId())
             : paper.getTimeDurationSeconds();
         return new StudentExamPaperResponse(
             exam.getId(),
@@ -166,11 +171,23 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
         return sectionOrder * 1000 + itemOrder;
     }
 
-    private static int estimateDurationSeconds(java.util.List<StudentExamPaperQuestionResponse> paperQuestions) {
-        return paperQuestions.stream()
-            .map(r -> r.question())
-            .mapToInt(question -> question.preparationTimeSeconds() + question.maxResponseSeconds())
-            .sum();
+    /**
+     * Chỉ dùng khi mã đề chưa có {@code timeDurationSeconds} -- hiếm, vì mọi đường tạo mã đề đều gọi
+     * {@code RecalculateExamTimeDurationService} ngay sau đó. Tính lại từ domain object chứ không từ
+     * response DTO để đi đúng một công thức với mọi nơi khác ({@link PaperTimeCalculator}); nếu tự
+     * cộng ở đây thì thí sinh sẽ nhận đồng hồ thiếu đúng phần thời lượng phát AUDIO/VIDEO, mà lại
+     * không có gì để đối chiếu nên sai hoàn toàn âm thầm.
+     */
+    private int estimateDurationSeconds(UUID paperId) {
+        var questions = examPaperItemRepository.findByPaperId(paperId).stream()
+            .map(ExamPaperItem::getQuestionId)
+            .filter(Objects::nonNull)
+            .map(questionRepository::findById)
+            .flatMap(Optional::stream)
+            .toList();
+        var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
+            .findByQuestionIdIn(questions.stream().map(Question::getId).distinct().toList()));
+        return PaperTimeCalculator.breakdownOf(questions, assetByQuestionId).totalSeconds();
     }
 
     private static int durationMinutesOf(int durationSeconds) {

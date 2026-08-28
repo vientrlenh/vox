@@ -1,16 +1,20 @@
 name: CD Test
 
-# Bản CD riêng cho nhánh test hiện tại (fixBugDeploy) -- tách khỏi cd.yml (nhánh
-# `default`) để không đụng tới pipeline chính. Trigger thẳng trên push, không
-# qua workflow_run như cd.yml -- workflow_run chỉ fire khi chính file workflow
-# đã tồn tại trên nhánh mặc định của repo (xem comment trong cd.yml), bất tiện
-# cho một nhánh test tạm thời. Đổi lại: không có cổng CI Build trước khi build
-# Docker/push ECR -- chấp nhận được cho mục đích test nhanh, không dùng cho
+# Bản CD riêng cho nhánh test hiện tại (fixBugDeployFinal) -- tách khỏi cd.yml
+# (nhánh `default`) để không đụng tới pipeline chính. Trigger thẳng trên push,
+# không qua workflow_run như cd.yml -- workflow_run chỉ fire khi chính file
+# workflow đã tồn tại trên nhánh mặc định của repo (xem comment trong cd.yml),
+# bất tiện cho một nhánh test tạm thời. Đổi lại: không có cổng CI Build trước khi
+# build Docker/push ECR -- chấp nhận được cho mục đích test nhanh, không dùng cho
 # nhánh production.
+#
+# ⚠️ TÊN NHÁNH DƯỚI ĐÂY PHẢI KHỚP NHÁNH ĐANG LÀM VIỆC, nếu không workflow không
+# chạy lần nào và KHÔNG BÁO LỖI GÌ -- push xong chỉ thấy im lặng, rất dễ tưởng
+# CI hỏng. Cập nhật 2026-08-19: fixBugDeploy -> fixBugDeployFinal.
 on:
   push:
     branches:
-      - fixBugDeploy
+      - fixBugDeployFinal
 
 jobs:
   docker-build-push:

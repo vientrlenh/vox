@@ -30,6 +30,7 @@ import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 class RecalculateExamTimeDurationServiceTests {
@@ -55,7 +56,7 @@ class RecalculateExamTimeDurationServiceTests {
         examScheduleRepository = mock(ExamScheduleRepository.class);
         service = new RecalculateExamTimeDurationService(
             examRepository, examPaperRepository, examPaperItemRepository,
-            questionRepository, examScheduleRepository);
+            questionRepository, mock(QuestionAssetRepository.class), examScheduleRepository);
     }
 
     @Test

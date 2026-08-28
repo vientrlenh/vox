@@ -20,7 +20,7 @@ public class ViewSchoolsUseCase implements IUseCase<ViewSchoolsQuery, PageResult
 
     @Override
     public PageResult<SchoolDto> execute(ViewSchoolsQuery input) {
-        var schools = schoolRepository.findAll(input.page(), input.size());
+        var schools = schoolRepository.findAll(input.page(), input.size(), input.search(), input.isActive());
         return SchoolDtoMapper.toSchoolDtoPage(schools);
     }
     

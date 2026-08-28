@@ -61,4 +61,12 @@ public interface MailTemplatePort {
     /** Trường vừa hết nợ hạn mức AI (mua thêm/gia hạn/nâng cấp) -- gửi mọi SCHOOL_ADMIN của trường. */
     String renderSchoolDebtClearedEmail(String schoolName);
 
+    // ---- đình chỉ/gỡ đình chỉ gói subscription -----------------------------
+
+    /** Gói subscription của trường vừa bị đình chỉ (System Admin hoặc job tự động) -- gửi mọi SCHOOL_ADMIN của trường. */
+    String renderSchoolSubscriptionSuspendedEmail(String schoolName, String reason);
+
+    /** Gói subscription của trường vừa được gỡ đình chỉ -- gửi mọi SCHOOL_ADMIN của trường. */
+    String renderSchoolSubscriptionUnsuspendedEmail(String schoolName);
+
 }

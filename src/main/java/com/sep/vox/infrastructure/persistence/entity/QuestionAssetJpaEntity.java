@@ -63,7 +63,7 @@ public class QuestionAssetJpaEntity {
     @Column(name = "transcript", columnDefinition = "TEXT")
     private String transcript;
 
-    @Column(name = "description", length = 2048)
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "question_asset_order", nullable = false)

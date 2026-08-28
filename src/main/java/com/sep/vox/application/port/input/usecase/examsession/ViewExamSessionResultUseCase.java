@@ -34,6 +34,7 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
     private final ExamItemResponseRepository examItemResponseRepository;
     private final ExamItemEvaluationRepository examItemEvaluationRepository;
     private final ExamPaperItemRepository examPaperItemRepository;
+    private final com.sep.vox.domain.repository.QuestionAssetRepository questionAssetRepository;
 
     public ViewExamSessionResultUseCase(
             ExamCandidateResultRepository examCandidateResultRepository,
@@ -45,7 +46,8 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
             QuestionRepository questionRepository,
             ExamItemResponseRepository examItemResponseRepository,
             ExamItemEvaluationRepository examItemEvaluationRepository,
-            ExamPaperItemRepository examPaperItemRepository) {
+            ExamPaperItemRepository examPaperItemRepository,
+            com.sep.vox.domain.repository.QuestionAssetRepository questionAssetRepository) {
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examSessionResultCalculator = examSessionResultCalculator;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
@@ -56,6 +58,29 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
         this.examItemResponseRepository = examItemResponseRepository;
         this.examItemEvaluationRepository = examItemEvaluationRepository;
         this.examPaperItemRepository = examPaperItemRepository;
+        this.questionAssetRepository = questionAssetRepository;
+    }
+
+    /**
+     * Tài nguyên của các câu, nạp một lần rồi map theo questionId.
+     *
+     * <p>Câu có nhiều asset thì lấy cái đầu theo thứ tự repo trả về, cùng quy tắc với
+     * {@code GetExamSessionPaperUseCase} -- để trang kết quả và màn thi không nhìn vào hai asset
+     * khác nhau của cùng một câu.
+     */
+    private java.util.Map<java.util.UUID, com.sep.vox.domain.dto.QuestionAssetDto> assetsByQuestionId(
+            java.util.List<java.util.UUID> questionIds) {
+        if (questionIds.isEmpty()) {
+            return java.util.Map.of();
+        }
+        var assets = new java.util.HashMap<java.util.UUID, com.sep.vox.domain.dto.QuestionAssetDto>();
+        for (var questionId : questionIds) {
+            questionAssetRepository.findByQuestionId(questionId).stream()
+                .findFirst()
+                .map(com.sep.vox.domain.mapper.QuestionAssetDtoMapper::toDto)
+                .ifPresent(asset -> assets.put(questionId, asset));
+        }
+        return assets;
     }
 
     /**
@@ -79,12 +104,14 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
                 texts.put(question.getId(), question.getQuestionText());
             }
         }
+        var assets = assetsByQuestionId(questionIds);
         return items.stream()
             .map(item -> new ExamCandidateResultItemResponse(
                 item.paperItemId(),
                 item.responseId(),
                 item.sectionId(),
                 item.questionId() == null ? null : texts.get(item.questionId()),
+                item.questionId() == null ? null : assets.get(item.questionId()),
                 item.itemScore(),
                 item.weightedScore()
             ))
@@ -133,12 +160,14 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
                 texts.put(question.getId(), question.getQuestionText());
             }
         }
+        var assets = assetsByQuestionId(questionIds);
         return paperItems.stream()
             .map(paperItem -> new ExamCandidateResultItemResponse(
                 paperItem.getId(),
                 responseByPaperItemId.get(paperItem.getId()),
                 paperItem.getSectionId(),
                 paperItem.getQuestionId() == null ? null : texts.get(paperItem.getQuestionId()),
+                paperItem.getQuestionId() == null ? null : assets.get(paperItem.getQuestionId()),
                 null,
                 null
             ))

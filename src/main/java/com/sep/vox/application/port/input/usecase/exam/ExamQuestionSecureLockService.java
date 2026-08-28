@@ -27,35 +27,58 @@ public class ExamQuestionSecureLockService {
         this.questionRepository = questionRepository;
     }
 
+    /**
+     * TẮT CÓ CHỦ ĐÍCH -- gắn câu hỏi vào kỳ thi không còn niêm phong câu hỏi đó nữa.
+     *
+     * <p>Trước đây hàm này dựng một {@code ExamSecurePool} rồi đặt {@code locked=true},
+     * {@code confidentiality=EXAM_RESTRICTED} và trỏ {@code securePoolId} vào pool. Bỏ vì mức bảo
+     * mật ấy KHÔNG bảo vệ gì thật: cả {@code findAccessible} lẫn {@code findAccessibleForExamPaper}
+     * đều không lọc theo {@code confidentiality}, nên câu hỏi vẫn hiện ra với mọi người và vẫn chọn
+     * được cho kỳ thi khác. Nó chỉ dán một cái nhãn nói sai về trạng thái thật.
+     *
+     * <p>Cũng thôi đặt {@code locked}: bỏ pool thì không còn đường nào tìm lại câu hỏi để mở khoá,
+     * nên đặt khoá là khoá vĩnh viễn.
+     *
+     * <p>Không mất gì khi bỏ cờ đó, vì một câu hỏi muốn vào được kỳ thi hay khung đề thì BẮT BUỘC
+     * phải {@code PUBLISHED} ({@code findAccessibleForExamPaper} lọc {@code q.status = 'PUBLISHED'}),
+     * mà {@code PUBLISHED} tự nó đã nằm trong phép kiểm {@code immutable} ở mọi đường sửa:
+     * {@code status == PUBLISHED || isLocked() || existsUsedInExam(...)}. Nghĩa là vế đầu đã luôn
+     * đúng trước cả khi hai vế sau được xét -- câu hỏi trong kỳ thi vẫn phải nhân bản mới sửa được.
+     *
+     * <p>Giữ nguyên chữ ký và các nơi gọi để bật lại chỉ bằng cách hoàn nguyên thân hàm này.
+     */
     @Transactional
     public void lockQuestionForExam(
             UUID questionId,
             UUID examId,
             ExamSecurePoolReleaseMode releaseModeIfCreating,
             UUID currentUserId) {
-        var now = Instant.now();
-        var pool = examSecurePoolRepository.findByExamId(examId)
-            .orElseGet(() -> examSecurePoolRepository.save(new ExamSecurePool(
-                examId,
-                ExamSecurePoolStatus.SEALED,
-                releaseModeIfCreating,
-                null,
-                null,
-                null,
-                now,
-                now,
-                currentUserId,
-                currentUserId
-            )));
-
-        var question = questionRepository.findById(questionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
-        question.setLocked(true);
-        question.setConfidentiality(QuestionConfidentiality.EXAM_RESTRICTED);
-        question.setSecurePoolId(pool.getId());
-        question.setUpdatedAt(now);
-        question.setUpdatedBy(currentUserId);
-        questionRepository.save(question);
+        // Không làm gì -- xem javadoc. Giữ nguyên thân hàm cũ bên dưới để bật lại chỉ bằng cách
+        // bỏ chú thích, không phải viết lại từ đầu.
+        //
+        // var now = Instant.now();
+        // var pool = examSecurePoolRepository.findByExamId(examId)
+        //     .orElseGet(() -> examSecurePoolRepository.save(new ExamSecurePool(
+        //         examId,
+        //         ExamSecurePoolStatus.SEALED,
+        //         releaseModeIfCreating,
+        //         null,
+        //         null,
+        //         null,
+        //         now,
+        //         now,
+        //         currentUserId,
+        //         currentUserId
+        //     )));
+        //
+        // var question = questionRepository.findById(questionId)
+        //     .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
+        // question.setLocked(true);
+        // question.setConfidentiality(QuestionConfidentiality.EXAM_RESTRICTED);
+        // question.setSecurePoolId(pool.getId());
+        // question.setUpdatedAt(now);
+        // question.setUpdatedBy(currentUserId);
+        // questionRepository.save(question);
     }
 
     @Transactional

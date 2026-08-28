@@ -156,8 +156,10 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
+
         validatePageSize(page, size);
         var query = new ViewSystemRubricsQuery(page, size);
+
         return viewSystemRubricsUseCase.execute(query);
     }
 

@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -11,6 +12,23 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.QuestionBankJpaEntity;
 
 public interface SpringDataQuestionBankRepository extends JpaRepository<QuestionBankJpaEntity, UUID> {
+
+    /**
+     * Trọn danh sách ngân hàng của MỘT phạm vi sở hữu, cho import đối chiếu trùng code.
+     * {@code schoolId} null nghĩa là phạm vi hệ thống (ngân hàng SYSTEM không thuộc trường nào),
+     * nên phải so bằng {@code IS NULL} chứ không so bằng tham số.
+     */
+    @Query("""
+        SELECT qb
+        FROM QuestionBankJpaEntity qb
+        WHERE qb.ownerType = :ownerType
+          AND ((:schoolId IS NULL AND qb.schoolId IS NULL) OR qb.schoolId = :schoolId)
+        """)
+    List<QuestionBankJpaEntity> findByOwnerScope(
+        @Param("ownerType") String ownerType,
+        @Param("schoolId") UUID schoolId
+    );
+
     @Query("""
         SELECT qb
         FROM QuestionBankJpaEntity qb

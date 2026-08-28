@@ -30,6 +30,10 @@ import com.sep.vox.application.query.dto.GradingStatsInfo;
 import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
 import com.sep.vox.application.query.dto.GradingTaskInfo;
 import com.sep.vox.application.query.dto.GradingTaskItemInfo;
+import com.sep.vox.domain.dto.QuestionAssetDto;
+import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
+import com.sep.vox.infrastructure.persistence.entity.QuestionAssetJpaEntity;
+import com.sep.vox.infrastructure.persistence.mapper.QuestionAssetMapper;
 import com.sep.vox.application.query.dto.GradingTurnInfo;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.common.PageResult;
@@ -804,7 +808,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
      */
     private List<GradingTaskItemInfo> taskItems(UUID sessionId) {
         var rows = em.createQuery("""
-            SELECT r.id, r.paperItemId, sec.title, pi.sectionId, q.questionText
+            SELECT r.id, r.paperItemId, sec.title, pi.sectionId, q.questionText, pi.questionId
             FROM ExamItemResponseJpaEntity r
             LEFT JOIN ExamPaperItemJpaEntity pi ON pi.id = r.paperItemId
             LEFT JOIN ExamPaperSectionJpaEntity sec ON sec.id = pi.sectionId
@@ -847,6 +851,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             })
             .toList();
         var fallbackTurnsByResponse = turnsByResponseIds(responseIdsWithoutAiTurns);
+        var assetsByQuestion = questionAssetsByQuestionIds(
+            rows.stream().map(row -> row.get(5, UUID.class)).filter(Objects::nonNull).distinct().toList());
 
         // Số thứ tự câu trong section: rows đã sắp theo (sec.order, pi.order) nên chỉ
         // cần đếm dồn theo sectionId. Câu không thuộc section nào tự thành câu 1.
@@ -874,6 +880,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                 // LEFT JOIN sang câu hỏi ngay trong query có sẵn: không thêm round-trip nào,
                 // giữ đúng "số query cố định" ghi ở đầu hàm.
                 row.get(4, String.class),
+                assetsByQuestion.get(row.get(5, UUID.class)),
                 current == null ? null : current.itemScore(),
                 current == null ? null : current.feedbackSummary(),
                 current == null ? List.of() : scoresByEvaluation.getOrDefault(current.id(), List.of()),
@@ -890,6 +897,40 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             ));
         }
         return result;
+    }
+
+    /**
+     * Tài nguyên của từng câu hỏi, gom trong MỘT query rồi map theo questionId.
+     *
+     * <p>Cố ý không LEFT JOIN thẳng vào query {@code taskItems}: {@code question_assets} là quan hệ
+     * một-nhiều ở mức schema (chỉ có {@code CreateQuestionAssetUseCase} chặn cái thứ hai), nên một
+     * câu lỡ có hai asset trong dữ liệu cũ sẽ nhân đôi CẢ DÒNG CÂU HỎI — giáo viên thấy câu 2 xuất
+     * hiện hai lần trong màn chấm. Thêm một round-trip rẻ hơn nhiều so với lỗi đó.
+     *
+     * <p>Câu có nhiều asset thì lấy cái {@code order} nhỏ nhất, cùng quy tắc với
+     * {@code GetExamSessionPaperUseCase} ({@code findByQuestionId(...).findFirst()}) — để màn chấm
+     * và màn thi không bao giờ nhìn vào hai asset khác nhau của cùng một câu.
+     */
+    private Map<UUID, QuestionAssetDto> questionAssetsByQuestionIds(List<UUID> questionIds) {
+        if (questionIds.isEmpty()) {
+            return Map.of();
+        }
+
+        var assets = em.createQuery("""
+            SELECT a FROM QuestionAssetJpaEntity a
+            WHERE a.questionId IN :questionIds
+            ORDER BY a.order ASC
+        """, QuestionAssetJpaEntity.class)
+            .setParameter("questionIds", questionIds)
+            .getResultList();
+
+        var byQuestion = new HashMap<UUID, QuestionAssetDto>();
+        for (var asset : assets) {
+            byQuestion.putIfAbsent(
+                asset.getQuestionId(),
+                QuestionAssetDtoMapper.toDto(QuestionAssetMapper.toDomain(asset)));
+        }
+        return byQuestion;
     }
 
     private record CurrentEvaluation(UUID id, BigDecimal itemScore, String feedbackSummary) {

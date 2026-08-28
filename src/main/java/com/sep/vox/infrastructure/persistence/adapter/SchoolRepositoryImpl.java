@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.repository.SchoolRepository;
@@ -44,9 +45,12 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     }
 
     @Override
-    public PageResult<School> findAll(int page, int size) {
+    public PageResult<School> findAll(int page, int size, String search, Boolean isActive) {
         var pageRequest = PageRequest.of(page - 1, size);
-        var pageable = springDataSchoolRepository.findAll(pageRequest);
+        var pattern = StringNormalization.toLikePattern(search);
+        var pageable = isActive != null
+            ? springDataSchoolRepository.findAllBySearchAndIsActive(pattern, isActive, pageRequest)
+            : springDataSchoolRepository.findAllBySearch(pattern, pageRequest);
         return new PageResult<>(
             pageable.getContent().stream()
                 .map(SchoolMapper::toDomain)

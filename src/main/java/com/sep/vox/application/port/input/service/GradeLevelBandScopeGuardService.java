@@ -29,6 +29,15 @@ import com.sep.vox.domain.repository.SchoolGradeRepository;
  * hơn, nên trần sẽ trượt vì vô ý chứ không cần ai cố tình lách. Vì vậy ở đây luôn lần ngược
  * Lớp -> Khối năm học -> Khối trước khi so trần.
  *
+ * <p><b>Hai loại bài kiểm tra, hai trần khác nhau:</b> cột {@code default_target_band_id} mang
+ * nghĩa trần CENTRALIZE (kiểm tra tập trung -- policy áp cho cả Khối hoặc cả Niên khóa, tức
+ * {@code schoolClassId} KHÔNG được chọn); cột {@code hard_max_band_id} mang nghĩa trần CLASS_TEST
+ * (lớp chuyên có bài kiểm tra riêng -- policy neo đúng vào 1 {@code schoolClassId} cụ thể). Tên
+ * cột giữ nguyên như lúc thiết kế ban đầu (không đổi schema), nhưng ngữ nghĩa THỰC TẾ là theo loại
+ * bài kiểm tra, không phải "gợi ý mặc định" với "trần cứng". Chỉ đúng phạm vi Lớp mới được nới tới
+ * trần CLASS_TEST; Khối và Niên khóa (gộp nhiều lớp, không tách được lớp nào chuyên) đều bị ép về
+ * trần CENTRALIZE thấp hơn -- xem {@link Batch#effectiveCeilingBand}.
+ *
  * <p><b>Không áp dụng cho policy hệ thống:</b> CreateSystemAssessmentPolicyUseCase tạo policy với
  * cả bốn cột phạm vi là null (toàn hệ, chỉ theo ngôn ngữ + khung) -- không có khối nào để suy ra,
  * nên bảng trần theo khối về bản chất không phủ được luồng đó.
@@ -68,8 +77,8 @@ public class GradeLevelBandScopeGuardService {
     }
 
     /**
-     * Bậc gợi ý mặc định của khối, để màn hình tạo policy điền sẵn. Rỗng khi khối chưa cấu hình
-     * trần cho phiên bản khung này.
+     * Trần CENTRALIZE (kiểm tra tập trung, không neo vào 1 Lớp cụ thể) của khối. Rỗng khi khối
+     * chưa cấu hình trần cho phiên bản khung này.
      */
     public Optional<FrameworkResultBand> defaultTargetBand(UUID gradeLevelId, UUID frameworkVersionId) {
         return bandScopeRepository.findByGradeLevelIdAndFrameworkVersionId(gradeLevelId, frameworkVersionId)
@@ -129,20 +138,36 @@ public class GradeLevelBandScopeGuardService {
                 return;
             }
 
-            var hardMaxBand = findBand(scope.get().getHardMaxBandId());
-            if (hardMaxBand.isEmpty()) {
+            var centralizeCapBand = findBand(scope.get().getDefaultTargetBandId());
+            var classTestCapBand = findBand(scope.get().getHardMaxBandId());
+            if (centralizeCapBand.isEmpty() || classTestCapBand.isEmpty()) {
                 // FK trong V42 lẽ ra không cho phép xảy ra; nếu vẫn xảy ra thì cấu hình hỏng chứ
                 // không phải người dùng sai -- không chặn họ, nhưng phải để lại dấu vết.
                 LOGGER.error(
-                    "Trần bậc của khối {} (phiên bản khung {}) trỏ tới bậc không tồn tại: {}.",
-                    resolvedGradeLevelId, frameworkVersionId, scope.get().getHardMaxBandId()
+                    "Trần bậc của khối {} (phiên bản khung {}) trỏ tới bậc không tồn tại"
+                        + " (centralize={}, classTest={}).",
+                    resolvedGradeLevelId, frameworkVersionId,
+                    scope.get().getDefaultTargetBandId(), scope.get().getHardMaxBandId()
                 );
                 return;
             }
 
-            if (targetBand.getOrder() > hardMaxBand.get().getOrder()) {
-                throw new IllegalArgumentException(buildMessage(resolvedGradeLevelId, targetBand, hardMaxBand.get()));
+            FrameworkResultBand effectiveCeiling =
+                    effectiveCeilingBand(schoolClassId, centralizeCapBand.get(), classTestCapBand.get());
+            if (targetBand.getOrder() > effectiveCeiling.getOrder()) {
+                throw new IllegalArgumentException(buildMessage(resolvedGradeLevelId, targetBand, effectiveCeiling));
             }
+        }
+
+        /**
+         * Chỉ policy neo đúng vào 1 Lớp cụ thể ({@code schoolClassId} khác null) mới là bài
+         * CLASS_TEST, được nới tới trần {@code classTestCapBand}. Policy áp cho cả Khối hoặc cả
+         * Niên khóa (gộp nhiều lớp cùng lúc, không tách được lớp nào chuyên) là bài CENTRALIZE,
+         * chỉ được trần {@code centralizeCapBand} thấp hơn.
+         */
+        private static FrameworkResultBand effectiveCeilingBand(UUID schoolClassId,
+                FrameworkResultBand centralizeCapBand, FrameworkResultBand classTestCapBand) {
+            return schoolClassId != null ? classTestCapBand : centralizeCapBand;
         }
 
         /**

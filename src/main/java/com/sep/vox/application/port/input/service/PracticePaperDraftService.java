@@ -102,7 +102,7 @@ public class PracticePaperDraftService {
             return store(
                 draftId,
                 studentId,
-                PracticePaperDraft.failed(draftId, "Dựng đề bị gián đoạn, vui lòng thử lại.")
+                PracticePaperDraft.failed(draftId, "Dựng đề bị gián đoạn, vui lòng thử lại.", null)
             );
         } catch (ExecutionException failed) {
             return store(draftId, studentId, failure(draftId, failed));
@@ -129,22 +129,31 @@ public class PracticePaperDraftService {
 
     private static PracticePaperDraft failure(UUID draftId, Throwable error) {
         LOGGER.warn("Dựng đề thất bại cho draft {}", draftId, error);
-        return PracticePaperDraft.failed(draftId, readableReason(error));
+        var reason = readableReason(error);
+        return PracticePaperDraft.failed(draftId, reason.message(), reason.errorCode());
+    }
+
+    /** Cặp (thông báo, mã lỗi) suy ra từ nguyên nhân thất bại. */
+    private record FailureReason(String message, String errorCode) {
     }
 
     /** Giữ nguyên thông báo của lỗi nghiệp vụ (hết hạn mức, chủ đề chưa có câu...) vì chúng
-     * được viết để hiện thẳng cho học sinh; lỗi lạ thì trả câu chung, không lộ chi tiết kỹ thuật. */
-    private static String readableReason(Throwable error) {
+     * được viết để hiện thẳng cho học sinh; lỗi lạ thì trả câu chung, không lộ chi tiết kỹ thuật.
+     * errorCode chỉ gắn cho QuotaExceededException -- đây là lỗi KHÔNG đáng cho học sinh thử lại
+     * (hạn mức không tự đầy lại), khác các lỗi nghiệp vụ khác vẫn có thể hết khi bấm lại. */
+    private static FailureReason readableReason(Throwable error) {
         var cause = error instanceof ExecutionException && error.getCause() != null
             ? error.getCause()
             : error;
+        if (cause instanceof QuotaExceededException) {
+            return new FailureReason(cause.getMessage(), "QUOTA_EXCEEDED");
+        }
         if (cause instanceof NotFoundException
-                || cause instanceof QuotaExceededException
                 || cause instanceof IllegalStateException
                 || cause instanceof IllegalArgumentException) {
-            return cause.getMessage();
+            return new FailureReason(cause.getMessage(), null);
         }
-        return "Không dựng được đề luyện lúc này, vui lòng thử lại.";
+        return new FailureReason("Không dựng được đề luyện lúc này, vui lòng thử lại.", null);
     }
 
 }

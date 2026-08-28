@@ -54,15 +54,15 @@ public class RegenerateQuestionAssetAnalysisUseCase implements IUseCase<Regenera
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         var question = questionRepository.findById(input.questionId())
-            .orElseThrow(() -> new NotFoundException("KhÃ´ng tÃ¬m tháº¥y cÃ¢u há»i"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
         var sourceAsset = questionAssetRepository.findById(input.assetId())
-            .orElseThrow(() -> new NotFoundException("KhÃ´ng tÃ¬m tháº¥y tÃ i nguyÃªn cÃ¢u há»i"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy tài nguyên câu hỏi"));
         if (!sourceAsset.getQuestionId().equals(question.getId())) {
-            throw new ForbiddenException("TÃ i nguyÃªn khÃ´ng thuá»™c cÃ¢u há»i nÃ y");
+            throw new ForbiddenException("Tài nguyên không thuộc câu hỏi này");
         }
 
         var bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("KhÃ´ng tÃ¬m tháº¥y ngÃ¢n hÃ ng cÃ¢u há»i"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         var owner = currentUserId.equals(question.getCreatedBy());
         var editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
@@ -71,7 +71,7 @@ public class RegenerateQuestionAssetAnalysisUseCase implements IUseCase<Regenera
         var systemAdminOnSystemBank = userContextPort.isSystemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
         if (!systemAdminOnSystemBank && !owner && !editorCollaborator) {
-            throw new ForbiddenException("Quyá»n truy cáº­p bá»‹ tá»« chá»‘i");
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
         var immutable = question.getStatus() == QuestionStatus.PUBLISHED
@@ -94,7 +94,7 @@ public class RegenerateQuestionAssetAnalysisUseCase implements IUseCase<Regenera
         return questionAssetRepository.findByQuestionId(questionId).stream()
             .filter(asset -> asset.getOrder() == order)
             .findFirst()
-            .orElseThrow(() -> new NotFoundException("KhÃ´ng tÃ¬m tháº¥y tÃ i nguyÃªn cÃ¢u há»i trong báº£n nhÃ¡p má»›i"));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy tài nguyên câu hỏi trong bản nháp mới"));
     }
 
     private void resetForAnalysis(QuestionAsset asset) {

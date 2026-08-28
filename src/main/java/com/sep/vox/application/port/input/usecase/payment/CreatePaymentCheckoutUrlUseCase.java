@@ -155,6 +155,15 @@ public class CreatePaymentCheckoutUrlUseCase
                 "Đơn hàng này đã được thanh toán, hệ thống đang ghi nhận. Vui lòng đợi trong giây lát.");
 
             case CANCELLED, EXPIRED, FAILED, NOT_FOUND -> {
+                // Ân hạn cho NOT_FOUND: lần thử treo có thể là của MỘT TAB KHÁC vừa commit dòng
+                // PENDING và đang đợi createPaymentLink trả về. Chốt hỏng nó lúc ấy là đánh hỏng một
+                // lần thử sắp sống -- xem PaymentRecord.canRetireOnGatewayNotFound.
+                if (remoteStatus == PaymentLinkRemoteStatus.NOT_FOUND
+                        && !pending.canRetireOnGatewayNotFound(Instant.now())) {
+                    throw new IllegalStateException(
+                        "Đơn hàng vừa mở một phiên thanh toán mà cổng chưa xác nhận. "
+                            + "Vui lòng thử lại sau vài phút.");
+                }
                 // Cổng đã xác nhận lần thử này KHÔNG ra tiền -- chốt nó lại để nhường chỗ cho lần mới.
                 // Chỉ được chốt SAU khi có xác nhận đó: đánh hỏng một lần thử còn sống nghĩa là lúc
                 // trường trả vào link cũ sẽ không còn dòng nào đang chờ khoản tiền đó.

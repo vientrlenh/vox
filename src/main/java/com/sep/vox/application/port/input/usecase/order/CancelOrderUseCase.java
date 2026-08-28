@@ -105,6 +105,16 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
                 "Đơn hàng này đã được thanh toán, hệ thống đang ghi nhận. Không thể hủy.");
         }
 
+        // Lần thử vừa mở mà cổng đã nói không có: nhiều khả năng createPaymentLink của một tab khác
+        // đang bay dở. Bắt đợi hết ân hạn rồi hủy lại -- xem PaymentRecord.canRetireOnGatewayNotFound.
+        // Tách riêng khỏi nhánh dưới để câu báo nói đúng việc phải làm: ca này chỉ cần thử lại sau
+        // vài phút, chứ không phải "đợi đơn hết hạn".
+        if (remoteStatus == PaymentLinkRemoteStatus.NOT_FOUND
+                && !attempt.canRetireOnGatewayNotFound(Instant.now())) {
+            throw new IllegalStateException(
+                "Đơn hàng vừa mở một phiên thanh toán mà cổng chưa xác nhận. Vui lòng thử lại sau vài phút.");
+        }
+
         // Cổng đã xác nhận phiên chết sẵn (trường bấm hủy trên trang cổng, hoặc link tự hết hạn):
         // không cần gọi hủy nữa, chỉ chốt lại dòng của mình cho khớp.
         if (isAlreadyDead(remoteStatus)) {
@@ -159,13 +169,21 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
         LOGGER.info("Đóng lần thanh toán {} của đơn {} do trường hủy đơn", attemptId, order.getId());
     }
 
-    /** Cổng đã chốt là phiên này không ra tiền -- không cần hủy thêm. */
+    /**
+     * Cổng đã chốt là phiên này không ra tiền -- không cần hủy thêm.
+     *
+     * <p>NOT_FOUND phải nằm ở đây (đã qua ân hạn, chỗ gọi kiểm trước): thiếu nó thì một dòng mồ côi
+     * rơi xuống nhánh "phiên vẫn sống" bên dưới, mà gọi hủy một mã cổng không biết thì
+     * cancelPaymentLink trả false (PayOS nuốt lỗi rồi trả false, SePay vốn luôn trả false) -- trường
+     * nhận câu "đợi đơn hết hạn" trong khi chính dòng mồ côi ấy đang chặn expireIfOverdue, nên đơn
+     * sẽ không bao giờ hết hạn. Đường thoát thủ công mà hỏng thì chỉ còn sửa tay dưới DB.
+     */
     private boolean isAlreadyDead(PaymentLinkRemoteStatus status) {
         if (status == null) {
             return false;
         }
         return switch (status) {
-            case CANCELLED, EXPIRED, FAILED -> true;
+            case CANCELLED, EXPIRED, FAILED, NOT_FOUND -> true;
             default -> false;
         };
     }

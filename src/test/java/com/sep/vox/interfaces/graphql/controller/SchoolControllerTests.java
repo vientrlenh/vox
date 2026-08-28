@@ -291,31 +291,6 @@ class SchoolControllerTests {
         assertThrows(IllegalArgumentException.class, () -> controller.schoolClassesByUser(schoolId, userId, null, 1, 0));
     }
 
-    // @Test
-    // @SuppressWarnings("unchecked")
-    // void school_class_user_user_field_should_load_related_user() {
-    //     var userId = UUID.randomUUID();
-    //     var response = new SchoolClassUserDto(
-    //         UUID.randomUUID(),
-    //         userId,
-    //         UUID.randomUUID(),
-    //         true,
-    //         "2026-06-06T12:00:00Z",
-    //         "2026-06-06T12:00:00Z",
-    //         UUID.randomUUID()
-    //     );
-    //     var expected = new UserDto(userId, "student@example.com", null, "Student", null, null, null, null, null, null);
-    //     var env = mock(DataFetchingEnvironment.class);
-    //     var loader = mock(DataLoader.class);
-    //     when(env.<UUID, UserDto>getDataLoader("userBySchoolClassUser")).thenReturn(loader);
-    //     when(loader.load(userId)).thenReturn(CompletableFuture.completedFuture(expected));
-
-    //     var result = controller.user(response, env).join();
-
-    //     assertThat(result).isEqualTo(expected);
-    //     verify(loader).load(userId);
-    // }
-
     @Test
     void update_school_class_name_only_should_return_id_response() {
         var classId = UUID.randomUUID();

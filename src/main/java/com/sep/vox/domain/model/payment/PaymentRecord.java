@@ -1,6 +1,7 @@
 package com.sep.vox.domain.model.payment;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -25,6 +26,17 @@ import java.util.UUID;
  * (source_type, source_id) đa hình bằng các cột có kiểu -- thêm lại ở đây là đi ngược.
  */
 public class PaymentRecord {
+
+    /**
+     * Cửa sổ ân hạn trước khi được phép tin một câu NOT_FOUND từ cổng -- xem
+     * {@link #canRetireOnGatewayNotFound}.
+     *
+     * <p>Đặt dài hơn hẳn mọi timeout gọi cổng (SePay: 5s kết nối + 15s đọc; SDK PayOS không công bố
+     * ngưỡng nên phải chừa rộng) vì nó phải trùm được TOÀN BỘ quãng createPaymentLink còn đang bay.
+     * Đắt nhất khi đặt rộng chỉ là dòng mồ côi bị dọn ở lượt đối soát sau -- 5 phút nữa; đặt hẹp thì
+     * cái giá là một khoản tiền vào mà không giao gì.
+     */
+    private static final Duration ORPHAN_GRACE = Duration.ofMinutes(5);
 
     private UUID id;
     private UUID orderId;
@@ -183,5 +195,27 @@ public class PaymentRecord {
     /** Đã kết thúc (không còn chờ cổng) -- chốt chặn trước khi cho phát link mới. */
     public boolean isSettled() {
         return status != PaymentStatus.PENDING;
+    }
+
+    /**
+     * Có được phép tin lời cổng nói "không có phiên nào mang mã này" mà chốt lần thử này là hỏng hay
+     * không.
+     *
+     * <p>Cần thiết vì dòng PENDING nay được COMMIT TRƯỚC lúc gọi createPaymentLink (xem
+     * CreatePaymentCheckoutUrlUseCase): trong suốt quãng lời gọi đó còn đang bay, cổng CHƯA dựng
+     * phiên nên trả NOT_FOUND là hoàn toàn đúng -- mà lần thử ấy thì sắp sống. Chốt hỏng nó ngay lúc
+     * này tạo ra đúng ca tệ nhất hệ thống có: trường nhận được link thật, trả tiền vào đó, còn dòng
+     * ứng với khoản tiền ấy đã mang FAILED nên callback không giao gì cả (xem
+     * CallbackOutcome.PAID_AFTER_WRITE_OFF). Cửa sổ này hẹp nhưng có thật -- job đối soát chạy nền
+     * hoàn toàn có thể rơi vào giữa hai bước đó.
+     *
+     * <p>Quá {@code ORPHAN_GRACE} thì không còn lời gọi nào bay được nữa, nên NOT_FOUND lúc đó nghĩa
+     * là phiên chưa từng dựng xong: không có đường nào ra tiền theo mã ấy, chốt hỏng là an toàn.
+     *
+     * <p>Thiếu createdAt thì trả false: chưa biết lần thử này bao nhiêu tuổi thì không được phép
+     * đánh hỏng nó.
+     */
+    public boolean canRetireOnGatewayNotFound(Instant now) {
+        return createdAt != null && !now.isBefore(createdAt.plus(ORPHAN_GRACE));
     }
 }

@@ -138,6 +138,30 @@ class CreatePaymentCheckoutUrlUseCaseTests {
     }
 
     /**
+     * Mặt kia của NOT_FOUND, và là ca nguy hiểm hơn: lần thử vừa mở vài giây trước thì NOT_FOUND
+     * KHÔNG có nghĩa là nó chết. Rất có thể một tab khác vừa commit dòng PENDING và đang đợi
+     * createPaymentLink trả về -- cổng chưa dựng phiên nên trả NOT_FOUND hoàn toàn đúng.
+     *
+     * <p>Chốt hỏng nó lúc này là tạo ra ca tệ nhất: tab kia nhận link thật, trường trả tiền vào đó,
+     * mà dòng ứng với khoản tiền ấy đã FAILED nên callback không giao gì (PAID_AFTER_WRITE_OFF).
+     * Thà bắt đợi vài phút.
+     */
+    @Test
+    void should_not_believe_not_found_for_an_attempt_that_was_just_opened() {
+        var justOpened = existingAttempt(Instant.now().minus(3, ChronoUnit.SECONDS));
+        when(paymentRecordRepository.findPendingByOrderId(ORDER_ID)).thenReturn(Optional.of(justOpened));
+        when(paymentProcessPort.getPaymentLinkStatus("orphan-ref"))
+            .thenReturn(new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND));
+
+        assertThatThrownBy(() -> useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS")))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("thử lại sau vài phút");
+
+        assertThat(justOpened.getStatus()).isEqualTo(PaymentStatus.PENDING);
+        verify(paymentProcessPort, never()).createPaymentLink(any());
+    }
+
+    /**
      * Cổng nói đã thu tiền cho lần thử đang treo: KHÔNG được phát thêm link nào. Phát nữa là hai phiên
      * cùng sống trên một đơn, tức mời trường trả lần thứ hai.
      */
@@ -181,8 +205,14 @@ class CreatePaymentCheckoutUrlUseCaseTests {
     }
 
     private static PaymentRecord existingAttempt() {
+        // Mặc định là lần thử ĐÃ QUA ân hạn: phần lớn phép kiểm dưới đây nói về hành vi ở trạng thái
+        // ổn định, không phải về cửa sổ vài phút ngay sau lúc mở lần thử.
+        return existingAttempt(Instant.now().minus(10, ChronoUnit.MINUTES));
+    }
+
+    private static PaymentRecord existingAttempt(Instant createdAt) {
         var attempt = PaymentRecord.forEBankingCheckout(
-            ORDER_ID, new BigDecimal("500000"), PaymentProvider.PAYOS, "orphan-ref", Instant.now());
+            ORDER_ID, new BigDecimal("500000"), PaymentProvider.PAYOS, "orphan-ref", createdAt);
         attempt.setId(UUID.randomUUID());
         return attempt;
     }

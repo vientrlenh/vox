@@ -109,9 +109,9 @@ public class PendingOrderReconciler {
                 }
             }
 
-            // Tới đây đơn chắc chắn không còn lần thử nào đang treo: hoặc chưa từng có, hoặc vừa bị
-            // chốt hỏng ở trên. expireIfOverdue vẫn tự kiểm tra lại dưới row lock vì giữa hai bước
-            // này trường hoàn toàn có thể vừa bấm thanh toán lại.
+            // Thử đóng đơn nếu đã quá hạn. KHÔNG giả định ở đây rằng đơn không còn lần thử treo:
+            // reconcileAttempt trả false cho cả ca "cổng nói vẫn đang chờ trả" lẫn ca gọi cổng hỏng.
+            // expireIfOverdue tự kiểm tra lại dưới row lock và tự từ chối khi còn dòng PENDING.
             if (expireOverdue(order, now)) {
                 expired++;
             }
@@ -143,7 +143,7 @@ public class PendingOrderReconciler {
 
             // Chỉ đóng LẦN THỬ chứ không đóng đơn -- cùng lý do như ở callback: trường phải bấm trả
             // lại được mà không cần đặt đơn mới. Xem OrderSettlementService.failAttempt.
-            if (isFinalFailure(remoteStatus)) {
+            if (isFinalFailure(remoteStatus, attempt)) {
                 LOGGER.info("[RECONCILER] Chốt lần thanh toán {} (orderRef={}) thành FAILED do cổng {} báo {}",
                     attempt.getId(), attempt.getProviderOrderRef(), attempt.getProvider(), remoteStatus);
                 orderSettlementService.failAttempt(attempt, PaymentStatus.FAILED);
@@ -167,13 +167,25 @@ public class PendingOrderReconciler {
         }
     }
 
-    /** null hoặc PENDING/PROCESSING/UNDERPAID = chưa phải trạng thái cuối, chưa chốt gì. */
-    private boolean isFinalFailure(PaymentLinkRemoteStatus status) {
+    /**
+     * null hoặc PENDING/PROCESSING/UNDERPAID = chưa phải trạng thái cuối, chưa chốt gì.
+     *
+     * <p>NOT_FOUND PHẢI nằm ở đây, và đây là chỗ quan trọng nhất trong ba chỗ xử lý nó. Dòng mồ côi
+     * (cổng chưa từng thấy mã, sinh ra khi createPaymentLink hỏng giữa chừng) mà không được chốt thì
+     * {@code expireIfOverdue} TỪ CHỐI đóng đơn -- nó thấy còn lần thử treo nên trả false. Đơn kẹt
+     * PENDING vĩnh viễn chứ không phải tới lúc hết hạn: hết hạn là thứ chính job này phải thực hiện,
+     * mà nó lại đang bị chặn bởi đúng dòng nó không chịu dọn. Với đơn đăng ký thì
+     * uq_orders_one_open_subscription_order khóa luôn trường khỏi việc đặt đơn mới -- cũng vĩnh viễn.
+     */
+    private boolean isFinalFailure(PaymentLinkRemoteStatus status, PaymentRecord attempt) {
         if (status == null) {
             return false;
         }
         return switch (status) {
             case CANCELLED, EXPIRED, FAILED -> true;
+            // Ân hạn trước khi tin NOT_FOUND -- xem PaymentRecord.canRetireOnGatewayNotFound. Job
+            // này chạy nền nên nó chính là thứ dễ rơi vào giữa lúc createPaymentLink còn đang bay.
+            case NOT_FOUND -> attempt.canRetireOnGatewayNotFound(Instant.now());
             default -> false;
         };
     }

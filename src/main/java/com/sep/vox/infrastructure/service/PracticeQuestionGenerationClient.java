@@ -68,7 +68,7 @@ public class PracticeQuestionGenerationClient implements PracticeQuestionGenerat
             var payload = new java.util.LinkedHashMap<String, Object>();
             payload.put("topic_id", topic.id().toString());
             payload.put("topic_name", topic.name());
-            payload.put("interest_dimension", topic.interestDimension());
+            payload.put("interest_dimensions", topic.interestDimension());
             payload.put("curriculum_group", topic.curriculumGroup());
             payload.put("target_criterion_code", criterionCode);
             payload.put("target_sub_attribute", subAttribute);

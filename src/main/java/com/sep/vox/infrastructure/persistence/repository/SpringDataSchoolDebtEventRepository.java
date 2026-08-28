@@ -8,5 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.sep.vox.infrastructure.persistence.entity.SchoolDebtEventJpaEntity;
 
 public interface SpringDataSchoolDebtEventRepository extends JpaRepository<SchoolDebtEventJpaEntity, UUID> {
-    List<SchoolDebtEventJpaEntity> findAllBySchoolId(UUID schoolId);
+    List<SchoolDebtEventJpaEntity> findBySchoolId(UUID schoolId);
 }

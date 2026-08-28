@@ -2,9 +2,11 @@ package com.sep.vox.application.port.input.usecase.examcandidate;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -88,12 +91,12 @@ public class UpdateExamCandidatesAttendanceUseCase
         }
 
         var absentIds = new HashSet<>(input.candidateIds() == null ? List.<UUID>of() : input.candidateIds());
-        var scheduleCandidateIds = candidates.stream().map(candidate -> candidate.getId()).collect(java.util.stream.Collectors.toSet());
+        var scheduleCandidateIds = candidates.stream().map(candidate -> candidate.getId()).collect(Collectors.toSet());
         if (!scheduleCandidateIds.containsAll(absentIds)) {
             throw new IllegalArgumentException("Danh sách thí sinh điểm danh không hợp lệ");
         }
 
-        var changed = new java.util.ArrayList<com.sep.vox.domain.model.exam.ExamCandidate>();
+        var changed = new ArrayList<ExamCandidate>();
         for (var candidate : candidates) {
             var shouldBeAbsent = absentIds.contains(candidate.getId());
             if (candidate.getStatus() == ExamCandidateStatus.EXEMPTED

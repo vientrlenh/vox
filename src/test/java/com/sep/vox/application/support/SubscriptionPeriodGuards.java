@@ -4,7 +4,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.time.LocalDate;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,8 +29,11 @@ public final class SubscriptionPeriodGuards {
     public static SubscriptionPeriodGuardService alwaysWithinPeriod() {
         var subscription = new SchoolSubscription();
         subscription.setId(UUID.randomUUID());
-        subscription.setStartDate(LocalDate.now().minusYears(50));
-        subscription.setEndDate(LocalDate.now().plusYears(50));
+        // ChronoUnit.YEARS/MONTHS KHÔNG dùng được với Instant (ném UnsupportedTemporalTypeException):
+        // Instant không có lịch nên không biết một năm dài bao nhiêu. Đếm bằng ngày -- ý ở đây chỉ là
+        // "một cửa sổ rộng tới mức mọi test đều lọt", nên độ chính xác của năm nhuận không quan trọng.
+        subscription.setStartDate(Instant.now().minus(50L * 365, ChronoUnit.DAYS));
+        subscription.setEndDate(Instant.now().plus(50L * 365, ChronoUnit.DAYS));
 
         var repository = mock(SchoolSubscriptionRepository.class);
         when(repository.findActiveBySchoolId(any())).thenReturn(Optional.of(subscription));

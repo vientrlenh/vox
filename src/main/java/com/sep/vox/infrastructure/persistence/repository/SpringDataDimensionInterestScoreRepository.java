@@ -19,7 +19,7 @@ public interface SpringDataDimensionInterestScoreRepository
 
     @Modifying
     @Query(value = """
-        UPDATE dimension_interest_score
+        UPDATE dimension_interest_scores
         SET baseline_score = score
         WHERE learner_profile_id = :profileId
           AND baseline_score IS NULL
@@ -28,7 +28,7 @@ public interface SpringDataDimensionInterestScoreRepository
 
     @Modifying
     @Query(value = """
-        INSERT INTO dimension_interest_score (
+        INSERT INTO dimension_interest_scores (
             id, learner_profile_id, dimension, score
         ) VALUES (:id, :profileId, :dimension, :score)
         ON CONFLICT (learner_profile_id, dimension)
@@ -41,6 +41,6 @@ public interface SpringDataDimensionInterestScoreRepository
         @Param("score") java.math.BigDecimal score
     );
 
-    // GỠ: copyScores. Nó chỉ tồn tại để chép 6 dòng điểm sang learner_profile bản mới mỗi lần
+    // GỠ: copyScores. Nó chỉ tồn tại để chép 6 dòng điểm sang learner_profiles bản mới mỗi lần
     // hồ sơ đổi. Từ khi hồ sơ về 1-1 và cập nhật tại chỗ thì id không đổi, điểm nằm yên một chỗ.
 }

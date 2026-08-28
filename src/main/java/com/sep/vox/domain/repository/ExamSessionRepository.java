@@ -15,8 +15,8 @@ public interface ExamSessionRepository {
     Optional<ExamSession> findLatestByExamIdAndCandidateId(UUID examId, UUID candidateId);
     Optional<ExamSession> findLatestByCandidateId(UUID candidateId);
     Optional<ExamSession> findLatestByCandidateIdAndStatuses(UUID candidateId, Collection<ExamSessionStatus> statuses);
-    List<ExamSession> findAllByCandidateId(UUID candidateId);
-    List<ExamSession> findAllByCandidateIdIn(Collection<UUID> candidateIds);
+    List<ExamSession> findByCandidateId(UUID candidateId);
+    List<ExamSession> findByCandidateIdIn(Collection<UUID> candidateIds);
     /**
      * Số phiên còn đang làm bài ({@link ExamSessionStatus#RESUMABLE}) của một bài kiểm tra.
      *
@@ -26,8 +26,8 @@ public interface ExamSessionRepository {
      */
     long countActiveByExamId(UUID examId);
 
-    List<ExamSession> findDeferredGradingCandidates(java.time.Instant now);
-    List<ExamSession> findPastScheduleEndCandidates(java.time.Instant threshold);
+    List<ExamSession> findDeferredGradingCandidates(Instant now);
+    List<ExamSession> findPastScheduleEndCandidates(Instant threshold);
     boolean existsById(UUID id);
     /**
      * Đã có phiên thi nào dựng trên mã đề này chưa. {@code exam_sessions.paper_id} là cột NOT NULL

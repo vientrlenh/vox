@@ -48,11 +48,11 @@ import com.sep.vox.application.event.SchoolSubscriptionUnsuspendedPayloadV1;
 import com.sep.vox.application.port.output.PushNotificationPort;
 import com.sep.vox.application.response.output.PushMessage;
 import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.notification.Notification;
 import com.sep.vox.domain.model.notification.NotificationCategory;
 import com.sep.vox.domain.model.notification.NotificationPreference;
 import com.sep.vox.domain.model.outbox.ProcessedEvent;
-import com.sep.vox.domain.model.subscription.QuotaType;
 import com.sep.vox.domain.repository.NotificationDeviceRepository;
 import com.sep.vox.domain.repository.NotificationPreferenceRepository;
 import com.sep.vox.domain.repository.NotificationRepository;
@@ -418,7 +418,7 @@ public class NotificationPushedEventConsumer {
                 yield fanOut(payload.systemAdminIds(), category,
                     "Cảnh báo: nợ hạn mức AI vượt trần",
                     "%s -- nợ %s vượt trần cảnh báo %s".formatted(quotaLabel(payload.quotaType()),
-                        formatUsd(payload.overageUsd()), formatUsd(payload.capUsd())),
+                        formatAmount(payload.overageVnd()), formatAmount(payload.capVnd())),
                     data(eventType, "schoolId", payload.schoolId()));
             }
 
@@ -536,17 +536,12 @@ public class NotificationPushedEventConsumer {
         return amount == null ? "--" : AMOUNT_FORMAT.get().format(amount) + " ₫";
     }
 
-    private String formatUsd(BigDecimal amountUsd) {
-        return amountUsd == null ? "--" : "$" + amountUsd.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
-    }
-
     private String quotaLabel(QuotaType quotaType) {
         if (quotaType == null) {
             return "--";
         }
         return switch (quotaType) {
-            case GRADING -> "Bài thi cần chấm";
-            case CLASS_TEST -> "Bài kiểm tra trên lớp";
+            case EXAM -> "Bài kiểm tra";
             case PRACTICE -> "Lượt ôn luyện cá nhân";
         };
     }

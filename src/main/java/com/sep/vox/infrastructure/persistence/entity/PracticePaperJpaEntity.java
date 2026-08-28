@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(
-    name = "practice_paper",
+    name = "practice_papers",
     indexes = {
         @Index(
             name = "idx_practice_paper_student_created",

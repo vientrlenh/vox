@@ -20,11 +20,11 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.ResolveExamCandidateAttemptsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.ExamCandidateAttempts;
-import com.sep.vox.domain.dto.SchoolAdminDashboardSummaryDto.ExamStatusCountsDto;
-import com.sep.vox.domain.dto.TeacherDashboardSummaryDto;
-import com.sep.vox.domain.dto.TeacherDashboardSummaryDto.ClassScoreStatsDto;
-import com.sep.vox.domain.dto.TeacherDashboardSummaryDto.GradingStatsDto;
-import com.sep.vox.domain.dto.TeacherDashboardSummaryDto.ScoreStatsDto;
+import com.sep.vox.application.response.input.dashboard.ExamStatusCountResponse;
+import com.sep.vox.application.response.input.dashboard.GradingStatsResponse;
+import com.sep.vox.application.response.input.dashboard.SchoolClassScoreStatsResponse;
+import com.sep.vox.application.response.input.dashboard.ScoreStatsResponse;
+import com.sep.vox.application.response.input.dashboard.TeacherDashboardSummaryResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -39,7 +39,7 @@ import com.sep.vox.domain.repository.SchoolClassUserRepository;
 
 @Service
 @Transactional(readOnly = true)
-public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashboardSummaryDto> {
+public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashboardSummaryResponse> {
 
     private static final int MAX_CLASS_TESTS_FOR_DASHBOARD = 500;
     private static final String UNKNOWN_CLASS_NAME = "Không xác định";
@@ -71,7 +71,7 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
     }
 
     @Override
-    public TeacherDashboardSummaryDto execute(Void input) {
+    public TeacherDashboardSummaryResponse execute(Void input) {
         var teacherId = userContextPort.getCurrentAuthenticatedUserId();
         var schoolId = userContextPort.getCurrentSchoolId();
         var classTests = fetchTeacherClassTests(teacherId, schoolId);
@@ -82,7 +82,7 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
             ? Map.of()
             : resolveExamCandidateAttemptsUseCase.executeBatch(candidateIds);
 
-        return new TeacherDashboardSummaryDto(
+        return new TeacherDashboardSummaryResponse(
             buildExamStatusCounts(classTests),
             buildGradingStats(teacherId),
             buildScoreStats(candidates, attemptsByCandidateId),
@@ -108,7 +108,7 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
         return accessible.stream().filter(e -> memberExamIds.contains(e.getId())).toList();
     }
 
-    private ExamStatusCountsDto buildExamStatusCounts(List<Exam> classTests) {
+    private ExamStatusCountResponse buildExamStatusCounts(List<Exam> classTests) {
         var draft = countByStatus(classTests, ExamStatus.DRAFT);
         var scheduled = countByStatus(classTests, ExamStatus.SCHEDULED);
         var inProgress = countByStatus(classTests, ExamStatus.IN_PROGRESS);
@@ -116,35 +116,35 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
         var resultsPublished = countByStatus(classTests, ExamStatus.RESULTS_PUBLISHED);
         var cancelled = countByStatus(classTests, ExamStatus.CANCELLED);
         var total = draft + scheduled + inProgress + closed + resultsPublished + cancelled;
-        return new ExamStatusCountsDto(total, draft, scheduled, inProgress, closed, resultsPublished, cancelled);
+        return new ExamStatusCountResponse(total, draft, scheduled, inProgress, closed, resultsPublished, cancelled);
     }
 
     private long countByStatus(List<Exam> classTests, ExamStatus status) {
         return classTests.stream().filter(e -> e.getStatus() == status).count();
     }
 
-    private GradingStatsDto buildGradingStats(UUID teacherId) {
-        return new GradingStatsDto(
+    private GradingStatsResponse buildGradingStats(UUID teacherId) {
+        return new GradingStatsResponse(
             examGradingAssignmentRepository.countByTeacherIdAndStatus(teacherId, GradingAssignmentStatus.ASSIGNED),
             examGradingAssignmentRepository.countByTeacherIdAndStatus(teacherId, GradingAssignmentStatus.COMPLETED)
         );
     }
 
-    private ScoreStatsDto buildScoreStats(List<ExamCandidate> candidates,
+    private ScoreStatsResponse buildScoreStats(List<ExamCandidate> candidates,
             Map<UUID, ExamCandidateAttempts> attemptsByCandidateId) {
         if (candidates.isEmpty()) {
-            return new ScoreStatsDto(null, 0, 0);
+            return new ScoreStatsResponse(null, 0, 0);
         }
 
         var scores = officialScoresOf(candidates, attemptsByCandidateId);
         if (scores.isEmpty()) {
-            return new ScoreStatsDto(null, 0, candidates.size());
+            return new ScoreStatsResponse(null, 0, candidates.size());
         }
 
-        return new ScoreStatsDto(average(scores), scores.size(), candidates.size());
+        return new ScoreStatsResponse(average(scores), scores.size(), candidates.size());
     }
 
-    private List<ClassScoreStatsDto> buildClassScoreStats(List<Exam> classTests, List<ExamCandidate> candidates,
+    private List<SchoolClassScoreStatsResponse> buildClassScoreStats(List<Exam> classTests, List<ExamCandidate> candidates,
             Map<UUID, ExamCandidateAttempts> attemptsByCandidateId) {
         if (classTests.isEmpty()) {
             return List.of();
@@ -161,7 +161,7 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
                 var scores = officialScoresOf(examCandidates, attemptsByCandidateId);
                 var classId = classIdByExamId.get(exam.getId());
                 var className = classId == null ? UNKNOWN_CLASS_NAME : classNameById.getOrDefault(classId, UNKNOWN_CLASS_NAME);
-                return new ClassScoreStatsDto(
+                return new SchoolClassScoreStatsResponse(
                     exam.getName(),
                     className,
                     scores.isEmpty() ? null : average(scores),

@@ -14,7 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "school_debt_event")
+@Table(name = "school_debt_events")
 public class SchoolDebtEventJpaEntity {
 
     @Id
@@ -44,8 +44,8 @@ public class SchoolDebtEventJpaEntity {
 
     @Column(name = "quota_type", nullable = false, updatable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_school_debt_event_quota_type_valid",
-            constraint = "quota_type IN ('GRADING', 'CLASS_TEST', 'PRACTICE')"
+            name = "chk_school_debt_events_quota_type_valid",
+            constraint = "quota_type IN ('EXAM', 'PRACTICE')"
         )
     })
     private String quotaType;
@@ -53,17 +53,17 @@ public class SchoolDebtEventJpaEntity {
     @Column(name = "trigger_exam_session_id", updatable = false)
     private UUID triggerExamSessionId;
 
-    @Column(name = "trigger_amount_usd", updatable = false, precision = 18, scale = 6)
-    private BigDecimal triggerAmountUsd;
+    @Column(name = "trigger_amount_vnd", updatable = false, precision = 18, scale = 6)
+    private BigDecimal triggerAmountVnd;
 
-    @Column(name = "total_allocated_usd", nullable = false, updatable = false, precision = 18, scale = 6)
-    private BigDecimal totalAllocatedUsd;
+    @Column(name = "total_allocated_vnd", nullable = false, updatable = false, precision = 18, scale = 6)
+    private BigDecimal totalAllocatedVnd;
 
-    @Column(name = "used_quantity_usd", nullable = false, updatable = false, precision = 18, scale = 6)
-    private BigDecimal usedQuantityUsd;
+    @Column(name = "used_amount_vnd", nullable = false, updatable = false, precision = 18, scale = 6)
+    private BigDecimal usedAmountVnd;
 
-    @Column(name = "overage_usd", nullable = false, updatable = false, precision = 18, scale = 6)
-    private BigDecimal overageUsd;
+    @Column(name = "overage_vnd", nullable = false, updatable = false, precision = 18, scale = 6)
+    private BigDecimal overageVnd;
 
     @Column(name = "occurred_at", nullable = false, updatable = false)
     private Instant occurredAt;
@@ -71,18 +71,18 @@ public class SchoolDebtEventJpaEntity {
     protected SchoolDebtEventJpaEntity() {}
 
     public SchoolDebtEventJpaEntity(UUID id, UUID schoolId, UUID subscriptionId, String eventType, String quotaType,
-            UUID triggerExamSessionId, BigDecimal triggerAmountUsd, BigDecimal totalAllocatedUsd,
-            BigDecimal usedQuantityUsd, BigDecimal overageUsd, Instant occurredAt) {
+            UUID triggerExamSessionId, BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd,
+            BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant occurredAt) {
         this.id = id;
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
         this.eventType = eventType;
         this.quotaType = quotaType;
         this.triggerExamSessionId = triggerExamSessionId;
-        this.triggerAmountUsd = triggerAmountUsd;
-        this.totalAllocatedUsd = totalAllocatedUsd;
-        this.usedQuantityUsd = usedQuantityUsd;
-        this.overageUsd = overageUsd;
+        this.triggerAmountVnd = triggerAmountVnd;
+        this.totalAllocatedVnd = totalAllocatedVnd;
+        this.usedAmountVnd = usedAmountVnd;
+        this.overageVnd = overageVnd;
         this.occurredAt = occurredAt;
     }
 
@@ -134,36 +134,36 @@ public class SchoolDebtEventJpaEntity {
         this.triggerExamSessionId = triggerExamSessionId;
     }
 
-    public BigDecimal getTriggerAmountUsd() {
-        return triggerAmountUsd;
+    public BigDecimal getTriggerAmountVnd() {
+        return triggerAmountVnd;
     }
 
-    public void setTriggerAmountUsd(BigDecimal triggerAmountUsd) {
-        this.triggerAmountUsd = triggerAmountUsd;
+    public void setTriggerAmountVnd(BigDecimal triggerAmountVnd) {
+        this.triggerAmountVnd = triggerAmountVnd;
     }
 
-    public BigDecimal getTotalAllocatedUsd() {
-        return totalAllocatedUsd;
+    public BigDecimal getTotalAllocatedVnd() {
+        return totalAllocatedVnd;
     }
 
-    public void setTotalAllocatedUsd(BigDecimal totalAllocatedUsd) {
-        this.totalAllocatedUsd = totalAllocatedUsd;
+    public void setTotalAllocatedVnd(BigDecimal totalAllocatedVnd) {
+        this.totalAllocatedVnd = totalAllocatedVnd;
     }
 
-    public BigDecimal getUsedQuantityUsd() {
-        return usedQuantityUsd;
+    public BigDecimal getUsedAmountVnd() {
+        return usedAmountVnd;
     }
 
-    public void setUsedQuantityUsd(BigDecimal usedQuantityUsd) {
-        this.usedQuantityUsd = usedQuantityUsd;
+    public void setUsedAmountVnd(BigDecimal usedAmountVnd) {
+        this.usedAmountVnd = usedAmountVnd;
     }
 
-    public BigDecimal getOverageUsd() {
-        return overageUsd;
+    public BigDecimal getOverageVnd() {
+        return overageVnd;
     }
 
-    public void setOverageUsd(BigDecimal overageUsd) {
-        this.overageUsd = overageUsd;
+    public void setOverageVnd(BigDecimal overageVnd) {
+        this.overageVnd = overageVnd;
     }
 
     public Instant getOccurredAt() {

@@ -96,7 +96,7 @@ public class ZeroScoreExamResultService {
             if (ExamCandidateStatus.isNonScorable(candidate.getStatus())) {
                 continue;
             }
-            var sessions = examSessionRepository.findAllByCandidateId(candidate.getId()).stream()
+            var sessions = examSessionRepository.findByCandidateId(candidate.getId()).stream()
                 .filter(session -> examId.equals(session.getExamId()))
                 .toList();
             if (sessions.isEmpty()) {

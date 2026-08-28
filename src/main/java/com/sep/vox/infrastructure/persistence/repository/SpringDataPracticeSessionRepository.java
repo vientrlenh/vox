@@ -22,7 +22,7 @@ public interface SpringDataPracticeSessionRepository
     // request thứ 2 (Python retry sau timeout, xem practice_session_client.py) cho CÙNG
     // session phải đợi request đầu commit xong rồi mới đọc, chứ không được chạy song song
     // và cùng chọn/lưu 1 câu MAIN mới độc lập với nhau (race → có thể vỡ ràng buộc slot).
-    @Query(value = "SELECT * FROM practice_session WHERE id = :id FOR UPDATE", nativeQuery = true)
+    @Query(value = "SELECT * FROM practice_sessions WHERE id = :id FOR UPDATE", nativeQuery = true)
     Optional<PracticeSessionJpaEntity> findByIdForUpdate(@Param("id") UUID id);
 
     boolean existsByIdAndStudentIdAndStatus(UUID id, UUID studentId, String status);
@@ -42,11 +42,11 @@ public interface SpringDataPracticeSessionRepository
                session.ended_at AS endedAt,
                (
                    SELECT COUNT(*)
-                   FROM practice_item_response response
+                   FROM practice_item_responses response
                    WHERE response.practice_session_id = session.id
                      AND NOT EXISTS (
                          SELECT 1
-                         FROM practice_item_evaluation evaluation
+                         FROM practice_item_evaluations evaluation
                          WHERE evaluation.practice_response_id = response.id
                      )
                )::int AS pendingEvaluations,
@@ -55,8 +55,8 @@ public interface SpringDataPracticeSessionRepository
                -- cứng ở giao diện chính là lỗi đã gặp (in " / 100" khi dữ liệu là 0-10).
                0   AS scoreScaleMin,
                100 AS scoreScaleMax
-        FROM practice_session session
-        JOIN practice_topic topic ON topic.id = session.chosen_practice_topic_id
+        FROM practice_sessions session
+        JOIN practice_topics topic ON topic.id = session.chosen_practice_topic_id
         WHERE session.id = :sessionId AND session.student_id = :studentId
         """, nativeQuery = true)
     Optional<SessionRowInfo> findSessionRow(
@@ -79,11 +79,11 @@ public interface SpringDataPracticeSessionRepository
                session.ended_at AS endedAt,
                (
                    SELECT COUNT(*)
-                   FROM practice_item_response response
+                   FROM practice_item_responses response
                    WHERE response.practice_session_id = session.id
                      AND NOT EXISTS (
                          SELECT 1
-                         FROM practice_item_evaluation evaluation
+                         FROM practice_item_evaluations evaluation
                          WHERE evaluation.practice_response_id = response.id
                      )
                )::int AS pendingEvaluations,
@@ -92,8 +92,8 @@ public interface SpringDataPracticeSessionRepository
                -- cứng ở giao diện chính là lỗi đã gặp (in " / 100" khi dữ liệu là 0-10).
                0   AS scoreScaleMin,
                100 AS scoreScaleMax
-        FROM practice_session session
-        JOIN practice_topic topic ON topic.id = session.chosen_practice_topic_id
+        FROM practice_sessions session
+        JOIN practice_topics topic ON topic.id = session.chosen_practice_topic_id
         WHERE session.id = :sessionId
         """, nativeQuery = true)
     Optional<SessionRowInfo> findSessionRowById(@Param("sessionId") UUID sessionId);
@@ -120,16 +120,16 @@ public interface SpringDataPracticeSessionRepository
                -- phiên: lịch sử trả tối đa vài chục dòng, mà N+1 ở đây là N+1 thật.
                (
                    SELECT COUNT(*)
-                   FROM practice_item_response response
+                   FROM practice_item_responses response
                    WHERE response.practice_session_id = session.id
                      AND NOT EXISTS (
                          SELECT 1
-                         FROM practice_item_evaluation evaluation
+                         FROM practice_item_evaluations evaluation
                          WHERE evaluation.practice_response_id = response.id
                      )
                )::int AS pendingEvaluations
-        FROM practice_session session
-        JOIN practice_topic topic ON topic.id = session.chosen_practice_topic_id
+        FROM practice_sessions session
+        JOIN practice_topics topic ON topic.id = session.chosen_practice_topic_id
         WHERE session.student_id = :studentId
         ORDER BY session.started_at DESC
         LIMIT :limit
@@ -139,7 +139,7 @@ public interface SpringDataPracticeSessionRepository
     @Query(value = """
         SELECT EXISTS (
             SELECT 1
-            FROM practice_session session
+            FROM practice_sessions session
             JOIN school_class_users student_membership
               ON student_membership.user_id = session.student_id
              AND student_membership.is_active = true
@@ -156,7 +156,7 @@ public interface SpringDataPracticeSessionRepository
 
     @Modifying
     @Query(value = """
-        UPDATE practice_session
+        UPDATE practice_sessions
         SET last_heartbeat_at = CURRENT_TIMESTAMP
         WHERE id = :sessionId AND status = 'IN_PROGRESS'
         """, nativeQuery = true)
@@ -164,7 +164,7 @@ public interface SpringDataPracticeSessionRepository
 
     @Query(value = """
         SELECT *
-        FROM practice_session
+        FROM practice_sessions
         WHERE status = 'IN_PROGRESS'
           AND last_heartbeat_at < :staleBefore
         FOR UPDATE SKIP LOCKED
@@ -191,11 +191,11 @@ public interface SpringDataPracticeSessionRepository
     // cho câu quá ngắn hoặc lạc đề.
     @Modifying
     @Query(value = """
-        UPDATE practice_session
+        UPDATE practice_sessions
         SET overall_score = (
             SELECT AVG(evaluation.item_score)
-            FROM practice_item_response response
-            JOIN practice_item_evaluation evaluation
+            FROM practice_item_responses response
+            JOIN practice_item_evaluations evaluation
               ON evaluation.practice_response_id = response.id
             WHERE response.practice_session_id = :sessionId
               AND evaluation.marked_invalid = false
@@ -236,7 +236,7 @@ public interface SpringDataPracticeSessionRepository
                target.label              AS bandLabel,
                target.result_band_order  AS bandOrder,
                fcb.descriptor            AS descriptor
-        FROM practice_session session
+        FROM practice_sessions session
         JOIN framework_result_bands target
           ON target.id = session.target_framework_band_id
         JOIN framework_criteria fc
@@ -252,14 +252,14 @@ public interface SpringDataPracticeSessionRepository
     @Query(value = """
         SELECT COUNT(*) AS sessionsDone,
                COALESCE(AVG(overall_score), 0) AS averageScore
-        FROM practice_session
+        FROM practice_sessions
         WHERE student_id = :studentId AND status = 'COMPLETED'
         """, nativeQuery = true)
     PracticeDashboardCountsInfo findDashboardCounts(@Param("studentId") UUID studentId);
 
     @Query(value = """
         SELECT DISTINCT started_at::date AS d
-        FROM practice_session
+        FROM practice_sessions
         WHERE student_id = :studentId AND status = 'COMPLETED'
         ORDER BY d DESC
         """, nativeQuery = true)

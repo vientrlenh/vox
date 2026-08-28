@@ -1,119 +1,123 @@
-enum PlanStatus {
+# Phạm vi file này: GÓI (SubscriptionPlan) và ĐĂNG KÝ CỦA TRƯỜNG (SchoolSubscription) cùng hạn mức
+# đi kèm. Hóa đơn / đơn hàng / thanh toán KHÔNG nằm ở đây -- chúng là tổng hợp riêng (Order,
+# PaymentRecord, Invoice, SchoolBalance) và sẽ có schema riêng.
+#
+# Tiền tệ: mọi trường VND đều là Float vì dự án chưa khai báo scalar riêng nào. VND không có đơn vị
+# lẻ nên giá trị luôn nguyên, và numeric(15,0) tối đa vẫn nằm dưới 2^53 nên client JS đọc không mất
+# độ chính xác. Đổi sang scalar BigDecimal là việc chung của cả 24 schema, không làm lẻ ở đây.
+
+enum SubscriptionPlanStatus {
     DRAFT
     ACTIVE
     ARCHIVED
 }
 
-enum SubscriptionStatus {
+enum SubscriptionPlanPeriod {
+    DAY
+    MONTH
+    YEAR
+}
+
+enum SchoolSubscriptionStatus {
     ACTIVE
     EXPIRED
     CANCELLED
+    "System Admin cưỡng chế mất quyền dùng NGAY -- khác CANCELLED chỉ tắt gia hạn, vẫn dùng được tới hết endDate"
     SUSPENDED
 }
 
+"""
+Hai VÍ hạn mức cấp trường, đều tính bằng VND. Mỗi hoạt động chỉ trừ vào ĐÚNG MỘT ví, và tiêu hết ví
+này không đụng tới ví kia -- để một tuần luyện nói nhiều bất thường không ăn mất ngân sách kỳ thi.
+
+CLASS_TEST đã bị bỏ: nó là TRẦN CHI nằm trong ví EXAM chứ không phải ví thứ ba, và bị trừ trùng
+cùng một khoản với EXAM cho mỗi bài kiểm tra trên lớp. Trần theo từng giáo viên vẫn còn, ở
+SchoolSubscriptionQuotaUserAllocation với quotaType = EXAM.
+"""
 enum QuotaType {
-    GRADING
-    CLASS_TEST
+    "Chấm thi -- cả kỳ thi tập trung lẫn bài kiểm tra trên lớp đều trừ vào đây"
+    EXAM
+    "Học sinh tự luyện nói"
     PRACTICE
 }
 
-enum TokenUsageGranularity {
-    DAY
-    WEEK
-    MONTH
-}
-
-enum RequestType {
-    REGISTRATION
-    UPGRADE
-}
-
-enum RequestStatus {
-    PENDING
-    APPROVED
-    REJECTED
-}
-
-enum PurchaseStatus {
-    PENDING
-    PAID
-    FAILED
-}
-
-enum InvoiceSourceType {
-    SUBSCRIPTION
-    SUBSCRIPTION_REQUEST
-    TOKEN_PURCHASE
-}
-
-enum InvoiceStatus {
-    PAID
-    PENDING
-    FAILED
-    CANCELLED
-}
-
-enum FinancialEventType {
-    SUB_PURCHASED
-    SUB_RENEWED
-    SUB_CANCELLED
-    SUB_UPGRADED
-    TOKEN_PURCHASED
-    TOKEN_CONSUMED
-    REFUND_ISSUED
-}
-
-enum PaymentMethod {
-    PAYOS
-    MANUAL
-}
-
-type PlanQuota {
+type SubscriptionPlanQuota {
     id: ID!
+    subscriptionPlanId: ID!
     quotaType: QuotaType!
-    includedQuantity: Float!
-    tokenUnitPrice: Float!
+    """
+    Định mức bao gồm trong giá gói, quy ra VND. Không còn tokenUnitPrice đi kèm: đơn giá "VND cho
+    mỗi $1" trước đây là tỷ giá đã cộng lãi nên hiển thị ra sai lệch với tỷ giá thật. Phần dùng vượt
+    định mức trừ thẳng vào số dư của trường theo tỷ giá ghi ở từng lượt dùng.
+    """
+    includedAmountVnd: Float!
 }
 
 type SubscriptionPlan {
     id: ID!
     name: String!
     tagline: String
-    pricePerYear: Float!
-    validityDays: Int!
-    maxTimePerAttemptMin: Int
-    popular: Boolean!
-    status: PlanStatus!
+    priceVnd: Float!
+    """
+    Chu kỳ gói = periodType x periodCount (vd. MONTH x 12). Thay cho validityDays cũ: gói tính theo
+    tháng/năm thì hạn phải rơi đúng ngày tương ứng, cộng thô theo số ngày sẽ lệch dần.
+    """
+    periodType: SubscriptionPlanPeriod!
+    periodCount: Int!
+    maxTimePerAttemptMin: Int!
+    status: SubscriptionPlanStatus!
     version: Int!
     createdAt: String
+    updatedAt: String
     createdBy: ID
+    updatedBy: ID
+    "Gói thay thế khi gói này đã ARCHIVED -- theo dây chuyền này để tìm gói còn bán được"
     replacedByPlanId: ID
-    # Margin dịch vụ riêng của gói này (vd 0.20 = 20%), FE tự nhân với usdToVndRate
-    # (quotaPricing query) để ra suggestedTokenUnitPriceVnd -- xem QuotaSellingPriceProperties.
-    serviceFeeRatio: Float!
-    quotas: [PlanQuota!]!
+    quotas: [SubscriptionPlanQuota!]!
 }
 
 type SubscriptionPlanPage {
-    content: [SubscriptionPlan!]!
+    content: [SubscriptionPlanListItem!]!
     page: Int!
     size: Int!
     totalElements: Int!
     totalPages: Int!
 }
 
+"""
+Một dòng trong danh sách gói: chính gói, kèm nhãn "phổ biến nhất".
+
+Nhãn đó nằm ở ĐÂY chứ không phải trên SubscriptionPlan vì nó không phải thuộc tính của gói -- nó là
+kết quả so gói này với mọi gói khác, chỉ có nghĩa trong ngữ cảnh một danh sách. Hỏi một gói lẻ
+(subscriptionPlan) thì câu hỏi "có phải phổ biến nhất không" không có ngữ cảnh để trả lời.
+"""
+type SubscriptionPlanListItem {
+    subscription: SubscriptionPlan!
+    """
+    Gói đang có nhiều trường dùng nhất TOÀN HỆ THỐNG (không phải nhiều nhất trong trang hiện tại),
+    và không đếm theo số lần thanh toán: gói được thay thế sinh ra id mới nên lịch sử giao dịch nằm
+    lại ở gói cũ đã ARCHIVED. false ở mọi gói khi chưa trường nào đăng ký.
+    """
+    isMostPopular: Boolean!
+}
+
 type SchoolSubscription {
     id: ID!
     schoolId: ID!
-    planId: ID!
+    subscriptionPlanId: ID!
     startDate: String
     endDate: String
-    status: SubscriptionStatus!
+    status: SchoolSubscriptionStatus!
+    "Giá đã trả tại thời điểm mua -- chốt cứng, không đổi theo giá gói sau này"
     pricePaidSnapshot: Float!
     cancelledAt: String
     createdAt: String
+    # 3 cột suspended_* bị xóa trắng khi gỡ đình chỉ nên chỉ phản ánh lần đình chỉ ĐANG hiệu lực,
+    # không phải lịch sử. Lịch sử bền vững nằm ở school_subscription_events (V2 mục 12), do
+    # ForceSuspend/UnsuspendSubscriptionUseCase ghi -- không phải FinancialEvent, thứ đã bị bỏ.
     suspendedAt: String
     suspendedReason: String
+    suspendedBy: ID
     plan: SubscriptionPlan
 }
 
@@ -125,183 +129,58 @@ type SchoolSubscriptionPage {
     totalPages: Int!
 }
 
-type SubscriptionQuota {
+type SchoolSubscriptionQuotaRecord {
     id: ID!
-    subscriptionId: ID!
+    schoolSubscriptionId: ID!
     quotaType: QuotaType!
-    totalAllocated: Float!
-    usedQuantity: Float!
-    "usedQuantity > totalAllocated -- với GRADING/CLASS_TEST, đây là điều kiện khóa cấp trường (không cho publish/sửa bài, không cho vào thi mới cho tới khi hết nợ)"
-    isLocked: Boolean!
+    "Định mức được cấp cho kỳ này, quy ra VND"
+    totalAllocatedAmountVnd: Float!
+    """
+    Đã dùng bao nhiêu VND trong định mức trên. KHÔNG BAO GIỜ vượt totalAllocatedAmountVnd: phần chi
+    vượt hạn mức được ConsumeQuotaService chuyển sang ví tự nạp của trường thành một bút toán
+    OVERAGE_CHARGE, chứ không đẩy con số này lên quá trần.
+    """
+    usedAmountVnd: Float!
+    # KHÔNG còn isLocked ở đây. Nó từng là phép so usedAmountVnd > totalAllocatedAmountVnd, mà điều
+    # kiện đó giờ không thể xảy ra nữa (xem trên). "Trường có đang bị khóa không" là một sự thật cấp
+    # TRƯỜNG -- số dư ví tự nạp âm, xem SchoolSubscriptionDebtGuardService -- chứ không phải thuộc
+    # tính của từng ví hạn mức, nên không có chỗ đúng cho nó trên type này.
 }
 
-type TokenUsageTimeseriesPoint {
-    "Mốc bắt đầu của bucket, ISO instant (đầu ngày/tuần/tháng theo granularity)"
-    bucket: String!
+"""
+Gia hạn ngay bây giờ thì trường nhận được gì -- xem TRƯỚC khi đặt đơn.
+
+KHÔNG có phần bù trừ ngày thừa: kỳ mới NỐI TIẾP kỳ đang chạy chứ không đè lên, nên trường gia hạn
+sớm không mất ngày nào và cũng không có gì để bù. startsAt nói rõ kỳ mới bắt đầu lúc nào.
+"""
+type SchoolSubscriptionRenewalPreview {
+    "true = gói gia hạn khác gói đang dùng, tức trường đang bị chuyển sang gói thay thế. FE nên làm nổi bật."
+    planChanged: Boolean!
+    "Gói trường đang/vừa dùng"
+    currentPlan: SubscriptionPlan!
+    "Gói sẽ được mua khi gia hạn -- id của nó chính là acceptedPlanId phải gửi lên khi đặt đơn"
+    renewalPlan: SubscriptionPlan!
+    "Kỳ mới bắt đầu chạy khi nào: ngay bây giờ nếu không còn kỳ nào hiệu lực, hoặc ngày hết hạn của kỳ hiện tại"
+    startsAt: String!
+    "Giá gói gia hạn, CHƯA gồm phí dịch vụ -- phí cộng vào lúc đặt đơn"
+    amountDue: Float!
+}
+
+"""
+Hạn mức CÁ NHÂN của một người dùng trong một ví cấp trường -- trần chi nhà trường đặt lên phần ví
+người này được tiêu, KHÔNG phải một ví riêng: tiền vẫn nằm ở ví cấp trường.
+
+quotaType = EXAM chỉ có ở giáo viên (trần cho bài kiểm tra trên lớp họ ra đề), PRACTICE chỉ có ở học
+sinh. Thay cho cặp MyClassTestQuotaAllocation/MyPracticeQuotaAllocation cũ -- cùng một khái niệm thì
+một kiểu là đủ.
+"""
+type SchoolSubscriptionQuotaUserAllocation {
+    id: ID!
+    userId: ID!
+    schoolSubscriptionId: ID!
     quotaType: QuotaType!
-    tokensConsumed: Float!
-}
-
-type TokenUsageTimeseries {
-    granularity: TokenUsageGranularity!
-    "Tổng token đã dùng (USD) trong toàn khoảng dateFrom..dateTo, cộng cả 3 loại quota"
-    totalUsed: Float!
-    "Chuỗi điểm dữ liệu cho line chart — 1 điểm / bucket / quotaType"
-    points: [TokenUsageTimeseriesPoint!]!
-    "Snapshot hạn mức hiện tại (giống subscriptionUsage) — dùng để vẽ progress bar hạn mức"
-    currentPeriod: [SubscriptionQuota!]!
-}
-
-# null = giáo viên gọi query không có hạn mức CLASS_TEST cá nhân riêng, chỉ pool của trường áp dụng.
-type MyClassTestQuotaAllocation {
-    allocatedQuantity: Float!
-    usedQuantity: Float!
-}
-
-# null = học sinh gọi query không có hạn mức PRACTICE cá nhân riêng, chỉ pool của trường áp dụng.
-type MyPracticeQuotaAllocation {
-    allocatedQuantity: Float!
-    usedQuantity: Float!
-}
-
-type SubscriptionRequest {
-    id: ID!
-    schoolId: ID!
-    requestType: RequestType!
-    currentPlanId: ID
-    requestedPlanId: ID!
-    amount: Float!
-    status: RequestStatus!
-    submittedAt: String
-    reviewedBy: ID
-    reviewedAt: String
-}
-
-type SubscriptionRequestPage {
-    content: [SubscriptionRequest!]!
-    page: Int!
-    size: Int!
-    totalElements: Int!
-    totalPages: Int!
-}
-
-type TokenPurchaseItem {
-    id: ID!
-    purchaseId: ID!
-    quotaType: QuotaType!
-    quantity: Float!
-    unitPriceSnapshot: Float!
-    subtotal: Float!
-}
-
-type TokenPurchase {
-    id: ID!
-    subscriptionId: ID!
-    totalAmount: Float!
-    status: PurchaseStatus!
-    purchasedAt: String
-    items: [TokenPurchaseItem!]!
-}
-
-type InvoiceQuotaItem {
-    quotaType: QuotaType!
-    amount: Float!
-}
-
-type Invoice {
-    id: ID!
-    invoiceNumber: String!
-    # Chỉ được gán sau khi thanh toán thành công (InvoiceSettlementService.settle()) — null với hóa
-    # đơn còn PENDING hoặc đã CANCELLED/FAILED mà chưa từng chốt.
-    subscriptionId: ID
-    sourceType: InvoiceSourceType!
-    sourceId: ID!
-    issueDate: String
-    amount: Float!
-    status: InvoiceStatus!
-    paymentLinkId: String
-    checkoutUrl: String
-    paidAt: String
-    # Plan đã áp dụng cho hóa đơn (SUBSCRIPTION/SUBSCRIPTION_REQUEST) — null nếu chưa resolve được
-    # (vd hóa đơn PENDING/FAILED) hoặc hóa đơn loại TOKEN_PURCHASE (không gắn với 1 plan).
-    resolvedPlanId: ID
-    # Hạn mức USD từng loại quota gắn với hóa đơn: lấy từ plan_quota (SUBSCRIPTION/SUBSCRIPTION_REQUEST)
-    # hoặc token_purchase_item (TOKEN_PURCHASE) — xem JpaInvoiceQueryRepository.withQuotaItems.
-    quotaItems: [InvoiceQuotaItem!]!
-}
-
-type InvoicePage {
-    content: [Invoice!]!
-    page: Int!
-    size: Int!
-    totalElements: Int!
-    totalPages: Int!
-}
-
-type FinancialEvent {
-    id: ID!
-    schoolId: ID!
-    subscriptionId: ID!
-    eventType: FinancialEventType!
-    amountSigned: Float!
-    currency: String!
-    paymentMethod: PaymentMethod!
-    actorId: ID
-    occurredAt: String
-}
-
-type FinancialEventPage {
-    content: [FinancialEvent!]!
-    page: Int!
-    size: Int!
-    totalElements: Int!
-    totalPages: Int!
-}
-
-enum SchoolDebtEventType {
-    LOCKED
-    CAP_EXCEEDED
-    CLEARED
-}
-
-# Sổ audit "nguyên nhân nợ hạn mức AI" -- mỗi dòng là đúng 1 bucket quota của trường vừa đổi trạng
-# thái (vượt hạn mức / vượt trần cảnh báo / hết nợ), kèm session/số USD đã gây ra transition đó --
-# xem SchoolDebtEvent (domain model) / SchoolDebtNotificationService.
-type SchoolDebtEvent {
-    id: ID!
-    schoolId: ID!
-    subscriptionId: ID!
-    eventType: SchoolDebtEventType!
-    quotaType: QuotaType!
-    triggerExamSessionId: ID
-    triggerAmountUsd: Float
-    totalAllocatedUsd: Float!
-    usedQuantityUsd: Float!
-    overageUsd: Float!
-    occurredAt: String
-}
-
-type SchoolDebtEventPage {
-    content: [SchoolDebtEvent!]!
-    page: Int!
-    size: Int!
-    totalElements: Int!
-    totalPages: Int!
-}
-
-input PlanQuotaItemInput {
-    quotaType: QuotaType!
-    includedQuantity: Float!
-}
-
-input UpdateSubscriptionPlanInput {
-    name: String
-    tagline: String
-    pricePerYear: Float
-    validityDays: Int
-    maxTimePerAttemptMin: Int
-    serviceFeeRatio: Float
-    quotas: [PlanQuotaItemInput!]
+    allocatedAmountVnd: Float!
+    usedAmountVnd: Float!
 }
 
 type QuotaPricing {
@@ -310,43 +189,54 @@ type QuotaPricing {
     usdToVndRate: Float!
 }
 
+input SubscriptionPlanQuotaInput {
+    quotaType: QuotaType!
+    includedAmountVnd: Float!
+}
+
+input UpdateSubscriptionPlanInput {
+    name: String
+    tagline: String
+    priceVnd: Float
+    "periodType KHÔNG sửa được sau khi tạo (cột period_type là updatable = false) -- muốn đổi thì tạo gói mới rồi trỏ replacedByPlanId"
+    periodCount: Int
+    maxTimePerAttemptMin: Int
+    quotas: [SubscriptionPlanQuotaInput!]
+}
+
 extend type Query {
-    subscriptionPlans(page: Int = 0, size: Int = 20): SubscriptionPlanPage!
+    subscriptionPlans(page: Int = 1, size: Int = 20): SubscriptionPlanPage!
     subscriptionPlan(id: ID!): SubscriptionPlan
     quotaPricing: QuotaPricing!
 
     schoolSubscriptions(
         keyword: String,
-        planId: ID,
-        status: SubscriptionStatus,
-        page: Int = 0,
+        subscriptionPlanId: ID,
+        status: SchoolSubscriptionStatus,
+        page: Int = 1,
         size: Int = 20
     ): SchoolSubscriptionPage!
     schoolSubscription(schoolId: ID!): SchoolSubscription
     schoolSubscriptionHistory(schoolId: ID!): [SchoolSubscription!]!
 
-    subscriptionRequests(status: RequestStatus!, page: Int = 0, size: Int = 20): SubscriptionRequestPage!
+    subscriptionUsage(schoolId: ID!): [SchoolSubscriptionQuotaRecord!]!
+    "null = giáo viên không có hạn mức cá nhân riêng, tức chỉ ví EXAM của trường áp dụng"
+    myExamQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
+    "null = học sinh không có hạn mức cá nhân riêng, tức chỉ ví PRACTICE của trường áp dụng"
+    myPracticeQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
 
-    tokenPurchases(schoolId: ID!): [TokenPurchase!]!
-    subscriptionUsage(schoolId: ID!): [SubscriptionQuota!]!
     """
-    Token usage theo thời gian. dateFrom/dateTo là ISO instant (vd. 2026-08-01T00:00:00Z), bỏ trống
-    = 30 ngày gần nhất; khoảng tối đa 366 ngày (BE tự cắt bớt nếu vượt).
-    """
-    schoolTokenUsageTimeseries(
-        schoolId: ID!,
-        dateFrom: String,
-        dateTo: String,
-        granularity: TokenUsageGranularity = DAY
-    ): TokenUsageTimeseries!
-    myClassTestQuotaAllocation: MyClassTestQuotaAllocation
-    myPracticeQuotaAllocation: MyPracticeQuotaAllocation
+    Gia hạn ngay bây giờ thì trường nhận được gì. KHÔNG nhận tham số: gói cần gia hạn là gói gần nhất
+    của chính trường đang đăng nhập.
 
-    invoices(schoolId: ID!, page: Int = 0, size: Int = 20): InvoicePage!
-    financialEvents(schoolId: ID!, page: Int = 0, size: Int = 20): FinancialEventPage!
-    schoolDebtEvents(schoolId: ID!, page: Int = 0, size: Int = 20): SchoolDebtEventPage!
+    Phải gọi query này TRƯỚC khi đặt đơn gia hạn: renewalPlan.id chính là acceptedPlanId phải gửi lên
+    ở POST /api/v1/orders/renewal. Gói đang dùng có thể đã bị lưu trữ và được gán gói thay thế, khi đó
+    gia hạn tự chuyển sang gói mới -- trường phải nhìn thấy và đồng ý trước.
+    """
+    schoolSubscriptionRenewalPreview: SchoolSubscriptionRenewalPreview!
 }
 
 extend type Mutation {
-    updateSubscriptionPlan(id: ID!, input: UpdateSubscriptionPlanInput!): SubscriptionPlan!
+    "Trả id gói vừa sửa, không trả cả object: client tự query lại nếu cần -- xem UpdateSubscriptionPlanUseCase."
+    updateSubscriptionPlan(id: ID!, input: UpdateSubscriptionPlanInput!): ID!
 }

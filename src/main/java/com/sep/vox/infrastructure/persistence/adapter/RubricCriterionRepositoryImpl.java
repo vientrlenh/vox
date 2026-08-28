@@ -65,7 +65,7 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
     @Override
     public PageResult<RubricCriterion> findAllByRubricVersionId(UUID rubricVersionId, int page, int size) {
         // Tối ưu: Mặc định sort theo order  để bảng điểm hiển thị chuẩn
-        Pageable pageable = PageRequest.of(page, size, Sort.by("order").ascending());
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("order").ascending());
 
         var entityPage = springDataRubricCriterionRepository.findAllByRubricVersionId(rubricVersionId, pageable);
 
@@ -92,7 +92,7 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
 
     @Override
     public PageResult<RubricCriterion> searchRubricCriteria(UUID versionId, String keyword, Boolean isRequired, int page, int size) {
-        var springPageable = PageRequest.of(page, size);
+        var springPageable = PageRequest.of(page - 1, size);
         var pageEntity = springDataRubricCriterionRepository.searchRubricCriteria(
                 versionId, StringNormalization.toLikePattern(keyword), isRequired, springPageable);
 

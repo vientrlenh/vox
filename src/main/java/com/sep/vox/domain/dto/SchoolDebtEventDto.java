@@ -10,10 +10,10 @@ public record SchoolDebtEventDto(
     String eventType,
     String quotaType,
     UUID triggerExamSessionId,
-    BigDecimal triggerAmountUsd,
-    BigDecimal totalAllocatedUsd,
-    BigDecimal usedQuantityUsd,
-    BigDecimal overageUsd,
+    BigDecimal triggerAmountVnd,
+    BigDecimal totalAllocatedVnd,
+    BigDecimal usedAmountVnd,
+    BigDecimal overageVnd,
     String occurredAt
 ) {
 }

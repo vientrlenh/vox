@@ -106,7 +106,7 @@ public class TopicOfferBackfillService {
         //
         // Lượt sinh lúc đó gửi `interestScores` RỖNG sang LLM (xem
         // TopicSuggestionService.synchronousOffers), nên chủ đề nhận về là loại chung chung
-        // không bám vào ai. Mà practice_topic là kho DÙNG CHUNG toàn hệ và những dòng đó ở
+        // không bám vào ai. Mà practice_topics là kho DÙNG CHUNG toàn hệ và những dòng đó ở
         // lại vĩnh viễn: một lần đăng nhập của một tài khoản chưa làm quiz là đủ định hình
         // kho cho mọi học sinh sau đó.
         //

@@ -59,7 +59,7 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
 
     @Override
     public PageResult<QuestionBank> findAll(int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber, size);
+        var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataQuestionBankRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent().stream()
@@ -86,7 +86,7 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
     public PageResult<QuestionBank> findAccessible(UUID currentSchoolId, boolean systemAdmin, boolean schoolAdmin,
             QuestionBankOwnerType ownerType, QuestionBankStatus status, UUID languageId, UUID schoolId,
             UUID schoolGradeId, String keyword, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber, size);
+        var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataQuestionBankRepository.findAccessible(
             currentSchoolId,
             systemAdmin,

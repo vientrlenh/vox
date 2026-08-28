@@ -2,12 +2,21 @@ package com.sep.vox.interfaces.rest.dto.request;
 
 import java.util.List;
 
-import com.sep.vox.domain.model.subscription.DistributionMode;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
-import jakarta.validation.constraints.NotNull;
 
 public record AllocateQuotaRequest(
-    @NotNull DistributionMode mode,
-    List<UserQuotaAmountRequest> allocations
+    @NotBlank(message = "Cách phân bổ không được để trống")
+    // Có $ ở cuối: thiếu neo thì regex chỉ đòi chuỗi BẮT ĐẦU bằng AUTO/MANUAL, nên "AUTOMATIC" lọt
+    // qua validation rồi chết ở fromString() phía sau -- người dùng nhận 500 thay vì câu báo lỗi này.
+    @Pattern(regexp = "^(AUTO|MANUAL)$", message = "Cách phân bổ chỉ chấp nhận giá trị AUTO/MANUAL")
+    String mode,
+
+    // Bỏ @NotEmpty, do mode auto không cần list này
+    // Vẫn giữ @Valid, dùng cho validate các trường trong record nếu có xuất hiện 
+    @Valid
+    List<AllocateUserQuotaAmountRequest> allocations
 ) {
 }

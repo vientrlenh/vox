@@ -1,7 +1,6 @@
 package com.sep.vox.infrastructure.worker;
 
 import java.time.Instant;
-import java.time.LocalDate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +8,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 // Trước đây KHÔNG có gì tự động đưa subscription ACTIVE quá endDate sang EXPIRED — status chỉ đổi
@@ -32,7 +30,7 @@ public class SubscriptionExpiryJob {
     @Scheduled(fixedDelay = 3_600_000, initialDelay = 60_000)
     @Transactional
     public void expireOverdueSubscriptions() {
-        var today = LocalDate.ofInstant(Instant.now(), DateMapper.DEFAULT_INPUT_ZONE);
+        var today = Instant.now();
         var expiredCount = schoolSubscriptionRepository.expireOverdue(today);
         if (expiredCount > 0) {
             LOGGER.info("Đã chuyển {} subscription quá hạn sang EXPIRED", expiredCount);

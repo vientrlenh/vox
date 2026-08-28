@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.service;
 
-import java.time.Instant;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -9,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -29,12 +27,13 @@ import com.sep.vox.application.response.output.CallbackVerificationResult;
 import com.sep.vox.application.response.output.CreatePaymentLinkCommand;
 import com.sep.vox.application.response.output.PaymentCheckoutResult;
 import com.sep.vox.application.response.output.PaymentLinkStatusResult;
-import com.sep.vox.domain.model.subscription.PaymentMethod;
+import com.sep.vox.domain.model.payment.PaymentProvider;
 
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 import vn.payos.PayOS;
+import vn.payos.exception.NotFoundException;
 import vn.payos.exception.WebhookException;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.PaymentLinkStatus;
@@ -49,10 +48,6 @@ public class PayOSService implements PaymentProcessPort {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final String SUCCESS_CODE = "00";
-
-    // Đủ ngắn để đưa hóa đơn PENDING treo mãi về trạng thái cuối trong một khoảng thời gian xác định,
-    // và ngắn hơn chu kỳ quét của PendingInvoiceReconciler (5 phút) để lần quét kế tiếp bắt kịp ngay.
-    private static final long PAYMENT_LINK_EXPIRATION_MINUTES = 3;
 
     private final PayOS payOSClient;
     private final JsonMapper jsonMapper;
@@ -74,8 +69,8 @@ public class PayOSService implements PaymentProcessPort {
     }
 
     @Override
-    public PaymentMethod provider() {
-        return PaymentMethod.PAYOS;
+    public PaymentProvider provider() {
+        return PaymentProvider.PAYOS;
     }
 
     /**
@@ -84,7 +79,7 @@ public class PayOSService implements PaymentProcessPort {
      * phần ngẫu nhiên chặn hai hóa đơn tạo trong cùng một mili giây trùng mã.
      */
     @Override
-    public String newOrderRef(String invoiceNumber) {
+    public String newOrderRef() {
         return String.valueOf(System.currentTimeMillis() * 1000 + ThreadLocalRandom.current().nextInt(1000));
     }
 
@@ -96,7 +91,8 @@ public class PayOSService implements PaymentProcessPort {
             .description(command.description())
             .returnUrl(returnUrl)
             .cancelUrl(cancelUrl)
-            .expiredAt(Instant.now().plus(PAYMENT_LINK_EXPIRATION_MINUTES, ChronoUnit.MINUTES).getEpochSecond())
+            // Hạn lấy từ ĐƠN chứ không phải hằng số của adapter -- xem CreatePaymentLinkCommand.expiresAt.
+            .expiredAt(command.expiresAt().getEpochSecond())
             .build();
         var response = payOSClient.paymentRequests().create(paymentLinkRequest);
         return PaymentCheckoutResult.redirect(response.getCheckoutUrl(), response.getPaymentLinkId());
@@ -104,8 +100,40 @@ public class PayOSService implements PaymentProcessPort {
 
     @Override
     public PaymentLinkStatusResult getPaymentLinkStatus(String providerOrderRef) {
-        var paymentLink = payOSClient.paymentRequests().get(Long.parseLong(providerOrderRef));
-        return new PaymentLinkStatusResult(toRemoteStatus(paymentLink.getStatus()));
+        try {
+            var paymentLink = payOSClient.paymentRequests().get(Long.parseLong(providerOrderRef));
+            return new PaymentLinkStatusResult(toRemoteStatus(paymentLink.getStatus()));
+        } catch (NotFoundException e) {
+            // CHỈ bắt đúng 404. Mọi lỗi khác (mất mạng, 5xx, hết hạn mức gọi) vẫn ném ra ngoài: chỗ
+            // gọi phải phân biệt được "cổng nói không có phiên nào" với "không hỏi được cổng" -- quy
+            // cái sau về NOT_FOUND là tự cho phép mình đánh hỏng một lần thử có thể đang sống và sắp
+            // ra tiền.
+            LOGGER.warn("PayOS không có phiên thanh toán nào mang mã {} -- coi như lần thử đã chết",
+                providerOrderRef, e);
+            return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND);
+        }
+    }
+
+    @Override
+    public boolean cancelPaymentLink(String providerOrderRef, String reason) {
+        try {
+            var cancelled = payOSClient.paymentRequests().cancel(Long.parseLong(providerOrderRef), reason);
+            // Tin vào trạng thái PayOS TRẢ VỀ chứ không tin vào việc "gọi không ném lỗi": nếu vì lý do
+            // nào đó link không thật sự chuyển sang CANCELLED thì nó vẫn thu tiền được, mà chỗ gọi lại
+            // đang chờ một câu trả lời dứt khoát để dám đóng đơn.
+            var confirmed = toRemoteStatus(cancelled.getStatus()) == PaymentLinkRemoteStatus.CANCELLED;
+            if (!confirmed) {
+                LOGGER.warn("PayOS nhận lệnh hủy link {} nhưng trạng thái trả về là {}",
+                    providerOrderRef, cancelled.getStatus());
+            }
+            return confirmed;
+        } catch (Exception e) {
+            // Không ném ra ngoài: với chỗ gọi thì "hủy hỏng" và "cổng không hỗ trợ hủy" dẫn tới cùng
+            // một quyết định -- không đóng đơn. Ném lỗi ở đây chỉ biến một trường hợp xử lý được
+            // thành lỗi 500 cho người dùng.
+            LOGGER.warn("Không hủy được link thanh toán PayOS {}", providerOrderRef, e);
+            return false;
+        }
     }
 
     @Override

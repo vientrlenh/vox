@@ -195,10 +195,10 @@ extend type Query {
     # chỉ nhảy 2 thằng đầu
     viewSystemRubric(id: ID!): Rubric
     viewSchoolRubric(schoolId: ID!, id: ID!): Rubric
-    viewSystemRubrics(page: Int = 0, size: Int = 10): RubricPage!
-    viewSchoolRubrics(schoolId: ID!, page: Int = 0, size: Int = 10): RubricPage!
+    viewSystemRubrics(page: Int = 1, size: Int = 10): RubricPage!
+    viewSchoolRubrics(schoolId: ID!, page: Int = 1, size: Int = 10): RubricPage!
     # Cổng tìm kiếm cho System Admin
-    searchSystemRubrics(filter: SearchRubricFilter, page: Int = 0, size: Int = 10): RubricPage!
+    searchSystemRubrics(filter: SearchRubricFilter, page: Int = 1, size: Int = 10): RubricPage!
     """
     Danh mục bộ tiêu chí MẪU của hệ thống, cho Trường duyệt trước khi sao về.
 
@@ -209,40 +209,40 @@ extend type Query {
     Tách khỏi `searchSystemRubrics` thay vì nới quyền của nó, để lần sau ai đó siết hoặc nới một
     cổng sẽ không vô tình đổi luôn cổng kia.
     """
-    systemRubricTemplates(filter: SearchRubricFilter, page: Int = 0, size: Int = 10): RubricPage!
+    systemRubricTemplates(filter: SearchRubricFilter, page: Int = 1, size: Int = 10): RubricPage!
     # Cổng tìm kiếm cho School Admin (Bắt buộc phải truyền schoolId)
-    searchSchoolRubrics(schoolId: ID!, filter: SearchRubricFilter, page: Int = 0, size: Int = 10): RubricPage!
+    searchSchoolRubrics(schoolId: ID!, filter: SearchRubricFilter, page: Int = 1, size: Int = 10): RubricPage!
     # Cổng tìm kiếm cho Teacher (schoolId tự suy ra từ token, chỉ thấy rubric của trường mình)
-    searchTeacherRubrics(filter: SearchRubricFilter, page: Int = 0, size: Int = 10): RubricPage!
+    searchTeacherRubrics(filter: SearchRubricFilter, page: Int = 1, size: Int = 10): RubricPage!
 
     # RUBRIC VERSION
     viewSchoolRubricVersion(schoolId: ID!, versionId: ID!): RubricVersion
     viewSystemRubricVersion(versionId: ID!): RubricVersion
-    viewSchoolRubricVersions(schoolId: ID!, rubricId: ID!, status: String, page: Int = 0, size: Int = 10): RubricVersionPage!
-    viewSystemRubricVersions(rubricId: ID!, status: String, page: Int = 0, size: Int = 10): RubricVersionPage!
+    viewSchoolRubricVersions(schoolId: ID!, rubricId: ID!, status: String, page: Int = 1, size: Int = 10): RubricVersionPage!
+    viewSystemRubricVersions(rubricId: ID!, status: String, page: Int = 1, size: Int = 10): RubricVersionPage!
     # Teacher chỉ xem được version PUBLISHED của rubric thuộc trường mình (schoolId tự suy ra từ token)
     viewTeacherRubricVersions(rubricId: ID!, page: Int = 1, size: Int = 10): RubricVersionPage!
-    searchSystemRubricVersions(rubricId: ID!, filter: SearchRubricVersionFilter, page: Int = 0, size: Int = 10): RubricVersionPage!
-    searchSchoolRubricVersions(schoolId: ID!, rubricId: ID!, filter: SearchRubricVersionFilter, page: Int = 0, size: Int = 10): RubricVersionPage!
+    searchSystemRubricVersions(rubricId: ID!, filter: SearchRubricVersionFilter, page: Int = 1, size: Int = 10): RubricVersionPage!
+    searchSchoolRubricVersions(schoolId: ID!, rubricId: ID!, filter: SearchRubricVersionFilter, page: Int = 1, size: Int = 10): RubricVersionPage!
 
 
     # RUBRIC CRITERION
     viewSystemRubricCriterion(criterionId: ID!): RubricCriterion
     viewSchoolRubricCriterion(schoolId: ID!, criterionId: ID!): RubricCriterion
-    viewSystemRubricCriteria(versionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionPage!
-    viewSchoolRubricCriteria(schoolId: ID!, versionId: ID!, page: Int = 0, size: Int = 10): RubricCriterionPage!
-    searchSystemRubricCriteria(versionId: ID!, filter: SearchRubricCriterionFilter, page: Int = 0, size: Int = 10): RubricCriterionPage!
-    searchSchoolRubricCriteria(schoolId: ID!, versionId: ID!, filter: SearchRubricCriterionFilter, page: Int = 0, size: Int = 10): RubricCriterionPage!
+    viewSystemRubricCriteria(versionId: ID!, page: Int = 1, size: Int = 10): RubricCriterionPage!
+    viewSchoolRubricCriteria(schoolId: ID!, versionId: ID!, page: Int = 1, size: Int = 10): RubricCriterionPage!
+    searchSystemRubricCriteria(versionId: ID!, filter: SearchRubricCriterionFilter, page: Int = 1, size: Int = 10): RubricCriterionPage!
+    searchSchoolRubricCriteria(schoolId: ID!, versionId: ID!, filter: SearchRubricCriterionFilter, page: Int = 1, size: Int = 10): RubricCriterionPage!
 
 
     # RUBRIC CRITERION RESULT BAND
     viewSystemRubricResultBand(resultBandId: ID!): RubricResultBand
     viewSchoolRubricResultBand(schoolId: ID!, resultBandId: ID!): RubricResultBand
-    viewSystemRubricResultBands(versionId: ID!, page: Int = 0, size: Int = 10): RubricResultBandPage!
-    viewSchoolRubricResultBands(schoolId: ID!, versionId: ID!, page: Int = 0, size: Int = 10): RubricResultBandPage!
+    viewSystemRubricResultBands(versionId: ID!, page: Int = 1, size: Int = 10): RubricResultBandPage!
+    viewSchoolRubricResultBands(schoolId: ID!, versionId: ID!, page: Int = 1, size: Int = 10): RubricResultBandPage!
 
     # System Admin
-    searchSystemRubricResultBands(versionId: ID!, filter: SearchRubricResultBandFilter, page: Int = 0, size: Int = 10): RubricResultBandPage!
+    searchSystemRubricResultBands(versionId: ID!, filter: SearchRubricResultBandFilter, page: Int = 1, size: Int = 10): RubricResultBandPage!
     # School Admin
-    searchSchoolRubricResultBands(schoolId: ID!, versionId: ID!, filter: SearchRubricResultBandFilter, page: Int = 0, size: Int = 10): RubricResultBandPage!
+    searchSchoolRubricResultBands(schoolId: ID!, versionId: ID!, filter: SearchRubricResultBandFilter, page: Int = 1, size: Int = 10): RubricResultBandPage!
 }

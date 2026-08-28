@@ -1,12 +1,13 @@
 package com.sep.vox.infrastructure.service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
-import com.sep.vox.domain.model.subscription.QuotaPricingSource;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.QuotaPricingPort;
+import com.sep.vox.application.port.output.ServiceFeePort;
+import com.sep.vox.domain.model.metering.QuotaPricingSource;
+import com.sep.vox.domain.model.financial.CurrencyCode;
 import com.sep.vox.domain.repository.ExchangeRateSnapshotRepository;
 import com.sep.vox.domain.repository.QuotaPricingCalibrationRepository;
 import com.sep.vox.infrastructure.properties.QuotaPricingProperties;
@@ -24,7 +25,7 @@ import com.sep.vox.infrastructure.properties.QuotaSellingPriceProperties;
  * qua QuotaPricingPort để không phụ thuộc ngược lên tầng này.
  */
 @Service
-public class QuotaPricingService implements QuotaPricingPort {
+public class QuotaPricingService implements QuotaPricingPort, ServiceFeePort {
 
     private final QuotaPricingCalibrationRepository quotaPricingCalibrationRepository;
     private final ExchangeRateSnapshotRepository exchangeRateSnapshotRepository;
@@ -58,21 +59,17 @@ public class QuotaPricingService implements QuotaPricingPort {
 
     @Override
     public BigDecimal usdToVndRate() {
-        return exchangeRateSnapshotRepository.findLatest()
-            .map(snapshot -> snapshot.getUsdToVndRate())
+        return exchangeRateSnapshotRepository.findLatest(CurrencyCode.USD)
+            .map(snapshot -> snapshot.getExchangeRateToVnd())
             .orElseGet(quotaSellingPriceProperties::usdToVndRate);
     }
 
     /**
-     * Giá bán mỗi $1 hạn mức cho CreatePlanUseCase/UpdatePlanUseCase -- tính từ usdToVndRate() ×
-     * (1 + serviceFeeRatio), làm tròn HALF_UP về số nguyên (khớp cột plan_quota.token_unit_price
-     * NUMERIC(15,0)). serviceFeeRatio là field cấp-gói (không theo từng quotaType) nên cùng 1 giá
-     * áp dụng cho mọi loại quota của gói đó.
+     * Phí dịch vụ đọc thẳng từ config, KHÔNG nhân sẵn vào tỷ giá -- đơn hàng tự cộng thành một dòng
+     * riêng. Xem ServiceFeePort#serviceFeeRatio.
      */
     @Override
-    public BigDecimal tokenUnitPriceFor(BigDecimal serviceFeeRatio) {
-        return usdToVndRate()
-            .multiply(BigDecimal.ONE.add(serviceFeeRatio))
-            .setScale(0, RoundingMode.HALF_UP);
+    public BigDecimal serviceFeeRatio() {
+        return quotaSellingPriceProperties.serviceFeeRatio();
     }
 }

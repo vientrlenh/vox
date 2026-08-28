@@ -14,10 +14,10 @@ import com.sep.vox.application.event.SchoolLockedDueToDebtPayloadV1;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.common.AggregateTypeConstant;
 import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.outbox.Outbox;
-import com.sep.vox.domain.model.subscription.QuotaType;
-import com.sep.vox.domain.model.subscription.SchoolDebtEvent;
-import com.sep.vox.domain.model.subscription.SchoolDebtEventType;
+import com.sep.vox.domain.model.school.SchoolDebtEvent;
+import com.sep.vox.domain.model.school.SchoolDebtEventType;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolDebtEventRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -60,12 +60,12 @@ public class SchoolDebtNotificationService {
 
     public void publishDebtCapExceeded(
             UUID subscriptionId, UUID schoolId, QuotaType quotaType, UUID triggerExamSessionId,
-            BigDecimal triggerAmountUsd, BigDecimal totalAllocatedUsd, BigDecimal usedQuantityUsd,
-            BigDecimal overageUsd, BigDecimal capUsd, Instant now) {
+            BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd,
+            BigDecimal overageVnd, BigDecimal capVnd, Instant now) {
         var systemAdminIds = userRoleRepository.findActiveUserIdsByRoleCode(RoleConstant.SYSTEM_ADMIN_ROLE);
 
         var payload = jsonSerializationPort.toJson(new SchoolDebtCapExceededPayloadV1(
-            systemAdminIds, schoolId, subscriptionId, quotaType, overageUsd, capUsd, now
+            systemAdminIds, schoolId, subscriptionId, quotaType, overageVnd, capVnd, now
         ));
 
         outboxRepository.save(Outbox.create(
@@ -74,12 +74,24 @@ public class SchoolDebtNotificationService {
         ));
 
         logDebtEvent(schoolId, subscriptionId, SchoolDebtEventType.CAP_EXCEEDED, quotaType,
-            triggerExamSessionId, triggerAmountUsd, totalAllocatedUsd, usedQuantityUsd, overageUsd, now);
+            triggerExamSessionId, triggerAmountVnd, totalAllocatedVnd, usedAmountVnd, overageVnd, now);
     }
 
+    /**
+     * @param debtVnd số nợ THẬT lúc bị khóa, tức phần số dư đã âm (luôn {@code >= 0}).
+     *
+     * <p>Nhận thẳng số nợ chứ KHÔNG tự suy ra từ {@code usedAmountVnd - totalAllocatedVnd} như bản
+     * trước: từ khi ConsumeQuotaService kẹp {@code used} tại {@code total} rồi đẩy phần vượt sang ví
+     * tự nạp, hiệu đó không bao giờ dương nữa -- mọi dòng school_debt_events kiểu LOCKED vì thế ghi
+     * overage_vnd = 0 (hoặc số âm) và dấu vết đối soát trở nên vô dụng đúng ở ca nghiêm trọng nhất.
+     *
+     * <p>{@code used_amount_vnd} ghi xuống là con số DỰNG LẠI {@code total + debt}, giống hệt cách
+     * {@code ConsumeQuotaService.checkDebtCapTransition} dựng cho dòng CAP_EXCEEDED -- hai loại sự
+     * kiện phải nói cùng một thứ tiếng thì mới xếp chung một bảng để đọc được.
+     */
     public void publishSchoolLockedDueToDebt(
             UUID subscriptionId, UUID schoolId, QuotaType quotaType, UUID triggerExamSessionId,
-            BigDecimal triggerAmountUsd, BigDecimal totalAllocatedUsd, BigDecimal usedQuantityUsd, Instant now) {
+            BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd, BigDecimal debtVnd, Instant now) {
         var schoolAdminIds = schoolAdminIdsOf(schoolId);
 
         var payload = jsonSerializationPort.toJson(new SchoolLockedDueToDebtPayloadV1(
@@ -92,12 +104,12 @@ public class SchoolDebtNotificationService {
         ));
 
         logDebtEvent(schoolId, subscriptionId, SchoolDebtEventType.LOCKED, quotaType, triggerExamSessionId,
-            triggerAmountUsd, totalAllocatedUsd, usedQuantityUsd, usedQuantityUsd.subtract(totalAllocatedUsd), now);
+            triggerAmountVnd, totalAllocatedVnd, totalAllocatedVnd.add(debtVnd), debtVnd, now);
     }
 
     public void publishSchoolDebtCleared(
             UUID subscriptionId, UUID schoolId, QuotaType quotaType,
-            BigDecimal totalAllocatedUsd, BigDecimal usedQuantityUsd, Instant now) {
+            BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, Instant now) {
         var schoolAdminIds = schoolAdminIdsOf(schoolId);
 
         var payload = jsonSerializationPort.toJson(new SchoolDebtClearedPayloadV1(
@@ -109,17 +121,20 @@ public class SchoolDebtNotificationService {
             EventTypeConstant.SCHOOL_DEBT_CLEARED, payload, now
         ));
 
+        // overage = 0 CỐ ĐỊNH, không phải usedAmountVnd - totalAllocatedVnd: hết nợ nghĩa là số dư đã
+        // về không âm, tức phần vượt bằng 0 theo đúng định nghĩa. Hiệu kia giờ luôn <= 0 (used bị kẹp
+        // tại total) nên chỉ ghi được số 0 hoặc một số ÂM vô nghĩa trên sổ đối soát.
         logDebtEvent(schoolId, subscriptionId, SchoolDebtEventType.CLEARED, quotaType, null, null,
-            totalAllocatedUsd, usedQuantityUsd, usedQuantityUsd.subtract(totalAllocatedUsd), now);
+            totalAllocatedVnd, usedAmountVnd, BigDecimal.ZERO, now);
     }
 
     private void logDebtEvent(
             UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType, QuotaType quotaType,
-            UUID triggerExamSessionId, BigDecimal triggerAmountUsd, BigDecimal totalAllocatedUsd,
-            BigDecimal usedQuantityUsd, BigDecimal overageUsd, Instant now) {
+            UUID triggerExamSessionId, BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd,
+            BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant now) {
         schoolDebtEventRepository.save(new SchoolDebtEvent(
-            schoolId, subscriptionId, eventType, quotaType, triggerExamSessionId, triggerAmountUsd,
-            totalAllocatedUsd, usedQuantityUsd, overageUsd, now
+            schoolId, subscriptionId, eventType, quotaType, triggerExamSessionId, triggerAmountVnd,
+            totalAllocatedVnd, usedAmountVnd, overageVnd, now
         ));
     }
 

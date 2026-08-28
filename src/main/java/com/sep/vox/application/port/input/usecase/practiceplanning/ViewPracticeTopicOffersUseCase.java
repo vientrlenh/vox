@@ -192,7 +192,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
 
     /** Nguồn topic cho EXAM_PREP: ngân hàng câu hỏi (question_bank/question_topic) đã PUBLISHED
      * của đúng trường + khối hiện tại của học sinh -- không dùng pool AI-sinh cho ABILITY_IMPROVEMENT.
-     * Mỗi topic được vật chất hoá lazy thành 1 dòng practice_topic (nếu chưa có) để toàn bộ pipeline
+     * Mỗi topic được vật chất hoá lazy thành 1 dòng practice_topics (nếu chưa có) để toàn bộ pipeline
      * chọn câu hỏi / theo dõi điểm yếu / vector sở thích phía sau chạy nguyên vẹn không cần sửa. */
     private List<RankedTopic> examTopicRanked(UUID studentId) {
         var schoolId = schoolUserRepository.findSchoolIdByUserId(studentId).orElse(null);
@@ -262,7 +262,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
      * {@code PersonalizeRepository.getDashboard}). Nên chỉ cần đăng nhập là lô chào đã chạy,
      * không cần chạm vào tab nào.
      *
-     * <p>Không chặn thì {@code dimension_interest_score} rỗng và câu xếp hạng lấp bằng
+     * <p>Không chặn thì {@code dimension_interest_scores} rỗng và câu xếp hạng lấp bằng
      * {@code COALESCE(..., 0.5)}: mọi chủ đề trong chương trình ra đúng cùng một điểm, client
      * vẫn in "% khớp" từ con số đó. Danh sách trông như đã cá nhân hoá trong khi chưa có một
      * tín hiệu nào -- sai lặng lẽ, không lỗi.

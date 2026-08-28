@@ -1,14 +1,13 @@
 package com.sep.vox.application.port.input.service;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
@@ -26,7 +25,11 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 @Service
 public class SubscriptionPeriodGuardService {
 
-    private static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    // Instant.toString() in ra UTC kèm hậu tố Z, nên hạn gói bắt đầu 01/01 hiện thành
+    // "2025-12-31T17:00:00Z" -- lệch một ngày so với chính con số trên màn quản lý thuê bao, đúng
+    // vào lúc người đọc đang cố đối chiếu hai chỗ với nhau.
+    private static final DateTimeFormatter DISPLAY_DATE =
+        DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneConstant.BUSINESS_ZONE);
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
 
@@ -55,15 +58,18 @@ public class SubscriptionPeriodGuardService {
             return;
         }
 
-        var lowerBound = startDate.atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
-        // end_date INCLUSIVE (khớp "CURRENT_DATE BETWEEN start_date AND end_date" ở các native
-        // query): cận trên thật sự là hết ngày end_date, nên lấy 00:00 hôm sau làm mốc EXCLUSIVE.
-        var upperBoundExclusive = endDate.plusDays(1).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
-
-        if (openAt != null && isOutside(openAt, lowerBound, upperBoundExclusive)) {
+        // end_date là mốc EXCLUSIVE, đúng bằng thời điểm kỳ kết thúc -- khớp "end_date >
+        // CURRENT_TIMESTAMP" ở các native query và "endDate > :at" ở findInForceBySchoolId.
+        //
+        // KHÔNG cộng thêm một ngày nữa. Bản cũ cộng vì end_date từng là LocalDate, tức mốc theo NGÀY
+        // nên cận trên thật sự là hết ngày hôm đó. V2 đổi cột sang timestamptz và model sang Instant,
+        // nên end_date giờ đã là chính xác lúc kỳ hết hạn; cộng thêm 24 giờ là mở cửa cho lịch thi
+        // nằm NGOÀI hạn gói -- bài xếp lịch trót lọt rồi chết lúc chạy thật ở
+        // ClassTestTokenQuotaGuardService, đúng cái lỗi muộn mà guard này sinh ra để chặn.
+        if (openAt != null && isOutside(openAt, startDate, endDate)) {
             throw new IllegalStateException(outsidePeriodMessage("Thời gian mở bài", subscription));
         }
-        if (closeAt != null && isOutside(closeAt, lowerBound, upperBoundExclusive)) {
+        if (closeAt != null && isOutside(closeAt, startDate, endDate)) {
             throw new IllegalStateException(outsidePeriodMessage("Thời gian đóng bài", subscription));
         }
     }
@@ -79,11 +85,8 @@ public class SubscriptionPeriodGuardService {
     private String outsidePeriodMessage(String fieldLabel, SchoolSubscription subscription) {
         return "%s phải nằm trong hạn gói dịch vụ của trường (từ %s đến %s)".formatted(
             fieldLabel,
-            format(subscription.getStartDate()),
-            format(subscription.getEndDate()));
+            DISPLAY_DATE.format(subscription.getStartDate()),
+            DISPLAY_DATE.format(subscription.getEndDate()));
     }
 
-    private String format(LocalDate date) {
-        return date.format(DISPLAY_DATE);
-    }
 }

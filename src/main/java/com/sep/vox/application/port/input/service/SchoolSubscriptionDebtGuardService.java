@@ -5,46 +5,51 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
-import com.sep.vox.domain.model.subscription.QuotaType;
-import com.sep.vox.domain.repository.SubscriptionQuotaRepository;
+import com.sep.vox.domain.model.school.SchoolBalance;
+import com.sep.vox.domain.repository.SchoolBalanceRepository;
 
 /**
- * Trường "bị khóa" khi chi phí AI thật đã trừ (ConsumeQuotaUseCase, allowDebt=true) đẩy
- * usedQuantity vượt totalAllocated ở 1 trong 2 bucket cấp TRƯỜNG (GRADING hoặc CLASS_TEST) --
- * KHÔNG tính hạn mức cá nhân của từng giáo viên (SubscriptionQuotaUserAllocation), vì đó là do
- * trường tự chia nội bộ, không phải tiền thật trường đang thiếu.
+ * Trường "bị khóa" khi số dư ví tự nạp âm, tức chi phí AI thật đã tiêu quá cả hạn mức kèm gói lẫn
+ * số tiền trường đã nạp -- xem {@link SchoolBalance#isInDebt()}.
  *
- * <p>Không có cờ/bảng riêng để lưu trạng thái khóa -- suy trực tiếp từ usedQuantity/totalAllocated
- * mỗi lần gọi nên luôn chính xác tức thời, và tự "mở khóa" ngay khi trường mua thêm token/gia hạn
- * (addAllocation) đưa usedQuantity về lại trong hạn mức, không cần bước reconcile nào.
+ * <p>Khóa theo TRƯỜNG chứ không theo gói đăng ký, và đó là lý do tham số ở đây là {@code schoolId}:
+ * số dư thuộc về trường và sống xuyên qua mọi lần gia hạn/đổi gói (V2 mục 2), nên nhận
+ * {@code subscriptionId} rồi tự tra ngược sẽ ngụ ý sai rằng nợ thuộc về một kỳ đăng ký nào đó.
+ *
+ * <p>KHÔNG còn tách theo QuotaType. Trước đây nợ là {@code used_amount_vnd > total_allocated_amount_vnd}
+ * của TỪNG ví nên hỏi được "ví thi có đang nợ không"; giờ nợ nằm ở số dư -- một túi duy nhất của
+ * trường -- nên câu hỏi đó không còn dữ liệu để trả lời. Ví hạn mức chỉ còn diễn tả "gói cấp bao
+ * nhiêu / đã tiêu bao nhiêu trong số đó", và used không bao giờ vượt total nữa (xem
+ * ConsumeQuotaService).
+ *
+ * <p>Không có cờ/bảng riêng lưu trạng thái khóa -- suy trực tiếp từ số dư mỗi lần gọi nên luôn chính
+ * xác tức thời, và tự "mở khóa" ngay khi trường nạp thêm tiền đưa số dư về không âm, không cần bước
+ * reconcile nào.
  */
 @Service
 public class SchoolSubscriptionDebtGuardService {
 
-    private final SubscriptionQuotaRepository subscriptionQuotaRepository;
+    private final SchoolBalanceRepository schoolBalanceRepository;
 
-    public SchoolSubscriptionDebtGuardService(SubscriptionQuotaRepository subscriptionQuotaRepository) {
-        this.subscriptionQuotaRepository = subscriptionQuotaRepository;
+    public SchoolSubscriptionDebtGuardService(SchoolBalanceRepository schoolBalanceRepository) {
+        this.schoolBalanceRepository = schoolBalanceRepository;
     }
 
-    public boolean isSchoolLocked(UUID subscriptionId) {
-        return isQuotaOverLimit(subscriptionId, QuotaType.GRADING) || isQuotaOverLimit(subscriptionId, QuotaType.CLASS_TEST);
+    /**
+     * Chưa có dòng số dư nào = trường chưa từng nạp và cũng chưa từng tiêu vượt hạn mức = KHÔNG nợ.
+     * Ví rỗng và ví số dư 0 là cùng một nghĩa -- xem {@link SchoolBalance#emptyFor}.
+     */
+    public boolean isSchoolLocked(UUID schoolId) {
+        return schoolBalanceRepository.findBySchoolId(schoolId)
+            .map(b -> b.isInDebt())
+            .orElse(false);
     }
 
-    public void requireSchoolNotLocked(UUID subscriptionId) {
-        if (isSchoolLocked(subscriptionId)) {
+    public void requireSchoolNotLocked(UUID schoolId) {
+        if (isSchoolLocked(schoolId)) {
             throw new PlanLimitExceededException(
                 "Trường đang bị khóa do chi phí AI thực tế vượt hạn mức, vui lòng thanh toán hoặc gia hạn/nâng cấp gói để tiếp tục sử dụng"
             );
         }
-    }
-
-    // public (không còn private isOverLimit) -- SchoolDebtEvent audit log (mục "nguyên nhân nợ") cần
-    // check TỪNG bucket riêng để biết chính xác bucket nào vừa transition, thay vì chỉ biết kết quả
-    // OR gộp của isSchoolLocked. Xem CompleteExamSessionGradingUseCase/InvoiceSettlementService/BuyTokensUseCase.
-    public boolean isQuotaOverLimit(UUID subscriptionId, QuotaType quotaType) {
-        return subscriptionQuotaRepository.findBySubscriptionIdAndQuotaType(subscriptionId, quotaType)
-            .map(quota -> quota.getUsedQuantity().compareTo(quota.getTotalAllocated()) > 0)
-            .orElse(false);
     }
 }

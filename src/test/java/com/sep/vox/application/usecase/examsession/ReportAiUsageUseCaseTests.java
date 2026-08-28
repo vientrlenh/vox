@@ -22,12 +22,12 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.RecordAiUsageCommand;
 import com.sep.vox.application.port.input.command.ReportAiUsageCommand;
 import com.sep.vox.application.port.input.usecase.examsession.ReportAiUsageUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.RecordAiUsageUseCase;
+import com.sep.vox.application.port.input.usecase.metering.RecordAiUsageUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
-import com.sep.vox.domain.model.subscription.AiUsageType;
+import com.sep.vox.domain.model.metering.AiUsageType;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 

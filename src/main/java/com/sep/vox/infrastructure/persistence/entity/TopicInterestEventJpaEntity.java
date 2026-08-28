@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(
-    name = "topic_interest_event",
+    name = "topic_interest_events",
     indexes = @Index(
         name = "idx_topic_interest_event_student_time",
         columnList = "student_id, occurred_at"

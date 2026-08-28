@@ -40,7 +40,7 @@ import com.sep.vox.domain.dto.ExamPaperItemDto;
 import com.sep.vox.domain.dto.ExamPaperSectionDto;
 import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.ExamSecurePoolDto;
-import com.sep.vox.domain.dto.ExamTokenEstimateDto;
+import com.sep.vox.application.response.input.exam.ExamTokenEstimateResponse;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.QuestionSelectionSpecDto;
 import com.sep.vox.domain.dto.UserDto;
@@ -120,7 +120,7 @@ public class ExamController {
     }
 
     @QueryMapping(name = "examTokenEstimate")
-    public ExamTokenEstimateDto examTokenEstimate(@Argument(name = "examId") UUID examId) {
+    public ExamTokenEstimateResponse examTokenEstimate(@Argument(name = "examId") UUID examId) {
         return estimateExamTokenQuotaUseCase.execute(new EstimateExamTokenQuotaQuery(examId));
     }
 

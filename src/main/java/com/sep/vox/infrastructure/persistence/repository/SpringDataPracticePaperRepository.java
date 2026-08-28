@@ -28,7 +28,7 @@ public interface SpringDataPracticePaperRepository
         SELECT COUNT(*)
         FROM (
             SELECT origin
-            FROM practice_paper
+            FROM practice_papers
             WHERE student_id = :studentId
             ORDER BY created_at DESC
             LIMIT 10
@@ -39,7 +39,7 @@ public interface SpringDataPracticePaperRepository
 
     @Query(value = """
         SELECT COALESCE(SUM(reserved_quota_seconds), 0)
-        FROM practice_paper
+        FROM practice_papers
         WHERE student_id = :studentId
           AND status = 'RESERVED'
           AND reservation_expires_at > CURRENT_TIMESTAMP

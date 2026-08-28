@@ -1,0 +1,38 @@
+"""
+MỘT LẦN THỬ thanh toán của một đơn, không phải vòng đời của đơn.
+
+Một đơn có thể có nhiều dòng -- trả hụt rồi trả lại là hai lần thử khác nhau -- nhưng tối đa một
+dòng PAID và tối đa một dòng PENDING. Các lần thất bại CỐ Ý không bị lọc đi: khi trường hỏi "sao tôi
+bấm trả hai lần mà chỉ bị trừ một lần", danh sách này chính là câu trả lời.
+"""
+type Payment {
+    id: ID!
+    orderId: ID!
+    amountVnd: Float!
+    "E_BANKING hoặc CARD. Hiện mọi đơn đi qua cổng thứ ba nên luôn là E_BANKING."
+    method: String
+    "PAYOS hoặc SEPAY."
+    provider: String
+    "PENDING | PAID | FAILED -- vòng đời của LẦN THỬ này. Lý do vì sao không ra tiền nằm ở Order.status."
+    status: String!
+    """
+    Mã giao dịch phía cổng. Đưa ra để trường và hỗ trợ cùng tra được một giao dịch trên dashboard
+    PayOS/SePay khi tiền đã chuyển mà đơn chưa nhận.
+    """
+    providerOrderRef: String
+    """
+    Link trả tiền, CHỈ có ở lần thử còn PENDING -- phiên của lần thử đã chốt thì bên cổng đã đóng.
+    FE dùng đúng trường này cho nút "thanh toán tiếp" thay vì gọi lại API tạo link, vì mỗi lần phát
+    link mới là một mã đơn mới phía cổng.
+    """
+    checkoutUrl: String
+    "Thời điểm CỔNG ghi nhận tiền, khác createdAt (lúc mình phát link). Null khi lần thử chưa ra tiền."
+    paidAt: String
+    createdAt: String
+}
+
+# Xem ghi chú ở invoice.graphqls về lý do dùng extend.
+extend type Order {
+    "Các lần thử thanh toán, MỚI NHẤT TRƯỚC. Rỗng khi trường chưa bấm thanh toán lần nào."
+    payments: [Payment!]
+}

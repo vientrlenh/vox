@@ -99,7 +99,7 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
-    public PageResult<SchoolGrade> findAllBySchoolId(UUID schoolId, UUID gradeLevelId, String status, int pageNumber, int size) {
+    public PageResult<SchoolGrade> findBySchoolId(UUID schoolId, UUID gradeLevelId, String status, int pageNumber, int size) {
         var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, gradeLevelId, status, pageable);
         return new PageResult<>(
@@ -127,13 +127,6 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     @Override
     public void deleteById(UUID schoolGradeId) {
         springDataSchoolGradeRepository.deleteById(schoolGradeId);
-    }
-
-    @Override
-    public List<SchoolGrade> findAllById(List<UUID> gradeIds) {
-       return springDataSchoolGradeRepository.findAllById(gradeIds).stream()
-            .map(SchoolGradeMapper::toDomain)
-            .toList();
     }
 
     @Override

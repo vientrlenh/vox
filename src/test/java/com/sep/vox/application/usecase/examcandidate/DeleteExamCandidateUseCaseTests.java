@@ -68,7 +68,7 @@ class DeleteExamCandidateUseCaseTests {
             .thenReturn(true);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam(ExamStatus.DRAFT)));
         when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate(examId)));
-        when(examSessionRepository.findAllByCandidateId(candidateId)).thenReturn(List.of());
+        when(examSessionRepository.findByCandidateId(candidateId)).thenReturn(List.of());
     }
 
     @Test
@@ -80,7 +80,7 @@ class DeleteExamCandidateUseCaseTests {
 
     @Test
     void should_reject_when_candidate_already_has_session() {
-        when(examSessionRepository.findAllByCandidateId(candidateId)).thenReturn(List.of(new ExamSession()));
+        when(examSessionRepository.findByCandidateId(candidateId)).thenReturn(List.of(new ExamSession()));
 
         assertThatThrownBy(() -> useCase.execute(new DeleteExamCandidateCommand(examId, candidateId)))
             .isInstanceOf(IllegalStateException.class)

@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.subscription.QuotaPricingCalibration;
-import com.sep.vox.domain.model.subscription.QuotaPricingSource;
+import com.sep.vox.domain.model.metering.QuotaPricingCalibration;
+import com.sep.vox.domain.model.metering.QuotaPricingSource;
 import com.sep.vox.infrastructure.persistence.entity.QuotaPricingCalibrationJpaEntity;
 
 public final class QuotaPricingCalibrationMapper {

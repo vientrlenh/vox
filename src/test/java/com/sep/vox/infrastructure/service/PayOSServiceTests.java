@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.response.output.CallbackVerificationResult;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
-import com.sep.vox.domain.model.subscription.PaymentMethod;
+import com.sep.vox.domain.model.payment.PaymentProvider;
 
 import tools.jackson.databind.json.JsonMapper;
 
@@ -54,7 +54,7 @@ class PayOSServiceTests {
 
     @Test
     void reportsItselfAsThePayosAdapter() {
-        assertThat(service.provider()).isEqualTo(PaymentMethod.PAYOS);
+        assertThat(service.provider()).isEqualTo(PaymentProvider.PAYOS);
     }
 
     @Test

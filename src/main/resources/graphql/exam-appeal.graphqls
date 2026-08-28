@@ -144,7 +144,7 @@ type AppealReviewerLite {
 
 extend type Query {
     "Danh sách đơn phúc khảo của trường. Phân trang 0-based."
-    appeals(status: AppealStatus, keyword: String, page: Int = 0, size: Int = 20): AppealSummaryPage!
+    appeals(status: AppealStatus, keyword: String, page: Int = 1, size: Int = 20): AppealSummaryPage!
 
     """
     Đơn phúc khảo của MỘT bài kiểm tra trên lớp, cho chính giáo viên tạo bài. Tách khỏi
@@ -155,7 +155,7 @@ extend type Query {
         examId: ID!,
         status: AppealStatus,
         keyword: String,
-        page: Int = 0,
+        page: Int = 1,
         size: Int = 20
     ): AppealSummaryPage!
 
@@ -169,7 +169,7 @@ extend type Query {
     với school admin -- FE (web/mobile) KHÔNG được hỏi/hiện reviewerName cho học sinh
     (blind re-evaluation), nhưng chặn ở tầng UI thay vì tầng schema.
     """
-    myAppeals(status: AppealStatus, page: Int = 0, size: Int = 20): AppealSummaryPage!
+    myAppeals(status: AppealStatus, page: Int = 1, size: Int = 20): AppealSummaryPage!
 
     """
     Chi tiết một đơn thuộc học sinh đang đăng nhập. Dùng chung type AppealDetail với school

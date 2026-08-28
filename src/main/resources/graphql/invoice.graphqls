@@ -1,0 +1,28 @@
+"""
+Chứng từ phát hành sau khi tiền đã về.
+
+KHÔNG phải hóa đơn GTGT: không có MST, không có thông tin đơn vị bán, không ký số, và invoiceNumber
+là mã nội bộ chứ không thuộc dải serial đã đăng ký với cơ quan thuế. Đừng dựng UI hứa với kế toán
+trường rằng đây là chứng từ khấu trừ được.
+
+Chỉ có hai trường, và đó là tất cả những gì hóa đơn tự nó biết: số tiền, mua gì, trả bằng cách nào
+đều nằm ở Order và Payment. Vì vậy nó không có query riêng -- luôn đọc qua Order.invoice.
+"""
+type Invoice {
+    "Duy nhất toàn hệ thống, dạng INV-{năm}-{12 ký tự hex}. Đây là mã trường đọc cho hỗ trợ khi cần tra."
+    invoiceNumber: String!
+    "Năm trong invoiceNumber lấy theo giờ Việt Nam, nên luôn khớp với ngày hiển thị ở đây."
+    issueDate: String!
+}
+
+# Khai bằng extend để order.graphqls không phải biết tới hóa đơn: quan hệ là 1-1 và hóa đơn mới là
+# bên phụ thuộc. Spring GraphQL gộp mọi file .graphqls thành một schema nên type ở file khác vẫn nối
+# vào được.
+extend type Order {
+    """
+    NULL khi đơn chưa thu được tiền, và đó là câu trả lời đúng chứ không phải nạp hụt dữ liệu: chỉ
+    đơn SUCCESS mới được phát hóa đơn. Dùng luôn sự có mặt của trường này để đánh dấu dòng nào trong
+    lịch sử thật sự đã ra tiền.
+    """
+    invoice: Invoice
+}

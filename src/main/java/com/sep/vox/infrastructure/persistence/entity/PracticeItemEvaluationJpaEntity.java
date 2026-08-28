@@ -13,7 +13,7 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(
-    name = "practice_item_evaluation",
+    name = "practice_item_evaluations",
     uniqueConstraints = @UniqueConstraint(
         name = "uq_practice_evaluation_response",
         columnNames = "practice_response_id"

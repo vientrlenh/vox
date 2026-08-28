@@ -37,7 +37,7 @@ public interface PracticeItemResponseRepository {
     /** Đóng dấu đã gửi yêu cầu chấm (GRADING + tăng số lần thử) -- gọi NGAY SAU khi publish. */
     void markGradingRequested(UUID responseId, Instant requestedAt);
 
-    /** Bản chấm đã về -- gọi CÙNG TRANSACTION với lúc ghi practice_item_evaluation. */
+    /** Bản chấm đã về -- gọi CÙNG TRANSACTION với lúc ghi practice_item_evaluations. */
     void markGraded(UUID responseId);
 
     /** Agents báo chấm hỏng. */

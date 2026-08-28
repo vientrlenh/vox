@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +32,10 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
  */
 @Service
 public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCommand, PracticePaper> {
+
+    // Trùng scale của school_subscription_quota_records.used_amount_vnd numeric(18,6) -- cùng hằng số
+    // với SubmitPracticeTurnUseCase, nơi khoản chi thật của từng lượt được quy đổi và trừ.
+    private static final int COST_VND_SCALE = 6;
 
     private final PracticeTopicRepository topicRepository;
     private final PracticePaperRepository paperRepository;
@@ -71,7 +76,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
         schoolSubscriptionActiveGuardService.requireActiveForStudent(studentId, "bắt đầu buổi luyện tập cá nhân hóa AI");
         var topic = requireTopic(input.topicId());
-        var quotaRemainingUsd = remainingPracticeQuotaUsd(studentId);
+        var spendableFundsVnd = spendablePracticeFundsVnd(studentId);
         var focus = selectionService.resolveFocus(studentId, input.fromSubAttribute());
         var chosen = chosenBand(input.targetFrameworkBandId());
         var chosenBandOrder = chosen.order();
@@ -96,11 +101,17 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         // xem QuotaPricingCalibrationService/QuotaPricingSource) vì pipeline AI khác hẳn exam. Cộng
         // cả reservedSeconds (câu đang chờ nộp của các phiên khác) để không cho 2 phiên cùng lúc
         // cùng vượt hạn mức trong lúc chưa phiên nào submit turn thật.
+        //
+        // Quy sang VND ngay tại đây: giá/giây niêm yết bằng USD nhưng ví hạn mức lẫn ví tự nạp đều là
+        // cột VND, và đây đúng là con số ConsumeQuotaService sẽ trừ thật ở từng lượt nói. Lấy GIÁ VỐN,
+        // KHÔNG cộng phí dịch vụ -- phí đã thu một lần lúc trường đặt đơn, xem ServiceFeePort.
         var reservedSeconds = paperRepository.sumReservedQuotaSeconds(studentId);
-        var estimatedCostUsd = BigDecimal.valueOf((long) reservedSeconds + question.spokenSeconds())
-            .multiply(quotaPricingPort.currentEstimatedCostPerPracticeSecondUsd());
-        if (quotaRemainingUsd.compareTo(estimatedCostUsd) < 0) {
-            throw new QuotaExceededException("Hạn mức PRACTICE không đủ cho một câu trọn vẹn.");
+        var estimatedCostVnd = BigDecimal.valueOf((long) reservedSeconds + question.spokenSeconds())
+            .multiply(quotaPricingPort.currentEstimatedCostPerPracticeSecondUsd())
+            .multiply(quotaPricingPort.usdToVndRate())
+            .setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
+        if (spendableFundsVnd.compareTo(estimatedCostVnd) < 0) {
+            throw new QuotaExceededException("Không còn đủ hạn mức hoặc số dư cho một câu luyện trọn vẹn.");
         }
         var paper = persistenceService.persist(
             studentId,
@@ -151,9 +162,16 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
             : origin;
     }
 
-    private BigDecimal remainingPracticeQuotaUsd(UUID studentId) {
-        var quota = schoolSubscriptionRepository.findPracticeQuotaRemaining(studentId);
-        return quota.max(BigDecimal.ZERO);
+    /**
+     * Tiền còn chi được cho lượt luyện này = LEAST(hạn mức trường còn lại + số dư ví tự nạp, hạn mức
+     * cá nhân còn lại) -- xem SchoolSubscriptionRepository.findPracticeSpendableFundsVnd.
+     *
+     * <p>Kẹp về 0 vì con số đó có thể âm (hạn mức cá nhân bị cấp giảm xuống dưới mức đã dùng, hoặc
+     * dữ liệu cũ còn used vượt allocated): "không còn gì" phải luôn là đúng một con số, nếu không
+     * mọi phép so bên dưới lại phải tự nhớ xử lý số âm.
+     */
+    private BigDecimal spendablePracticeFundsVnd(UUID studentId) {
+        return schoolSubscriptionRepository.findPracticeSpendableFundsVnd(studentId).max(BigDecimal.ZERO);
     }
 
     /**

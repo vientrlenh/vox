@@ -8,9 +8,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.model.subscription.AiUsageRecord;
+import com.sep.vox.domain.model.metering.AiUsageRecord;
 import com.sep.vox.domain.repository.AiUsageRecordRepository;
-import com.sep.vox.domain.repository.SessionCostAggregate;
 import com.sep.vox.infrastructure.persistence.mapper.AiUsageRecordMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAiUsageRecordRepository;
 
@@ -36,8 +35,8 @@ public class AiUsageRecordRepositoryImpl implements AiUsageRecordRepository {
     }
 
     @Override
-    public List<AiUsageRecord> findAllByExamSessionId(UUID examSessionId) {
-        return springDataAiUsageRecordRepository.findAllByExamSessionId(examSessionId).stream()
+    public List<AiUsageRecord> findByExamSessionId(UUID examSessionId) {
+        return springDataAiUsageRecordRepository.findByExamSessionId(examSessionId).stream()
             .map(AiUsageRecordMapper::toDomain)
             .toList();
     }
@@ -48,12 +47,19 @@ public class AiUsageRecordRepositoryImpl implements AiUsageRecordRepository {
     }
 
     @Override
-    public BigDecimal sumCostUsdByExamSessionId(UUID examSessionId) {
-        return springDataAiUsageRecordRepository.sumCostUsdByExamSessionId(examSessionId);
+    public int markChargedByExamSessionId(UUID examSessionId, Instant chargedAt) {
+        return springDataAiUsageRecordRepository.markChargedByExamSessionId(examSessionId, chargedAt);
     }
 
     @Override
-    public List<SessionCostAggregate> sumCostUsdGroupedBySessionSince(Instant since) {
-        return springDataAiUsageRecordRepository.sumCostUsdGroupedBySessionSince(since);
+    public BigDecimal sumCostVndByExamSessionIdAndChargedAt(UUID examSessionId, Instant chargedAt) {
+        return springDataAiUsageRecordRepository
+            .sumCostVndByExamSessionIdAndChargedAt(examSessionId, chargedAt);
+    }
+
+    @Override
+    public BigDecimal sumCostUsdByExamSessionIdAndChargedAt(UUID examSessionId, Instant chargedAt) {
+        return springDataAiUsageRecordRepository
+            .sumCostUsdByExamSessionIdAndChargedAt(examSessionId, chargedAt);
     }
 }

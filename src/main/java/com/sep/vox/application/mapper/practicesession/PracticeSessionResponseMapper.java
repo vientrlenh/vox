@@ -62,7 +62,6 @@ public final class PracticeSessionResponseMapper {
             dto.evaluationQueued(),
             dto.corrections().stream().map(PracticeSessionResponseMapper::toResponse).toList(),
             dto.quotaExhausted(),
-            dto.quotaExhaustedScope(),
             dto.sessionSpokenSeconds(),
             dto.sessionBudgetSeconds()
         );

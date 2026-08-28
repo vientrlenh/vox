@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.subscription.AiUsageType;
+import com.sep.vox.domain.model.metering.AiUsageType;
 
 public record RecordAiUsageCommand(
     UUID examSessionId,

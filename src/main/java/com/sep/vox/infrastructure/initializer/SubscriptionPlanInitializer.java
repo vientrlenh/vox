@@ -11,12 +11,12 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.application.port.output.QuotaPricingPort;
-import com.sep.vox.domain.model.subscription.PlanQuota;
-import com.sep.vox.domain.model.subscription.PlanStatus;
-import com.sep.vox.domain.model.subscription.QuotaType;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
-import com.sep.vox.domain.repository.PlanQuotaRepository;
+import com.sep.vox.domain.model.subscription.SubscriptionPlanPeriod;
+import com.sep.vox.domain.model.subscription.SubscriptionPlanQuota;
+import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
+import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 /**
@@ -26,9 +26,10 @@ import com.sep.vox.domain.repository.SubscriptionPlanRepository;
  * {@code DRAFT} thì trường KHÔNG đăng ký được, nên một cơ sở dữ liệu chỉ có bản nháp vẫn cần gói
  * này. Ngược lại, đã có gói ACTIVE rồi thì thêm nữa chỉ làm rối màn chọn gói.
  *
- * <p>Giá và {@code tokenUnitPrice} KHÔNG gán số cứng mà lấy qua {@link QuotaPricingPort}, đúng cách
- * {@code CreatePlanUseCase} làm -- gán cứng thì gói seed sẽ lệch giá so với mọi gói tạo từ giao
- * diện ngay khi tỷ giá đổi, và lệch kiểu im lặng.
+ * <p><b>Cập nhật theo V2 (orders/payments/school balance).</b> Hạn mức không còn đo bằng token hay
+ * bằng USD chi phí AI nữa mà bằng TIỀN: {@code plan_quota.included_quantity} đã đổi thành
+ * {@code subscription_plan_quotas.included_amount_vnd}, và {@code token_unit_price} bị bỏ hẳn. Vì
+ * vậy lớp này không còn cần {@code QuotaPricingPort} -- không còn con số đơn giá nào để tra.
  */
 @Component
 @Order(10)
@@ -39,32 +40,31 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
     private static final String PLAN_NAME = "Gói Tiêu chuẩn";
     private static final String PLAN_TAGLINE = "Gói mặc định dựng sẵn cho trường mới";
 
-    /** Khớp DEFAULT_SERVICE_FEE_RATIO của CreatePlanUseCase. */
-    private static final BigDecimal SERVICE_FEE_RATIO = new BigDecimal("0.20");
-
     /**
-     * Hạn mức mỗi loại, đơn vị USD chi phí AI (xem {@code plan_quota.included_quantity}).
-     * Rộng tay có chủ đích: đây là gói để chạy demo/thử nghiệm, chặn hạn mức giữa buổi trình bày
-     * gây khó chịu hơn nhiều so với việc cấp dư.
+     * Hạn mức mỗi loại, đơn vị VNĐ.
+     *
+     * <p>Giữ nguyên ý định của bản trước -- "cấp dư để không chặn giữa buổi trình bày" -- chỉ đổi
+     * đơn vị theo V2. Bản cũ cấp 1000 USD chi phí AI mỗi loại; quy theo đúng tỷ giá đã ghi trong
+     * chú thích cũ (31.263₫/USD) là ~31,3 triệu, nên lấy tròn 31.263.000₫ để con số vẫn truy được
+     * về gốc thay vì bịa một số mới.
      */
-    private static final BigDecimal INCLUDED_QUANTITY_USD = new BigDecimal("1000");
+    private static final BigDecimal INCLUDED_AMOUNT_VND = new BigDecimal("31263000");
 
     /**
      * Giá bán CỐ ĐỊNH, mang tính tượng trưng cho demo -- KHÔNG suy ra từ hạn mức.
      *
-     * <p>Bản đầu tính giá = tổng USD cấp × giá bán mỗi USD, và ra 93.789.000₫ (1000 USD × 3 loại ×
-     * 31.263₫). Đúng về mặt kinh doanh nhưng vô dụng cho demo: không ai bấm mua một gói 93 triệu để
-     * xem thử luồng đăng ký.
+     * <p>Bản đầu tính giá = tổng chi phí AI cấp × đơn giá, ra 93.789.000₫. Đúng về mặt kinh doanh
+     * nhưng vô dụng cho demo: không ai bấm mua một gói 93 triệu để xem thử luồng đăng ký.
      *
-     * <p>Hệ quả phải nói rõ: gói này bán LỖ nặng so với chi phí AI nó cấp ({@link
-     * #INCLUDED_QUANTITY_USD} vẫn giữ 1000 USD/loại để không chặn hạn mức giữa buổi trình bày). Đây
-     * là lựa chọn có chủ đích cho môi trường demo, KHÔNG phải công thức giá dùng được thật. Gói tạo
-     * từ giao diện qua {@code CreatePlanUseCase} vẫn tính giá theo cách của nó, không dính gì tới
-     * hằng số này.
+     * <p>Hệ quả phải nói rõ: gói này bán LỖ nặng so với hạn mức nó cấp. Đây là lựa chọn có chủ đích
+     * cho môi trường demo, KHÔNG phải công thức giá dùng được thật. Gói tạo từ giao diện vẫn tính
+     * giá theo cách của nó, không dính gì tới hằng số này.
      */
-    private static final BigDecimal PRICE_PER_YEAR = new BigDecimal("10000");
+    private static final BigDecimal PRICE_VND = new BigDecimal("10000");
 
-    private static final int VALIDITY_DAYS = 365;
+    /** Một năm: V2 thay {@code validity_days} bằng cặp (loại chu kỳ, số chu kỳ). */
+    private static final SubscriptionPlanPeriod PERIOD_TYPE = SubscriptionPlanPeriod.YEAR;
+    private static final int PERIOD_COUNT = 1;
 
     /**
      * Trần độ dài MỘT lượt thi. Đây là cái thước, không phải túi tiền -- nó không cạn đi khi thi
@@ -74,58 +74,58 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
     private static final int MAX_TIME_PER_ATTEMPT_MIN = 60;
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final PlanQuotaRepository planQuotaRepository;
-    private final QuotaPricingPort quotaPricingPort;
+    private final SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository;
 
     public SubscriptionPlanInitializer(
             SubscriptionPlanRepository subscriptionPlanRepository,
-            PlanQuotaRepository planQuotaRepository,
-            QuotaPricingPort quotaPricingPort) {
+            SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.planQuotaRepository = planQuotaRepository;
-        this.quotaPricingPort = quotaPricingPort;
+        this.subscriptionPlanQuotaRepository = subscriptionPlanQuotaRepository;
     }
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        if (!subscriptionPlanRepository.findAllByStatus(PlanStatus.ACTIVE).isEmpty()) {
+        if (!subscriptionPlanRepository.findByStatus(SubscriptionPlanStatus.ACTIVE).isEmpty()) {
             LOGGER.info("Active subscription plan already exists. Skip initialize");
             return;
         }
 
-        var tokenUnitPrice = quotaPricingPort.tokenUnitPriceFor(SERVICE_FEE_RATIO);
-        var quotaTypes = List.of(QuotaType.GRADING, QuotaType.CLASS_TEST, QuotaType.PRACTICE);
+        // V2 gộp GRADING và CLASS_TEST vào EXAM, nên chỉ còn hai loại hạn mức.
+        var quotaTypes = List.of(QuotaType.EXAM, QuotaType.PRACTICE);
 
+        var now = Instant.now();
         var plan = subscriptionPlanRepository.save(new SubscriptionPlan(
             PLAN_NAME,
             PLAN_TAGLINE,
-            PRICE_PER_YEAR,
-            VALIDITY_DAYS,
+            PRICE_VND,
+            PERIOD_TYPE,
+            PERIOD_COUNT,
             MAX_TIME_PER_ATTEMPT_MIN,
             // ACTIVE ngay, không phải DRAFT: mục đích của gói này là dùng được luôn, mà DRAFT thì
             // trường không đăng ký được.
-            PlanStatus.ACTIVE,
-            1,
-            Instant.now(),
-            // Không có người dùng đăng nhập lúc khởi động; cột created_by cho phép null.
+            SubscriptionPlanStatus.ACTIVE,
+            1L,
+            now,
+            now,
+            // Không có người dùng đăng nhập lúc khởi động; cột created_by/updated_by cho phép null.
             null,
-            SERVICE_FEE_RATIO
+            null
         ));
 
         for (var quotaType : quotaTypes) {
-            planQuotaRepository.save(new PlanQuota(
+            subscriptionPlanQuotaRepository.save(new SubscriptionPlanQuota(
                 plan.getId(),
                 quotaType,
-                INCLUDED_QUANTITY_USD,
-                tokenUnitPrice
+                INCLUDED_AMOUNT_VND
             ));
         }
 
         LOGGER.info(
-            "Subscription plan initialized successfully: {} ({} VND/nam, {} USD moi loai han muc)",
+            "Subscription plan initialized successfully: {} ({}đ/nam, {}đ moi loai han muc, {} loai)",
             PLAN_NAME,
-            PRICE_PER_YEAR.toPlainString(),
-            INCLUDED_QUANTITY_USD.toPlainString()
+            PRICE_VND.toPlainString(),
+            INCLUDED_AMOUNT_VND.toPlainString(),
+            quotaTypes.size()
         );
     }
 }

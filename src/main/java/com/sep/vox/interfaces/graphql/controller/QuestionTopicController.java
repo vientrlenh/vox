@@ -32,8 +32,8 @@ public class QuestionTopicController {
             @Argument(name = "questionBankId") UUID questionBankId,
             @Argument(name = "status") QuestionTopicStatus status,
             @Argument(name = "keyword") String keyword,
-            @Argument(name = "page") int page,
-            @Argument(name = "size") int size) {
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
         validatePage(page, size);
         var query = new ViewQuestionTopicsQuery(questionBankId, status, keyword, page, size);
         return viewQuestionTopicsUseCase.execute(query);
@@ -45,8 +45,10 @@ public class QuestionTopicController {
         return viewQuestionTopicDetailsUseCase.execute(query);
     }
 
-    private void validatePage(int page, int size) {
-        if (page < 0 || size <= 0) {
+    private void validatePage(Integer page, Integer size) {
+        // page <= 0 chứ không phải < 0: trang đầu là 1. Nhận 0 rồi trừ đi 1 ở adapter sẽ ra
+        // PageRequest.of(-1, size) và ném IllegalArgumentException từ tận trong Spring Data.
+        if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
         }
     }

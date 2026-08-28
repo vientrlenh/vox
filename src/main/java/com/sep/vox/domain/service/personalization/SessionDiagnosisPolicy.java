@@ -32,7 +32,7 @@ public final class SessionDiagnosisPolicy {
      *
      * <p>Sức mạnh của tín hiệu ấy do {@link #signal} quyết định -- xem javadoc ở đó.
      *
-     * <p><b>Kết quả đi đâu:</b> {@code practice_session.abandon_diagnosis}, và nơi tiêu thụ
+     * <p><b>Kết quả đi đâu:</b> {@code practice_sessions.abandon_diagnosis}, và nơi tiêu thụ
      * DUY NHẤT có tác dụng là cổng vào của
      * {@code InterestVectorService.recordSessionOutcome} -- phiên không hoàn thành chỉ được
      * ghi tín hiệu sở thích khi chẩn đoán là {@code BORED}. {@code TOO_HARD} cố ý KHÔNG ghi

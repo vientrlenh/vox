@@ -54,7 +54,7 @@ public class ExamRepositoryImpl implements ExamRepository {
     public PageResult<Exam> findAccessible(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
             boolean schoolAdmin, UUID schoolId, UUID schoolClassId, ExamKind kind, ExamStatus status, String keyword,
             int page, int size) {
-        var pageable = PageRequest.of(page, size);
+        var pageable = PageRequest.of(page - 1, size);
         var result = springDataExamRepository.findAccessible(
             currentUserId,
             currentSchoolId,

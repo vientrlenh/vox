@@ -77,7 +77,7 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
     @Override
     public PageResult<RubricResultBand> findAllByRubricVersionId(UUID rubricVersionId, int page, int size) {
         // Tối ưu: Mặc định sort theo order TĂNG DẦN để bảng kết quả hiển thị chuẩn
-        Pageable pageable = PageRequest.of(page, size, Sort.by("order").ascending());
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("order").ascending());
 
         var entityPage = springDataRubricResultBandRepository.findAllByRubricVersionId(rubricVersionId, pageable);
 
@@ -104,7 +104,7 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
 
     @Override
     public PageResult<RubricResultBand> searchRubricResultBands(UUID versionId, String keyword, int page, int size) {
-        var springPageable = PageRequest.of(page, size);
+        var springPageable = PageRequest.of(page - 1, size);
         var pageEntity = springDataRubricResultBandRepository.searchRubricResultBands(
                 versionId, StringNormalization.toLikePattern(keyword), springPageable);
 

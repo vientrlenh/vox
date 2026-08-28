@@ -141,7 +141,7 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
     @Override
     public PageResult<RubricVersion> findAllByRubricIdAndStatus(UUID rubricId, String status, int page, int size) {
         // Tối ưu: Mặc định sort theo version giảm dần (bản mới nhất nằm trên cùng)
-        Pageable pageable = PageRequest.of(page, size, Sort.by("version").descending());
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("version").descending());
 
         var entityPage = springDataRubricVersionRepository.findAllByRubricIdAndStatus(rubricId, status, pageable);
 
@@ -170,7 +170,7 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
     @Override
     public PageResult<RubricVersion> searchRubricVersions(UUID rubricId, String keyword, String status, int page, int size) {
 
-        Pageable springPageable = PageRequest.of(page, size);
+        Pageable springPageable = PageRequest.of(page - 1, size);
 
         // 1. Thực thi lấy dữ liệu từ Database
         var pageEntity = springDataRubricVersionRepository.searchRubricVersions(

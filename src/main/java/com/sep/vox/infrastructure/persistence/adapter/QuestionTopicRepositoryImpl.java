@@ -57,7 +57,7 @@ public class QuestionTopicRepositoryImpl implements QuestionTopicRepository {
 
     @Override
     public PageResult<QuestionTopic> findByQuestionBankId(UUID questionBankId, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber, size);
+        var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataQuestionTopicRepository.findByQuestionBankId(questionBankId, pageable);
         return new PageResult<>(
             page.getContent().stream()
@@ -88,7 +88,14 @@ public class QuestionTopicRepositoryImpl implements QuestionTopicRepository {
     @Override
     public PageResult<QuestionTopic> findAccessible(UUID currentSchoolId, boolean systemAdmin, boolean schoolAdmin,
             UUID questionBankId, QuestionTopicStatus status, String keyword, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber, size);
+        // pageNumber là 1-based như mọi truy vấn phân trang khác của dự án; Spring Data đếm từ 0.
+        //
+        // Đợt refactor subscription đã lật 35 trường phân trang trên schema GraphQL sang 1-based
+        // nhưng KHÔNG sửa các adapter tương ứng, nên một thời gian dài schema hứa 1-based còn ở đây
+        // vẫn tính từ 0: trang đầu client xin về lại ra trang thứ hai. Không có lỗi nào nổi lên vì
+        // kiểu dữ liệu không đổi -- chỉ có dữ liệu sai. Chỗ này là một trong 16 adapter đã kéo về
+        // cho khớp; quy ước chung là adapter luôn nhận 1-based và tự trừ.
+        var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataQuestionTopicRepository.findAccessible(
             currentSchoolId,
             systemAdmin,

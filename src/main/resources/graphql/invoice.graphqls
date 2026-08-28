@@ -9,7 +9,7 @@ Chỉ có hai trường, và đó là tất cả những gì hóa đơn tự nó
 đều nằm ở Order và Payment. Vì vậy nó không có query riêng -- luôn đọc qua Order.invoice.
 """
 type Invoice {
-    "Duy nhất toàn hệ thống, dạng INV-{năm}-{8 ký tự}. Đây là mã trường đọc cho hỗ trợ khi cần tra."
+    "Duy nhất toàn hệ thống, dạng INV-{năm}-{12 ký tự hex}. Đây là mã trường đọc cho hỗ trợ khi cần tra."
     invoiceNumber: String!
     "Năm trong invoiceNumber lấy theo giờ Việt Nam, nên luôn khớp với ngày hiển thị ở đây."
     issueDate: String!

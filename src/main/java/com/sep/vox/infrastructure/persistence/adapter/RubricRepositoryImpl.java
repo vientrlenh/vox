@@ -78,7 +78,7 @@ public class RubricRepositoryImpl implements RubricRepository {
 
     @Override
     public PageResult<Rubric> findAllByOwnerType(RubricOwnerType ownerType, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page - 1, size);
 
         // Gọi xuống Spring Data trả về Page của Spring
         Page<RubricJpaEntity> entityPage = springDataRubricRepository.findAllByOwnerType(ownerType.name(), pageable);
@@ -99,7 +99,7 @@ public class RubricRepositoryImpl implements RubricRepository {
 
     @Override
     public PageResult<Rubric> findAllByOwnerTypeAndSchoolId(RubricOwnerType ownerType, UUID schoolId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page - 1, size);
         Page<RubricJpaEntity> entityPage = springDataRubricRepository.findAllByOwnerTypeAndSchoolId(ownerType.name(), schoolId, pageable);
 
         List<Rubric> rubrics = entityPage.getContent().stream()
@@ -117,7 +117,7 @@ public class RubricRepositoryImpl implements RubricRepository {
 
     @Override
     public PageResult<Rubric> searchSystemRubrics(String keyword, UUID frameworkId, UUID languageId, int page, int size) {
-        Pageable springPageable = PageRequest.of(page, size);
+        Pageable springPageable = PageRequest.of(page - 1, size);
 
         // 2. Gọi DB
        Page<RubricJpaEntity> pageEntity =
@@ -135,7 +135,7 @@ public class RubricRepositoryImpl implements RubricRepository {
 
     @Override
     public PageResult<Rubric> searchSchoolRubrics(UUID schoolId, String keyword, UUID frameworkId, UUID languageId, int page, int size) {
-        Pageable springPageable = PageRequest.of(page, size);
+        Pageable springPageable = PageRequest.of(page - 1, size);
 
         // 2. Gọi DB
         Page<RubricJpaEntity> pageEntity =

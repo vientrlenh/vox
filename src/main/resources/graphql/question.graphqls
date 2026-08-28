@@ -225,7 +225,7 @@ extend type Query {
         questionBankId: ID,
         status: QuestionTopicStatus,
         keyword: String,
-        page: Int! = 0,
+        page: Int! = 1,
         size: Int! = 20
     ): QuestionTopicPage!
     questionTopic(id: ID!): QuestionTopic

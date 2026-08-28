@@ -138,7 +138,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     public PageResult<Question> findAccessible(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
             boolean schoolAdmin, UUID questionBankId, UUID questionTopicId, String topicName, QuestionStatus status,
             QuestionType type, QuestionSharing sharing, String scope, String keyword, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber, size);
+        var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataQuestionRepository.findAccessible(
             currentUserId,
             currentSchoolId,
@@ -169,7 +169,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     public PageResult<Question> findAccessibleForExamPaper(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
             boolean schoolAdmin, UUID questionBankId, UUID questionTopicId, String topicName, QuestionStatus status,
             QuestionType type, QuestionSharing sharing, String scope, String keyword, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber, size);
+        var pageable = PageRequest.of(pageNumber - 1, size);
         var page = springDataQuestionRepository.findAccessibleForExamPaper(
             currentUserId,
             currentSchoolId,

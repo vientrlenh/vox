@@ -93,7 +93,7 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
     private List<Exam> fetchTeacherClassTests(UUID teacherId, UUID schoolId) {
         var accessible = examRepository.findAccessible(
             teacherId, schoolId, false, false, schoolId, null, ExamKind.CLASS_TEST, null, null,
-            0, MAX_CLASS_TESTS_FOR_DASHBOARD
+            1, MAX_CLASS_TESTS_FOR_DASHBOARD
         ).content();
         if (accessible.isEmpty()) {
             return List.of();

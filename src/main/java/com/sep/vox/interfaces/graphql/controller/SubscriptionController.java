@@ -36,6 +36,7 @@ import com.sep.vox.application.response.input.subscription.SchoolSubscriptionRen
 import com.sep.vox.application.response.input.subscription.ViewSubscriptionPlansResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
+import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.dto.SubscriptionPlanQuotaDto;
@@ -176,6 +177,15 @@ public class SubscriptionController {
         if (loader == null) 
             throw new IllegalStateException("Không tìm thấy data loader quotasBySubscriptionPlanId");
         return loader.load(plan.id());
+    }
+
+    @SchemaMapping(typeName = "SchoolSubscription", field = "school")
+    public CompletableFuture<SchoolDto> schoolFromSchoolSubscription(SchoolSubscriptionDto dto, DataFetchingEnvironment env) {
+        DataLoader<UUID, SchoolDto> loader = env.getDataLoader("schoolBySchoolSubscription");
+        if (loader == null) {
+            throw new IllegalStateException("Không tìm thấy dataloader schoolBySchoolSubscription");
+        }
+        return loader.load(dto.schoolId());
     }
 
     // page ĐẾM TỪ 1 theo quy ước chung của dự án -- các repository adapter trừ 1 trước khi xuống

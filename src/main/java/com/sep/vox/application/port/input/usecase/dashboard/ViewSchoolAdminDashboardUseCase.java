@@ -102,7 +102,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
 
     private long countExamsByStatus(UUID currentUserId, UUID schoolId, ExamStatus status) {
         return examRepository.findAccessible(
-            currentUserId, schoolId, false, true, schoolId, null, null, status, null, 0, 1
+            currentUserId, schoolId, false, true, schoolId, null, null, status, null, 1, 1
         ).totalElements();
     }
 

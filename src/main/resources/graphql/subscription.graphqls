@@ -119,6 +119,7 @@ type SchoolSubscription {
     suspendedReason: String
     suspendedBy: ID
     plan: SubscriptionPlan
+    school: School
 }
 
 type SchoolSubscriptionPage {

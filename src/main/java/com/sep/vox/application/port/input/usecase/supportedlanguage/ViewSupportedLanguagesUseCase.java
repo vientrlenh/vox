@@ -25,12 +25,10 @@ public class ViewSupportedLanguagesUseCase implements IUseCase<ViewSupportedLang
 
     @Override
     public PageResult<SupportedLanguageDto> execute(ViewSupportedLanguagesQuery input) {
-        if (!userContextPort.isSystemAdmin() && input.isActive() != null && input.isActive().equals(Boolean.FALSE)) {
-            throw new IllegalArgumentException("Yêu cầu trạng thái để xem ngôn ngữ hỗ trợ không hợp lệ");
-        }
+        var effectiveIsActive = userContextPort.isSystemAdmin() ? input.isActive() : Boolean.TRUE;
         var result = supportedLanguageRepository.findAll(
             StringNormalization.trimAndCollapseSpaces(input.search()),
-            input.isActive(),
+            effectiveIsActive,
             input.page(), 
             input.size()
         );

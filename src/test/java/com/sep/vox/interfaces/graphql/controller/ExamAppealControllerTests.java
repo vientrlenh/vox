@@ -55,22 +55,9 @@ public class ExamAppealControllerTests {
     }
 
     @Test
-    void should_default_paging_to_zero_based_first_page() {
-        when(viewExamAppealsUseCase.execute(any()))
-            .thenReturn(new PageResult<>(List.of(), 0, 20, 0, 0));
-
-        controller.appeals(null, null, null, null);
-
-        var captor = ArgumentCaptor.forClass(SearchExamAppealsQuery.class);
-        org.mockito.Mockito.verify(viewExamAppealsUseCase).execute(captor.capture());
-        assertThat(captor.getValue().page()).isZero();
-        assertThat(captor.getValue().size()).isEqualTo(20);
-    }
-
-    @Test
     void should_pass_filters_through_to_use_case() {
         when(viewExamAppealsUseCase.execute(any()))
-            .thenReturn(new PageResult<>(List.of(), 1, 5, 0, 0));
+            .thenReturn(new PageResult<>(List.of(), 1, 5, 1, 0));
 
         controller.appeals("PENDING", "Nam", 1, 5);
 

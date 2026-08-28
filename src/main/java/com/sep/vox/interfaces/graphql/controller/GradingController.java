@@ -39,8 +39,6 @@ import com.sep.vox.domain.common.PageResult;
 @Controller("graphqlGradingController")
 public class GradingController {
 
-    private static final int DEFAULT_PAGE_SIZE = 20;
-
     private final ViewGradingAssignmentsUseCase viewGradingAssignmentsUseCase;
     private final ViewGradingStatsUseCase viewGradingStatsUseCase;
     private final ViewClassTestGradingStatsUseCase viewClassTestGradingStatsUseCase;
@@ -94,10 +92,11 @@ public class GradingController {
             @Argument(name = "kind") String kind,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        validatePageSize(page, size);
         return viewGradingAssignmentsUseCase.execute(new SearchGradingAssignmentsQuery(
             examId, scheduleId, teacherId, resultStatus, roundType, status,
             Boolean.TRUE.equals(unassignedOnly), Boolean.TRUE.equals(overdueOnly), hasOpenAppeal, search, kind,
-            page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
+            page, size));
     }
 
     @QueryMapping(name = "gradingStats")
@@ -124,9 +123,10 @@ public class GradingController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        validatePageSize(page, size);
         return viewClassTestGradingResultsUseCase.execute(new ViewClassTestGradingResultsQuery(
             examId, resultStatus, Boolean.TRUE.equals(unassignedOnly), search,
-            page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
+            page, size));
     }
 
     @QueryMapping(name = "myGradingTasks")
@@ -137,9 +137,10 @@ public class GradingController {
             @Argument(name = "roundType") String roundType,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        validatePageSize(page, size);
         return viewMyGradingTasksUseCase.execute(new ViewMyGradingTasksQuery(
             examId, status, roundType,
-            page == null ? 0 : page, size == null ? DEFAULT_PAGE_SIZE : size));
+            page, size));
     }
 
     /**
@@ -161,10 +162,10 @@ public class GradingController {
             @Argument(name = "roundType") String roundType,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        validatePageSize(page, size);
         return viewMyClassTestGradingTasksUseCase.execute(new ViewMyClassTestGradingTasksQuery(
             examId, status, roundType,
-            page == null ? 0 : page,
-            size == null ? DEFAULT_PAGE_SIZE : size
+            page, size
         ));
     }
 
@@ -195,5 +196,14 @@ public class GradingController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public AiQualityReportInfo aiQualityReport(@Argument(name = "examId") UUID examId) {
         return viewAiQualityReportUseCase.execute(new ViewAiQualityReportQuery(examId));
+    }
+
+    private void validatePageSize(Integer page, Integer size) {
+        if (page == null || page <= 0) {
+            throw new IllegalArgumentException("Số trang yêu cầu không hợp lệ");
+        }
+        if (size == null || size <= 0) {
+            throw new IllegalArgumentException("Kích cỡ trang yêu cầu không hợp lệ");
+        }
     }
 }

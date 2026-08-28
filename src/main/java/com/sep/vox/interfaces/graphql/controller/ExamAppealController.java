@@ -66,8 +66,9 @@ public class ExamAppealController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        validatePageSize(page, size);
         return viewExamAppealsUseCase.execute(new SearchExamAppealsQuery(
-            status, keyword, page == null ? 0 : page, size == null ? 20 : size));
+            status, keyword, page, size));
     }
 
     @QueryMapping(name = "classTestAppeals")
@@ -78,8 +79,9 @@ public class ExamAppealController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        validatePageSize(page, size);
         return viewClassTestAppealsUseCase.execute(new SearchClassTestAppealsQuery(
-            examId, status, keyword, page == null ? 0 : page, size == null ? 20 : size));
+            examId, status, keyword, page, size));
     }
 
     @QueryMapping(name = "appealStats")
@@ -100,8 +102,9 @@ public class ExamAppealController {
             @Argument(name = "status") String status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        validatePageSize(page, size);
         return viewMyAppealsUseCase.execute(new SearchExamAppealsQuery(
-            status, null, page == null ? 0 : page, size == null ? 20 : size));
+            status, null, page, size));
     }
 
     @QueryMapping(name = "myAppeal")
@@ -116,5 +119,14 @@ public class ExamAppealController {
             @Argument(name = "appealId") UUID appealId,
             @Argument(name = "keyword") String keyword) {
         return viewAssignableReviewersUseCase.execute(new ViewAssignableReviewersQuery(appealId, keyword));
+    }
+
+    private void validatePageSize(Integer page, Integer size) {
+        if (page == null || page <= 0) {
+            throw new IllegalArgumentException("Số trang yêu cầu không hợp lệ");
+        }
+        if (size == null || size <= 0) {
+            throw new IllegalArgumentException("Kích cỡ trang yêu cầu không hợp lệ");
+        }
     }
 }

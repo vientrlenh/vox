@@ -756,7 +756,7 @@ extend type Query {
         status: ExamStatus,
         schoolId: ID,
         keyword: String,
-        page: Int = 0,
+        page: Int = 1,
         size: Int = 20
     ): ExamPage!
 
@@ -775,7 +775,7 @@ extend type Query {
         status: ExamStatus,
         schoolClassId: ID,
         keyword: String,
-        page: Int = 0,
+        page: Int = 1,
         size: Int = 20
     ): ExamPage!
 
@@ -785,7 +785,7 @@ extend type Query {
         languageId: ID,
         examKind: String,
         keyword: String,
-        page: Int = 0,
+        page: Int = 1,
         size: Int = 20
     ): ExamBlueprintPage!
 

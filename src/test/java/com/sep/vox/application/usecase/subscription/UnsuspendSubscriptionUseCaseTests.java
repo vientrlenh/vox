@@ -45,6 +45,7 @@ class UnsuspendSubscriptionUseCaseTests {
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
     private SchoolSubscriptionEventRepository schoolSubscriptionEventRepository;
     private SchoolSubscriptionSuspensionNotificationService suspensionNotificationService;
+    private UserContextPort userContextPort;
     private UnsuspendSubscriptionUseCase useCase;
 
     @BeforeEach
@@ -52,7 +53,7 @@ class UnsuspendSubscriptionUseCaseTests {
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         schoolSubscriptionEventRepository = mock(SchoolSubscriptionEventRepository.class);
         suspensionNotificationService = mock(SchoolSubscriptionSuspensionNotificationService.class);
-        var userContextPort = mock(UserContextPort.class);
+        userContextPort = mock(UserContextPort.class);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(ADMIN_ID);
         when(schoolSubscriptionRepository.save(any())).thenAnswer(call -> call.getArgument(0));
 

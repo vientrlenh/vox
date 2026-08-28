@@ -76,12 +76,12 @@ class SupportedLanguageControllerTests {
         var controller = new SupportedLanguageController(listUseCase, detailsUseCase, updateUseCase);
         var id = UUID.randomUUID();
         var expected = new SupportedLanguageDto(id, "EN", "English", null, false, null, null);
-        when(detailsUseCase.execute(new ViewSupportedLanguageDetailsQuery(id, false))).thenReturn(expected);
+        when(detailsUseCase.execute(new ViewSupportedLanguageDetailsQuery(id))).thenReturn(expected);
 
         var result = controller.supportedLanguage(id);
 
         assertThat(result).isEqualTo(expected);
-        verify(detailsUseCase).execute(new ViewSupportedLanguageDetailsQuery(id, false));
+        verify(detailsUseCase).execute(new ViewSupportedLanguageDetailsQuery(id));
     }
 
     @Test
@@ -93,12 +93,12 @@ class SupportedLanguageControllerTests {
         var controller = new SupportedLanguageController(listUseCase, detailsUseCase, updateUseCase);
         var id = UUID.randomUUID();
         var expected = new SupportedLanguageDto(id, "EN", "English", null, true, null, null);
-        when(detailsUseCase.execute(new ViewSupportedLanguageDetailsQuery(id, true))).thenReturn(expected);
+        when(detailsUseCase.execute(new ViewSupportedLanguageDetailsQuery(id))).thenReturn(expected);
 
         var result = controller.supportedLanguage(id);
 
         assertThat(result).isEqualTo(expected);
-        verify(detailsUseCase).execute(new ViewSupportedLanguageDetailsQuery(id, true));
+        verify(detailsUseCase).execute(new ViewSupportedLanguageDetailsQuery(id));
     }
 
     @Test

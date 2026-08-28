@@ -400,7 +400,7 @@ extend type Query {
         CLASS_TEST khi dùng cho màn theo dõi chấm bài kiểm tra trên lớp.
         """
         kind: ExamKind,
-        page: Int = 0,
+        page: Int = 1,
         "Tối đa 100 — giá trị lớn hơn bị kẹp xuống 100 chứ không báo lỗi."
         size: Int = 20
     ): GradingAssignmentRowPage!
@@ -429,7 +429,7 @@ extend type Query {
         examId: ID,
         status: GradingAssignmentStatus,
         roundType: GradingRoundType,
-        page: Int = 0,
+        page: Int = 1,
         "Tối đa 100 — giá trị lớn hơn bị kẹp xuống 100 chứ không báo lỗi."
         size: Int = 20
     ): GradingTaskPage!
@@ -461,7 +461,7 @@ extend type Query {
         "Chỉ bài chưa có phân công đang mở — đúng những bài còn phải nhận chấm."
         unassignedOnly: Boolean,
         search: String,
-        page: Int = 0,
+        page: Int = 1,
         "Tối đa 100 — giá trị lớn hơn bị kẹp xuống 100 chứ không báo lỗi."
         size: Int = 20
     ): GradingAssignmentRowPage!
@@ -470,7 +470,7 @@ extend type Query {
         examId: ID!,
         status: GradingAssignmentStatus,
         roundType: GradingRoundType,
-        page: Int = 0,
+        page: Int = 1,
         size: Int = 20
     ): GradingTaskPage!
 

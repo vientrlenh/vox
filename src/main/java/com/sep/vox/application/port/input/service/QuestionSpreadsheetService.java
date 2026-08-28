@@ -100,7 +100,10 @@ public class QuestionSpreadsheetService {
             String keyword) {
         var access = resolveAccess();
         var questions = new ArrayList<QuestionDto>();
-        var page = 0;
+        // findAccessible là 1-based (QuestionRepositoryImpl trừ 1 trước khi dựng PageRequest), nên
+        // bắt đầu từ 1 chứ KHÔNG phải 0 -- số 0 thành -1 và Spring Data ném "Page index must not be
+        // less than zero" ngay vòng lặp đầu, tức xuất Excel hỏng hoàn toàn.
+        var page = 1;
         while (true) {
             var result = questionRepository.findAccessible(
                 access.currentUserId(),
@@ -124,7 +127,10 @@ public class QuestionSpreadsheetService {
                 .map(QuestionDtoMapper::toQuestionDto)
                 .toList());
             page++;
-            if (page >= result.totalPages()) {
+            // `>` chứ không phải `>=`: đi kèm mốc bắt đầu 1-based ở trên. Giữ `>=` thì trang CUỐI
+            // không bao giờ được đọc (totalPages=3: đọc 1, 2 rồi thoát ở 3>=3), mà mất dòng trong
+            // file Excel thì không có gì báo -- lỗi lặng, tệ hơn cả ngoại lệ.
+            if (page > result.totalPages()) {
                 break;
             }
         }

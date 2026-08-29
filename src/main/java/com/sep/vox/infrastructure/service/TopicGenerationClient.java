@@ -101,7 +101,13 @@ public class TopicGenerationClient implements TopicGenerationPort {
             for (var node : root.path("proposals")) {
                 proposals.add(new TopicProposal(
                     node.path("name").asString(),
-                    node.path("interest_dimensions").asString(),
+                    // SỐ ÍT. Python trả `interest_dimension` (schemas/topic_generation.py:45).
+                    // Đọc sai tên thì Jackson trả MissingNode và asString() cho ra CHUỖI RỖNG --
+                    // không ném lỗi, không log. Chuỗi rỗng đó được ghi thẳng vào
+                    // practice_topics.interest_dimensions và nằm lại vĩnh viễn, rồi nổ muộn ở tận
+                    // bước sinh câu: Python từ chối 422 `string_too_short` vì chủ đề không có chiều
+                    // sở thích. Lỗi lộ ra cách nơi gây ra nó hai tầng service.
+                    node.path("interest_dimension").asString(),
                     node.path("curriculum_group").asString(),
                     node.path("temporal_affordance").asString(TensePolicy.AFFORDANCE_MIXED),
                     node.path("confidence").asDouble(),

@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -18,7 +20,10 @@ import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.payment.PaymentCheckoutResponse;
+import com.sep.vox.application.response.output.BankTransferDetails;
+import com.sep.vox.application.response.output.CheckoutAction;
 import com.sep.vox.application.response.output.CreatePaymentLinkCommand;
+import com.sep.vox.application.response.output.PaymentCheckoutResult;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderStatus;
@@ -27,6 +32,8 @@ import com.sep.vox.domain.model.payment.PaymentRecord;
 import com.sep.vox.domain.model.payment.PaymentStatus;
 import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.PaymentRecordRepository;
+
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Phát URL thanh toán cho một đơn. Thay cho CẢ BA use case cũ
@@ -40,10 +47,13 @@ import com.sep.vox.domain.repository.PaymentRecordRepository;
 public class CreatePaymentCheckoutUrlUseCase
         implements IUseCase<CreatePaymentCheckoutUrlCommand, PaymentCheckoutResponse> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(CreatePaymentCheckoutUrlUseCase.class);
+
     private final OrderRepository orderRepository;
     private final PaymentRecordRepository paymentRecordRepository;
     private final PaymentProcessResolver paymentProcessResolver;
     private final UserContextPort userContextPort;
+    private final JsonMapper jsonMapper;
     private final TransactionTemplate transactionTemplate;
 
     public CreatePaymentCheckoutUrlUseCase(
@@ -51,11 +61,13 @@ public class CreatePaymentCheckoutUrlUseCase
             PaymentRecordRepository paymentRecordRepository,
             PaymentProcessResolver paymentProcessResolver,
             UserContextPort userContextPort,
+            JsonMapper jsonMapper,
             PlatformTransactionManager transactionManager) {
         this.orderRepository = orderRepository;
         this.paymentRecordRepository = paymentRecordRepository;
         this.paymentProcessResolver = paymentProcessResolver;
         this.userContextPort = userContextPort;
+        this.jsonMapper = jsonMapper;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
@@ -90,6 +102,22 @@ public class CreatePaymentCheckoutUrlUseCase
     public PaymentCheckoutResponse execute(CreatePaymentCheckoutUrlCommand input) {
         var provider = providerOf(input.provider());
 
+        // Chặn TRƯỚC mọi transaction, và đây là chỗ duy nhất chặn được.
+        //
+        // openAttempt COMMIT dòng payment_records rồi mới gọi ra cổng -- cố ý, để lời gọi hỏng giữa
+        // chừng vẫn còn dấu vết đối soát. Nhưng nếu cổng thiếu cấu hình thì lời gọi đó chắc chắn
+        // chết, và dòng PENDING ở lại vĩnh viễn: hủy đơn phải hỏi cổng nên hỏng theo, phát link mới
+        // cũng phải hỏi cổng nên hỏng theo, còn expireIfOverdue thì từ chối đóng đơn khi còn lần thử
+        // treo. Đơn kẹt PENDING mãi mãi và trường không đặt được đơn đăng ký nào khác.
+        //
+        // Đường phục hồi có sẵn (cổng trả NOT_FOUND -> canRetireOnGatewayNotFound) không cứu được ca
+        // này vì nó cần cổng TRẢ LỜI. Thiếu cấu hình là ca duy nhất biết chắc trước khi gọi, nên nó
+        // phải dừng ở đây chứ không phải để lại một dòng không ai dọn được.
+        if (!paymentProcessResolver.resolve(provider).isConfigured()) {
+            throw new IllegalStateException(
+                "Cổng thanh toán " + provider + " chưa được cấu hình trên hệ thống. Vui lòng chọn cổng khác hoặc liên hệ hỗ trợ.");
+        }
+
         var pending = inTransaction(() -> loadPendingAttempt(input.orderId()));
         if (pending != null) {
             // Gọi cổng NGOÀI mọi transaction: đây là lượt mạng thứ nhất.
@@ -116,7 +144,19 @@ public class CreatePaymentCheckoutUrlUseCase
             prepared.expiresAt()
         ));
 
-        inTransaction(() -> attachCheckoutUrl(prepared.paymentId(), result.actionUrl()));
+        // Lưu lại thứ dựng lại được lần thử này.
+        //
+        // REDIRECT/QR: giữ checkout_url. Với FORM_POST thì KHÔNG -- actionUrl của nó là một endpoint
+        // CỐ ĐỊNH dùng chung cho mọi đơn, còn thứ nhận dạng phiên nằm hết ở bộ field mang chữ ký,
+        // thứ cố ý không lưu. Lưu mỗi cái URL đó rồi lần sau redirect thẳng tới nó là ném trường vào
+        // một trang init trống, không phải phiên của họ.
+        //
+        // QR: lưu thêm chuỗi mã và thông tin chuyển khoản. Hỏi trạng thái chỉ trả về TRẠNG THÁI, cổng
+        // không phát lại mã -- không lưu ở đây thì không còn chỗ nào lấy lại được.
+        if (result.action() != CheckoutAction.FORM_POST) {
+            inTransaction(() -> attachCheckoutData(
+                prepared.paymentId(), result.actionUrl(), qrPayloadJson(result)));
+        }
 
         return PaymentCheckoutResponse.from(
             input.orderId(), prepared.paymentId(), prepared.providerOrderRef(), provider, result);
@@ -182,6 +222,15 @@ public class CreatePaymentCheckoutUrlUseCase
             // Cổng nói vẫn đang chờ trả: trả lại ĐÚNG link cũ thay vì phát link mới. Phát mới thì link
             // cũ vẫn trả được nhưng không còn dòng PENDING nào ứng với nó.
             default -> {
+                // Cổng có QR: dựng lại mã từ payload đã lưu. Đây là đường đi BÌNH THƯỜNG chứ không
+                // phải ca hiếm -- quét QR nghĩa là rời trang sang app ngân hàng rồi quay lại.
+                var qr = readQrPayload(pending);
+                if (qr != null) {
+                    return PaymentCheckoutResponse.qrFor(
+                        order.getId(), pending.getId(), pending.getProviderOrderRef(),
+                        pending.getProvider(), qr.qrCode(), qr.transfer(), pending.getCheckoutUrl());
+                }
+
                 if (pending.getCheckoutUrl() == null) {
                     // Cổng dạng FORM_POST: bộ field mang chữ ký nên cố ý không lưu, không dựng lại
                     // được ở đây. Để trường đợi hết hạn lần thử cũ còn hơn phát thêm một link song song.
@@ -234,13 +283,52 @@ public class CreatePaymentCheckoutUrlUseCase
      * <p>Không khóa đơn ở đây: chỉ đụng đúng dòng payment_records vừa tạo, và việc nó có được phép
      * tồn tại hay không đã chốt xong ở {@code openAttempt}.
      */
-    private Void attachCheckoutUrl(UUID paymentId, String checkoutUrl) {
+    private Void attachCheckoutData(UUID paymentId, String checkoutUrl, String qrPayloadJson) {
         var payment = paymentRecordRepository.findById(paymentId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lần thanh toán vừa tạo"));
         payment.setCheckoutUrl(checkoutUrl);
+        if (qrPayloadJson != null) {
+            payment.setProviderPayloadJson(qrPayloadJson);
+        }
         paymentRecordRepository.save(payment);
         return null;
     }
+
+    /** Chuỗi QR + thông tin chuyển khoản, dạng JSON để lưu xuống provider_payload_json. */
+    private String qrPayloadJson(PaymentCheckoutResult result) {
+        if (result.action() != CheckoutAction.QR) {
+            return null;
+        }
+        try {
+            return jsonMapper.writeValueAsString(new StoredQrPayload(result.qrCode(), result.transfer()));
+        } catch (RuntimeException e) {
+            // Không làm hỏng cả lần thanh toán chỉ vì không ghi được payload: mã vẫn hiện được ở
+            // lượt này, chỉ mất khả năng dựng lại khi trường quay lại đơn. Lúc đó nhánh checkout_url
+            // ở resolvePendingAttempt vẫn đưa họ sang trang của cổng.
+            LOGGER.warn("Không ghi được payload QR cho lần thanh toán {} -- lần sau sẽ phải mở trang của cổng",
+                result.paymentLinkId(), e);
+            return null;
+        }
+    }
+
+    /** Đọc ngược payload đã lưu; trả null nếu lần thử này không phải dạng QR hoặc payload hỏng. */
+    private StoredQrPayload readQrPayload(PaymentRecord pending) {
+        var json = pending.getProviderPayloadJson();
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            var payload = jsonMapper.readValue(json, StoredQrPayload.class);
+            return payload.qrCode() == null ? null : payload;
+        } catch (RuntimeException e) {
+            LOGGER.warn("Payload QR của lần thanh toán {} không đọc được -- bỏ qua, dùng đường checkout_url",
+                pending.getId(), e);
+            return null;
+        }
+    }
+
+    /** Hình dạng của provider_payload_json. KHÔNG chứa chữ ký -- xem PaymentRecordJpaEntity. */
+    private record StoredQrPayload(String qrCode, BankTransferDetails transfer) {}
 
     /**
      * Khóa dòng đơn rồi kiểm tra ba điều kiện bắt buộc để được phát link. Gọi ở ĐẦU mỗi transaction

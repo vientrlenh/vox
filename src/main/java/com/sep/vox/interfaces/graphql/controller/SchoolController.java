@@ -18,7 +18,6 @@ import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesByUserQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
-import com.sep.vox.application.port.input.query.ViewSchoolDebtEventsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolDirectoryCursorPageQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolDirectoryDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolDirectoryPageQuery;
@@ -37,8 +36,6 @@ import com.sep.vox.application.port.input.query.key.SchoolClassesKey;
 import com.sep.vox.application.port.input.query.key.SchoolUsersKey;
 import com.sep.vox.application.port.input.usecase.school.ListSchoolsWithOnGoingExamUseCase;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolUseCase;
-import com.sep.vox.application.port.input.usecase.school.ViewSchoolDebtEventsUseCase;
-import com.sep.vox.domain.dto.SchoolDebtEventDto;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
@@ -94,7 +91,6 @@ import graphql.schema.DataFetchingEnvironment;
 @Controller("graphqlSchoolController")
 public class SchoolController {
 
-private final ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase;
         private final ViewSchoolsUseCase viewSchoolsUseCase;
     private final ViewSchoolClassesUseCase viewSchoolClassesUseCase;
     private final ViewSchoolClassesByUserUseCase viewSchoolClassesByUserUseCase;
@@ -149,7 +145,7 @@ private final ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase;
                             ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase,
                             ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase,
                             ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase,
-            ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase, ListSchoolsWithOnGoingExamUseCase listSchoolsWithOnGoingExamUseCase) {
+            ListSchoolsWithOnGoingExamUseCase listSchoolsWithOnGoingExamUseCase) {
         this.viewSchoolsUseCase = viewSchoolsUseCase;
         this.viewSchoolClassesUseCase = viewSchoolClassesUseCase;
         this.viewSchoolClassesByUserUseCase = viewSchoolClassesByUserUseCase;
@@ -176,29 +172,13 @@ private final ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase;
         this.viewSchoolDirectoryCursorPageUseCase = viewSchoolDirectoryCursorPageUseCase;
         this.viewSchoolDirectoryPageUseCase = viewSchoolDirectoryPageUseCase;
         this.viewSchoolDirectoryDetailsUseCase = viewSchoolDirectoryDetailsUseCase;
-        this.viewSchoolDebtEventsUseCase = viewSchoolDebtEventsUseCase;
         this.listSchoolsWithOnGoingExamUseCase = listSchoolsWithOnGoingExamUseCase;
     }
 
 
 
-    /**
-     * Sổ audit nợ hạn mức AI của một trường. Ở đây chứ không ở SubscriptionController vì nợ thuộc về
-     * TRƯỜNG, không thuộc một kỳ đăng ký: số dư ví sống xuyên qua mọi lần gia hạn/đổi gói, và
-     * ViewSchoolDebtEventsUseCase cũng nằm ở package school.
-     */
-    @QueryMapping(name = "schoolDebtEvents")
-    public PageResult<SchoolDebtEventDto> schoolDebtEvents(
-            @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "page") Integer page,
-            @Argument(name = "size") Integer size) {
-        // page ĐẾM TỪ 1 theo quy ước chung của dự án -- ViewSchoolDebtEventsUseCase trừ 1 trước khi
-        // xuống PageRequest.
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
-        }
-        return viewSchoolDebtEventsUseCase.execute(new ViewSchoolDebtEventsQuery(schoolId, page, size));
-    }
+    // schoolDebtEvents đã chuyển sang SchoolBalanceController: nợ là mặt trái của ví trường -- số dư
+    // âm CHÍNH LÀ khoản nợ -- nên nó thuộc cùng nhóm với sao kê ví, không phải với lớp học và phòng thi.
 
     @QueryMapping(name = "schools")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

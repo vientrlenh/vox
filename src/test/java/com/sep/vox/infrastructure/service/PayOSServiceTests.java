@@ -38,8 +38,10 @@ class PayOSServiceTests {
     @BeforeEach
     void setUp() {
         // payOSClient chỉ được dùng ở createPaymentLink/getPaymentLinkStatus, không đụng tới ở đây.
+        // clientId/apiKey cũng vậy -- chúng chỉ phục vụ isConfigured(), nhưng phải đặt giá trị thật
+        // để test không vô tình chạy trên một adapter tự coi mình là chưa cấu hình.
         service = new PayOSService(
-            null, JsonMapper.builder().build(), CHECKSUM_KEY,
+            null, JsonMapper.builder().build(), "client-id", "api-key", CHECKSUM_KEY,
             "https://vox.test/return", "https://vox.test/cancel");
     }
 

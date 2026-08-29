@@ -3,6 +3,7 @@ package com.sep.vox.application.response.input.payment;
 import java.util.Map;
 import java.util.UUID;
 
+import com.sep.vox.application.response.output.BankTransferDetails;
 import com.sep.vox.application.response.output.PaymentCheckoutResult;
 import com.sep.vox.domain.model.payment.PaymentProvider;
 
@@ -22,6 +23,8 @@ import com.sep.vox.domain.model.payment.PaymentProvider;
  * @param fields           field ẩn phải POST khi {@code action} là FORM_POST, rỗng khi REDIRECT.
  *                         Thứ tự key là một phần của hợp đồng (SePay ký trên chuỗi ghép theo đúng
  *                         thứ tự đó). CÓ CHỨA CHỮ KÝ nên không được ghi log và không lưu xuống DB
+ * @param qrCode           chuỗi VietQR để FE tự vẽ mã, null khi action không phải QR
+ * @param transfer         thông tin chuyển khoản tay đi kèm mã QR, null khi không có QR
  */
 public record PaymentCheckoutResponse(
     UUID orderId,
@@ -30,7 +33,9 @@ public record PaymentCheckoutResponse(
     String provider,
     String action,
     String checkoutUrl,
-    Map<String, String> fields
+    Map<String, String> fields,
+    String qrCode,
+    BankTransferDetails transfer
 ) {
 
     public static PaymentCheckoutResponse from(
@@ -43,7 +48,9 @@ public record PaymentCheckoutResponse(
             provider.name(),
             result.action().name(),
             result.actionUrl(),
-            result.fields()
+            result.fields(),
+            result.qrCode(),
+            result.transfer()
         );
     }
 
@@ -54,6 +61,20 @@ public record PaymentCheckoutResponse(
     public static PaymentCheckoutResponse redirectTo(
             UUID orderId, UUID paymentId, String providerOrderRef, PaymentProvider provider, String checkoutUrl) {
         return new PaymentCheckoutResponse(
-            orderId, paymentId, providerOrderRef, provider.name(), "REDIRECT", checkoutUrl, Map.of());
+            orderId, paymentId, providerOrderRef, provider.name(), "REDIRECT", checkoutUrl, Map.of(), null, null);
+    }
+
+    /**
+     * Dựng lại một lần thử ĐANG TREO của cổng có QR, từ payload đã lưu ở payment_records.
+     *
+     * <p>Đây là lý do phải LƯU chuỗi QR chứ không chỉ checkout_url: hỏi trạng thái chỉ trả về trạng
+     * thái, cổng không phát lại mã. Không lưu thì trường rời trang rồi quay lại sẽ không thấy mã của
+     * chính mình nữa -- mà rời trang để mở app ngân hàng chính là đường đi bình thường ở đây.
+     */
+    public static PaymentCheckoutResponse qrFor(
+            UUID orderId, UUID paymentId, String providerOrderRef, PaymentProvider provider,
+            String qrCode, BankTransferDetails transfer, String checkoutUrl) {
+        return new PaymentCheckoutResponse(
+            orderId, paymentId, providerOrderRef, provider.name(), "QR", checkoutUrl, Map.of(), qrCode, transfer);
     }
 }

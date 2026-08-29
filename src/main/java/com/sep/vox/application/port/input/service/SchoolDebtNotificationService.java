@@ -58,8 +58,19 @@ public class SchoolDebtNotificationService {
         this.schoolDebtEventRepository = schoolDebtEventRepository;
     }
 
+    /**
+     * @param triggerExamSessionId ca THI đã gây ra khoản trừ vượt trần -- null khi nguồn là luyện nói
+     * @param triggerPracticeSessionId phiên LUYỆN NÓI đã gây ra khoản trừ -- null khi nguồn là ca thi
+     *
+     * <p>Phải nhận CẢ HAI vì ví hạn mức PRACTICE cũng vượt trần được, y như ví EXAM. Bản trước chỉ
+     * nhận examSessionId nên mọi dòng CAP_EXCEEDED do luyện nói gây ra đều ghi trigger = NULL: sổ
+     * biết trường vượt trần mà không biết vì khoản nào, đúng lúc cần tra nhất.
+     * chk_school_debt_events_shape_matches_event_type giờ đòi ĐÚNG MỘT trong hai, nên quên truyền
+     * là INSERT hỏng ngay thay vì âm thầm ghi một dòng mất dấu.
+     */
     public void publishDebtCapExceeded(
-            UUID subscriptionId, UUID schoolId, QuotaType quotaType, UUID triggerExamSessionId,
+            UUID subscriptionId, UUID schoolId, QuotaType quotaType,
+            UUID triggerExamSessionId, UUID triggerPracticeSessionId,
             BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd,
             BigDecimal overageVnd, BigDecimal capVnd, Instant now) {
         var systemAdminIds = userRoleRepository.findActiveUserIdsByRoleCode(RoleConstant.SYSTEM_ADMIN_ROLE);
@@ -74,7 +85,8 @@ public class SchoolDebtNotificationService {
         ));
 
         logDebtEvent(schoolId, subscriptionId, SchoolDebtEventType.CAP_EXCEEDED, quotaType,
-            triggerExamSessionId, triggerAmountVnd, totalAllocatedVnd, usedAmountVnd, overageVnd, now);
+            triggerExamSessionId, triggerPracticeSessionId, triggerAmountVnd, totalAllocatedVnd,
+            usedAmountVnd, overageVnd, now);
     }
 
     /**
@@ -90,7 +102,8 @@ public class SchoolDebtNotificationService {
      * kiện phải nói cùng một thứ tiếng thì mới xếp chung một bảng để đọc được.
      */
     public void publishSchoolLockedDueToDebt(
-            UUID subscriptionId, UUID schoolId, QuotaType quotaType, UUID triggerExamSessionId,
+            UUID subscriptionId, UUID schoolId, QuotaType quotaType,
+            UUID triggerExamSessionId, UUID triggerPracticeSessionId,
             BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd, BigDecimal debtVnd, Instant now) {
         var schoolAdminIds = schoolAdminIdsOf(schoolId);
 
@@ -103,13 +116,20 @@ public class SchoolDebtNotificationService {
             EventTypeConstant.SCHOOL_LOCKED_DUE_TO_DEBT, payload, now
         ));
 
-        logDebtEvent(schoolId, subscriptionId, SchoolDebtEventType.LOCKED, quotaType, triggerExamSessionId,
+        logDebtEvent(schoolId, subscriptionId, SchoolDebtEventType.LOCKED, quotaType,
+            triggerExamSessionId, triggerPracticeSessionId,
             triggerAmountVnd, totalAllocatedVnd, totalAllocatedVnd.add(debtVnd), debtVnd, now);
     }
 
-    public void publishSchoolDebtCleared(
-            UUID subscriptionId, UUID schoolId, QuotaType quotaType,
-            BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, Instant now) {
+    /**
+     * Trường vừa thoát nợ: số dư ví đã về không âm nên khoá tự mở, không ai phải duyệt.
+     *
+     * <p>KHÔNG nhận quotaType/totalAllocated/usedAmount nữa. Hết nợ là sự kiện cấp TRƯỜNG: số dư là
+     * MỘT con số dùng chung cho cả hai ví hạn mức, nên "ví nào vừa hết nợ" không có câu trả lời, và
+     * bịa ra một quotaType để lấp chỗ trống là làm bẩn chính quyển sổ dùng để đối soát. Ba cột đó
+     * bỏ trống ở dòng CLEARED, có chk_school_debt_events_shape_matches_event_type canh (V4).
+     */
+    public void publishSchoolDebtCleared(UUID subscriptionId, UUID schoolId, Instant now) {
         var schoolAdminIds = schoolAdminIdsOf(schoolId);
 
         var payload = jsonSerializationPort.toJson(new SchoolDebtClearedPayloadV1(
@@ -124,17 +144,17 @@ public class SchoolDebtNotificationService {
         // overage = 0 CỐ ĐỊNH, không phải usedAmountVnd - totalAllocatedVnd: hết nợ nghĩa là số dư đã
         // về không âm, tức phần vượt bằng 0 theo đúng định nghĩa. Hiệu kia giờ luôn <= 0 (used bị kẹp
         // tại total) nên chỉ ghi được số 0 hoặc một số ÂM vô nghĩa trên sổ đối soát.
-        logDebtEvent(schoolId, subscriptionId, SchoolDebtEventType.CLEARED, quotaType, null, null,
-            totalAllocatedVnd, usedAmountVnd, BigDecimal.ZERO, now);
+        logDebtEvent(schoolId, subscriptionId, SchoolDebtEventType.CLEARED, null, null, null, null,
+            null, null, BigDecimal.ZERO, now);
     }
 
     private void logDebtEvent(
             UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType, QuotaType quotaType,
-            UUID triggerExamSessionId, BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd,
-            BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant now) {
+            UUID triggerExamSessionId, UUID triggerPracticeSessionId, BigDecimal triggerAmountVnd,
+            BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant now) {
         schoolDebtEventRepository.save(new SchoolDebtEvent(
-            schoolId, subscriptionId, eventType, quotaType, triggerExamSessionId, triggerAmountVnd,
-            totalAllocatedVnd, usedAmountVnd, overageVnd, now
+            schoolId, subscriptionId, eventType, quotaType, triggerExamSessionId,
+            triggerPracticeSessionId, triggerAmountVnd, totalAllocatedVnd, usedAmountVnd, overageVnd, now
         ));
     }
 

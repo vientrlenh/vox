@@ -76,11 +76,23 @@ public class PaymentRecordJpaEntity {
     // này ra tiền, nên phải updatable -- điền cùng lúc với status = PAID.
     // Link đã phát cho lần thử này -- trường bấm lại thì trả về đúng link cũ thay vì phát link mới,
     // vì uq_payment_records_one_pending_per_order chỉ cho phép một lần thử treo.
-    @Column(name = "checkout_url", updatable = false, length = 2048)
+    //
+    // PHẢI updatable, cùng lý do với paid_at ở dưới: giá trị chỉ có SAU khi cổng trả lời, mà dòng
+    // này đã được INSERT trước đó rồi (xem CreatePaymentCheckoutUrlUseCase -- commit trước, gọi cổng
+    // sau). Để updatable = false thì Hibernate lặng lẽ bỏ cột khỏi câu UPDATE của attachCheckoutUrl:
+    // không lỗi, không cảnh báo, cột ở NULL vĩnh viễn. Hệ quả là nhánh "trả lại đúng link cũ" trong
+    // resolvePendingAttempt không bao giờ chạy được -- trường rời trang cổng rồi quay lại bấm trả
+    // tiếp sẽ ăn lỗi "đang có một phiên thanh toán chờ xử lý" thay vì nhận lại link của chính mình.
+    @Column(name = "checkout_url", length = 2048)
     private String checkoutUrl;
 
-    // Dữ liệu riêng của từng cổng dạng JSON (vd PayOS paymentLinkId). KHÔNG chứa chữ ký.
-    @Column(name = "provider_payload_json", updatable = false)
+    // Dữ liệu riêng của từng cổng dạng JSON (chuỗi VietQR + thông tin chuyển khoản của PayOS).
+    // KHÔNG chứa chữ ký -- bộ field FORM_POST của SePay cố ý không bao giờ đi vào đây.
+    //
+    // PHẢI updatable, cùng lý do với checkout_url: giá trị chỉ có SAU khi cổng trả lời, mà dòng này
+    // đã INSERT từ trước. Đây là chỗ duy nhất giữ được mã QR để dựng lại khi trường quay lại đơn cũ
+    // -- hỏi trạng thái chỉ trả về trạng thái, cổng không phát lại mã.
+    @Column(name = "provider_payload_json")
     private String providerPayloadJson;
 
     @Column(name = "paid_at")

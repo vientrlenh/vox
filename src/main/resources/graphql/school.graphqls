@@ -234,49 +234,12 @@ type SchoolDirectoryPage {
     totalPages: Int!
 }
 
-# Nợ hạn mức AI thuộc về TRƯỜNG, không thuộc một kỳ đăng ký: số dư ví sống xuyên qua mọi lần
-# gia hạn/đổi gói (V2 mục 2), và ViewSchoolDebtEventsUseCase cũng nằm ở package school.
-enum SchoolDebtEventType {
-    LOCKED
-    CAP_EXCEEDED
-    CLEARED
-}
-
-"""
-Sổ audit "nguyên nhân nợ hạn mức AI" -- mỗi dòng là đúng 1 bucket quota của trường vừa đổi trạng
-thái (vượt hạn mức / vượt trần cảnh báo / hết nợ), kèm session và số VND đã gây ra transition đó.
-Xem SchoolDebtEvent (domain model) / SchoolDebtNotificationService.
-"""
-type SchoolDebtEvent {
-    id: ID!
-    schoolId: ID!
-    # CỐ Ý giữ tên subscriptionId: cột này đang chứa id của ĐĂNG KÝ, dù domain model đặt tên trường
-    # là subscriptionPlanId. Model mới là chỗ sai; đừng đổi tên ở đây trước khi model được sửa,
-    # không thì phải đổi hai lần theo hai hướng ngược nhau.
-    subscriptionId: ID!
-    eventType: SchoolDebtEventType!
-    quotaType: QuotaType!
-    triggerExamSessionId: ID
-    # Bốn cột dưới đây đổi từ ...Usd sang VND cùng lúc với school_debt_events (V2 mục 15) và
-    # SchoolDebtEventDto: mọi con số đi vào đây đã là VND từ ConsumeQuotaService, giữ hậu tố Usd chỉ
-    # làm client hiểu sai đơn vị của một khoản tiền.
-    triggerAmountVnd: Float
-    totalAllocatedVnd: Float!
-    usedAmountVnd: Float!
-    overageVnd: Float!
-    occurredAt: String
-}
-
-type SchoolDebtEventPage {
-    content: [SchoolDebtEvent!]!
-    page: Int!
-    size: Int!
-    totalElements: Int!
-    totalPages: Int!
-}
+# Nợ hạn mức AI (SchoolDebtEventType / SchoolDebtEvent / SchoolDebtEventPage / schoolDebtEvents) đã
+# chuyển sang school-balance.graphqls: nợ là mặt trái của số dư ví -- cùng một cái ví, một bên kể
+# tiền đi đâu, một bên kể vì sao trường bị khoá -- nên hai thứ đó đọc chung một chỗ thì dễ hiểu hơn.
+# Schema sau khi Spring GraphQL gộp file KHÔNG đổi, nên không có bên gọi nào phải sửa.
 
 extend type Query {
-    schoolDebtEvents(schoolId: ID!, page: Int = 1, size: Int = 20): SchoolDebtEventPage!
     schoolRoom(id: ID!): SchoolRoom
     schoolRooms(schoolId: ID!, page: Int, size: Int): SchoolRoomPageResult
     schools(page: Int = 1, size: Int = 20, search: String, isActive: Boolean): SchoolPage!

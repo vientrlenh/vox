@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.PaymentProcessPort;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
+import com.sep.vox.application.response.output.BankTransferDetails;
 import com.sep.vox.application.response.output.CallbackVerificationResult;
 import com.sep.vox.application.response.output.CreatePaymentLinkCommand;
 import com.sep.vox.application.response.output.PaymentCheckoutResult;
@@ -51,21 +52,44 @@ public class PayOSService implements PaymentProcessPort {
 
     private final PayOS payOSClient;
     private final JsonMapper jsonMapper;
+    private final String clientId;
+    private final String apiKey;
     private final String checksumKey;
     private final String returnUrl;
     private final String cancelUrl;
 
+    // clientId và apiKey KHÔNG được dùng ở đâu khác trong class này -- chúng đi vào PayOS client ở
+    // PayOSConfig. Nhận thêm vào đây chỉ để isConfigured() trả lời được đầy đủ: cả năm giá trị đều
+    // mặc định rỗng trong application.yaml, và new PayOS("", "", "") dựng bean thành công, nên
+    // thiếu credential không lộ ra lúc khởi động mà chỉ lộ ra giữa một lần thanh toán thật.
     public PayOSService(
             PayOS payOSClient,
             JsonMapper jsonMapper,
+            @Value("${payos.client-id}") String clientId,
+            @Value("${payos.api-key}") String apiKey,
             @Value("${payos.checksum-key}") String checksumKey,
             @Value("${payos.return-url}") String returnUrl,
             @Value("${payos.cancel-url}") String cancelUrl) {
         this.payOSClient = payOSClient;
         this.jsonMapper = jsonMapper;
+        this.clientId = clientId;
+        this.apiKey = apiKey;
         this.checksumKey = checksumKey;
         this.returnUrl = returnUrl;
         this.cancelUrl = cancelUrl;
+    }
+
+    @Override
+    public boolean isConfigured() {
+        return hasText(clientId)
+            && hasText(apiKey)
+            && hasText(checksumKey)
+            && hasText(returnUrl)
+            && hasText(cancelUrl);
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     @Override
@@ -95,7 +119,30 @@ public class PayOSService implements PaymentProcessPort {
             .expiredAt(command.expiresAt().getEpochSecond())
             .build();
         var response = payOSClient.paymentRequests().create(paymentLinkRequest);
-        return PaymentCheckoutResult.redirect(response.getCheckoutUrl(), response.getPaymentLinkId());
+
+        // PayOS trả về CẢ chuỗi VietQR lẫn bộ thông tin chuyển khoản, không chỉ mỗi checkoutUrl.
+        // Giữ lại để hiện mã ngay trong ứng dụng: người dùng không phải rời trang, và mình không mất
+        // dấu họ giữa chừng. checkoutUrl vẫn đi kèm làm lối thoát cho ai muốn dùng trang của PayOS.
+        //
+        // Thiếu qrCode thì lùi về REDIRECT thay vì dựng một trang QR trống -- FE không phải đoán, và
+        // một phiên bản SDK không có trường này cũng không làm gãy luồng thanh toán.
+        if (!hasText(response.getQrCode())) {
+            LOGGER.warn("PayOS không trả về qrCode cho orderCode={} -- lùi về điều hướng sang trang checkout",
+                command.orderRef());
+            return PaymentCheckoutResult.redirect(response.getCheckoutUrl(), response.getPaymentLinkId());
+        }
+
+        var transfer = new BankTransferDetails(
+            response.getBin(),
+            response.getAccountNumber(),
+            response.getAccountName(),
+            command.amount(),
+            // Nội dung chuyển khoản phải là thứ PayOS ĐANG chờ, không phải mô tả mình tự đặt: đây là
+            // khoá khớp tiền với đơn, lệch một ký tự là tiền về mà đơn vẫn treo.
+            response.getDescription());
+
+        return PaymentCheckoutResult.qr(
+            response.getQrCode(), transfer, response.getCheckoutUrl(), response.getPaymentLinkId());
     }
 
     @Override

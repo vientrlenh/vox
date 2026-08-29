@@ -28,6 +28,7 @@ import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.payment.CreatePaymentCheckoutUrlUseCase;
 import com.sep.vox.application.port.output.PaymentProcessPort;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.output.BankTransferDetails;
 import com.sep.vox.application.response.output.PaymentCheckoutResult;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
 import com.sep.vox.application.response.output.PaymentLinkStatusResult;
@@ -39,6 +40,8 @@ import com.sep.vox.domain.model.payment.PaymentRecord;
 import com.sep.vox.domain.model.payment.PaymentStatus;
 import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.PaymentRecordRepository;
+
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Bất biến DUY NHẤT mà lớp test này tồn tại vì nó: dòng payment_records phải được COMMIT trước khi
@@ -77,6 +80,9 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         var userContextPort = mock(UserContextPort.class);
 
         when(paymentProcessPort.provider()).thenReturn(PaymentProvider.PAYOS);
+        // Mặc định của mock là false, mà use case chặn ngay ở đó -- không khai thì mọi test dưới đây
+        // đều dừng ở "cổng chưa cấu hình" trước khi chạm tới thứ nó định kiểm.
+        when(paymentProcessPort.isConfigured()).thenReturn(true);
         when(paymentProcessPort.newOrderRef()).thenReturn("123456");
         when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         when(userContextPort.getCurrentSchoolId()).thenReturn(SCHOOL_ID);
@@ -99,7 +105,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         useCase = new CreatePaymentCheckoutUrlUseCase(
             orderRepository, paymentRecordRepository,
             new PaymentProcessResolver(List.of(paymentProcessPort)),
-            userContextPort, transactionManager);
+            userContextPort, JsonMapper.builder().build(), transactionManager);
     }
 
     @Test
@@ -114,6 +120,73 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         order.verify(paymentRecordRepository).save(any());
         order.verify(transactionManager).commit(any());
         order.verify(paymentProcessPort).createPaymentLink(any());
+    }
+
+    /**
+     * Mặt trái của "commit trước rồi mới gọi cổng": nếu cổng thiếu cấu hình thì lời gọi chắc chắn
+     * chết, và dòng PENDING vừa commit ở lại vĩnh viễn -- hủy đơn phải hỏi cổng nên hỏng theo, phát
+     * link mới cũng vậy, còn expireIfOverdue từ chối đóng đơn khi còn lần thử treo. Đơn kẹt PENDING
+     * mãi mãi và trường không đặt được đơn đăng ký nào khác.
+     *
+     * <p>Nhánh NOT_FOUND không cứu được ca này vì nó cần cổng TRẢ LỜI được. Nên phải chặn TRƯỚC khi
+     * ghi, và test này khoá đúng điều đó: không có dòng nào được lưu.
+     */
+    @Test
+    void should_refuse_before_writing_anything_when_the_gateway_is_not_configured() {
+        when(paymentProcessPort.isConfigured()).thenReturn(false);
+
+        assertThatThrownBy(() -> useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS")))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("chưa được cấu hình");
+
+        verify(paymentRecordRepository, never()).save(any());
+        verify(paymentProcessPort, never()).createPaymentLink(any());
+    }
+
+    /**
+     * Cổng trả về QR thì mã và thông tin chuyển khoản phải được LƯU, không chỉ đi qua response một
+     * lần rồi mất. Quét QR nghĩa là rời trang sang app ngân hàng -- quay lại là đường đi bình thường,
+     * mà hỏi trạng thái chỉ trả về TRẠNG THÁI chứ cổng không phát lại mã.
+     */
+    @Test
+    void should_persist_the_qr_payload_so_it_can_be_rebuilt_later() {
+        when(paymentRecordRepository.findPendingByOrderId(ORDER_ID)).thenReturn(Optional.empty());
+        when(paymentProcessPort.createPaymentLink(any())).thenReturn(PaymentCheckoutResult.qr(
+            "00020101021138...VIETQR",
+            new BankTransferDetails("970422", "0912888866", "CONG TY VOX", new BigDecimal("500000"), "VOX 8f3c1a04"),
+            "https://payos.test/checkout",
+            "link-1"));
+
+        var response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+
+        assertThat(response.action()).isEqualTo("QR");
+        assertThat(response.qrCode()).isEqualTo("00020101021138...VIETQR");
+        assertThat(response.transfer().transferContent()).isEqualTo("VOX 8f3c1a04");
+
+        var stored = savedById.get(response.paymentId());
+        assertThat(stored.getCheckoutUrl()).isEqualTo("https://payos.test/checkout");
+        assertThat(stored.getProviderPayloadJson()).contains("VIETQR").contains("VOX 8f3c1a04");
+    }
+
+    /** Và dựng lại được từ chính payload đó khi trường quay lại đơn còn treo. */
+    @Test
+    void should_rebuild_the_qr_from_the_stored_payload_on_a_live_attempt() {
+        var live = existingAttempt();
+        live.setCheckoutUrl("https://payos.test/checkout");
+        live.setProviderPayloadJson(
+            "{\"qrCode\":\"00020101021138...VIETQR\",\"transfer\":{\"bankBin\":\"970422\","
+                + "\"accountNumber\":\"0912888866\",\"accountName\":\"CONG TY VOX\","
+                + "\"amountVnd\":500000,\"transferContent\":\"VOX 8f3c1a04\"}}");
+        when(paymentRecordRepository.findPendingByOrderId(ORDER_ID)).thenReturn(Optional.of(live));
+        when(paymentProcessPort.getPaymentLinkStatus("orphan-ref"))
+            .thenReturn(new PaymentLinkStatusResult(PaymentLinkRemoteStatus.PENDING));
+
+        var response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+
+        assertThat(response.action()).isEqualTo("QR");
+        assertThat(response.qrCode()).isEqualTo("00020101021138...VIETQR");
+        assertThat(response.transfer().accountNumber()).isEqualTo("0912888866");
+        verify(paymentProcessPort, never()).createPaymentLink(any());
     }
 
     /**
@@ -191,6 +264,44 @@ class CreatePaymentCheckoutUrlUseCaseTests {
 
         assertThat(response.checkoutUrl()).isEqualTo("https://payos.test/still-alive");
         verify(paymentProcessPort, never()).createPaymentLink(any());
+    }
+
+    /**
+     * Nhánh REDIRECT phải LƯU được link, nếu không thì test trên chỉ đúng trên giấy: entity từng khai
+     * checkout_url là updatable = false, nên câu UPDATE của attachCheckoutUrl lặng lẽ bỏ qua cột đó
+     * -- không lỗi, không cảnh báo, cột ở NULL vĩnh viễn. Hệ quả là mọi lần quay lại trả tiếp đều rơi
+     * vào "đang có một phiên thanh toán chờ xử lý" thay vì nhận lại link của chính mình.
+     */
+    @Test
+    void should_persist_the_checkout_url_for_a_redirect_gateway() {
+        when(paymentRecordRepository.findPendingByOrderId(ORDER_ID)).thenReturn(Optional.empty());
+        when(paymentProcessPort.createPaymentLink(any()))
+            .thenReturn(PaymentCheckoutResult.redirect("https://payos.test/checkout", "link-1"));
+
+        var response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+
+        assertThat(savedById.get(response.paymentId()).getCheckoutUrl())
+            .isEqualTo("https://payos.test/checkout");
+    }
+
+    /**
+     * Ngược lại, cổng dạng FORM_POST KHÔNG được lưu: actionUrl của nó là một endpoint cố định dùng
+     * chung mọi đơn, còn thứ nhận dạng phiên nằm ở bộ field mang chữ ký (cố ý không lưu). Lưu mỗi URL
+     * rồi lần sau redirect thẳng tới đó là đưa trường vào một trang init trống.
+     *
+     * <p>Nhờ vậy checkout_url IS NULL giữ đúng một nghĩa -- "lần thử này không dựng lại được" -- và
+     * đó chính là điều kiện resolvePendingAttempt đang kiểm.
+     */
+    @Test
+    void should_not_persist_a_form_post_action_url() {
+        when(paymentRecordRepository.findPendingByOrderId(ORDER_ID)).thenReturn(Optional.empty());
+        when(paymentProcessPort.createPaymentLink(any()))
+            .thenReturn(PaymentCheckoutResult.formPost(
+                "https://sepay.test/v1/checkout/init", Map.of("merchant", "vox", "signature", "abc")));
+
+        var response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+
+        assertThat(savedById.get(response.paymentId()).getCheckoutUrl()).isNull();
     }
 
     private static Order payableOrder() {

@@ -175,12 +175,33 @@ public class ConsumeQuotaService {
                 schoolId, subscriptionId, practiceSessionId, quotaType, overageVnd, balanceAfterVnd,
                 costUsd, fxRateUsed, now));
 
-        checkDebtCapTransition(subscriptionId, schoolId, quotaType, examSessionId, overageVnd,
-            current.getTotalAllocatedAmountVnd(), balanceBeforeVnd, balanceAfterVnd, now);
+        // Truyền CẢ HAI nguồn, y như lúc ghi bút toán ở ngay trên. Bản trước chỉ truyền examSessionId
+        // trong khi practiceSessionId nằm ngay trong tầm với, nên mọi dòng CAP_EXCEEDED do luyện nói
+        // gây ra đều mất dấu vết.
+        checkDebtCapTransition(subscriptionId, schoolId, quotaType, examSessionId, practiceSessionId,
+            overageVnd, current.getTotalAllocatedAmountVnd(), balanceBeforeVnd, balanceAfterVnd, now);
 
         // crossedIntoDebt lấy TRƯỚC/SAU của cùng một dòng đang giữ khóa -- không phải hai lần đọc rời
         // nhau, nên không thể lệch với những gì vừa thực sự xảy ra ở trên.
         var crossedIntoDebt = balanceBeforeVnd.signum() >= 0 && balanceAfterVnd.signum() < 0;
+
+        // Báo "trường vừa bị khoá" NGAY TẠI ĐÂY chứ không để chỗ gọi tự làm.
+        //
+        // Trước đây việc này nằm ở CompleteExamSessionGradingUseCase, tức chỉ đường CHẤM THI có --
+        // luyện nói cũng đẩy trường vào nợ y hệt mà không sinh dòng LOCKED nào, không gửi mail cho
+        // ai. Trường vẫn bị khoá thật (guard suy từ dấu số dư, không quan tâm nguồn nào gây ra) nên
+        // hiệu trưởng mất quyền mở ca thi mà không có chỗ nào giải thích vì sao.
+        //
+        // Đặt ở đây thì mọi nguồn trừ tiền hiện tại và tương lai đều được báo, và dòng sự kiện commit
+        // CÙNG transaction với bút toán đã gây ra nó -- không còn cửa sổ nào để một cái vào sổ mà cái
+        // kia không.
+        if (crossedIntoDebt) {
+            schoolDebtNotificationService.publishSchoolLockedDueToDebt(
+                subscriptionId, schoolId, quotaType, examSessionId, practiceSessionId, amountVnd,
+                current.getTotalAllocatedAmountVnd(), balanceAfterVnd.negate().max(BigDecimal.ZERO), now
+            );
+        }
+
         return new ChargeSplit(remainingVnd, overageVnd, balanceAfterVnd, crossedIntoDebt);
     }
 
@@ -220,7 +241,7 @@ public class ConsumeQuotaService {
      * bản cũ phải fetch before/after quanh một bulk update và vì thế phải bật {@code clearAutomatically}.
      */
     private void checkDebtCapTransition(UUID subscriptionId, UUID schoolId, QuotaType quotaType,
-            UUID examSessionId, BigDecimal overageVnd, BigDecimal totalAllocatedVnd,
+            UUID examSessionId, UUID practiceSessionId, BigDecimal overageVnd, BigDecimal totalAllocatedVnd,
             BigDecimal balanceBeforeVnd, BigDecimal balanceAfterVnd, Instant now) {
         var cap = totalAllocatedVnd.multiply(quotaDebtConfig.capRatio());
         var debtBeforeVnd = balanceBeforeVnd.negate().max(BigDecimal.ZERO);
@@ -231,12 +252,12 @@ public class ConsumeQuotaService {
         }
 
         LOGGER.warn(
-            "Nợ vượt trần cảnh báo: subscriptionId={} quotaType={} examSessionId={} debtVnd={} capVnd={}",
-            subscriptionId, quotaType, examSessionId, debtAfterVnd, cap
+            "Nợ vượt trần cảnh báo: subscriptionId={} quotaType={} examSessionId={} practiceSessionId={} debtVnd={} capVnd={}",
+            subscriptionId, quotaType, examSessionId, practiceSessionId, debtAfterVnd, cap
         );
 
         schoolDebtNotificationService.publishDebtCapExceeded(
-            subscriptionId, schoolId, quotaType, examSessionId, overageVnd,
+            subscriptionId, schoolId, quotaType, examSessionId, practiceSessionId, overageVnd,
             totalAllocatedVnd, totalAllocatedVnd.add(debtAfterVnd), debtAfterVnd, cap, now
         );
     }

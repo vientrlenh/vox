@@ -216,9 +216,9 @@ public class Order {
      * Đơn mua một chu kỳ gói. Tiền đơn đúng bằng giá niêm yết của gói, KHÔNG cộng phí dịch vụ: biên
      * lãi của gói đã nằm sẵn trong priceVnd do admin tự đặt (bán 10 triệu cho 8 triệu hạn mức).
      */
-    public static Order forSubscription(UUID schoolId, OrderType type, String description, BigDecimal planPriceVnd,
+    public static Order forSubscription(UUID schoolId, OrderType type, String description, BigDecimal planPriceVnd, BigDecimal serviceFeeVnd, 
             Instant now, UUID createdBy) {
-        return new Order(schoolId, type, description, planPriceVnd, planPriceVnd, BigDecimal.ZERO, BigDecimal.ZERO,
+        return new Order(schoolId, type, description, planPriceVnd, planPriceVnd.add(serviceFeeVnd), serviceFeeVnd, BigDecimal.ZERO,
             OrderStatus.PENDING, null, now, now, now.plus(PENDING_TTL), createdBy, createdBy);
     }
 
@@ -235,9 +235,9 @@ public class Order {
      * chúng nhận một tham số luôn bằng 0 là mời gọi có ngày ai đó truyền nhầm.
      */
     public static Order forSubscriptionUpgrade(UUID schoolId, String description, BigDecimal planPriceVnd,
-            BigDecimal unusedCreditVnd, Instant now, UUID createdBy) {
+            BigDecimal unusedCreditVnd, BigDecimal serviceFeeVnd, Instant now, UUID createdBy) {
         return new Order(schoolId, OrderType.SUBSCRIPTION_UPGRADE, description, planPriceVnd,
-            planPriceVnd.subtract(unusedCreditVnd), BigDecimal.ZERO, unusedCreditVnd,
+            planPriceVnd.subtract(unusedCreditVnd).add(serviceFeeVnd), serviceFeeVnd, unusedCreditVnd,
             OrderStatus.PENDING, null, now, now, now.plus(PENDING_TTL), createdBy, createdBy);
     }
 

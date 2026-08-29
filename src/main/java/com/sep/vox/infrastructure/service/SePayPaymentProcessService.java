@@ -115,6 +115,11 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
     }
 
     @Override
+    public boolean isConfigured() {
+        return properties.isConfigured();
+    }
+
+    @Override
     public PaymentProvider provider() {
         return PaymentProvider.SEPAY;
     }

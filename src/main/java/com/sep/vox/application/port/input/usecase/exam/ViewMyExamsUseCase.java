@@ -78,8 +78,11 @@ public class ViewMyExamsUseCase implements IUseCase<ViewMyExamsQuery, PageResult
             .sorted(orderBy(input.sortDescending()))
             .toList();
 
+        // page - 1: số trang ĐẾM TỪ 1 (graphqls mặc định `page: Int = 1`, và mọi adapter JPA đều
+        // trừ đi 1 trước khi dựng PageRequest). Cắt trang trong bộ nhớ ở đây vẫn tính 0-based nên
+        // trang 1 nhảy qua trọn trang đầu -- danh sách trả về rỗng dù có dữ liệu.
         var pageRows = rows.stream()
-            .skip((long) input.page() * input.size())
+            .skip((long) (input.page() - 1) * input.size())
             .limit(input.size())
             .toList();
         var content = toResponses(pageRows, now);

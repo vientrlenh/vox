@@ -78,11 +78,14 @@ public class ViewMyExamsUseCase implements IUseCase<ViewMyExamsQuery, PageResult
             .sorted(orderBy(input.sortDescending()))
             .toList();
 
-        // page - 1: số trang ĐẾM TỪ 1 (graphqls mặc định `page: Int = 1`, và mọi adapter JPA đều
-        // trừ đi 1 trước khi dựng PageRequest). Cắt trang trong bộ nhớ ở đây vẫn tính 0-based nên
-        // trang 1 nhảy qua trọn trang đầu -- danh sách trả về rỗng dù có dữ liệu.
+        // 0-BASED, KHÁC quy ước 1-based của phần còn lại. ĐỪNG trừ đi 1 ở đây: `/api/v1/exams` là
+        // REST, không phải GraphQL, và cả hợp đồng lẫn client đều đã 0-based -- ExamController khai
+        // `defaultValue = "0"`, ViewMyExamsQueryMapper chỉ chặn `page < 0`, WPF gọi thẳng
+        // `?page=0&size=200` (ExamApiService.cs:37), FE web tự trừ 1 trước khi gửi
+        // (useExamResultQueries.ts fetchMyExams). Trừ thêm lần nữa là `skip(-200)` ->
+        // IllegalArgumentException -> 400 -> học sinh không mở nổi danh sách bài thi để vào thi.
         var pageRows = rows.stream()
-            .skip((long) (input.page() - 1) * input.size())
+            .skip((long) input.page() * input.size())
             .limit(input.size())
             .toList();
         var content = toResponses(pageRows, now);

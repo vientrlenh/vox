@@ -241,3 +241,74 @@ extend type Mutation {
     "Trả id gói vừa sửa, không trả cả object: client tự query lại nếu cần -- xem UpdateSubscriptionPlanUseCase."
     updateSubscriptionPlan(id: ID!, input: UpdateSubscriptionPlanInput!): ID!
 }
+
+"""
+Một người trong màn chia hạn mức cá nhân của trường.
+
+Hạn mức cá nhân là TRẦN CHI mà trường tự chia nội bộ, không phải một túi tiền riêng: nó không giữ
+tiền và không sinh bút toán nào. Người KHÔNG có dòng phân bổ thì không bị chặn theo cá nhân, chỉ ví
+hạn mức của trường áp dụng -- xem ConsumeQuotaService.
+"""
+type SchoolQuotaUserAllocation {
+    userId: ID!
+    "0 với người chưa được chia gì -- dòng ảo, không có trong DB."
+    allocatedAmountVnd: Float!
+    usedAmountVnd: Float!
+    """
+    Người được chia. Nối qua data loader userById nên một trang N dòng chỉ tốn thêm ĐÚNG MỘT truy vấn
+    users, không phải N. null khi tài khoản đã bị xoá khỏi hệ thống nhưng dòng phân bổ còn lại.
+    """
+    user: User
+}
+
+"""
+Một TRANG của màn chia hạn mức, kèm hai con số tổng cho cả tập.
+
+distributedAmountVnd phải do máy chủ tính trên TOÀN BỘ tập: giao diện chỉ cầm một trang, nên cộng
+cột phân bổ của trang đó ra số sai ngay từ trang thứ hai.
+"""
+type SchoolQuotaUserAllocationPage {
+    "Ví hạn mức cấp trường -- EXAM khi chia cho giáo viên, PRACTICE khi chia cho học sinh."
+    pool: SchoolSubscriptionQuotaRecord!
+    "Tổng đã chia cho TẤT CẢ người dùng, không phải chỉ trang này."
+    distributedAmountVnd: Float!
+    """
+    Trần phân phối của trường cho loại hạn mức này, 0..1. Mặc định 1.0 = chia được toàn bộ ví.
+    Thuộc về TRƯỜNG nên sống xuyên qua mọi lần gia hạn -- xem school_quota_policies (V5).
+    """
+    distributableRatio: Float!
+    """
+    Phần ví được phép chia ra = pool x distributableRatio. Tính sẵn ở máy chủ vì đây chính là con số
+    dùng để từ chối một lần chia vượt trần; client tự nhân lần nữa là mở đường cho hai bên lệch nhau.
+    """
+    distributableAmountVnd: Float!
+    content: [SchoolQuotaUserAllocation!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+extend type Query {
+    """
+    Hạn mức thi đã chia cho từng GIÁO VIÊN, có phân trang.
+
+    Thay cho GET /v1/schools/{schoolId}/teachers/exam-quota: đường REST đó trả về mọi giáo viên
+    trong một lượt và không mang tên người dùng, nên cột "Họ tên" ở client luôn rỗng.
+    """
+    schoolExamQuotaUserAllocations(
+        schoolId: ID!,
+        "Lọc theo TÊN. Bỏ trống thì không lọc."
+        search: String,
+        page: Int! = 1,
+        size: Int! = 20
+    ): SchoolQuotaUserAllocationPage!
+
+    "Hạn mức luyện nói đã chia cho từng HỌC SINH, có phân trang."
+    schoolPracticeQuotaUserAllocations(
+        schoolId: ID!,
+        search: String,
+        page: Int! = 1,
+        size: Int! = 20
+    ): SchoolQuotaUserAllocationPage!
+}

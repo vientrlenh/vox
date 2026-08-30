@@ -7,11 +7,15 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.domain.model.exam.ExamKind;
 
+/**
+ * Mapper chỉ còn lo chuẩn hoá {@code status} và {@code sort}. Việc kiểm {@code page}/{@code size}
+ * đã chuyển ra biên ({@code PageArguments}, gọi từ controller) -- xem {@code PageArgumentsTests}.
+ */
 class ViewMyExamsQueryMapperTests {
 
     @Test
     void should_default_to_examdate_desc() {
-        var query = ViewMyExamsQueryMapper.fromRequest(null, null, 0, 20, "examDate,desc");
+        var query = ViewMyExamsQueryMapper.fromRequest(null, null, 1, 20, "examDate,desc");
 
         assertThat(query.sortDescending()).isTrue();
         assertThat(query.status()).isNull();
@@ -27,37 +31,32 @@ class ViewMyExamsQueryMapperTests {
         assertThat(query.page()).isEqualTo(1);
     }
 
+    /** Trang đi thẳng qua mapper: trang đầu là 1 và không bị quy đổi ở đây. */
     @Test
-    void should_reject_negative_page() {
-        assertThatThrownBy(() -> ViewMyExamsQueryMapper.fromRequest(null, null, -1, 20, "examDate,desc"))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Số trang hoặc kích thước trang");
-    }
+    void should_carry_the_page_through_untouched() {
+        var query = ViewMyExamsQueryMapper.fromRequest(null, null, 3, 20, "examDate,desc");
 
-    @Test
-    void should_reject_zero_size() {
-        assertThatThrownBy(() -> ViewMyExamsQueryMapper.fromRequest(null, null, 0, 0, "examDate,desc"))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Số trang hoặc kích thước trang");
+        assertThat(query.page()).isEqualTo(3);
+        assertThat(query.size()).isEqualTo(20);
     }
 
     @Test
     void should_reject_invalid_status() {
-        assertThatThrownBy(() -> ViewMyExamsQueryMapper.fromRequest(null, "DRAFT", 0, 20, "examDate,desc"))
+        assertThatThrownBy(() -> ViewMyExamsQueryMapper.fromRequest(null, "DRAFT", 1, 20, "examDate,desc"))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Trạng thái bài thi không hợp lệ");
     }
 
     @Test
     void should_reject_unknown_sort_field() {
-        assertThatThrownBy(() -> ViewMyExamsQueryMapper.fromRequest(null, null, 0, 20, "name,desc"))
+        assertThatThrownBy(() -> ViewMyExamsQueryMapper.fromRequest(null, null, 1, 20, "name,desc"))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Tham số sắp xếp không hợp lệ");
     }
 
     @Test
     void should_reject_unknown_sort_direction() {
-        assertThatThrownBy(() -> ViewMyExamsQueryMapper.fromRequest(null, null, 0, 20, "examDate,up"))
+        assertThatThrownBy(() -> ViewMyExamsQueryMapper.fromRequest(null, null, 1, 20, "examDate,up"))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Tham số sắp xếp không hợp lệ");
     }

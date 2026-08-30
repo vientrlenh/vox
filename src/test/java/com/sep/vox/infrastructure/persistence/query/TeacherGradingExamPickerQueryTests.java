@@ -145,7 +145,7 @@ class TeacherGradingExamPickerQueryTests extends ContainerTestConfig {
     @Test
     void should_filter_the_teacher_queue_by_exam_id() {
         var page = examGradingQueryRepository.findTasksByTeacherIdAndExamId(
-            teacherId, midtermExamId, "CENTRALIZED", null, null, 0, 20);
+            teacherId, midtermExamId, "CENTRALIZED", null, null, 1, 20);
 
         assertThat(page.content()).hasSize(3)
             .allSatisfy(task -> assertThat(task.examName()).isEqualTo("Kỳ thi giữa kỳ"));
@@ -162,7 +162,7 @@ class TeacherGradingExamPickerQueryTests extends ContainerTestConfig {
     @Test
     void should_not_leak_another_teachers_tasks_when_filtering_by_exam_id() {
         var page = examGradingQueryRepository.findTasksByTeacherIdAndExamId(
-            teacherId, otherTeacherExamId, "CENTRALIZED", null, null, 0, 20);
+            teacherId, otherTeacherExamId, "CENTRALIZED", null, null, 1, 20);
 
         assertThat(page.content()).isEmpty();
         assertThat(page.totalElements()).isZero();
@@ -172,7 +172,7 @@ class TeacherGradingExamPickerQueryTests extends ContainerTestConfig {
     @Test
     void should_return_every_centralized_task_when_no_exam_id_is_given() {
         var page = examGradingQueryRepository.findTasksByTeacherIdAndExamId(
-            teacherId, null, "CENTRALIZED", null, null, 0, 20);
+            teacherId, null, "CENTRALIZED", null, null, 1, 20);
 
         assertThat(page.totalElements()).isEqualTo(4);
     }

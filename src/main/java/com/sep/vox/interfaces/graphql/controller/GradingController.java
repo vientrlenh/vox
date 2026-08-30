@@ -35,6 +35,7 @@ import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
 import com.sep.vox.application.query.dto.GradingTaskInfo;
 import com.sep.vox.application.query.dto.ResultStatusHistoryInfo;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlGradingController")
 public class GradingController {
@@ -198,12 +199,11 @@ public class GradingController {
         return viewAiQualityReportUseCase.execute(new ViewAiQualityReportQuery(examId));
     }
 
+    /**
+     * Biên là chỗ duy nhất kiểm phân trang: repository bên dưới tin vào đây và chỉ còn trừ 1 để đổi
+     * sang offset, không tự kẹp lại giá trị sai nữa.
+     */
     private void validatePageSize(Integer page, Integer size) {
-        if (page == null || page <= 0) {
-            throw new IllegalArgumentException("Số trang yêu cầu không hợp lệ");
-        }
-        if (size == null || size <= 0) {
-            throw new IllegalArgumentException("Kích cỡ trang yêu cầu không hợp lệ");
-        }
+        PageArguments.validate(page, size);
     }
 }

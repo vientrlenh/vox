@@ -34,14 +34,31 @@ class PagingConventionTests {
 
     private static final Path GRAPHQL_DIR = Path.of("src/main/resources/graphql");
 
+    private static final Path QUERY_DIR =
+        Path.of("src/main/java/com/sep/vox/infrastructure/persistence/query");
+
     /** Method trả PageResult và nhận vào một tham số trang. */
     private static final Pattern PAGED_METHOD = Pattern.compile(
         "public\\s+PageResult<[^>]+>\\s+(\\w+)\\s*\\(([^)]*)\\)\\s*\\{", Pattern.DOTALL);
+
+    /**
+     * Như {@link #PAGED_METHOD} nhưng nới cho query repository: ở đó phép phân trang hay nằm trong
+     * một helper {@code private <T> PageResult<T> paginate(...)} dùng chung, chứ không phải lúc nào
+     * cũng ở ngay method public.
+     */
+    private static final Pattern PAGED_QUERY_METHOD = Pattern.compile(
+        "(?:public|private|protected)\\s+(?:static\\s+)?(?:<[^>]+>\\s+)?PageResult<[^>]+>\\s+(\\w+)"
+            + "\\s*\\(([^)]*)\\)\\s*\\{",
+        Pattern.DOTALL);
 
     private static final Pattern PAGE_PARAM = Pattern.compile("int\\s+(page|pageNumber)\\b");
 
     private static final Pattern SUBTRACTS_ONE =
         Pattern.compile("PageRequest\\.of\\(\\s*[\\w.()]+\\s*-\\s*1");
+
+    /** Lối phân trang thủ công của query repository: {@code setFirstResult((page - 1) * size)}. */
+    private static final Pattern OFFSET_SUBTRACTS_ONE =
+        Pattern.compile("setFirstResult\\(\\s*\\(?\\s*[\\w.()]+\\s*-\\s*1");
 
     @Test
     @DisplayName("mọi adapter phân trang đều tự trừ 1 trước khi giao cho Spring Data")
@@ -77,6 +94,51 @@ class PagingConventionTests {
 
         assertThat(offenders)
             .as("adapter nhận trang 1-based mà không trừ 1: client xin trang đầu sẽ nhận trang thứ hai")
+            .isEmpty();
+    }
+
+    /**
+     * Cùng một luật, nhưng cho nhánh đọc: query repository không đi qua {@code PageRequest} mà tự
+     * tính offset bằng {@code setFirstResult}, nên phép kiểm adapter ở trên KHÔNG nhìn thấy chúng.
+     *
+     * <p>Đó từng là một điểm mù thật: chỗ này nhận page 1-based từ controller (guard
+     * {@code validatePageSize} chặn page <= 0, schema mặc định 1) nhưng lại nhân thẳng
+     * {@code page * size}, nên client xin trang đầu thì nhận trang thứ hai còn trang đầu không có
+     * đường nào tới. Bảng điều phối chấm, hàng đợi giáo viên và danh sách phúc khảo đều dính.
+     */
+    @Test
+    @DisplayName("mọi query repository phân trang đều tự trừ 1 trước khi tính offset")
+    void query_repositories_must_convert_one_based_page_to_offset() throws IOException {
+        var offenders = new ArrayList<String>();
+        var scanned = 0;
+
+        try (Stream<Path> files = Files.list(QUERY_DIR)) {
+            for (Path file : files.filter(p -> p.toString().endsWith(".java")).toList()) {
+                var source = Files.readString(file, StandardCharsets.UTF_8);
+                var matcher = PAGED_QUERY_METHOD.matcher(source);
+                while (matcher.find()) {
+                    if (!PAGE_PARAM.matcher(matcher.group(2)).find()) {
+                        continue;
+                    }
+                    var body = bodyOf(source, matcher.end());
+                    if (!body.contains("setFirstResult(")) {
+                        continue;
+                    }
+                    scanned++;
+                    if (!OFFSET_SUBTRACTS_ONE.matcher(body).find()) {
+                        offenders.add(file.getFileName() + "." + matcher.group(1));
+                    }
+                }
+            }
+        }
+
+        // Chốt chặn cho chính phép kiểm này, như ở trên.
+        assertThat(scanned)
+            .as("số method phân trang quét được trong query repository")
+            .isGreaterThan(4);
+
+        assertThat(offenders)
+            .as("query repository nhận trang 1-based mà nhân thẳng page * size: mất hẳn trang đầu")
             .isEmpty();
     }
 

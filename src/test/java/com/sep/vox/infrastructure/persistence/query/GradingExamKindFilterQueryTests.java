@@ -73,7 +73,7 @@ class GradingExamKindFilterQueryTests extends ContainerTestConfig {
 
     @Test
     void should_list_only_centralized_rows_on_the_coordination_board() {
-        var page = examGradingQueryRepository.searchAssignments(filter("CENTRALIZED"), 0, 20);
+        var page = examGradingQueryRepository.searchAssignments(filter("CENTRALIZED"), 1, 20);
 
         assertThat(page.content()).singleElement()
             .satisfies(row -> assertThat(row.examName()).isEqualTo("Kỳ thi cuối kỳ"));
@@ -83,7 +83,7 @@ class GradingExamKindFilterQueryTests extends ContainerTestConfig {
 
     @Test
     void should_list_only_class_test_rows_when_asked_for_class_tests() {
-        var page = examGradingQueryRepository.searchAssignments(filter("CLASS_TEST"), 0, 20);
+        var page = examGradingQueryRepository.searchAssignments(filter("CLASS_TEST"), 1, 20);
 
         assertThat(page.content()).singleElement()
             .satisfies(row -> assertThat(row.examName()).isEqualTo("Kiểm tra 15 phút"));
@@ -93,7 +93,7 @@ class GradingExamKindFilterQueryTests extends ContainerTestConfig {
     /** Bộ lọc bỏ trống vẫn trả cả hai — mặc định nằm ở use case, không ẩn trong SQL. */
     @Test
     void should_list_both_kinds_when_no_kind_is_given() {
-        assertThat(examGradingQueryRepository.searchAssignments(filter(null), 0, 20).content())
+        assertThat(examGradingQueryRepository.searchAssignments(filter(null), 1, 20).content())
             .hasSize(2);
     }
 
@@ -112,7 +112,7 @@ class GradingExamKindFilterQueryTests extends ContainerTestConfig {
     @Test
     void should_keep_class_test_assignments_out_of_the_centralized_teacher_queue() {
         var page = examGradingQueryRepository
-            .findTasksByTeacherId(teacherId, "CENTRALIZED", null, null, 0, 20);
+            .findTasksByTeacherId(teacherId, "CENTRALIZED", null, null, 1, 20);
 
         assertThat(page.content()).singleElement()
             .satisfies(task -> assertThat(task.examName()).isEqualTo("Kỳ thi cuối kỳ"));
@@ -122,7 +122,7 @@ class GradingExamKindFilterQueryTests extends ContainerTestConfig {
     @Test
     void should_keep_centralized_assignments_out_of_the_class_test_queue() {
         var page = examGradingQueryRepository
-            .findTasksByTeacherId(teacherId, "CLASS_TEST", null, null, 0, 20);
+            .findTasksByTeacherId(teacherId, "CLASS_TEST", null, null, 1, 20);
 
         assertThat(page.content()).singleElement()
             .satisfies(task -> assertThat(task.examName()).isEqualTo("Kiểm tra 15 phút"));

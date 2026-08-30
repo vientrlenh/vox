@@ -20,8 +20,6 @@ public class JpaSchoolUserQueryRepository implements SchoolUserQueryRepository {
 
     @Override
     public PageResult<SchoolUserInfo> findBySchoolIdAndRoleCodes(UUID schoolId, List<String> roleCodes, int page, int size) {
-        var normalizedPage = Math.max(page, 0);
-        var normalizedSize = Math.max(size, 1);
 
         var content = em.createQuery("""
             SELECT DISTINCT new com.sep.vox.application.query.dto.SchoolUserInfo(
@@ -50,8 +48,8 @@ public class JpaSchoolUserQueryRepository implements SchoolUserQueryRepository {
         """, SchoolUserInfo.class)
             .setParameter("schoolId", schoolId)
             .setParameter("roleCodes", roleCodes)
-            .setFirstResult(normalizedPage * normalizedSize)
-            .setMaxResults(normalizedSize)
+            .setFirstResult((page - 1) * size)
+            .setMaxResults(size)
             .getResultList();
 
         var totalElements = em.createQuery("""
@@ -70,8 +68,8 @@ public class JpaSchoolUserQueryRepository implements SchoolUserQueryRepository {
 
         var totalPages = totalElements == 0
             ? 0
-            : (int) Math.ceil((double) totalElements / normalizedSize);
+            : (int) Math.ceil((double) totalElements / size);
 
-        return new PageResult<>(content, normalizedPage, normalizedSize, totalElements, totalPages);
+        return new PageResult<>(content, page, size, totalElements, totalPages);
     }
 }

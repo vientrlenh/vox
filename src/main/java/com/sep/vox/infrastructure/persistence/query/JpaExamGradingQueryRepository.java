@@ -74,16 +74,9 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
         " (cr.status = :pendingReview OR " + OPEN_APPEAL_EXISTS + ")";
 
     /**
-     * Trần số dòng một trang. {@code size} trong schema chỉ là giá trị MẶC ĐỊNH, không
-     * phải giới hạn — không kẹp ở đây thì một client gửi {@code size: 100000} là đủ
-     * làm nghẽn connection pool, kèm theo các query phụ với mệnh đề IN khổng lồ.
-     */
-    private static final int MAX_PAGE_SIZE = 100;
-
-    /**
      * Trần số kỳ thi trả về cho dropdown lọc của giáo viên. Cùng tinh thần với
-     * {@link #MAX_PAGE_SIZE}: danh sách này không phân trang nên phải có chặn trên ở
-     * đâu đó, dù một người bình thường không bao giờ chạm tới.
+     * {@link com.sep.vox.interfaces.shared.PageArguments#MAX_PAGE_SIZE}: danh sách này không phân
+     * trang nên phải có chặn trên ở đâu đó, dù một người bình thường không bao giờ chạm tới.
      */
     private static final int MAX_EXAM_OPTIONS = 200;
 
@@ -116,8 +109,6 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
     @Override
     public PageResult<GradingAssignmentRowInfo> searchAssignments(
             GradingAssignmentFilter filter, int page, int size) {
-        var normalizedPage = Math.max(page, 0);
-        var normalizedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         var now = Instant.now();
 
         var rows = applyFilters(em.createQuery("""
@@ -130,8 +121,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             """ + WHERE_CLAUSE + """
             ORDER BY cr.updatedAt DESC, cr.id ASC
         """, Tuple.class), filter, now)
-            .setFirstResult(normalizedPage * normalizedSize)
-            .setMaxResults(normalizedSize)
+            .setFirstResult((page - 1) * size)
+            .setMaxResults(size)
             .getResultList();
 
         var candidateResultIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
@@ -181,8 +172,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             """ + WHERE_CLAUSE, Long.class), filter, now)
             .getSingleResult();
 
-        var totalPages = (int) Math.ceil((double) total / normalizedSize);
-        return new PageResult<>(content, normalizedPage, normalizedSize, total, totalPages);
+        var totalPages = (int) Math.ceil((double) total / size);
+        return new PageResult<>(content, page, size, total, totalPages);
     }
 
     /**
@@ -553,8 +544,6 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
     public PageResult<GradingTaskInfo> findTasksByTeacherIdAndExamId(
             UUID teacherId, UUID examId, String examKind, String status, String roundType,
             int page, int size) {
-        var normalizedPage = Math.max(page, 0);
-        var normalizedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         var now = Instant.now();
 
         // Ẩn danh là luật của kỳ thi TẬP TRUNG, không phải luật chung: ở đó dữ liệu học
@@ -580,8 +569,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             .setParameter("examId", examId)
             .setParameter("status", status)
             .setParameter("roundType", roundType)
-            .setFirstResult(normalizedPage * normalizedSize)
-            .setMaxResults(normalizedSize)
+            .setFirstResult((page - 1) * size)
+            .setMaxResults(size)
             .getResultList();
 
         var pageResultIds = rows.stream().map(row -> row.get(1, UUID.class)).toList();
@@ -645,8 +634,8 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             .setParameter("roundType", roundType)
             .getSingleResult();
 
-        var totalPages = (int) Math.ceil((double) total / normalizedSize);
-        return new PageResult<>(content, normalizedPage, normalizedSize, total, totalPages);
+        var totalPages = (int) Math.ceil((double) total / size);
+        return new PageResult<>(content, page, size, total, totalPages);
     }
 
     /**

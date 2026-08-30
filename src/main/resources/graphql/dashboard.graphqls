@@ -108,8 +108,85 @@ type QuestionBankStats {
     description: Int!
 }
 
+"Kết quả chấm AI của một ngày lịch theo giờ Việt Nam."
+type GradingOutcomeBucket {
+    "Định dạng YYYY-MM-DD"
+    day: String!
+    graded: Int!
+    failed: Int!
+}
+
+"""
+Sức khỏe vận hành nền tảng. Trộn hai loại thời gian CÓ CHỦ Ý:
+
+sessionsInProgress / examsInProgress / gradingQueueDepth là ảnh chụp NGAY LÚC GỌI và không đổi theo
+dateFrom/dateTo — "đang có 6 kỳ thi chạy" mà đổi khi bấm sang tháng trước thì vô nghĩa. Các trường
+còn lại thuộc cửa sổ đang xem.
+"""
+type PlatformOperationalHealth {
+    "Phiên thi đang diễn ra ngay lúc này"
+    sessionsInProgress: Int!
+    "Số kỳ thi KHÁC NHAU đang có phiên chạy"
+    examsInProgress: Int!
+    "Phiên đã nộp, đang xếp hàng hoặc đang chấm"
+    gradingQueueDepth: Int!
+    "Phiên chấm xong trong cửa sổ"
+    graded: Int!
+    "Phiên AI chấm lỗi trong cửa sổ (exam_sessions.status = GRADING_FAILED)"
+    gradingFailed: Int!
+    "null khi cửa sổ chưa có phiên nào chấm xong lẫn chấm lỗi — khác hẳn với 0%"
+    successRatePercent: Float
+    "Liên tục theo ngày, cũ -> mới, ngày không có phiên trả về 0"
+    daily: [GradingOutcomeBucket!]!
+}
+
+"""
+Sức khỏe kinh doanh nền tảng.
+
+Bốn nhóm trường LOẠI TRỪ NHAU và phân loại theo TRƯỜNG, không theo dòng thuê bao — một trường có
+nhiều kỳ trong lịch sử. "Còn hiệu lực" gồm cả CANCELLED vì trạng thái đó chỉ tắt gia hạn tự động,
+trường vẫn dùng được tới hết endDate; chỉ SUSPENDED mới mất quyền dùng ngay.
+
+Số đếm trường là ảnh chụp NGAY LÚC GỌI, không đổi theo dateFrom/dateTo. Các con số tiền thì theo cửa
+sổ đang xem.
+"""
+type PlatformBusinessHealth {
+    "Trường có kỳ thuê bao phủ hôm nay"
+    subscribedSchools: Int!
+    "Tập con của subscribedSchools: kỳ đang phủ sẽ hết trong 30 ngày tới"
+    expiringSoonSchools: Int!
+    "Từng có gói nhưng hiện không kỳ nào phủ, và không bị đình chỉ"
+    lapsedSchools: Int!
+    "Bị đình chỉ và hiện không có kỳ nào phủ"
+    suspendedSchools: Int!
+    "Ví tự nạp âm — chính là trường đang bị chặn mở ca thi"
+    schoolsInDebt: Int!
+    "Tiền thực thu trong cửa sổ (đơn SUCCESS), VND"
+    revenueVnd: Float!
+    "Cùng độ dài, ngay TRƯỚC cửa sổ — không phải tháng lịch trước"
+    previousRevenueVnd: Float!
+    "Giá vốn AI phát sinh trong cửa sổ, VND (ai_usage_records.cost_vnd)"
+    aiCostVnd: Float!
+    "null khi cửa sổ chưa thu được đồng nào — biên của doanh thu 0 không tồn tại, không phải 0%"
+    grossMarginPercent: Float
+}
+
 extend type Query {
     systemAdminDashboard: SystemAdminDashboardSummary!
+
+    """
+    dateFrom/dateTo là ISO instant (vd "2026-08-01T00:00:00Z"). dateFrom BAO GỒM, dateTo KHÔNG bao
+    gồm — hai dải liền nhau sẽ đếm trùng phiên rơi đúng ranh giới nếu dùng <=, cùng quy ước với
+    schoolBalanceSummary. Bỏ trống dateTo = ngay lúc này; bỏ trống dateFrom = lùi 14 ngày.
+    """
+    platformOperationalHealth(dateFrom: String, dateTo: String): PlatformOperationalHealth!
+
+    """
+    Cùng quy ước khoảng với platformOperationalHealth. Bỏ trống dateFrom = đầu tháng hiện tại theo
+    giờ Việt Nam.
+    """
+    platformBusinessHealth(dateFrom: String, dateTo: String): PlatformBusinessHealth!
+
     schoolAdminDashboard: SchoolAdminDashboardSummary!
     teacherDashboard: TeacherDashboardSummary!
     "Kỳ thi tập trung gần thời điểm hiện tại nhất của trường — null nếu chưa có kỳ thi tập trung nào"

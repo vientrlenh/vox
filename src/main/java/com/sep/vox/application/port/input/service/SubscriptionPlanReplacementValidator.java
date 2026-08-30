@@ -37,6 +37,17 @@ public class SubscriptionPlanReplacementValidator {
             throw new IllegalArgumentException("Gói thay thế phải đang ở trạng thái hoạt động");
         }
 
+        requireCompatibleTerms(replacement, replaced);
+    }
+
+    /**
+     * Chỉ phần so điều khoản (chu kỳ/giá/thời lượng/hạn mức) -- KHÔNG đòi replacement đang ACTIVE.
+     *
+     * <p>Tách riêng cho luồng "tạo gói thay thế" (CreateSubscriptionPlanReplacementUseCase): gói mới
+     * tạo ra còn DRAFT nên requireValidReplacement không gọi được ngay; điều khoản chỉ được chốt lúc
+     * publish (PublishSubscriptionPlanUseCase), thời điểm gói mới thật sự nhận vai trò thay thế.
+     */
+    public void requireCompatibleTerms(SubscriptionPlan replacement, SubscriptionPlan replaced) {
         requireSamePeriod(replacement, replaced);
         requireSamePrice(replacement, replaced);
         requireNotLessAttemptTime(replacement, replaced);

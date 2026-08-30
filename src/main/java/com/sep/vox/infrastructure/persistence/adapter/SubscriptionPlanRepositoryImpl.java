@@ -80,6 +80,13 @@ public class SubscriptionPlanRepositoryImpl implements SubscriptionPlanRepositor
     }
 
     @Override
+    public List<SubscriptionPlan> findByReplacedByPlanId(UUID replacedByPlanId) {
+        return springDataSubscriptionPlanRepository.findByReplacedByPlanId(replacedByPlanId).stream()
+            .map(SubscriptionPlanMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public PageResult<SubscriptionPlan> findByStatus(SubscriptionPlanStatus status, int page, int size) {
         return toPageResult(
             // page vào theo lối 1-BASED như mọi repository khác trong dự án (xem OrderRepositoryImpl),

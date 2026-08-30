@@ -6,7 +6,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +21,6 @@ import com.sep.vox.application.port.input.command.ForceSuspendSubscriptionComman
 import com.sep.vox.application.port.input.command.UnsuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.command.DeleteDraftSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.PublishSubscriptionPlanCommand;
-import com.sep.vox.application.port.input.query.ViewQuotaAllocationsQuery;
 import com.sep.vox.application.port.input.usecase.subscription.AllocateExamQuotaToTeachersUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.AllocatePracticeQuotaToStudentsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ArchiveSubscriptionPlanUseCase;
@@ -33,9 +31,12 @@ import com.sep.vox.application.port.input.usecase.subscription.DeleteDraftSubscr
 import com.sep.vox.application.port.input.usecase.subscription.ForceSuspendSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.PublishSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.UnsuspendSubscriptionUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.ViewExamQuotaAllocationsUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.ViewPracticeQuotaAllocationsUseCase;
+import com.sep.vox.application.port.input.command.SetQuotaDistributionPolicyCommand;
+import com.sep.vox.application.port.input.usecase.subscription.SetQuotaDistributionPolicyUseCase;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;
+import com.sep.vox.interfaces.rest.dto.request.SetQuotaDistributionPolicyRequest;
+
+import java.math.BigDecimal;
 import com.sep.vox.interfaces.rest.dto.request.AllocateQuotaRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSubscriptionPlanRequest;
 import com.sep.vox.interfaces.rest.dto.request.SuspendSubscriptionRequest;
@@ -60,8 +61,7 @@ public class SubscriptionController {
     private final UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase;
     private final AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase;
     private final AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase;
-    private final ViewExamQuotaAllocationsUseCase viewExamQuotaAllocationsUseCase;
-    private final ViewPracticeQuotaAllocationsUseCase viewPracticeQuotaAllocationsUseCase;
+    private final SetQuotaDistributionPolicyUseCase setQuotaDistributionPolicyUseCase;
 
     public SubscriptionController(
             CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase,
@@ -74,8 +74,7 @@ public class SubscriptionController {
             UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase,
             AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase,
             AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase,
-            ViewExamQuotaAllocationsUseCase viewExamQuotaAllocationsUseCase,
-            ViewPracticeQuotaAllocationsUseCase viewPracticeQuotaAllocationsUseCase) {
+            SetQuotaDistributionPolicyUseCase setQuotaDistributionPolicyUseCase) {
         this.createSubscriptionPlanUseCase = createSubscriptionPlanUseCase;
         this.archiveSubscriptionPlanUseCase = archiveSubscriptionPlanUseCase;
         this.updateSubscriptionPlanReplacementUseCase = updateSubscriptionPlanReplacementUseCase;
@@ -86,8 +85,7 @@ public class SubscriptionController {
         this.unsuspendSubscriptionUseCase = unsuspendSubscriptionUseCase;
         this.allocateExamQuotaToTeachersUseCase = allocateExamQuotaToTeachersUseCase;
         this.allocatePracticeQuotaToStudentsUseCase = allocatePracticeQuotaToStudentsUseCase;
-        this.viewExamQuotaAllocationsUseCase = viewExamQuotaAllocationsUseCase;
-        this.viewPracticeQuotaAllocationsUseCase = viewPracticeQuotaAllocationsUseCase;
+        this.setQuotaDistributionPolicyUseCase = setQuotaDistributionPolicyUseCase;
     }
 
     @PostMapping
@@ -177,6 +175,11 @@ public class SubscriptionController {
         return ResponseEntity.ok(ApiResponse.success("Gỡ đình chỉ gói đăng ký thành công", data));
     }
 
+    // Hai đường ĐỌC hạn mức đã chia (GET .../teachers/exam-quota và GET .../students/practice-quota)
+    // đã bỏ: chúng chuyển sang GraphQL thành schoolExamQuotaUserAllocations /
+    // schoolPracticeQuotaUserAllocations, nơi có phân trang và nối được tên người dùng qua data
+    // loader. Đường GHI ở lại REST theo đúng quy ước "đọc GraphQL, ghi REST".
+
     @PutMapping("/schools/{schoolId}/teachers/exam-quota")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> allocateExamQuotaToTeachers(
@@ -185,14 +188,6 @@ public class SubscriptionController {
         var data = allocateExamQuotaToTeachersUseCase.execute(
             AllocateQuotaCommandMapper.toExamCommand(schoolId, request));
         return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức thi cho giáo viên thành công", data));
-    }
-
-    @GetMapping("/schools/{schoolId}/teachers/exam-quota")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> viewExamQuotaAllocations(
-            @PathVariable(name = "schoolId") UUID schoolId) {
-        var data = viewExamQuotaAllocationsUseCase.execute(new ViewQuotaAllocationsQuery(schoolId));
-        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách hạn mức thi của giáo viên thành công", data));
     }
 
     @PutMapping("/schools/{schoolId}/students/practice-quota")
@@ -205,12 +200,22 @@ public class SubscriptionController {
         return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức luyện tập cho học sinh thành công", data));
     }
 
-    @GetMapping("/schools/{schoolId}/students/practice-quota")
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> viewPracticeQuotaAllocations(
-            @PathVariable(name = "schoolId") UUID schoolId) {
-        var data = viewPracticeQuotaAllocationsUseCase.execute(new ViewQuotaAllocationsQuery(schoolId));
-        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách hạn mức luyện tập thành công", data));
-    }
 
+    /**
+     * Đặt trần phân phối cho MỘT loại hạn mức của trường.
+     *
+     * <p>Chính sách thuộc về TRƯỜNG, không thuộc kỳ đăng ký -- nên đường dẫn cũng theo trường, không
+     * theo subscription. Bản ghi hạn mức được dựng lại mỗi kỳ, đặt chính sách ở đó là để nó biến mất
+     * sau mỗi lần gia hạn (xem V5).
+     */
+    @PutMapping("/schools/{schoolId}/quota-policies/{quotaType}")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<BigDecimal>> setQuotaDistributionPolicy(
+            @PathVariable(name = "schoolId") UUID schoolId,
+            @PathVariable(name = "quotaType") String quotaType,
+            @Valid @RequestBody SetQuotaDistributionPolicyRequest request) {
+        var data = setQuotaDistributionPolicyUseCase.execute(
+            new SetQuotaDistributionPolicyCommand(schoolId, quotaType, request.distributableRatio()));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật trần phân phối hạn mức thành công", data));
+    }
 }

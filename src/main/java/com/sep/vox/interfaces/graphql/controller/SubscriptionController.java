@@ -43,6 +43,11 @@ import com.sep.vox.domain.dto.SubscriptionPlanQuotaDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSubscriptionPlanInput;
+import com.sep.vox.application.port.input.query.ViewQuotaUserAllocationsQuery;
+import com.sep.vox.application.port.input.usecase.subscription.ViewExamQuotaUserAllocationsUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ViewPracticeQuotaUserAllocationsUseCase;
+import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPageResponse;
+import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSubscriptionPlanCommandMapper;
 
 @Controller("graphqlSubscriptionController")
@@ -58,6 +63,8 @@ public class SubscriptionController {
     private final ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase;
     private final ViewSchoolSubscriptionUseCase viewSchoolSubscriptionUseCase;
     private final ViewSchoolSubscriptionHistoryUseCase viewSchoolSubscriptionHistoryUseCase;
+    private final ViewExamQuotaUserAllocationsUseCase viewExamQuotaUserAllocationsUseCase;
+    private final ViewPracticeQuotaUserAllocationsUseCase viewPracticeQuotaUserAllocationsUseCase;
     private final QuotaPricingPort quotaPricingPort;
 
     public SubscriptionController(
@@ -71,6 +78,8 @@ public class SubscriptionController {
             ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase,
             ViewSchoolSubscriptionUseCase viewSchoolSubscriptionUseCase,
             ViewSchoolSubscriptionHistoryUseCase viewSchoolSubscriptionHistoryUseCase,
+            ViewExamQuotaUserAllocationsUseCase viewExamQuotaUserAllocationsUseCase,
+            ViewPracticeQuotaUserAllocationsUseCase viewPracticeQuotaUserAllocationsUseCase,
             QuotaPricingPort quotaPricingPort) {
         this.viewSubscriptionPlansUseCase = viewSubscriptionPlansUseCase;
         this.viewSubscriptionPlanDetailUseCase = viewSubscriptionPlanDetailUseCase;
@@ -82,6 +91,8 @@ public class SubscriptionController {
         this.viewMyPracticeQuotaAllocationUseCase = viewMyPracticeQuotaAllocationUseCase;
         this.viewSchoolSubscriptionUseCase = viewSchoolSubscriptionUseCase;
         this.viewSchoolSubscriptionHistoryUseCase = viewSchoolSubscriptionHistoryUseCase;
+        this.viewExamQuotaUserAllocationsUseCase = viewExamQuotaUserAllocationsUseCase;
+        this.viewPracticeQuotaUserAllocationsUseCase = viewPracticeQuotaUserAllocationsUseCase;
         this.quotaPricingPort = quotaPricingPort;
     }
 
@@ -195,6 +206,54 @@ public class SubscriptionController {
     private void validatePageSize(Integer page, Integer size) {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalArgumentException("Trang hoặc kích thước yêu cầu phải lớn hơn 0");
+        }
+    }
+
+    @QueryMapping(name = "schoolExamQuotaUserAllocations")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public QuotaUserAllocationPageResponse schoolExamQuotaUserAllocations(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "search") String search,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        validatePaging(page, size);
+        return viewExamQuotaUserAllocationsUseCase.execute(
+            new ViewQuotaUserAllocationsQuery(schoolId, search, page, size));
+    }
+
+    @QueryMapping(name = "schoolPracticeQuotaUserAllocations")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public QuotaUserAllocationPageResponse schoolPracticeQuotaUserAllocations(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "search") String search,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        validatePaging(page, size);
+        return viewPracticeQuotaUserAllocationsUseCase.execute(
+            new ViewQuotaUserAllocationsQuery(schoolId, search, page, size));
+    }
+
+    /**
+     * Nối tên người dùng vào từng dòng phân bổ.
+     *
+     * <p>Qua data loader nên cả trang gom lại thành ĐÚNG MỘT truy vấn users, không phải một truy vấn
+     * mỗi dòng. Đây là chỗ sửa lỗi cột "Họ tên" luôn hiện dấu gạch: đường REST cũ trả về dòng phân bổ
+     * không kèm tên, còn client thì khai sẵn một trường fullName không bao giờ được điền.
+     */
+    @SchemaMapping(typeName = "SchoolQuotaUserAllocation", field = "user")
+    public CompletableFuture<UserDto> allocationUser(
+            QuotaUserAllocationPageResponse.Row row, DataFetchingEnvironment env) {
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(row.userId());
+    }
+
+    // page ĐẾM TỪ 1 theo quy ước chung của dự án -- adapter trừ 1 trước khi xuống PageRequest.
+    private static void validatePaging(Integer page, Integer size) {
+        if (page == null || page < 1) {
+            throw new IllegalArgumentException("Số trang phải lớn hơn hoặc bằng 1");
+        }
+        if (size == null || size <= 0) {
+            throw new IllegalArgumentException("Kích thước trang phải lớn hơn 0");
         }
     }
 }

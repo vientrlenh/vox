@@ -13,7 +13,7 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationReposi
 /**
  * Cho giáo viên tự xem hạn mức EXAM cá nhân của chính mình -- endpoint duy nhất đọc
  * SchoolSubscriptionQuotaUserAllocation trước đây chỉ SCHOOL_ADMIN gọi được và trả cả trường, không
- * lọc theo người gọi (xem ViewExamQuotaAllocationsUseCase). FE dùng số này để cảnh báo
+ * lọc theo người gọi (xem ViewExamQuotaUserAllocationsUseCase). FE dùng số này để cảnh báo
  * trước khi publish/sửa/thêm học sinh, cùng công thức với ClassTestTokenQuotaGuardService.
  *
  * <p>null = không có allocation riêng, tức không bị chặn theo cá nhân (chỉ pool của trường áp dụng),

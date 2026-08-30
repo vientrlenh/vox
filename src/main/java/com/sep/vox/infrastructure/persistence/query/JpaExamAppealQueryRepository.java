@@ -46,8 +46,6 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
     @Override
     public PageResult<AppealSummaryInfo> searchAppeals(
             UUID schoolId, UUID examId, String status, String keyword, int page, int size) {
-        var normalizedPage = Math.max(page, 0);
-        var normalizedSize = Math.max(size, 1);
         var normalizedKeyword = keyword == null || keyword.isBlank() ? null : "%" + keyword.trim().toLowerCase() + "%";
 
         // KHÔNG join sang phần thi ở đây: một đơn có N phần, join to-many sẽ nhân dòng
@@ -69,8 +67,8 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             .setParameter("examId", examId)
             .setParameter("status", status)
             .setParameter("keyword", normalizedKeyword)
-            .setFirstResult(normalizedPage * normalizedSize)
-            .setMaxResults(normalizedSize);
+            .setFirstResult((page - 1) * size)
+            .setMaxResults(size);
 
         var rows = query.getResultList();
         var appealIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
@@ -118,8 +116,8 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             .setParameter("keyword", normalizedKeyword)
             .getSingleResult();
 
-        var totalPages = (int) Math.ceil((double) total / normalizedSize);
-        return new PageResult<>(content, normalizedPage, normalizedSize, total, totalPages);
+        var totalPages = (int) Math.ceil((double) total / size);
+        return new PageResult<>(content, page, size, total, totalPages);
     }
 
     /**
@@ -132,8 +130,6 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
     @Override
     public PageResult<AppealSummaryInfo> searchAppealsByStudentId(
             UUID studentId, String status, int page, int size) {
-        var normalizedPage = Math.max(page, 0);
-        var normalizedSize = Math.max(size, 1);
         var rows = em.createQuery("""
             SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline
             FROM ExamResultAppealJpaEntity a
@@ -147,8 +143,8 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         """, Tuple.class)
             .setParameter("studentId", studentId)
             .setParameter("status", status)
-            .setFirstResult(normalizedPage * normalizedSize)
-            .setMaxResults(normalizedSize)
+            .setFirstResult((page - 1) * size)
+            .setMaxResults(size)
             .getResultList();
 
         var appealIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
@@ -188,8 +184,8 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             .setParameter("studentId", studentId)
             .setParameter("status", status)
             .getSingleResult();
-        var totalPages = (int) Math.ceil((double) total / normalizedSize);
-        return new PageResult<>(content, normalizedPage, normalizedSize, total, totalPages);
+        var totalPages = (int) Math.ceil((double) total / size);
+        return new PageResult<>(content, page, size, total, totalPages);
     }
 
     private Map<UUID, AppealReviewerInfo> reviewersByAppealIds(List<UUID> appealIds) {

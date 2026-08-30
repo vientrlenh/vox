@@ -1,14 +1,18 @@
 package com.sep.vox.application.usecase.exam;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -17,52 +21,48 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.query.ViewMyExamsQuery;
 import com.sep.vox.application.port.input.usecase.exam.ViewMyExamsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.dto.ExamAttemptSummary;
+import com.sep.vox.application.query.dto.StudentExamRowInfo;
 import com.sep.vox.application.query.repository.ExamCandidateAttemptsQueryRepository;
-import com.sep.vox.application.response.input.exam.StudentExamSummaryResponse;
+import com.sep.vox.application.query.repository.StudentExamQueryRepository;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
-import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamSchedule;
-import com.sep.vox.domain.model.exam.ExamScheduleStatus;
+import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 
 /**
- * Màn danh sách bài thi của học sinh trước đây trả về mọi bài mà em đó là thí sinh, kể cả kỳ thi
- * còn DRAFT và bài chưa được xếp ca -- tức lịch chưa xếp xong đã lộ ra cho học sinh. Thứ tự lại là
- * cũ trước mới sau.
+ * Phần còn lại trong Java sau khi lọc/sắp/phân trang đã xuống SQL: dựng response và quyết định học
+ * sinh có được vào phòng thi hay không.
+ *
+ * <p>Các luật về phạm vi và thứ tự (ẩn kỳ thi DRAFT, ẩn ca chưa publish, mới trước cũ sau, phân
+ * trang từ 1) nay nằm trong JPQL nên được kiểm ở
+ * {@code JpaStudentExamQueryRepositoryTests} trên DB thật -- giả lập repository ở đây rồi khẳng
+ * định lại chúng thì chỉ là kiểm chính cái mock.
  */
 class ViewMyExamsUseCaseTests {
 
     private static final UUID STUDENT_ID = UUID.randomUUID();
     private static final Instant NOW = Instant.now();
 
-    private ExamCandidateRepository examCandidateRepository;
-    private ExamRepository examRepository;
+    private StudentExamQueryRepository studentExamQueryRepository;
     private ExamScheduleRepository examScheduleRepository;
+    private ExamCandidateAttemptsQueryRepository attemptsQueryRepository;
     private ViewMyExamsUseCase useCase;
-
-    private final List<ExamCandidate> candidates = new ArrayList<>();
-    private final List<Exam> exams = new ArrayList<>();
-    private final List<ExamSchedule> schedules = new ArrayList<>();
 
     @BeforeEach
     void setUp() {
-        examCandidateRepository = mock(ExamCandidateRepository.class);
-        examRepository = mock(ExamRepository.class);
+        studentExamQueryRepository = mock(StudentExamQueryRepository.class);
         examScheduleRepository = mock(ExamScheduleRepository.class);
+        attemptsQueryRepository = mock(ExamCandidateAttemptsQueryRepository.class);
         var examPaperRepository = mock(ExamPaperRepository.class);
-        var attemptsQueryRepository = mock(ExamCandidateAttemptsQueryRepository.class);
         var userContextPort = mock(UserContextPort.class);
 
         useCase = new ViewMyExamsUseCase(
-            examCandidateRepository,
-            examRepository,
+            studentExamQueryRepository,
             examPaperRepository,
             examScheduleRepository,
             attemptsQueryRepository,
@@ -72,166 +72,216 @@ class ViewMyExamsUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(STUDENT_ID);
         when(examPaperRepository.findByIdIn(anyCollection())).thenReturn(List.of());
         when(attemptsQueryRepository.findByCandidateIds(anyCollection())).thenReturn(List.of());
-        when(examCandidateRepository.findByStudentId(STUDENT_ID)).thenReturn(candidates);
-        when(examRepository.findByIdIn(anyCollection())).thenAnswer(invocation ->
-            filterByIds(exams, invocation.getArgument(0), exam -> exam.getId()));
-        when(examScheduleRepository.findByIdIn(anyCollection())).thenAnswer(invocation ->
-            filterByIds(schedules, invocation.getArgument(0), schedule -> schedule.getId()));
+        // Ca thi còn hiệu lực -- các ca kiểm tra riêng sẽ ghi đè khi cần.
+        when(examScheduleRepository.findByIdAndInSchedule(any(), any()))
+            .thenReturn(Optional.of(new ExamSchedule()));
     }
 
     @Test
-    void should_hide_exam_in_draft_status() {
-        givenExam("Kỳ thi nháp", ExamStatus.DRAFT, ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(3600));
+    void should_pass_the_paging_envelope_through_untouched() {
+        givenRows(new PageResult<>(List.of(row().build()), 2, 20, 41, 3));
 
-        assertThat(execute().content()).isEmpty();
+        var result = useCase.execute(new ViewMyExamsQuery(null, null, 2, 20, true));
+
+        assertThat(result.page()).isEqualTo(2);
+        assertThat(result.size()).isEqualTo(20);
+        assertThat(result.totalElements()).isEqualTo(41);
+        assertThat(result.totalPages()).isEqualTo(3);
     }
 
     @Test
-    void should_hide_exam_when_candidate_has_no_schedule() {
-        var candidate = givenExam("Chưa xếp ca", ExamStatus.SCHEDULED, ExamScheduleStatus.PUBLISHED,
-            NOW.plusSeconds(3600));
-        candidate.setScheduleId(null);
+    void should_forward_the_one_based_page_to_the_query_repository() {
+        givenRows(new PageResult<>(List.of(), 1, 20, 0, 0));
 
-        assertThat(execute().content()).isEmpty();
+        useCase.execute(new ViewMyExamsQuery(null, null, 1, 20, true));
+
+        org.mockito.Mockito.verify(studentExamQueryRepository)
+            .findMyExams(eq(STUDENT_ID), eq(null), eq(null), eq(true), eq(1), eq(20), any());
     }
 
     @Test
-    void should_hide_exam_when_schedule_is_draft() {
-        givenExam("Ca chưa publish", ExamStatus.SCHEDULED, ExamScheduleStatus.DRAFT, NOW.plusSeconds(3600));
+    void should_let_an_attended_student_of_a_running_exam_enter() {
+        givenRows(row().candidateStatus(ExamCandidateStatus.ATTENDED).examStatus(ExamStatus.IN_PROGRESS).build());
 
-        assertThat(execute().content()).isEmpty();
+        var response = firstResponse();
+
+        assertThat(response.canEnter()).isTrue();
+        assertThat(response.entryMessage()).isNull();
     }
 
     @Test
-    void should_hide_exam_when_schedule_is_moved() {
-        givenExam("Ca đã dời", ExamStatus.SCHEDULED, ExamScheduleStatus.MOVED, NOW.plusSeconds(3600));
+    void should_block_a_student_who_was_forced_to_stop() {
+        givenRows(row()
+            .candidateStatus(ExamCandidateStatus.ATTENDED)
+            .examStatus(ExamStatus.IN_PROGRESS)
+            .blockedAt(NOW)
+            .build());
 
-        assertThat(execute().content()).isEmpty();
-    }
-
-    /** Kỳ thi bị huỷ vẫn phải hiện, nếu không học sinh cứ chờ một ca đã không còn. */
-    @Test
-    void should_keep_cancelled_exam() {
-        givenExam("Kỳ thi đã huỷ", ExamStatus.CANCELLED, ExamScheduleStatus.CANCELLED, NOW.plusSeconds(3600));
-
-        assertThat(execute().content()).extracting(response -> response.title())
-            .containsExactly("Kỳ thi đã huỷ");
+        assertThat(firstResponse().canEnter()).isFalse();
+        assertThat(firstResponse().entryMessage()).contains("buộc kết thúc");
     }
 
     @Test
-    void should_sort_exams_from_newest_to_oldest() {
-        givenExam("Bài cũ", ExamStatus.CLOSED, ExamScheduleStatus.COMPLETED, NOW.minusSeconds(86400));
-        givenExam("Bài mới", ExamStatus.SCHEDULED, ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(86400));
-        givenExam("Bài giữa", ExamStatus.SCHEDULED, ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(3600));
+    void should_block_a_student_who_was_not_marked_present() {
+        givenRows(row().candidateStatus(ExamCandidateStatus.ASSIGNED).examStatus(ExamStatus.IN_PROGRESS).build());
 
-        assertThat(execute().content()).extracting(response -> response.title())
-            .containsExactly("Bài mới", "Bài giữa", "Bài cũ");
+        assertThat(firstResponse().entryMessage()).contains("điểm danh");
     }
 
     @Test
-    void should_sort_ascending_when_asked() {
-        givenExam("Bài cũ", ExamStatus.CLOSED, ExamScheduleStatus.COMPLETED, NOW.minusSeconds(86400));
-        givenExam("Bài mới", ExamStatus.SCHEDULED, ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(86400));
+    void should_block_when_the_exam_is_not_running_yet() {
+        givenRows(row().candidateStatus(ExamCandidateStatus.ATTENDED).examStatus(ExamStatus.SCHEDULED).build());
 
-        var result = useCase.execute(new ViewMyExamsQuery(null, null, 0, 20, false));
-
-        assertThat(result.content()).extracting(response -> response.title())
-            .containsExactly("Bài cũ", "Bài mới");
-    }
-
-    /** Ca thi thiếu ngày là dữ liệu lỗi, đảo chiều mà kéo nó lên đầu thì mở màn ra toàn dòng trống. */
-    @Test
-    void should_put_exam_without_date_last() {
-        givenExam("Có ngày", ExamStatus.SCHEDULED, ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(3600));
-        givenExam("Không ngày", ExamStatus.SCHEDULED, ExamScheduleStatus.PUBLISHED, null);
-
-        assertThat(execute().content()).extracting(response -> response.title())
-            .containsExactly("Có ngày", "Không ngày");
+        assertThat(firstResponse().entryMessage()).contains("chưa được mở");
     }
 
     @Test
-    void should_filter_by_kind() {
-        givenExam("Kỳ thi tập trung", ExamStatus.SCHEDULED, ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(3600));
-        var classTest = givenExam("Bài trên lớp", ExamStatus.SCHEDULED, ExamScheduleStatus.PUBLISHED,
-            NOW.plusSeconds(7200));
-        examOf(classTest).setKind(ExamKind.CLASS_TEST);
+    void should_block_when_the_student_has_no_assigned_paper() {
+        givenRows(row()
+            .candidateStatus(ExamCandidateStatus.ATTENDED)
+            .examStatus(ExamStatus.IN_PROGRESS)
+            .assignedPaperId(null)
+            .build());
 
-        var result = useCase.execute(new ViewMyExamsQuery(ExamKind.CLASS_TEST, null, 0, 20, true));
+        assertThat(firstResponse().entryMessage()).contains("chưa được gán đề thi");
+    }
 
-        assertThat(result.content()).extracting(response -> response.title()).containsExactly("Bài trên lớp");
+    /**
+     * Session còn dở (IN_PROGRESS/INTERRUPTED) là phiên vào lại được, không phải một lượt đã tiêu.
+     * Đếm nhầm thì học sinh bị báo "hết lượt" ngay ở màn danh sách, trước khi kịp vào lại phiên dở.
+     */
+    @Test
+    void should_not_count_an_unfinished_session_as_a_used_attempt() {
+        var candidateId = UUID.randomUUID();
+        givenRows(row().candidateId(candidateId).candidateStatus(ExamCandidateStatus.ATTENDED)
+            .examStatus(ExamStatus.IN_PROGRESS).maxAttempt(1).build());
+        when(attemptsQueryRepository.findByCandidateIds(anyCollection()))
+            .thenReturn(List.of(attempt(candidateId, ExamSessionStatus.IN_PROGRESS)));
+
+        var response = firstResponse();
+
+        assertThat(response.attemptsUsed()).isZero();
+        assertThat(response.canEnter()).isTrue();
     }
 
     @Test
-    void should_filter_by_derived_status() {
-        givenExam("Sắp thi", ExamStatus.SCHEDULED, ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(3600));
-        givenExam("Đã xong", ExamStatus.CLOSED, ExamScheduleStatus.COMPLETED, NOW.minusSeconds(86400));
+    void should_block_once_every_attempt_is_used_up() {
+        var candidateId = UUID.randomUUID();
+        givenRows(row().candidateId(candidateId).candidateStatus(ExamCandidateStatus.ATTENDED)
+            .examStatus(ExamStatus.IN_PROGRESS).maxAttempt(1).build());
+        when(attemptsQueryRepository.findByCandidateIds(anyCollection()))
+            .thenReturn(List.of(attempt(candidateId, ExamSessionStatus.SUBMITTED)));
 
-        var result = useCase.execute(new ViewMyExamsQuery(null, "completed", 0, 20, true));
+        var response = firstResponse();
 
-        assertThat(result.content()).extracting(response -> response.title()).containsExactly("Đã xong");
+        assertThat(response.attemptsUsed()).isEqualTo(1);
+        assertThat(response.entryMessage()).contains("hết số lượt");
+    }
+
+    /** Không có đề thì thời lượng suy từ độ dài ca thi. */
+    @Test
+    void should_derive_the_duration_from_the_schedule_window() {
+        givenRows(row().scheduleStartDate(NOW).scheduleEndDate(NOW.plusSeconds(2700)).build());
+
+        assertThat(firstResponse().duration()).isEqualTo(45);
     }
 
     @Test
-    void should_paginate_and_report_total_elements() {
-        givenExam("Bài 1", ExamStatus.SCHEDULED, ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(300));
-        givenExam("Bài 2", ExamStatus.SCHEDULED, ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(200));
-        givenExam("Bài 3", ExamStatus.SCHEDULED, ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(100));
+    void should_expose_the_kind_as_a_readable_subject() {
+        givenRows(row().examKind("CLASS_TEST").build());
 
-        var firstPage = useCase.execute(new ViewMyExamsQuery(null, null, 0, 2, true));
-        var secondPage = useCase.execute(new ViewMyExamsQuery(null, null, 1, 2, true));
-
-        assertThat(firstPage.content()).extracting(response -> response.title()).containsExactly("Bài 1", "Bài 2");
-        assertThat(firstPage.totalElements()).isEqualTo(3);
-        assertThat(firstPage.totalPages()).isEqualTo(2);
-        assertThat(secondPage.content()).extracting(response -> response.title()).containsExactly("Bài 3");
+        assertThat(firstResponse().subject()).isEqualTo("CLASS TEST");
     }
 
-    private PageResult<StudentExamSummaryResponse> execute() {
-        return useCase.execute(new ViewMyExamsQuery(null, null, 0, 20, true));
+    // ---- fixtures ----------------------------------------------------------
+
+    private void givenRows(StudentExamRowInfo... rows) {
+        givenRows(new PageResult<>(List.of(rows), 1, 20, rows.length, 1));
     }
 
-    private ExamCandidate givenExam(
-            String name,
-            ExamStatus examStatus,
-            ExamScheduleStatus scheduleStatus,
-            Instant startDate) {
-        var examId = UUID.randomUUID();
-        var scheduleId = UUID.randomUUID();
-
-        var exam = new Exam();
-        exam.setId(examId);
-        exam.setName(name);
-        exam.setKind(ExamKind.CENTRALIZED);
-        exam.setStatus(examStatus);
-        exam.setMaxAttempt(1);
-        exams.add(exam);
-
-        var schedule = new ExamSchedule();
-        schedule.setId(scheduleId);
-        schedule.setExamId(examId);
-        schedule.setStatus(scheduleStatus);
-        schedule.setStartDate(startDate);
-        schedule.setEndDate(startDate == null ? null : startDate.plusSeconds(3600));
-        schedules.add(schedule);
-
-        var candidate = new ExamCandidate();
-        candidate.setId(UUID.randomUUID());
-        candidate.setExamId(examId);
-        candidate.setStudentId(STUDENT_ID);
-        candidate.setScheduleId(scheduleId);
-        candidate.setStatus(ExamCandidateStatus.ASSIGNED);
-        candidates.add(candidate);
-        return candidate;
+    private void givenRows(PageResult<StudentExamRowInfo> page) {
+        when(studentExamQueryRepository.findMyExams(
+            any(), any(), any(), anyBoolean(), anyInt(), anyInt(), any())).thenReturn(page);
     }
 
-    private Exam examOf(ExamCandidate candidate) {
-        return exams.stream().filter(exam -> exam.getId().equals(candidate.getExamId())).findFirst().orElseThrow();
+    private com.sep.vox.application.response.input.exam.StudentExamSummaryResponse firstResponse() {
+        return useCase.execute(new ViewMyExamsQuery(null, null, 1, 20, true)).content().get(0);
     }
 
-    private static <T> List<T> filterByIds(
-            List<T> source,
-            Collection<UUID> ids,
-            java.util.function.Function<T, UUID> idOf) {
-        return source.stream().filter(item -> ids.contains(idOf.apply(item))).toList();
+    private static ExamAttemptSummary attempt(UUID candidateId, ExamSessionStatus status) {
+        return new ExamAttemptSummary(
+            candidateId, UUID.randomUUID(), ExamCandidateStatus.ATTENDED, UUID.randomUUID(),
+            NOW, null, status, false, null, BigDecimal.ZERO,
+            null, null, null, null, null, ExamCandidateResultStatus.PENDING_REVIEW);
+    }
+
+    private static RowBuilder row() {
+        return new RowBuilder();
+    }
+
+    /** Dòng "bình thường": đã điểm danh, kỳ thi đang mở, ca thi đang diễn ra, đã có đề. */
+    private static final class RowBuilder {
+        private UUID candidateId = UUID.randomUUID();
+        private ExamCandidateStatus candidateStatus = ExamCandidateStatus.ATTENDED;
+        private Instant blockedAt;
+        private UUID assignedPaperId = UUID.randomUUID();
+        private String examKind = "CENTRALIZED";
+        private ExamStatus examStatus = ExamStatus.IN_PROGRESS;
+        private Integer maxAttempt = 3;
+        private Instant scheduleStartDate = NOW.minusSeconds(600);
+        private Instant scheduleEndDate = NOW.plusSeconds(600);
+
+        RowBuilder candidateId(UUID value) {
+            this.candidateId = value;
+            return this;
+        }
+
+        RowBuilder candidateStatus(ExamCandidateStatus value) {
+            this.candidateStatus = value;
+            return this;
+        }
+
+        RowBuilder blockedAt(Instant value) {
+            this.blockedAt = value;
+            return this;
+        }
+
+        RowBuilder assignedPaperId(UUID value) {
+            this.assignedPaperId = value;
+            return this;
+        }
+
+        RowBuilder examKind(String value) {
+            this.examKind = value;
+            return this;
+        }
+
+        RowBuilder examStatus(ExamStatus value) {
+            this.examStatus = value;
+            return this;
+        }
+
+        RowBuilder maxAttempt(Integer value) {
+            this.maxAttempt = value;
+            return this;
+        }
+
+        RowBuilder scheduleStartDate(Instant value) {
+            this.scheduleStartDate = value;
+            return this;
+        }
+
+        RowBuilder scheduleEndDate(Instant value) {
+            this.scheduleEndDate = value;
+            return this;
+        }
+
+        StudentExamRowInfo build() {
+            return new StudentExamRowInfo(
+                candidateId, candidateStatus, blockedAt, assignedPaperId,
+                UUID.randomUUID(), "Kỳ thi", "Mô tả", examKind, examStatus, true, maxAttempt,
+                UUID.randomUUID(), scheduleStartDate, scheduleEndDate,
+                scheduleStartDate, "in_progress");
+        }
     }
 }

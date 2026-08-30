@@ -20,11 +20,11 @@ public final class ViewMyExamsQueryMapper {
     private ViewMyExamsQueryMapper() {
     }
 
+    /**
+     * {@code page}/{@code size} đã được {@code PageArguments.validate} kiểm ở controller, nên ở đây
+     * không kiểm lại: một luật hai chỗ giữ là cách chắc chắn để hai chỗ trôi khỏi nhau.
+     */
     public static ViewMyExamsQuery fromRequest(ExamKind kind, String status, int page, int size, String sort) {
-        if (page < 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
-
         return new ViewMyExamsQuery(kind, normalizeStatus(status), page, size, parseSortDescending(sort));
     }
 

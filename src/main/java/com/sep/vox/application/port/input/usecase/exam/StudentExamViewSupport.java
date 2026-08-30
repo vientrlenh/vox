@@ -14,10 +14,15 @@ final class StudentExamViewSupport {
     }
 
     static String subjectOf(Exam exam) {
-        if (exam == null || exam.getKind() == null) {
+        return subjectOf(exam == null || exam.getKind() == null ? null : exam.getKind().name());
+    }
+
+    /** Bản nhận thẳng cột {@code kind} dạng chuỗi, cho nhánh đọc đi qua query repository. */
+    static String subjectOf(String kind) {
+        if (kind == null) {
             return "Exam";
         }
-        return exam.getKind().name().replace('_', ' ');
+        return kind.replace('_', ' ');
     }
 
     static String statusOf(Exam exam, ExamSchedule schedule, Instant now) {
@@ -48,10 +53,17 @@ final class StudentExamViewSupport {
     }
 
     static int durationMinutesOf(ExamSchedule schedule, int fallbackMinutes) {
-        if (schedule == null || schedule.getStartDate() == null || schedule.getEndDate() == null) {
+        return schedule == null
+            ? fallbackMinutes
+            : durationMinutesOf(schedule.getStartDate(), schedule.getEndDate(), fallbackMinutes);
+    }
+
+    /** Bản nhận thẳng hai mốc thời gian, cho nhánh đọc đi qua query repository. */
+    static int durationMinutesOf(Instant startDate, Instant endDate, int fallbackMinutes) {
+        if (startDate == null || endDate == null) {
             return fallbackMinutes;
         }
-        return Math.max(1, Math.toIntExact(Duration.between(schedule.getStartDate(), schedule.getEndDate()).toMinutes()));
+        return Math.max(1, Math.toIntExact(Duration.between(startDate, endDate).toMinutes()));
     }
 
     static Instant examDateInstantOf(ExamSchedule schedule, Instant fallback) {

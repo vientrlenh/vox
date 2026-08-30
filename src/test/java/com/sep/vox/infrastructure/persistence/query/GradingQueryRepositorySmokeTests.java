@@ -63,7 +63,7 @@ class GradingQueryRepositorySmokeTests extends ContainerTestConfig {
         var filter = new GradingAssignmentFilter(
             schoolId, null, null, null, null, null, null, false, false, null, null, null);
 
-        var page = examGradingQueryRepository.searchAssignments(filter, 0, 20);
+        var page = examGradingQueryRepository.searchAssignments(filter, 1, 20);
 
         assertThat(page.content()).isEmpty();
     }
@@ -74,7 +74,7 @@ class GradingQueryRepositorySmokeTests extends ContainerTestConfig {
             schoolId, examId, scheduleId, someId, "PENDING_REVIEW", "APPEAL", "ASSIGNED",
             true, true, Boolean.TRUE, "nguyen", "CENTRALIZED");
 
-        assertThat(examGradingQueryRepository.searchAssignments(filter, 0, 20).content()).isEmpty();
+        assertThat(examGradingQueryRepository.searchAssignments(filter, 1, 20).content()).isEmpty();
     }
 
     @Test
@@ -89,7 +89,7 @@ class GradingQueryRepositorySmokeTests extends ContainerTestConfig {
     @Test
     void should_run_the_teacher_queue_query() {
         assertThat(examGradingQueryRepository
-            .findTasksByTeacherId(someId, "CENTRALIZED", null, null, 0, 20).content())
+            .findTasksByTeacherId(someId, "CENTRALIZED", null, null, 1, 20).content())
             .isEmpty();
     }
 

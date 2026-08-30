@@ -60,6 +60,7 @@ import com.sep.vox.interfaces.rest.mapper.UpdateExamMemberCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamSecurePoolStatusCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateExamStatusCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.ViewMyExamsQueryMapper;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 import jakarta.validation.Valid;
 
@@ -118,9 +119,13 @@ public class ExamController {
     public ResponseEntity<ApiResponse<?>> getMyExams(
             @RequestParam(name = "kind", required = false) ExamKind kind,
             @RequestParam(name = "status", required = false) String status,
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size,
+            @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "20") Integer size,
             @RequestParam(name = "sort", defaultValue = "examDate,desc") String sort) {
+        // Trang đếm từ 1, như mọi entry point khác. `Integer` chứ không phải `int` để một tham số
+        // rỗng (`?page=`) vào đây thành null và bị guard từ chối, thay vì nổ ở tầng bind với thông
+        // báo khó hiểu. Kiểm ngay tại biên: repository bên dưới chỉ còn trừ 1 để đổi sang offset.
+        PageArguments.validate(page, size);
         var data = viewMyExamsUseCase.execute(
             ViewMyExamsQueryMapper.fromRequest(kind, status, page, size, sort));
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách bài thi thành công", data));

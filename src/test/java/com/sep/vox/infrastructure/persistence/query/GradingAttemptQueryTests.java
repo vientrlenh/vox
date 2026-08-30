@@ -111,7 +111,7 @@ class GradingAttemptQueryTests extends ContainerTestConfig {
     private List<GradingAssignmentRowInfo> boardRowsOf(String studentName) {
         return examGradingQueryRepository.searchAssignments(new GradingAssignmentFilter(
             schoolId, examId, null, null, null, null, null, false, false, null, null,
-            "CLASS_TEST"), 0, 20).content().stream()
+            "CLASS_TEST"), 1, 20).content().stream()
             .filter(row -> studentName.equals(row.studentName()))
             .toList();
     }
@@ -119,7 +119,7 @@ class GradingAttemptQueryTests extends ContainerTestConfig {
     @Test
     void should_number_attempts_in_the_teacher_queue() {
         var tasks = examGradingQueryRepository
-            .findTasksByTeacherIdAndExamId(teacherId, examId, null, null, null, 0, 20).content();
+            .findTasksByTeacherIdAndExamId(teacherId, examId, null, null, null, 1, 20).content();
 
         assertThat(tasks).hasSize(3);
         assertThat(tasks).filteredOn(task -> task.attemptCount() == 2)
@@ -130,7 +130,7 @@ class GradingAttemptQueryTests extends ContainerTestConfig {
     @Test
     void should_number_the_attempt_on_the_grading_detail() {
         var secondAttempt = examGradingQueryRepository
-            .findTasksByTeacherIdAndExamId(teacherId, examId, null, null, null, 0, 20).content().stream()
+            .findTasksByTeacherIdAndExamId(teacherId, examId, null, null, null, 1, 20).content().stream()
             .filter(task -> task.attemptNo() == 2)
             .findFirst()
             .orElseThrow();

@@ -54,9 +54,14 @@ public class RubricGraphQlDataLoaderConfig {
                                     int totalElements = rubricVersions.size();
                                     int totalPages = (int) Math.ceil((double) totalElements / key.size());
 
+                                    // page - 1: số trang ĐẾM TỪ 1 (mặc định trong graphqls là
+                                    // `page: Int = 1`, và mọi adapter JPA cũng trừ đi 1 trước khi
+                                    // dựng PageRequest). Cắt trang trong bộ nhớ ở đây trước giờ
+                                    // vẫn tính 0-based, nên trang 1 nhảy qua trọn trang đầu và
+                                    // `versions.content` trả về RỖNG dù rubric có phiên bản.
                                     List<RubricVersionDto> pagedDtos = rubricVersions.stream()
                                             .sorted((v1, v2) -> Integer.compare(v2.getVersion(), v1.getVersion()))
-                                            .skip((long) key.page() * key.size())
+                                            .skip((long) (key.page() - 1) * key.size())
                                             .limit(key.size())
                                             .map(RubricVersionDtoMapper::toRubricVersionDto)
                                             .toList();
@@ -87,7 +92,8 @@ public class RubricGraphQlDataLoaderConfig {
 
                                 List<RubricCriterionDto> pagedDtos = criteriaList.stream()
                                         .sorted(Comparator.comparingInt(c -> c.getOrder()))
-                                        .skip((long) key.page() * key.size())
+                                        // page - 1 -- xem chu thich o loader phien ban ben tren.
+                                        .skip((long) (key.page() - 1) * key.size())
                                         .limit(key.size())
                                         .map(RubricCriterionDtoMapper::toDto)
                                         .toList();
@@ -117,7 +123,8 @@ public class RubricGraphQlDataLoaderConfig {
 
                                 List<RubricResultBandDto> pagedDtos = bandList.stream()
                                         .sorted((b1, b2) -> Integer.compare(b1.getOrder(), b2.getOrder()))
-                                        .skip((long) key.page() * key.size())
+                                        // page - 1 -- xem chu thich o loader phien ban ben tren.
+                                        .skip((long) (key.page() - 1) * key.size())
                                         .limit(key.size())
                                         .map(RubricResultBandDtoMapper::toDto)
                                         .toList();

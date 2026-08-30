@@ -14,6 +14,8 @@ import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.command.SetPracticeGoalCommand;
 import com.sep.vox.application.port.input.command.SubmitInterestQuizCommand;
+import com.sep.vox.application.port.input.service.TopicOfferBackfillService;
+import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.port.input.usecase.learnerprofile.SetPracticeGoalUseCase;
 import com.sep.vox.application.port.input.usecase.learnerprofile.SubmitInterestQuizUseCase;
 import com.sep.vox.application.port.input.usecase.learnerprofile.ViewInterestQuizItemsUseCase;
@@ -36,6 +38,8 @@ public class PracticeController {
     private final ViewPracticeFrameworkOptionsUseCase viewPracticeFrameworkOptionsUseCase;
     private final SubmitInterestQuizUseCase submitInterestQuizUseCase;
     private final SetPracticeGoalUseCase setPracticeGoalUseCase;
+    private final TopicOfferBackfillService topicOfferBackfillService;
+    private final UserContextPort userContextPort;
     private final AsyncTaskExecutor practiceGenerationExecutor;
 
     public PracticeController(
@@ -45,7 +49,11 @@ public class PracticeController {
             ViewPracticeFrameworkOptionsUseCase viewPracticeFrameworkOptionsUseCase,
             SubmitInterestQuizUseCase submitInterestQuizUseCase,
             SetPracticeGoalUseCase setPracticeGoalUseCase,
+            TopicOfferBackfillService topicOfferBackfillService,
+            UserContextPort userContextPort,
             @Qualifier("practiceGenerationExecutor") AsyncTaskExecutor practiceGenerationExecutor) {
+        this.topicOfferBackfillService = topicOfferBackfillService;
+        this.userContextPort = userContextPort;
         this.practiceGenerationExecutor = practiceGenerationExecutor;
         this.viewLearnerProfileUseCase = viewLearnerProfileUseCase;
         this.viewInterestQuizItemsUseCase = viewInterestQuizItemsUseCase;
@@ -102,7 +110,24 @@ public class PracticeController {
                 answer.leastStatementIndex()
             ))
             .toList();
-        return submitInterestQuizUseCase.execute(new SubmitInterestQuizCommand(answers));
+        var profile = submitInterestQuizUseCase.execute(new SubmitInterestQuizCommand(answers));
+
+        // Sinh chủ đề NGAY sau khi nộp quiz, chạy nền, KHÔNG chặn phản hồi.
+        //
+        // Trước đây chỉ có một đường sinh: mở màn chọn chủ đề thấy `offers.size() < 3` mới gọi
+        // (PracticePlanningController). Nghĩa là học sinh vừa làm xong quiz mà kho chung đang đầy
+        // thì KHÔNG có chủ đề nào được sinh theo sở thích vừa khai -- em ấy chỉ được chọn từ những
+        // chủ đề người khác đã sinh. Ở đây gọi vô điều kiện: kho đầy thì backfillAsync vẫn sinh
+        // BACKFILL_COUNT_STEADY = 2 chủ đề bám đúng điểm sở thích vừa ghi.
+        //
+        // GỌI Ở CONTROLLER, KHÔNG gọi trong use case: use case là @Transactional còn backfillAsync
+        // là @Async, nên gọi bên trong sẽ để luồng nền chạy TRƯỚC khi transaction commit --
+        // hasCompletedInterestQuiz đọc ra "chưa làm quiz" và bỏ lượt, im lặng không làm gì. Controller
+        // không có transaction nên tới dòng này quiz đã commit xong.
+        //
+        // Gọi trùng không tốn thêm: backfillAsync có khoá in-flight theo studentId.
+        topicOfferBackfillService.backfillAsync(userContextPort.getCurrentAuthenticatedUserId());
+        return profile;
     }
 
     /**

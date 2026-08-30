@@ -68,7 +68,11 @@ public class PracticeQuestionGenerationClient implements PracticeQuestionGenerat
             var payload = new java.util.LinkedHashMap<String, Object>();
             payload.put("topic_id", topic.id().toString());
             payload.put("topic_name", topic.name());
-            payload.put("interest_dimensions", topic.interestDimension());
+            // SỐ ÍT. Python khai `interest_dimension: str` và KHÔNG có giá trị mặc định
+            // (schemas/question_generation.py). Gửi sai tên thì Pydantic lặng lẽ bỏ qua trường lạ
+            // rồi báo thiếu trường bắt buộc -- toàn bộ lượt sinh câu luyện tập trả 422, và học sinh
+            // chỉ thấy "lỗi" khi mở một chủ đề chưa có câu nào trong kho.
+            payload.put("interest_dimension", topic.interestDimension());
             payload.put("curriculum_group", topic.curriculumGroup());
             payload.put("target_criterion_code", criterionCode);
             payload.put("target_sub_attribute", subAttribute);

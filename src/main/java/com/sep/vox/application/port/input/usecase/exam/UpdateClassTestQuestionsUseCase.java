@@ -138,7 +138,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         // Chiếu TRƯỚC khi ghi nên không dùng lại được RecalculateExamTimeDurationService. Dùng
         // totalSeconds (đã gồm thời lượng phát AUDIO/VIDEO) vì đây là thước đo ĐỘ DÀI so với gói.
         var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
-            .findByQuestionIdIn(candidateQuestions.stream().map(Question::getId).distinct().toList()));
+            .findByQuestionIdIn(candidateQuestions.stream().map(q -> q.getId()).distinct().toList()));
         var candidateDurationSeconds = PaperTimeCalculator
             .breakdownOf(candidateQuestions, assetByQuestionId).totalSeconds();
         examTimeQuotaGuardService.requireWithinPlan(

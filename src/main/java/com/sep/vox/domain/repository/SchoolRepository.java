@@ -38,4 +38,7 @@ public interface SchoolRepository {
 
     long countAll();
     long countByIsActiveTrue();
+
+    /** Id các trường đang có ca thi diễn ra -- cùng vị từ với ExamSchedule.isOngoingAt. */
+    List<UUID> findIdsWithOngoingExam(Instant now);
 }

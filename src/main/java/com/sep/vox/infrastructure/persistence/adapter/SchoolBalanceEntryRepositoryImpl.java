@@ -38,13 +38,18 @@ public class SchoolBalanceEntryRepositoryImpl implements SchoolBalanceEntryRepos
     }
 
     @Override
-    public PageResult<SchoolBalanceEntry> findBySchoolId(UUID schoolId, int page, int size) {
-        var result = springDataSchoolBalanceEntryRepository
-            // page vào theo lối 1-BASED như mọi repository khác trong dự án, PageRequest đếm từ 0 --
-            // xem OrderRepositoryImpl.findBySchoolId. Thiếu phép trừ này thì người gọi theo đúng quy
-            // ước chung sẽ nhảy mất trang mới nhất của sao kê, còn page = 0 thì đã bị các controller
-            // chặn từ ngoài (validatePaging đòi page >= 1) nên trang đầu không cách nào lấy được.
-            .findBySchoolIdOrderByOccurredAtDesc(schoolId, PageRequest.of(page - 1, size));
+    public PageResult<SchoolBalanceEntry> findBySchoolId(
+            UUID schoolId, SchoolBalanceEntryType entryType, Instant from, Instant to, int page, int size) {
+        // page vào theo lối 1-BASED như mọi repository khác trong dự án, PageRequest đếm từ 0 --
+        // xem OrderRepositoryImpl.findBySchoolId. Thiếu phép trừ này thì người gọi theo đúng quy
+        // ước chung sẽ nhảy mất trang mới nhất của sao kê, còn page = 0 thì đã bị các controller
+        // chặn từ ngoài (validatePaging đòi page >= 1) nên trang đầu không cách nào lấy được.
+        var pageable = PageRequest.of(page - 1, size);
+        var result = entryType == null
+            ? springDataSchoolBalanceEntryRepository.findPageBySchoolIdInRange(schoolId, from, to, pageable)
+            : springDataSchoolBalanceEntryRepository
+                .findPageBySchoolIdAndEntryTypeInRange(schoolId, entryType.name(), from, to, pageable);
+
         return new PageResult<>(
             result.getContent().stream().map(SchoolBalanceEntryMapper::toDomain).toList(),
             page,

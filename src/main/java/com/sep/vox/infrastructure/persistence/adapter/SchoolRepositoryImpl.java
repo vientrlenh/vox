@@ -132,4 +132,9 @@ public class SchoolRepositoryImpl implements SchoolRepository {
         return springDataSchoolRepository.countByIsActiveTrue();
     }
 
+    @Override
+    public List<UUID> findIdsWithOngoingExam(Instant now) {
+        return springDataSchoolRepository.findIdsWithOngoingExam(now);
+    }
+
 }

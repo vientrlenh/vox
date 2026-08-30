@@ -24,8 +24,11 @@ public class SchoolDebtEvent {
     // model gọi khác -- đọc code ở tầng này sẽ tưởng đang cầm id của gói.
     private UUID subscriptionId;
     private SchoolDebtEventType eventType;
+    /** null với CLEARED: hết nợ là sự kiện cấp TRƯỜNG, số dư không chia theo ví hạn mức nào. */
     private QuotaType quotaType;
+    /** LOCKED/CAP_EXCEEDED: ĐÚNG MỘT trong hai cột session dưới đây được set. CLEARED: cả hai null. */
     private UUID triggerExamSessionId;
+    private UUID triggerPracticeSessionId;
     private BigDecimal triggerAmountVnd;
     private BigDecimal totalAllocatedVnd;
     private BigDecimal usedAmountVnd;
@@ -35,7 +38,8 @@ public class SchoolDebtEvent {
     public SchoolDebtEvent() {}
 
     public SchoolDebtEvent(UUID id, UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType,
-            QuotaType quotaType, UUID triggerExamSessionId, BigDecimal triggerAmountVnd,
+            QuotaType quotaType, UUID triggerExamSessionId, UUID triggerPracticeSessionId,
+            BigDecimal triggerAmountVnd,
             BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant occurredAt) {
         this.id = id;
         this.schoolId = schoolId;
@@ -43,6 +47,7 @@ public class SchoolDebtEvent {
         this.eventType = eventType;
         this.quotaType = quotaType;
         this.triggerExamSessionId = triggerExamSessionId;
+        this.triggerPracticeSessionId = triggerPracticeSessionId;
         this.triggerAmountVnd = triggerAmountVnd;
         this.totalAllocatedVnd = totalAllocatedVnd;
         this.usedAmountVnd = usedAmountVnd;
@@ -51,13 +56,15 @@ public class SchoolDebtEvent {
     }
 
     public SchoolDebtEvent(UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType,
-            QuotaType quotaType, UUID triggerExamSessionId, BigDecimal triggerAmountVnd,
+            QuotaType quotaType, UUID triggerExamSessionId, UUID triggerPracticeSessionId,
+            BigDecimal triggerAmountVnd,
             BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant occurredAt) {
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
         this.eventType = eventType;
         this.quotaType = quotaType;
         this.triggerExamSessionId = triggerExamSessionId;
+        this.triggerPracticeSessionId = triggerPracticeSessionId;
         this.triggerAmountVnd = triggerAmountVnd;
         this.totalAllocatedVnd = totalAllocatedVnd;
         this.usedAmountVnd = usedAmountVnd;
@@ -111,6 +118,14 @@ public class SchoolDebtEvent {
 
     public void setTriggerExamSessionId(UUID triggerExamSessionId) {
         this.triggerExamSessionId = triggerExamSessionId;
+    }
+
+    public UUID getTriggerPracticeSessionId() {
+        return triggerPracticeSessionId;
+    }
+
+    public void setTriggerPracticeSessionId(UUID triggerPracticeSessionId) {
+        this.triggerPracticeSessionId = triggerPracticeSessionId;
     }
 
     public BigDecimal getTriggerAmountVnd() {

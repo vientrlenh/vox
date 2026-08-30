@@ -20,6 +20,25 @@ public interface PaymentProcessPort {
     PaymentProvider provider();
 
     /**
+     * Cổng này có đủ cấu hình để dùng thật không.
+     *
+     * <p>Phải hỏi được TRƯỚC khi ghi dòng payment_records, và đó là toàn bộ lý do nó nằm trên port
+     * thay vì nằm im trong adapter: dòng lần-thử được commit ở một transaction RIÊNG rồi mới gọi ra
+     * cổng, nên nếu lời gọi đó chết vì thiếu cấu hình, dòng PENDING vẫn ở lại. Từ lúc đó đơn không
+     * hủy được (CancelOrderUseCase phải hỏi cổng), không phát link mới được, và cũng không hết hạn
+     * được (expireIfOverdue từ chối đóng đơn khi còn lần thử treo) -- đơn kẹt PENDING vĩnh viễn, và
+     * với đơn đăng ký thì uq_orders_one_open_subscription_order khóa luôn trường khỏi việc mua tiếp.
+     *
+     * <p>Khác với việc cổng đang HỎNG: chỗ đó đã có đường phục hồi (cổng trả NOT_FOUND rồi
+     * PaymentRecord.canRetireOnGatewayNotFound chốt lần thử). Đường đó cần cổng TRẢ LỜI được, nên
+     * nó không cứu được ca thiếu cấu hình -- ca duy nhất mình biết chắc từ trước khi gọi.
+     *
+     * <p>Cố ý không validate lúc khởi động: môi trường dev/test phải chạy được mà không cần biến môi
+     * trường của cổng nào.
+     */
+    boolean isConfigured();
+
+    /**
      * Sinh mã đơn theo đúng quy ước của cổng. PayOS bắt buộc orderCode là số, SePay dùng chuỗi ở
      * order_invoice_number -- không cổng nào ép được cổng kia nên quyết định thuộc về adapter.
      *

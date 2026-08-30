@@ -144,4 +144,5 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     public boolean tryTransitionStatus(UUID sessionId, ExamSessionStatus from, ExamSessionStatus to) {
         return springDataExamSessionRepository.tryTransitionStatus(sessionId, from.name(), to.name()) > 0;
     }
+
 }

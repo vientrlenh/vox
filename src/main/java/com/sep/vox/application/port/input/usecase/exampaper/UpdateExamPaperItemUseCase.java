@@ -222,7 +222,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
         // totalSeconds (đã gồm thời lượng phát AUDIO/VIDEO) vì đây là thước đo ĐỘ DÀI so với gói --
         // xem PaperTimeCalculator để rõ vì sao ước tính CHI PHÍ lại dùng số khác.
         var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
-            .findByQuestionIdIn(questions.stream().map(Question::getId).distinct().toList()));
+            .findByQuestionIdIn(questions.stream().map(q -> q.getId()).distinct().toList()));
         return PaperTimeCalculator.breakdownOf(questions, assetByQuestionId).totalSeconds();
     }
 }

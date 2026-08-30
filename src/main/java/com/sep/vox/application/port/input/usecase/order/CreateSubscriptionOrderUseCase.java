@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.order;
 
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -10,6 +11,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateSubscriptionOrderCommand;
 import com.sep.vox.application.port.input.service.SubscriptionUpgradePolicyService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.ServiceFeePort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderItem;
@@ -39,6 +41,7 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionUpgradePolicyService upgradePolicyService;
+    private final ServiceFeePort serviceFeePort;
     private final UserContextPort userContextPort;
 
     public CreateSubscriptionOrderUseCase(
@@ -46,13 +49,15 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
             OrderItemRepository orderItemRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionUpgradePolicyService upgradePolicyService,
+            SubscriptionUpgradePolicyService upgradePolicyService, 
+            ServiceFeePort serviceFeePort, 
             UserContextPort userContextPort) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.upgradePolicyService = upgradePolicyService;
+        this.serviceFeePort = serviceFeePort;
         this.userContextPort = userContextPort;
     }
 
@@ -180,8 +185,13 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
         var unusedCredit = upgradePolicyService.calculateUnusedCredit(
             schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now), plan.getPriceVnd(), now);
 
+        // Phí dịch vụ cộng thêm (từ phần tiền sau trừ)
+        var serviceFeeVnd = plan.getPriceVnd().subtract(unusedCredit)
+            .multiply(serviceFeePort.serviceFeeRatio())
+            .setScale(0, RoundingMode.HALF_UP);
+
         return Order.forSubscriptionUpgrade(schoolId,
-            "Nâng cấp lên " + plan.getName(), plan.getPriceVnd(), unusedCredit, now, createdBy);
+            "Nâng cấp lên " + plan.getName(), plan.getPriceVnd(), unusedCredit, serviceFeeVnd, now, createdBy);
     }
 
     /**
@@ -198,7 +208,8 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
 
     /** Đăng ký mới, gia hạn, hoặc chuyển sang gói rẻ hơn -- tất cả đều nối tiếp kỳ đang chạy. */
     private Order chainedOrder(UUID schoolId, SubscriptionPlan plan, Instant now, UUID createdBy) {
+        var serviceFeeVnd = plan.getPriceVnd().multiply(serviceFeePort.serviceFeeRatio()).setScale(0, RoundingMode.HALF_UP);
         return Order.forSubscription(schoolId, OrderType.SUBSCRIPTION_REQUEST,
-            "Đăng ký " + plan.getName(), plan.getPriceVnd(), now, createdBy);
+            "Đăng ký " + plan.getName(), plan.getPriceVnd(), serviceFeeVnd, now, createdBy);
     }
 }

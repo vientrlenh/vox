@@ -63,9 +63,6 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
     );
     List<SchoolJpaEntity> findByIdIn(Collection<UUID> ids);
 
-    @Query("SELECT s.id AS id, s.name AS name FROM SchoolJpaEntity s WHERE s.id IN :ids")
-    List<Object[]> findIdNameByIdIn(@Param("ids") Collection<UUID> ids);
-
     long countByIsActiveTrue();
 
     @Query("SELECT s FROM SchoolJpaEntity s WHERE " +
@@ -76,4 +73,28 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
            "(:search IS NULL OR LOWER(s.name) LIKE :search ESCAPE '!' OR LOWER(s.code) LIKE :search ESCAPE '!') " +
            "AND s.isActive = :isActive")
     Page<SchoolJpaEntity> findAllBySearchAndIsActive(@Param("search") String search, @Param("isActive") boolean isActive, Pageable pageable);
+
+    /**
+     * Trường đang có ca thi DIỄN RA: đã công bố, đã tới giờ, chưa hết giờ.
+     *
+     * <p>Soi LỊCH THI chứ không soi phiên thi đang mở, vì đây phải là ĐÚNG vị từ mà
+     * {@code ForceSuspendSubscriptionUseCase} dùng để từ chối đình chỉ -- nó gọi
+     * {@code ExamSchedule.isOngoingAt}, tức trạng thái của LỊCH. Đếm theo phiên (status =
+     * 'IN_PROGRESS') sẽ bỏ sót đúng ca hay gặp nhất: cửa thi vừa mở mà chưa em nào bấm vào. Lúc đó
+     * BE vẫn chặn nhưng danh sách này rỗng, nên nút hiện bật, admin bấm, rồi mới nhận lỗi -- đúng
+     * thứ mà trạng thái chặn sinh ra để tránh.
+     *
+     * <p>Cùng biểu thức với {@code SpringDataExamScheduleRepository.findByExamIdAndInSchedule}, chỉ
+     * khác là gom theo trường thay vì theo một bài thi.
+     */
+    @Query("""
+        SELECT DISTINCT exam.schoolId
+        FROM ExamScheduleJpaEntity schedule
+        JOIN ExamJpaEntity exam
+            ON schedule.examId = exam.id
+        WHERE schedule.status = 'PUBLISHED'
+            AND schedule.startDate <= :now
+            AND schedule.endDate > :now
+        """)
+    List<UUID> findIdsWithOngoingExam(@Param("now") Instant now);
 }

@@ -12,10 +12,8 @@ import java.util.UUID;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CompleteExamSessionGradingCommand;
 import com.sep.vox.application.port.input.service.ConsumeQuotaService;
-import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.QuotaPricingPort;
-import com.sep.vox.application.response.input.subscription.ConsumeQuotaResponse;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -36,7 +34,6 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
     private final AiUsageRecordRepository aiUsageRecordRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final ConsumeQuotaService consumeQuotaService;
-    private final SchoolDebtNotificationService schoolDebtNotificationService;
     private final QuotaPricingPort quotaPricingPort;
 
     public CompleteExamSessionGradingUseCase(
@@ -45,14 +42,12 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
             AiUsageRecordRepository aiUsageRecordRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             ConsumeQuotaService consumeQuotaService,
-            SchoolDebtNotificationService schoolDebtNotificationService,
             QuotaPricingPort quotaPricingPort) {
         this.examSessionRepository = examSessionRepository;
         this.examRepository = examRepository;
         this.aiUsageRecordRepository = aiUsageRecordRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.consumeQuotaService = consumeQuotaService;
-        this.schoolDebtNotificationService = schoolDebtNotificationService;
         this.quotaPricingPort = quotaPricingPort;
     }
 
@@ -123,36 +118,19 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
     }
 
     /**
-     * Trừ hạn mức, rồi báo cáo nếu chính lần trừ này là lần đẩy trường vào nợ.
+     * Trừ hạn mức cho ca thi vừa chấm xong.
      *
-     * <p>KHÔNG còn hỏi {@code isQuotaOverLimit} hai lần quanh lời gọi trừ. Nợ giờ là
-     * {@code balance_vnd < 0} chứ không phải phép so hai cột của ví hạn mức, và
-     * {@link ConsumeQuotaResponse#crossedIntoDebt()} được tính TRONG transaction đang giữ khóa dòng
-     * số dư -- hai lần đọc rời nhau bên ngoài khóa đó có thể không khớp với chính cái vừa xảy ra bên
-     * trong nó.
+     * <p>KHÔNG còn tự báo cáo chuyển trạng thái nợ: việc đó đã chuyển vào
+     * {@code ConsumeQuotaService.chargeOverage}, nơi biết cả hai nguồn trừ tiền (ca thi và phiên
+     * luyện nói) và nơi dòng sự kiện commit cùng transaction với bút toán đã gây ra nó. Giữ ở đây
+     * nghĩa là đường luyện nói vĩnh viễn không có ai báo -- xem lịch sử của V4.
      */
     private void checkAndReportLockTransition(UUID subscriptionId, UUID schoolId, QuotaType quotaType,
             UUID examSessionId, BigDecimal totalCostVnd, BigDecimal totalCostUsd, UUID userId, Instant now) {
 
-        var result = consumeQuotaService.consumeExamAllowingDebt(
+        consumeQuotaService.consumeExamAllowingDebt(
             subscriptionId, examSessionId, totalCostVnd,
             totalCostUsd, effectiveFxRate(totalCostVnd, totalCostUsd), userId
-        );
-
-        // Chỉ báo đúng lần CHUYỂN từ trong hạn mức sang nợ. Đang nợ sẵn thì những lần trừ tiếp theo
-        // không sinh thêm sự kiện nào.
-        if (!result.crossedIntoDebt()) {
-            return;
-        }
-
-        // Số nợ = phần số dư đã âm, KHÔNG phải result.quota().usedAmountVnd(): ví hạn mức luôn bị kẹp
-        // tại totalAllocated nên nó không mang thông tin nợ nào cả. balanceAfterVnd là con số vừa được
-        // tính bên trong transaction đang giữ khóa dòng số dư, tức đúng cái vừa thực sự xảy ra.
-        var debtVnd = result.balanceAfterVnd().negate().max(BigDecimal.ZERO);
-
-        schoolDebtNotificationService.publishSchoolLockedDueToDebt(
-            subscriptionId, schoolId, quotaType, examSessionId, totalCostVnd,
-            result.quota().totalAllocatedAmountVnd(), debtVnd, now
         );
     }
 

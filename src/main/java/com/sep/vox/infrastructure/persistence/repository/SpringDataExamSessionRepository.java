@@ -54,7 +54,7 @@ public interface SpringDataExamSessionRepository extends JpaRepository<ExamSessi
           AND s.status NOT IN ('GRADING', 'GRADED', 'GRADING_FAILED')
         ORDER BY s.startedAt ASC
     """)
-    List<ExamSessionJpaEntity> findDeferredGradingCandidates(@Param("now") java.time.Instant now);
+    List<ExamSessionJpaEntity> findDeferredGradingCandidates(@Param("now") Instant now);
 
     @Query("""
         SELECT s

@@ -1,0 +1,244 @@
+# Phạm vi: VÍ TIỀN TỰ NẠP của trường (SchoolBalance) và sổ cái của nó (SchoolBalanceEntry).
+#
+# KHÔNG chứa hạn mức kèm gói -- đó là SchoolSubscriptionQuotaRecord bên subscription.graphqls, một
+# túi khác hẳn: tách theo QuotaType, cấp lại mỗi kỳ, và used luôn bị kẹp tại total. Ví này là MỘT
+# con số, sống xuyên kỳ, chỉ bị trừ khi hạn mức của loại tương ứng đã cạn.
+#
+# Nhật ký nợ (SchoolDebtEvent) cũng ở đây, chuyển sang từ school.graphqls: nợ là mặt trái của chính
+# cái ví này -- số dư âm CHÍNH LÀ khoản nợ -- nên hai sổ phải đọc chung một chỗ. Chúng trả lời hai
+# câu hỏi khác nhau về cùng một ví: sao kê nói "tiền đi đâu", nhật ký nợ nói "vì sao trường bị khoá".
+#
+# TIỀN Ở FILE NÀY LÀ String, KHÔNG PHẢI Float -- cố ý lệch khỏi quy ước chung.
+# Quy ước Float ghi ở đầu subscription.graphqls dựa trên một tiền đề: "VND luôn nguyên, numeric(15,0)
+# nằm dưới 2^53 nên client JS đọc không mất độ chính xác". Tiền đề đó KHÔNG đúng ở đây:
+# school_balances.balance_vnd và school_balance_entries.amount_vnd là numeric(18,6), cố ý giữ 6 số lẻ
+# vì một lượt ôn luyện có thể chỉ tốn vài phần trăm đồng (xem chú thích của cột trong V2). 128440.95
+# không biểu diễn chính xác được bằng double, mà đây lại đúng là chỗ con số phải khớp tuyệt đối:
+# bất biến của sổ cái là SUM(amount_vnd) = balance_vnd.
+#
+# Giá trị trả về là chuỗi thập phân NGUYÊN VẸN do BigDecimal.toPlainString() dựng -- không ký hiệu
+# khoa học, không dấu phân cách nghìn, giữ nguyên scale đã lưu ("-128440.950000"). Client parse bằng
+# thư viện thập phân hoặc Number() để hiển thị, và tuyệt đối không cộng dồn amountVnd để dựng lại số
+# dư: balanceAfterVnd đã lưu sẵn chính là để không ai phải cộng.
+#
+# Khi nào dự án đổi cả 24 schema sang scalar BigDecimal thì đây là nhóm field đổi trước tiên, và
+# String này biến mất cùng lúc.
+
+enum SchoolBalanceEntryType {
+    "Trường nạp tiền vào ví -- luôn gắn với một đơn đã thu đủ."
+    TOP_UP
+    """
+    Trừ phần chi phí AI VƯỢT hạn mức kèm gói. Phần còn nằm trong hạn mức KHÔNG ghi ở đây -- nó đã
+    được đếm ở school_subscription_quota_records.used_amount_vnd, ghi lại là đếm hai lần cùng một
+    đồng tiền. Vì thế tổng cột số tiền của sổ này KHÔNG phải tổng chi phí AI của trường.
+    """
+    OVERAGE_CHARGE
+    "Hoàn tiền -- luôn gắn với đơn gốc."
+    REFUND
+    "Quản trị hệ thống sửa tay. Bắt buộc có người thực hiện và lý do."
+    ADJUSTMENT
+}
+
+"""
+Ví tiền TỰ NẠP của trường. Sống xuyên qua mọi lần gia hạn/đổi gói và không bao giờ hết hạn.
+
+KHÔNG phải "hạn mức còn lại". Ví chỉ bị trừ KHI hạn mức kèm gói của loại tương ứng đã cạn -- gộp
+hai con số làm một là âm thầm xoá mất giới hạn theo loại.
+"""
+type SchoolBalance {
+    schoolId: ID!
+    "Âm = đang nợ. Cột DB cố ý không có CHECK >= 0 -- phần âm CHÍNH LÀ khoản nợ."
+    balanceVnd: String!
+    """
+    balanceVnd < 0. Trả sẵn thay vì để client tự so với 0: đây đúng là luật mà
+    SchoolSubscriptionDebtGuardService dùng để chặn mở ca thi và vào ca thi bằng OTP, và một luật thì
+    chỉ nên có một nơi định nghĩa. Cũng chính là chỗ đúng cho isLocked -- field đã bị gỡ khỏi
+    SchoolSubscriptionQuotaRecord vì khoá là sự thật cấp TRƯỜNG, không phải của từng ví hạn mức.
+    """
+    locked: Boolean!
+    "null khi trường chưa từng chạm vào ví."
+    updatedAt: String
+}
+
+"""
+Một bút toán trên sổ cái ví. Append-only: không sửa, không xoá, không có mutation nào.
+"""
+type SchoolBalanceEntry {
+    id: ID!
+    schoolId: ID!
+    entryType: SchoolBalanceEntryType!
+    "Dương = nạp / hoàn / điều chỉnh tăng. Âm = trừ."
+    amountVnd: String!
+    """
+    Số dư NGAY SAU bút toán này, lấy nguyên giá trị đã lưu.
+
+    Dựng sao kê phải đọc cột này chứ đừng cộng dồn amountVnd: sổ có phân trang, nên cộng dồn trên
+    một trang cho ra số sai ngay từ dòng đầu tiên của trang thứ hai.
+    """
+    balanceAfterVnd: String!
+    occurredAt: String!
+
+    "Kỳ đăng ký đang chạy lúc phát sinh. CHỈ để truy vết -- số dư không thuộc về gói nào."
+    subscriptionId: ID
+
+    # Nguồn. Field nào có giá trị là do entryType quyết định, và DB đã có CHECK ép đúng tổ hợp đó.
+    # Client rẽ nhánh theo entryType, không phải theo "field nào khác null".
+
+    "TOP_UP, REFUND."
+    orderId: ID
+    "OVERAGE_CHARGE. Đúng MỘT trong hai field session có giá trị."
+    examSessionId: ID
+    "OVERAGE_CHARGE. Đúng MỘT trong hai field session có giá trị."
+    practiceSessionId: ID
+    "OVERAGE_CHARGE. Ví hạn mức đã đẩy khoản này sang -- chiều BÁO CÁO, không phải ví riêng."
+    quotaType: QuotaType
+    "OVERAGE_CHARGE. Chi phí GỐC nhà cung cấp tính. Giữ USD để đối soát ngược với hoá đơn Azure."
+    costUsd: String
+    """
+    OVERAGE_CHARGE. Tỷ giá đã CHỐT lúc phát sinh, không phải tỷ giá hôm nay -- và là bình quân gia
+    quyền của cả phiên, nên costUsd * fxRateUsed khớp đúng amountVnd của chính bút toán này. Lấy tỷ
+    giá của một lượt gọi lẻ thì phép đối soát ngược không ra.
+    """
+    fxRateUsed: String
+    "ADJUSTMENT: bắt buộc có. REFUND: có thể có."
+    reason: String
+    """
+    ADJUSTMENT: người thực hiện. null với mọi loại còn lại -- chúng do hệ thống ghi, không do ai bấm.
+
+    Id thô chứ không phải tên, cùng cách SchoolDebtEvent trả triggerExamSessionId: hiện tên đòi một
+    LEFT JOIN sang users, và khi đó DTO không còn dựng được từ một mình domain model. Đáng làm khi có
+    màn hình thật sự cần, không phải làm sẵn.
+    """
+    actorId: ID
+}
+
+type SchoolBalanceEntryPage {
+    content: [SchoolBalanceEntry!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+"""
+Cộng dồn theo KHOẢNG THỜI GIAN, tính ở DB.
+
+Không dựng được ở client: client chỉ cầm một trang 20 dòng, còn dải cần cộng có thể hàng nghìn.
+Đây cũng là nguồn cho con số "Đã trừ trong 30 ngày qua" trên trang Số dư ví.
+"""
+type SchoolBalanceSummary {
+    "TOP_UP + REFUND. Luôn >= 0."
+    creditedVnd: String!
+    "OVERAGE_CHARGE. Luôn <= 0."
+    overageChargedVnd: String!
+    "ADJUSTMENT. Dấu nào cũng có thể."
+    adjustedVnd: String!
+}
+
+# =============================================================================================
+# Nhật ký nợ hạn mức AI, chuyển sang từ school.graphqls.
+#
+# Bốn cột tiền đổi từ Float sang String cùng lúc với việc dời file, vì đúng một lý do như sổ cái ở
+# trên: school_debt_events cũng là numeric(18,6). Giữ Float ở đây thì hai sổ nói về CÙNG một khoản
+# nợ bằng hai kiểu khác nhau, và con số nợ trên nhật ký sẽ không khớp tuyệt đối với số dư trên sao
+# kê -- đúng chỗ mà một sổ đối soát không được phép lệch.
+#
+# Đây LÀ một thay đổi phá vỡ hợp đồng, chỉ an toàn vì hiện chưa có bên gọi nào: query đã chạy được
+# từ lâu mà chưa màn hình nào dùng tới. Đổi bây giờ là rẻ nhất; sau khi trang Nhật ký nợ lên thì
+# không còn rẻ nữa.
+# =============================================================================================
+
+enum SchoolDebtEventType {
+    LOCKED
+    CAP_EXCEEDED
+    CLEARED
+}
+
+"""
+Sổ audit "nguyên nhân nợ hạn mức AI" -- mỗi dòng là đúng 1 bucket quota của trường vừa đổi trạng
+thái (vượt hạn mức / vượt trần cảnh báo / hết nợ), kèm session và số VND đã gây ra transition đó.
+Xem SchoolDebtEvent (domain model) / SchoolDebtNotificationService.
+
+Chỉ ghi lúc ĐỔI trạng thái, không ghi mỗi lần trừ tiền: khoảng trống giữa hai dòng không có nghĩa
+là nợ đã dừng lại. Và sổ trống là trạng thái BÌNH THƯỜNG -- một trường tiêu vượt hạn mức đều đặn
+nhưng ví luôn còn dương thì không sinh dòng nào.
+"""
+type SchoolDebtEvent {
+    id: ID!
+    schoolId: ID!
+    # CỐ Ý giữ tên subscriptionId: cột này đang chứa id của ĐĂNG KÝ, dù domain model đặt tên trường
+    # là subscriptionPlanId. Model mới là chỗ sai; đừng đổi tên ở đây trước khi model được sửa,
+    # không thì phải đổi hai lần theo hai hướng ngược nhau.
+    subscriptionId: ID!
+    eventType: SchoolDebtEventType!
+    """
+    null với CLEARED: hết nợ là sự kiện cấp TRƯỜNG. Số dư là MỘT con số dùng chung cho cả hai ví
+    hạn mức, nên "ví nào vừa hết nợ" không có câu trả lời -- bịa ra một giá trị để lấp chỗ trống là
+    làm bẩn chính quyển sổ dùng để đối soát. Xem chk_school_debt_events_shape_matches_event_type.
+    """
+    quotaType: QuotaType
+    "LOCKED/CAP_EXCEEDED: ĐÚNG MỘT trong hai field session có giá trị. CLEARED: cả hai null."
+    triggerExamSessionId: ID
+    triggerPracticeSessionId: ID
+    # Bốn cột dưới đây đổi từ ...Usd sang VND cùng lúc với school_debt_events (V2 mục 15) và
+    # SchoolDebtEventDto: mọi con số đi vào đây đã là VND từ ConsumeQuotaService, giữ hậu tố Usd chỉ
+    # làm client hiểu sai đơn vị của một khoản tiền.
+    #
+    # String chứ không Float -- cùng lý do như sổ cái ở trên, xem khối chú thích đầu file.
+    "null với dòng CLEARED: hết nợ không do một khoản trừ nào gây ra."
+    triggerAmountVnd: String
+    "null với CLEARED, cùng lý do như quotaType."
+    totalAllocatedVnd: String
+    # KHÔNG phải giá trị đọc từ bản ghi hạn mức, mà là con số DỰNG LẠI bằng totalAllocated + nợ. Bản
+    # ghi thật luôn bị kẹp tại đúng hạn mức (phần vượt đã đẩy sang ví), nên chép thẳng nó vào đây thì
+    # mọi dòng đều hiện "đã dùng = hạn mức, nợ = 0" -- xem javadoc publishSchoolLockedDueToDebt.
+    usedAmountVnd: String
+    "Số nợ tại thời điểm đó. Luôn 0 với dòng CLEARED, theo đúng định nghĩa hết nợ."
+    overageVnd: String!
+    occurredAt: String
+}
+
+type SchoolDebtEventPage {
+    content: [SchoolDebtEvent!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+extend type Query {
+    """
+    Ví của một trường. SCHOOL_ADMIN chỉ đọc được trường của chính mình, SYSTEM_ADMIN đọc được mọi
+    trường -- cùng phép kiểm tra như schoolDebtEvents.
+
+    KHÔNG null: trường chưa từng chạm vào ví nhận một bản 0 đồng dựng tại chỗ. Dòng số dư được tạo
+    lười (chỉ sinh lúc chạm vào ví lần đầu), và ví rỗng với ví 0 đồng là cùng một nghĩa -- xem
+    SchoolBalance.emptyFor. Trả null ở đây chỉ bắt client thêm một nhánh cho cùng một trạng thái.
+    """
+    schoolBalance(schoolId: ID!): SchoolBalance!
+
+    "Sao kê ví, mới nhất trước. Bỏ trống entryType thì không lọc theo loại."
+    schoolBalanceEntries(
+        schoolId: ID!,
+        entryType: SchoolBalanceEntryType,
+        page: Int! = 1,
+        size: Int! = 20
+    ): SchoolBalanceEntryPage!
+
+    """
+    Cộng dồn cho một dải thời gian. from/to là ISO-8601 (vd "2026-08-01T00:00:00Z"), bỏ trống là
+    không chặn đầu đó.
+
+    to KHÔNG bao gồm mốc cuối: hai dải liền nhau (tháng 7 kết thúc 01/08, tháng 8 bắt đầu 01/08) sẽ
+    đếm trùng bút toán rơi đúng vào ranh giới nếu dùng <=.
+    """
+    schoolBalanceSummary(schoolId: ID!, from: String, to: String): SchoolBalanceSummary!
+
+    """
+    Nhật ký nợ hạn mức. Cùng phép kiểm quyền như ba query trên.
+
+    Chữ ký giữ NGUYÊN như hồi ở school.graphqls (page/size là Int nullable, không phải Int!) -- dời
+    file và đổi kiểu tiền đã đủ cho một bước, không cần thêm một khác biệt nữa để phải nhớ.
+    """
+    schoolDebtEvents(schoolId: ID!, page: Int = 1, size: Int = 20): SchoolDebtEventPage!
+}

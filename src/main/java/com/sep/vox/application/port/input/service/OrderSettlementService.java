@@ -61,6 +61,7 @@ public class OrderSettlementService {
     private final SchoolSubscriptionQuotaRecordRepository quotaRecordRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository;
+    private final SchoolDebtNotificationService schoolDebtNotificationService;
 
     public OrderSettlementService(
             OrderRepository orderRepository,
@@ -72,7 +73,8 @@ public class OrderSettlementService {
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SchoolSubscriptionQuotaRecordRepository quotaRecordRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository) {
+            SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository,
+            SchoolDebtNotificationService schoolDebtNotificationService) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.paymentRecordRepository = paymentRecordRepository;
@@ -83,6 +85,7 @@ public class OrderSettlementService {
         this.quotaRecordRepository = quotaRecordRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.subscriptionPlanQuotaRepository = subscriptionPlanQuotaRepository;
+        this.schoolDebtNotificationService = schoolDebtNotificationService;
     }
 
     /**
@@ -202,6 +205,7 @@ public class OrderSettlementService {
         var balance = schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(order.getSchoolId(), now);
 
         var credited = order.getSubtotalAmountVnd();
+        var balanceBefore = balance.getBalanceVnd();
         var balanceAfter = balance.apply(credited, now);
         schoolBalanceRepository.save(balance);
 
@@ -216,6 +220,43 @@ public class OrderSettlementService {
 
         LOGGER.info("Nạp {} VND vào ví trường {} từ đơn {} -- số dư mới {}",
             credited, order.getSchoolId(), order.getId(), balanceAfter);
+
+        reportDebtClearedIfCrossedBack(order.getSchoolId(), activeSubscriptionId, balanceBefore, balanceAfter, now);
+    }
+
+    /**
+     * Lần nạp này vừa kéo số dư từ ÂM về không âm: trường hết nợ và khoá tự mở ngay.
+     *
+     * <p>Đây là chỗ gọi DUY NHẤT của publishSchoolDebtCleared, và trước V4 nó không tồn tại --
+     * hàm phát sự kiện đã viết xong, mẫu email đã có, mà không dòng mã nào gọi tới. Hệ quả: sổ nợ
+     * ghi lúc trường rơi vào nợ và lúc vượt trần, rồi im lặng mãi mãi. Với hiệu trưởng, quyển sổ
+     * dùng để giải thích "vì sao trường bị khoá" không bao giờ nói trường đã thoát ra.
+     *
+     * <p>Nạp thêm là đường DUY NHẤT cộng tiền vào ví (REFUND/ADJUSTMENT có trong enum nhưng chưa có
+     * factory nào dựng), nên đặt ở đây là phủ hết. Khi hai loại kia có đường ghi, chúng phải gọi lại
+     * chính hàm này.
+     *
+     * <p>So sánh TRƯỚC/SAU của cùng một dòng đang giữ khoá, giống crossedIntoDebt ở chiều ngược lại:
+     * chỉ báo đúng một lần lúc CHUYỂN, còn nạp tiếp khi đã hết nợ thì không sinh sự kiện nào.
+     */
+    private void reportDebtClearedIfCrossedBack(
+            UUID schoolId, UUID subscriptionId, BigDecimal balanceBefore, BigDecimal balanceAfter, Instant now) {
+        if (balanceBefore.signum() >= 0 || balanceAfter.signum() < 0) {
+            return;
+        }
+
+        // school_debt_events.subscription_id là NOT NULL, mà nợ lại thuộc về TRƯỜNG chứ không thuộc
+        // kỳ đăng ký nào -- một trường trả hết nợ đúng lúc gói vừa hết hạn thì không có id nào để
+        // ghi. Bỏ qua dòng sự kiện thay vì để INSERT nổ và cuốn theo cả lần nạp tiền đã thành công.
+        if (subscriptionId == null) {
+            LOGGER.warn(
+                "Trường {} vừa hết nợ (số dư {} -> {}) nhưng không có gói nào đang hoạt động để gắn sự kiện -- bỏ qua dòng CLEARED.",
+                schoolId, balanceBefore, balanceAfter);
+            return;
+        }
+
+        LOGGER.info("Trường {} đã hết nợ: số dư {} -> {}", schoolId, balanceBefore, balanceAfter);
+        schoolDebtNotificationService.publishSchoolDebtCleared(subscriptionId, schoolId, now);
     }
 
     /**

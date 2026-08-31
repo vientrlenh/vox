@@ -117,6 +117,10 @@ public class UpdateExamSessionStatusUseCase implements IUseCase<UpdateExamSessio
             case GRADING -> to == ExamSessionStatus.GRADED || to == ExamSessionStatus.GRADING_FAILED;
             case GRADING_FAILED -> to == ExamSessionStatus.GRADING;
             case GRADED -> to == ExamSessionStatus.GRADING;
+            // DELETED là điểm dừng, không đi tiếp đâu được: phục hồi một phiên đã xoá là thao tác
+            // sửa dữ liệu trực tiếp (xoá mềm không có đường phục hồi qua API), không phải một bước
+            // chuyển trạng thái bình thường.
+            case DELETED -> false;
         };
     }
 }

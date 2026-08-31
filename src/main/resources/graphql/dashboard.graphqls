@@ -282,8 +282,81 @@ type GradingFailureSessionPage {
     totalPages: Int!
 }
 
+"""
+Bốn nhóm "trường cần chú ý". KHÔNG phải một phép chia nhóm — đừng cộng bốn số lại:
+
+* EXPIRING_SOON là TẬP CON của nhóm trường còn gói.
+* LAPSED và SUSPENDED loại trừ nhau và loại trừ nhóm còn gói.
+* IN_DEBT CẮT NGANG cả ba: nó đọc từ số dư ví chứ không từ trạng thái thuê bao.
+
+Trường CHƯA TỪNG mua gói nào không thuộc ba nhóm đầu — chúng không có dòng nào trong
+school_subscriptions để gộp. Đây là hành vi giống hệt phép đếm trên trang tổng quan, giữ nguyên có
+chủ đích để hai màn hình nói cùng một con số.
+"""
+enum SchoolRiskBucket {
+    EXPIRING_SOON
+    LAPSED
+    SUSPENDED
+    IN_DEBT
+}
+
+type SchoolAtRisk {
+    schoolId: ID!
+    schoolName: String!
+    schoolCode: String!
+    "Tên gói của kỳ LIÊN QUAN tới nhóm: kỳ đang phủ nếu còn gói, kỳ gần nhất nếu không"
+    planName: String
+    "ISO-8601, ngày hết hạn của chính kỳ đó"
+    relevantEndDate: String
+    "Lý do đình chỉ gần nhất; chỉ có nghĩa ở nhóm SUSPENDED"
+    suspendedReason: String
+    "Số dư ví tự nạp, VND. Âm nghĩa là trường đang bị chặn mở ca thi. Không bao giờ null"
+    balanceVnd: Float!
+}
+
+type SchoolAtRiskPage {
+    content: [SchoolAtRisk!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+"""
+Số đếm của cả bốn nhóm.
+
+Lấy từ CHÍNH phép đếm mà platformBusinessHealth dùng, không đếm lại bằng câu khác — nếu không thì
+thẻ trên trang tổng quan ghi 5, người dùng bấm vào, và màn hình này hiện 9.
+"""
+type SchoolRiskBucketCounts {
+    expiringSoon: Int!
+    lapsed: Int!
+    suspended: Int!
+    inDebt: Int!
+}
+
+type SchoolsAtRisk {
+    bucket: SchoolRiskBucket!
+    counts: SchoolRiskBucketCounts!
+    schools: SchoolAtRiskPage!
+}
+
 extend type Query {
     systemAdminDashboard: SystemAdminDashboardSummary!
+
+    """
+    Danh sách trường trong MỘT nhóm cần chú ý, kèm số đếm của cả bốn nhóm.
+
+    KHÔNG dùng `schoolSubscriptions` cho việc này dù nó cũng lọc theo trạng thái: màn đó lọc theo
+    DÒNG thuê bao còn ở đây đếm theo TRƯỜNG. Một trường có kỳ 2024 đã hết và kỳ 2025 đang chạy sẽ
+    nằm trong danh sách status=EXPIRED của màn kia nhưng KHÔNG thuộc nhóm LAPSED.
+    """
+    schoolsAtRisk(
+        bucket: SchoolRiskBucket!
+        keyword: String
+        page: Int = 1
+        size: Int = 20
+    ): SchoolsAtRisk!
 
     """
     Cùng quy ước khoảng với platformOperationalHealth, và cùng mặc định: bỏ trống dateTo = ngay lúc

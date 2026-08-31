@@ -53,8 +53,9 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
 
     @Override
     public PageResult<ExamDirectoryUserInfo> findUsersBySchoolId(UUID schoolId, String roleCode, String search,
-            int page, int size) {
+            Collection<UUID> excludeUserIds, int page, int size) {
         var pattern = likePattern(search);
+        var excluded = normalizeExclusions(excludeUserIds);
         var filter = """
             FROM SchoolUserJpaEntity su
             JOIN UserJpaEntity u
@@ -68,7 +69,7 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
               AND (:pattern IS NULL
                   OR vn_search_key(u.fullName) LIKE :pattern
                   OR vn_search_key(u.email) LIKE :pattern)
-            """;
+            """ + excludeClause(excluded);
 
         TypedQuery<ExamDirectoryUserInfo> contentQuery = em.createQuery("""
             SELECT new com.sep.vox.application.query.dto.ExamDirectoryUserInfo(
@@ -83,12 +84,13 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
             .setParameter("roleCode", roleCode)
             .setParameter("pattern", pattern);
 
+        bindExclusions(contentQuery, countQuery, excluded);
         return paginate(contentQuery, countQuery, page, size);
     }
 
     @Override
     public PageResult<ExamDirectoryUserInfo> findUsersByClassIds(Collection<UUID> schoolClassIds, String roleCode,
-            String search, int page, int size) {
+            String search, Collection<UUID> excludeUserIds, int page, int size) {
         // IN () không hợp lệ ở JPQL, và ngữ nghĩa đúng của "không phụ trách lớp nào" là
         // "không thấy ai" — tuyệt đối không được rơi về phạm vi toàn trường.
         if (schoolClassIds == null || schoolClassIds.isEmpty()) {
@@ -96,6 +98,7 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
         }
 
         var pattern = likePattern(search);
+        var excluded = normalizeExclusions(excludeUserIds);
         // Lọc lớp bằng EXISTS chứ không JOIN: học sinh học nhiều lớp trong tập sẽ bị JOIN
         // nhân dòng, làm sai cả nội dung trang lẫn totalElements.
         var filter = """
@@ -113,7 +116,7 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
               AND (:pattern IS NULL
                   OR vn_search_key(u.fullName) LIKE :pattern
                   OR vn_search_key(u.email) LIKE :pattern)
-            """;
+            """ + excludeClause(excluded);
 
         TypedQuery<ExamDirectoryUserInfo> contentQuery = em.createQuery("""
             SELECT new com.sep.vox.application.query.dto.ExamDirectoryUserInfo(
@@ -128,6 +131,7 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
             .setParameter("roleCode", roleCode)
             .setParameter("pattern", pattern);
 
+        bindExclusions(contentQuery, countQuery, excluded);
         return paginate(contentQuery, countQuery, page, size);
     }
 
@@ -148,6 +152,31 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
 
     private static int normalizeSize(int size) {
         return Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+    }
+
+    private static List<UUID> normalizeExclusions(Collection<UUID> excludeUserIds) {
+        if (excludeUserIds == null) {
+            return List.of();
+        }
+        return excludeUserIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
+    }
+
+    /**
+     * Ghép mệnh đề loại trừ vào ĐÚNG một chuỗi filter mà cả câu lấy dữ liệu lẫn câu COUNT dùng
+     * chung — hai câu lệch điều kiện là nguồn gốc của "trang trống mà số đếm khác 0".
+     *
+     * <p>Tập rỗng thì không ghép gì: {@code IN ()} không hợp lệ ở JPQL.
+     */
+    private static String excludeClause(List<UUID> excluded) {
+        return excluded.isEmpty() ? "" : "  AND u.id NOT IN :excludeUserIds\n";
+    }
+
+    private static void bindExclusions(TypedQuery<?> contentQuery, TypedQuery<?> countQuery, List<UUID> excluded) {
+        if (excluded.isEmpty()) {
+            return;
+        }
+        contentQuery.setParameter("excludeUserIds", excluded);
+        countQuery.setParameter("excludeUserIds", excluded);
     }
 
     /**

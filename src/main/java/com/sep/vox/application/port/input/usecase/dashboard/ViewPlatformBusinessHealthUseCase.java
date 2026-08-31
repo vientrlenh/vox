@@ -10,9 +10,11 @@ import java.time.temporal.ChronoUnit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.port.input.query.ViewPlatformBusinessHealthQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.repository.PlatformBusinessHealthQueryRepository;
 import com.sep.vox.application.response.input.dashboard.PlatformBusinessHealthResponse;
+import com.sep.vox.domain.common.BusinessConstant;
 import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.repository.OrderRepository;
@@ -26,10 +28,7 @@ import com.sep.vox.domain.repository.OrderRepository;
  */
 @Service
 public class ViewPlatformBusinessHealthUseCase
-        implements IUseCase<ViewPlatformBusinessHealthUseCase.Query, PlatformBusinessHealthResponse> {
-
-    /** Ngưỡng "sắp hết hạn" mặc định của dashboard. */
-    static final int EXPIRING_SOON_DAYS = 30;
+        implements IUseCase<ViewPlatformBusinessHealthQuery, PlatformBusinessHealthResponse> {
 
     private final PlatformBusinessHealthQueryRepository platformBusinessHealthQueryRepository;
     private final OrderRepository orderRepository;
@@ -41,23 +40,16 @@ public class ViewPlatformBusinessHealthUseCase
         this.orderRepository = orderRepository;
     }
 
-    /**
-     * @param dateFrom mốc đầu BAO GỒM; bỏ trống = đầu tháng hiện tại theo giờ nghiệp vụ
-     * @param dateTo   mốc cuối KHÔNG bao gồm; bỏ trống = ngay lúc này
-     */
-    public record Query(Instant dateFrom, Instant dateTo) {
-    }
-
     @Override
     @Transactional(readOnly = true)
-    public PlatformBusinessHealthResponse execute(Query input) {
+    public PlatformBusinessHealthResponse execute(ViewPlatformBusinessHealthQuery input) {
         var zone = ZoneConstant.BUSINESS_ZONE;
         var now = Instant.now();
 
         // Ngưỡng trượt theo mốc hiện tại, KHÔNG neo vào ngày lịch: hai cột end_date/start_date là
         // timestamptz, nên "30 ngày nữa" tính bằng instant là phép so duy nhất không phải đoán múi giờ.
         var health = platformBusinessHealthQueryRepository.countSchoolSubscriptionHealth(
-            now, now.plus(EXPIRING_SOON_DAYS, ChronoUnit.DAYS));
+            now, now.plus(BusinessConstant.DASHBOARD_EXPIRING_SOON_DAYS, ChronoUnit.DAYS));
         var schoolsInDebt = platformBusinessHealthQueryRepository.countSchoolsInDebt();
 
         var to = input == null || input.dateTo() == null ? now : input.dateTo();

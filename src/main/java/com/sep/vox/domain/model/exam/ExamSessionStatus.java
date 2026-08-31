@@ -11,7 +11,14 @@ public enum ExamSessionStatus {
     GRADING,
     GRADED,
     EXPIRED, // hết thời gian nộp
-    GRADING_FAILED; // AI chấm lỗi
+    GRADING_FAILED, // AI chấm lỗi
+    /**
+     * Đã xoá mềm (xem {@code DeleteExamSessionUseCase}). Không phải một bước trong vòng đời bài thi
+     * mà là điểm dừng: phiên ở trạng thái này bị ẩn khỏi mọi luồng đọc bằng
+     * {@code @SQLRestriction("deleted_at IS NULL")} trên {@code ExamSessionJpaEntity}, nên trên thực
+     * tế không luồng nghiệp vụ nào còn nhìn thấy nó để mà chuyển trạng thái tiếp.
+     */
+    DELETED;
 
     /**
      * Các trạng thái mà một phiên thi vẫn còn được coi là đang dùng được: học viên có thể vào lại,

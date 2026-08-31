@@ -183,6 +183,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
      */
     private static final String WHERE_CLAUSE = """
         WHERE e.schoolId = :schoolId
+        AND cr.status <> 'DELETED'
         AND (:examKind IS NULL OR e.kind = :examKind)
         AND (:examId IS NULL OR cr.examId = :examId)
         AND (:scheduleId IS NULL OR c.scheduleId = :scheduleId)
@@ -416,6 +417,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
             JOIN ExamJpaEntity e ON e.id = cr.examId
             JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
             WHERE e.schoolId = :schoolId
+            AND cr.status <> 'DELETED'
             AND (:examKind IS NULL OR e.kind = :examKind)
             AND (:examId IS NULL OR cr.examId = :examId)
             AND (:scheduleId IS NULL OR c.scheduleId = :scheduleId)
@@ -1360,7 +1362,7 @@ public class JpaExamGradingQueryRepository implements ExamGradingQueryRepository
                         THEN 1 ELSE 0 END)
             FROM ExamCandidateResultJpaEntity cr
             JOIN ExamJpaEntity e ON e.id = cr.examId
-            WHERE e.schoolId = :schoolId AND cr.examId = :examId
+            WHERE e.schoolId = :schoolId AND cr.examId = :examId AND cr.status <> 'DELETED'
         """, Tuple.class)
             .setParameter("schoolId", schoolId)
             .setParameter("examId", examId)

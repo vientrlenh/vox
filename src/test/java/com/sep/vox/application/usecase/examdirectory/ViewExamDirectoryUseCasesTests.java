@@ -48,7 +48,7 @@ class ViewExamDirectoryUseCasesTests {
     private final UUID examId = UUID.randomUUID();
     private final UUID schoolId = UUID.randomUUID();
     private final UUID callerId = UUID.randomUUID();
-    private final ViewExamDirectoryQuery query = new ViewExamDirectoryQuery(examId, "  an   nguyen ", 2, 20);
+    private final ViewExamDirectoryQuery query = new ViewExamDirectoryQuery(examId, "  an   nguyen ", 2, 20, List.of());
 
     @BeforeEach
     void setUp() {
@@ -123,15 +123,15 @@ class ViewExamDirectoryUseCasesTests {
     void should_list_all_school_students_when_scope_is_school_wide() {
         givenScope(true);
         var useCase = new ViewExamDirectoryStudentsUseCase(accessService, queryRepository);
-        when(queryRepository.findUsersBySchoolId(any(), any(), any(), anyInt(), anyInt()))
+        when(queryRepository.findUsersBySchoolId(any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(new PageResult<>(List.of(user()), 2, 20, 1, 1));
 
         var result = useCase.execute(query);
 
         assertThat(result.content()).hasSize(1);
         verify(queryRepository)
-            .findUsersBySchoolId(schoolId, SchoolRoleCodes.STUDENT, "an nguyen", 2, 20);
-        verify(queryRepository, never()).findUsersByClassIds(any(), any(), any(), anyInt(), anyInt());
+            .findUsersBySchoolId(schoolId, SchoolRoleCodes.STUDENT, "an nguyen", List.of(), 2, 20);
+        verify(queryRepository, never()).findUsersByClassIds(any(), any(), any(), any(), anyInt(), anyInt());
     }
 
     @Test
@@ -140,14 +140,14 @@ class ViewExamDirectoryUseCasesTests {
         var classId = UUID.randomUUID();
         when(accessService.callerClassIds(scope)).thenReturn(List.of(classId));
         var useCase = new ViewExamDirectoryStudentsUseCase(accessService, queryRepository);
-        when(queryRepository.findUsersByClassIds(any(), any(), any(), anyInt(), anyInt()))
+        when(queryRepository.findUsersByClassIds(any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(new PageResult<>(List.of(), 2, 20, 0, 0));
 
         useCase.execute(query);
 
         verify(queryRepository)
-            .findUsersByClassIds(List.of(classId), SchoolRoleCodes.STUDENT, "an nguyen", 2, 20);
-        verify(queryRepository, never()).findUsersBySchoolId(any(), any(), any(), anyInt(), anyInt());
+            .findUsersByClassIds(List.of(classId), SchoolRoleCodes.STUDENT, "an nguyen", List.of(), 2, 20);
+        verify(queryRepository, never()).findUsersBySchoolId(any(), any(), any(), any(), anyInt(), anyInt());
     }
 
     // ---------- giám thị ----------
@@ -157,13 +157,13 @@ class ViewExamDirectoryUseCasesTests {
         // Không phân nhánh theo kind: giám thị luôn là giáo viên toàn trường.
         givenScope(false);
         var useCase = new ViewExamDirectoryProctorsUseCase(accessService, queryRepository);
-        when(queryRepository.findUsersBySchoolId(any(), any(), any(), anyInt(), anyInt()))
+        when(queryRepository.findUsersBySchoolId(any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(new PageResult<>(List.of(), 2, 20, 0, 0));
 
         useCase.execute(query);
 
         verify(queryRepository)
-            .findUsersBySchoolId(schoolId, SchoolRoleCodes.TEACHER, "an nguyen", 2, 20);
+            .findUsersBySchoolId(schoolId, SchoolRoleCodes.TEACHER, "an nguyen", List.of(), 2, 20);
     }
 
     private ExamDirectoryScope givenScope(boolean schoolWide) {

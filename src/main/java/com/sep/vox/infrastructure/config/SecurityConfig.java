@@ -85,6 +85,25 @@ public class SecurityConfig {
         "/actuator/**"
     };
 
+    // ĐÚNG MỘT endpoint trên chain API cần CSRF, và đây là nó.
+    //
+    // Lý do: mọi route khác xác thực bằng JWT trong header Authorization, mà trình duyệt KHÔNG
+    // tự gắn header đó vào request do trang khác gây ra -- không có credential đi ngầm thì không
+    // có CSRF để chống. Riêng POST /api/v1/auth/refresh đọc cookie refresh_token
+    // (AuthController, @CookieValue), và cookie thì trình duyệt gắn tự động. Đây cũng là
+    // @CookieValue DUY NHẤT trong toàn bộ src/main/java -- nếu sau này thêm endpoint nào đọc
+    // cookie nữa thì phải thêm vào đây, không thì nó không được bảo vệ.
+    //
+    // Trước đây chỗ này từng là csrf().disable() cho cả chain. Bật lại cho TOÀN BỘ chain thì
+    // hỏng hết (đã xảy ra 2026-08-31: mọi POST /graphql và /api/v1/auth/login trả 403), nên
+    // phải thu hẹp bằng requireCsrfProtectionMatcher chứ không bật đại trà.
+    //
+    // Phía frontend BẮT BUỘC phải có withXSRFToken: true (shared/api/apiClient.ts): axios từ
+    // 1.6 không tự gắn header X-XSRF-TOKEN cho request KHÁC ORIGIN nếu thiếu cờ đó, và
+    // voxenta.net -> api.voxenta.net là khác origin. Thiếu nó thì mọi lần refresh token đều 403
+    // -- và vì chỉ hỏng lúc access token hết hạn nên trông như "thỉnh thoảng bị đăng xuất".
+    private static final String CSRF_PROTECTED_API_PATH = "/api/v1/auth/refresh";
+
     // Toàn bộ /admin/** do adminConsoleFilterChain lo, chain đó khai securityMatcher riêng nên
     // request tới đây KHÔNG bao giờ rơi xuống chain chính -- đừng thêm /admin/** vào
     // PERMITTED_PATTERNS ở trên, nó sẽ không có tác dụng gì ngoài việc gây hiểu nhầm.
@@ -277,8 +296,21 @@ public class SecurityConfig {
     @Bean
     @Order(3)
     public SecurityFilterChain configure(HttpSecurity http) {
+        // Xem khối chú thích ở CSRF_PROTECTED_API_PATH. Đọc LƯỜI là cookie chỉ được ghi ở đúng
+        // request /refresh -- tức là muộn hơn một nhịp so với lúc client cần nó.
+        var apiCsrfRequestHandler = new CsrfTokenRequestAttributeHandler();
+        apiCsrfRequestHandler.setCsrfRequestAttributeName(null);
+
         http
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf
+                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRequestHandler(apiCsrfRequestHandler)
+                // ĐẢO NGƯỢC mặc định: mặc định là "chặn tất cả trừ danh sách bỏ qua", ở đây là
+                // "chỉ chặn đúng path này". requireCsrfProtectionMatcher thay THẲNG matcher mặc
+                // định, kể cả luật bỏ qua GET/HEAD/TRACE/OPTIONS -- nên phải tự ghim METHOD, để
+                // trống là GET trên path đó cũng bị đòi token.
+                .requireCsrfProtectionMatcher(PathPatternRequestMatcher.withDefaults()
+                    .matcher(HttpMethod.POST, CSRF_PROTECTED_API_PATH)))
             .formLogin(fl -> fl.disable())
             .httpBasic(hb -> hb.disable())
             .cors(cors -> cors

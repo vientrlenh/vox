@@ -110,6 +110,11 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
     }
 
     @Override
+    public int softDelete(UUID id, Instant deletedAt, String reason) {
+        return springDataExamSessionRepository.softDelete(id, deletedAt, reason);
+    }
+
+    @Override
     public Optional<ExamSession> findByIdAndResumable(UUID id) {
         var rawStatuses = ExamSessionStatus.RESUMABLE.stream().map(s -> s.name()).toList();
         return springDataExamSessionRepository.findByIdAndStatusIn(id, rawStatuses)

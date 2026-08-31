@@ -12,6 +12,18 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+/**
+ * Phiên thi.
+ *
+ * <p>Xoá mềm KHÔNG dùng {@code @SQLRestriction}: quản trị trường và chủ tịch hội đồng vẫn phải đọc
+ * được phiên đã xoá (để giải trình khi học sinh hỏi điểm đi đâu), mà restriction ở tầng entity thì
+ * giấu luôn khỏi cả họ. Vì vậy {@code DELETED} là một trạng thái BÌNH THƯỜNG và từng lối đọc tự
+ * quyết: đường phục vụ quản trị/chủ tịch cho đi qua, đường của học sinh và các luồng nghiệp vụ khác
+ * phải loại ra.
+ *
+ * <p>Viết query mới đọc bảng này thì phải tự hỏi: người đọc có được thấy phiên đã xoá không? Xem
+ * {@code ExamSessionStatus#DELETED}.
+ */
 @Entity
 @Table(name = "exam_sessions")
 public class ExamSessionJpaEntity {
@@ -45,7 +57,7 @@ public class ExamSessionJpaEntity {
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_exam_sessions_status_valid", 
-            constraint = "status IN ('IN_PROGRESS', 'SUBMITTED', 'INTERRUPTED', 'GRADING', 'GRADED', 'EXPIRED', 'GRADING_FAILED')"
+            constraint = "status IN ('IN_PROGRESS', 'SUBMITTED', 'INTERRUPTED', 'GRADING', 'GRADED', 'EXPIRED', 'GRADING_FAILED', 'DELETED')"
         )
     }
     )
@@ -56,6 +68,14 @@ public class ExamSessionJpaEntity {
 
     @Column(name = "flag_reason", columnDefinition = "text")
     private String flagReason;
+
+    /** Đi kèm {@code status = 'DELETED'} — CHECK ở migration V8 buộc hai cột luôn nhất quán. */
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    /** Vì sao xoá. Xoá một bài thi là chuyện phải giải trình được với học sinh và phụ huynh. */
+    @Column(name = "deleted_reason", columnDefinition = "text")
+    private String deletedReason;
 
     @Column(name = "chosen_stream_type", length = 20, check = {
         @CheckConstraint(
@@ -151,6 +171,22 @@ public class ExamSessionJpaEntity {
 
     public void setFlagged(boolean flagged) {
         this.flagged = flagged;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(Instant deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public String getDeletedReason() {
+        return deletedReason;
+    }
+
+    public void setDeletedReason(String deletedReason) {
+        this.deletedReason = deletedReason;
     }
 
     public String getFlagReason() {

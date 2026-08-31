@@ -40,7 +40,10 @@ public class ResolveExamCandidateAttemptsUseCase {
             return Map.of();
         }
 
-        var rows = examCandidateAttemptsQueryRepository.findByCandidateIds(candidateIds);
+        // Kèm cả lượt đã xoá mềm: đây là đường của màn kết quả kỳ thi, đã chặn quyền ở quản trị
+        // trường / chủ tịch hội đồng (ViewExamCandidatesUseCase), và họ cần thấy lượt bị xoá kèm lý
+        // do. Điểm của lượt đã xoá KHÔNG được chọn làm điểm chính thức — xem countsTowardOfficialScore.
+        var rows = examCandidateAttemptsQueryRepository.findByCandidateIdsIncludingDeleted(candidateIds);
         var rowsByCandidateId = rows.stream().collect(Collectors.groupingBy((ExamAttemptSummary row) -> row.candidateId()));
 
         var examIds = rows.stream().map(row -> row.examId()).distinct().toList();
@@ -109,7 +112,8 @@ public class ResolveExamCandidateAttemptsUseCase {
         return switch (attempt.resultStatus()) {
             case FINAL, RELEASED, PASSED, FAILED -> true;
             case PENDING_REVIEW -> !attempt.flagged();
-            case INVALID, RETAKE_REQUIRED, APPEALED, RE_GRADING -> false;
+            // DELETED: phiên đã xoá mềm tuyệt đối không được chọn làm điểm chính thức.
+            case INVALID, RETAKE_REQUIRED, APPEALED, RE_GRADING, DELETED -> false;
         };
     }
 }

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.sep.vox.application.port.input.query.ViewPlatformOperationalHealthQuery;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformOperationalHealthUseCase;
 import com.sep.vox.application.query.dto.GradingOutcomeBucketDto;
 import com.sep.vox.application.query.dto.LiveSessionCountsDto;
@@ -53,7 +54,7 @@ class ViewPlatformOperationalHealthUseCaseTests {
             // 02/08 và 03/08 không có dòng nào -- đây chính là trường hợp phải chèn 0.
             new GradingOutcomeBucketDto(LocalDate.of(2026, 8, 4), 80L, 19L)));
 
-        var result = useCase.execute(new ViewPlatformOperationalHealthUseCase.Query(FROM, TO));
+        var result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
 
         assertThat(result.daily()).extracting(bucket -> bucket.day())
             .containsExactly("2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04");
@@ -69,7 +70,7 @@ class ViewPlatformOperationalHealthUseCaseTests {
             new GradingOutcomeBucketDto(LocalDate.of(2026, 8, 1), 120L, 1L),
             new GradingOutcomeBucketDto(LocalDate.of(2026, 8, 4), 80L, 19L)));
 
-        var result = useCase.execute(new ViewPlatformOperationalHealthUseCase.Query(FROM, TO));
+        var result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
 
         assertThat(result.graded()).isEqualTo(200L);
         assertThat(result.gradingFailed()).isEqualTo(20L);
@@ -86,7 +87,7 @@ class ViewPlatformOperationalHealthUseCaseTests {
     void successRateIsNullWhenNothingWasGradedInTheWindow() {
         when(queryRepository.findGradingOutcomeByDay(any(), any(), any())).thenReturn(List.of());
 
-        var result = useCase.execute(new ViewPlatformOperationalHealthUseCase.Query(FROM, TO));
+        var result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
 
         assertThat(result.successRatePercent()).isNull();
         assertThat(result.daily()).hasSize(4);
@@ -101,7 +102,7 @@ class ViewPlatformOperationalHealthUseCaseTests {
     void liveCountsPassThroughUnchanged() {
         when(queryRepository.findGradingOutcomeByDay(any(), any(), any())).thenReturn(List.of());
 
-        var result = useCase.execute(new ViewPlatformOperationalHealthUseCase.Query(FROM, TO));
+        var result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
 
         assertThat(result.sessionsInProgress()).isEqualTo(6L);
         assertThat(result.examsInProgress()).isEqualTo(2L);
@@ -114,7 +115,7 @@ class ViewPlatformOperationalHealthUseCaseTests {
      */
     @Test
     void invertedRangeKeepsLiveCountsAndReturnsNoDays() {
-        var result = useCase.execute(new ViewPlatformOperationalHealthUseCase.Query(TO, FROM));
+        var result = useCase.execute(new ViewPlatformOperationalHealthQuery(TO, FROM));
 
         assertThat(result.daily()).isEmpty();
         assertThat(result.successRatePercent()).isNull();
@@ -126,7 +127,7 @@ class ViewPlatformOperationalHealthUseCaseTests {
     void defaultsToFourteenDaysEndingNow() {
         when(queryRepository.findGradingOutcomeByDay(any(), any(), any())).thenReturn(List.of());
 
-        var result = useCase.execute(new ViewPlatformOperationalHealthUseCase.Query(null, null));
+        var result = useCase.execute(new ViewPlatformOperationalHealthQuery(null, null));
 
         assertThat(result.daily()).hasSize(14);
         assertThat(result.daily().get(13).day())
@@ -141,7 +142,7 @@ class ViewPlatformOperationalHealthUseCaseTests {
     void bucketsByBusinessZoneNotUtc() {
         when(queryRepository.findGradingOutcomeByDay(any(), any(), any())).thenReturn(List.of());
 
-        var result = useCase.execute(new ViewPlatformOperationalHealthUseCase.Query(FROM, TO));
+        var result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
 
         assertThat(result.daily().get(0).day()).isEqualTo("2026-08-01");
         var zoneCaptor = ArgumentCaptor.forClass(ZoneId.class);

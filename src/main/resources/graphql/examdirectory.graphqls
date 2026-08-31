@@ -66,6 +66,10 @@ type ExamDirectoryUserPage {
 extend type Query {
     examDirectoryClasses(examId: ID!, search: String, page: Int! = 1, size: Int! = 20): ExamDirectoryClassPage!
     examDirectoryGrades(examId: ID!, search: String, page: Int! = 1, size: Int! = 20): ExamDirectoryGradePage!
-    examDirectoryStudents(examId: ID!, search: String, page: Int! = 1, size: Int! = 20): ExamDirectoryUserPage!
-    examDirectoryProctors(examId: ID!, search: String, page: Int! = 1, size: Int! = 20): ExamDirectoryUserPage!
+    """
+    `excludeUserIds`: những người phía gọi ĐÃ CÓ rồi (thí sinh của kỳ thi, giám thị của ca) —
+    loại ngay trong SQL để `content`, `totalElements` và `totalPages` cùng nói một chuyện.
+    """
+    examDirectoryStudents(examId: ID!, search: String, page: Int! = 1, size: Int! = 20, excludeUserIds: [ID!]): ExamDirectoryUserPage!
+    examDirectoryProctors(examId: ID!, search: String, page: Int! = 1, size: Int! = 20, excludeUserIds: [ID!]): ExamDirectoryUserPage!
 }

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.sep.vox.application.port.input.query.ViewPlatformBusinessHealthQuery;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformBusinessHealthUseCase;
 import com.sep.vox.application.query.dto.SchoolSubscriptionHealthDto;
 import com.sep.vox.application.query.repository.PlatformBusinessHealthQueryRepository;
@@ -48,7 +49,7 @@ class ViewPlatformBusinessHealthUseCaseTests {
 
     @Test
     void schoolCountsPassThroughUnchanged() {
-        var result = useCase.execute(new ViewPlatformBusinessHealthUseCase.Query(FROM, TO));
+        var result = useCase.execute(new ViewPlatformBusinessHealthQuery(FROM, TO));
 
         assertThat(result.subscribedSchools()).isEqualTo(96L);
         assertThat(result.expiringSoonSchools()).isEqualTo(14L);
@@ -59,7 +60,7 @@ class ViewPlatformBusinessHealthUseCaseTests {
 
     @Test
     void grossMarginIsRevenueMinusAiCostOverRevenue() {
-        var result = useCase.execute(new ViewPlatformBusinessHealthUseCase.Query(FROM, TO));
+        var result = useCase.execute(new ViewPlatformBusinessHealthQuery(FROM, TO));
 
         // (412.500.000 - 132.100.000) / 412.500.000 = 67,975... -> 68,0
         assertThat(result.grossMarginPercent()).isEqualTo(68.0);
@@ -75,7 +76,7 @@ class ViewPlatformBusinessHealthUseCaseTests {
     void grossMarginIsNullWhenNoRevenueInWindow() {
         when(orderRepository.sumTotalAmountByStatusInRange(any(), any(), any())).thenReturn(BigDecimal.ZERO);
 
-        var result = useCase.execute(new ViewPlatformBusinessHealthUseCase.Query(FROM, TO));
+        var result = useCase.execute(new ViewPlatformBusinessHealthQuery(FROM, TO));
 
         assertThat(result.grossMarginPercent()).isNull();
     }
@@ -85,7 +86,7 @@ class ViewPlatformBusinessHealthUseCaseTests {
     void nullRevenueFromRepositoryBecomesZero() {
         when(orderRepository.sumTotalAmountByStatusInRange(any(), any(), any())).thenReturn(null);
 
-        var result = useCase.execute(new ViewPlatformBusinessHealthUseCase.Query(FROM, TO));
+        var result = useCase.execute(new ViewPlatformBusinessHealthQuery(FROM, TO));
 
         assertThat(result.revenueVnd()).isEqualByComparingTo("0");
         assertThat(result.previousRevenueVnd()).isEqualByComparingTo("0");
@@ -98,7 +99,7 @@ class ViewPlatformBusinessHealthUseCaseTests {
      */
     @Test
     void previousWindowHasSameLengthAndEndsWhereWindowStarts() {
-        useCase.execute(new ViewPlatformBusinessHealthUseCase.Query(FROM, TO));
+        useCase.execute(new ViewPlatformBusinessHealthQuery(FROM, TO));
 
         var fromCaptor = ArgumentCaptor.forClass(Instant.class);
         var toCaptor = ArgumentCaptor.forClass(Instant.class);
@@ -120,7 +121,7 @@ class ViewPlatformBusinessHealthUseCaseTests {
      */
     @Test
     void expiringSoonThresholdIsThirtyRollingDaysFromNow() {
-        useCase.execute(new ViewPlatformBusinessHealthUseCase.Query(FROM, TO));
+        useCase.execute(new ViewPlatformBusinessHealthQuery(FROM, TO));
 
         var nowCaptor = ArgumentCaptor.forClass(Instant.class);
         var throughCaptor = ArgumentCaptor.forClass(Instant.class);
@@ -135,7 +136,7 @@ class ViewPlatformBusinessHealthUseCaseTests {
     /** Khoảng ngược: phần đếm trường vẫn đúng vì nó không phụ thuộc cửa sổ, phần tiền về 0. */
     @Test
     void invertedRangeKeepsSchoolCountsAndZeroesMoney() {
-        var result = useCase.execute(new ViewPlatformBusinessHealthUseCase.Query(TO, FROM));
+        var result = useCase.execute(new ViewPlatformBusinessHealthQuery(TO, FROM));
 
         assertThat(result.subscribedSchools()).isEqualTo(96L);
         assertThat(result.schoolsInDebt()).isEqualTo(3L);
@@ -156,7 +157,7 @@ class ViewPlatformBusinessHealthUseCaseTests {
             .thenReturn(new BigDecimal("200000000"));
         when(queryRepository.sumAiCostVnd(previousFrom, FROM)).thenReturn(new BigDecimal("56000000"));
 
-        var result = useCase.execute(new ViewPlatformBusinessHealthUseCase.Query(FROM, TO));
+        var result = useCase.execute(new ViewPlatformBusinessHealthQuery(FROM, TO));
 
         // (200.000.000 - 56.000.000) / 200.000.000 = 72,0 -> chênh so với 68,0 là -4,0 ĐIỂM.
         assertThat(result.previousGrossMarginPercent()).isEqualTo(72.0);
@@ -173,7 +174,7 @@ class ViewPlatformBusinessHealthUseCaseTests {
         when(orderRepository.sumTotalAmountByStatusInRange(eq(OrderStatus.SUCCESS), eq(previousFrom), eq(FROM)))
             .thenReturn(BigDecimal.ZERO);
 
-        var result = useCase.execute(new ViewPlatformBusinessHealthUseCase.Query(FROM, TO));
+        var result = useCase.execute(new ViewPlatformBusinessHealthQuery(FROM, TO));
 
         assertThat(result.previousGrossMarginPercent()).isNull();
         assertThat(result.grossMarginPercent()).isEqualTo(68.0);

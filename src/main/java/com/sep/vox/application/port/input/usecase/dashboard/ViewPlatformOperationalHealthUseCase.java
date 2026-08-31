@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.port.input.query.ViewPlatformOperationalHealthQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.repository.PlatformOperationalHealthQueryRepository;
 import com.sep.vox.application.response.input.dashboard.GradingOutcomeBucketResponse;
@@ -25,7 +26,7 @@ import com.sep.vox.domain.common.ZoneConstant;
  */
 @Service
 public class ViewPlatformOperationalHealthUseCase
-        implements IUseCase<ViewPlatformOperationalHealthUseCase.Query, PlatformOperationalHealthResponse> {
+        implements IUseCase<ViewPlatformOperationalHealthQuery, PlatformOperationalHealthResponse> {
 
     /** Cửa sổ mặc định khi client không truyền mốc nào. */
     static final int DEFAULT_WINDOW_DAYS = 14;
@@ -44,16 +45,10 @@ public class ViewPlatformOperationalHealthUseCase
         this.platformOperationalHealthQueryRepository = platformOperationalHealthQueryRepository;
     }
 
-    /**
-     * @param dateFrom mốc đầu BAO GỒM; bỏ trống = lùi {@value #DEFAULT_WINDOW_DAYS} ngày từ mốc cuối
-     * @param dateTo   mốc cuối KHÔNG bao gồm; bỏ trống = ngay lúc này
-     */
-    public record Query(Instant dateFrom, Instant dateTo) {
-    }
 
     @Override
     @Transactional(readOnly = true)
-    public PlatformOperationalHealthResponse execute(Query input) {
+    public PlatformOperationalHealthResponse execute(ViewPlatformOperationalHealthQuery input) {
         var zone = ZoneConstant.BUSINESS_ZONE;
         var live = platformOperationalHealthQueryRepository.countLiveSessions();
 

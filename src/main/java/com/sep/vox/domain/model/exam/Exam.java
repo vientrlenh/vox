@@ -145,6 +145,25 @@ public class Exam {
             || status == ExamStatus.CANCELLED;
     }
 
+    /**
+     * Kỳ thi đã chốt sổ: bài thi không còn được xoá nữa.
+     *
+     * <p>Khác {@link #isLockedForEditing()} ở hai đầu, và cố ý:
+     *
+     * <ul>
+     *   <li>{@code IN_PROGRESS} vẫn cho xoá — xoá phiên thi sinh ra chính là để cứu một lượt thi
+     *       hỏng (vào phòng lỗi, chấm lỗi) NGAY TRONG lúc thi; khoá lúc này là bịt đúng đường thoát.
+     *   <li>{@code CLOSED} / {@code RESULTS_PUBLISHED} thì cấm — điểm đã chốt (và có thể đã công bố
+     *       cho học sinh, đã dùng để phúc khảo). Xoá một phiên ở đây làm điểm biến mất khỏi bảng kết
+     *       quả mà không để lại dấu vết, và {@code DeleteExamSessionUseCase} là xoá cứng, không hoàn
+     *       tác được.
+     *   <li>{@code CANCELLED} vẫn cho xoá: kỳ thi đã huỷ thì dọn dữ liệu rác là việc nên làm.
+     * </ul>
+     */
+    public boolean isResultsFinalized() {
+        return status == ExamStatus.CLOSED || status == ExamStatus.RESULTS_PUBLISHED;
+    }
+
     public UUID getId() {
         return id;
     }

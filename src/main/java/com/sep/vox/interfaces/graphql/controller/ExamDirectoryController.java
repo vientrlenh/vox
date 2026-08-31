@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -16,6 +17,7 @@ import com.sep.vox.application.query.dto.ExamDirectoryGradeInfo;
 import com.sep.vox.application.query.dto.ExamDirectoryUserInfo;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 /**
  * Bề mặt GraphQL "danh bạ kỳ thi" — chỉ đọc.
@@ -53,6 +55,7 @@ public class ExamDirectoryController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        PageArguments.validate(page, size);
         return viewExamDirectoryClassesUseCase.execute(query(examId, search, page, size));
     }
 
@@ -63,6 +66,7 @@ public class ExamDirectoryController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        PageArguments.validate(page, size);
         return viewExamDirectoryGradesUseCase.execute(query(examId, search, page, size));
     }
 
@@ -72,8 +76,10 @@ public class ExamDirectoryController {
             @Argument(name = "examId") UUID examId,
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
-            @Argument(name = "size") Integer size) {
-        return viewExamDirectoryStudentsUseCase.execute(query(examId, search, page, size));
+            @Argument(name = "size") Integer size,
+            @Argument(name = "excludeUserIds") List<UUID> excludeUserIds) {
+        PageArguments.validate(page, size);
+        return viewExamDirectoryStudentsUseCase.execute(query(examId, search, page, size, excludeUserIds));
     }
 
     @QueryMapping(name = "examDirectoryProctors")
@@ -82,14 +88,19 @@ public class ExamDirectoryController {
             @Argument(name = "examId") UUID examId,
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
-            @Argument(name = "size") Integer size) {
-        return viewExamDirectoryProctorsUseCase.execute(query(examId, search, page, size));
+            @Argument(name = "size") Integer size,
+            @Argument(name = "excludeUserIds") List<UUID> excludeUserIds) {
+        PageArguments.validate(page, size);
+        return viewExamDirectoryProctorsUseCase.execute(query(examId, search, page, size, excludeUserIds));
     }
 
     private static ViewExamDirectoryQuery query(UUID examId, String search, Integer page, Integer size) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
-        }
-        return new ViewExamDirectoryQuery(examId, search, page, size);
+        return query(examId, search, page, size, List.of());
+    }
+
+    private static ViewExamDirectoryQuery query(UUID examId, String search, Integer page, Integer size,
+            List<UUID> excludeUserIds) {
+        PageArguments.validate(page, size);
+        return new ViewExamDirectoryQuery(examId, search, page, size, excludeUserIds);
     }
 }

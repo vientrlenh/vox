@@ -86,6 +86,8 @@ enum ExamSessionStatus {
     GRADED
     EXPIRED
     GRADING_FAILED
+    """Đã xoá mềm. Chỉ xuất hiện ở đường đọc của quản trị trường / chủ tịch hội đồng."""
+    DELETED
 }
 enum ExamSecurePoolStatus {
     SEALED
@@ -434,6 +436,11 @@ type ExamAttemptSummary {
     rubricResultBandCode: String
     rubricResultBandName: String
     resultStatus: ExamCandidateResultStatus
+    """
+    Lý do lượt thi bị xoá, đi cùng `status = DELETED`. Chỉ quản trị trường và chủ tịch hội
+    đồng đọc được lượt đã xoá; đường của học sinh không trả về những lượt này.
+    """
+    deletedReason: String
 }
 
 enum ExamCandidateResultStatus {
@@ -446,6 +453,8 @@ enum ExamCandidateResultStatus {
     RETAKE_REQUIRED
     PASSED
     FAILED
+    """Phiên thi sinh ra kết quả này đã bị xoá mềm."""
+    DELETED
 }
 
 type ExamSession {

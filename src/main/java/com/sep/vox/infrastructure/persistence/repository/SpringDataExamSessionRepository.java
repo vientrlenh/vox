@@ -15,11 +15,41 @@ import com.sep.vox.infrastructure.persistence.entity.ExamSessionJpaEntity;
 
 
 public interface SpringDataExamSessionRepository extends JpaRepository<ExamSessionJpaEntity, UUID> {
-    Optional<ExamSessionJpaEntity> findTopByExamIdAndCandidateIdOrderByStartedAtDesc(UUID examId, UUID candidateId);
-    Optional<ExamSessionJpaEntity> findTopByCandidateIdOrderByStartedAtDesc(UUID candidateId);
+
+    // Bốn câu dưới đây LOẠI phiên đã xoá mềm: chúng phục vụ luồng nghiệp vụ (vào thi, đếm lượt,
+    // chốt điểm, đóng kỳ thi) chứ không phải màn tra cứu của quản trị, nên một phiên đã xoá không
+    // được tính là "thí sinh đã có bài". Các câu còn lại trong file đã lọc theo danh sách trạng
+    // thái dương (IN_PROGRESS, SUBMITTED...) nên tự khắc không dính DELETED.
+    @Query("""
+        SELECT s FROM ExamSessionJpaEntity s
+        WHERE s.examId = :examId AND s.candidateId = :candidateId AND s.status <> 'DELETED'
+        ORDER BY s.startedAt DESC
+        LIMIT 1
+    """)
+    Optional<ExamSessionJpaEntity> findTopByExamIdAndCandidateIdOrderByStartedAtDesc(
+        @Param("examId") UUID examId, @Param("candidateId") UUID candidateId);
+
+    @Query("""
+        SELECT s FROM ExamSessionJpaEntity s
+        WHERE s.candidateId = :candidateId AND s.status <> 'DELETED'
+        ORDER BY s.startedAt DESC
+        LIMIT 1
+    """)
+    Optional<ExamSessionJpaEntity> findTopByCandidateIdOrderByStartedAtDesc(@Param("candidateId") UUID candidateId);
+
     Optional<ExamSessionJpaEntity> findTopByCandidateIdAndStatusInOrderByStartedAtDesc(UUID candidateId, Collection<String> statuses);
-    List<ExamSessionJpaEntity> findByCandidateId(UUID candidateId);
-    List<ExamSessionJpaEntity> findByCandidateIdIn(Collection<UUID> candidateIds);
+
+    @Query("SELECT s FROM ExamSessionJpaEntity s WHERE s.candidateId = :candidateId AND s.status <> 'DELETED'")
+    List<ExamSessionJpaEntity> findByCandidateId(@Param("candidateId") UUID candidateId);
+
+    @Query("SELECT s FROM ExamSessionJpaEntity s WHERE s.candidateId IN :candidateIds AND s.status <> 'DELETED'")
+    List<ExamSessionJpaEntity> findByCandidateIdIn(@Param("candidateIds") Collection<UUID> candidateIds);
+
+    /**
+     * CỐ Ý tính cả phiên đã xoá mềm: dòng đã xoá vẫn giữ {@code paper_id}, nên nếu cho xoá mã đề đi
+     * thì phiên ấy trỏ vào một mã đề không còn tồn tại và quản trị hết đường mở lại để đối chiếu —
+     * đúng thứ mà xoá mềm sinh ra để bảo toàn.
+     */
     boolean existsByPaperId(UUID paperId);
 
     /**
@@ -127,4 +157,21 @@ public interface SpringDataExamSessionRepository extends JpaRepository<ExamSessi
           AND (s.remainingSeconds IS NULL OR s.remainingSeconds > :remainingSeconds)
     """)
     int checkpointRemainingSeconds(@Param("id") UUID id, @Param("remainingSeconds") int remainingSeconds);
+
+    /**
+     * Xoá mềm phiên thi: đánh dấu {@code DELETED} kèm mốc thời gian và lý do.
+     *
+     * <p>Điều kiện {@code deletedAt IS NULL} làm thao tác này idempotent — bấm xoá hai lần (hoặc hai
+     * người cùng bấm) thì lần sau nhận 0 dòng chứ không ghi đè lý do và thời điểm của lần đầu, vốn
+     * là thứ cần giữ nguyên khi phải giải trình.
+     *
+     * @return 1 nếu vừa xoá, 0 nếu phiên đã bị xoá từ trước.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        UPDATE ExamSessionJpaEntity s
+        SET s.status = 'DELETED', s.deletedAt = :deletedAt, s.deletedReason = :reason
+        WHERE s.id = :id AND s.deletedAt IS NULL
+    """)
+    int softDelete(@Param("id") UUID id, @Param("deletedAt") Instant deletedAt, @Param("reason") String reason);
 }

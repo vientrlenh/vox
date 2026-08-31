@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -15,4 +16,7 @@ public interface ExamCandidateResultRepository {
     List<ExamCandidateResult> findByExamId(UUID examId);
     ExamCandidateResult save(ExamCandidateResult result);
     void deleteBySessionId(UUID sessionId);
+
+    /** Xoá mềm kết quả của một phiên thi, cùng lúc với chính phiên đó. */
+    int softDeleteBySessionId(UUID sessionId, Instant deletedAt, String reason);
 }

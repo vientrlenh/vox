@@ -36,6 +36,13 @@ public interface ExamSessionRepository {
     boolean existsByPaperId(UUID paperId);
     ExamSession save(ExamSession session);
     void deleteById(UUID id);
+
+    /**
+     * Xoá mềm: đánh dấu {@code DELETED} kèm thời điểm và lý do, giữ nguyên toàn bộ dữ liệu bài làm.
+     *
+     * @return 1 nếu vừa xoá, 0 nếu phiên đã bị xoá từ trước (idempotent).
+     */
+    int softDelete(UUID id, Instant deletedAt, String reason);
     /**
      * Phiên thi đang ở một trong các trạng thái {@link ExamSessionStatus#RESUMABLE}.
      */

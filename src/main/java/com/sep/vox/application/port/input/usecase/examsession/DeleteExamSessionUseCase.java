@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
-import java.util.List;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -8,42 +8,44 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.port.input.command.DeleteExamSessionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
-import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
-import com.sep.vox.domain.repository.ExamItemEvaluationTurnRepository;
-import com.sep.vox.domain.repository.ExamItemResponseRepository;
-import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRecordingRepository;
 import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.ExamResultAppealItemRepository;
-import com.sep.vox.domain.repository.ExamResultStatusHistoryRepository;
-import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Permanently deletes an exam session and every row it produced (item
- * responses, live turns, evaluations, criterion scores, evaluation turns,
- * candidate result rollup, and any appeal raised against that result) -- for
- * recovering from a session broken by a failed/errored exam entry.
- * Irreversible, no soft-delete/undo.
+ * Xoá MỀM một phiên thi: đánh dấu phiên (và kết quả của phiên đó) là {@code DELETED} kèm thời điểm
+ * và lý do — dùng để gỡ một lượt thi hỏng vì vào phòng lỗi hoặc chấm lỗi.
  *
- * Authorization: SCHOOL_ADMIN can delete any session for their own school
- * (any exam kind). A teacher can only delete a session for an exam they
- * chair AND only when that exam is CLASS_TEST -- centralized exams stay
- * school-admin-only, matching the mutation rules already enforced elsewhere
- * (UpdateExamUseCase.authorizeMutation).
+ * <p>Bản trước xoá CỨNG cả cây dữ liệu (câu trả lời, lượt nói, đánh giá, điểm theo tiêu chí, kết
+ * quả, phúc khảo, phân công chấm, nhật ký trạng thái, bản ghi hình). Ba vấn đề khiến nó bị thay:
+ *
+ * <ul>
+ *   <li>Không hoàn tác được và không kiểm chứng lại được. Xoá nhầm một bài thi là mất trắng bằng
+ *       chứng, đúng lúc cần nhất là khi học sinh thắc mắc điểm.
+ *   <li>Cascade viết tay qua hơn mười bảng, không có FK nào đỡ: sót một bảng là để lại dòng mồ côi.
+ *   <li>Hai khoá ngoại trỏ vào {@code exam_sessions} mà cascade đó không hề dọn
+ *       ({@code school_balance_entries.exam_session_id}, {@code school_debt_events.trigger_exam_session_id}),
+ *       cả hai đều {@code NO ACTION} — xoá một phiên đã phát sinh chi phí AI là vi phạm khoá ngoại.
+ *       Giữ dòng lại thì cả hai tham chiếu vẫn hợp lệ.
+ * </ul>
+ *
+ * <p>Dữ liệu bài làm được giữ NGUYÊN, chỉ ẩn khỏi các luồng đọc. Quản trị trường và chủ tịch hội
+ * đồng vẫn thấy được phiên đã xoá (có nhãn "Đã xoá" kèm lý do) — xem {@code ExamSessionJpaEntity}.
+ *
+ * <p>Phân quyền: SCHOOL_ADMIN xoá được mọi phiên thuộc trường mình (mọi loại kỳ thi). Giáo viên chỉ
+ * xoá được phiên của kỳ thi mình làm chủ tịch VÀ chỉ khi đó là CLASS_TEST — kỳ thi tập trung vẫn
+ * chỉ quản trị trường mới đụng được, khớp với {@code UpdateExamUseCase.authorizeMutation}.
  */
 @Service
-public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
+public class DeleteExamSessionUseCase implements IUseCase<DeleteExamSessionCommand, Void> {
 
     private final ExamSessionRepository examSessionRepository;
     private final ExamRepository examRepository;
@@ -51,17 +53,7 @@ public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-    private final ExamItemResponseRepository examItemResponseRepository;
-    private final ExamItemResponseTurnRepository examItemResponseTurnRepository;
-    private final ExamItemEvaluationRepository examItemEvaluationRepository;
-    private final ExamItemEvaluationTurnRepository examItemEvaluationTurnRepository;
-    private final ExamItemCriterionScoreRepository examItemCriterionScoreRepository;
     private final ExamCandidateResultRepository examCandidateResultRepository;
-    private final ExamResultAppealRepository examResultAppealRepository;
-    private final ExamResultAppealItemRepository examResultAppealItemRepository;
-    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
-    private final ExamResultStatusHistoryRepository examResultStatusHistoryRepository;
-    private final ExamRecordingRepository examRecordingRepository;
 
     public DeleteExamSessionUseCase(
             ExamSessionRepository examSessionRepository,
@@ -70,94 +62,44 @@ public class DeleteExamSessionUseCase implements IUseCase<UUID, Void> {
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort,
-            ExamItemResponseRepository examItemResponseRepository,
-            ExamItemResponseTurnRepository examItemResponseTurnRepository,
-            ExamItemEvaluationRepository examItemEvaluationRepository,
-            ExamItemEvaluationTurnRepository examItemEvaluationTurnRepository,
-            ExamItemCriterionScoreRepository examItemCriterionScoreRepository,
-            ExamCandidateResultRepository examCandidateResultRepository,
-            ExamResultAppealRepository examResultAppealRepository,
-            ExamResultAppealItemRepository examResultAppealItemRepository,
-            ExamGradingAssignmentRepository examGradingAssignmentRepository,
-            ExamResultStatusHistoryRepository examResultStatusHistoryRepository,
-            ExamRecordingRepository examRecordingRepository) {
+            ExamCandidateResultRepository examCandidateResultRepository) {
         this.examSessionRepository = examSessionRepository;
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
-        this.examItemResponseRepository = examItemResponseRepository;
-        this.examItemResponseTurnRepository = examItemResponseTurnRepository;
-        this.examItemEvaluationRepository = examItemEvaluationRepository;
-        this.examItemEvaluationTurnRepository = examItemEvaluationTurnRepository;
-        this.examItemCriterionScoreRepository = examItemCriterionScoreRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
-        this.examResultAppealRepository = examResultAppealRepository;
-        this.examResultAppealItemRepository = examResultAppealItemRepository;
-        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
-        this.examResultStatusHistoryRepository = examResultStatusHistoryRepository;
-        this.examRecordingRepository = examRecordingRepository;
     }
 
     @Override
     @Transactional
-    public Void execute(UUID sessionId) {
+    public Void execute(DeleteExamSessionCommand input) {
+        var sessionId = input.sessionId();
         var session = examSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
         var exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra của phiên thi này"));
 
         authorizeDelete(exam.getId(), exam.getSchoolId(), exam.getKind());
-
-        var responseIds = examItemResponseRepository.findBySessionId(sessionId).stream()
-            .map(response -> response.getId())
-            .toList();
-
-        if (!responseIds.isEmpty()) {
-            var evaluationIds = examItemEvaluationRepository.findByResponseIdIn(responseIds).stream()
-                .map(evaluation -> evaluation.getId())
-                .toList();
-
-            if (!evaluationIds.isEmpty()) {
-                examItemCriterionScoreRepository.deleteByEvaluationIdIn(evaluationIds);
-                examItemEvaluationTurnRepository.deleteByEvaluationIdIn(evaluationIds);
-                examItemEvaluationRepository.deleteByResponseIdIn(responseIds);
-            }
-
-            examItemResponseTurnRepository.deleteByExamItemResponseIdIn(responseIds);
+        // Kỳ thi đã chốt sổ thì điểm đã (hoặc sắp) đến tay học sinh — xem Exam#isResultsFinalized.
+        if (exam.isResultsFinalized()) {
+            throw new IllegalStateException("Không thể xóa bài thi khi kỳ thi đã đóng hoặc đã công bố kết quả");
         }
 
-        examItemResponseRepository.deleteBySessionId(sessionId);
+        var reason = input.reason() == null ? "" : input.reason().strip();
+        if (reason.isEmpty()) {
+            throw new IllegalArgumentException("Phải nhập lý do xóa bài thi");
+        }
 
-        // Đơn phúc khảo treo trên candidate result, phải dọn TRƯỚC khi xoá nó.
-        // Không có FK nào chặn, nên bỏ sót sẽ để lại đơn mồ côi trỏ vào kết quả
-        // đã biến mất: đơn im lặng rơi khỏi mọi màn hình (INNER JOIN) nhưng dòng
-        // vẫn nằm lại trong DB.
-        examCandidateResultRepository.findBySessionId(sessionId).ifPresent(result -> {
-            var appealIds = examResultAppealRepository.findByCandidateResultId(result.getId()).stream()
-                .map(appeal -> appeal.getId())
-                .toList();
-            if (!appealIds.isEmpty()) {
-                // Con trước cha: đơn có bảng con phần thi. Bỏ sót là để lại đúng loại
-                // dòng mồ côi nói trên.
-                examResultAppealItemRepository.deleteByAppealIdIn(appealIds);
-                examResultAppealRepository.deleteByIdIn(appealIds);
-            }
-            // Phân công chấm và nhật ký trạng thái cũng treo trên candidate result và
-            // cũng không có FK — hai bảng độc lập với nhau nên thứ tự giữa chúng không
-            // quan trọng, nhưng cả hai phải xong trước khi candidate result biến mất.
-            var resultIds = List.of(result.getId());
-            examGradingAssignmentRepository.deleteByCandidateResultIdIn(resultIds);
-            examResultStatusHistoryRepository.deleteByCandidateResultIdIn(resultIds);
-        });
-
-        examCandidateResultRepository.deleteBySessionId(sessionId);
-        // Bản ghi hình/tiếng cũng treo trên phiên thi và cũng không có FK. Chỉ xoá dòng trong DB:
-        // file trên S3 để lifecycle rule của bucket dọn, vì xoá file không rollback được cùng
-        // transaction này.
-        examRecordingRepository.deleteByExamSessionId(sessionId);
-        examSessionRepository.deleteById(sessionId);
+        var now = Instant.now();
+        // Idempotent: hai người cùng bấm xoá thì lần sau nhận 0 dòng, và lý do/mốc thời gian của lần
+        // đầu — thứ phải giữ nguyên để giải trình — không bị ghi đè.
+        if (examSessionRepository.softDelete(sessionId, now, reason) == 0) {
+            return null;
+        }
+        // Điểm phải biến mất khỏi bảng kết quả, hàng đợi chấm và phúc khảo CÙNG LÚC với phiên thi.
+        examCandidateResultRepository.softDeleteBySessionId(sessionId, now, reason);
         return null;
     }
 

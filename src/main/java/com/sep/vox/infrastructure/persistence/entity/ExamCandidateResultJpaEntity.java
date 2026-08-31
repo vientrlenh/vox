@@ -63,10 +63,18 @@ public class ExamCandidateResultJpaEntity {
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_exam_candidate_results_status_valid",
-            constraint = "status IN ('PENDING_REVIEW', 'RELEASED', 'APPEALED', 'RE_GRADING', 'FINAL', 'INVALID', 'RETAKE_REQUIRED', 'PASSED', 'FAILED')"
+            constraint = "status IN ('PENDING_REVIEW', 'RELEASED', 'APPEALED', 'RE_GRADING', 'FINAL', 'INVALID', 'RETAKE_REQUIRED', 'PASSED', 'FAILED', 'DELETED')"
         )
     })
     private String status;
+
+    /** Đi kèm {@code status = 'DELETED'} — CHECK ở migration V8 buộc hai cột luôn nhất quán. */
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    /** Sao chép từ phiên thi lúc xoá, để đọc kết quả là biết lý do mà không phải join ngược. */
+    @Column(name = "deleted_reason", columnDefinition = "text")
+    private String deletedReason;
 
     @Column(name = "released_at")
     private Instant releasedAt;
@@ -182,6 +190,22 @@ public class ExamCandidateResultJpaEntity {
 
     public void setTargetFrameworkBandId(UUID targetFrameworkBandId) {
         this.targetFrameworkBandId = targetFrameworkBandId;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(Instant deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public String getDeletedReason() {
+        return deletedReason;
+    }
+
+    public void setDeletedReason(String deletedReason) {
+        this.deletedReason = deletedReason;
     }
 
     public String getStatus() {

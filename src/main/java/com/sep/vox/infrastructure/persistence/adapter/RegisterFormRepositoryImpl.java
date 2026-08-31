@@ -96,4 +96,9 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
         return springDataRegisterFormRepository.countByCreatedAtAfter(after);
     }
 
+    @Override
+    public Optional<Instant> findOldestCreatedAtByStatus(RegisterFormStatus status) {
+        return Optional.ofNullable(springDataRegisterFormRepository.findOldestCreatedAtByStatus(status.name()));
+    }
+
 }

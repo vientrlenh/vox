@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -66,5 +67,10 @@ public class ExamCandidateResultRepositoryImpl implements ExamCandidateResultRep
     @Override
     public void deleteBySessionId(UUID sessionId) {
         springDataExamCandidateResultRepository.deleteBySessionId(sessionId);
+    }
+
+    @Override
+    public int softDeleteBySessionId(UUID sessionId, Instant deletedAt, String reason) {
+        return springDataExamCandidateResultRepository.softDeleteBySessionId(sessionId, deletedAt, reason);
     }
 }

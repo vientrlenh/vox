@@ -41,6 +41,18 @@ public class ExamSession {
      */
     private Integer remainingSeconds;
 
+    /**
+     * Vì sao lần chấm AI gần nhất hỏng; null khi phiên không ở {@link ExamSessionStatus#GRADING_FAILED}.
+     *
+     * <p>null KHI ĐANG lỗi cũng là một câu trả lời có nghĩa, không phải dữ liệu thiếu: nhánh DLT
+     * đánh dấu phiên hỏng khi bản tin đã hết đường retry, và ở đó không có lý do nào để lưu. Phân
+     * biệt được "hỏng vì X" với "hỏng, không rõ vì sao" là toàn bộ giá trị của trang phân loại.
+     */
+    private String gradingError;
+
+    /** Dịch vụ chấm đã thử bao nhiêu lần trước khi bỏ cuộc; null cùng lúc với {@link #gradingError}. */
+    private Integer gradingRetryCount;
+
     public ExamSession() {}
 
     public ExamSession(UUID id, UUID examId, UUID candidateId, UUID paperId, Instant startedAt,
@@ -154,5 +166,33 @@ public class ExamSession {
 
     public void setRemainingSeconds(Integer remainingSeconds) {
         this.remainingSeconds = remainingSeconds;
+    }
+
+    public String getGradingError() {
+        return gradingError;
+    }
+
+    /** Chỉ đặt cùng lúc với {@code setStatus(GRADING_FAILED)}: ràng buộc
+     * {@code chk_exam_sessions_grading_error_only_when_failed} ở DB từ chối lý do trên phiên không lỗi. */
+    public void setGradingError(String gradingError) {
+        this.gradingError = gradingError;
+    }
+
+    public Integer getGradingRetryCount() {
+        return gradingRetryCount;
+    }
+
+    public void setGradingRetryCount(Integer gradingRetryCount) {
+        this.gradingRetryCount = gradingRetryCount;
+    }
+
+    /**
+     * Xóa dấu vết lần chấm hỏng trước. Phải gọi ở MỌI đường rời khỏi {@code GRADING_FAILED}: giữ lại
+     * thông điệp cũ thì một phiên đã chấm lại thành công vẫn nằm trong nhóm sự cố trên trang phân
+     * loại, và người trực xử lý lại đúng thứ đã xong.
+     */
+    public void clearGradingFailure() {
+        this.gradingError = null;
+        this.gradingRetryCount = null;
     }
 }

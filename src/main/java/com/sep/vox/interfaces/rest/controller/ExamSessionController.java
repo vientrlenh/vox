@@ -166,9 +166,11 @@ public class ExamSessionController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
-    public ResponseEntity<ApiResponse<?>> delete(@PathVariable(name = "id") UUID id) {
-        deleteExamSessionUseCase.execute(id);
-        return ResponseEntity.ok(ApiResponse.success("Xoa phien thi thanh cong", null));
+    public ResponseEntity<ApiResponse<?>> delete(
+            @PathVariable(name = "id") UUID id,
+            @Valid @RequestBody SessionReasonRequest request) {
+        deleteExamSessionUseCase.execute(new DeleteExamSessionCommand(id, request.reason()));
+        return ResponseEntity.ok(ApiResponse.success("Xóa bài thi thành công", null));
     }
 
      @PostMapping("/{sessionId}/complete-grading")

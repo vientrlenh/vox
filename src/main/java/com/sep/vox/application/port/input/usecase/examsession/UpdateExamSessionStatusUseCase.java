@@ -49,6 +49,7 @@ public class UpdateExamSessionStatusUseCase implements IUseCase<UpdateExamSessio
                 && session.getSubmittedAt() == null) {
             session.setSubmittedAt(Instant.now());
         }
+        applyGradingFailure(session, input);
 
         examSessionRepository.save(session);
         if (input.status() == ExamSessionStatus.SUBMITTED && canSubmitImmediately(session)) {
@@ -58,6 +59,28 @@ public class UpdateExamSessionStatusUseCase implements IUseCase<UpdateExamSessio
         return CreateExamSessionUseCase.toResponse(
             examSessionRepository.findById(session.getId()).orElse(session)
         );
+    }
+
+    /**
+     * Lý do chấm hỏng sống đúng bằng lần hỏng đó.
+     *
+     * <p>RỜI khỏi GRADING_FAILED là phải xóa: đường duy nhất đi ra là sang GRADING (chấm lại), và
+     * nếu lần đó thành công mà thông điệp cũ còn nằm lại thì trang phân loại vẫn đếm phiên này vào
+     * nhóm sự cố — người trực sẽ xử lý lại đúng thứ vừa xong. Xóa ngay tại đây, chứ không đợi tới
+     * lúc chấm xong, vì giữa hai mốc đó phiên đang GRADING nên ràng buộc
+     * {@code chk_exam_sessions_grading_error_only_when_failed} ở DB sẽ từ chối cả bản ghi.
+     *
+     * <p>VÀO GRADING_FAILED mà {@code gradingFailure} null thì cũng ghi null: đó là nhánh DLT, và
+     * "không rõ vì sao" là câu trả lời đúng chứ không phải dữ liệu thiếu.
+     */
+    private void applyGradingFailure(com.sep.vox.domain.model.exam.ExamSession session,
+            UpdateExamSessionStatusCommand input) {
+        if (input.status() != ExamSessionStatus.GRADING_FAILED) {
+            session.clearGradingFailure();
+            return;
+        }
+        session.setGradingError(input.gradingFailure() == null ? null : input.gradingFailure().error());
+        session.setGradingRetryCount(input.gradingFailure() == null ? null : input.gradingFailure().retryCount());
     }
 
     /**
@@ -94,6 +117,10 @@ public class UpdateExamSessionStatusUseCase implements IUseCase<UpdateExamSessio
             case GRADING -> to == ExamSessionStatus.GRADED || to == ExamSessionStatus.GRADING_FAILED;
             case GRADING_FAILED -> to == ExamSessionStatus.GRADING;
             case GRADED -> to == ExamSessionStatus.GRADING;
+            // DELETED là điểm dừng, không đi tiếp đâu được: phục hồi một phiên đã xoá là thao tác
+            // sửa dữ liệu trực tiếp (xoá mềm không có đường phục hồi qua API), không phải một bước
+            // chuyển trạng thái bình thường.
+            case DELETED -> false;
         };
     }
 }

@@ -23,4 +23,7 @@ public interface RegisterFormRepository {
 
     long countByStatus(RegisterFormStatus status);
     long countByCreatedAtAfter(Instant after);
+
+    /** Mốc nộp của đơn CŨ NHẤT còn ở trạng thái này; rỗng khi không còn đơn nào. */
+    Optional<Instant> findOldestCreatedAtByStatus(RegisterFormStatus status);
 }

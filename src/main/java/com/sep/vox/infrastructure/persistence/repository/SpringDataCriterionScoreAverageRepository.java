@@ -56,6 +56,9 @@ public interface SpringDataCriterionScoreAverageRepository
             WHERE ec.student_id = :studentId
               AND e.marked_invalid = false
               AND ec.blocked_at IS NULL
+              -- Query native nên KHÔNG được lọc theo entity: phải tự loại phiên đã xoá mềm, nếu
+              -- không điểm của một bài đã xoá vẫn kéo trung bình năng lực của học sinh.
+              AND s.status <> 'DELETED'
               AND cs.final_score IS NOT NULL
               AND EXISTS (
                   SELECT 1

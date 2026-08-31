@@ -212,7 +212,7 @@ class ViewMyExamsUseCaseTests {
         return new ExamAttemptSummary(
             candidateId, UUID.randomUUID(), ExamCandidateStatus.ATTENDED, UUID.randomUUID(),
             NOW, null, status, false, null, BigDecimal.ZERO,
-            null, null, null, null, null, ExamCandidateResultStatus.PENDING_REVIEW);
+            null, null, null, null, null, ExamCandidateResultStatus.PENDING_REVIEW, null);
     }
 
     private static RowBuilder row() {

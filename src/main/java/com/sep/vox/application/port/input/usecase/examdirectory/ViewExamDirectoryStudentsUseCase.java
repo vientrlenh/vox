@@ -39,12 +39,14 @@ public class ViewExamDirectoryStudentsUseCase
 
         if (scope.schoolWide()) {
             return examDirectoryQueryRepository.findUsersBySchoolId(
-                scope.schoolId(), SchoolRoleCodes.STUDENT, search, input.page(), input.size());
+                scope.schoolId(), SchoolRoleCodes.STUDENT, search, input.excludeUserIds(),
+                input.page(), input.size());
         }
         return examDirectoryQueryRepository.findUsersByClassIds(
             examDirectoryAccessService.callerClassIds(scope),
             SchoolRoleCodes.STUDENT,
             search,
+            input.excludeUserIds(),
             input.page(),
             input.size()
         );

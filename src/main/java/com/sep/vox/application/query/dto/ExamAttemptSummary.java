@@ -34,7 +34,15 @@ public record ExamAttemptSummary(
     UUID rubricResultBandId,
     String rubricResultBandCode,
     String rubricResultBandName,
-    ExamCandidateResultStatus resultStatus
+    ExamCandidateResultStatus resultStatus,
+    /**
+     * Lý do lượt thi bị xoá mềm, null nếu chưa xoá. Đi cùng {@code status = DELETED}.
+     *
+     * <p>Chỉ có giá trị ở đường đọc của quản trị trường / chủ tịch hội đồng
+     * ({@code findByCandidateIdsIncludingDeleted}); đường của học sinh không trả về lượt đã xoá
+     * nên trường này luôn null ở đó.
+     */
+    String deletedReason
 ) {
     // Auxiliary constructor for JPQL "SELECT NEW ...ExamAttemptSummary(...)"
     // projections: status/resultStatus are plain String columns on the JPA
@@ -58,7 +66,8 @@ public record ExamAttemptSummary(
             UUID rubricResultBandId,
             String rubricResultBandCode,
             String rubricResultBandName,
-            String resultStatus) {
+            String resultStatus,
+            String deletedReason) {
         this(
             candidateId,
             examId,
@@ -75,7 +84,8 @@ public record ExamAttemptSummary(
             rubricResultBandId,
             rubricResultBandCode,
             rubricResultBandName,
-            resultStatus == null ? null : ExamCandidateResultStatus.valueOf(resultStatus)
+            resultStatus == null ? null : ExamCandidateResultStatus.valueOf(resultStatus),
+            deletedReason
         );
     }
 }

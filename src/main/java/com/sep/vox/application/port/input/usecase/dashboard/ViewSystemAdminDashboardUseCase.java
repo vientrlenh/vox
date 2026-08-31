@@ -83,6 +83,7 @@ public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdm
             activeSchools,
             totalSchools - activeSchools,
             registerFormRepository.countByStatus(RegisterFormStatus.PENDING),
+            oldestPendingRegistrationDays(now),
             registerFormRepository.countByCreatedAtAfter(now.minus(30, ChronoUnit.DAYS)),
             registerFormRepository.countByCreatedAtAfter(now.minus(90, ChronoUnit.DAYS)),
             totalRevenue != null ? totalRevenue : BigDecimal.ZERO,
@@ -93,6 +94,25 @@ public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdm
             activeFrameworkCount,
             systemRubricCount
         );
+    }
+
+    /**
+     * Đơn chờ lâu nhất đã nằm trong hàng đợi bao nhiêu NGÀY LỊCH, theo giờ nghiệp vụ.
+     *
+     * <p>Đếm theo ngày lịch chứ không phải elapsed chia 24 giờ: đơn nộp 23:00 hôm qua mà bây giờ là
+     * 01:00 thì người trực đọc là "đã sang ngày thứ hai", trong khi phép chia cho 24 giờ vẫn trả 0 và
+     * làm thẻ KPI trông như hàng đợi vẫn sạch.
+     *
+     * <p>{@code null} khi không còn đơn nào chờ — cùng quy ước với {@code grossMarginPercent}: thiếu
+     * dữ liệu và "bằng 0" là hai chuyện khác nhau, và ở đây 0 lại là trạng thái TỐT nhất nên nhập
+     * nhèm hai cái sẽ vẽ ra một hàng đợi rỗng trông y hệt một hàng đợi vừa được xử lý xong.
+     */
+    private Integer oldestPendingRegistrationDays(Instant now) {
+        return registerFormRepository.findOldestCreatedAtByStatus(RegisterFormStatus.PENDING)
+            .map(oldest -> (int) ChronoUnit.DAYS.between(
+                oldest.atZone(ZoneConstant.BUSINESS_ZONE).toLocalDate(),
+                now.atZone(ZoneConstant.BUSINESS_ZONE).toLocalDate()))
+            .orElse(null);
     }
 
     private long countUsersByRole(String roleCode) {

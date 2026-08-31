@@ -2,7 +2,6 @@ package com.sep.vox.infrastructure.persistence.query;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -11,6 +10,7 @@ import com.sep.vox.application.query.dto.ExamDirectoryGradeInfo;
 import com.sep.vox.application.query.dto.ExamDirectoryUserInfo;
 import com.sep.vox.application.query.repository.ExamDirectoryQueryRepository;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.common.VnSearchKey;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -32,7 +32,9 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
             FROM SchoolGradeJpaEntity sg
             WHERE sg.schoolId = :schoolId
               AND sg.status = 'ACTIVE'
-              AND (:pattern IS NULL OR LOWER(sg.code) LIKE :pattern OR LOWER(sg.name) LIKE :pattern)
+              AND (:pattern IS NULL
+                  OR vn_search_key(sg.code) LIKE :pattern
+                  OR vn_search_key(sg.name) LIKE :pattern)
             """;
 
         TypedQuery<ExamDirectoryGradeInfo> contentQuery = em.createQuery("""
@@ -51,8 +53,9 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
 
     @Override
     public PageResult<ExamDirectoryUserInfo> findUsersBySchoolId(UUID schoolId, String roleCode, String search,
-            int page, int size) {
+            Collection<UUID> excludeUserIds, int page, int size) {
         var pattern = likePattern(search);
+        var excluded = normalizeExclusions(excludeUserIds);
         var filter = """
             FROM SchoolUserJpaEntity su
             JOIN UserJpaEntity u
@@ -63,8 +66,10 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
                   SELECT 1 FROM UserRoleJpaEntity ur
                   JOIN RoleJpaEntity r ON r.id = ur.roleId
                   WHERE ur.userId = u.id AND r.code = :roleCode)
-              AND (:pattern IS NULL OR LOWER(u.fullName) LIKE :pattern OR LOWER(u.email) LIKE :pattern)
-            """;
+              AND (:pattern IS NULL
+                  OR vn_search_key(u.fullName) LIKE :pattern
+                  OR vn_search_key(u.email) LIKE :pattern)
+            """ + excludeClause(excluded);
 
         TypedQuery<ExamDirectoryUserInfo> contentQuery = em.createQuery("""
             SELECT new com.sep.vox.application.query.dto.ExamDirectoryUserInfo(
@@ -79,12 +84,13 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
             .setParameter("roleCode", roleCode)
             .setParameter("pattern", pattern);
 
+        bindExclusions(contentQuery, countQuery, excluded);
         return paginate(contentQuery, countQuery, page, size);
     }
 
     @Override
     public PageResult<ExamDirectoryUserInfo> findUsersByClassIds(Collection<UUID> schoolClassIds, String roleCode,
-            String search, int page, int size) {
+            String search, Collection<UUID> excludeUserIds, int page, int size) {
         // IN () không hợp lệ ở JPQL, và ngữ nghĩa đúng của "không phụ trách lớp nào" là
         // "không thấy ai" — tuyệt đối không được rơi về phạm vi toàn trường.
         if (schoolClassIds == null || schoolClassIds.isEmpty()) {
@@ -92,6 +98,7 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
         }
 
         var pattern = likePattern(search);
+        var excluded = normalizeExclusions(excludeUserIds);
         // Lọc lớp bằng EXISTS chứ không JOIN: học sinh học nhiều lớp trong tập sẽ bị JOIN
         // nhân dòng, làm sai cả nội dung trang lẫn totalElements.
         var filter = """
@@ -106,8 +113,10 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
                   SELECT 1 FROM UserRoleJpaEntity ur
                   JOIN RoleJpaEntity r ON r.id = ur.roleId
                   WHERE ur.userId = u.id AND r.code = :roleCode)
-              AND (:pattern IS NULL OR LOWER(u.fullName) LIKE :pattern OR LOWER(u.email) LIKE :pattern)
-            """;
+              AND (:pattern IS NULL
+                  OR vn_search_key(u.fullName) LIKE :pattern
+                  OR vn_search_key(u.email) LIKE :pattern)
+            """ + excludeClause(excluded);
 
         TypedQuery<ExamDirectoryUserInfo> contentQuery = em.createQuery("""
             SELECT new com.sep.vox.application.query.dto.ExamDirectoryUserInfo(
@@ -122,6 +131,7 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
             .setParameter("roleCode", roleCode)
             .setParameter("pattern", pattern);
 
+        bindExclusions(contentQuery, countQuery, excluded);
         return paginate(contentQuery, countQuery, page, size);
     }
 
@@ -144,10 +154,39 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
         return Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
     }
 
+    private static List<UUID> normalizeExclusions(Collection<UUID> excludeUserIds) {
+        if (excludeUserIds == null) {
+            return List.of();
+        }
+        return excludeUserIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
+    }
+
+    /**
+     * Ghép mệnh đề loại trừ vào ĐÚNG một chuỗi filter mà cả câu lấy dữ liệu lẫn câu COUNT dùng
+     * chung — hai câu lệch điều kiện là nguồn gốc của "trang trống mà số đếm khác 0".
+     *
+     * <p>Tập rỗng thì không ghép gì: {@code IN ()} không hợp lệ ở JPQL.
+     */
+    private static String excludeClause(List<UUID> excluded) {
+        return excluded.isEmpty() ? "" : "  AND u.id NOT IN :excludeUserIds\n";
+    }
+
+    private static void bindExclusions(TypedQuery<?> contentQuery, TypedQuery<?> countQuery, List<UUID> excluded) {
+        if (excluded.isEmpty()) {
+            return;
+        }
+        contentQuery.setParameter("excludeUserIds", excluded);
+        countQuery.setParameter("excludeUserIds", excluded);
+    }
+
+    /**
+     * Từ khoá phải bỏ dấu đúng như cột đang được so (hàm SQL {@code vn_search_key}), nếu không thì
+     * gõ không dấu "nguyen van an" sẽ không khớp "Nguyễn Văn An" — xem {@link VnSearchKey}.
+     */
     private static String likePattern(String search) {
         if (search == null || search.isBlank()) {
             return null;
         }
-        return "%" + search.strip().toLowerCase(Locale.ROOT) + "%";
+        return "%" + VnSearchKey.of(search) + "%";
     }
 }

@@ -13,7 +13,9 @@ public enum ExamCandidateResultStatus {
     INVALID,
     RETAKE_REQUIRED,
     PASSED, // chốt sau khi kỳ thi RESULTS_PUBLISHED, điểm >= passingScore (hoặc nhà trường tự chọn từ FINAL)
-    FAILED; // chốt sau khi kỳ thi RESULTS_PUBLISHED, điểm < passingScore hoặc INVALID (hoặc nhà trường tự chọn từ FINAL)
+    FAILED, // chốt sau khi kỳ thi RESULTS_PUBLISHED, điểm < passingScore hoặc INVALID (hoặc nhà trường tự chọn từ FINAL)
+    /** Phiên thi sinh ra kết quả này đã bị xoá mềm — xem {@link ExamSessionStatus#DELETED}. */
+    DELETED;
 
     public static boolean isVisibleToCandidate(ExamCandidateResultStatus status) {
         if (status == null) {
@@ -21,7 +23,8 @@ public enum ExamCandidateResultStatus {
         }
         return switch (status) {
             case RELEASED, FINAL, PASSED, FAILED, INVALID -> true;
-            case PENDING_REVIEW, APPEALED, RE_GRADING, RETAKE_REQUIRED -> false;
+            // DELETED: kết quả của phiên đã xoá — học sinh tuyệt đối không được thấy lại.
+            case PENDING_REVIEW, APPEALED, RE_GRADING, RETAKE_REQUIRED, DELETED -> false;
         };
     }
 }

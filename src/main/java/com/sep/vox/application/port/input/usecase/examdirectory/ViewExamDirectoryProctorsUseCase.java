@@ -42,6 +42,7 @@ public class ViewExamDirectoryProctorsUseCase
             scope.schoolId(),
             SchoolRoleCodes.TEACHER,
             StringNormalization.trimAndCollapseSpaces(input.search()),
+            input.excludeUserIds(),
             input.page(),
             input.size()
         );

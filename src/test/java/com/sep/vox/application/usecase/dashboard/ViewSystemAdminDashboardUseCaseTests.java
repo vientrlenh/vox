@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -44,12 +45,13 @@ class ViewSystemAdminDashboardUseCaseTests {
     private static final int REVENUE_MONTHS = 24;
 
     private OrderRepository orderRepository;
+    private RegisterFormRepository registerFormRepository;
     private ViewSystemAdminDashboardUseCase useCase;
 
     @BeforeEach
     void setUp() {
         var schoolRepository = mock(SchoolRepository.class);
-        var registerFormRepository = mock(RegisterFormRepository.class);
+        registerFormRepository = mock(RegisterFormRepository.class);
         orderRepository = mock(OrderRepository.class);
         var roleRepository = mock(RoleRepository.class);
         var userRoleRepository = mock(UserRoleRepository.class);
@@ -64,6 +66,7 @@ class ViewSystemAdminDashboardUseCaseTests {
         when(schoolRepository.countByIsActiveTrue()).thenReturn(0L);
         when(registerFormRepository.countByStatus(any())).thenReturn(0L);
         when(registerFormRepository.countByCreatedAtAfter(any())).thenReturn(0L);
+        when(registerFormRepository.findOldestCreatedAtByStatus(any())).thenReturn(Optional.empty());
         when(roleRepository.findByCode(any())).thenReturn(Optional.empty());
         when(frameworkRepository.findAllActive(1, 1)).thenReturn(new PageResult<>(List.of(), 1, 1, 0, 0));
         when(rubricRepository.findAllByOwnerType(any(), any(Integer.class), any(Integer.class)))
@@ -119,6 +122,46 @@ class ViewSystemAdminDashboardUseCaseTests {
             .thenReturn(new BigDecimal("12345678"));
 
         assertThat(useCase.execute(null).totalRevenue()).isEqualByComparingTo("12345678");
+    }
+
+    /**
+     * Hàng đợi rỗng phải là null, không phải 0: ở chỉ số này 0 là trạng thái TỐT NHẤT ("có đơn, vừa
+     * nộp hôm nay"), nên trả 0 cho hàng đợi rỗng khiến hai tình huống ngược nhau in ra cùng một dòng.
+     */
+    @Test
+    void should_report_no_oldest_pending_day_count_when_the_queue_is_empty() {
+        when(registerFormRepository.findOldestCreatedAtByStatus(any())).thenReturn(Optional.empty());
+
+        assertThat(useCase.execute(null).oldestPendingRegistrationDays()).isNull();
+    }
+
+    /** Đếm theo NGÀY LỊCH giờ nghiệp vụ, không phải elapsed chia 24 giờ. */
+    @Test
+    void should_count_oldest_pending_registration_in_business_zone_calendar_days() {
+        var sixDaysAgo = LocalDate.now(ZoneConstant.BUSINESS_ZONE)
+            .minusDays(6)
+            .atTime(9, 30)
+            .atZone(ZoneConstant.BUSINESS_ZONE)
+            .toInstant();
+        when(registerFormRepository.findOldestCreatedAtByStatus(any())).thenReturn(Optional.of(sixDaysAgo));
+
+        assertThat(useCase.execute(null).oldestPendingRegistrationDays()).isEqualTo(6);
+    }
+
+    /**
+     * Đơn nộp cuối ngày hôm qua đã sang ngày thứ hai của hàng đợi, dù mới trôi qua vài tiếng — phép
+     * chia cho 24 giờ sẽ trả 0 và làm thẻ KPI trông như hàng đợi vẫn sạch.
+     */
+    @Test
+    void should_count_yesterday_late_night_submission_as_one_day() {
+        var lateYesterday = LocalDate.now(ZoneConstant.BUSINESS_ZONE)
+            .minusDays(1)
+            .atTime(23, 50)
+            .atZone(ZoneConstant.BUSINESS_ZONE)
+            .toInstant();
+        when(registerFormRepository.findOldestCreatedAtByStatus(any())).thenReturn(Optional.of(lateYesterday));
+
+        assertThat(useCase.execute(null).oldestPendingRegistrationDays()).isEqualTo(1);
     }
 
     private static BigDecimal amountOf(List<MonthlyRevenueResponse> monthly, String month) {

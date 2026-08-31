@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.PublishSubscriptionPlanCommand;
+import com.sep.vox.application.port.input.service.SubscriptionPlanReplacementValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
@@ -19,14 +20,17 @@ public class PublishSubscriptionPlanUseCase implements IUseCase<PublishSubscript
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository;
+    private final SubscriptionPlanReplacementValidator replacementValidator;
     private final UserContextPort userContextPort;
 
     public PublishSubscriptionPlanUseCase(
             SubscriptionPlanRepository subscriptionPlanRepository,
             SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository,
+            SubscriptionPlanReplacementValidator replacementValidator,
             UserContextPort userContextPort) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.subscriptionPlanQuotaRepository = subscriptionPlanQuotaRepository;
+        this.replacementValidator = replacementValidator;
         this.userContextPort = userContextPort;
     }
 
@@ -50,6 +54,13 @@ public class PublishSubscriptionPlanUseCase implements IUseCase<PublishSubscript
         // tiền xong không dùng được gì, mà lỗi chỉ lộ ra lúc chấm bài.
         if (subscriptionPlanQuotaRepository.findBySubscriptionPlanId(plan.getId()).isEmpty()) {
             throw new IllegalStateException("Gói phải có ít nhất một hạn mức trước khi xuất bản.");
+        }
+
+        // Gói này có đang là gói thay thế (replacedByPlanId) của gói nào khác không -- nếu có, đây là
+        // lúc nó THẬT SỰ nhận vai trò đó (trường sẽ bị chuyển sang gói này lúc gia hạn, không có cơ
+        // hội từ chối). Phải đạt cùng chuẩn với luồng archive thủ công trước khi được sống.
+        for (var replacedPlan : subscriptionPlanRepository.findByReplacedByPlanId(plan.getId())) {
+            replacementValidator.requireCompatibleTerms(plan, replacedPlan);
         }
 
         plan.setStatus(SubscriptionPlanStatus.ACTIVE);

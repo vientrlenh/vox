@@ -43,6 +43,7 @@ public enum NotificationCategory {
         Map.entry(EventTypeConstant.SCHOOL_DEBT_CAP_EXCEEDED, SYSTEM),
         Map.entry(EventTypeConstant.SCHOOL_LOCKED_DUE_TO_DEBT, BILLING),
         Map.entry(EventTypeConstant.SCHOOL_DEBT_CLEARED, BILLING),
+        Map.entry(EventTypeConstant.SCHOOL_QUOTA_USAGE_WARNING, BILLING),
 
         Map.entry(EventTypeConstant.SCHOOL_SUBSCRIPTION_SUSPENDED, BILLING),
         Map.entry(EventTypeConstant.SCHOOL_SUBSCRIPTION_UNSUSPENDED, BILLING)

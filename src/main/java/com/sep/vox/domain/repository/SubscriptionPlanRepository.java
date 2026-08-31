@@ -23,6 +23,9 @@ public interface SubscriptionPlanRepository {
      */
     boolean existsByReplacedByPlanId(UUID replacedByPlanId);
 
+    /** Gói nào (nếu có) đang trỏ replacedByPlanId vào gói này -- xem existsByReplacedByPlanId. */
+    List<SubscriptionPlan> findByReplacedByPlanId(UUID replacedByPlanId);
+
     /** Danh sách gói cho trường/khách vãng lai -- chỉ những gói còn bán được. */
     PageResult<SubscriptionPlan> findByStatus(SubscriptionPlanStatus status, int page, int size);
 

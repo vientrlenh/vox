@@ -18,5 +18,8 @@ public interface SpringDataSubscriptionPlanRepository extends JpaRepository<Subs
      * vậy sẽ cắt cụt chuỗi và những trường ở đầu chuỗi mất luôn đường gia hạn.
      */
     boolean existsByReplacedByPlanId(UUID replacedByPlanId);
+
+    /** Gói nào (nếu có) đang trỏ replacedByPlanId vào gói này -- xem existsByReplacedByPlanId. */
+    List<SubscriptionPlanJpaEntity> findByReplacedByPlanId(UUID replacedByPlanId);
     Page<SubscriptionPlanJpaEntity> findByStatus(String status, Pageable pageable);
 }

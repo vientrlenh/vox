@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.ImportExamCandidatesFromGradeCommand;
+import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService.ExamDirectoryScope;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromGradeUseCase;
@@ -30,6 +31,7 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.model.school.SchoolGrade;
@@ -52,6 +54,7 @@ class ImportExamCandidatesFromGradeUseCaseTests {
     private SchoolClassUserRepository schoolClassUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
     private ExamDirectoryAccessService examDirectoryAccessService;
+    private ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
     private ImportExamCandidatesFromGradeUseCase useCase;
 
     private final UUID userId = UUID.randomUUID();
@@ -78,10 +81,11 @@ class ImportExamCandidatesFromGradeUseCaseTests {
         schoolClassUserRepository = mock(SchoolClassUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         examDirectoryAccessService = mock(ExamDirectoryAccessService.class);
+        classTestTokenQuotaGuardService = mock(ClassTestTokenQuotaGuardService.class);
         useCase = new ImportExamCandidatesFromGradeUseCase(
             examRepository, examCandidateRepository, schoolGradeRepository,
             schoolClassRepository, schoolClassUserRepository, userRoleQueryRepository,
-            examDirectoryAccessService);
+            examDirectoryAccessService, classTestTokenQuotaGuardService);
 
         var exam = exam();
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
@@ -129,6 +133,53 @@ class ImportExamCandidatesFromGradeUseCaseTests {
 
         var studentIds = result.stream().map(c -> c.studentId()).collect(Collectors.toSet());
         assertThat(studentIds).containsExactlyInAnyOrder(activeStudent, sharedStudent, student2);
+    }
+
+    @Test
+    void should_recheck_token_quota_when_exam_already_scheduled() {
+        var scheduledExam = exam();
+        scheduledExam.setStatus(ExamStatus.SCHEDULED);
+        when(examRepository.findById(examId)).thenReturn(Optional.of(scheduledExam));
+        when(examDirectoryAccessService.resolve(scheduledExam))
+            .thenReturn(new ExamDirectoryScope(userId, schoolId, true));
+        when(schoolClassRepository.findBySchoolId(schoolId, null, null, null, gradeId, 1, MAX_CLASSES))
+            .thenReturn(new PageResult<>(List.of(schoolClass(class1Id)), 1, MAX_CLASSES, 1, 1));
+        when(schoolClassUserRepository.findBySchoolClassId(class1Id, 1, MAX_ROSTER)).thenReturn(new PageResult<>(List.of(
+            classUser(activeStudent, class1Id, true)
+        ), 0, MAX_ROSTER, 1, 1));
+        when(userRoleQueryRepository.findUserIdsByRoleCode(anyCollection(), eq(SchoolRoleCodes.STUDENT)))
+            .thenReturn(Set.of(activeStudent));
+        when(examCandidateRepository.findStudentIdsByExamId(examId)).thenReturn(Set.of());
+        when(examCandidateRepository.saveAll(anyCollection())).thenAnswer(inv -> {
+            Collection<ExamCandidate> arg = inv.getArgument(0);
+            return arg.stream().peek(c -> c.setId(UUID.randomUUID())).toList();
+        });
+
+        useCase.execute(new ImportExamCandidatesFromGradeCommand(examId, gradeId));
+
+        // Nhập theo khối vào bài ĐÃ publish là đường thêm thí sinh mạnh nhất -- phải soi lại quota
+        // ngay sau khi lưu, giống hệt AddExamCandidateUseCase/ImportExamCandidatesFromClassUseCase.
+        verify(classTestTokenQuotaGuardService).requireWithinTokenQuota(scheduledExam);
+    }
+
+    @Test
+    void should_not_recheck_token_quota_when_exam_still_draft() {
+        when(schoolClassRepository.findBySchoolId(schoolId, null, null, null, gradeId, 1, MAX_CLASSES))
+            .thenReturn(new PageResult<>(List.of(schoolClass(class1Id)), 1, MAX_CLASSES, 1, 1));
+        when(schoolClassUserRepository.findBySchoolClassId(class1Id, 1, MAX_ROSTER)).thenReturn(new PageResult<>(List.of(
+            classUser(activeStudent, class1Id, true)
+        ), 0, MAX_ROSTER, 1, 1));
+        when(userRoleQueryRepository.findUserIdsByRoleCode(anyCollection(), eq(SchoolRoleCodes.STUDENT)))
+            .thenReturn(Set.of(activeStudent));
+        when(examCandidateRepository.findStudentIdsByExamId(examId)).thenReturn(Set.of());
+        when(examCandidateRepository.saveAll(anyCollection())).thenAnswer(inv -> {
+            Collection<ExamCandidate> arg = inv.getArgument(0);
+            return arg.stream().peek(c -> c.setId(UUID.randomUUID())).toList();
+        });
+
+        useCase.execute(new ImportExamCandidatesFromGradeCommand(examId, gradeId));
+
+        verify(classTestTokenQuotaGuardService, never()).requireWithinTokenQuota(any());
     }
 
     @Test

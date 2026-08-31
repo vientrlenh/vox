@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.ArchiveSubscriptionPlanCommand;
+import com.sep.vox.application.port.input.command.CreateSubscriptionPlanReplacementCommand;
 import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanReplacementCommand;
 import com.sep.vox.application.port.input.command.ForceSuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.command.UnsuspendSubscriptionCommand;
@@ -24,6 +25,7 @@ import com.sep.vox.application.port.input.command.PublishSubscriptionPlanCommand
 import com.sep.vox.application.port.input.usecase.subscription.AllocateExamQuotaToTeachersUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.AllocatePracticeQuotaToStudentsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ArchiveSubscriptionPlanUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.CreateSubscriptionPlanReplacementUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.UpdateSubscriptionPlanReplacementUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CancelSchoolSubscriptionUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreateSubscriptionPlanUseCase;
@@ -52,6 +54,7 @@ import jakarta.validation.Valid;
 public class SubscriptionController {
 
     private final CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase;
+    private final CreateSubscriptionPlanReplacementUseCase createSubscriptionPlanReplacementUseCase;
     private final ArchiveSubscriptionPlanUseCase archiveSubscriptionPlanUseCase;
     private final UpdateSubscriptionPlanReplacementUseCase updateSubscriptionPlanReplacementUseCase;
     private final PublishSubscriptionPlanUseCase publishSubscriptionPlanUseCase;
@@ -65,6 +68,7 @@ public class SubscriptionController {
 
     public SubscriptionController(
             CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase,
+            CreateSubscriptionPlanReplacementUseCase createSubscriptionPlanReplacementUseCase,
             ArchiveSubscriptionPlanUseCase archiveSubscriptionPlanUseCase,
             UpdateSubscriptionPlanReplacementUseCase updateSubscriptionPlanReplacementUseCase,
             PublishSubscriptionPlanUseCase publishSubscriptionPlanUseCase,
@@ -76,6 +80,7 @@ public class SubscriptionController {
             AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase,
             SetQuotaDistributionPolicyUseCase setQuotaDistributionPolicyUseCase) {
         this.createSubscriptionPlanUseCase = createSubscriptionPlanUseCase;
+        this.createSubscriptionPlanReplacementUseCase = createSubscriptionPlanReplacementUseCase;
         this.archiveSubscriptionPlanUseCase = archiveSubscriptionPlanUseCase;
         this.updateSubscriptionPlanReplacementUseCase = updateSubscriptionPlanReplacementUseCase;
         this.publishSubscriptionPlanUseCase = publishSubscriptionPlanUseCase;
@@ -93,6 +98,22 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> createPlan(@Valid @RequestBody CreateSubscriptionPlanRequest request) {
         var data = createSubscriptionPlanUseCase.execute(CreatePlanCommandMapper.fromRequest(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo gói đăng ký thành công", data));
+    }
+
+    /**
+     * Tạo gói mới (DRAFT) và archive NGAY gói {id} (phải đang ACTIVE) trỏ replacedByPlanId sang gói
+     * mới -- gộp hai bước tạo gói + ngừng bán/chọn gói thay thế. Xem
+     * CreateSubscriptionPlanReplacementUseCase cho lý do điều khoản (giá/chu kỳ/hạn mức) chỉ được
+     * kiểm lúc publish, không phải ở đây.
+     */
+    @PostMapping("/{id}/replacement-plan")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ResponseEntity<ApiResponse<UUID>> createPlanReplacement(
+            @PathVariable(name = "id") UUID id,
+            @Valid @RequestBody CreateSubscriptionPlanRequest request) {
+        var data = createSubscriptionPlanReplacementUseCase.execute(
+            new CreateSubscriptionPlanReplacementCommand(id, CreatePlanCommandMapper.fromRequest(request)));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo gói thay thế thành công", data));
     }
 
     @DeleteMapping("/{id}")

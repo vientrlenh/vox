@@ -18,7 +18,6 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
 import com.sep.vox.domain.model.exam.ExamCandidate;
-import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -86,10 +85,10 @@ public class AddExamCandidateUseCase implements IUseCase<AddExamCandidateCommand
         var candidate = ExamCandidate.createFresh(exam.getId(), input.studentId(), currentUserId,
             Instant.now());
         var saved = examCandidateRepository.save(candidate);
-        // Bài trên lớp đã publish (SCHEDULED) mà thêm học sinh thì số thí sinh -- một input của ước
-        // lượng token đã soi lúc publish -- tăng lên; soi lại ngay, không để tới lúc chấm xong mới vỡ
-        // quota (xem ClassTestTokenQuotaGuardService).
-        if (exam.getKind() == ExamKind.CLASS_TEST && exam.getStatus() == ExamStatus.SCHEDULED) {
+        // Bài đã publish (SCHEDULED) mà thêm học sinh thì số thí sinh -- một input của ước lượng
+        // token đã soi lúc publish -- tăng lên; soi lại ngay, không riêng CLASS_TEST, không để tới
+        // lúc chấm xong mới vỡ quota (xem ClassTestTokenQuotaGuardService).
+        if (exam.getStatus() == ExamStatus.SCHEDULED) {
             classTestTokenQuotaGuardService.requireWithinTokenQuota(exam);
         }
         return ExamCandidateDtoMapper.toDto(saved);

@@ -57,6 +57,10 @@ public class ClassTestTokenQuotaGuardService {
     // lệch khỏi con số sẽ bị trừ thật.
     private static final int COST_VND_SCALE = 6;
 
+    // % nên đủ mượt để hiện "37.5%" thay vì làm tròn cả về số nguyên -- không cần khớp scale tiền tệ
+    // vì đây là tỉ lệ hiển thị, không phải con số đem trừ/so trực tiếp với ai_usage_records.
+    private static final int RATIO_SCALE = 4;
+
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private final SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
@@ -140,9 +144,10 @@ public class ClassTestTokenQuotaGuardService {
      */
     public ExamTokenEstimateResponse estimateTokenQuota(Exam exam) {
         var estimatedCostVnd = computeEstimatedCostVnd(exam);
+        var schoolLocked = schoolSubscriptionDebtGuardService.isSchoolLocked(exam.getSchoolId());
         var subscription = schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId());
         if (subscription.isEmpty()) {
-            return new ExamTokenEstimateResponse(estimatedCostVnd, null, null, false, false);
+            return new ExamTokenEstimateResponse(estimatedCostVnd, null, null, false, false, schoolLocked, null, null);
         }
 
         var subscriptionId = subscription.get().getId();
@@ -161,8 +166,46 @@ public class ClassTestTokenQuotaGuardService {
                 && estimatedCostVnd.compareTo(remainingMyClassTest) > 0;
         }
 
+        // Kỳ thi tập trung không có hạn mức cá nhân (nhánh trên) nên tiêu bao nhiêu cũng ăn thẳng vào
+        // ví chung -- ngược lại với CLASS_TEST, người bấm lên lịch (SCHOOL_ADMIN/CHAIR) không tự thấy
+        // hệ quả lên các giáo viên khác đang có hạn mức cá nhân riêng. Chỉ tính cho CENTRALIZED, đúng
+        // phạm vi vấn đề -- xem computeSharedPoolInsight.
+        var sharedPoolInsight = exam.getKind() == ExamKind.CENTRALIZED
+            ? computeSharedPoolInsight(subscriptionId, estimatedCostVnd)
+            : SharedPoolInsight.NOT_APPLICABLE;
+
         return new ExamTokenEstimateResponse(
-            estimatedCostVnd, remainingExam, remainingMyClassTest, wouldExceedExam, wouldExceedMyClassTest);
+            estimatedCostVnd, remainingExam, remainingMyClassTest, wouldExceedExam, wouldExceedMyClassTest,
+            schoolLocked, sharedPoolInsight.usageRatio(), sharedPoolInsight.teachersWithUnusedAllocation());
+    }
+
+    private record SharedPoolInsight(BigDecimal usageRatio, Integer teachersWithUnusedAllocation) {
+        static final SharedPoolInsight NOT_APPLICABLE = new SharedPoolInsight(null, null);
+    }
+
+    /**
+     * Chỉ có ý nghĩa cho CENTRALIZED -- xem lời gọi ở estimateTokenQuota. % tính trên ĐÚNG phần hạn
+     * mức GÓI còn lại (không cộng số dư ví tự nạp): câu hỏi ở đây là "bài này ăn bao nhiêu % ngân
+     * sách được cấp", khác câu "trường còn chi được bao nhiêu tổng cộng" mà remainingExamVnd/
+     * wouldExceedExam đã trả lời rồi.
+     */
+    private SharedPoolInsight computeSharedPoolInsight(UUID subscriptionId, BigDecimal estimatedCostVnd) {
+        var pool = subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.EXAM);
+        if (pool.isEmpty()) {
+            return SharedPoolInsight.NOT_APPLICABLE;
+        }
+        var quotaOnlyRemaining = pool.get().getTotalAllocatedAmountVnd().subtract(pool.get().getUsedAmountVnd());
+        // Ví gói đã cạn/âm sẵn thì tỉ lệ vô nghĩa (mẫu số <= 0) -- wouldExceedExam/schoolLocked ở
+        // banner khác đã đủ nói rồi, thêm % ở đây chỉ gây rối.
+        if (quotaOnlyRemaining.signum() <= 0) {
+            return SharedPoolInsight.NOT_APPLICABLE;
+        }
+        var ratio = estimatedCostVnd.divide(quotaOnlyRemaining, RATIO_SCALE, RoundingMode.HALF_UP);
+        var teacherCount = (int) subscriptionQuotaUserAllocationRepository
+            .findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.EXAM).stream()
+            .filter(allocation -> allocation.getAllocatedAmountVnd().compareTo(allocation.getUsedAmountVnd()) > 0)
+            .count();
+        return new SharedPoolInsight(ratio, teacherCount);
     }
 
     /**

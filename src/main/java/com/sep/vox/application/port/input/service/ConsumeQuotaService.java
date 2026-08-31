@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.QuotaDebtConfigPort;
+import com.sep.vox.application.port.output.QuotaUsageWarningConfigPort;
 import com.sep.vox.application.response.input.subscription.ConsumeQuotaResponse;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -51,6 +52,8 @@ public class ConsumeQuotaService {
     private final SchoolBalanceEntryRepository schoolBalanceEntryRepository;
     private final SchoolDebtNotificationService schoolDebtNotificationService;
     private final QuotaDebtConfigPort quotaDebtConfig;
+    private final SchoolQuotaUsageNotificationService schoolQuotaUsageNotificationService;
+    private final QuotaUsageWarningConfigPort quotaUsageWarningConfig;
 
     public ConsumeQuotaService(
             SchoolSubscriptionQuotaRecordRepository schoolSubscriptionQuotaRecordRepository,
@@ -59,7 +62,9 @@ public class ConsumeQuotaService {
             SchoolBalanceRepository schoolBalanceRepository,
             SchoolBalanceEntryRepository schoolBalanceEntryRepository,
             SchoolDebtNotificationService schoolDebtNotificationService,
-            QuotaDebtConfigPort quotaDebtConfig) {
+            QuotaDebtConfigPort quotaDebtConfig,
+            SchoolQuotaUsageNotificationService schoolQuotaUsageNotificationService,
+            QuotaUsageWarningConfigPort quotaUsageWarningConfig) {
         this.schoolSubscriptionQuotaRecordRepository = schoolSubscriptionQuotaRecordRepository;
         this.schoolSubscriptionQuotaUserAllocationRepository = schoolSubscriptionQuotaUserAllocationRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
@@ -67,6 +72,8 @@ public class ConsumeQuotaService {
         this.schoolBalanceEntryRepository = schoolBalanceEntryRepository;
         this.schoolDebtNotificationService = schoolDebtNotificationService;
         this.quotaDebtConfig = quotaDebtConfig;
+        this.schoolQuotaUsageNotificationService = schoolQuotaUsageNotificationService;
+        this.quotaUsageWarningConfig = quotaUsageWarningConfig;
     }
 
     /**
@@ -116,10 +123,15 @@ public class ConsumeQuotaService {
 
         // tryConsume là UPDATE có điều kiện nên tự nó đã là chốt chặn -- không đọc-rồi-so ở Java.
         // Lọt qua = khoản này nằm gọn trong hạn mức: không đụng số dư, không sinh bút toán nào.
-        var split = schoolSubscriptionQuotaRecordRepository.tryConsume(quota.getId(), amountVnd)
-            ? new ChargeSplit(amountVnd, BigDecimal.ZERO, currentBalanceVnd(subscriptionId), false)
-            : chargeOverage(subscriptionId, examSessionId, practiceSessionId, quotaType, quota,
+        ChargeSplit split;
+        if (schoolSubscriptionQuotaRecordRepository.tryConsume(quota.getId(), amountVnd)) {
+            checkUsageWarningTransition(subscriptionId, quotaType, quota.getTotalAllocatedAmountVnd(),
+                quota.getUsedAmountVnd(), quota.getUsedAmountVnd().add(amountVnd), Instant.now());
+            split = new ChargeSplit(amountVnd, BigDecimal.ZERO, currentBalanceVnd(subscriptionId), false);
+        } else {
+            split = chargeOverage(subscriptionId, examSessionId, practiceSessionId, quotaType, quota,
                 amountVnd, costUsd, fxRateUsed);
+        }
 
         consumeUserAllocation(subscriptionId, quotaType, userId, amountVnd);
         return buildResponse(subscriptionId, quota.getId(), split);
@@ -154,6 +166,8 @@ public class ConsumeQuotaService {
 
         if (remainingVnd.signum() > 0) {
             schoolSubscriptionQuotaRecordRepository.addUsage(quota.getId(), remainingVnd);
+            checkUsageWarningTransition(subscriptionId, quotaType, current.getTotalAllocatedAmountVnd(),
+                current.getUsedAmountVnd(), current.getUsedAmountVnd().add(remainingVnd), now);
         }
 
         // Có addAllocation (gia hạn/nạp thêm) chen vào giữa lúc tryConsume hỏng và lần đọc lại trên,
@@ -259,6 +273,36 @@ public class ConsumeQuotaService {
         schoolDebtNotificationService.publishDebtCapExceeded(
             subscriptionId, schoolId, quotaType, examSessionId, practiceSessionId, overageVnd,
             totalAllocatedVnd, totalAllocatedVnd.add(debtAfterVnd), debtAfterVnd, cap, now
+        );
+    }
+
+    /**
+     * Chỉ CẢNH BÁO SỚM (log + notification SCHOOL_ADMIN), KHÔNG chặn -- hạn mức CHƯA cạn, đây chỉ là
+     * báo trước để trường cân nhắc gia hạn/nạp thêm trước khi bị tính vào nợ (xem
+     * {@link #checkDebtCapTransition}).
+     *
+     * <p>So sánh {@code used/total} TRƯỚC/SAU để chỉ báo đúng 1 lần lúc CHUYỂN từ dưới ngưỡng sang
+     * vượt ngưỡng -- cùng kỹ thuật crossing-detection với checkDebtCapTransition, nên tự "reset" đúng
+     * khi trường gia hạn/nạp thêm làm {@code totalAllocatedVnd} tăng và tỉ lệ tụt xuống dưới ngưỡng.
+     */
+    private void checkUsageWarningTransition(UUID subscriptionId, QuotaType quotaType,
+            BigDecimal totalAllocatedVnd, BigDecimal usedBeforeVnd, BigDecimal usedAfterVnd, Instant now) {
+        if (totalAllocatedVnd.signum() <= 0) {
+            return;
+        }
+
+        var threshold = totalAllocatedVnd.multiply(quotaUsageWarningConfig.warningRatio());
+        if (usedAfterVnd.compareTo(threshold) < 0 || usedBeforeVnd.compareTo(threshold) >= 0) {
+            return;
+        }
+
+        LOGGER.info(
+            "Hạn mức vượt ngưỡng cảnh báo sớm: subscriptionId={} quotaType={} usedVnd={} totalVnd={}",
+            subscriptionId, quotaType, usedAfterVnd, totalAllocatedVnd
+        );
+
+        schoolQuotaUsageNotificationService.publishQuotaUsageWarning(
+            subscriptionId, requireSchoolId(subscriptionId), quotaType, totalAllocatedVnd, usedAfterVnd, now
         );
     }
 

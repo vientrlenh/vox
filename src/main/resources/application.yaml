@@ -418,6 +418,7 @@ app:
       "[SchoolDebtCapExceeded]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
       "[SchoolLockedDueToDebt]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
       "[SchoolDebtCleared]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
+      "[SchoolQuotaUsageWarning]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
 
       "[SchoolSubscriptionSuspended]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
       "[SchoolSubscriptionUnsuspended]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
@@ -468,6 +469,10 @@ vox:
       # Trần cảnh báo (KHÔNG chặn) khi nợ (usedQuantity - totalAllocated) vượt tỉ lệ này so với
       # totalAllocated -- xem QuotaDebtProperties/SchoolSubscriptionDebtGuardService.
       cap-ratio: ${VOX_QUOTA_DEBT_CAP_RATIO:}
+    usage-warning:
+      # Cảnh báo SỚM (KHÔNG chặn) khi used/totalAllocated vượt tỉ lệ này -- xem
+      # QuotaUsageWarningProperties/ConsumeQuotaService.checkUsageWarningTransition.
+      warning-ratio: ${VOX_QUOTA_USAGE_WARNING_RATIO:}
     selling-price:
       # Fallback tĩnh khi chưa có snapshot nào từ ExchangeRateRefreshJob (mới deploy) -- xem
       # QuotaSellingPriceProperties/QuotaPricingService.

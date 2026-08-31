@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -250,6 +251,54 @@ class ClassTestTokenQuotaGuardServiceTests {
         // không thì hoặc dọa người dùng về một bài vẫn publish được, hoặc để họ bấm rồi mới ăn lỗi.
         assertThat(estimate.remainingExamVnd()).isEqualByComparingTo(BigDecimal.valueOf(6_000_000));
         assertThat(estimate.wouldExceedExam()).isFalse();
+    }
+
+    /**
+     * CENTRALIZED không có hạn mức cá nhân nên tiêu bao nhiêu cũng ăn thẳng vào ví chung -- người
+     * bấm lên lịch không tự thấy hệ quả lên các giáo viên khác đang có hạn mức cá nhân riêng cho
+     * CLASS_TEST. % tính trên phần hạn mức GÓI còn lại (không cộng ví tự nạp, khác remainingExamVnd).
+     */
+    @Test
+    void should_compute_shared_pool_usage_ratio_and_teacher_count_for_centralized_estimate() {
+        givenSchoolQuota(10_000_000, 1_000_000); // quotaOnlyRemaining = 9.000.000
+        var teacherWithRoom = UUID.randomUUID();
+        var teacherFullyUsed = UUID.randomUUID();
+        when(subscriptionQuotaUserAllocationRepository
+            .findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.EXAM))
+            .thenReturn(List.of(
+                new SchoolSubscriptionQuotaUserAllocation(subscriptionId, QuotaType.EXAM, teacherWithRoom,
+                    BigDecimal.valueOf(500_000), BigDecimal.valueOf(100_000)),
+                new SchoolSubscriptionQuotaUserAllocation(subscriptionId, QuotaType.EXAM, teacherFullyUsed,
+                    BigDecimal.valueOf(500_000), BigDecimal.valueOf(500_000))));
+
+        var estimate = guard.estimateTokenQuota(centralizedExam(EXAM_SECONDS));
+
+        // estimatedCostVnd = 3.600.000 / quotaOnlyRemaining = 9.000.000 = 0.4 (40%).
+        assertThat(estimate.sharedPoolUsageRatio()).isEqualByComparingTo(BigDecimal.valueOf(0.4));
+        // Chỉ teacherWithRoom còn dư (500.000 - 100.000 > 0) -- teacherFullyUsed đã dùng hết, không tính.
+        assertThat(estimate.teachersWithUnusedPersonalAllocationCount()).isEqualTo(1);
+    }
+
+    /** Ví gói đã cạn/âm sẵn thì % vô nghĩa -- wouldExceedExam/schoolLocked đã đủ nói, thêm % chỉ gây rối. */
+    @Test
+    void should_return_null_shared_pool_insight_when_quota_pool_already_exhausted() {
+        givenSchoolQuota(1_000_000, 1_000_000);
+
+        var estimate = guard.estimateTokenQuota(centralizedExam(EXAM_SECONDS));
+
+        assertThat(estimate.sharedPoolUsageRatio()).isNull();
+        assertThat(estimate.teachersWithUnusedPersonalAllocationCount()).isNull();
+    }
+
+    /** CLASS_TEST đã tự thấy trần cá nhân của chính mình rồi -- không cần soi hiệu ứng domino. */
+    @Test
+    void should_not_compute_shared_pool_insight_for_class_test() {
+        givenSchoolQuota(10_000_000, 1_000_000);
+
+        var estimate = guard.estimateTokenQuota(classTest(EXAM_SECONDS));
+
+        assertThat(estimate.sharedPoolUsageRatio()).isNull();
+        assertThat(estimate.teachersWithUnusedPersonalAllocationCount()).isNull();
     }
 
     private void givenSchoolQuota(long totalAllocatedVnd, long usedVnd) {

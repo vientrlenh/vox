@@ -12,12 +12,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ImportExamCandidatesFromGradeCommand;
+import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
 import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -40,6 +42,7 @@ public class ImportExamCandidatesFromGradeUseCase
     private final SchoolClassUserRepository schoolClassUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final ExamDirectoryAccessService examDirectoryAccessService;
+    private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
 
     public ImportExamCandidatesFromGradeUseCase(
             ExamRepository examRepository,
@@ -48,7 +51,8 @@ public class ImportExamCandidatesFromGradeUseCase
             SchoolClassRepository schoolClassRepository,
             SchoolClassUserRepository schoolClassUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
-            ExamDirectoryAccessService examDirectoryAccessService) {
+            ExamDirectoryAccessService examDirectoryAccessService,
+            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService) {
         this.examRepository = examRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.schoolGradeRepository = schoolGradeRepository;
@@ -56,6 +60,7 @@ public class ImportExamCandidatesFromGradeUseCase
         this.schoolClassUserRepository = schoolClassUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.examDirectoryAccessService = examDirectoryAccessService;
+        this.classTestTokenQuotaGuardService = classTestTokenQuotaGuardService;
     }
 
     @Override
@@ -112,6 +117,14 @@ public class ImportExamCandidatesFromGradeUseCase
         if (newCandidates.isEmpty()) {
             return List.of();
         }
-        return ExamCandidateDtoMapper.toDtoList(examCandidateRepository.saveAll(newCandidates));
+        var saved = examCandidateRepository.saveAll(newCandidates);
+        // Xem AddExamCandidateUseCase: nhập cả khối vào bài đã publish thì số thí sinh -- một input
+        // của ước lượng token đã soi lúc publish -- tăng lên mạnh nhất trong mọi đường thêm thí sinh,
+        // càng phải soi lại ngay. Không cần check kind vì đường này chỉ chạy được cho scope trường
+        // (CENTRALIZED) -- xem chặn ForbiddenException phía trên.
+        if (exam.getStatus() == ExamStatus.SCHEDULED) {
+            classTestTokenQuotaGuardService.requireWithinTokenQuota(exam);
+        }
+        return ExamCandidateDtoMapper.toDtoList(saved);
     }
 }

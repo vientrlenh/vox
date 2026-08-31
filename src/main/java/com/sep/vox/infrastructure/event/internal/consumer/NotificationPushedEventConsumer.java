@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.event.internal.consumer;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
@@ -43,6 +44,7 @@ import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.event.SchoolDebtCapExceededPayloadV1;
 import com.sep.vox.application.event.SchoolDebtClearedPayloadV1;
 import com.sep.vox.application.event.SchoolLockedDueToDebtPayloadV1;
+import com.sep.vox.application.event.SchoolQuotaUsageWarningPayloadV1;
 import com.sep.vox.application.event.SchoolSubscriptionSuspendedPayloadV1;
 import com.sep.vox.application.event.SchoolSubscriptionUnsuspendedPayloadV1;
 import com.sep.vox.application.port.output.PushNotificationPort;
@@ -427,6 +429,18 @@ public class NotificationPushedEventConsumer {
                 yield fanOut(payload.schoolAdminIds(), category,
                     "Trường đang bị khóa do nợ hạn mức AI",
                     "Chi phí AI thực tế đã vượt hạn mức -- thanh toán hoặc gia hạn/nâng cấp gói để tiếp tục tổ chức thi",
+                    data(eventType, "schoolId", payload.schoolId()));
+            }
+
+            case EventTypeConstant.SCHOOL_QUOTA_USAGE_WARNING -> {
+                var payload = parse(value, SchoolQuotaUsageWarningPayloadV1.class, eventType, eventId);
+                var percent = payload.usedAmountVnd()
+                    .multiply(BigDecimal.valueOf(100))
+                    .divide(payload.totalAllocatedVnd(), 0, RoundingMode.HALF_UP);
+                yield fanOut(payload.schoolAdminIds(), category,
+                    "Cảnh báo: sắp hết hạn mức AI",
+                    "%s đã dùng %s%% hạn mức -- cân nhắc gia hạn/nâng cấp gói để tránh gián đoạn"
+                        .formatted(quotaLabel(payload.quotaType()), percent),
                     data(eventType, "schoolId", payload.schoolId()));
             }
 

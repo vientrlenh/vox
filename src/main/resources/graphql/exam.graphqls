@@ -754,6 +754,25 @@ type ExamTokenEstimate {
     remainingMyClassTestVnd: Float
     wouldExceedExam: Boolean!
     wouldExceedMyClassTest: Boolean!
+    """
+    Trường đang bị khóa do nợ (số dư ví tự nạp âm) -- xem SchoolSubscriptionDebtGuardService. Khác
+    nguyên nhân với wouldExceedExam (hết hạn mức): khóa do nợ thì cần thanh toán/nạp thêm, không chỉ
+    là "mua thêm token". Có thể true dù wouldExceedExam=false nếu hạn mức gói vẫn còn dư.
+    """
+    schoolLocked: Boolean!
+    """
+    % ước lượng chi phí bài này chiếm trong PHẦN HẠN MỨC GÓI còn lại của ví EXAM (không tính số dư ví
+    tự nạp) -- chỉ có giá trị khi kind=CENTRALIZED và ví còn dư >0, dùng để cảnh báo sớm hiệu ứng
+    domino lên các giáo viên khác đang có hạn mức cá nhân (xem teachersWithUnusedPersonalAllocationCount).
+    null cho CLASS_TEST hoặc khi không áp dụng được.
+    """
+    sharedPoolUsageRatio: Float
+    """
+    Số giáo viên (thuộc subscription này) hiện còn hạn mức cá nhân CHƯA dùng hết cho CLASS_TEST. Chỉ có
+    giá trị cùng điều kiện với sharedPoolUsageRatio -- CENTRALIZED tiêu nhiều vào ví chung có thể khiến
+    các giáo viên này không lên lịch CLASS_TEST được nữa dù hạn mức cá nhân vẫn còn.
+    """
+    teachersWithUnusedPersonalAllocationCount: Int
 }
 
 extend type Query {

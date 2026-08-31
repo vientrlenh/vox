@@ -17,7 +17,6 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
 import com.sep.vox.domain.model.exam.ExamCandidate;
-import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -108,8 +107,8 @@ public class ImportExamCandidatesFromClassUseCase
         }
         var saved = examCandidateRepository.saveAll(newCandidates);
         // Xem AddExamCandidateUseCase: thêm cả loạt thí sinh vào bài đã publish thì càng phải soi lại
-        // token quota ngay, không đợi tới lúc chấm xong mới vỡ.
-        if (exam.getKind() == ExamKind.CLASS_TEST && exam.getStatus() == ExamStatus.SCHEDULED) {
+        // token quota ngay, không riêng CLASS_TEST, không đợi tới lúc chấm xong mới vỡ.
+        if (exam.getStatus() == ExamStatus.SCHEDULED) {
             classTestTokenQuotaGuardService.requireWithinTokenQuota(exam);
         }
         return ExamCandidateDtoMapper.toDtoList(saved);

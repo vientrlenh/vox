@@ -8,6 +8,7 @@ import com.sep.vox.application.port.input.command.RetryGradingExamSessionCommand
 import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
 import com.sep.vox.application.port.input.service.ExamSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
@@ -24,6 +25,7 @@ public class RetryGradingExamSessionUseCase implements IUseCase<RetryGradingExam
     private final ExamCandidateResultRepository examCandidateResultRepository;
     private final ExamRepository examRepository;
     private final ExamSessionModerationAccessService moderationAccessService;
+    private final UserContextPort userContextPort;
     private final SubmitExamSessionUseCase submitExamSessionUseCase;
 
     public RetryGradingExamSessionUseCase(
@@ -32,12 +34,14 @@ public class RetryGradingExamSessionUseCase implements IUseCase<RetryGradingExam
             ExamCandidateResultRepository examCandidateResultRepository,
             ExamRepository examRepository,
             ExamSessionModerationAccessService moderationAccessService,
+            UserContextPort userContextPort,
             SubmitExamSessionUseCase submitExamSessionUseCase) {
         this.examSessionRepository = examSessionRepository;
         this.examCandidateRepository = examCandidateRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examRepository = examRepository;
         this.moderationAccessService = moderationAccessService;
+        this.userContextPort = userContextPort;
         this.submitExamSessionUseCase = submitExamSessionUseCase;
     }
 
@@ -65,6 +69,25 @@ public class RetryGradingExamSessionUseCase implements IUseCase<RetryGradingExam
             && candidate.getBlockedAt() == null;
         if (session.getStatus() != ExamSessionStatus.GRADING_FAILED && !isUnblockedInvalidRetry) {
             throw new IllegalStateException("Chỉ có thể chấm lại phiên thi đang lỗi chấm");
+        }
+
+        // Định mức chỉ áp cho phía TRƯỜNG, và chỉ cho lượt chấm lại thật (phiên đang lỗi chấm).
+        //
+        // Quản trị hệ thống không tiêu vào định mức này: lượt của họ là lượt khắc phục sự cố nền
+        // tảng, và nếu nó đốt định mức của trường thì một lần AI hỏng hàng loạt sẽ ép hàng trăm bài
+        // sang chấm tay vì lỗi của chính mình. Cùng lý do sẽ áp cho job tự chạy lại sau này.
+        //
+        // Nhánh INVALID được dỡ cấm KHÔNG tính: đó là lần chấm AI ĐẦU TIÊN của phiên, không phải
+        // chấm lại sau khi hỏng.
+        var schoolInitiated = !userContextPort.isSystemAdmin();
+        if (schoolInitiated && session.getStatus() == ExamSessionStatus.GRADING_FAILED) {
+            if (!session.canSchoolRequestAiRegrade()) {
+                throw new IllegalStateException(
+                    "Đã dùng hết lượt nhờ AI chấm lại cho phiên thi này, vui lòng chuyển sang chấm tay"
+                );
+            }
+            session.setSchoolRegradeCount(session.getSchoolRegradeCount() + 1);
+            examSessionRepository.save(session);
         }
 
         submitExamSessionUseCase.execute(new SubmitExamSessionCommand(session.getId()));

@@ -94,6 +94,13 @@ public class ExamSessionJpaEntity {
     @Column(name = "grading_retry_count")
     private Integer gradingRetryCount;
 
+    // DEFAULT 0 phải có mặt Ở ĐÂY chứ không chỉ trong V9: test tầng persistence chạy với
+    // ddl-auto: create-drop nên schema của chúng dựng từ entity này, không qua Flyway. Thiếu default
+    // thì mọi câu INSERT native trong fixture (kể cả những fixture có sẵn, không liên quan gì tới
+    // cột này) phải tự liệt kê cột mới -- một cột nội bộ không nên bắt cả bộ test biết tới nó.
+    @Column(name = "school_regrade_count", nullable = false, columnDefinition = "INTEGER DEFAULT 0")
+    private int schoolRegradeCount;
+
     protected ExamSessionJpaEntity() {}
 
     public ExamSessionJpaEntity(UUID id, UUID examId, UUID candidateId, UUID paperId, Instant startedAt,
@@ -227,5 +234,13 @@ public class ExamSessionJpaEntity {
 
     public void setGradingRetryCount(Integer gradingRetryCount) {
         this.gradingRetryCount = gradingRetryCount;
+    }
+
+    public int getSchoolRegradeCount() {
+        return schoolRegradeCount;
+    }
+
+    public void setSchoolRegradeCount(int schoolRegradeCount) {
+        this.schoolRegradeCount = schoolRegradeCount;
     }
 }

@@ -90,6 +90,14 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     }
 
     @Override
+    public void deleteByIdIn(Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return;
+        }
+        springDataExamCandidateRepository.deleteByIdIn(ids);
+    }
+
+    @Override
     public void deleteByExamId(UUID examId) {
         springDataExamCandidateRepository.deleteByExamId(examId);
     }

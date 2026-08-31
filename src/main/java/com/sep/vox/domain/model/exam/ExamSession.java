@@ -53,6 +53,19 @@ public class ExamSession {
     /** Dịch vụ chấm đã thử bao nhiêu lần trước khi bỏ cuộc; null cùng lúc với {@link #gradingError}. */
     private Integer gradingRetryCount;
 
+    /**
+     * Số lần NHÀ TRƯỜNG đã nhờ AI chấm lại phiên này.
+     *
+     * <p>Khác hẳn {@link #gradingRetryCount}: cột kia là số lần DỊCH VỤ CHẤM tự thử trong một lượt,
+     * lấy từ sự kiện Kafka. Cột này đếm số LƯỢT do người ở trường yêu cầu.
+     *
+     * <p>CHỈ đếm lượt phía trường. Lượt do quản trị hệ thống kích — và sau này là job tự chạy lại khi
+     * có sự cố diện rộng — không tiêu vào định mức của trường: bằng không, một lần AI hỏng hàng loạt
+     * sẽ âm thầm đốt sạch lượt chấm lại của mọi trường rồi ép hàng trăm bài sang chấm tay, vì một sự
+     * cố của chính nền tảng.
+     */
+    private int schoolRegradeCount;
+
     public ExamSession() {}
 
     public ExamSession(UUID id, UUID examId, UUID candidateId, UUID paperId, Instant startedAt,
@@ -191,6 +204,28 @@ public class ExamSession {
      * thông điệp cũ thì một phiên đã chấm lại thành công vẫn nằm trong nhóm sự cố trên trang phân
      * loại, và người trực xử lý lại đúng thứ đã xong.
      */
+    public int getSchoolRegradeCount() {
+        return schoolRegradeCount;
+    }
+
+    public void setSchoolRegradeCount(int schoolRegradeCount) {
+        this.schoolRegradeCount = schoolRegradeCount;
+    }
+
+    /**
+     * Trường còn được nhờ AI chấm lại phiên này nữa không.
+     *
+     * <p>Một lượt: lỗi tạm thời gần như luôn hết ngay ở lần thử đầu, nên lượt thứ hai hỏng tiếp là
+     * bằng chứng khá chắc rằng nguyên nhân mang tính tất định (âm thanh hỏng, cấu hình rubric sai) —
+     * thử thêm chỉ đốt tiền cho một thất bại đã biết trước. Đường ra lúc đó là giao người chấm.
+     */
+    public boolean canSchoolRequestAiRegrade() {
+        return schoolRegradeCount < MAX_SCHOOL_REGRADES;
+    }
+
+    /** Số lượt AI chấm lại tối đa mà phía trường được yêu cầu cho một phiên. */
+    public static final int MAX_SCHOOL_REGRADES = 1;
+
     public void clearGradingFailure() {
         this.gradingError = null;
         this.gradingRetryCount = null;

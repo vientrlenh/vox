@@ -19,6 +19,9 @@ public interface ExamCandidateRepository {
     Map<UUID, Long> countByExamIdIn(Collection<UUID> examIds);
 
     void deleteById(UUID id);
+
+    /** Xoá cả nhóm trong một câu lệnh — dùng cho thao tác xoá hàng loạt trên màn danh sách thí sinh. */
+    void deleteByIdIn(Collection<UUID> ids);
     void deleteByExamId(UUID examId);
 
     Optional<ExamCandidate> findById(UUID id);

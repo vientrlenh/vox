@@ -25,6 +25,7 @@ public final class ExamSessionMapper {
         domain.setRemainingSeconds(jpa.getRemainingSeconds());
         domain.setGradingError(jpa.getGradingError());
         domain.setGradingRetryCount(jpa.getGradingRetryCount());
+        domain.setSchoolRegradeCount(jpa.getSchoolRegradeCount());
         return domain;
     }
 
@@ -46,6 +47,7 @@ public final class ExamSessionMapper {
         jpa.setRemainingSeconds(domain.getRemainingSeconds());
         jpa.setGradingError(domain.getGradingError());
         jpa.setGradingRetryCount(domain.getGradingRetryCount());
+        jpa.setSchoolRegradeCount(domain.getSchoolRegradeCount());
         return jpa;
     }
 

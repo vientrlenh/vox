@@ -101,6 +101,20 @@ public class AiUsageRecordJpaEntity {
     @Column(name = "charged_at")
     private Instant chargedAt;
 
+    /**
+     * NULL = chưa quyết định; có giá trị = khoản chi này SẼ KHÔNG BAO GIỜ được thu của trường.
+     *
+     * <p>Tách khỏi {@code chargedAt} vì trước V9 một mình cột đó phải mang hai nghĩa lẫn nhau ("chưa
+     * thu" và "sẽ không thu"), và câu giành tiền chỉ nhìn NULL nên nó nuốt luôn phần token đã đốt ở
+     * lượt chấm hỏng. Giữ MỐC thay vì cờ boolean để trả lời được "sự cố hôm đó tốn nền tảng bao
+     * nhiêu".
+     *
+     * <p>Cùng cảnh báo như {@code chargedAt}: domain model không mang cột này, nên một đường ghi lại
+     * dòng đã tồn tại sẽ xóa dấu miễn.
+     */
+    @Column(name = "waived_at")
+    private Instant waivedAt;
+
     protected AiUsageRecordJpaEntity() {}
 
     public AiUsageRecordJpaEntity(UUID id, UUID examSessionId, UUID turnId, UUID usageEventId, String usageType,
@@ -132,6 +146,14 @@ public class AiUsageRecordJpaEntity {
 
     public void setChargedAt(Instant chargedAt) {
         this.chargedAt = chargedAt;
+    }
+
+    public Instant getWaivedAt() {
+        return waivedAt;
+    }
+
+    public void setWaivedAt(Instant waivedAt) {
+        this.waivedAt = waivedAt;
     }
 
     public UUID getId() {

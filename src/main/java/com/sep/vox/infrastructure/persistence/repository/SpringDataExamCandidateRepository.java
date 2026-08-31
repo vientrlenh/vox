@@ -25,6 +25,7 @@ public interface SpringDataExamCandidateRepository extends JpaRepository<ExamCan
     List<ExamCandidateJpaEntity> findByExamIdOrderByAssignedAtAscIdAsc(UUID examId);
     List<ExamCandidateJpaEntity> findByExamIdIn(Collection<UUID> examIds);
     void deleteByExamId(UUID examId);
+    void deleteByIdIn(Collection<UUID> ids);
     Optional<ExamCandidateJpaEntity> findByExamIdAndStudentId(UUID examId, UUID studentId);
     List<ExamCandidateJpaEntity> findByStudentId(UUID studentId);
     List<ExamCandidateJpaEntity> findByScheduleId(UUID scheduleId);

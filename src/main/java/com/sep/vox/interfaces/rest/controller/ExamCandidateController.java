@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sep.vox.application.port.input.command.BulkDeleteExamCandidatesCommand;
 import com.sep.vox.application.port.input.command.DeleteExamCandidateCommand;
 import com.sep.vox.application.port.input.command.UnblockExamCandidateCommand;
 import com.sep.vox.application.port.input.command.UpdateExamCandidateStatusCommand;
@@ -22,6 +23,7 @@ import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamCandid
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamPapersUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.AutoFillExamCandidatesUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.BulkAssignExamCandidateScheduleUseCase;
+import com.sep.vox.application.port.input.usecase.examcandidate.BulkDeleteExamCandidatesUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.DeleteExamCandidateUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromClassUseCase;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromGradeUseCase;
@@ -35,6 +37,7 @@ import com.sep.vox.interfaces.rest.dto.request.AssignExamCandidateScheduleReques
 import com.sep.vox.interfaces.rest.dto.request.AssignExamPapersRequest;
 import com.sep.vox.interfaces.rest.dto.request.AutoFillExamCandidatesRequest;
 import com.sep.vox.interfaces.rest.dto.request.BulkAssignExamCandidateScheduleRequest;
+import com.sep.vox.interfaces.rest.dto.request.BulkDeleteExamCandidatesRequest;
 import com.sep.vox.interfaces.rest.dto.request.ImportExamCandidatesFromClassRequest;
 import com.sep.vox.interfaces.rest.dto.request.ImportExamCandidatesFromGradeRequest;
 import com.sep.vox.interfaces.rest.dto.request.SessionReasonRequest;
@@ -64,6 +67,7 @@ public class ExamCandidateController {
     private final UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase;
     private final UnblockExamCandidateUseCase unblockExamCandidateUseCase;
     private final DeleteExamCandidateUseCase deleteExamCandidateUseCase;
+    private final BulkDeleteExamCandidatesUseCase bulkDeleteExamCandidatesUseCase;
 
     public ExamCandidateController(
             AddExamCandidateUseCase addExamCandidateUseCase,
@@ -75,7 +79,8 @@ public class ExamCandidateController {
             AssignExamPapersUseCase assignExamPapersUseCase,
             UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase,
             UnblockExamCandidateUseCase unblockExamCandidateUseCase,
-            DeleteExamCandidateUseCase deleteExamCandidateUseCase) {
+            DeleteExamCandidateUseCase deleteExamCandidateUseCase,
+            BulkDeleteExamCandidatesUseCase bulkDeleteExamCandidatesUseCase) {
         this.addExamCandidateUseCase = addExamCandidateUseCase;
         this.importExamCandidatesFromClassUseCase = importExamCandidatesFromClassUseCase;
         this.importExamCandidatesFromGradeUseCase = importExamCandidatesFromGradeUseCase;
@@ -86,6 +91,7 @@ public class ExamCandidateController {
         this.updateExamCandidateStatusUseCase = updateExamCandidateStatusUseCase;
         this.unblockExamCandidateUseCase = unblockExamCandidateUseCase;
         this.deleteExamCandidateUseCase = deleteExamCandidateUseCase;
+        this.bulkDeleteExamCandidatesUseCase = bulkDeleteExamCandidatesUseCase;
     }
 
     @PostMapping
@@ -190,6 +196,22 @@ public class ExamCandidateController {
             @PathVariable("examId") UUID examId,
             @PathVariable("candidateId") UUID candidateId) {
         deleteExamCandidateUseCase.execute(new DeleteExamCandidateCommand(examId, candidateId));
+        return ResponseEntity.ok(ApiResponse.success("Xóa thí sinh khỏi kỳ thi thành công"));
+    }
+
+    /**
+     * Xoá cả nhóm thí sinh trong một transaction — dùng cho màn tick chọn nhiều thí sinh.
+     *
+     * <p>Danh sách id đi trong body: DELETE với hàng chục UUID trên query string vừa chạm giới hạn
+     * độ dài URL vừa đổ hết id vào access log.
+     */
+    @DeleteMapping
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<Void>> bulkDelete(
+            @PathVariable("examId") UUID examId,
+            @Valid @RequestBody BulkDeleteExamCandidatesRequest request) {
+        bulkDeleteExamCandidatesUseCase.execute(
+            new BulkDeleteExamCandidatesCommand(examId, request.candidateIds()));
         return ResponseEntity.ok(ApiResponse.success("Xóa thí sinh khỏi kỳ thi thành công"));
     }
 }

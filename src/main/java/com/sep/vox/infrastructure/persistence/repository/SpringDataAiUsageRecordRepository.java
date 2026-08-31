@@ -35,10 +35,39 @@ public interface SpringDataAiUsageRecordRepository extends JpaRepository<AiUsage
     @Query("""
         UPDATE AiUsageRecordJpaEntity r
         SET r.chargedAt = :chargedAt
-        WHERE r.examSessionId = :examSessionId AND r.chargedAt IS NULL
+        WHERE r.examSessionId = :examSessionId AND r.chargedAt IS NULL AND r.waivedAt IS NULL
     """)
     int markChargedByExamSessionId(
         @Param("examSessionId") UUID examSessionId, @Param("chargedAt") Instant chargedAt);
+
+    /**
+     * MIỄN mọi dòng chi phí chưa ngã ngũ của phiên: chúng thuộc lượt chấm vừa hỏng, và lượt hỏng
+     * không tạo ra kết quả nào cho trường nên không có gì để thu.
+     *
+     * <p>"Chưa ngã ngũ" = chưa thu VÀ chưa miễn. Loại dòng đã thu ra là bắt buộc: một phiên có thể
+     * chấm nhiều lượt, và những lượt trước đã thu tiền hợp lệ -- miễn đè lên chúng là hoàn tiền cho
+     * phần việc đã giao đủ.
+     *
+     * <p>Gọi ngay lúc phiên vào GRADING_FAILED, KHÔNG đợi tới lúc ai đó bấm chấm lại: để tới đó thì
+     * hành vi phụ thuộc vào việc có người đi khắc phục hay không -- bỏ mặc thì miễn phí, còn đi sửa
+     * thì bị tính tiền, đúng chiều khuyến khích ngược.
+     */
+    @Modifying
+    @Query("""
+        UPDATE AiUsageRecordJpaEntity r
+        SET r.waivedAt = :waivedAt
+        WHERE r.examSessionId = :examSessionId AND r.chargedAt IS NULL AND r.waivedAt IS NULL
+    """)
+    int markWaivedByExamSessionId(
+        @Param("examSessionId") UUID examSessionId, @Param("waivedAt") Instant waivedAt);
+
+    /** Tổng chi phí nền tảng đã gánh thay cho các lượt chấm hỏng của phiên này. */
+    @Query("""
+        SELECT COALESCE(SUM(r.costVnd), 0)
+        FROM AiUsageRecordJpaEntity r
+        WHERE r.examSessionId = :examSessionId AND r.waivedAt IS NOT NULL
+    """)
+    BigDecimal sumWaivedCostVndByExamSessionId(@Param("examSessionId") UUID examSessionId);
 
     @Query("""
         SELECT COALESCE(SUM(r.costVnd), 0)

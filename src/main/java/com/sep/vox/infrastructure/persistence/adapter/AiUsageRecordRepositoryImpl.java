@@ -52,6 +52,11 @@ public class AiUsageRecordRepositoryImpl implements AiUsageRecordRepository {
     }
 
     @Override
+    public int markWaivedByExamSessionId(UUID examSessionId, Instant waivedAt) {
+        return springDataAiUsageRecordRepository.markWaivedByExamSessionId(examSessionId, waivedAt);
+    }
+
+    @Override
     public BigDecimal sumCostVndByExamSessionIdAndChargedAt(UUID examSessionId, Instant chargedAt) {
         return springDataAiUsageRecordRepository
             .sumCostVndByExamSessionIdAndChargedAt(examSessionId, chargedAt);

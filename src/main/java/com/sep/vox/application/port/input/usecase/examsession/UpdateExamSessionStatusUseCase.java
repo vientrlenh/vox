@@ -1,7 +1,10 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
 import java.time.Instant;
+import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,23 +13,30 @@ import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
 import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.examsession.ExamSessionResponse;
+import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
+import com.sep.vox.domain.repository.AiUsageRecordRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 
 @Service
 public class UpdateExamSessionStatusUseCase implements IUseCase<UpdateExamSessionStatusCommand, ExamSessionResponse> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpdateExamSessionStatusUseCase.class);
+
     private final ExamSessionRepository examSessionRepository;
     private final ExamCandidateRepository examCandidateRepository;
+    private final AiUsageRecordRepository aiUsageRecordRepository;
     private final SubmitExamSessionUseCase submitExamSessionUseCase;
 
     public UpdateExamSessionStatusUseCase(
             ExamSessionRepository examSessionRepository,
             ExamCandidateRepository examCandidateRepository,
+            AiUsageRecordRepository aiUsageRecordRepository,
             SubmitExamSessionUseCase submitExamSessionUseCase) {
         this.examSessionRepository = examSessionRepository;
         this.examCandidateRepository = examCandidateRepository;
+        this.aiUsageRecordRepository = aiUsageRecordRepository;
         this.submitExamSessionUseCase = submitExamSessionUseCase;
     }
 
@@ -73,7 +83,7 @@ public class UpdateExamSessionStatusUseCase implements IUseCase<UpdateExamSessio
      * <p>VÀO GRADING_FAILED mà {@code gradingFailure} null thì cũng ghi null: đó là nhánh DLT, và
      * "không rõ vì sao" là câu trả lời đúng chứ không phải dữ liệu thiếu.
      */
-    private void applyGradingFailure(com.sep.vox.domain.model.exam.ExamSession session,
+    private void applyGradingFailure(ExamSession session,
             UpdateExamSessionStatusCommand input) {
         if (input.status() != ExamSessionStatus.GRADING_FAILED) {
             session.clearGradingFailure();
@@ -81,13 +91,36 @@ public class UpdateExamSessionStatusUseCase implements IUseCase<UpdateExamSessio
         }
         session.setGradingError(input.gradingFailure() == null ? null : input.gradingFailure().error());
         session.setGradingRetryCount(input.gradingFailure() == null ? null : input.gradingFailure().retryCount());
+        waiveFailedRoundCost(session.getId());
+    }
+
+    /**
+     * Lượt chấm vừa hỏng KHÔNG được thu tiền của trường.
+     *
+     * <p>Quy tắc là "thu cho phần việc TẠO RA KẾT QUẢ DÙNG ĐƯỢC", không phải "hỏng thì miễn". Lượt
+     * hỏng không để lại dòng {@code exam_candidate_results} nào, nên trường không nhận được gì —
+     * khác hẳn một lượt luyện nói đã trả lời học sinh xong, vốn vẫn bị thu dù chuyện gì xảy ra sau
+     * đó (xem {@code SubmitPracticeTurnUseCase}).
+     *
+     * <p>Miễn NGAY tại đây thay vì lúc chấm lại: để tới đó thì tiền phụ thuộc vào việc có người đi
+     * khắc phục hay không — bỏ mặc thì miễn phí, đi sửa thì bị tính tiền cho cả lượt hỏng. Đúng
+     * hành vi ta muốn khuyến khích lại là hành vi duy nhất bị phạt.
+     *
+     * <p>Chỉ động vào dòng CHƯA NGÃ NGŨ. Lượt chấm thành công trước đó (nếu có) đã đóng dấu
+     * {@code charged_at} và phải giữ nguyên: miễn đè lên chúng là hoàn tiền cho phần việc đã giao đủ.
+     */
+    private void waiveFailedRoundCost(UUID sessionId) {
+        var waived = aiUsageRecordRepository.markWaivedByExamSessionId(sessionId, Instant.now());
+        if (waived > 0) {
+            LOGGER.info("Miễn {} dòng chi phí AI của lượt chấm hỏng ở phiên {}", waived, sessionId);
+        }
     }
 
     /**
      * B.0: chỉ blockedAt quyết định hoãn/chấm ngay - flagged chỉ ảnh hưởng việc
      * có tính vào kết quả chính thức hay không (mục G/I), không hoãn việc chấm AI.
      */
-    private boolean canSubmitImmediately(com.sep.vox.domain.model.exam.ExamSession session) {
+    private boolean canSubmitImmediately(ExamSession session) {
         return examCandidateRepository.findById(session.getCandidateId())
             .map(candidate -> candidate.getBlockedAt() == null)
             .orElse(false);

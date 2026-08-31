@@ -30,6 +30,19 @@ public interface AiUsageRecordRepository {
     int markChargedByExamSessionId(UUID examSessionId, Instant chargedAt);
 
     /**
+     * MIỄN mọi dòng chi phí chưa ngã ngũ của phiên — chúng thuộc lượt chấm vừa hỏng.
+     *
+     * <p>Quy tắc là "thu cho phần việc TẠO RA KẾT QUẢ DÙNG ĐƯỢC", không phải "hỏng thì miễn": một
+     * lượt chấm hỏng không để lại dòng {@code exam_candidate_results} nào nên trường không nhận được
+     * gì. Đừng suy diễn quy tắc này sang đường luyện nói, nơi tiền được thu ngay trong request theo
+     * chi phí đã phát sinh vì lượt nói đó ĐÃ trả kết quả cho học sinh — xem
+     * {@code SubmitPracticeTurnUseCase}.
+     *
+     * @return số dòng vừa được miễn
+     */
+    int markWaivedByExamSessionId(UUID examSessionId, Instant waivedAt);
+
+    /**
      * Tổng cost_vnd của những dòng vừa được {@link #markChargedByExamSessionId} giành ở mốc này --
      * nguồn thật để trừ SchoolSubscriptionQuotaRecord.
      *

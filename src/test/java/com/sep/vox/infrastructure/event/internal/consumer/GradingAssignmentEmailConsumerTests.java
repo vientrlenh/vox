@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.kafka.support.Acknowledgment;
 
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
 import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
 import com.sep.vox.application.port.output.MailSendingPort;
@@ -68,7 +69,7 @@ class GradingAssignmentEmailConsumerTests {
             .thenReturn("<html></html>");
         var payload = new GradingDeadlineReminderPayloadV1(
             UUID.randomUUID(), teacherId, "Kỳ thi giữa kỳ",
-            GradingRoundType.INITIAL.name(), Instant.parse("2026-08-01T03:00:00Z"));
+            GradingRoundType.INITIAL.name(), Instant.parse("2026-08-01T03:00:00Z"), UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.GRADING_DEADLINE_REMINDER, payload), ack);
 
@@ -90,7 +91,7 @@ class GradingAssignmentEmailConsumerTests {
             .when(mailSendingPort).sendHtml(anyString(), anyString(), anyString());
         var payload = new GradingDeadlineReminderPayloadV1(
             UUID.randomUUID(), teacherId, "Kỳ thi giữa kỳ",
-            GradingRoundType.INITIAL.name(), Instant.parse("2026-08-01T03:00:00Z"));
+            GradingRoundType.INITIAL.name(), Instant.parse("2026-08-01T03:00:00Z"), UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         // Khác hẳn listener cũ: ở đó lỗi phải nuốt vì reminded_at đã commit và không có gì
         // gửi lại. Giờ outbox giữ message nên ném ra để @RetryableTopic thử lại mới đúng.
@@ -107,7 +108,7 @@ class GradingAssignmentEmailConsumerTests {
         when(mailTemplatePort.renderGradingDeadlineReminderEmail(anyString(), anyString(), anyString()))
             .thenReturn("<html></html>");
         var payload = new GradingDeadlineReminderPayloadV1(
-            UUID.randomUUID(), teacherId, null, null, null);
+            UUID.randomUUID(), teacherId, null, null, null, UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.GRADING_DEADLINE_REMINDER, payload), ack);
 
@@ -123,7 +124,7 @@ class GradingAssignmentEmailConsumerTests {
         when(mailTemplatePort.renderGradingDeclinedEmail(anyString(), anyString(), anyString()))
             .thenReturn("<html></html>");
         var payload = new GradingAssignmentDeclinedPayloadV1(
-            UUID.randomUUID(), UUID.randomUUID(), teacherId, assignedBy, "Kỳ thi giữa kỳ", "Bận công tác");
+            UUID.randomUUID(), UUID.randomUUID(), teacherId, assignedBy, "Kỳ thi giữa kỳ", "Bận công tác", UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, payload), ack);
 
@@ -142,7 +143,7 @@ class GradingAssignmentEmailConsumerTests {
         when(mailTemplatePort.renderGradingDeclinedEmail(anyString(), anyString(), anyString()))
             .thenReturn("<html></html>");
         var payload = new GradingAssignmentDeclinedPayloadV1(
-            UUID.randomUUID(), UUID.randomUUID(), teacherId, assignedBy, null, null);
+            UUID.randomUUID(), UUID.randomUUID(), teacherId, assignedBy, null, null, UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, payload), ack);
 
@@ -154,7 +155,7 @@ class GradingAssignmentEmailConsumerTests {
         when(processedEventRepository.existsByEventIdAndConsumerGroup(any(UUID.class), anyString()))
             .thenReturn(true);
         var payload = new GradingDeadlineReminderPayloadV1(
-            UUID.randomUUID(), UUID.randomUUID(), "Kỳ thi giữa kỳ", null, null);
+            UUID.randomUUID(), UUID.randomUUID(), "Kỳ thi giữa kỳ", null, null, UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.GRADING_DEADLINE_REMINDER, payload), ack);
 
@@ -168,7 +169,7 @@ class GradingAssignmentEmailConsumerTests {
         var assignedBy = UUID.randomUUID();
         when(userRepository.findById(assignedBy)).thenReturn(Optional.empty());
         var payload = new GradingAssignmentDeclinedPayloadV1(
-            UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), assignedBy, "Kỳ thi giữa kỳ", "Bận");
+            UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), assignedBy, "Kỳ thi giữa kỳ", "Bận", UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         assertThatCode(() -> consumer.consume(record(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, payload), ack))
             .doesNotThrowAnyException();
@@ -180,7 +181,7 @@ class GradingAssignmentEmailConsumerTests {
     @Test
     void should_throw_when_event_type_is_unknown() {
         var payload = new GradingDeadlineReminderPayloadV1(
-            UUID.randomUUID(), UUID.randomUUID(), "Kỳ thi giữa kỳ", null, null);
+            UUID.randomUUID(), UUID.randomUUID(), "Kỳ thi giữa kỳ", null, null, UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         assertThatThrownBy(() -> consumer.consume(record("KhongTonTai", payload), ack))
             .isInstanceOf(IllegalStateException.class)

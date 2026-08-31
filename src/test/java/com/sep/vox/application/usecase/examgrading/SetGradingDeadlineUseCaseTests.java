@@ -24,6 +24,7 @@ import com.sep.vox.application.port.input.command.SetGradingDeadlineCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.application.port.input.usecase.examgrading.SetGradingDeadlineUseCase;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.ExamSession;
@@ -62,7 +63,7 @@ class SetGradingDeadlineUseCaseTests {
         assignment.setId(UUID.randomUUID());
         assignment.setRemindedAt(Instant.now().minus(6, ChronoUnit.HOURS));
         when(examGradingAccessService.loadForUpdate(assignment.getId())).thenReturn(new GradingContext(
-            assignment, new ExamCandidateResult(), new ExamSession(), assignmentSchoolId, "IELTS Mock"));
+            assignment, new ExamCandidateResult(), new ExamSession(), assignmentSchoolId, "IELTS Mock", ExamKind.CENTRALIZED));
         return assignment;
     }
 

@@ -102,7 +102,8 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
         var studentId = gradingActionSupport.resolveStudentId(result);
         if (studentId != null) {
             var payload = new ExamResultInvalidClearedPayloadV1(
-                result.getId(), studentId, prepared.context().examName(), prepared.reason());
+                result.getId(), studentId, prepared.context().examName(), prepared.reason(),
+                result.getSessionId(), prepared.context().examKind());
             outboxRepository.save(Outbox.create(
                 AggregateTypeConstant.EXAM_CANDIDATE_RESULT,
                 result.getId(),

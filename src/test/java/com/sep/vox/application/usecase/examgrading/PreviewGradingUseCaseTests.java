@@ -32,6 +32,7 @@ import com.sep.vox.application.port.input.usecase.examevaluation.ExamSessionResu
 import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.PreviewGradingUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.RegradeResultUseCase;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
@@ -133,7 +134,7 @@ public class PreviewGradingUseCaseTests {
         var session = new ExamSession();
         session.setId(sessionId);
 
-        return new GradingContext(assignment, candidateResult, session, UUID.randomUUID(), "IELTS Speaking Mock");
+        return new GradingContext(assignment, candidateResult, session, UUID.randomUUID(), "IELTS Speaking Mock", ExamKind.CENTRALIZED);
     }
 
     private SubmitGradingCommand command(String fluency, String pronunciation) {

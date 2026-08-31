@@ -23,6 +23,7 @@ import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.service.GradingActionSupport.PreparedAction;
 import com.sep.vox.application.port.input.usecase.examgrading.ClearInvalidResultUseCase;
 import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
@@ -80,7 +81,7 @@ class ClearInvalidResultUseCaseTests {
             GradingRoundType.REMEDIATION, null, null, Instant.now(), UUID.randomUUID(), null);
         assignment.setId(assignmentId);
         var context = new GradingContext(
-            assignment, result, new ExamSession(), UUID.randomUUID(), "IELTS Mock");
+            assignment, result, new ExamSession(), UUID.randomUUID(), "IELTS Mock", ExamKind.CENTRALIZED);
         when(gradingActionSupport.prepare(any(), any(), any())).thenReturn(new PreparedAction(
             context, teacherId, GradingRoundType.REMEDIATION, GradingOutcome.CLEARED_INVALID,
             "Xem lại video, không có vi phạm", null));

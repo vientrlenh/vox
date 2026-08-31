@@ -102,7 +102,8 @@ public class DecideExamCandidateResultOutcomeUseCase
             before, result, ResultStatusChangeSource.EXAM_PUBLISH, actorId, null);
         var payload = new ExamResultOutcomeDecidedPayloadV1(
             result.getId(), candidate.getStudentId(), exam.getName(),
-            input.decision().name(), result.getTotalScore());
+            input.decision().name(), result.getTotalScore(),
+            result.getSessionId(), exam.getKind());
         outboxRepository.save(Outbox.create(
             AggregateTypeConstant.EXAM_CANDIDATE_RESULT,
             result.getId(),

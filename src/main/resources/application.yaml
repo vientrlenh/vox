@@ -314,6 +314,9 @@ app:
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-url: ${OAUTH2_URL}
+    # Tiền tố của route chuyển hướng thông báo (/n/{id}). Bỏ trống thì push web vẫn gửi
+    # bình thường, chỉ là bấm vào không mở được đúng mục -- xem FcmNotificationService.
+    notification-url: ${NOTIFICATION_URL:}
   external-event:
     kafka:
       consumer-groups:

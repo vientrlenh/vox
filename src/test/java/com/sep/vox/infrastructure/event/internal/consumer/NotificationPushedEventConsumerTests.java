@@ -52,6 +52,7 @@ import com.sep.vox.application.event.SchoolSubscriptionSuspendedPayloadV1;
 import com.sep.vox.application.event.SchoolSubscriptionUnsuspendedPayloadV1;
 import com.sep.vox.application.port.output.PushNotificationPort;
 import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.invoice.InvoiceSourceType;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.notification.Notification;
@@ -59,6 +60,7 @@ import com.sep.vox.domain.model.notification.NotificationCategory;
 import com.sep.vox.domain.model.notification.NotificationDevice;
 import com.sep.vox.domain.model.notification.NotificationDevicePlatform;
 import com.sep.vox.domain.model.notification.NotificationPreference;
+import com.sep.vox.domain.model.notification.NotificationTarget;
 import com.sep.vox.domain.repository.NotificationDeviceRepository;
 import com.sep.vox.domain.repository.NotificationPreferenceRepository;
 import com.sep.vox.domain.repository.NotificationRepository;
@@ -88,6 +90,12 @@ class NotificationPushedEventConsumerTests {
 
     private UUID userId;
 
+    /** Hai khoá điều hướng mà màn hình đích cần ngoài id của chính thực thể. */
+    private UUID sessionId;
+    private UUID examId;
+    private UUID blueprintId;
+    private UUID versionId;
+
     @BeforeEach
     void setUp() {
         notificationRepository = mock(NotificationRepository.class);
@@ -109,9 +117,13 @@ class NotificationPushedEventConsumerTests {
             executor);
 
         userId = UUID.randomUUID();
+        sessionId = UUID.randomUUID();
+        examId = UUID.randomUUID();
+        blueprintId = UUID.randomUUID();
+        versionId = UUID.randomUUID();
 
         when(notificationRepository.saveIfAbsent(any()))
-            .thenAnswer(invocation -> Optional.of(invocation.getArgument(0)));
+            .thenAnswer(invocation -> Optional.of(withId(invocation.getArgument(0))));
         when(notificationPreferenceRepository.findByUserIdAndCategory(any(), any()))
             .thenReturn(Optional.empty());
         when(notificationDeviceRepository.findByUserId(any())).thenReturn(List.of(device(FID)));
@@ -148,6 +160,11 @@ class NotificationPushedEventConsumerTests {
                 .as("tiêu đề của %s", testCase.eventType())
                 .isNotBlank();
             assertThat(saved.getEventType()).isEqualTo(testCase.eventType());
+            // Payload là thứ duy nhất client có để biết mở màn hình nào, nên mọi eventType
+            // đều phải ghi được target vào đó -- không có thông báo nào "bấm vào không đi đâu".
+            assertThat(saved.getPayload())
+                .as("target trong payload của %s", testCase.eventType())
+                .contains(NotificationTarget.of(testCase.eventType()).name());
             verify(ack).acknowledge();
         }
     }
@@ -166,7 +183,8 @@ class NotificationPushedEventConsumerTests {
         var admin3 = UUID.randomUUID();
 
         consumer.consume(record(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
-            new ExamBlueprintVersionPublishedEvent(List.of(admin1, admin2, admin3), "BP-01", "Blueprint Toán 12")), ack);
+            new ExamBlueprintVersionPublishedEvent(
+                List.of(admin1, admin2, admin3), "BP-01", "Blueprint Toán 12", blueprintId, versionId)), ack);
 
         var captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository, times(3)).saveIfAbsent(captor.capture());
@@ -184,7 +202,8 @@ class NotificationPushedEventConsumerTests {
         var admin = UUID.randomUUID();
 
         consumer.consume(record(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
-            new ExamBlueprintVersionPublishedEvent(Arrays.asList(admin, admin, null), "BP-01", "Blueprint Toán 12")), ack);
+            new ExamBlueprintVersionPublishedEvent(
+                Arrays.asList(admin, admin, null), "BP-01", "Blueprint Toán 12", blueprintId, versionId)), ack);
 
         verify(notificationRepository, times(1)).saveIfAbsent(any());
         verify(ack).acknowledge();
@@ -203,11 +222,12 @@ class NotificationPushedEventConsumerTests {
         // đã stub ở setUp, và answer cũ nhận null làm đối số rồi ném NPE trước khi kịp re-stub.
         doAnswer(invocation -> {
             Notification notification = invocation.getArgument(0);
-            return existing.equals(notification.getUserId()) ? Optional.empty() : Optional.of(notification);
+            return existing.equals(notification.getUserId()) ? Optional.empty() : Optional.of(withId(notification));
         }).when(notificationRepository).saveIfAbsent(any());
 
         consumer.consume(record(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
-            new ExamBlueprintVersionPublishedEvent(List.of(existing, fresh), "BP-01", "Blueprint Toán 12")), ack);
+            new ExamBlueprintVersionPublishedEvent(
+                List.of(existing, fresh), "BP-01", "Blueprint Toán 12", blueprintId, versionId)), ack);
 
         verify(notificationDeviceRepository, times(1)).findByUserId(fresh);
         verify(notificationDeviceRepository, never()).findByUserId(existing);
@@ -218,7 +238,8 @@ class NotificationPushedEventConsumerTests {
     @Test
     void should_skip_event_without_recipients_instead_of_failing() {
         consumer.consume(record(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
-            new ExamBlueprintVersionPublishedEvent(List.of(), "BP-01", "Blueprint Toán 12")), ack);
+            new ExamBlueprintVersionPublishedEvent(
+                List.of(), "BP-01", "Blueprint Toán 12", blueprintId, versionId)), ack);
 
         verify(notificationRepository, never()).saveIfAbsent(any());
         verifyNoInteractions(pushNotificationPort);
@@ -364,7 +385,162 @@ class NotificationPushedEventConsumerTests {
         verify(pushNotificationPort).send(captor.capture(), anyList());
         assertThat(captor.getValue().data())
             .containsEntry("eventType", EventTypeConstant.EXAM_RESULT_RELEASED)
+            .containsEntry("target", NotificationTarget.EXAM_RESULT_DETAIL.name())
             .containsKey("candidateResultId");
+    }
+
+    /**
+     * Màn hình kết quả của học sinh nhận sessionId, không phải candidateResultId. Trước khi
+     * event mang thêm trường này, thông báo điểm chỉ mở được danh sách bài thi.
+     */
+    @Test
+    void should_carry_session_id_and_exam_kind_for_result_notifications() {
+        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+
+        var captor = ArgumentCaptor.forClass(PushMessage.class);
+        verify(pushNotificationPort).send(captor.capture(), anyList());
+        assertThat(captor.getValue().data())
+            .containsEntry("target", NotificationTarget.EXAM_RESULT_DETAIL.name())
+            .containsEntry("sessionId", sessionId.toString())
+            .containsEntry("examKind", ExamKind.CENTRALIZED.name())
+            // Màn hình kết quả bên Flutter nhận examName để dựng tiêu đề: nó tự nạp điểm
+            // theo sessionId nhưng không có nguồn nào khác cho tên kỳ thi.
+            .containsEntry("examName", "Kỳ thi giữa kỳ");
+    }
+
+    /** Màn hình chấm của bài kiểm tra lớp nằm dưới examId, nên nhắc hạn phải mang theo nó. */
+    @Test
+    void should_carry_exam_id_and_kind_for_grading_notifications() {
+        consumer.consume(record(EventTypeConstant.GRADING_DEADLINE_REMINDER,
+            new GradingDeadlineReminderPayloadV1(UUID.randomUUID(), userId, "Kỳ thi giữa kỳ", "FIRST",
+                Instant.parse("2026-09-01T03:00:00Z"), examId, ExamKind.CLASS_TEST)), ack);
+
+        var captor = ArgumentCaptor.forClass(PushMessage.class);
+        verify(pushNotificationPort).send(captor.capture(), anyList());
+        assertThat(captor.getValue().data())
+            .containsEntry("target", NotificationTarget.TEACHER_GRADING_TASK.name())
+            .containsEntry("examId", examId.toString())
+            .containsEntry("examKind", ExamKind.CLASS_TEST.name());
+    }
+
+    /**
+     * Không có route nào tra blueprint theo mã, nên mã ở lại phần hiển thị còn điều hướng
+     * dùng id. Giữ luôn cả versionId: event nói về một version cụ thể vừa publish.
+     */
+    @Test
+    void should_navigate_blueprint_notifications_by_id_not_by_code() {
+        consumer.consume(record(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
+            new ExamBlueprintVersionPublishedEvent(
+                List.of(userId), "BP-01", "Blueprint Toán 12", blueprintId, versionId)), ack);
+
+        var captor = ArgumentCaptor.forClass(PushMessage.class);
+        verify(pushNotificationPort).send(captor.capture(), anyList());
+        assertThat(captor.getValue().data())
+            .containsEntry("blueprintId", blueprintId.toString())
+            .containsEntry("versionId", versionId.toString())
+            .doesNotContainKey("blueprintCode");
+    }
+
+    /**
+     * Event cũ còn trong retention của Kafka không có các trường vừa thêm. Chúng phải vắng
+     * mặt hẳn khỏi map chứ không thành chuỗi "null" -- client phân biệt "không có khoá" với
+     * "có khoá nhưng vô nghĩa", và chuỗi "null" sẽ lọt vào URL.
+     */
+    @Test
+    void should_omit_navigation_keys_that_the_event_does_not_carry() {
+        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED,
+            new ExamResultReleasedPayloadV1(
+                UUID.randomUUID(), userId, "Kỳ thi giữa kỳ", new BigDecimal("8.5"), null, null)), ack);
+
+        var captor = ArgumentCaptor.forClass(PushMessage.class);
+        verify(pushNotificationPort).send(captor.capture(), anyList());
+        assertThat(captor.getValue().data())
+            .doesNotContainKey("sessionId")
+            .doesNotContainKey("examKind")
+            .containsEntry("target", NotificationTarget.EXAM_RESULT_DETAIL.name());
+        assertThat(captor.getValue().data().values()).doesNotContain("null");
+    }
+
+    /**
+     * Không có id thì người dùng bấm vào khay chỉ mở được danh sách: push data là toàn bộ
+     * thứ client cầm trong tay ở nhánh đó, {@code myNotifications} chưa được gọi.
+     */
+    @Test
+    void should_carry_saved_notification_id_into_push_data() {
+        var savedId = UUID.randomUUID();
+        doAnswer(invocation -> {
+            Notification notification = invocation.getArgument(0);
+            notification.setId(savedId);
+            return Optional.of(notification);
+        }).when(notificationRepository).saveIfAbsent(any());
+
+        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+
+        var captor = ArgumentCaptor.forClass(PushMessage.class);
+        verify(pushNotificationPort).send(captor.capture(), anyList());
+        assertThat(captor.getValue().data()).containsEntry("notificationId", savedId.toString());
+    }
+
+    /**
+     * Chiều ngược lại của test trên: cột payload KHÔNG được chứa notificationId. Client đọc
+     * danh sách đã có sẵn id của từng dòng, ghi thêm vào đây chỉ là nhân đôi dữ liệu trong
+     * một cột không bao giờ được dọn.
+     */
+    @Test
+    void should_not_persist_notification_id_into_the_payload_column() {
+        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+
+        var captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).saveIfAbsent(captor.capture());
+        assertThat(captor.getValue().getPayload()).doesNotContain("notificationId");
+    }
+
+    /**
+     * Id null nghĩa là adapter không trả về khoá chính. Push vẫn phải đi -- một thông báo mở
+     * về danh sách hơn hẳn một thông báo không bao giờ tới.
+     */
+    @Test
+    void should_still_push_without_deep_link_when_saved_row_has_no_id() {
+        doAnswer(invocation -> Optional.of(invocation.getArgument(0)))
+            .when(notificationRepository).saveIfAbsent(any());
+
+        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+
+        var captor = ArgumentCaptor.forClass(PushMessage.class);
+        verify(pushNotificationPort).send(captor.capture(), anyList());
+        assertThat(captor.getValue().data())
+            .doesNotContainKey("notificationId")
+            .containsEntry("target", NotificationTarget.EXAM_RESULT_DETAIL.name());
+        verify(ack).acknowledge();
+    }
+
+    /**
+     * Cùng lý do với {@code should_cover_exactly_the_mapped_event_types}: category và target
+     * là hai bảng riêng trên cùng một tập eventType, thiếu một bên thì renderDrafts ném giữa
+     * chừng và message rơi vào DLT. Lưới an toàn thật nằm ở NotificationCategoryMappingValidator.
+     */
+    @Test
+    void should_map_a_target_for_every_event_type_that_has_a_category() {
+        assertThat(NotificationTarget.mappedEventTypes())
+            .containsExactlyInAnyOrderElementsOf(NotificationCategory.mappedEventTypes());
+    }
+
+    /**
+     * Hai event dưới đây cùng mang {@code assignmentId} nhưng gửi cho hai vai trò khác nhau,
+     * nên phải là hai target khác nhau -- client đoán theo tên khoá sẽ đẩy admin vào màn hình
+     * của giáo viên. Đây chính là lý do target tồn tại thay vì để client tự suy từ payload.
+     */
+    @Test
+    void should_separate_targets_for_events_sharing_an_id_key_across_roles() {
+        assertThat(NotificationTarget.of(EventTypeConstant.GRADING_DEADLINE_REMINDER))
+            .isEqualTo(NotificationTarget.TEACHER_GRADING_TASK);
+        assertThat(NotificationTarget.of(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED))
+            .isEqualTo(NotificationTarget.ADMIN_GRADING_ASSIGNMENT);
+
+        assertThat(NotificationTarget.of(EventTypeConstant.SCHOOL_LOCKED_DUE_TO_DEBT))
+            .isEqualTo(NotificationTarget.SCHOOL_BILLING_OVERVIEW);
+        assertThat(NotificationTarget.of(EventTypeConstant.SCHOOL_DEBT_CAP_EXCEEDED))
+            .isEqualTo(NotificationTarget.SYSTEM_SCHOOL_ATTENTION);
     }
 
     // --- helpers ---------------------------------------------------------------
@@ -388,13 +564,14 @@ class NotificationPushedEventConsumerTests {
         return List.of(
             new TestCase(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()),
             new TestCase(EventTypeConstant.EXAM_RESULT_REGRADED, new ExamResultRegradedPayloadV1(
-                id, userId, examName, "FIRST", new BigDecimal("7.0"), new BigDecimal("8.0"))),
+                id, userId, examName, "FIRST", new BigDecimal("7.0"), new BigDecimal("8.0"),
+                sessionId, ExamKind.CENTRALIZED)),
             new TestCase(EventTypeConstant.EXAM_RESULT_INVALIDATED, new ExamResultInvalidatedPayloadV1(
-                id, userId, examName, "Gian lận")),
+                id, userId, examName, "Gian lận", sessionId, ExamKind.CENTRALIZED)),
             new TestCase(EventTypeConstant.EXAM_RESULT_INVALID_CLEARED, new ExamResultInvalidClearedPayloadV1(
-                id, userId, examName, "Đã xác minh lại")),
+                id, userId, examName, "Đã xác minh lại", sessionId, ExamKind.CENTRALIZED)),
             new TestCase(EventTypeConstant.EXAM_RESULT_OUTCOME_DECIDED, new ExamResultOutcomeDecidedPayloadV1(
-                id, userId, examName, "PASSED", new BigDecimal("8.0"))),
+                id, userId, examName, "PASSED", new BigDecimal("8.0"), sessionId, ExamKind.CENTRALIZED)),
 
             new TestCase(EventTypeConstant.EXAM_APPEAL_PUBLISHED, new ExamAppealPublishedPayloadV1(
                 id, userId, examName, new BigDecimal("6.0"), new BigDecimal("7.5"))),
@@ -404,15 +581,18 @@ class NotificationPushedEventConsumerTests {
                 id, userId, examName, Instant.parse("2026-09-01T03:00:00Z"))),
 
             new TestCase(EventTypeConstant.GRADING_DEADLINE_REMINDER, new GradingDeadlineReminderPayloadV1(
-                id, userId, examName, "FIRST", Instant.parse("2026-09-01T03:00:00Z"))),
+                id, userId, examName, "FIRST", Instant.parse("2026-09-01T03:00:00Z"),
+                examId, ExamKind.CENTRALIZED)),
             // Người nhận là assignedBy (admin đã giao việc), không phải teacherId.
             new TestCase(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, new GradingAssignmentDeclinedPayloadV1(
-                id, id, UUID.randomUUID(), userId, examName, "Bận lịch coi thi")),
+                id, id, UUID.randomUUID(), userId, examName, "Bận lịch coi thi",
+                examId, ExamKind.CENTRALIZED)),
 
             // Hai event fan-out: ở đây cố tình chỉ một người nhận để dùng chung được vòng
             // lặp assertion phía trên. Hành vi nhiều người nhận có test riêng bên dưới.
             new TestCase(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
-                new ExamBlueprintVersionPublishedEvent(List.of(userId), "BP-01", "Blueprint Toán 12")),
+                new ExamBlueprintVersionPublishedEvent(
+                    List.of(userId), "BP-01", "Blueprint Toán 12", blueprintId, versionId)),
             new TestCase(EventTypeConstant.INVOICE_PAID, new InvoicePaidPayloadV1(
                 List.of(userId), id, id, id, "INV-001", new BigDecimal("500000"),
                 Instant.parse("2026-09-01T03:00:00Z"), InvoiceSourceType.SUBSCRIPTION)),
@@ -435,8 +615,21 @@ class NotificationPushedEventConsumerTests {
         );
     }
 
+    /**
+     * saveIfAbsent thật trả về dòng ĐÃ ghi, tức là đã có khoá chính (xem
+     * NotificationRepositoryImpl). Mock phải bắt chước đúng chi tiết đó: thiếu id thì nhánh
+     * gắn notificationId vào push data không bao giờ chạy, và test sẽ xanh trong khi thực
+     * tế client không mở được đúng mục.
+     */
+    private Notification withId(Notification notification) {
+        notification.setId(UUID.randomUUID());
+        return notification;
+    }
+
     private ExamResultReleasedPayloadV1 releasedPayload() {
-        return new ExamResultReleasedPayloadV1(UUID.randomUUID(), userId, "Kỳ thi giữa kỳ", new BigDecimal("8.5"));
+        return new ExamResultReleasedPayloadV1(
+            UUID.randomUUID(), userId, "Kỳ thi giữa kỳ", new BigDecimal("8.5"),
+            sessionId, ExamKind.CENTRALIZED);
     }
 
     private NotificationDevice device(String installationId) {

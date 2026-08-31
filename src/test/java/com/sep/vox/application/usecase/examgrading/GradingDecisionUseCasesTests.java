@@ -33,6 +33,7 @@ import com.sep.vox.application.port.input.usecase.examgrading.DeclineGradingAssi
 import com.sep.vox.application.port.input.usecase.examgrading.InvalidateResultUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.UpholdResultUseCase;
 import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
@@ -149,7 +150,7 @@ class GradingDecisionUseCasesTests {
             Instant.now().minus(1, ChronoUnit.DAYS));
         assignment.setId(assignmentId);
         when(examGradingAccessService.loadForUpdate(assignmentId)).thenReturn(
-            new GradingContext(assignment, result, session, UUID.randomUUID(), "IELTS Mock"));
+            new GradingContext(assignment, result, session, UUID.randomUUID(), "IELTS Mock", ExamKind.CENTRALIZED));
         return result;
     }
 

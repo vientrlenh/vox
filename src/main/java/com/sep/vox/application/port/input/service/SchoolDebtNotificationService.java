@@ -24,12 +24,12 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
 
 /**
- * Phát 3 event thông báo nợ hạn mức AI, mirror đúng cách {@code InvoiceSettlementService
+ * Phát 3 event thông báo nợ hạn mức AI, mirror đúng cách {@code OrderSettlementService
  * .publishInvoicePaid} đang ghi outbox -- CHỐT danh sách người nhận NGAY LÚC publish, nhúng thẳng vào
  * payload, không để consumer truy vấn lại (xem javadoc {@link SchoolLockedDueToDebtPayloadV1}).
  *
  * <p>Mỗi method PHẢI được gọi trong cùng transaction với nơi phát hiện transition (nơi gọi tự chịu
- * trách nhiệm @Transactional), giống hệt cách InvoiceSettlementService ghi outbox ngay trong transaction
+ * trách nhiệm @Transactional), giống hệt cách OrderSettlementService ghi outbox ngay trong transaction
  * xử lý nghiệp vụ chính.
  *
  * <p>Song song với outbox (tạm thời, phục vụ push/in-app), mỗi lần phát còn ghi 1 dòng

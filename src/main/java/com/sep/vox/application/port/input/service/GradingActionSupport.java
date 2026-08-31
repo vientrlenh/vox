@@ -243,7 +243,8 @@ public class GradingActionSupport {
                 result.getId(),
                 EventTypeConstant.EXAM_RESULT_RELEASED,
                 new ExamResultReleasedPayloadV1(
-                    result.getId(), studentId, examName, result.getTotalScore()),
+                    result.getId(), studentId, examName, result.getTotalScore(),
+                    result.getSessionId(), prepared.context().examKind()),
                 now
             );
             return;
@@ -263,7 +264,9 @@ public class GradingActionSupport {
                     examName,
                     prepared.roundType().name(),
                     prepared.before().totalScore(),
-                    result.getTotalScore()
+                    result.getTotalScore(),
+                    result.getSessionId(),
+                    prepared.context().examKind()
                 ),
                 now
             );

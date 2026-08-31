@@ -21,6 +21,7 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.application.port.input.usecase.examgrading.ReassignGradingUseCase;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.ExamSession;
@@ -68,7 +69,7 @@ class ReassignGradingUseCaseTests {
         var candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);
         when(examGradingAccessService.loadForUpdate(assignment.getId())).thenReturn(new GradingContext(
-            assignment, candidateResult, new ExamSession(), schoolId, "IELTS Mock"));
+            assignment, candidateResult, new ExamSession(), schoolId, "IELTS Mock", ExamKind.CENTRALIZED));
         return assignment;
     }
 

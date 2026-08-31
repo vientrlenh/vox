@@ -26,6 +26,7 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService.Gradi
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
@@ -116,7 +117,7 @@ class GradingActionSupportTests {
         var assignment = ExamGradingAssignment.open(candidateResultId, teacherId, roundType, linkedAppealId,
             result.getTotalScore(), Instant.now(), UUID.randomUUID(), null);
         assignment.setId(assignmentId);
-        return new GradingContext(assignment, result, new ExamSession(), UUID.randomUUID(), "IELTS Mock");
+        return new GradingContext(assignment, result, new ExamSession(), UUID.randomUUID(), "IELTS Mock", ExamKind.CENTRALIZED);
     }
 
     /** Vòng phúc khảo có đơn đi kèm; đơn đang ở GRADING vì giáo viên đang cầm bài. */

@@ -29,6 +29,7 @@ import com.sep.vox.application.port.input.service.GradingItemScoreResolver.Resol
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.RegradeResultUseCase;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
@@ -119,7 +120,7 @@ class RegradeResultUseCaseTests {
         var assignment = ExamGradingAssignment.open(candidateResultId, teacherId, roundType, null,
             current.getTotalScore(), Instant.now(), UUID.randomUUID(), null);
         assignment.setId(assignmentId);
-        var context = new GradingContext(assignment, current, session, UUID.randomUUID(), "IELTS Mock");
+        var context = new GradingContext(assignment, current, session, UUID.randomUUID(), "IELTS Mock", ExamKind.CENTRALIZED);
 
         when(gradingActionSupport.prepare(assignmentId, GradingOutcome.REGRADED, null)).thenReturn(
             new PreparedAction(context, teacherId, roundType, GradingOutcome.REGRADED, null,

@@ -37,4 +37,6 @@ type NotificationCursorPage {
 extend type Query {
     myNotifications(cursor: ID, limit: Int! = 20): NotificationCursorPage
     myUnreadNotificationCount: Int!
+    "Một thông báo của chính người đang đăng nhập. Dùng cho luồng mở từ thông báo đẩy, nơi client chỉ cầm mỗi id."
+    myNotification(id: ID!): Notification
 }

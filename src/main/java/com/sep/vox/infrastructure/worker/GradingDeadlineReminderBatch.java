@@ -75,23 +75,27 @@ public class GradingDeadlineReminderBatch {
                 due.stream().map(assignment -> assignment.getCandidateResultId()).distinct().toList()).stream()
             .collect(Collectors.toMap(
                 result -> result.getId(), Function.identity(), (left, right) -> left));
-        var examNamesById = examRepository.findByIdIn(
+        // Giữ nguyên Exam thay vì chỉ rút lấy tên: thông báo còn cần id và loại bài để mở
+        // đúng màn hình chấm, mà lô này là chỗ duy nhất trong luồng còn cầm Exam trong tay.
+        var examsById = examRepository.findByIdIn(
                 resultsById.values().stream().map(result -> result.getExamId()).distinct().toList()).stream()
             .collect(Collectors.toMap(
-                exam -> exam.getId(), exam -> exam.getName(), (left, right) -> left));
+                exam -> exam.getId(), Function.identity(), (left, right) -> left));
 
         for (var assignment : due) {
             assignment.setRemindedAt(now);
             examGradingAssignmentRepository.save(assignment);
 
             var result = resultsById.get(assignment.getCandidateResultId());
-            var examName = result == null ? null : examNamesById.get(result.getExamId());
+            var exam = result == null ? null : examsById.get(result.getExamId());
             var payload = new GradingDeadlineReminderPayloadV1(
                 assignment.getId(),
                 assignment.getTeacherId(),
-                examName,
+                exam == null ? null : exam.getName(),
                 assignment.getRoundType() == null ? null : assignment.getRoundType().name(),
-                assignment.getDeadlineAt()
+                assignment.getDeadlineAt(),
+                result == null ? null : result.getExamId(),
+                exam == null ? null : exam.getKind()
             );
             outboxRepository.save(Outbox.create(
                 AggregateTypeConstant.EXAM_GRADING_ASSIGNMENT,

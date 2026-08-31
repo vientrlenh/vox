@@ -7,7 +7,9 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
+import com.sep.vox.application.port.input.query.ViewMyNotificationQuery;
 import com.sep.vox.application.port.input.query.ViewMyNotificationsCursorPageQuery;
+import com.sep.vox.application.port.input.usecase.notification.ViewMyNotificationUseCase;
 import com.sep.vox.application.port.input.usecase.notification.ViewMyNotificationsCursorPageUseCase;
 import com.sep.vox.application.port.input.usecase.notification.ViewMyUnreadNotificationCountUseCase;
 import com.sep.vox.application.query.dto.NotificationDto;
@@ -18,12 +20,15 @@ public class NotificationController {
 
     private final ViewMyNotificationsCursorPageUseCase viewMyNotificationsCursorPageUseCase;
     private final ViewMyUnreadNotificationCountUseCase viewMyUnreadNotificationCountUseCase;
+    private final ViewMyNotificationUseCase viewMyNotificationUseCase;
 
     public NotificationController(
             ViewMyNotificationsCursorPageUseCase viewMyNotificationsCursorPageUseCase,
-            ViewMyUnreadNotificationCountUseCase viewMyUnreadNotificationCountUseCase) {
+            ViewMyUnreadNotificationCountUseCase viewMyUnreadNotificationCountUseCase,
+            ViewMyNotificationUseCase viewMyNotificationUseCase) {
         this.viewMyNotificationsCursorPageUseCase = viewMyNotificationsCursorPageUseCase;
         this.viewMyUnreadNotificationCountUseCase = viewMyUnreadNotificationCountUseCase;
+        this.viewMyNotificationUseCase = viewMyNotificationUseCase;
     }
 
     @QueryMapping(name = "myNotifications")
@@ -42,5 +47,11 @@ public class NotificationController {
     @PreAuthorize("isAuthenticated()")
     public long myUnreadNotificationCount() {
         return viewMyUnreadNotificationCountUseCase.execute();
+    }
+
+    @QueryMapping(name = "myNotification")
+    @PreAuthorize("isAuthenticated()")
+    public NotificationDto myNotification(@Argument(name = "id") UUID id) {
+        return viewMyNotificationUseCase.execute(new ViewMyNotificationQuery(id));
     }
 }

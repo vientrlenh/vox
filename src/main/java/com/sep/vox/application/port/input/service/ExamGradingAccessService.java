@@ -71,13 +71,21 @@ public class ExamGradingAccessService {
         this.userContextPort = userContextPort;
     }
 
-    /** Ngữ cảnh đã giải xong của một phân công chấm bài. */
+    /**
+     * Ngữ cảnh đã giải xong của một phân công chấm bài.
+     *
+     * @param examKind lấy sẵn từ Exam đã nạp ở {@link #loadFromCandidateResult}. Các event
+     *        phát ra từ luồng chấm mang theo trường này để thông báo biết mở màn hình của
+     *        bài tập trung hay bài kiểm tra lớp -- hai nhánh có route khác nhau, mà nơi
+     *        phát event thì không còn giữ Exam trong tay.
+     */
     public record GradingContext(
         ExamGradingAssignment assignment,
         ExamCandidateResult candidateResult,
         ExamSession session,
         UUID schoolId,
-        String examName
+        String examName,
+        ExamKind examKind
     ) {
     }
 
@@ -131,7 +139,8 @@ public class ExamGradingAccessService {
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi."));
         var exam = examRepository.findById(candidateResult.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
-        return new GradingContext(assignment, candidateResult, session, exam.getSchoolId(), exam.getName());
+        return new GradingContext(
+            assignment, candidateResult, session, exam.getSchoolId(), exam.getName(), exam.getKind());
     }
 
     /** School admin cùng trường với bài thi. Dùng cho gán / đổi / gỡ phân công. */

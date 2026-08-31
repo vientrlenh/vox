@@ -59,7 +59,9 @@ public class DeclineGradingAssignmentUseCase
             assignment.getTeacherId(),
             assignment.getAssignedBy(),
             prepared.context().examName(),
-            prepared.reason()
+            prepared.reason(),
+            result.getExamId(),
+            prepared.context().examKind()
         );
         outboxRepository.save(Outbox.create(
             AggregateTypeConstant.EXAM_GRADING_ASSIGNMENT,

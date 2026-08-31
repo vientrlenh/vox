@@ -151,20 +151,39 @@ public class InvoiceEmailConsumer {
         var school = schoolRepository.findById(payload.schoolId())
             .orElseThrow(() -> new IllegalStateException(
                 "Không tìm thấy trường: eventId=" + eventId + ", schoolId=" + payload.schoolId()));
-        var subscription = schoolSubscriptionRepository.findById(payload.subscriptionId())
-            .orElseThrow(() -> new IllegalStateException(
-                "Không tìm thấy gói đăng ký: eventId=" + eventId));
-        var plan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
-            .orElseThrow(() -> new IllegalStateException("Không tìm thấy gói: eventId=" + eventId));
+        var isTopUp = payload.sourceType() == InvoiceSourceType.TOPUP;
 
-        String itemTitle = payload.sourceType() == InvoiceSourceType.TOKEN_PURCHASE
-            ? "Mua thêm hạn mức"
-            : "Gói " + plan.getName();
+        // Nạp thêm hạn mức KHÔNG gắn với kỳ đăng ký nào: trường chưa mua gói bao giờ vẫn nạp
+        // được, và lúc đó publisher gửi subscriptionId null (xem OrderSettlementService
+        // .creditBalance). Đòi cho bằng được một kỳ ở đây sẽ ném, message chạy hết vòng retry
+        // rồi vào DLT -- mail chứng từ của mọi lần nạp kiểu đó không bao giờ tới.
+        var subscription = payload.subscriptionId() == null
+            ? null
+            : schoolSubscriptionRepository.findById(payload.subscriptionId()).orElse(null);
+
+        // Hóa đơn GÓI mà không tra được kỳ thì vẫn phải kêu to như cũ: đó là dữ liệu hỏng, không
+        // phải một hình dạng hợp lệ.
+        if (subscription == null && !isTopUp) {
+            throw new IllegalStateException("Không tìm thấy gói đăng ký: eventId=" + eventId);
+        }
+
+        String itemTitle;
+        if (isTopUp) {
+            itemTitle = "Mua thêm hạn mức";
+        } else {
+            // phải có subscription null check ở đây, analyzer đánh dấu subscription.getSubscriptionPlanId() là possible null reference
+            if (subscription == null) {
+                throw new IllegalStateException("Không tìm thấy gói đăng ký: eventId=" + eventId);
+            }
+            var plan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
+                .orElseThrow(() -> new IllegalStateException("Không tìm thấy gói: eventId=" + eventId));
+            itemTitle = "Gói " + plan.getName();
+        }
 
         var amountFormatter = new DecimalFormat("#,###", DecimalFormatSymbols.getInstance(Locale.of("vi", "VN")));
         var amountLabel = amountFormatter.format(payload.amount()) + " ₫";
         var paidAtLabel = payload.paidAt() == null ? "-" : PAID_AT_FORMATTER.format(payload.paidAt());
-        var validUntilLabel = subscription.getEndDate() == null
+        var validUntilLabel = subscription == null || subscription.getEndDate() == null
             ? "-" : VALID_UNTIL_FORMATTER.format(subscription.getEndDate());
 
         return mailTemplatePort.renderInvoicePaidEmail(

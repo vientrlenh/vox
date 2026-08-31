@@ -124,7 +124,9 @@ public class UpdateExamBlueprintVersionStatusUseCase
             var event = new ExamBlueprintVersionPublishedEvent(
                 schoolAdminIds,
                 blueprint.getCode(),
-                blueprint.getName()
+                blueprint.getName(),
+                blueprint.getId(),
+                saved.getId()
             );
             var payload = jsonSerializationPort.toJson(event);
             var outbox = Outbox.create(AggregateTypeConstant.EXAM_BLUEPRINT_VERSION, version.getId(), EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED, payload, now);

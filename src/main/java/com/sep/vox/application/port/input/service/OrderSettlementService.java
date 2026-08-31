@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -9,8 +10,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.RoleConstant;
+import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.domain.common.AggregateTypeConstant;
+import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.invoice.Invoice;
+import com.sep.vox.domain.model.invoice.InvoiceSourceType;
+import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderItemType;
 import com.sep.vox.domain.model.order.OrderStatus;
@@ -28,7 +36,9 @@ import com.sep.vox.domain.repository.PaymentRecordRepository;
 import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
 import com.sep.vox.domain.repository.SchoolBalanceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
+import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
@@ -62,6 +72,9 @@ public class OrderSettlementService {
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository;
     private final SchoolDebtNotificationService schoolDebtNotificationService;
+    private final SchoolUserRepository schoolUserRepository;
+    private final OutboxRepository outboxRepository;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public OrderSettlementService(
             OrderRepository orderRepository,
@@ -74,7 +87,10 @@ public class OrderSettlementService {
             SchoolSubscriptionQuotaRecordRepository quotaRecordRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
             SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository,
-            SchoolDebtNotificationService schoolDebtNotificationService) {
+            SchoolDebtNotificationService schoolDebtNotificationService,
+            SchoolUserRepository schoolUserRepository,
+            OutboxRepository outboxRepository,
+            JsonSerializationPort jsonSerializationPort) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.paymentRecordRepository = paymentRecordRepository;
@@ -86,6 +102,9 @@ public class OrderSettlementService {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.subscriptionPlanQuotaRepository = subscriptionPlanQuotaRepository;
         this.schoolDebtNotificationService = schoolDebtNotificationService;
+        this.schoolUserRepository = schoolUserRepository;
+        this.outboxRepository = outboxRepository;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     /**
@@ -132,9 +151,12 @@ public class OrderSettlementService {
 
         // Giao hàng TRƯỚC khi phát hóa đơn: hóa đơn là chứng từ cho thứ đã giao. Cùng transaction
         // nên thứ tự này không đổi kết quả khi lỗi, nhưng nó nói đúng ý định cho người đọc sau.
-        fulfil(order, paidAt);
+        var subscriptionId = fulfil(order, paidAt);
 
-        issueInvoice(order, payment, paidAt);
+        // Chỉ báo khi hóa đơn THẬT SỰ vừa được phát: Optional rỗng nghĩa là đơn này đã có hóa đơn
+        // từ một lần chốt trước, và một callback lặp không được sinh mail/thông báo lần hai.
+        issueInvoice(order, payment, paidAt)
+            .ifPresent(invoice -> publishInvoicePaid(order, invoice, paidAt, subscriptionId));
     }
 
     /**
@@ -187,18 +209,22 @@ public class OrderSettlementService {
         return true;
     }
 
-    private void fulfil(Order order, Instant now) {
-        switch (order.getType()) {
+    /**
+     * @return kỳ đăng ký gắn với lần chốt này, dùng để dựng hóa đơn. Null là hợp lệ: trường chưa có
+     *         gói nào vẫn nạp tiền được -- xem {@link #creditBalance}.
+     */
+    private UUID fulfil(Order order, Instant now) {
+        return switch (order.getType()) {
             case TOPUP -> creditBalance(order, now);
             case SUBSCRIPTION_REQUEST, SUBSCRIPTION_UPGRADE -> activateSubscription(order, now);
-        }
+        };
     }
 
     /**
      * Cộng vào ví trường số tiền HÀNG, không phải số tiền đã thu: phí dịch vụ là tiền công của
      * mình, cộng cả total vào ví là trả lại phí cho trường dưới dạng số dư tiêu được.
      */
-    private void creditBalance(Order order, Instant now) {
+    private UUID creditBalance(Order order, Instant now) {
         // Khóa ví: một trường có thể có nhiều đơn nạp cùng lúc (uq_orders_one_open_subscription_order
         // cố ý KHÔNG chặn TOPUP), nên hai callback về gần nhau sẽ cùng đọc một số dư cũ rồi cùng ghi
         // đè -- mất hẳn một lần nạp mà không có lỗi nào nổi lên.
@@ -222,6 +248,8 @@ public class OrderSettlementService {
             credited, order.getSchoolId(), order.getId(), balanceAfter);
 
         reportDebtClearedIfCrossedBack(order.getSchoolId(), activeSubscriptionId, balanceBefore, balanceAfter, now);
+
+        return activeSubscriptionId;
     }
 
     /**
@@ -270,7 +298,7 @@ public class OrderSettlementService {
      * dòng đã trả tiền và xếp hàng phía sau; findActiveBySchoolId lọc theo ngày nên luôn chỉ ra
      * đúng một kỳ đang hiệu lực. Xem SchoolSubscription.activate.
      */
-    private void activateSubscription(Order order, Instant now) {
+    private UUID activateSubscription(Order order, Instant now) {
         var planId = orderItemRepository.findByOrderId(order.getId()).stream()
             .filter(item -> item.getType() == OrderItemType.SUBSCRIPTION)
             .map(item -> item.getItemId())
@@ -301,6 +329,8 @@ public class OrderSettlementService {
             LOGGER.info("Kích hoạt gói {} cho trường {} từ đơn {} -- hạn tới {}",
                 planId, order.getSchoolId(), order.getId(), subscription.getEndDate());
         }
+
+        return subscription.getId();
     }
 
     /**
@@ -372,12 +402,77 @@ public class OrderSettlementService {
      * <p>Kiểm tra tồn tại trước khi phát: guard trạng thái đơn ở trên đã chặn hầu hết đường lặp,
      * nhưng hóa đơn là chứng từ đối ngoại nên đáng trả thêm một truy vấn để chắc chắn không phát
      * hai số cho cùng một đơn.
+     *
+     * @return hóa đơn vừa phát, hoặc rỗng khi đơn đã có hóa đơn từ lần chốt trước. Phía gọi dùng
+     *         đúng dấu hiệu này để quyết định có báo cho trường hay không.
      */
-    private void issueInvoice(Order order, PaymentRecord payment, Instant now) {
+    private Optional<Invoice> issueInvoice(Order order, PaymentRecord payment, Instant now) {
         if (invoiceRepository.existsByOrderId(order.getId())) {
-            return;
+            return Optional.empty();
         }
         var invoice = invoiceRepository.save(Invoice.issueFor(order.getId(), payment.getId(), now));
         LOGGER.info("Phát hành hóa đơn {} cho đơn {}", invoice.getInvoiceNumber(), order.getId());
+
+        return Optional.of(invoice);
+    }
+
+    /**
+     * Báo cho mọi SCHOOL_ADMIN của trường rằng hóa đơn đã thu tiền: một mail chứng từ
+     * (InvoiceEmailConsumer) và một thông báo trong app (NotificationPushedEventConsumer).
+     *
+     * <p>FIX: cả hai consumer, mẫu mail, ánh xạ category/target và định tuyến topic đều đã tồn tại
+     * từ trước, nhưng KHÔNG dòng mã nào ghi outbox {@code InvoicePaid} -- lần tách
+     * {@code InvoiceSettlementService} thành lớp này đã đánh rơi lời gọi
+     * {@code publishInvoicePaid} (dấu vết còn lại là javadoc của SchoolDebtNotificationService,
+     * vẫn trỏ tới một method không còn tồn tại). Hệ quả: trường trả tiền xong không nhận được gì
+     * cả, và vì không có lỗi nào nổi lên nên chỉ lộ ra khi đọc chéo publisher với consumer.
+     *
+     * <p>Nằm trong CÙNG transaction với việc đóng đơn và phát hóa đơn, đúng như mọi publisher khác
+     * trong luồng này: chứng từ và thông báo về nó cùng sống hoặc cùng chết. Đặt sau
+     * {@code existsByOrderId} nên một callback lặp không phát sự kiện lần hai.
+     */
+    private void publishInvoicePaid(Order order, Invoice invoice, Instant now, UUID subscriptionId) {
+        var schoolAdminIds = schoolUserRepository
+            .findBySchoolIdWithRole(order.getSchoolId(), RoleConstant.SCHOOL_ADMIN_ROLE)
+            .stream()
+            .map(schoolUser -> schoolUser.getUserId())
+            .toList();
+
+        // Chốt danh sách người nhận NGAY LÚC phát, không để consumer truy vấn lại -- giống hệt các
+        // event nợ hạn mức. Nhờ vậy mỗi lần chạy lại (retry, replay từ DLT) đều ra đúng tập người
+        // nhận cũ và uk_notifications_user_event chặn được trùng.
+        var payload = jsonSerializationPort.toJson(new InvoicePaidPayloadV1(
+            schoolAdminIds,
+            order.getSchoolId(),
+            subscriptionId,
+            // sourceId = id ĐƠN. Hóa đơn luôn được phát cho một đơn (Invoice.issueFor), nên đó là
+            // nguồn duy nhất luôn tồn tại; đây cũng là khoá để thông báo mở đúng trang chi tiết đơn.
+            order.getId(),
+            invoice.getInvoiceNumber(),
+            order.getTotalAmountVnd(),
+            now,
+            sourceTypeOf(order.getType())
+        ));
+
+        outboxRepository.save(Outbox.create(
+            AggregateTypeConstant.INVOICE, invoice.getId(),
+            EventTypeConstant.INVOICE_PAID, payload, now
+        ));
+    }
+
+    /**
+     * Loại đơn -> loại nguồn hóa đơn. Hai enum tách nhau vì {@code InvoiceSourceType} mô tả thứ
+     * đang được mua trên chứng từ, còn {@code OrderType} mô tả cách đơn được tạo.
+     *
+     * <p>Đăng ký mới và nâng cấp cùng ra {@code SUBSCRIPTION}: trên chứng từ cả hai đều là tiền
+     * mua một kỳ gói, khác nhau ở đường tạo đơn chứ không ở thứ được bán. Phân biệt hai đường đó
+     * là việc của {@code OrderType}, đã nằm sẵn trên đơn.
+     */
+    private InvoiceSourceType sourceTypeOf(OrderType orderType) {
+        return switch (orderType) {
+            case TOPUP -> InvoiceSourceType.TOPUP;
+            case SUBSCRIPTION_REQUEST -> InvoiceSourceType.SUBSCRIPTION;
+            case SUBSCRIPTION_UPGRADE -> InvoiceSourceType.SUBSCRIPTION;
+        };
     }
 }

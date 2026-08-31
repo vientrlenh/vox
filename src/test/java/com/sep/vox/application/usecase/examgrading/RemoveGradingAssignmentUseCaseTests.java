@@ -19,6 +19,7 @@ import com.sep.vox.application.port.input.command.RemoveGradingAssignmentCommand
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.application.port.input.usecase.examgrading.RemoveGradingAssignmentUseCase;
+import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
@@ -67,7 +68,7 @@ class RemoveGradingAssignmentUseCaseTests {
         var candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);
         when(examGradingAccessService.load(assignment.getId())).thenReturn(new GradingContext(
-            assignment, candidateResult, new ExamSession(), schoolId, "IELTS Mock"));
+            assignment, candidateResult, new ExamSession(), schoolId, "IELTS Mock", ExamKind.CENTRALIZED));
         return assignment.getId();
     }
 

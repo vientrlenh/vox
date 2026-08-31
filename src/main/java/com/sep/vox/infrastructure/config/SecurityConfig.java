@@ -278,6 +278,7 @@ public class SecurityConfig {
     @Order(3)
     public SecurityFilterChain configure(HttpSecurity http) {
         http
+            .csrf(csrf -> csrf.disable())
             .formLogin(fl -> fl.disable())
             .httpBasic(hb -> hb.disable())
             .cors(cors -> cors

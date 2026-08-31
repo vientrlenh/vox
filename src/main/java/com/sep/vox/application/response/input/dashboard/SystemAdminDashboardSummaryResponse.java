@@ -13,6 +13,11 @@ public record SystemAdminDashboardSummaryResponse(
     long activeSchools,
     long inactiveSchools,
     long pendingRegistrations,
+    /**
+     * Số ngày đơn chờ LÂU NHẤT đã nằm trong hàng đợi. {@code null} khi không còn đơn nào chờ — khác
+     * hẳn 0, vốn nghĩa là "có đơn, và nó vừa nộp hôm nay".
+     */
+    Integer oldestPendingRegistrationDays,
     long registrationsLast30Days,
     long registrationsLast90Days,
     BigDecimal totalRevenue,

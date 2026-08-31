@@ -142,5 +142,40 @@ class ViewPlatformBusinessHealthUseCaseTests {
         assertThat(result.revenueVnd()).isEqualByComparingTo("0");
         assertThat(result.aiCostVnd()).isEqualByComparingTo("0");
         assertThat(result.grossMarginPercent()).isNull();
+        assertThat(result.previousGrossMarginPercent()).isNull();
+    }
+
+    /**
+     * Biên kỳ trước dựng từ doanh thu VÀ giá vốn của CHÍNH kỳ trước — cả hai đều phải đọc ở cửa sổ
+     * lùi, không phải lấy giá vốn kỳ này ghép với doanh thu kỳ trước.
+     */
+    @Test
+    void previousGrossMarginUsesThePreviousWindowOnBothSides() {
+        var previousFrom = FROM.minus(java.time.Duration.between(FROM, TO));
+        when(orderRepository.sumTotalAmountByStatusInRange(eq(OrderStatus.SUCCESS), eq(previousFrom), eq(FROM)))
+            .thenReturn(new BigDecimal("200000000"));
+        when(queryRepository.sumAiCostVnd(previousFrom, FROM)).thenReturn(new BigDecimal("56000000"));
+
+        var result = useCase.execute(new ViewPlatformBusinessHealthUseCase.Query(FROM, TO));
+
+        // (200.000.000 - 56.000.000) / 200.000.000 = 72,0 -> chênh so với 68,0 là -4,0 ĐIỂM.
+        assertThat(result.previousGrossMarginPercent()).isEqualTo(72.0);
+        assertThat(result.grossMarginPercent()).isEqualTo(68.0);
+    }
+
+    /**
+     * Kỳ trước trống thì KHÔNG có mức chênh để vẽ. Để client tự chia sẽ dựng ra một biên -∞ rồi in
+     * thành cú sụt khổng lồ, trong khi thật ra chỉ là chưa có gì để so.
+     */
+    @Test
+    void previousGrossMarginIsNullWhenPreviousWindowHadNoRevenue() {
+        var previousFrom = FROM.minus(java.time.Duration.between(FROM, TO));
+        when(orderRepository.sumTotalAmountByStatusInRange(eq(OrderStatus.SUCCESS), eq(previousFrom), eq(FROM)))
+            .thenReturn(BigDecimal.ZERO);
+
+        var result = useCase.execute(new ViewPlatformBusinessHealthUseCase.Query(FROM, TO));
+
+        assertThat(result.previousGrossMarginPercent()).isNull();
+        assertThat(result.grossMarginPercent()).isEqualTo(68.0);
     }
 }

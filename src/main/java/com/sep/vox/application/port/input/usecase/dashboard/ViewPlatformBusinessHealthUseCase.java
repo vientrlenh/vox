@@ -70,7 +70,7 @@ public class ViewPlatformBusinessHealthUseCase
             return new PlatformBusinessHealthResponse(
                 health.subscribedSchools(), health.expiringSoonSchools(), health.lapsedSchools(),
                 health.suspendedSchools(), schoolsInDebt,
-                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null);
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, null);
         }
 
         var revenue = zeroIfNull(orderRepository.sumTotalAmountByStatusInRange(OrderStatus.SUCCESS, from, to));
@@ -80,13 +80,20 @@ public class ViewPlatformBusinessHealthUseCase
         // của màn hình là "từ đầu tháng tới giờ"; đem 10 ngày đầu tháng so với trọn tháng trước thì
         // tháng này luôn trông như sụp đổ, và đó là lỗi của phép so chứ không phải của việc kinh doanh.
         var windowLength = Duration.between(from, to);
+        var previousFrom = from.minus(windowLength);
         var previousRevenue = zeroIfNull(orderRepository.sumTotalAmountByStatusInRange(
-            OrderStatus.SUCCESS, from.minus(windowLength), from));
+            OrderStatus.SUCCESS, previousFrom, from));
+
+        // Giá vốn của kỳ trước chỉ để dựng ra BIÊN của kỳ trước, nên không trả nó ra ngoài: màn hình
+        // hỏi "biên tháng này hơn kém tháng trước mấy điểm", không hỏi chi phí kỳ trước là bao nhiêu.
+        var previousAiCost = zeroIfNull(platformBusinessHealthQueryRepository.sumAiCostVnd(previousFrom, from));
 
         return new PlatformBusinessHealthResponse(
             health.subscribedSchools(), health.expiringSoonSchools(), health.lapsedSchools(),
             health.suspendedSchools(), schoolsInDebt,
-            revenue, previousRevenue, aiCost, grossMarginPercent(revenue, aiCost));
+            revenue, previousRevenue, aiCost,
+            grossMarginPercent(revenue, aiCost),
+            grossMarginPercent(previousRevenue, previousAiCost));
     }
 
     /**

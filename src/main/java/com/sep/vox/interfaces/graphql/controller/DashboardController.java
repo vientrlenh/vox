@@ -6,6 +6,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.common.DateMapper;
+import com.sep.vox.application.port.input.query.ViewGradingFailureOverviewQuery;
+import com.sep.vox.application.port.input.query.ViewGradingFailureSessionsQuery;
+import com.sep.vox.application.port.input.usecase.dashboard.ViewGradingFailureOverviewUseCase;
+import com.sep.vox.application.port.input.usecase.dashboard.ViewGradingFailureSessionsUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewNearestCentralizedExamUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformBusinessHealthUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformOperationalHealthUseCase;
@@ -13,13 +17,17 @@ import com.sep.vox.application.port.input.usecase.dashboard.ViewSchoolAdminDashb
 import com.sep.vox.application.port.input.usecase.dashboard.ViewSystemAdminDashboardUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewQuestionBankStatsUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewTeacherDashboardUseCase;
+import com.sep.vox.application.query.dto.GradingFailureSessionDto;
 import com.sep.vox.application.query.dto.NearestCentralizedExamDto;
 import com.sep.vox.application.query.dto.QuestionBankStatsDto;
+import com.sep.vox.application.response.input.dashboard.GradingFailureOverviewResponse;
 import com.sep.vox.application.response.input.dashboard.PlatformBusinessHealthResponse;
 import com.sep.vox.application.response.input.dashboard.PlatformOperationalHealthResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolAdminDashboardSummaryResponse;
 import com.sep.vox.application.response.input.dashboard.SystemAdminDashboardSummaryResponse;
 import com.sep.vox.application.response.input.dashboard.TeacherDashboardSummaryResponse;
+import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller
 public class DashboardController {
@@ -31,6 +39,8 @@ public class DashboardController {
     private final ViewQuestionBankStatsUseCase viewQuestionBankStatsUseCase;
     private final ViewPlatformOperationalHealthUseCase viewPlatformOperationalHealthUseCase;
     private final ViewPlatformBusinessHealthUseCase viewPlatformBusinessHealthUseCase;
+    private final ViewGradingFailureOverviewUseCase viewGradingFailureOverviewUseCase;
+    private final ViewGradingFailureSessionsUseCase viewGradingFailureSessionsUseCase;
 
     public DashboardController(ViewSystemAdminDashboardUseCase viewSystemAdminDashboardUseCase,
             ViewSchoolAdminDashboardUseCase viewSchoolAdminDashboardUseCase,
@@ -38,7 +48,9 @@ public class DashboardController {
             ViewNearestCentralizedExamUseCase viewNearestCentralizedExamUseCase,
             ViewQuestionBankStatsUseCase viewQuestionBankStatsUseCase,
             ViewPlatformOperationalHealthUseCase viewPlatformOperationalHealthUseCase,
-            ViewPlatformBusinessHealthUseCase viewPlatformBusinessHealthUseCase) {
+            ViewPlatformBusinessHealthUseCase viewPlatformBusinessHealthUseCase,
+            ViewGradingFailureOverviewUseCase viewGradingFailureOverviewUseCase,
+            ViewGradingFailureSessionsUseCase viewGradingFailureSessionsUseCase) {
         this.viewSystemAdminDashboardUseCase = viewSystemAdminDashboardUseCase;
         this.viewSchoolAdminDashboardUseCase = viewSchoolAdminDashboardUseCase;
         this.viewTeacherDashboardUseCase = viewTeacherDashboardUseCase;
@@ -46,6 +58,8 @@ public class DashboardController {
         this.viewQuestionBankStatsUseCase = viewQuestionBankStatsUseCase;
         this.viewPlatformOperationalHealthUseCase = viewPlatformOperationalHealthUseCase;
         this.viewPlatformBusinessHealthUseCase = viewPlatformBusinessHealthUseCase;
+        this.viewGradingFailureOverviewUseCase = viewGradingFailureOverviewUseCase;
+        this.viewGradingFailureSessionsUseCase = viewGradingFailureSessionsUseCase;
     }
 
     @QueryMapping(name = "systemAdminDashboard")
@@ -97,6 +111,35 @@ public class DashboardController {
         return viewPlatformBusinessHealthUseCase.execute(new ViewPlatformBusinessHealthUseCase.Query(
             DateMapper.toInstant(dateFrom),
             DateMapper.toInstant(dateTo)
+        ));
+    }
+
+    @QueryMapping(name = "gradingFailureOverview")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public GradingFailureOverviewResponse gradingFailureOverview(
+            @Argument(name = "dateFrom") String dateFrom,
+            @Argument(name = "dateTo") String dateTo) {
+        return viewGradingFailureOverviewUseCase.execute(new ViewGradingFailureOverviewQuery(
+            DateMapper.toInstant(dateFrom),
+            DateMapper.toInstant(dateTo)
+        ));
+    }
+
+    @QueryMapping(name = "gradingFailureSessions")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public PageResult<GradingFailureSessionDto> gradingFailureSessions(
+            @Argument(name = "dateFrom") String dateFrom,
+            @Argument(name = "dateTo") String dateTo,
+            @Argument(name = "signature") String signature,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        PageArguments.validate(page, size);
+        return viewGradingFailureSessionsUseCase.execute(new ViewGradingFailureSessionsQuery(
+            DateMapper.toInstant(dateFrom),
+            DateMapper.toInstant(dateTo),
+            signature,
+            page, 
+            size
         ));
     }
 

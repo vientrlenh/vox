@@ -23,6 +23,8 @@ public final class ExamSessionMapper {
         );
         domain.setChosenStreamType(chosenStreamTypeFromString(jpa.getChosenStreamType()));
         domain.setRemainingSeconds(jpa.getRemainingSeconds());
+        domain.setGradingError(jpa.getGradingError());
+        domain.setGradingRetryCount(jpa.getGradingRetryCount());
         return domain;
     }
 
@@ -42,6 +44,8 @@ public final class ExamSessionMapper {
             domain.getChosenStreamType() == null ? null : domain.getChosenStreamType().name()
         );
         jpa.setRemainingSeconds(domain.getRemainingSeconds());
+        jpa.setGradingError(domain.getGradingError());
+        jpa.setGradingRetryCount(domain.getGradingRetryCount());
         return jpa;
     }
 

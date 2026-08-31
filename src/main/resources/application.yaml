@@ -1,6 +1,24 @@
 spring:
   application:
     name: vox
+  
+  boot:
+    admin:
+      # Đường dẫn gốc của SBA server: mọi @AdminController (kể cả POST /instances để đăng ký)
+      # được map lại thành /admin/**, xem AdminControllerHandlerMapping.
+      context-path: /admin
+      client:
+        # PHẢI kèm context-path ở trên. Client tự nối "/instances" vào url này
+        # (ClientProperties.apiPath), nên thiếu /admin là POST thẳng vào /instances -> 404.
+        url: http://localhost:8081/admin
+        # Tài khoản Basic mà client gắn vào request đăng ký. Trỏ về app.admin.* ở cuối file để
+        # chỉ có MỘT chỗ phải sửa -- lệch nhau giữa hai bên thì client kẹt ở 401 và cứ 10 giây
+        # thử lại một lần, log đầy nhưng không nói ra là do sai mật khẩu.
+        username: ${app.admin.username}
+        password: ${app.admin.password}
+        # Ngược lại, đây là URL của CHÍNH app này để SBA server gọi actuator -- không có /admin.
+        instance:
+          service-url: http://localhost:8081
 
   servlet:
     multipart:
@@ -64,7 +82,6 @@ spring:
     # mọi môi trường, mà clean-on-validation-error xóa toàn bộ dữ liệu và không hỏi lại lần nào.
     # Bật sẵn trong file này là đặt sẵn một quả mìn cho production.
     clean-disabled: ${FLYWAY_CLEAN_DISABLED:true}
-    clean-on-validation-error: ${FLYWAY_CLEAN_ON_VALIDATION_ERROR:false}
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
@@ -173,6 +190,18 @@ spring:
       ddl-auto: validate
     show-sql: true
 
+management: 
+  endpoints: 
+    web: 
+      exposure: 
+        include: "*"
+  endpoint: 
+    health: 
+      show-details: always
+  health: 
+    mail: 
+      enabled: false
+
 storage:
   provider: ${STORAGE_PROVIDER:}
   s3:
@@ -236,6 +265,13 @@ practice:
     secret: ${PRACTICE_INTERNAL_SECRET:}
 
 app:
+  admin:
+    # Tài khoản HTTP Basic cho /admin/** (trang Spring Boot Admin + endpoint đăng ký).
+    # KHÔNG đặt giá trị mặc định: sau cửa này là actuator của mọi instance đã đăng ký, kèm
+    # đường proxy ghi xuống chúng. Thiếu biến là app dừng ngay lúc khởi động kèm lời nhắn,
+    # xem SecurityConfig#requireConfigured.
+    username: ${SBA_ADMIN_USERNAME:}
+    password: ${SBA_ADMIN_PASSWORD:}
   mail:
     # Địa chỉ người gửi. BẮT BUỘC phải có: thiếu nó thì JavaMail tự suy địa chỉ local bằng
     # user.name + hostname của máy chạy, và khi không suy được sẽ ném

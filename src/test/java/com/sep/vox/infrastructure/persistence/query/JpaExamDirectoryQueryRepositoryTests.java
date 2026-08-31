@@ -130,6 +130,27 @@ class JpaExamDirectoryQueryRepositoryTests extends ContainerTestConfig {
         assertThat(missed.content()).isEmpty();
     }
 
+    /**
+     * Bàn phím không bật bộ gõ tiếng Việt là mặc định: giáo viên gõ "nguyen van an" phải ra
+     * "Nguyễn Văn An". `LOWER(...) LIKE` phân biệt dấu nên trước đây tìm không ra người có thật.
+     */
+    @Test
+    void should_match_vietnamese_names_typed_without_diacritics() {
+        var an = student("Nguyễn Văn An", "an");
+        var dat = student("Đỗ Quốc Đạt", "dat");
+        joinSchool(an);
+        joinSchool(dat);
+
+        var plain = repository.findUsersBySchoolId(schoolId, "STUDENT", "nguyen van an", 1, 20);
+        var withMarks = repository.findUsersBySchoolId(schoolId, "STUDENT", "Nguyễn Văn An", 1, 20);
+        // "đ" là chữ cái riêng (U+0111), NFD không tách được nên dễ sót nhất.
+        var dStroke = repository.findUsersBySchoolId(schoolId, "STUDENT", "do quoc dat", 1, 20);
+
+        assertThat(plain.content()).extracting(user -> user.userId()).containsExactly(an);
+        assertThat(withMarks.content()).extracting(user -> user.userId()).containsExactly(an);
+        assertThat(dStroke.content()).extracting(user -> user.userId()).containsExactly(dat);
+    }
+
     @Test
     void should_list_active_grades_of_the_school_only() {
         var active = grade("NK-2026", "ACTIVE");

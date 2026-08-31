@@ -29,7 +29,17 @@ public interface PlatformBusinessHealthQueryRepository {
      */
     SchoolSubscriptionHealthDto countSchoolSubscriptionHealth(Instant now, Instant expiringThrough);
 
-    /** Trường có ví tự nạp âm — chính là trường đang bị chặn mở ca thi, xem {@code SchoolBalance.locked}. */
+    /**
+     * Trường có ví tự nạp âm — chính là trường đang bị chặn mở ca thi.
+     *
+     * <p>Không có cờ khóa nào để đọc: trạng thái khóa được SUY RA từ số dư mỗi lần hỏi, xem
+     * {@code SchoolBalance.isInDebt()} và {@code SchoolSubscriptionDebtGuardService}. Điều kiện ở đây
+     * ({@code balance_vnd < 0}) phải khớp với vị từ đó, nếu không dashboard sẽ đếm ra một tập trường
+     * khác với tập thật sự đang bị chặn.
+     *
+     * <p>CẮT NGANG các nhóm thuê bao: đọc từ bảng khác nên một trường đang còn gói mà ví âm sẽ vào
+     * cả hai số đếm. Đừng cộng con số này với ba nhóm kia.
+     */
     long countSchoolsInDebt();
 
     /**

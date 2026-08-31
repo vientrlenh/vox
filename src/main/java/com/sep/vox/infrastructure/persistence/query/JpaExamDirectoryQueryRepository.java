@@ -2,7 +2,6 @@ package com.sep.vox.infrastructure.persistence.query;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -11,6 +10,7 @@ import com.sep.vox.application.query.dto.ExamDirectoryGradeInfo;
 import com.sep.vox.application.query.dto.ExamDirectoryUserInfo;
 import com.sep.vox.application.query.repository.ExamDirectoryQueryRepository;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.common.VnSearchKey;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -32,7 +32,9 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
             FROM SchoolGradeJpaEntity sg
             WHERE sg.schoolId = :schoolId
               AND sg.status = 'ACTIVE'
-              AND (:pattern IS NULL OR LOWER(sg.code) LIKE :pattern OR LOWER(sg.name) LIKE :pattern)
+              AND (:pattern IS NULL
+                  OR vn_search_key(sg.code) LIKE :pattern
+                  OR vn_search_key(sg.name) LIKE :pattern)
             """;
 
         TypedQuery<ExamDirectoryGradeInfo> contentQuery = em.createQuery("""
@@ -63,7 +65,9 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
                   SELECT 1 FROM UserRoleJpaEntity ur
                   JOIN RoleJpaEntity r ON r.id = ur.roleId
                   WHERE ur.userId = u.id AND r.code = :roleCode)
-              AND (:pattern IS NULL OR LOWER(u.fullName) LIKE :pattern OR LOWER(u.email) LIKE :pattern)
+              AND (:pattern IS NULL
+                  OR vn_search_key(u.fullName) LIKE :pattern
+                  OR vn_search_key(u.email) LIKE :pattern)
             """;
 
         TypedQuery<ExamDirectoryUserInfo> contentQuery = em.createQuery("""
@@ -106,7 +110,9 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
                   SELECT 1 FROM UserRoleJpaEntity ur
                   JOIN RoleJpaEntity r ON r.id = ur.roleId
                   WHERE ur.userId = u.id AND r.code = :roleCode)
-              AND (:pattern IS NULL OR LOWER(u.fullName) LIKE :pattern OR LOWER(u.email) LIKE :pattern)
+              AND (:pattern IS NULL
+                  OR vn_search_key(u.fullName) LIKE :pattern
+                  OR vn_search_key(u.email) LIKE :pattern)
             """;
 
         TypedQuery<ExamDirectoryUserInfo> contentQuery = em.createQuery("""
@@ -144,10 +150,14 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
         return Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
     }
 
+    /**
+     * Từ khoá phải bỏ dấu đúng như cột đang được so (hàm SQL {@code vn_search_key}), nếu không thì
+     * gõ không dấu "nguyen van an" sẽ không khớp "Nguyễn Văn An" — xem {@link VnSearchKey}.
+     */
     private static String likePattern(String search) {
         if (search == null || search.isBlank()) {
             return null;
         }
-        return "%" + search.strip().toLowerCase(Locale.ROOT) + "%";
+        return "%" + VnSearchKey.of(search) + "%";
     }
 }

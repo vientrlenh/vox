@@ -17,7 +17,6 @@ import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand
 import com.sep.vox.application.port.input.usecase.examevaluation.RecordExamAttemptEvaluationUseCase;
 import com.sep.vox.application.port.input.usecase.examitemresponse.ResolveExamSessionIdByResponseIdUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
-import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationCompletedEventDto;
 import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationFailedEventDto;
 import com.sep.vox.interfaces.kafka.mapper.RecordExamAttemptEvaluationCommandMapper;
@@ -77,10 +76,20 @@ public class ExamAttemptEvaluationCompletedConsumer {
                 LOGGER.info("Recorded exam evaluation for answerId={}", dto.answerId());
             } else if ("ExamAttemptEvaluationFailed".equals(eventType)) {
                 var failedEvent = jsonMapper.treeToValue(payload, ExamAttemptEvaluationFailedEventDto.class);
-                updateExamSessionStatusUseCase.execute(new UpdateExamSessionStatusCommand(
+                // payload là optional trong DTO: một producer cũ hơn có thể gửi sự kiện lỗi trần.
+                // Thiếu payload xử lý y hệt nhánh DLT — hỏng, không rõ vì sao.
+                var failurePayload = failedEvent.payload();
+                updateExamSessionStatusUseCase.execute(UpdateExamSessionStatusCommand.gradingFailed(
                     UUID.fromString(failedEvent.examAttemptId()),
-                    ExamSessionStatus.GRADING_FAILED
+                    failurePayload == null ? null : failurePayload.error(),
+                    failurePayload == null ? null : failurePayload.retryCount()
                 ));
+                LOGGER.warn(
+                    "Exam session {} marked GRADING_FAILED: retryCount={} error={}",
+                    failedEvent.examAttemptId(),
+                    failurePayload == null ? null : failurePayload.retryCount(),
+                    failurePayload == null ? null : failurePayload.error()
+                );
             } else {
                 LOGGER.info("Skip unknown exam evaluation event type={}", eventType);
             }
@@ -104,10 +113,11 @@ public class ExamAttemptEvaluationCompletedConsumer {
                 return;
             }
 
-            updateExamSessionStatusUseCase.execute(new UpdateExamSessionStatusCommand(
-                sessionId,
-                ExamSessionStatus.GRADING_FAILED
-            ));
+            // KHÔNG có lý do để lưu ở đây, và đó là sự thật chứ không phải thiếu sót: bản tin rơi
+            // xuống DLT sau khi hết lượt retry vì một lỗi xử lý phía mình (có khi còn không parse
+            // được), nên nó không mang thông điệp lỗi nào của dịch vụ chấm.
+            updateExamSessionStatusUseCase.execute(
+                UpdateExamSessionStatusCommand.gradingFailedWithoutReason(sessionId));
         } catch (Exception ex) {
             LOGGER.error("Failed to mark exam session as GRADING_FAILED from DLT: {}", ex.getMessage(), ex);
         }

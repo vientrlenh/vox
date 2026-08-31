@@ -68,6 +68,12 @@ public class ExamSessionJpaEntity {
     @Column(name = "remaining_seconds")
     private Integer remainingSeconds;
 
+    @Column(name = "grading_error", columnDefinition = "text")
+    private String gradingError;
+
+    @Column(name = "grading_retry_count")
+    private Integer gradingRetryCount;
+
     protected ExamSessionJpaEntity() {}
 
     public ExamSessionJpaEntity(UUID id, UUID examId, UUID candidateId, UUID paperId, Instant startedAt,
@@ -169,5 +175,21 @@ public class ExamSessionJpaEntity {
 
     public void setRemainingSeconds(Integer remainingSeconds) {
         this.remainingSeconds = remainingSeconds;
+    }
+
+    public String getGradingError() {
+        return gradingError;
+    }
+
+    public void setGradingError(String gradingError) {
+        this.gradingError = gradingError;
+    }
+
+    public Integer getGradingRetryCount() {
+        return gradingRetryCount;
+    }
+
+    public void setGradingRetryCount(Integer gradingRetryCount) {
+        this.gradingRetryCount = gradingRetryCount;
     }
 }

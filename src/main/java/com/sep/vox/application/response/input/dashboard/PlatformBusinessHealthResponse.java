@@ -26,6 +26,16 @@ public record PlatformBusinessHealthResponse(
     /** Giá vốn AI phát sinh trong cửa sổ, VND. */
     BigDecimal aiCostVnd,
     /** (doanh thu - giá vốn AI) / doanh thu * 100. {@code null} khi cửa sổ chưa thu được đồng nào. */
-    Double grossMarginPercent
+    Double grossMarginPercent,
+    /**
+     * Cùng công thức, tính trên kỳ so sánh — để màn hình vẽ được mức chênh theo ĐIỂM PHẦN TRĂM.
+     *
+     * <p>Tính ở đây chứ không để client lấy hiệu của hai tỷ lệ tự dựng: quy ước "doanh thu 0 thì biên
+     * không tồn tại, không phải 0%" chỉ đúng nếu áp một lần cho cả hai kỳ. Client tự chia sẽ dựng ra
+     * một biên -∞ cho kỳ trước trống rồi vẽ thành cú sụt khổng lồ.
+     *
+     * <p>{@code null} khi kỳ trước chưa thu được đồng nào — lúc đó KHÔNG có mức chênh để hiển thị.
+     */
+    Double previousGrossMarginPercent
 ) {
 }

@@ -5,6 +5,21 @@ spring:
         server:
             port: 0
 
+    boot:
+        admin:
+            client:
+                # Cùng họ với khối kafka bên dưới: chặn test nói chuyện ra ngoài process.
+                #
+                # Hôm nay client này chưa chạy trong test vì mọi @SpringBootTest đều dùng
+                # webEnvironment MOCK, không có WebServer thật nên WebServerInitializedEvent
+                # không bao giờ phát và ApplicationRegistrator không khởi động. Nhưng nó chỉ
+                # cách một chữ RANDOM_PORT: thêm đúng một test cần HTTP thật là client bật
+                # lên và POST vào spring.boot.admin.client.url -- địa chỉ đó ghi cứng
+                # localhost:8081, tức là app THẬT đang chạy trên máy dev, cứ 10 giây một lần.
+                # Kết quả là một instance ma nằm trong trang admin của app thật, trỏ về một
+                # cổng đã đóng ngay khi test kết thúc.
+                enabled: false
+
     # Cách ly Kafka. ContainerTestConfig chỉ dựng testcontainer cho Postgres, KHÔNG có
     # container Kafka -- nên nếu không chặn ở đây thì mọi @SpringBootTest sẽ nối thẳng vào
     # broker thật của máy dev (spring.kafka.bootstrap-servers mặc định localhost:9092).
@@ -55,6 +70,18 @@ system-admin:
   address: Test Address
 
 app:
+  # BẮT BUỘC phải có, không phải cho tiện. SecurityConfig#adminConsoleFilterChain gọi
+  # requireConfigured() và ném InfrastructureException khi hai khoá này rỗng, nên thiếu chúng
+  # là MỌI @SpringBootTest chết ngay lúc dựng context chứ không phải fail một assert nào đó.
+  #
+  # Trên máy dev thì .env che mất lỗi này (SBA_ADMIN_* đã có sẵn trong môi trường), nhưng CI
+  # chỉ đặt SPRING_DATASOURCE_* và JWT_SECRET -- xem .github/workflows/ci-build.yml. Giá trị
+  # dưới đây là rác cố định: test không gọi /admin/** nên nội dung không quan trọng, chỉ cần
+  # khác rỗng.
+  admin:
+    username: test-admin
+    password: test-admin-password
+
   frontend:
     password-setup-url: http://localhost:5173/test-password-setup-url
     oauth2-url: http://localhost:5173/oauth2-callback

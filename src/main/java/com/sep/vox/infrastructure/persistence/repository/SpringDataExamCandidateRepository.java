@@ -13,7 +13,16 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateJpaEntity;
 
 public interface SpringDataExamCandidateRepository extends JpaRepository<ExamCandidateJpaEntity, UUID> {
-    List<ExamCandidateJpaEntity> findByExamId(UUID examId);
+    /**
+     * Danh sách thí sinh của kỳ thi, thứ tự CỐ ĐỊNH theo lúc được thêm vào.
+     *
+     * <p>Không có ORDER BY thì Postgres trả về theo thứ tự vật lý của heap: thứ tự đổi sau mỗi
+     * lần ghi và không giống nhau giữa hai lần gọi. Màn danh sách thí sinh phân trang 10 dòng
+     * trên chính mảng này, nên thứ tự trôi làm người vừa thêm nhảy trang — thêm xong không thấy
+     * đâu, F5 lại thấy. `assignedAt` là `updatable = false`; kèm `id` để nhập theo lớp/khối
+     * (cả loạt chung một mốc thời gian) vẫn có thứ tự xác định.
+     */
+    List<ExamCandidateJpaEntity> findByExamIdOrderByAssignedAtAscIdAsc(UUID examId);
     List<ExamCandidateJpaEntity> findByExamIdIn(Collection<UUID> examIds);
     void deleteByExamId(UUID examId);
     Optional<ExamCandidateJpaEntity> findByExamIdAndStudentId(UUID examId, UUID studentId);

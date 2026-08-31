@@ -3,6 +3,14 @@ type SystemAdminDashboardSummary {
     activeSchools: Int!
     inactiveSchools: Int!
     pendingRegistrations: Int!
+    """
+    Đơn chờ LÂU NHẤT đã nằm trong hàng đợi bao nhiêu ngày lịch (giờ Việt Nam).
+
+    null khi không còn đơn nào chờ — khác hẳn 0, vốn nghĩa là "có đơn, vừa nộp hôm nay". Ở đây 0
+    lại là trạng thái tốt nhất, nên nhập nhèm hai cái sẽ vẽ ra một hàng đợi rỗng trông y hệt một
+    hàng đợi vừa xử lý xong.
+    """
+    oldestPendingRegistrationDays: Int
     registrationsLast30Days: Int!
     registrationsLast90Days: Int!
     totalRevenue: Float!
@@ -143,9 +151,19 @@ type PlatformOperationalHealth {
 """
 Sức khỏe kinh doanh nền tảng.
 
-Bốn nhóm trường LOẠI TRỪ NHAU và phân loại theo TRƯỜNG, không theo dòng thuê bao — một trường có
-nhiều kỳ trong lịch sử. "Còn hiệu lực" gồm cả CANCELLED vì trạng thái đó chỉ tắt gia hạn tự động,
-trường vẫn dùng được tới hết endDate; chỉ SUSPENDED mới mất quyền dùng ngay.
+Mọi số đếm phân loại theo TRƯỜNG, không theo dòng thuê bao — một trường có nhiều kỳ trong lịch sử.
+"Còn hiệu lực" gồm cả CANCELLED vì trạng thái đó chỉ tắt gia hạn tự động, trường vẫn dùng được tới
+hết endDate; chỉ SUSPENDED mới mất quyền dùng ngay.
+
+ĐỪNG CỘNG CÁC SỐ ĐẾM LẠI — chúng không phải một phép chia nhóm:
+
+* subscribedSchools / lapsedSchools / suspendedSchools loại trừ nhau: đó là ba trạng thái có thể
+  có của cùng một trường tại thời điểm gọi.
+* expiringSoonSchools là TẬP CON của subscribedSchools, không phải nhóm thứ tư.
+* schoolsInDebt cắt ngang cả ba: nó đọc từ school_balances chứ không từ school_subscriptions, nên
+  một trường đang còn gói mà ví âm sẽ được đếm ở CẢ subscribedSchools lẫn schoolsInDebt.
+* Trường CHƯA TỪNG có gói nào không nằm trong ba nhóm đầu: chúng không có dòng nào trong
+  school_subscriptions để gộp. Trường mới duyệt mà chưa mua gói vì thế vô hình ở đây.
 
 Số đếm trường là ảnh chụp NGAY LÚC GỌI, không đổi theo dateFrom/dateTo. Các con số tiền thì theo cửa
 sổ đang xem.
@@ -169,10 +187,122 @@ type PlatformBusinessHealth {
     aiCostVnd: Float!
     "null khi cửa sổ chưa thu được đồng nào — biên của doanh thu 0 không tồn tại, không phải 0%"
     grossMarginPercent: Float
+    """
+    Cùng công thức, tính trên kỳ so sánh — để vẽ mức chênh theo ĐIỂM PHẦN TRĂM (không phải %).
+
+    Tính ở server chứ không để client lấy hiệu của hai tỷ lệ tự dựng: quy ước "doanh thu 0 thì biên
+    không tồn tại" chỉ đúng nếu áp một lần cho cả hai kỳ. null khi kỳ trước chưa thu được đồng nào,
+    và lúc đó KHÔNG có mức chênh nào để hiển thị.
+    """
+    previousGrossMarginPercent: Float
+}
+
+"""
+Một nhóm phiên chấm lỗi cùng nguyên nhân.
+
+`signature` là thông điệp lỗi đã chuẩn hóa (thay uuid và số bằng chỗ trống) — nó là ĐỊNH DANH của
+nhóm, truyền lại y nguyên vào `gradingFailureSessions` để mở nhóm. null là nhóm "không rõ nguyên
+nhân": phiên bị đánh dấu hỏng qua nhánh DLT không mang thông điệp nào, và mọi phiên hỏng từ trước
+khi hệ thống bắt đầu lưu lý do cũng nằm ở đây. Đó là một nhóm THẬT, không phải dữ liệu thiếu.
+"""
+type GradingFailureGroup {
+    signature: String
+    "Một thông điệp lỗi thô đại diện, để đọc; null ở nhóm không rõ nguyên nhân"
+    sampleError: String
+    sessionCount: Int!
+    "Kỳ thi cấp hệ thống không thuộc trường nào nên không được đếm"
+    schoolCount: Int!
+    examCount: Int!
+    "ISO-8601. Cùng với lastFailedAt cho thấy sự cố gói trong hai tiếng hay lỗi rỉ rả suốt hai tuần"
+    firstFailedAt: String
+    lastFailedAt: String
+    "Số phiên thuộc kỳ CHƯA công bố điểm, tức thật sự chấm lại được"
+    retryableCount: Int!
+}
+
+"""
+Trang phân loại phiên chấm lỗi.
+
+sessionCount phải khớp đúng `gradingFailed` của platformOperationalHealth khi hai bên cùng khoảng:
+cùng vị từ (status = GRADING_FAILED), cùng cửa sổ theo submitted_at, cùng mặc định khi bỏ trống mốc.
+"""
+type GradingFailureOverview {
+    sessionCount: Int!
+    "Số nhóm nguyên nhân, tính cả nhóm không rõ nguyên nhân nếu có"
+    causeCount: Int!
+    schoolCount: Int!
+    retryableCount: Int!
+    "Nhóm đông nhất trước"
+    groups: [GradingFailureGroup!]!
+    """
+    Số nhóm vượt trần và bị cắt khỏi `groups`.
+
+    Nói ra thay vì im lặng cắt, vì nó là DẤU HIỆU CHẨN ĐOÁN: chuẩn hóa thông điệp mà không gom được
+    thì số nhóm nở gần bằng số phiên, và lúc đó cần sửa cách chuẩn hóa chứ không phải nới trần.
+    """
+    groupsTruncated: Int!
+}
+
+"""
+Một phiên chấm lỗi. KHÔNG có điểm: phiên GRADING_FAILED không có dòng exam_candidate_results nào để
+lấy điểm ra. Thứ thay thế là những trường giúp phân loại.
+"""
+type GradingFailureSession {
+    sessionId: ID!
+    schoolId: ID
+    "null với kỳ thi cấp hệ thống"
+    schoolName: String
+    schoolCode: String
+    examId: ID!
+    examName: String!
+    candidateName: String
+    "ISO-8601, mốc nộp bài"
+    failedAt: String
+    "Dịch vụ chấm đã thử mấy lần trước khi bỏ cuộc; null khi không rõ"
+    retryCount: Int
+    "Thông điệp lỗi thô, nguyên văn; null ở nhóm không rõ nguyên nhân"
+    error: String
+    "Kỳ thi chưa công bố điểm, tức chấm lại được"
+    retryable: Boolean!
+    """
+    Bài ĐÃ được đẩy sang hàng đợi người chấm.
+
+    Phiên vẫn ở GRADING_FAILED vì hand-off cố ý không đổi trạng thái phiên (xem
+    HandOffGradingToHumanUseCase), nên cờ này là thứ DUY NHẤT phân biệt phiên đã có người nhận với
+    phiên chưa ai đụng tới.
+    """
+    handedOff: Boolean!
+}
+
+type GradingFailureSessionPage {
+    content: [GradingFailureSession!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
 }
 
 extend type Query {
     systemAdminDashboard: SystemAdminDashboardSummary!
+
+    """
+    Cùng quy ước khoảng với platformOperationalHealth, và cùng mặc định: bỏ trống dateTo = ngay lúc
+    này, bỏ trống dateFrom = lùi 14 ngày. Người dùng bấm vào con số phiên lỗi trên trang tổng quan
+    rồi mong thấy đúng những phiên tạo ra con số đó.
+    """
+    gradingFailureOverview(dateFrom: String, dateTo: String): GradingFailureOverview!
+
+    """
+    Phiên trong MỘT nhóm. `signature` lấy nguyên văn từ GradingFailureGroup.signature — bỏ trống
+    hoặc null chọn đúng nhóm "không rõ nguyên nhân", KHÔNG phải bỏ lọc.
+    """
+    gradingFailureSessions(
+        dateFrom: String
+        dateTo: String
+        signature: String
+        page: Int = 1
+        size: Int = 20
+    ): GradingFailureSessionPage!
 
     """
     dateFrom/dateTo là ISO instant (vd "2026-08-01T00:00:00Z"). dateFrom BAO GỒM, dateTo KHÔNG bao

@@ -52,7 +52,7 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
 
     @Override
     public List<ExamCandidate> findByExamId(UUID examId) {
-        return springDataExamCandidateRepository.findByExamId(examId).stream()
+        return springDataExamCandidateRepository.findByExamIdOrderByAssignedAtAscIdAsc(examId).stream()
             .map(ExamCandidateMapper::toDomain)
             .toList();
     }

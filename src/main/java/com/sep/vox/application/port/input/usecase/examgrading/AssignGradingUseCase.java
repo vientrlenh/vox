@@ -17,6 +17,7 @@ import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.AssignGradingCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
@@ -50,18 +51,21 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
     private final ExamRepository examRepository;
     private final ExamGradingQueryRepository examGradingQueryRepository;
     private final ExamGradingAccessService examGradingAccessService;
+    private final GradingAssignmentNotificationService gradingAssignmentNotificationService;
 
     public AssignGradingUseCase(
             ExamGradingAssignmentRepository examGradingAssignmentRepository,
             ExamCandidateResultRepository examCandidateResultRepository,
             ExamRepository examRepository,
             ExamGradingQueryRepository examGradingQueryRepository,
-            ExamGradingAccessService examGradingAccessService) {
+            ExamGradingAccessService examGradingAccessService,
+            GradingAssignmentNotificationService gradingAssignmentNotificationService) {
         this.examGradingAssignmentRepository = examGradingAssignmentRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examRepository = examRepository;
         this.examGradingQueryRepository = examGradingQueryRepository;
         this.examGradingAccessService = examGradingAccessService;
+        this.gradingAssignmentNotificationService = gradingAssignmentNotificationService;
     }
 
     @Override
@@ -164,7 +168,12 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
             ));
         }
 
-        return examGradingAssignmentRepository.saveAll(assignments).stream()
+        var saved = examGradingAssignmentRepository.saveAll(assignments);
+
+        // Sau saveAll: thông báo cần id của dòng phân công để dẫn giáo viên vào đúng bài.
+        gradingAssignmentNotificationService.publishAssigned(saved, now);
+
+        return saved.stream()
             .map(assignment -> assignment.getId())
             .toList();
     }

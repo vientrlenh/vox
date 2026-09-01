@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.AssignGradingCommand;
@@ -65,7 +66,8 @@ public class AssignGradingUseCaseTests {
             examCandidateResultRepository,
             examRepository,
             examGradingQueryRepository,
-            examGradingAccessService);
+            examGradingAccessService,
+            mock(GradingAssignmentNotificationService.class));
 
         when(examGradingAccessService.requireActiveUserId()).thenReturn(adminId);
         when(examCandidateResultRepository.findByIdIn(anyCollection())).thenReturn(List.of(

@@ -41,6 +41,7 @@ import com.sep.vox.application.event.ExamResultOutcomeDecidedPayloadV1;
 import com.sep.vox.application.event.ExamResultRegradedPayloadV1;
 import com.sep.vox.application.event.ExamResultReleasedPayloadV1;
 import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
+import com.sep.vox.application.event.GradingAssignmentOpenedPayloadV1;
 import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
 import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.event.SchoolDebtCapExceededPayloadV1;
@@ -436,6 +437,23 @@ public class NotificationPushedEventConsumer {
                         .build());
             }
 
+            case EventTypeConstant.GRADING_ASSIGNMENT_OPENED -> {
+                var payload = parse(value, GradingAssignmentOpenedPayloadV1.class, eventType, eventId);
+                yield one(payload.teacherId(), category,
+                    "Bạn được giao chấm bài",
+                    // candidateLabel đã được chọn theo luật ẩn danh từ lúc phát: tên học sinh
+                    // với bài trên lớp, mã bài với kỳ thi tập trung. KHÔNG suy lại ở đây.
+                    "%s - %s: %s".formatted(
+                        orPlaceholder(payload.examName()),
+                        roundLabel(payload.roundType()),
+                        orPlaceholder(payload.candidateLabel())),
+                    data(eventType)
+                        .with("assignmentId", payload.assignmentId())
+                        .with("examId", payload.examId())
+                        .with("examKind", payload.examKind())
+                        .build());
+            }
+
             case EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED -> {
                 var payload = parse(value, ExamHumanGradingRequiredPayloadV1.class, eventType, eventId);
                 yield fanOut(payload.recipientIds(), category,
@@ -682,6 +700,20 @@ public class NotificationPushedEventConsumer {
 
     private String formatDeadline(Instant deadline) {
         return deadline == null ? "--" : DEADLINE_FORMAT.format(deadline);
+    }
+
+    /** Cùng bộ chữ với GradingAssignmentEmailConsumer: hai kênh nói về một vòng chấm. */
+    private String roundLabel(String roundType) {
+        if (roundType == null) {
+            return "Chấm bài";
+        }
+        return switch (roundType) {
+            case "INITIAL" -> "Chấm lần đầu";
+            case "SPOT_CHECK" -> "Hậu kiểm";
+            case "REMEDIATION" -> "Xem xét bài bị vô hiệu";
+            case "APPEAL" -> "Phúc khảo";
+            default -> "Chấm bài";
+        };
     }
 
     private String orPlaceholder(String value) {

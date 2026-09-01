@@ -157,6 +157,16 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     }
 
     @Override
+    public List<ExamCandidate> findByIdIn(Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataExamCandidateRepository.findByIdIn(ids).stream()
+            .map(ExamCandidateMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public List<ExamCandidate> findByIdInAndExamId(Collection<UUID> ids, UUID examId) {
         if (ids.isEmpty()) {
             return List.of();

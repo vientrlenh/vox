@@ -34,6 +34,7 @@ public interface ExamCandidateRepository {
     Set<UUID> findStudentIdsByExamId(UUID examId);
     List<UUID> findUnblockedStudentIdsByExamId(UUID examId);
     List<ExamCandidate> findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(UUID examId);
+    List<ExamCandidate> findByIdIn(Collection<UUID> ids);
     List<ExamCandidate> findByIdInAndExamId(Collection<UUID> ids, UUID examId);
     long countByScheduleId(UUID scheduleId);
     boolean existsByScheduleIdAndStudentId(UUID scheduleId, UUID studentId);

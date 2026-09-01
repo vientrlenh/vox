@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.AutoAssignGradingCommand;
@@ -45,6 +46,7 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
     private final ExamGradingAccessService examGradingAccessService;
     private final GradingSampleSelector gradingSampleSelector;
     private final RoundRobinLoadBalancer roundRobinLoadBalancer;
+    private final GradingAssignmentNotificationService gradingAssignmentNotificationService;
 
     public AutoAssignGradingUseCase(
             ExamGradingAssignmentRepository examGradingAssignmentRepository,
@@ -52,13 +54,15 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
             ExamGradingQueryRepository examGradingQueryRepository,
             ExamGradingAccessService examGradingAccessService,
             GradingSampleSelector gradingSampleSelector,
-            RoundRobinLoadBalancer roundRobinLoadBalancer) {
+            RoundRobinLoadBalancer roundRobinLoadBalancer,
+            GradingAssignmentNotificationService gradingAssignmentNotificationService) {
         this.examGradingAssignmentRepository = examGradingAssignmentRepository;
         this.examCandidateResultRepository = examCandidateResultRepository;
         this.examGradingQueryRepository = examGradingQueryRepository;
         this.examGradingAccessService = examGradingAccessService;
         this.gradingSampleSelector = gradingSampleSelector;
         this.roundRobinLoadBalancer = roundRobinLoadBalancer;
+        this.gradingAssignmentNotificationService = gradingAssignmentNotificationService;
     }
 
     @Override
@@ -140,7 +144,11 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
             ));
         }
 
-        return examGradingAssignmentRepository.saveAll(assignments).stream()
+        var saved = examGradingAssignmentRepository.saveAll(assignments);
+
+        gradingAssignmentNotificationService.publishAssigned(saved, now);
+
+        return saved.stream()
             .map(assignment -> assignment.getId())
             .toList();
     }

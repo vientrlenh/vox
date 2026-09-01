@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.AutoAssignGradingCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
@@ -60,7 +61,8 @@ public class AutoAssignGradingUseCaseTests {
         useCase = new AutoAssignGradingUseCase(
             examGradingAssignmentRepository, examCandidateResultRepository, examGradingQueryRepository,
             examGradingAccessService, new GradingSampleSelector(new java.util.Random(42)),
-            new RoundRobinLoadBalancer());
+            new RoundRobinLoadBalancer(),
+            mock(GradingAssignmentNotificationService.class));
 
         when(examGradingAccessService.requireActiveUserId()).thenReturn(adminId);
         when(examGradingAccessService.requireCurrentSchoolId(adminId)).thenReturn(schoolId);

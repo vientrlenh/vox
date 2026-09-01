@@ -83,6 +83,9 @@ public enum NotificationTarget {
         Map.entry(EventTypeConstant.EXAM_APPEAL_APPROVED, EXAM_APPEAL_DETAIL),
 
         Map.entry(EventTypeConstant.GRADING_DEADLINE_REMINDER, TEACHER_GRADING_TASK),
+        // Cùng đích với nhắc hạn: cả hai đều dẫn giáo viên vào đúng phân công của họ, nên
+        // không cần target mới -- đây chính là chỗ bảng target trả công.
+        Map.entry(EventTypeConstant.GRADING_ASSIGNMENT_OPENED, TEACHER_GRADING_TASK),
         // Cùng mang assignmentId với event trên, nhưng người nhận là admin đã giao việc chứ
         // không phải giáo viên -- nên là target khác, màn hình khác.
         Map.entry(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, ADMIN_GRADING_ASSIGNMENT),

@@ -37,6 +37,7 @@ public enum NotificationCategory {
         Map.entry(EventTypeConstant.GRADING_DEADLINE_REMINDER, GRADING),
         Map.entry(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, GRADING),
         Map.entry(EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED, GRADING),
+        Map.entry(EventTypeConstant.GRADING_ASSIGNMENT_OPENED, GRADING),
 
         Map.entry(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED, EXAM_BLUEPRINT),
 

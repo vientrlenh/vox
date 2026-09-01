@@ -16,6 +16,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
 import com.sep.vox.application.port.input.command.ReassignGradingCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
@@ -50,7 +51,8 @@ class ReassignGradingUseCaseTests {
         examGradingQueryRepository = mock(ExamGradingQueryRepository.class);
         examGradingAccessService = mock(ExamGradingAccessService.class);
         useCase = new ReassignGradingUseCase(
-            examGradingAssignmentRepository, examGradingQueryRepository, examGradingAccessService);
+            examGradingAssignmentRepository, examGradingQueryRepository, examGradingAccessService,
+            mock(GradingAssignmentNotificationService.class));
 
         when(examGradingAccessService.requireActiveUserId()).thenReturn(adminId);
         when(examGradingAccessService.isTeacherOfSchool(newTeacherId, schoolId)).thenReturn(true);

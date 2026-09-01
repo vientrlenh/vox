@@ -432,6 +432,7 @@ app:
       "[ExamBlueprintVersionPublished]": ${KAFKA_EXAM_BLUEPRINT_VERSION_TOPIC:vox.exam-blueprint-version.v1}
 
       "[ExamHumanGradingRequired]": ${KAFKA_EXAM_GRADING_REVIEW_TOPIC:vox.exam-grading-review.v1}
+      "[GradingAssignmentOpened]": ${KAFKA_EXAM_GRADING_REVIEW_TOPIC:vox.exam-grading-review.v1}
 
       "[InvoicePaid]": ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
 

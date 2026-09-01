@@ -1,11 +1,13 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
 import com.sep.vox.application.port.input.command.ReassignGradingCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -28,14 +30,17 @@ public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, 
     private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private final ExamGradingQueryRepository examGradingQueryRepository;
     private final ExamGradingAccessService examGradingAccessService;
+    private final GradingAssignmentNotificationService gradingAssignmentNotificationService;
 
     public ReassignGradingUseCase(
             ExamGradingAssignmentRepository examGradingAssignmentRepository,
             ExamGradingQueryRepository examGradingQueryRepository,
-            ExamGradingAccessService examGradingAccessService) {
+            ExamGradingAccessService examGradingAccessService,
+            GradingAssignmentNotificationService gradingAssignmentNotificationService) {
         this.examGradingAssignmentRepository = examGradingAssignmentRepository;
         this.examGradingQueryRepository = examGradingQueryRepository;
         this.examGradingAccessService = examGradingAccessService;
+        this.gradingAssignmentNotificationService = gradingAssignmentNotificationService;
     }
 
     @Override
@@ -79,6 +84,11 @@ public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, 
         // nhận mail nhắc hạn. Cùng lý lẽ với SetGradingDeadlineUseCase khi đổi hạn.
         assignment.setRemindedAt(null);
         examGradingAssignmentRepository.save(assignment);
+
+        // Chỉ báo cho người MỚI. Người cũ mất việc là chuyện của điều phối viên, và một
+        // thông báo "việc đã bị lấy đi" không giúp họ làm gì cả.
+        gradingAssignmentNotificationService.publishAssigned(List.of(assignment), Instant.now());
+
         return assignment.getId();
     }
 }

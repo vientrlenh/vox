@@ -56,6 +56,7 @@ public interface SpringDataExamCandidateRepository extends JpaRepository<ExamCan
         """)
     List<UUID> findDistinctUnblockedStudentIdsByExamId(@Param("examId") UUID examId);
     List<ExamCandidateJpaEntity> findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(UUID examId);
+    List<ExamCandidateJpaEntity> findByIdIn(Collection<UUID> ids);
     List<ExamCandidateJpaEntity> findByIdInAndExamId(Collection<UUID> ids, UUID examId);
     long countByScheduleId(UUID scheduleId);
     boolean existsByScheduleIdAndStudentId(UUID scheduleId, UUID studentId);

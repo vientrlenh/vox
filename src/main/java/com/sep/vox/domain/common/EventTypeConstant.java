@@ -26,6 +26,9 @@ public final class EventTypeConstant {
     /** Bài thi đóng lại mà còn bài ở PENDING_REVIEW ("Chờ soát điểm AI") -- cần người chấm tay. */
     public static final String EXAM_HUMAN_GRADING_REQUIRED = "ExamHumanGradingRequired";
 
+    /** Giáo viên vừa được giao một vòng chấm cụ thể (chấm lần đầu, hậu kiểm, phúc khảo...). */
+    public static final String GRADING_ASSIGNMENT_OPENED = "GradingAssignmentOpened";
+
     public static final String INVOICE_PAID = "InvoicePaid";
 
     public static final String SCHOOL_DEBT_CAP_EXCEEDED = "SchoolDebtCapExceeded";
@@ -59,6 +62,7 @@ public final class EventTypeConstant {
             GRADING_ASSIGNMENT_DECLINED,
             EXAM_BLUEPRINT_VERSION_PUBLISHED,
             EXAM_HUMAN_GRADING_REQUIRED,
+            GRADING_ASSIGNMENT_OPENED,
             INVOICE_PAID,
             SCHOOL_DEBT_CAP_EXCEEDED,
             SCHOOL_LOCKED_DUE_TO_DEBT,

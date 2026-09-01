@@ -43,6 +43,7 @@ import com.sep.vox.application.event.ExamResultOutcomeDecidedPayloadV1;
 import com.sep.vox.application.event.ExamResultRegradedPayloadV1;
 import com.sep.vox.application.event.ExamResultReleasedPayloadV1;
 import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
+import com.sep.vox.application.event.GradingAssignmentOpenedPayloadV1;
 import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
 import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.event.SchoolDebtCapExceededPayloadV1;
@@ -425,6 +426,44 @@ class NotificationPushedEventConsumerTests {
     }
 
     /**
+     * Giao chấm dẫn giáo viên vào ĐÚNG phân công của họ, nên dùng lại target của nhắc hạn --
+     * không cần target mới, đó chính là chỗ bảng target trả công.
+     */
+    @Test
+    void should_route_a_new_assignment_to_the_teacher_grading_task() {
+        consumer.consume(record(EventTypeConstant.GRADING_ASSIGNMENT_OPENED,
+            new GradingAssignmentOpenedPayloadV1(
+                UUID.randomUUID(), userId, examId, "Kiểm tra 15 phút", ExamKind.CLASS_TEST,
+                "INITIAL", "Trần Quang Thiên", null)), ack);
+
+        var captor = ArgumentCaptor.forClass(PushMessage.class);
+        verify(pushNotificationPort).send(captor.capture(), anyList());
+        assertThat(captor.getValue().data())
+            .containsEntry("target", NotificationTarget.TEACHER_GRADING_TASK.name())
+            .containsKey("assignmentId")
+            .containsEntry("examId", examId.toString());
+    }
+
+    /**
+     * Nhãn bài đã được chọn theo luật ẩn danh TỪ LÚC PHÁT, consumer chỉ hiển thị lại. Với kỳ
+     * thi tập trung nó là mã bài, và consumer không được suy lại theo examKind.
+     */
+    @Test
+    void should_show_the_candidate_label_verbatim_in_the_body() {
+        consumer.consume(record(EventTypeConstant.GRADING_ASSIGNMENT_OPENED,
+            new GradingAssignmentOpenedPayloadV1(
+                UUID.randomUUID(), userId, examId, "Kỳ thi giữa kỳ", ExamKind.CENTRALIZED,
+                "SPOT_CHECK", "A2041F3C", null)), ack);
+
+        var captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).saveIfAbsent(captor.capture());
+        assertThat(captor.getValue().getBody())
+            .contains("Kỳ thi giữa kỳ")
+            .contains("Hậu kiểm")
+            .contains("A2041F3C");
+    }
+
+    /**
      * Nhắc chấm tay dẫn về hàng đợi chấm của CẢ bài thi, nên chỉ cần examId + loại bài --
      * không có id bài lẻ nào ở đây, và cũng không nên có: một kỳ thi là hàng trăm bài.
      */
@@ -618,6 +657,11 @@ class NotificationPushedEventConsumerTests {
             new TestCase(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, new GradingAssignmentDeclinedPayloadV1(
                 id, id, UUID.randomUUID(), userId, examName, "Bận lịch coi thi",
                 examId, ExamKind.CENTRALIZED)),
+
+            new TestCase(EventTypeConstant.GRADING_ASSIGNMENT_OPENED,
+                new GradingAssignmentOpenedPayloadV1(
+                    id, userId, examId, examName, ExamKind.CLASS_TEST, "INITIAL",
+                    "Trần Quang Thiên", Instant.parse("2026-09-01T03:00:00Z"))),
 
             new TestCase(EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED,
                 new ExamHumanGradingRequiredPayloadV1(

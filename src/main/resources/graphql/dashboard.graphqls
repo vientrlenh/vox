@@ -72,8 +72,36 @@ type SchoolFunding {
     định nghĩa. Trùng nghĩa với SchoolBalance.locked, cố ý — đây là bản đọc kèm của trang tổng quan.
     """
     locked: Boolean!
-    "examQuotaRemainingVnd + max(balanceVnd, 0). Ví ÂM không bị trừ vào đây: nợ là khoản phải trả."
+    """
+    examQuotaRemainingVnd + max(balanceVnd, 0). Ví ÂM không bị trừ vào đây: nợ là khoản phải trả.
+
+    KHÔNG trừ committedToUsersVnd. Đây là vị từ KHOÁ — khớp từng đồng với
+    ClassTestTokenQuotaGuardService.spendableSchoolFundsVnd, cửa thật sự từ chối lên lịch kỳ thi.
+    Trừ phần đã hứa vào đây là báo hết tiền trong khi hệ thống vẫn cho chi.
+    """
     spendableVnd: String!
+    """
+    Phần đã hứa cho giáo viên qua trần chi cá nhân mà họ CHƯA tiêu. Không bao giờ âm.
+
+    Cộng phần CHƯA TIÊU, không phải tổng allocated: khoản giáo viên đã tiêu đã nằm trong
+    examQuotaRemainingVnd rồi (ConsumeQuotaService trừ cùng một đồng vào cả ví trường lẫn bộ đếm cá
+    nhân), nên lấy tổng allocated là trừ hai lần. Dòng đã tiêu quá trần đóng góp 0, không đóng góp số
+    âm — vượt trần là tiền đã tiêu thật, không phải tín dụng trả ngược cho trường.
+
+    Chỉ ví EXAM. Trần chi của học sinh nằm ở ví PRACTICE và không trả tiền cho việc chấm thi.
+    """
+    committedToUsersVnd: String!
+    """
+    spendableVnd - committedToUsersVnd — trường còn tự do dùng bao nhiêu cho kỳ thi TẬP TRUNG mà chưa
+    ăn vào phần đã hứa cho giáo viên.
+
+    ÂM là một câu trả lời, không phải lỗi: trường đã chia cho giáo viên nhiều hơn số tiền còn lại.
+    DistributeQuotaToUsersService chặn tổng phân bổ theo pool.totalAllocated × ratio, tức theo TỔNG
+    chứ không theo phần CÒN LẠI, nên trạng thái này đạt tới được mà không cần ai làm sai. Hệ quả:
+    người tiêu sau cùng bị ví trường từ chối dù trần cá nhân của họ vẫn còn chỗ — đúng tình huống mà
+    ClassTestTokenQuotaGuardService.computeSharedPoolInsight cảnh báo lúc lên lịch kỳ thi tập trung.
+    """
+    uncommittedVnd: String!
 }
 
 """

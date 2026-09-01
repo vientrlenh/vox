@@ -38,6 +38,7 @@ import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.SchoolBalanceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
@@ -66,6 +67,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     private final ExamResultAppealRepository examResultAppealRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
+    private final SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final OrderRepository orderRepository;
     private final SchoolBalanceRepository schoolBalanceRepository;
@@ -75,6 +77,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
             ExamResultAppealRepository examResultAppealRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
+            SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
             SubscriptionPlanRepository subscriptionPlanRepository, OrderRepository orderRepository,
             SchoolBalanceRepository schoolBalanceRepository,
             SchoolWorkloadQueryRepository schoolWorkloadQueryRepository) {
@@ -83,6 +86,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
         this.examResultAppealRepository = examResultAppealRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
+        this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.orderRepository = orderRepository;
         this.schoolBalanceRepository = schoolBalanceRepository;
@@ -108,6 +112,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
         var paidOrders = fetchPaidOrders(schoolId);
         var quotaTotal = examQuota.map(quota -> quota.getTotalAllocatedAmountVnd()).orElse(BigDecimal.ZERO);
         var quotaUsed = examQuota.map(quota -> quota.getUsedAmountVnd()).orElse(BigDecimal.ZERO);
+        var committedToUsers = committedToUsers(activeSubscription);
 
         return new SchoolAdminDashboardSummaryResponse(
             buildExamStatusCounts(currentUserId, schoolId),
@@ -117,7 +122,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
             quotaTotal,
             quotaUsed,
             buildSubscriptionRenewal(activeSubscription),
-            SchoolFundingResponse.of(quotaTotal, quotaUsed,
+            SchoolFundingResponse.of(quotaTotal, quotaUsed, committedToUsers,
                 schoolBalanceRepository.findBySchoolId(schoolId).orElse(null)),
             UnscoredWorkloadResponse.of(schoolWorkloadQueryRepository.countUnscored(schoolId, now), now),
             schoolWorkloadQueryRepository
@@ -249,6 +254,24 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     private Optional<SchoolSubscriptionQuotaRecord> activeExamQuota(Optional<SchoolSubscription> activeSubscription) {
         return activeSubscription.flatMap(subscription -> subscriptionQuotaRepository
             .findBySchoolSubscriptionIdAndQuotaType(subscription.getId(), QuotaType.EXAM));
+    }
+
+    /**
+     * Phần hạn mức thi đã hứa cho giáo viên mà họ chưa tiêu.
+     *
+     * <p>Chỉ ví EXAM: trần chi của học sinh nằm ở ví PRACTICE, và cộng nó vào đây sẽ làm "còn tự do"
+     * của kỳ thi bị trừ bởi một túi tiền không hề trả cho việc chấm thi -- cùng luật "hai túi khác
+     * nhau, đừng gộp" mà SchoolFundingResponse đang giữ.
+     *
+     * <p>Không có kỳ đăng ký đang chạy thì không có trần nào để hứa: allocation gắn với
+     * schoolSubscriptionId, và bản ghi hạn mức được dựng lại mỗi kỳ (OrderSettlementService
+     * .seedQuotaRecords), nên hỏi ở đây là hỏi về một kỳ không tồn tại.
+     */
+    private BigDecimal committedToUsers(Optional<SchoolSubscription> activeSubscription) {
+        return activeSubscription
+            .map(subscription -> subscriptionQuotaUserAllocationRepository
+                .sumUnusedAllocation(subscription.getId(), QuotaType.EXAM))
+            .orElse(BigDecimal.ZERO);
     }
 
     private SchoolSubscriptionRenewalResponse buildSubscriptionRenewal(Optional<SchoolSubscription> activeSubscription) {

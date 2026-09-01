@@ -21,5 +21,5 @@ import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
 public record QuotaUserAllocationSummaryResponse(
     SchoolSubscriptionQuotaRecordDto pool,
     List<SchoolSubscriptionQuotaUserAllocationDto> allocations
-) {
+) { 
 }

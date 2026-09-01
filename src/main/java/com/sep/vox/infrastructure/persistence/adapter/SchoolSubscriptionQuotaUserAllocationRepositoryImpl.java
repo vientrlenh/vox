@@ -56,6 +56,17 @@ public class SchoolSubscriptionQuotaUserAllocationRepositoryImpl implements Scho
         return springDataRepository.tryConsume(id, amount) > 0;
     }
 
+    /**
+     * COALESCE trong câu truy vấn đã lo tập rỗng, nhưng vẫn kẹp null một lần nữa ở đây: hợp đồng của
+     * cổng này là "không bao giờ null", và giữ nó đúng bằng chính mã của mình rẻ hơn là bằng một lời
+     * hứa nằm trong chuỗi JPQL.
+     */
+    @Override
+    public BigDecimal sumUnusedAllocation(UUID schoolSubscriptionId, QuotaType quotaType) {
+        var sum = springDataRepository.sumUnusedAllocation(schoolSubscriptionId, quotaType.name());
+        return sum == null ? BigDecimal.ZERO : sum;
+    }
+
     @Override
     public void addUsage(UUID id, BigDecimal amount) {
         springDataRepository.addUsage(id, amount);

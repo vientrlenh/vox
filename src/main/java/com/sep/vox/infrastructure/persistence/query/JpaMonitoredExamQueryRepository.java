@@ -73,6 +73,12 @@ public class JpaMonitoredExamQueryRepository implements MonitoredExamQueryReposi
      * phải giống hệt nhau: giám thị và school admin nhìn cùng một phòng thi thì không được thấy hai
      * con số khác nhau.
      *
+     * <p>Lọc trạng thái CA thôi không đủ, nên có thêm {@code exam.status <> 'DRAFT'}: hai cột trạng
+     * thái là hai máy độc lập, và luồng chuẩn bắt publish từng ca TRƯỚC rồi mới đẩy kỳ thi
+     * {@code DRAFT -> SCHEDULED}, nên ca PUBLISHED nằm dưới kỳ thi còn DRAFT là dữ liệu hợp lệ --
+     * thiếu nó là cả hai vai đều thấy kỳ thi nhà trường chưa công bố. Chỉ ẩn DRAFT: kỳ thi CANCELLED
+     * vẫn hiện kèm trạng thái, cùng luật với {@code JpaProctorScheduleQueryRepository}.
+     *
      * @param windowed cửa sổ thời gian được GHÉP VÀO hay bỏ hẳn khỏi câu -- cố ý không viết
      *                 {@code :leadUntil IS NULL OR ...} như chỗ lọc theo examId ngay bên dưới.
      *                 Bản đầu viết vậy và nổ trên Postgres: {@code could not determine data type of
@@ -100,6 +106,7 @@ public class JpaMonitoredExamQueryRepository implements MonitoredExamQueryReposi
             + accessJoin
             + """
             WHERE sch.status IN :statuses
+              AND exam.status <> 'DRAFT'
               AND (:examId IS NULL OR exam.id = :examId)
             """
             + (windowed ? "  AND sch.startDate <= :leadUntil AND sch.endDate > :now\n" : "")

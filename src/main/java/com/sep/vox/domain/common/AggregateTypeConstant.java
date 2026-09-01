@@ -10,6 +10,8 @@ public final class AggregateTypeConstant {
     public static final String EXAM_CANDIDATE_RESULT = "ExamCandidateResult";
     public static final String EXAM_GRADING_ASSIGNMENT = "ExamGradingAssignment";
 
+    public static final String EXAM = "Exam";
+
     public static final String EXAM_BLUEPRINT_VERSION = "ExamBlueprintVersion";
 
     public static final String INVOICE = "Invoice";

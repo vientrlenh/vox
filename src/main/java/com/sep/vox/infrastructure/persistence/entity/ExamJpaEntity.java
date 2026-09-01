@@ -159,6 +159,17 @@ public class ExamJpaEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
+    @Column(name = "human_grading_notified_at")
+    private Instant humanGradingNotifiedAt;
+
+    public Instant getHumanGradingNotifiedAt() {
+        return humanGradingNotifiedAt;
+    }
+
+    public void setHumanGradingNotifiedAt(Instant humanGradingNotifiedAt) {
+        this.humanGradingNotifiedAt = humanGradingNotifiedAt;
+    }
+
     protected ExamJpaEntity() {}
 
     public ExamJpaEntity(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,

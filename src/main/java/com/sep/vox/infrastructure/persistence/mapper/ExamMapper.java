@@ -42,6 +42,7 @@ public final class ExamMapper {
         // Đặt qua setter chứ không nhét vào constructor: constructor của Exam đã dài và có nhiều
         // biến thể, thêm tham số vào là sửa mọi nơi gọi chỉ để mang một trường tuỳ chọn.
         exam.setAiConfidenceThresholdPercent(jpa.getAiConfidenceThresholdPercent());
+        exam.setHumanGradingNotifiedAt(jpa.getHumanGradingNotifiedAt());
         return exam;
     }
 
@@ -73,6 +74,7 @@ public final class ExamMapper {
             exam.getUpdatedBy()
         );
         jpa.setExamTimeDurationSecond(exam.getExamTimeDurationSecond());
+        jpa.setHumanGradingNotifiedAt(exam.getHumanGradingNotifiedAt());
         jpa.setAiConfidenceThresholdPercent(exam.getAiConfidenceThresholdPercent());
         return jpa;
     }

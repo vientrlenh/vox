@@ -390,6 +390,11 @@ app:
             exam-result-lifecycle: ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
             exam-blueprint-version: ${KAFKA_EXAM_BLUEPRINT_VERSION_TOPIC:vox.exam-blueprint-version.v1}
+            # CỐ TÌNH không có bản sao dưới nhóm email: nhắc chấm tay chỉ hiện trong app, không
+            # gửi mail. Đây cũng là lý do nó không đi chung topic grading-assignment --
+            # GradingAssignmentEmailConsumer ném với eventType lạ, nên dùng chung là đẩy mọi
+            # message loại này vào DLT.
+            exam-grading-review: ${KAFKA_EXAM_GRADING_REVIEW_TOPIC:vox.exam-grading-review.v1}
             invoice: ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
             school-debt: ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
           # Ngược lại, group-id BẮT BUỘC phải là biến riêng. Dùng chung KAFKA_EMAIL_GROUP_ID
@@ -425,6 +430,8 @@ app:
       "[GradingAssignmentDeclined]": ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
 
       "[ExamBlueprintVersionPublished]": ${KAFKA_EXAM_BLUEPRINT_VERSION_TOPIC:vox.exam-blueprint-version.v1}
+
+      "[ExamHumanGradingRequired]": ${KAFKA_EXAM_GRADING_REVIEW_TOPIC:vox.exam-grading-review.v1}
 
       "[InvoicePaid]": ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
 

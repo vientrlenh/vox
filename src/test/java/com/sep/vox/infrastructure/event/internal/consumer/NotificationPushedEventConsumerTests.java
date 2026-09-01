@@ -36,6 +36,7 @@ import com.sep.vox.application.event.ExamAppealApprovedPayloadV1;
 import com.sep.vox.application.event.ExamAppealPublishedPayloadV1;
 import com.sep.vox.application.event.ExamAppealRejectedPayloadV1;
 import com.sep.vox.application.event.ExamBlueprintVersionPublishedEvent;
+import com.sep.vox.application.event.ExamHumanGradingRequiredPayloadV1;
 import com.sep.vox.application.event.ExamResultInvalidClearedPayloadV1;
 import com.sep.vox.application.event.ExamResultInvalidatedPayloadV1;
 import com.sep.vox.application.event.ExamResultOutcomeDecidedPayloadV1;
@@ -424,6 +425,36 @@ class NotificationPushedEventConsumerTests {
     }
 
     /**
+     * Nhắc chấm tay dẫn về hàng đợi chấm của CẢ bài thi, nên chỉ cần examId + loại bài --
+     * không có id bài lẻ nào ở đây, và cũng không nên có: một kỳ thi là hàng trăm bài.
+     */
+    @Test
+    void should_carry_exam_id_and_kind_for_human_grading_reminders() {
+        consumer.consume(record(EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED,
+            new ExamHumanGradingRequiredPayloadV1(
+                List.of(userId), examId, "Kỳ thi giữa kỳ", ExamKind.CLASS_TEST, 7)), ack);
+
+        var captor = ArgumentCaptor.forClass(PushMessage.class);
+        verify(pushNotificationPort).send(captor.capture(), anyList());
+        assertThat(captor.getValue().data())
+            .containsEntry("target", NotificationTarget.EXAM_HUMAN_GRADING_REQUIRED.name())
+            .containsEntry("examId", examId.toString())
+            .containsEntry("examKind", ExamKind.CLASS_TEST.name());
+    }
+
+    /** Số bài còn chờ nằm ở phần nội dung đọc được, không phải khoá điều hướng. */
+    @Test
+    void should_put_the_pending_count_in_the_notification_body() {
+        consumer.consume(record(EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED,
+            new ExamHumanGradingRequiredPayloadV1(
+                List.of(userId), examId, "Kỳ thi giữa kỳ", ExamKind.CENTRALIZED, 7)), ack);
+
+        var captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).saveIfAbsent(captor.capture());
+        assertThat(captor.getValue().getBody()).contains("Kỳ thi giữa kỳ").contains("7");
+    }
+
+    /**
      * Không có route nào tra blueprint theo mã, nên mã ở lại phần hiển thị còn điều hướng
      * dùng id. Giữ luôn cả versionId: event nói về một version cụ thể vừa publish.
      */
@@ -587,6 +618,10 @@ class NotificationPushedEventConsumerTests {
             new TestCase(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, new GradingAssignmentDeclinedPayloadV1(
                 id, id, UUID.randomUUID(), userId, examName, "Bận lịch coi thi",
                 examId, ExamKind.CENTRALIZED)),
+
+            new TestCase(EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED,
+                new ExamHumanGradingRequiredPayloadV1(
+                    List.of(userId), examId, examName, ExamKind.CENTRALIZED, 3)),
 
             // Hai event fan-out: ở đây cố tình chỉ một người nhận để dùng chung được vòng
             // lặp assertion phía trên. Hành vi nhiều người nhận có test riêng bên dưới.

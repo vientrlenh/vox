@@ -106,6 +106,13 @@ public class ExamRepositoryImpl implements ExamRepository {
     }
 
     @Override
+    public List<Exam> findDueForHumanGradingNotice() {
+        return springDataExamRepository.findDueForHumanGradingNotice().stream()
+            .map(ExamMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public List<Exam> findByStatusAndCloseAtBefore(ExamStatus status, Instant time) {
         return springDataExamRepository.findByStatusAndCloseAtBefore(status.name(), time).stream()
             .map(ExamMapper::toDomain)

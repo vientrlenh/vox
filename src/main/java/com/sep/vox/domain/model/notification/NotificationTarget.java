@@ -38,6 +38,16 @@ public enum NotificationTarget {
     /** School admin: phân công vừa bị giáo viên trả lại, cần giao cho người khác. */
     ADMIN_GRADING_ASSIGNMENT,
 
+    /**
+     * Hàng đợi chấm tay của MỘT bài thi.
+     *
+     * <p>Target duy nhất cho cả hai vai trò nhận tin: bài kiểm tra trên lớp báo cho giáo viên
+     * chủ bài, kỳ thi tập trung báo cho chủ tịch hội đồng lẫn school admin. Đích ngữ nghĩa
+     * giống hệt nhau -- "vào chấm những bài còn chờ" -- chỉ khác đường dẫn theo vai trò của
+     * người mở, mà đó là việc của bảng route bên client.
+     */
+    EXAM_HUMAN_GRADING_REQUIRED,
+
     /** School admin: blueprint đề thi vừa được publish. */
     SCHOOL_BLUEPRINT_DETAIL,
 
@@ -76,6 +86,8 @@ public enum NotificationTarget {
         // Cùng mang assignmentId với event trên, nhưng người nhận là admin đã giao việc chứ
         // không phải giáo viên -- nên là target khác, màn hình khác.
         Map.entry(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, ADMIN_GRADING_ASSIGNMENT),
+
+        Map.entry(EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED, EXAM_HUMAN_GRADING_REQUIRED),
 
         Map.entry(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED, SCHOOL_BLUEPRINT_DETAIL),
 

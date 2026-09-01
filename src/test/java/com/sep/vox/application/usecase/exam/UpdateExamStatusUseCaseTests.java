@@ -25,6 +25,7 @@ import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.service.ExamScheduleClosureService;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
+import com.sep.vox.application.port.input.service.ExamHumanGradingNotificationService;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
@@ -123,6 +124,7 @@ class UpdateExamStatusUseCaseTests {
             userContextPort,
             mock(EventPublisherPort.class),
             mock(ClassTestGradingAssignmentService.class),
+            mock(ExamHumanGradingNotificationService.class),
             classTestTokenQuotaGuardService,
             // Service thật (không mock) trên cùng repo giả: guard và cascade ca thi được kiểm luôn
             // ở đây; bảng ánh xạ trạng thái đầy đủ nằm ở ExamScheduleClosureServiceTests.

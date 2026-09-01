@@ -18,6 +18,7 @@ import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.service.ExamScheduleClosureService;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
+import com.sep.vox.application.port.input.service.ExamHumanGradingNotificationService;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -79,6 +80,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     private final UserContextPort userContextPort;
     private final EventPublisherPort eventPublisherPort;
     private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
+    private final ExamHumanGradingNotificationService examHumanGradingNotificationService;
     private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
     private final ExamScheduleClosureService examScheduleClosureService;
 
@@ -102,6 +104,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             UserContextPort userContextPort,
             EventPublisherPort eventPublisherPort,
             ClassTestGradingAssignmentService classTestGradingAssignmentService,
+            ExamHumanGradingNotificationService examHumanGradingNotificationService,
             ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService,
             ExamScheduleClosureService examScheduleClosureService) {
         this.examRepository = examRepository;
@@ -123,6 +126,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         this.userContextPort = userContextPort;
         this.eventPublisherPort = eventPublisherPort;
         this.classTestGradingAssignmentService = classTestGradingAssignmentService;
+        this.examHumanGradingNotificationService = examHumanGradingNotificationService;
         this.classTestTokenQuotaGuardService = classTestTokenQuotaGuardService;
         this.examScheduleClosureService = examScheduleClosureService;
     }
@@ -179,6 +183,9 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
                 // Quét bù SAU khi đã bù kết quả điểm 0: bài trên lớp không có ai điều phối
                 // chấm, nên đóng bài là chốt cuối để giáo viên chủ bài nhận hết phần còn lại.
                 classTestGradingAssignmentService.ensureAssignmentsForExam(exam.getId());
+                // Sau quét bù: con số "còn bao nhiêu bài chờ chấm" chỉ đúng khi hàng đợi đã
+                // đầy đủ. Áp dụng cho CẢ hai loại bài -- quét bù ở trên chỉ lo bài trên lớp.
+                examHumanGradingNotificationService.publishIfPendingReview(exam, now);
             }
             case "PUBLISH_RESULTS" -> {
                 zeroScoreExamResultService.ensureZeroResultsForMissingOrEmptyAttempts(exam.getId());

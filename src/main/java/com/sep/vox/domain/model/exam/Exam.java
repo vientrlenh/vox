@@ -43,6 +43,7 @@ public class Exam {
     private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
+    private Instant humanGradingNotifiedAt;
 
     public Exam() {}
 
@@ -162,6 +163,20 @@ public class Exam {
      */
     public boolean isResultsFinalized() {
         return status == ExamStatus.CLOSED || status == ExamStatus.RESULTS_PUBLISHED;
+    }
+
+    /**
+     * Đã phát ExamHumanGradingRequired cho bài thi này chưa. NULL = chưa nhắc lần nào.
+     *
+     * <p>Không nằm trong constructor vì cùng lý do với aiConfidenceThresholdPercent: constructor
+     * của Exam đã dài và có 58 nơi gọi, thêm tham số vào là sửa hết chỉ để mang một trường tuỳ chọn.
+     */
+    public Instant getHumanGradingNotifiedAt() {
+        return humanGradingNotifiedAt;
+    }
+
+    public void setHumanGradingNotifiedAt(Instant humanGradingNotifiedAt) {
+        this.humanGradingNotifiedAt = humanGradingNotifiedAt;
     }
 
     public UUID getId() {

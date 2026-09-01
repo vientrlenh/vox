@@ -32,6 +32,9 @@ public interface ExamRepository {
     boolean existsByBlueprintId(UUID blueprintId);
     boolean existsByBlueprintIdAndKindAndStatusNot(UUID blueprintId, ExamKind kind, ExamStatus status);
     boolean existsSubmittedSessionByExamId(UUID examId);
+    /** Bài thi đang có bài chờ soát điểm AI mà chưa nhắc lần nào. */
+    List<Exam> findDueForHumanGradingNotice();
+
     List<Exam> findByStatusAndOpenAtBefore(ExamStatus status, Instant time);
     List<Exam> findByStatusAndCloseAtBefore(ExamStatus status, Instant time);
     void deleteById(UUID id);

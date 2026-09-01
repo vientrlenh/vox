@@ -34,6 +34,7 @@ import com.sep.vox.application.event.ExamAppealApprovedPayloadV1;
 import com.sep.vox.application.event.ExamAppealPublishedPayloadV1;
 import com.sep.vox.application.event.ExamAppealRejectedPayloadV1;
 import com.sep.vox.application.event.ExamBlueprintVersionPublishedEvent;
+import com.sep.vox.application.event.ExamHumanGradingRequiredPayloadV1;
 import com.sep.vox.application.event.ExamResultInvalidClearedPayloadV1;
 import com.sep.vox.application.event.ExamResultInvalidatedPayloadV1;
 import com.sep.vox.application.event.ExamResultOutcomeDecidedPayloadV1;
@@ -138,6 +139,9 @@ public class NotificationPushedEventConsumer {
             "${app.internal-event.kafka.consumer-groups.notification.topic.exam-result-lifecycle}",
             "${app.internal-event.kafka.consumer-groups.notification.topic.grading-assignment}",
             "${app.internal-event.kafka.consumer-groups.notification.topic.exam-blueprint-version}",
+            // Topic riêng, KHÔNG dùng chung với grading-assignment: consumer mail đọc topic
+            // đó và ném với eventType lạ. Nhắc chấm tay cũng cố tình chỉ hiện trong app.
+            "${app.internal-event.kafka.consumer-groups.notification.topic.exam-grading-review}",
             // FIX: InvoicePaid đã có case xử lý bên dưới và category BILLING từ trước, nhưng thiếu
             // đúng dòng này nên consumer chưa từng nhận được message nào từ topic invoice -- thông
             // báo in-app "Hóa đơn đã được thanh toán" chưa bao giờ chạy (mail thì vẫn chạy bình
@@ -427,6 +431,18 @@ public class NotificationPushedEventConsumer {
                     "%s: %s".formatted(orPlaceholder(payload.examName()), orPlaceholder(payload.reason())),
                     data(eventType)
                         .with("assignmentId", payload.assignmentId())
+                        .with("examId", payload.examId())
+                        .with("examKind", payload.examKind())
+                        .build());
+            }
+
+            case EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED -> {
+                var payload = parse(value, ExamHumanGradingRequiredPayloadV1.class, eventType, eventId);
+                yield fanOut(payload.recipientIds(), category,
+                    "Có bài chờ soát điểm AI",
+                    "%s: %d bài cần chấm tay".formatted(
+                        orPlaceholder(payload.examName()), payload.pendingCount()),
+                    data(eventType)
                         .with("examId", payload.examId())
                         .with("examKind", payload.examKind())
                         .build());

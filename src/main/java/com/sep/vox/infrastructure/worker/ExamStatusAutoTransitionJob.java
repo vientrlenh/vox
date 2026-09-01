@@ -8,6 +8,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
+import com.sep.vox.application.port.input.service.ExamHumanGradingNotificationService;
 import com.sep.vox.application.port.input.service.ExamScheduleClosureService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
@@ -27,6 +28,7 @@ public class ExamStatusAutoTransitionJob {
     private final ExamQuestionSecureLockService examQuestionSecureLockService;
     private final ZeroScoreExamResultService zeroScoreExamResultService;
     private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
+    private final ExamHumanGradingNotificationService examHumanGradingNotificationService;
     private final ExamScheduleClosureService examScheduleClosureService;
 
     public ExamStatusAutoTransitionJob(
@@ -35,12 +37,14 @@ public class ExamStatusAutoTransitionJob {
             ExamQuestionSecureLockService examQuestionSecureLockService,
             ZeroScoreExamResultService zeroScoreExamResultService,
             ClassTestGradingAssignmentService classTestGradingAssignmentService,
+            ExamHumanGradingNotificationService examHumanGradingNotificationService,
             ExamScheduleClosureService examScheduleClosureService) {
         this.examRepository = examRepository;
         this.examPaperRepository = examPaperRepository;
         this.examQuestionSecureLockService = examQuestionSecureLockService;
         this.zeroScoreExamResultService = zeroScoreExamResultService;
         this.classTestGradingAssignmentService = classTestGradingAssignmentService;
+        this.examHumanGradingNotificationService = examHumanGradingNotificationService;
         this.examScheduleClosureService = examScheduleClosureService;
     }
 
@@ -91,6 +95,9 @@ public class ExamStatusAutoTransitionJob {
             // Đa số bài trên lớp đóng bằng đường này chứ không phải CHAIR bấm tay — bỏ sót
             // ở đây là mất phân công chấm cho gần như toàn bộ bài.
             classTestGradingAssignmentService.ensureAssignmentsForExam(exam.getId());
+            // Khớp side-effect của UpdateExamStatusUseCase.CLOSE: đa số bài trên lớp đóng bằng
+            // đường này, bỏ sót ở đây là giáo viên không bao giờ được báo có bài chờ chấm.
+            examHumanGradingNotificationService.publishIfPendingReview(exam, now);
             log.info("Tự động đóng bài kiểm tra {} (closeAt đã tới)", exam.getId());
         }
     }

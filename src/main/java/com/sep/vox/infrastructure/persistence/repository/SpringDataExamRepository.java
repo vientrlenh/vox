@@ -86,6 +86,32 @@ public interface SpringDataExamRepository extends JpaRepository<ExamJpaEntity, U
     """)
     boolean existsSubmittedSessionByExamId(@Param("examId") UUID examId);
 
+    /**
+     * Bài thi còn chấm được, đang có bài chờ soát điểm AI, và CHƯA nhắc lần nào.
+     *
+     * <p>Gồm cả IN_PROGRESS lẫn CLOSED có chủ ý: ca thi kết thúc sớm đã ra kết quả ngay khi bài
+     * thi còn đang diễn ra, nên chờ tới lúc đóng bài là vứt đi phần lớn thời gian chấm được.
+     * CLOSED vẫn nằm trong danh sách để bài đóng trước khi lượt quét kịp chạy không bị bỏ sót.
+     *
+     * <p>Native + {@code FOR UPDATE SKIP LOCKED} vì cùng lý do với
+     * {@code findDueForReminder}: {@code human_grading_notified_at} một mình chỉ chống trùng qua
+     * các LƯỢT chạy, không chống trùng giữa các INSTANCE -- hai replica cùng đọc trước khi bên nào
+     * commit thì cả hai đều thấy NULL và cùng phát event.
+     */
+    @Query(value = """
+        SELECT * FROM exams e
+        WHERE e.status IN ('IN_PROGRESS', 'CLOSED')
+        AND e.human_grading_notified_at IS NULL
+        AND EXISTS (
+            SELECT 1 FROM exam_candidate_results r
+            WHERE r.exam_id = e.id AND r.status = 'PENDING_REVIEW'
+        )
+        ORDER BY e.created_at ASC
+        LIMIT 200
+        FOR UPDATE SKIP LOCKED
+    """, nativeQuery = true)
+    List<ExamJpaEntity> findDueForHumanGradingNotice();
+
     List<ExamJpaEntity> findByStatusAndOpenAtBefore(String status, Instant time);
     List<ExamJpaEntity> findByStatusAndCloseAtBefore(String status, Instant time);
 }

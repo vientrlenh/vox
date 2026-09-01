@@ -23,6 +23,9 @@ public final class EventTypeConstant {
     public static final String GRADING_ASSIGNMENT_DECLINED = "GradingAssignmentDeclined";
     public static final String EXAM_BLUEPRINT_VERSION_PUBLISHED = "ExamBlueprintVersionPublished";
 
+    /** Bài thi đóng lại mà còn bài ở PENDING_REVIEW ("Chờ soát điểm AI") -- cần người chấm tay. */
+    public static final String EXAM_HUMAN_GRADING_REQUIRED = "ExamHumanGradingRequired";
+
     public static final String INVOICE_PAID = "InvoicePaid";
 
     public static final String SCHOOL_DEBT_CAP_EXCEEDED = "SchoolDebtCapExceeded";
@@ -55,6 +58,7 @@ public final class EventTypeConstant {
             GRADING_DEADLINE_REMINDER,
             GRADING_ASSIGNMENT_DECLINED,
             EXAM_BLUEPRINT_VERSION_PUBLISHED,
+            EXAM_HUMAN_GRADING_REQUIRED,
             INVOICE_PAID,
             SCHOOL_DEBT_CAP_EXCEEDED,
             SCHOOL_LOCKED_DUE_TO_DEBT,

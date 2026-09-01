@@ -15,10 +15,12 @@ import org.springframework.mock.web.MockHttpServletResponse;
 
 import com.sep.vox.application.port.input.command.ClientDeviceCommand;
 import com.sep.vox.application.port.input.command.LoginCommand;
+import com.sep.vox.application.port.input.command.LogoutCommand;
 import com.sep.vox.application.port.input.command.RefreshCommand;
 import com.sep.vox.application.port.input.command.ResetPasswordCommand;
 import com.sep.vox.application.port.input.command.SendResetPasswordOtpCommand;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
+import com.sep.vox.application.port.input.usecase.auth.LogoutUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
 import com.sep.vox.application.port.input.usecase.auth.ResetPasswordUseCase;
 import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
@@ -31,7 +33,7 @@ import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.interfaces.rest.dto.request.ClientDeviceRequest;
 import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
-import com.sep.vox.interfaces.rest.dto.request.RefreshRequest;
+import com.sep.vox.interfaces.rest.dto.request.DeviceIdRequest;
 import com.sep.vox.interfaces.rest.dto.request.ResetPasswordRequest;
 import com.sep.vox.interfaces.rest.dto.request.SendResetPasswordOtpRequest;
 
@@ -44,6 +46,7 @@ public class AuthControllerTests {
     private SetUpPasswordUseCase setUpPasswordUseCase;
     private HttpServletRequest servletRequest;
     private RefreshUseCase refreshUseCase;
+    private LogoutUseCase logoutUseCase;
     private SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase;
     private ResetPasswordUseCase resetPasswordUseCase;
     private RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase;
@@ -58,12 +61,13 @@ public class AuthControllerTests {
         setUpPasswordUseCase = mock(SetUpPasswordUseCase.class);
         servletRequest = mock(MockHttpServletRequest.class);
         refreshUseCase = mock(RefreshUseCase.class);
+        logoutUseCase = mock(LogoutUseCase.class);
         sendResetPasswordOtpUseCase = mock(SendResetPasswordOtpUseCase.class);
         resetPasswordUseCase = mock(ResetPasswordUseCase.class);
         registerBySelfDeclaredUseCase = mock(RegisterBySelfDeclaredUseCase.class);
         verifyRegisterFormOtpUseCase = mock(VerifyRegisterFormOtpUseCase.class);
         cookieManagerPort = mock(CookieManagerPort.class);
-        authController = new AuthController(loginUseCase, registerFromSchoolDirectoryUseCase, setUpPasswordUseCase, refreshUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, cookieManagerPort);
+        authController = new AuthController(loginUseCase, registerFromSchoolDirectoryUseCase, setUpPasswordUseCase, refreshUseCase, logoutUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, cookieManagerPort);
     }
 
 
@@ -108,7 +112,7 @@ public class AuthControllerTests {
 
     @Test
     void refresh_should_return_ok_response() {
-        var request = new RefreshRequest("device-1");
+        var request = new DeviceIdRequest("device-1");
         var expectedCommand = new RefreshCommand("old-refresh-token", request.deviceId());
         var refreshResponse = new RefreshResponse("access-token", "new-refresh-token");
 
@@ -124,6 +128,40 @@ public class AuthControllerTests {
         assertThat(response.getBody().data()).isEqualTo(new RefreshResponse("access-token", null));
         verify(cookieManagerPort).setCookie(servletResponse, "refresh_token", "new-refresh-token", 259200L);
         verify(refreshUseCase).execute(expectedCommand);
+    }
+
+    @Test
+    void logout_should_revoke_session_and_clear_cookie() {
+        var request = new DeviceIdRequest("device-1");
+        var expectedCommand = new LogoutCommand("old-refresh-token", request.deviceId());
+
+        var servletResponse = new MockHttpServletResponse();
+
+        var response = authController.logout(request, "old-refresh-token", servletResponse);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Đăng xuất thành công");
+        verify(logoutUseCase).execute(expectedCommand);
+        verify(cookieManagerPort).clearCookie(servletResponse, "refresh_token");
+    }
+
+    /**
+     * Không có cookie vẫn phải là 200 kèm lệnh xoá cookie: client xoá token trong máy ngay sau
+     * lời gọi này, nên một lỗi ở đây để lại client không còn token mà phiên thì vẫn sống.
+     */
+    @Test
+    void logout_should_return_ok_response_when_refresh_cookie_is_missing() {
+        var request = new DeviceIdRequest("device-1");
+        var expectedCommand = new LogoutCommand(null, request.deviceId());
+
+        var servletResponse = new MockHttpServletResponse();
+
+        var response = authController.logout(request, null, servletResponse);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        verify(logoutUseCase).execute(expectedCommand);
+        verify(cookieManagerPort).clearCookie(servletResponse, "refresh_token");
     }
 
     @Test

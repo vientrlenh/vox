@@ -32,5 +32,18 @@ public class HttpCookieProvider implements CookieManagerPort {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
-    
+    /**
+     * Xoá cookie bằng cách đặt lại chính nó với maxAge = 0.
+     *
+     * <p>Cố ý gọi lại {@link #setCookie} thay vì tự dựng một {@link ResponseCookie} riêng: trình
+     * duyệt chỉ ghi đè cookie khi bộ thuộc tính định danh khớp NGUYÊN VẸN với lúc đặt (path,
+     * domain, secure, sameSite). Lệch một cái là nó coi đây là cookie khác, cookie cũ vẫn nằm
+     * nguyên và refresh token vẫn dùng được -- kiểu hỏng không để lại dấu vết nào ở phía server,
+     * vì response vẫn 200 kèm Set-Cookie trông rất hợp lệ. Đi qua đúng một hàm thì hai bộ thuộc
+     * tính không thể lệch nhau.
+     */
+    @Override
+    public void clearCookie(HttpServletResponse response, String key) {
+        setCookie(response, key, "", 0);
+    }
 }

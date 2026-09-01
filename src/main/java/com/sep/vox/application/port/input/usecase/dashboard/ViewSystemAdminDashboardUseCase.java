@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.dashboard.MonthlyRevenueResponse;
 import com.sep.vox.application.response.input.dashboard.SystemAdminDashboardSummaryResponse;
+import com.sep.vox.domain.common.BusinessDays;
 import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderStatus;
@@ -109,9 +110,7 @@ public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdm
      */
     private Integer oldestPendingRegistrationDays(Instant now) {
         return registerFormRepository.findOldestCreatedAtByStatus(RegisterFormStatus.PENDING)
-            .map(oldest -> (int) ChronoUnit.DAYS.between(
-                oldest.atZone(ZoneConstant.BUSINESS_ZONE).toLocalDate(),
-                now.atZone(ZoneConstant.BUSINESS_ZONE).toLocalDate()))
+            .map(oldest -> BusinessDays.waitedDaysSince(oldest, now))
             .orElse(null);
     }
 

@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -44,4 +45,23 @@ public interface SpringDataExamResultAppealRepository extends JpaRepository<Exam
         AND a.status IN :statuses
     """)
     long countBySchoolIdAndStatusIn(@Param("schoolId") UUID schoolId, @Param("statuses") Collection<String> statuses);
+
+    /**
+     * Mốc nộp của đơn CHỜ XỬ LÝ lâu nhất; null khi không còn đơn nào chờ.
+     *
+     * <p>Chỉ {@code PENDING}: đơn đã {@code APPROVED}/{@code GRADING} đang được chấm nên đồng hồ của
+     * chúng đo một thứ khác — thời gian chấm, không phải thời gian trường bỏ quên đơn.
+     *
+     * <p>null KHÁC 0 và khác biệt đó phải đi tới tận giao diện: 0 ngày nghĩa là có đơn vừa nộp sáng
+     * nay, còn null nghĩa là hàng đợi sạch. Gộp hai cái làm một sẽ vẽ một hàng đợi rỗng trông y hệt
+     * một hàng đợi vừa nhận đơn.
+     */
+    @Query("""
+        SELECT MIN(a.requestedAt) FROM ExamResultAppealJpaEntity a, ExamCandidateResultJpaEntity r, ExamJpaEntity e
+        WHERE a.candidateResultId = r.id
+        AND r.examId = e.id
+        AND e.schoolId = :schoolId
+        AND a.status = 'PENDING'
+    """)
+    Instant findOldestPendingRequestedAtBySchoolId(@Param("schoolId") UUID schoolId);
 }

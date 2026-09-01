@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import java.util.UUID;
+
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,6 +12,7 @@ import com.sep.vox.application.port.input.query.ViewGradingFailureOverviewQuery;
 import com.sep.vox.application.port.input.query.ViewGradingFailureSessionsQuery;
 import com.sep.vox.application.port.input.query.ViewPlatformBusinessHealthQuery;
 import com.sep.vox.application.port.input.query.ViewPlatformOperationalHealthQuery;
+import com.sep.vox.application.port.input.query.SearchSchoolGradingFailuresQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolsAtRiskQuery;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewGradingFailureOverviewUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewGradingFailureSessionsUseCase;
@@ -17,6 +20,7 @@ import com.sep.vox.application.port.input.usecase.dashboard.ViewNearestCentraliz
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformBusinessHealthUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformOperationalHealthUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewSchoolAdminDashboardUseCase;
+import com.sep.vox.application.port.input.usecase.dashboard.ViewSchoolGradingFailuresUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewSchoolsAtRiskUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewSystemAdminDashboardUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewQuestionBankStatsUseCase;
@@ -29,6 +33,7 @@ import com.sep.vox.application.response.input.dashboard.GradingFailureOverviewRe
 import com.sep.vox.application.response.input.dashboard.PlatformBusinessHealthResponse;
 import com.sep.vox.application.response.input.dashboard.PlatformOperationalHealthResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolAdminDashboardSummaryResponse;
+import com.sep.vox.application.response.input.dashboard.SchoolGradingFailurePageResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolsAtRiskResponse;
 import com.sep.vox.application.response.input.dashboard.SystemAdminDashboardSummaryResponse;
 import com.sep.vox.application.response.input.dashboard.TeacherDashboardSummaryResponse;
@@ -48,6 +53,7 @@ public class DashboardController {
     private final ViewGradingFailureOverviewUseCase viewGradingFailureOverviewUseCase;
     private final ViewGradingFailureSessionsUseCase viewGradingFailureSessionsUseCase;
     private final ViewSchoolsAtRiskUseCase viewSchoolsAtRiskUseCase;
+    private final ViewSchoolGradingFailuresUseCase viewSchoolGradingFailuresUseCase;
 
     public DashboardController(ViewSystemAdminDashboardUseCase viewSystemAdminDashboardUseCase,
             ViewSchoolAdminDashboardUseCase viewSchoolAdminDashboardUseCase,
@@ -58,7 +64,8 @@ public class DashboardController {
             ViewPlatformBusinessHealthUseCase viewPlatformBusinessHealthUseCase,
             ViewGradingFailureOverviewUseCase viewGradingFailureOverviewUseCase,
             ViewGradingFailureSessionsUseCase viewGradingFailureSessionsUseCase,
-            ViewSchoolsAtRiskUseCase viewSchoolsAtRiskUseCase) {
+            ViewSchoolsAtRiskUseCase viewSchoolsAtRiskUseCase,
+            ViewSchoolGradingFailuresUseCase viewSchoolGradingFailuresUseCase) {
         this.viewSystemAdminDashboardUseCase = viewSystemAdminDashboardUseCase;
         this.viewSchoolAdminDashboardUseCase = viewSchoolAdminDashboardUseCase;
         this.viewTeacherDashboardUseCase = viewTeacherDashboardUseCase;
@@ -69,6 +76,7 @@ public class DashboardController {
         this.viewGradingFailureOverviewUseCase = viewGradingFailureOverviewUseCase;
         this.viewGradingFailureSessionsUseCase = viewGradingFailureSessionsUseCase;
         this.viewSchoolsAtRiskUseCase = viewSchoolsAtRiskUseCase;
+        this.viewSchoolGradingFailuresUseCase = viewSchoolGradingFailuresUseCase;
     }
 
     @QueryMapping(name = "systemAdminDashboard")
@@ -81,6 +89,24 @@ public class DashboardController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public SchoolAdminDashboardSummaryResponse schoolAdminDashboard() {
         return viewSchoolAdminDashboardUseCase.execute(null);
+    }
+
+    /**
+     * Chỗ đáp của dòng "AI chấm lỗi, chưa ai xử lý" trên trang tổng quan của trường.
+     *
+     * <p>Không nhận schoolId: use case lấy phạm vi từ người đang đăng nhập, nên một quản trị trường
+     * không có đường nào đọc bài của trường khác qua query này.
+     */
+    @QueryMapping(name = "schoolGradingFailures")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public SchoolGradingFailurePageResponse schoolGradingFailures(
+            @Argument(name = "examId") UUID examId,
+            @Argument(name = "retryLeft") Boolean retryLeft,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        PageArguments.validate(page, size);
+        return viewSchoolGradingFailuresUseCase.execute(
+            new SearchSchoolGradingFailuresQuery(examId, retryLeft, page, size));
     }
 
     @QueryMapping(name = "teacherDashboard")

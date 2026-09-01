@@ -1,9 +1,11 @@
 package com.sep.vox.infrastructure.persistence.query;
 
+import static com.sep.vox.domain.common.NativeQueryValues.toInstant;
+import static com.sep.vox.domain.common.NativeQueryValues.toLong;
+import static com.sep.vox.domain.common.NativeQueryValues.toUuid;
+
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
@@ -187,29 +189,4 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
         return new PageResult<>(content, page, size, total, (int) Math.ceil((double) total / size));
     }
 
-    /** COUNT về đây có thể là {@code Long} hoặc {@code BigInteger} tùy phiên bản driver/Hibernate. */
-    private static long toLong(Object value) {
-        return value == null ? 0L : ((Number) value).longValue();
-    }
-
-    private static UUID toUuid(Object value) {
-        return value == null ? null : (UUID) value;
-    }
-
-    /** Cột timestamptz về dưới dạng {@link Instant} hoặc {@link OffsetDateTime} tùy phiên bản. */
-    private static Instant toInstant(Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof Instant instant) {
-            return instant;
-        }
-        if (value instanceof OffsetDateTime offsetDateTime) {
-            return offsetDateTime.toInstant();
-        }
-        if (value instanceof java.sql.Timestamp timestamp) {
-            return timestamp.toInstant();
-        }
-        throw new IllegalStateException("Không đọc được cột thời gian kiểu " + value.getClass());
-    }
 }

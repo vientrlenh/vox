@@ -46,16 +46,162 @@ type SubscriptionRenewal {
     endDate: String!
 }
 
+"""
+Tiền của trường, ở mức đủ để trả lời "tuần này còn thi được không".
+
+TIỀN Ở TYPE NÀY LÀ String, không phải Float — cố ý lệch khỏi quy ước chung của file, vì số dư ví là
+numeric(18,6) và double làm tròn sai đúng chỗ con số phải khớp tuyệt đối. Lý do đầy đủ ở đầu
+school-balance.graphqls. Cả bốn field theo cùng một kiểu: trộn Float với String trong cùng một khối
+tiền còn khó đọc hơn là lệch với tokenAllocated/tokenUsed ngay bên cạnh.
+
+HAI TÚI KHÁC NHAU, đừng gộp: hạn mức kèm gói tách theo QuotaType (chỉ ví EXAM trả tiền cho việc chấm
+thi), còn ví tự nạp là MỘT con số dùng chung và chỉ bị trừ khi hạn mức của loại tương ứng đã cạn.
+Túi luyện nói còn rộng không giúp gì cho kỳ thi tuần sau.
+"""
+type SchoolFunding {
+    "Hạn mức CHẤM THI còn lại. Không bao giờ âm — phần vượt đã thành nợ trên ví."
+    examQuotaRemainingVnd: String!
+    examQuotaTotalVnd: String!
+    "Số dư ví tự nạp. Âm CHÍNH LÀ khoản nợ."
+    balanceVnd: String!
+    """
+    balanceVnd < 0 — trường không mở được ca thi mới.
+
+    Cùng luật SchoolSubscriptionDebtGuardService dùng để chặn VerifyExamScheduleOtpUseCase và
+    StartClassTestSessionUseCase, trả sẵn thay vì để client so với 0: một luật chỉ nên có một nơi
+    định nghĩa. Trùng nghĩa với SchoolBalance.locked, cố ý — đây là bản đọc kèm của trang tổng quan.
+    """
+    locked: Boolean!
+    "examQuotaRemainingVnd + max(balanceVnd, 0). Ví ÂM không bị trừ vào đây: nợ là khoản phải trả."
+    spendableVnd: String!
+}
+
+"""
+Bài đã thi xong mà học sinh CHƯA có điểm, chia theo thứ đang chặn.
+
+Năm nhóm LOẠI TRỪ NHAU và phủ kín — cộng lại đúng bằng `total`.
+
+KHÔNG lấy từ gradingStats.unassigned dù nghe giống: bên đó đếm bài ĐỦ ĐIỀU KIỆN nhận thêm một vòng
+chấm, tập ấy gồm cả RELEASED / INVALID / APPEALED, tức gần như mọi bài của trường.
+
+Phạm vi là kỳ thi TẬP TRUNG và kỳ CHƯA công bố điểm. Kỳ đã RESULTS_PUBLISHED bị loại vì cả chấm lại
+bằng AI lẫn chuyển người chấm đều bị từ chối ở đó — những bài ấy không còn là việc phải làm mà là
+thiệt hại đã xảy ra, và để chúng ở đây thì con số có một mức sàn không bao giờ về 0.
+"""
+type UnscoredWorkload {
+    total: Int!
+    "aiFailedRetryLeft + aiFailedNoRetryLeft — giao diện gộp thành một dòng, hai số con là nhãn phụ"
+    aiFailed: Int!
+    "AI chấm lỗi, chưa ai đụng tới, trường vẫn còn lượt nhờ AI chấm lại"
+    aiFailedRetryLeft: Int!
+    "AI chấm lỗi, đã dùng hết lượt AI — chỉ còn đường chấm tay"
+    aiFailedNoRetryLeft: Int!
+    "Đã vào hàng đợi người chấm nhưng chưa phân công cho ai"
+    awaitingAssignment: Int!
+    assignedOverdue: Int!
+    assignedInProgress: Int!
+    "Bài chờ lâu nhất đã chờ bao nhiêu ngày lịch (giờ VN); null khi không còn bài nào — null KHÁC 0"
+    oldestWaitingDays: Int
+    examCount: Int!
+}
+
+"""
+Kỳ thi ĐÃ ĐÓNG mà còn bài chưa có điểm.
+
+Công bố điểm là cánh cửa MỘT CHIỀU: RetryGradingExamSessionUseCase và HandOffGradingToHumanUseCase
+đều từ chối khi kỳ thi ở RESULTS_PUBLISHED. Bấm công bố lúc còn bài trống là chốt sổ vĩnh viễn cho
+đúng những bài đó, và hiện không màn nào cảnh báo trước.
+
+Chỉ kỳ CLOSED — đúng tập kỳ mà nút Công bố điểm đang bấm được. Kỳ IN_PROGRESS vẫn đang có người thi
+nên bài trống là chuyện bình thường.
+"""
+type ExamAwaitingPublish {
+    examId: ID!
+    code: String!
+    name: String!
+    "ISO-8601; null với kỳ không đặt mốc đóng"
+    closeAt: String
+    unscoredCount: Int!
+    "Trong số đó, còn cứu được bằng AI"
+    aiFailedRetryLeft: Int!
+    "Trong số đó, hết lượt AI — bắt buộc xếp giáo viên chấm"
+    aiFailedNoRetryLeft: Int!
+    "Trong số đó, đã nằm ở hàng đợi người chấm"
+    awaitingHumanGrading: Int!
+}
+
+"""
+Một bài AI chấm lỗi mà chưa ai xử lý, nhìn từ phía nhà trường.
+
+KHÔNG có điểm: phiên GRADING_FAILED chưa từng sinh dòng exam_candidate_results nào. Thứ thay thế là
+những trường giúp chọn giữa hai lối ra — nhờ AI chấm lại hay xếp giáo viên chấm tay.
+"""
+type SchoolGradingFailure {
+    sessionId: ID!
+    examId: ID!
+    examCode: String!
+    examName: String!
+    candidateName: String
+    "null khi học sinh chưa được xếp vào lớp đang hoạt động nào"
+    className: String
+    "ISO-8601, mốc nộp bài"
+    failedAt: String
+    "Thông điệp lỗi thô, nguyên văn; null với phiên bị đánh dấu hỏng qua nhánh DLT"
+    error: String
+    """
+    Dịch vụ chấm đã TỰ thử lại mấy lần bên trong một lượt; null khi không rõ.
+
+    KHÁC hẳn định mức của trường: con số này nói về độ dai của sự cố, không nói ai đã bấm gì. Đừng
+    dựng nút bấm từ nó — schoolRetryLeft mới là thứ quyết định.
+    """
+    aiRetryCount: Int
+    "Trường còn lượt nhờ AI chấm lại cho phiên này hay không"
+    schoolRetryLeft: Boolean!
+}
+
+type SchoolGradingFailurePage {
+    content: [SchoolGradingFailure!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+    """
+    Số bài còn lượt AI, ĐÃ áp bộ lọc kỳ thi nhưng CHƯA áp bộ lọc định mức.
+
+    Hai số này đứng trên chính hai nút lọc nên phải dự đoán đúng kết quả của cú bấm. Không lọc kỳ nào
+    thì chúng khớp đúng unscored.aiFailedRetryLeft / aiFailedNoRetryLeft trên trang tổng quan.
+    """
+    retryLeftCount: Int!
+    noRetryLeftCount: Int!
+}
+
 type SchoolAdminDashboardSummary {
     examStatusCounts: ExamStatusCounts!
     appealStats: AppealStats!
     revenue: Float!
     "Chi tiêu 12 tháng gần nhất, xếp từ cũ đến mới"
     monthlySpending: [SchoolMonthlySpending!]!
+    """
+    Hạn mức CHẤM THI của kỳ đăng ký đang chạy — chỉ ví EXAM, không gồm ví luyện nói.
+
+    Tên field nói "token" và không nói "exam" là di sản; xem SchoolFunding cho bản đọc rõ ràng, có
+    kèm cả số dư ví. Hai chỗ đọc cùng một bản ghi hạn mức nên không bao giờ lệch nhau.
+    """
     tokenAllocated: Float!
     tokenUsed: Float!
     "null nếu trường chưa từng có gói đăng ký nào đang hoạt động"
     subscriptionRenewal: SubscriptionRenewal
+    funding: SchoolFunding!
+    unscored: UnscoredWorkload!
+    "Nhiều bài trống nhất trước. Cắt ở 5 kỳ — đây là thẻ cảnh báo, không phải danh sách kỳ thi."
+    examsAwaitingPublish: [ExamAwaitingPublish!]!
+    """
+    Đơn khiếu nại CHỜ XỬ LÝ lâu nhất đã chờ bao nhiêu ngày lịch (giờ VN).
+
+    null khi không còn đơn nào chờ — khác hẳn 0, vốn nghĩa là "có đơn, vừa nộp hôm nay". Cùng bài học
+    với oldestPendingRegistrationDays: số ĐƠN không cho biết có đơn nào đang trễ hay không.
+    """
+    oldestPendingAppealDays: Int
 }
 
 type TeacherGradingStats {
@@ -389,6 +535,28 @@ extend type Query {
     giờ Việt Nam.
     """
     platformBusinessHealth(dateFrom: String, dateTo: String): PlatformBusinessHealth!
+
+    """
+    Bài AI chấm lỗi mà CHƯA ai xử lý, của trường đang đăng nhập — chỗ đáp của dòng cùng tên trên
+    trang tổng quan.
+
+    Chạy trên đúng tập mà `schoolAdminDashboard.unscored.aiFailed` đếm: cùng một CTE sinh ra cả hai,
+    nên bấm vào con số 14 sẽ ra đúng 14 dòng.
+
+    KHÔNG nhận schoolId — phạm vi lấy từ người đang đăng nhập.
+
+    Bỏ trống `retryLeft` là KHÔNG lọc; true chỉ lấy bài còn lượt nhờ AI chấm lại, false chỉ lấy bài
+    đã hết lượt. Hai nhóm dẫn tới hai hành động khác hẳn nhau nên tách được là đáng.
+
+    Xếp CŨ NHẤT TRƯỚC, ngược với gradingFailureSessions của quản trị hệ thống: bên đó hỏi "vừa hỏng
+    chuyện gì", ở đây hỏi "em nào đã chờ lâu nhất mà vẫn chưa có điểm".
+    """
+    schoolGradingFailures(
+        examId: ID
+        retryLeft: Boolean
+        page: Int = 1
+        size: Int = 20
+    ): SchoolGradingFailurePage!
 
     schoolAdminDashboard: SchoolAdminDashboardSummary!
     teacherDashboard: TeacherDashboardSummary!

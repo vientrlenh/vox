@@ -10,7 +10,12 @@ public record SchoolAdminDashboardSummaryResponse (
     List<SchoolMonthlySpendingResponse> monthlySpending,
     BigDecimal tokenAllocated,
     BigDecimal tokenUsed,
-    SchoolSubscriptionRenewalResponse subscriptionRenewal
+    SchoolSubscriptionRenewalResponse subscriptionRenewal,
+    SchoolFundingResponse funding,
+    UnscoredWorkloadResponse unscored,
+    List<ExamAwaitingPublishResponse> examsAwaitingPublish,
+    /** Số ngày đơn khiếu nại chờ lâu nhất đã chờ; null khi hàng đợi sạch. */
+    Integer oldestPendingAppealDays
 ) {
 
 }

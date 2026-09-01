@@ -14,11 +14,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.repository.SchoolWorkloadQueryRepository;
 import com.sep.vox.application.response.input.dashboard.ExamAppealStatsResponse;
+import com.sep.vox.application.response.input.dashboard.ExamAwaitingPublishResponse;
 import com.sep.vox.application.response.input.dashboard.ExamStatusCountResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolAdminDashboardSummaryResponse;
+import com.sep.vox.application.response.input.dashboard.SchoolFundingResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolMonthlySpendingResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolSubscriptionRenewalResponse;
+import com.sep.vox.application.response.input.dashboard.UnscoredWorkloadResponse;
+import com.sep.vox.domain.common.BusinessDays;
 import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
@@ -31,6 +36,7 @@ import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.OrderRepository;
+import com.sep.vox.domain.repository.SchoolBalanceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
@@ -46,6 +52,15 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     /** Số tháng vẽ trên biểu đồ chi tiêu, kể cả tháng hiện tại. */
     private static final int SPENDING_MONTHS = 12;
 
+    /**
+     * Trần số kỳ thi vẽ trên thẻ "sắp công bố điểm".
+     *
+     * <p>Đây là một thẻ CẢNH BÁO, không phải danh sách kỳ thi: một trường có ba kỳ đang chờ công bố
+     * thì đọc hết ba, còn ba mươi kỳ thì vấn đề không nằm ở chỗ nhìn đủ ba mươi cái tên. Cắt ở đây
+     * cũng giữ cho câu truy vấn không bao giờ trả về một trang khổng lồ cho màn tổng quan.
+     */
+    private static final int AWAITING_PUBLISH_LIMIT = 5;
+
     private final UserContextPort userContextPort;
     private final ExamRepository examRepository;
     private final ExamResultAppealRepository examResultAppealRepository;
@@ -53,12 +68,16 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final OrderRepository orderRepository;
+    private final SchoolBalanceRepository schoolBalanceRepository;
+    private final SchoolWorkloadQueryRepository schoolWorkloadQueryRepository;
 
     public ViewSchoolAdminDashboardUseCase(UserContextPort userContextPort, ExamRepository examRepository,
             ExamResultAppealRepository examResultAppealRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
-            SubscriptionPlanRepository subscriptionPlanRepository, OrderRepository orderRepository) {
+            SubscriptionPlanRepository subscriptionPlanRepository, OrderRepository orderRepository,
+            SchoolBalanceRepository schoolBalanceRepository,
+            SchoolWorkloadQueryRepository schoolWorkloadQueryRepository) {
         this.userContextPort = userContextPort;
         this.examRepository = examRepository;
         this.examResultAppealRepository = examResultAppealRepository;
@@ -66,26 +85,47 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.orderRepository = orderRepository;
+        this.schoolBalanceRepository = schoolBalanceRepository;
+        this.schoolWorkloadQueryRepository = schoolWorkloadQueryRepository;
     }
 
+    /**
+     * MỘT mốc {@code now} cho cả trang.
+     *
+     * <p>Thẻ tổng và thẻ theo kỳ đọc cùng một tập bài và cùng một phép xét quá hạn, nên hai lần gọi
+     * {@code Instant.now()} riêng có thể xếp cùng một bài vào "đang trong hạn" ở chỗ này và "quá
+     * hạn" ở chỗ kia — hai con số cạnh nhau trên cùng màn hình lệch nhau vì vài mili giây.
+     */
     @Override
     @Transactional(readOnly = true)
     public SchoolAdminDashboardSummaryResponse execute(Void input) {
+        var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var schoolId = userContextPort.getCurrentSchoolId();
 
         var activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId);
         var examQuota = activeExamQuota(activeSubscription);
         var paidOrders = fetchPaidOrders(schoolId);
+        var quotaTotal = examQuota.map(quota -> quota.getTotalAllocatedAmountVnd()).orElse(BigDecimal.ZERO);
+        var quotaUsed = examQuota.map(quota -> quota.getUsedAmountVnd()).orElse(BigDecimal.ZERO);
 
         return new SchoolAdminDashboardSummaryResponse(
             buildExamStatusCounts(currentUserId, schoolId),
             buildAppealStats(schoolId),
             sumAmount(paidOrders),
             buildMonthlySpending(paidOrders),
-            examQuota.map(quota -> quota.getTotalAllocatedAmountVnd()).orElse(BigDecimal.ZERO),
-            examQuota.map(quota -> quota.getUsedAmountVnd()).orElse(BigDecimal.ZERO),
-            buildSubscriptionRenewal(activeSubscription)
+            quotaTotal,
+            quotaUsed,
+            buildSubscriptionRenewal(activeSubscription),
+            SchoolFundingResponse.of(quotaTotal, quotaUsed,
+                schoolBalanceRepository.findBySchoolId(schoolId).orElse(null)),
+            UnscoredWorkloadResponse.of(schoolWorkloadQueryRepository.countUnscored(schoolId, now), now),
+            schoolWorkloadQueryRepository
+                .findExamsAwaitingPublish(schoolId, now, AWAITING_PUBLISH_LIMIT).stream()
+                .map(ExamAwaitingPublishResponse::of)
+                .toList(),
+            BusinessDays.waitedDaysSince(
+                examResultAppealRepository.findOldestPendingRequestedAt(schoolId), now)
         );
     }
 

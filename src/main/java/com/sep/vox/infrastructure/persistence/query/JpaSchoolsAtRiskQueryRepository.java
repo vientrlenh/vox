@@ -1,8 +1,10 @@
 package com.sep.vox.infrastructure.persistence.query;
 
+import static com.sep.vox.domain.common.NativeQueryValues.toInstant;
+import static com.sep.vox.domain.common.NativeQueryValues.toLong;
+
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -165,23 +167,4 @@ public class JpaSchoolsAtRiskQueryRepository implements SchoolsAtRiskQueryReposi
         return query;
     }
 
-    private static long toLong(Object value) {
-        return value == null ? 0L : ((Number) value).longValue();
-    }
-
-    private static Instant toInstant(Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof Instant instant) {
-            return instant;
-        }
-        if (value instanceof OffsetDateTime offsetDateTime) {
-            return offsetDateTime.toInstant();
-        }
-        if (value instanceof java.sql.Timestamp timestamp) {
-            return timestamp.toInstant();
-        }
-        throw new IllegalStateException("Không đọc được cột thời gian kiểu " + value.getClass());
-    }
 }

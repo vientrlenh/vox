@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -61,5 +62,10 @@ public class ExamResultAppealRepositoryImpl implements ExamResultAppealRepositor
     public long countBySchoolIdAndStatusIn(UUID schoolId, Collection<ExamAppealStatus> statuses) {
         var statusNames = statuses.stream().map(e -> e.name()).toList();
         return springDataExamResultAppealRepository.countBySchoolIdAndStatusIn(schoolId, statusNames);
+    }
+
+    @Override
+    public Instant findOldestPendingRequestedAt(UUID schoolId) {
+        return springDataExamResultAppealRepository.findOldestPendingRequestedAtBySchoolId(schoolId);
     }
 }

@@ -1,5 +1,6 @@
 package com.sep.vox.domain.repository;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -17,4 +18,7 @@ public interface ExamResultAppealRepository {
     List<ExamResultAppeal> findByCandidateResultId(UUID candidateResultId);
     void deleteByIdIn(Collection<UUID> ids);
     long countBySchoolIdAndStatusIn(UUID schoolId, Collection<ExamAppealStatus> statuses);
+
+    /** Mốc nộp của đơn chờ xử lý lâu nhất của trường; null khi hàng đợi sạch — null KHÁC 0 ngày. */
+    Instant findOldestPendingRequestedAt(UUID schoolId);
 }

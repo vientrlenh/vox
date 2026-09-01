@@ -133,6 +133,24 @@ class MonitoredExamQuerySmokeTests extends ContainerTestConfig {
         assertThat(repository.findMonitorableBySchool(schoolId, examId, now, null)).hasSize(1);
     }
 
+    /**
+     * Ca đã publish nhưng KỲ THI còn nháp thì màn giám sát phải im.
+     *
+     * <p>Không phải tổ hợp bịa: luồng chuẩn bắt publish từng ca TRƯỚC rồi mới đẩy kỳ thi sang
+     * SCHEDULED, nên đây đúng là trạng thái mọi kỳ thi đều đi qua. Lọc theo {@code sch.status} thôi
+     * thì cả hai vai đều thấy kỳ thi nhà trường chưa chốt.
+     */
+    @Test
+    void should_hide_an_exam_still_in_draft() {
+        seedExam("DRAFT");
+        seedSchedule(now.minus(Duration.ofMinutes(10)), now.plus(Duration.ofHours(1)), true);
+
+        assertThat(repository.findMonitorableByTeacher(teacherId, null, now, now.plus(LEAD))).isEmpty();
+        assertThat(repository.findMonitorableBySchool(schoolId, null, now, now.plus(LEAD))).isEmpty();
+        // Cả đường đọc một kỳ thi (bỏ cửa sổ thời gian) cũng phải câm -- đó là đường mở thẳng bằng URL.
+        assertThat(repository.findMonitorableBySchool(schoolId, examId, now, null)).isEmpty();
+    }
+
     @Test
     void should_not_read_an_exam_of_another_school() {
         seedExam();
@@ -147,17 +165,22 @@ class MonitoredExamQuerySmokeTests extends ContainerTestConfig {
         seedSchedule(start, end, true);
     }
 
+    private void seedExam() {
+        seedExam("IN_PROGRESS");
+    }
+
     // Chèn thẳng bằng SQL: entity ở đây có constructor ~25 tham số, và test này chỉ cần đúng những
     // cột mà câu truy vấn đọc. Baseline không khai foreign key nào nên id trường/giáo viên tự do.
-    private void seedExam() {
+    private void seedExam(String status) {
         em.createNativeQuery("""
             INSERT INTO exams (id, code, name, kind, status, language_id, school_id, requires_otp,
                                created_at, updated_at)
-            VALUES (:id, :code, 'Kỳ thi khói', 'CENTRALIZED', 'IN_PROGRESS', :languageId, :schoolId,
+            VALUES (:id, :code, 'Kỳ thi khói', 'CENTRALIZED', :status, :languageId, :schoolId,
                     true, :now, :now)
             """)
             .setParameter("id", examId)
             .setParameter("code", "SMOKE-" + examId)
+            .setParameter("status", status)
             .setParameter("languageId", UUID.randomUUID())
             .setParameter("schoolId", schoolId)
             .setParameter("now", now)

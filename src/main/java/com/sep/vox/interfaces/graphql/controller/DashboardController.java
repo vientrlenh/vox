@@ -12,7 +12,10 @@ import com.sep.vox.application.port.input.query.ViewGradingFailureOverviewQuery;
 import com.sep.vox.application.port.input.query.ViewGradingFailureSessionsQuery;
 import com.sep.vox.application.port.input.query.ViewPlatformBusinessHealthQuery;
 import com.sep.vox.application.port.input.query.ViewPlatformOperationalHealthQuery;
+import com.sep.vox.application.port.input.query.SearchSchoolAiSpendByUserQuery;
 import com.sep.vox.application.port.input.query.SearchSchoolGradingFailuresQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolAiCostQuery;
+import com.sep.vox.application.port.input.query.ViewSchoolAiCostQuery.AiCostGranularity;
 import com.sep.vox.application.port.input.query.ViewSchoolsAtRiskQuery;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewGradingFailureOverviewUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewGradingFailureSessionsUseCase;
@@ -20,6 +23,8 @@ import com.sep.vox.application.port.input.usecase.dashboard.ViewNearestCentraliz
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformBusinessHealthUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformOperationalHealthUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewSchoolAdminDashboardUseCase;
+import com.sep.vox.application.port.input.usecase.dashboard.ViewSchoolAiCostTimeseriesUseCase;
+import com.sep.vox.application.port.input.usecase.dashboard.ViewSchoolAiSpendByUserUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewSchoolGradingFailuresUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewSchoolsAtRiskUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewSystemAdminDashboardUseCase;
@@ -29,10 +34,13 @@ import com.sep.vox.application.query.dto.GradingFailureSessionDto;
 import com.sep.vox.application.query.dto.NearestCentralizedExamDto;
 import com.sep.vox.application.query.dto.QuestionBankStatsDto;
 import com.sep.vox.application.query.dto.SchoolRiskBucket;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.application.response.input.dashboard.GradingFailureOverviewResponse;
 import com.sep.vox.application.response.input.dashboard.PlatformBusinessHealthResponse;
 import com.sep.vox.application.response.input.dashboard.PlatformOperationalHealthResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolAdminDashboardSummaryResponse;
+import com.sep.vox.application.response.input.dashboard.SchoolAiCostTimeseriesResponse;
+import com.sep.vox.application.response.input.dashboard.SchoolAiSpendByUserPageResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolGradingFailurePageResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolsAtRiskResponse;
 import com.sep.vox.application.response.input.dashboard.SystemAdminDashboardSummaryResponse;
@@ -54,6 +62,8 @@ public class DashboardController {
     private final ViewGradingFailureSessionsUseCase viewGradingFailureSessionsUseCase;
     private final ViewSchoolsAtRiskUseCase viewSchoolsAtRiskUseCase;
     private final ViewSchoolGradingFailuresUseCase viewSchoolGradingFailuresUseCase;
+    private final ViewSchoolAiCostTimeseriesUseCase viewSchoolAiCostTimeseriesUseCase;
+    private final ViewSchoolAiSpendByUserUseCase viewSchoolAiSpendByUserUseCase;
 
     public DashboardController(ViewSystemAdminDashboardUseCase viewSystemAdminDashboardUseCase,
             ViewSchoolAdminDashboardUseCase viewSchoolAdminDashboardUseCase,
@@ -65,7 +75,9 @@ public class DashboardController {
             ViewGradingFailureOverviewUseCase viewGradingFailureOverviewUseCase,
             ViewGradingFailureSessionsUseCase viewGradingFailureSessionsUseCase,
             ViewSchoolsAtRiskUseCase viewSchoolsAtRiskUseCase,
-            ViewSchoolGradingFailuresUseCase viewSchoolGradingFailuresUseCase) {
+            ViewSchoolGradingFailuresUseCase viewSchoolGradingFailuresUseCase,
+            ViewSchoolAiCostTimeseriesUseCase viewSchoolAiCostTimeseriesUseCase,
+            ViewSchoolAiSpendByUserUseCase viewSchoolAiSpendByUserUseCase) {
         this.viewSystemAdminDashboardUseCase = viewSystemAdminDashboardUseCase;
         this.viewSchoolAdminDashboardUseCase = viewSchoolAdminDashboardUseCase;
         this.viewTeacherDashboardUseCase = viewTeacherDashboardUseCase;
@@ -77,6 +89,8 @@ public class DashboardController {
         this.viewGradingFailureSessionsUseCase = viewGradingFailureSessionsUseCase;
         this.viewSchoolsAtRiskUseCase = viewSchoolsAtRiskUseCase;
         this.viewSchoolGradingFailuresUseCase = viewSchoolGradingFailuresUseCase;
+        this.viewSchoolAiCostTimeseriesUseCase = viewSchoolAiCostTimeseriesUseCase;
+        this.viewSchoolAiSpendByUserUseCase = viewSchoolAiSpendByUserUseCase;
     }
 
     @QueryMapping(name = "systemAdminDashboard")
@@ -107,6 +121,37 @@ public class DashboardController {
         PageArguments.validate(page, size);
         return viewSchoolGradingFailuresUseCase.execute(
             new SearchSchoolGradingFailuresQuery(examId, retryLeft, page, size));
+    }
+
+    /**
+     * Chi phí AI của trường đang đăng nhập theo thời gian.
+     *
+     * <p>Không nhận schoolId, khác hẳn {@code schoolTokenUsageTimeseries} mà client vẫn gọi: use case
+     * lấy phạm vi từ người đăng nhập, nên không còn đường nào để một quản trị trường đọc chi tiêu của
+     * trường khác.
+     */
+    @QueryMapping(name = "schoolAiCostTimeseries")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public SchoolAiCostTimeseriesResponse schoolAiCostTimeseries(
+            @Argument(name = "dateFrom") String dateFrom,
+            @Argument(name = "dateTo") String dateTo,
+            @Argument(name = "granularity") AiCostGranularity granularity) {
+        return viewSchoolAiCostTimeseriesUseCase.execute(new ViewSchoolAiCostQuery(
+            DateMapper.toInstant(dateFrom), DateMapper.toInstant(dateTo), granularity));
+    }
+
+    @QueryMapping(name = "schoolAiSpendByUser")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public SchoolAiSpendByUserPageResponse schoolAiSpendByUser(
+            @Argument(name = "dateFrom") String dateFrom,
+            @Argument(name = "dateTo") String dateTo,
+            @Argument(name = "quotaType") QuotaType quotaType,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        PageArguments.validate(page, size);
+        return viewSchoolAiSpendByUserUseCase.execute(new SearchSchoolAiSpendByUserQuery(
+            DateMapper.toInstant(dateFrom), DateMapper.toInstant(dateTo),
+            quotaType, page, size));
     }
 
     @QueryMapping(name = "teacherDashboard")

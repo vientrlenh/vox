@@ -46,7 +46,7 @@ public class JpaPlatformOperationalHealthQueryRepository implements PlatformOper
      *
      * <p>{@code submitted_at AT TIME ZONE :zone} đổi timestamptz sang giờ địa phương của múi truyền
      * vào rồi mới cắt ngày — không dùng {@code date_trunc} trần như
-     * {@code JpaTokenUsageTimeseriesQueryRepository}, vì cắt trần là cắt theo UTC.
+     * {@code JpaSchoolAiCostQueryRepository}, vì cắt trần là cắt theo UTC.
      */
     @Override
     @SuppressWarnings("unchecked")
@@ -76,7 +76,7 @@ public class JpaPlatformOperationalHealthQueryRepository implements PlatformOper
     /**
      * COUNT của Postgres về tới đây có thể là {@code Long} hoặc {@code BigInteger} tùy phiên bản
      * driver/Hibernate, nên ép qua {@link Number} thay vì cast thẳng — cùng loại bẫy đã gây
-     * ClassCastException ở {@code JpaTokenUsageTimeseriesQueryRepository}.
+     * ClassCastException ở {@code JpaSchoolAiCostQueryRepository}.
      */
     private static long toLong(Object value) {
         return value == null ? 0L : ((Number) value).longValue();

@@ -487,8 +487,113 @@ type SchoolsAtRisk {
     schools: SchoolAtRiskPage!
 }
 
+"Đơn vị gom nhóm của biểu đồ chi phí AI."
+enum AiCostGranularity {
+    DAY
+    WEEK
+    MONTH
+}
+
+"""
+Chi phí AI của trường theo thời gian.
+
+TIỀN LÀ String, không phải Float — nguồn là numeric(18,6), cùng lý do đã ghi ở đầu
+school-balance.graphqls.
+
+Đọc từ school_ai_spend_entries: số TRƯỜNG BỊ TRỪ, không phải giá vốn nền tảng. Hai con số đó cố ý
+lệch nhau từ V9 (chi phí của lượt chấm hỏng được miễn), nên vẽ biểu đồ này từ ai_usage_records là
+tính cho trường cả những đồng ta đã quyết định không thu.
+
+Thay hẳn cho `schoolTokenUsageTimeseries` — trường đó chưa bao giờ tồn tại trong schema dù client vẫn
+gọi, và repository duy nhất phục vụ nó cộng `tokens_consumed` trên một bảng không mã nào còn ghi vào
+kể từ V2.
+"""
+type SchoolAiCostTimeseries {
+    granularity: AiCostGranularity!
+    "Tổng của đúng các điểm bên dưới — cộng từ cùng một tập, không phải một câu SUM thứ hai"
+    totalCostVnd: String!
+    points: [AiCostPoint!]!
+    """
+    Mốc sổ bắt đầu có dữ liệu; null khi trường chưa từng tiêu đồng nào.
+
+    V10 cố ý KHÔNG backfill (số dựng lại từ ai_usage_records sẽ khác số đã thu thật), nên mọi khoảng
+    trước mốc này vẽ ra đường phẳng ở 0 dù trường có tiêu tiền. Giao diện phải nói được sự khác biệt
+    giữa "không tiêu gì" và "chưa ghi sổ".
+    """
+    recordedFrom: String
+}
+
+type AiCostPoint {
+    "ISO-8601, đầu mốc theo giờ Việt Nam — date_trunc chạy trên giờ nghiệp vụ, không phải UTC"
+    bucket: String!
+    quotaType: QuotaType!
+    costVnd: String!
+}
+
+type UserAiSpend {
+    userId: ID!
+    fullName: String
+    quotaType: QuotaType!
+    spentVnd: String!
+    "Trần chi cá nhân; null khi nhà trường chưa chia trần cho người này — vẫn tiêu được, chỉ không có mức để so"
+    allocatedAmountVnd: String
+}
+
+"""
+Ai đã tiêu bao nhiêu hạn mức AI của trường trong cửa sổ đang xem.
+
+Một người tiêu ở cả hai loại ví thì có HAI hàng — mỗi hàng một loại, vì trần chi cũng chia theo loại.
+"""
+type SchoolAiSpendByUserPage {
+    content: [UserAiSpend!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+    """
+    Phần chi KHÔNG thuộc trần chi của ai — khoản của kỳ thi tập trung.
+
+    Kỳ thi tập trung do nhà trường tổ chức nên cố ý không tính vào túi riêng của người nào
+    (CompleteExamSessionGradingUseCase chỉ truyền người ra đề với bài kiểm tra trên lớp). Trả riêng
+    thay vì thành một hàng "không rõ": ở gần như mọi trường đây là khoản LỚN NHẤT và sẽ chiếm đỉnh
+    bảng, che mất đúng thứ bảng này sinh ra để cho thấy.
+
+    Cộng bảng người dùng rồi so với biểu đồ sẽ luôn thiếu đúng con số này.
+    """
+    schoolWideCostVnd: String!
+}
+
 extend type Query {
     systemAdminDashboard: SystemAdminDashboardSummary!
+
+    """
+    Chi phí AI của trường ĐANG ĐĂNG NHẬP theo thời gian.
+
+    Không nhận schoolId — bản cũ nhận, tức một quản trị trường gửi id trường khác lên là đọc được
+    chi tiêu của họ.
+
+    dateFrom BAO GỒM, dateTo KHÔNG bao gồm. Bỏ trống dateTo = ngay lúc gọi; bỏ trống dateFrom = lùi
+    30 ngày.
+    """
+    schoolAiCostTimeseries(
+        dateFrom: String
+        dateTo: String
+        granularity: AiCostGranularity! = DAY
+    ): SchoolAiCostTimeseries!
+
+    """
+    Ai đang tiêu hạn mức AI của trường. Cùng quy ước cửa sổ và cùng mặc định với
+    `schoolAiCostTimeseries` — hai khối đứng cạnh nhau nên phải đọc cùng một khoảng.
+
+    Bỏ trống quotaType là cả hai loại ví. Nhiều tiền nhất xếp trước.
+    """
+    schoolAiSpendByUser(
+        dateFrom: String
+        dateTo: String
+        quotaType: QuotaType
+        page: Int = 1
+        size: Int = 20
+    ): SchoolAiSpendByUserPage!
 
     """
     Danh sách trường trong MỘT nhóm cần chú ý, kèm số đếm của cả bốn nhóm.

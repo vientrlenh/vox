@@ -11,7 +11,7 @@ import com.sep.vox.application.query.dto.LiveSessionCountsDto;
  * Đọc tình trạng VẬN HÀNH của nền tảng từ bảng {@code exam_sessions}, cho dashboard system admin.
  *
  * <p>Là một BÁO CÁO, không phải cổng ghi của aggregate nào — cùng khuôn với
- * {@link TokenUsageTimeseriesQueryRepository} và {@link QuestionBankStatsQueryRepository}: gộp nhiều
+ * {@link SchoolAiCostQueryRepository} và {@link QuestionBankStatsQueryRepository}: gộp nhiều
  * phiên lại thành những con số không tương ứng với một thực thể nào và không có đường ghi ngược.
  *
  * <p>Nguồn sự thật là cột {@code exam_sessions.status}, nơi {@code GRADING_FAILED} nghĩa là AI chấm

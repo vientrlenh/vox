@@ -57,7 +57,7 @@ public interface SpringDataPracticeResponseTurnRepository
 
     // Không viết được JPQL constructor-expression như ExamItemResponseRepository (PracticeResponseTurnJpaEntity
     // không có association JPA tới PracticeItemResponseJpaEntity) -- native SQL + Object[], mirror cách
-    // JpaTokenUsageTimeseriesQueryRepository map row native query.
+    // JpaSchoolAiCostQueryRepository map row native query.
     @Query(value = """
         SELECT response.practice_session_id AS session_id, COALESCE(SUM(turn.duration_seconds), 0) AS total_seconds
         FROM practice_response_turns turn

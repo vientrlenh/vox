@@ -15,9 +15,11 @@ import com.sep.vox.application.port.output.QuotaUsageWarningConfigPort;
 import com.sep.vox.application.response.input.subscription.ConsumeQuotaResponse;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.model.metering.QuotaType;
+import com.sep.vox.domain.model.school.SchoolAiSpendEntry;
 import com.sep.vox.domain.model.school.SchoolBalance;
 import com.sep.vox.domain.model.school.SchoolBalanceEntry;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
+import com.sep.vox.domain.repository.SchoolAiSpendEntryRepository;
 import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
 import com.sep.vox.domain.repository.SchoolBalanceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
@@ -54,6 +56,7 @@ public class ConsumeQuotaService {
     private final QuotaDebtConfigPort quotaDebtConfig;
     private final SchoolQuotaUsageNotificationService schoolQuotaUsageNotificationService;
     private final QuotaUsageWarningConfigPort quotaUsageWarningConfig;
+    private final SchoolAiSpendEntryRepository schoolAiSpendEntryRepository;
 
     public ConsumeQuotaService(
             SchoolSubscriptionQuotaRecordRepository schoolSubscriptionQuotaRecordRepository,
@@ -64,7 +67,8 @@ public class ConsumeQuotaService {
             SchoolDebtNotificationService schoolDebtNotificationService,
             QuotaDebtConfigPort quotaDebtConfig,
             SchoolQuotaUsageNotificationService schoolQuotaUsageNotificationService,
-            QuotaUsageWarningConfigPort quotaUsageWarningConfig) {
+            QuotaUsageWarningConfigPort quotaUsageWarningConfig,
+            SchoolAiSpendEntryRepository schoolAiSpendEntryRepository) {
         this.schoolSubscriptionQuotaRecordRepository = schoolSubscriptionQuotaRecordRepository;
         this.schoolSubscriptionQuotaUserAllocationRepository = schoolSubscriptionQuotaUserAllocationRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
@@ -74,6 +78,7 @@ public class ConsumeQuotaService {
         this.quotaDebtConfig = quotaDebtConfig;
         this.schoolQuotaUsageNotificationService = schoolQuotaUsageNotificationService;
         this.quotaUsageWarningConfig = quotaUsageWarningConfig;
+        this.schoolAiSpendEntryRepository = schoolAiSpendEntryRepository;
     }
 
     /**
@@ -134,7 +139,38 @@ public class ConsumeQuotaService {
         }
 
         consumeUserAllocation(subscriptionId, quotaType, userId, amountVnd);
+        recordSpend(subscriptionId, examSessionId, practiceSessionId, quotaType, amountVnd, userId);
         return buildResponse(subscriptionId, quota.getId(), split);
+    }
+
+    /**
+     * Ghi vào sổ chi phí AI của trường -- ĐỦ số tiền, không chỉ phần vượt hạn mức.
+     *
+     * <p>Đặt ở đây, SAU cả hai nhánh, vì đây là chỗ duy nhất biết đồng thời trường, loại ví, người
+     * tiêu, số tiền và phiên. Để chỗ gọi tự ghi thì mỗi nguồn tiêu tiền mới lại là một cơ hội quên,
+     * và đường luyện nói vắng mặt khỏi mọi báo cáo suốt thời gian qua chính là hệ quả của kiểu quên
+     * đó (xem V10).
+     *
+     * <p>KHÁC {@code school_balance_entries} ở chỗ nó ghi cả khoản nằm gọn trong hạn mức: sổ kia là
+     * sổ cái của VÍ nên chỉ nhận phần vượt, còn sổ này trả lời "trường đã tiêu bao nhiêu". Cộng hai
+     * sổ lại là đếm hai lần cùng một đồng.
+     *
+     * <p>{@code userId} null là một CÂU TRẢ LỜI -- kỳ thi tập trung không thuộc trần chi của ai.
+     */
+    private void recordSpend(UUID subscriptionId, UUID examSessionId, UUID practiceSessionId,
+            QuotaType quotaType, BigDecimal amountVnd, UUID userId) {
+        // Ràng buộc chk_..._amount_positive từ chối dòng 0 đồng, và một lần trừ 0 đồng cũng không
+        // phải sự kiện đáng ghi -- chặn ở đây thay vì để DB ném giữa luồng chấm bài.
+        if (amountVnd == null || amountVnd.signum() <= 0) {
+            return;
+        }
+
+        var schoolId = requireSchoolId(subscriptionId);
+        var now = Instant.now();
+        schoolAiSpendEntryRepository.save(examSessionId != null
+            ? SchoolAiSpendEntry.forExam(schoolId, subscriptionId, examSessionId, userId, amountVnd, now)
+            : SchoolAiSpendEntry.forPractice(
+                schoolId, subscriptionId, practiceSessionId, userId, amountVnd, now));
     }
 
     /**

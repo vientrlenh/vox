@@ -14,7 +14,7 @@ import com.sep.vox.application.query.dto.SessionCostDto;
  * chung thì hình dạng báo cáo phải sống trong domain.repository, và mỗi màn thống kê mới lại thêm một
  * record nữa vào đó cho tới khi không còn phân biệt được cái nào là mô hình nghiệp vụ.
  *
- * <p>Xem TokenUsageTimeseriesQueryRepository / QuestionBankStatsQueryRepository cho cùng khuôn.
+ * <p>Xem SchoolAiCostQueryRepository / QuestionBankStatsQueryRepository cho cùng khuôn.
  */
 public interface SessionCostQueryRepository {
 

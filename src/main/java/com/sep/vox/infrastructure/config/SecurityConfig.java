@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -32,6 +33,7 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.util.StringUtils;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -57,14 +59,16 @@ public class SecurityConfig {
     private final CustomOidcUserService customOidcUserService;
     private final CorsProperties corsProperties;
     private final AdminConsoleProperties adminConsoleProperties;
+    private final String cookieDomain;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler, OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler, CustomOidcUserService customOidcUserService, CorsProperties corsProperties, AdminConsoleProperties adminConsoleProperties) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler, OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler, CustomOidcUserService customOidcUserService, CorsProperties corsProperties, AdminConsoleProperties adminConsoleProperties, @Value("${app.cookie.domain:}") String cookieDomain) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.oAuth2AuthenticationSuccessHandler = oAuth2AuthenticationSuccessHandler;
         this.oAuth2AuthenticationFailureHandler = oAuth2AuthenticationFailureHandler;
         this.customOidcUserService = customOidcUserService;
         this.corsProperties = corsProperties;
         this.adminConsoleProperties = adminConsoleProperties;
+        this.cookieDomain = cookieDomain;
     }
     
     private static final long HSTS_MAX_AGE_IN_SECONDS = 31536000;
@@ -269,6 +273,46 @@ public class SecurityConfig {
     }
 
     /**
+     * Cookie XSRF-TOKEN cho chain API, có khai Domain khi {@code app.cookie.domain} được đặt.
+     *
+     * <p>Không có Domain thì cookie là HOST-ONLY, tức chỉ thuộc về đúng host đã trả nó. Trên
+     * deployment backend là api.voxenta.net còn frontend là voxenta.net, nên
+     * {@code document.cookie} bên frontend KHÔNG đọc thấy cookie của api.voxenta.net -- axios
+     * không có gì để gắn vào header X-XSRF-TOKEN và /api/v1/auth/refresh trả 403 mãi mãi. Đã xảy
+     * ra thật 2026-09-01, xác nhận bằng response header:
+     * {@code Set-Cookie: XSRF-TOKEN=...; Path=/; Secure} -- không có Domain.
+     *
+     * <p>Đặt {@code app.cookie.domain=voxenta.net} thì cả voxenta.net, www.voxenta.net và
+     * api.voxenta.net cùng đọc được. Đánh đổi: MỌI subdomain của voxenta.net đọc được token này.
+     * Chấp nhận được vì token CSRF không phải bí mật đăng nhập -- nó tồn tại để chứng minh
+     * request do chính trang của mình phát ra, và trang của mình thì buộc phải đọc được nó.
+     *
+     * <p>KHÔNG có dấu chấm đầu. Kiểu ".voxenta.net" là cú pháp RFC 2109 cũ; RFC 6265 bỏ hẳn nó
+     * và quy định Domain=voxenta.net vốn đã phủ mọi subdomain. Tomcat theo đúng RFC 6265 và ném
+     * {@code IllegalArgumentException: An invalid domain [.voxenta.net] was specified for this
+     * cookie} -- không phải lúc khởi động mà ở TỪNG request, nên mọi endpoint trả 500. Vì thế
+     * chỗ này chặn ngay lúc dựng filter chain thay vì để app lên rồi hỏng toàn bộ.
+     *
+     * <p>Để TRỐNG khi chạy local: localhost:5173 và localhost:8081 cùng host "localhost" (cookie
+     * không phân biệt cổng) nên host-only đã đủ. Khai "localhost" ở đây lại hỏng, vì cookie có
+     * Domain thì không áp dụng cho host thuần trong một số trình duyệt.
+     */
+    private CookieCsrfTokenRepository apiCsrfTokenRepository() {
+        var repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        if (StringUtils.hasText(cookieDomain)) {
+            if (cookieDomain.startsWith(".")) {
+                throw new InfrastructureException(
+                    "app.cookie.domain = '" + cookieDomain + "' -- bỏ dấu chấm ở đầu. Tomcat theo "
+                        + "RFC 6265 từ chối domain dạng này và ném lỗi ở TỪNG request, khiến mọi "
+                        + "endpoint trả 500. Dùng '" + cookieDomain.substring(1)
+                        + "', nó đã phủ sẵn mọi subdomain.");
+            }
+            repository.setCookieCustomizer(cookie -> cookie.domain(cookieDomain));
+        }
+        return repository;
+    }
+
+    /**
      * Tài khoản dùng chung cho hai chain admin ở trên. Dựng mới mỗi lần gọi thay vì làm bean:
      * JwtAuthenticationFilter và JwtGrpcServerInterceptor cùng inject UserDetailsService THEO
      * KIỂU, nên thêm một InMemoryUserDetailsManager vào context là hai chỗ đó không phân giải
@@ -303,7 +347,7 @@ public class SecurityConfig {
 
         http
             .csrf(csrf -> csrf
-                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRepository(apiCsrfTokenRepository())
                 .csrfTokenRequestHandler(apiCsrfRequestHandler)
                 // ĐẢO NGƯỢC mặc định: mặc định là "chặn tất cả trừ danh sách bỏ qua", ở đây là
                 // "chỉ chặn đúng path này". requireCsrfProtectionMatcher thay THẲNG matcher mặc

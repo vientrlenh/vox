@@ -299,6 +299,16 @@ app:
   cookie:
     secure: ${COOKIE_SECURE:false} # Local dev use false
     same-site: ${COOKIE_SAME_SITE:Lax} # If using domain forward, make this as None
+    # Domain của cookie XSRF-TOKEN (SecurityConfig#apiCsrfTokenRepository).
+    #
+    # RỖNG khi chạy local: cookie host-only là đủ vì frontend (localhost:5173) và backend
+    # (localhost:8081) chung host "localhost" -- cookie không phân biệt cổng.
+    #
+    # Trên deployment PHẢI đặt ".voxenta.net": backend trả cookie từ api.voxenta.net, còn JS
+    # đọc nó lại chạy trên voxenta.net, mà cookie host-only thì document.cookie bên kia không
+    # thấy. Thiếu dòng này là axios không gắn được header X-XSRF-TOKEN và mọi lần gọi
+    # /api/v1/auth/refresh trả 403 -- người dùng bị đá ra đăng nhập lại mỗi khi access token hết hạn.
+    domain: ${COOKIE_DOMAIN:}
   data-initializer:
     enabled: ${DATA_INITIALIZER:true}
   practice:

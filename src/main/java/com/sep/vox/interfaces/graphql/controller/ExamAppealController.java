@@ -2,9 +2,12 @@ package com.sep.vox.interfaces.graphql.controller;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
+import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
@@ -23,7 +26,10 @@ import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.query.dto.AppealStatsInfo;
 import com.sep.vox.application.query.dto.AppealSummaryInfo;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.interfaces.shared.PageArguments;
+
+import graphql.schema.DataFetchingEnvironment;
 
 /**
  * Chỉ còn góc nhìn của school admin.
@@ -128,5 +134,21 @@ public class ExamAppealController {
      */
     private void validatePageSize(Integer page, Integer size) {
         PageArguments.validate(page, size);
+    }
+
+    /**
+     * Hồ sơ giám khảo cho picker phân công phúc khảo, nạp qua DataLoader {@code userById}.
+     *
+     * <p>Chỉ gắn vào {@code AppealReviewerLite} -- type này chỉ xuất hiện trong
+     * {@code appealReviewers}, truy vấn của school admin lúc chọn người chấm. KHÔNG gắn vào
+     * {@code AppealSummary}/{@code AppealDetail}: hai type đó dùng chung cho {@code myAppeals} của
+     * học sinh, mà giám khảo phải ẩn danh với học sinh (xem chú thích trong exam-appeal.graphqls).
+     * Một tấm ảnh lộ danh tính chắc chắn hơn cái tên.
+     */
+    @SchemaMapping(typeName = "AppealReviewerLite", field = "user")
+    public CompletableFuture<UserDto> appealReviewerUser(
+            AppealReviewerLiteInfo source, DataFetchingEnvironment env) {
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(source.id());
     }
 }

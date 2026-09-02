@@ -2,9 +2,12 @@ package com.sep.vox.interfaces.graphql.controller;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
+import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
@@ -35,7 +38,10 @@ import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
 import com.sep.vox.application.query.dto.GradingTaskInfo;
 import com.sep.vox.application.query.dto.ResultStatusHistoryInfo;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.interfaces.shared.PageArguments;
+
+import graphql.schema.DataFetchingEnvironment;
 
 @Controller("graphqlGradingController")
 public class GradingController {
@@ -205,5 +211,42 @@ public class GradingController {
      */
     private void validatePageSize(Integer page, Integer size) {
         PageArguments.validate(page, size);
+    }
+
+    /*
+     * Ba resolver dưới đây gắn hồ sơ người dùng vào các dòng THỐNG KÊ/PICKER của giáo viên, để FE
+     * hiện được ảnh đại diện. Đi qua DataLoader `userById` nên N dòng vẫn chỉ một truy vấn, và read
+     * model bên dưới không phải thêm join nào.
+     *
+     * CỐ Ý không có resolver tương ứng cho học sinh: read model chấm bài không mang studentId ở bất
+     * kỳ đâu (grep "studentId" trong exam-grading.graphqls ra 0), và đó chính là thứ giữ cho hàng
+     * đợi kỳ thi tập trung ẩn danh. Muốn hiện mặt học sinh thì phải thêm studentId vào read model --
+     * đúng thay đổi mà luật ẩn danh dựng ra để ngăn.
+     */
+
+    @SchemaMapping(typeName = "AssignableTeacher", field = "user")
+    public CompletableFuture<UserDto> assignableTeacherUser(
+            AssignableTeacherInfo source, DataFetchingEnvironment env) {
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(source.id());
+    }
+
+    @SchemaMapping(typeName = "GradingTeacherProgress", field = "teacher")
+    public CompletableFuture<UserDto> teacherProgressUser(
+            GradingStatsInfo.TeacherProgress source, DataFetchingEnvironment env) {
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(source.teacherId());
+    }
+
+    @SchemaMapping(typeName = "AiQualityByTeacher", field = "teacher")
+    public CompletableFuture<UserDto> aiQualityTeacherUser(
+            AiQualityReportInfo.ByTeacher source, DataFetchingEnvironment env) {
+        // teacherId nullable ở type này. DataLoader ném NPE khi nhận khoá null và làm hỏng CẢ query
+        // aiQualityReport chứ không riêng field này -- xem ExamScheduleController#room.
+        if (source.teacherId() == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(source.teacherId());
     }
 }

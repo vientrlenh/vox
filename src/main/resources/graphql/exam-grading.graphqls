@@ -49,6 +49,8 @@ type GradingTeacherProgress {
     assigned: Int!
     completed: Int!
     overdue: Int!
+    "Hồ sơ giáo viên, nạp qua DataLoader `userById`. Dùng cho ảnh đại diện."
+    teacher: User
 }
 
 "Số bài theo một trạng thái kết quả."
@@ -308,6 +310,11 @@ type AssignableTeacher {
     name: String
     "Số phân công đang mở đang giữ, gộp cả bốn vòng"
     load: Int!
+    """
+    Hồ sơ người dùng của chính giáo viên này, nạp qua DataLoader `userById` -- không thêm join vào
+    read model. Chỉ hỏi khi cần ảnh đại diện; `name` ở trên vẫn đủ cho mọi thứ khác.
+    """
+    user: User
 }
 
 """
@@ -365,6 +372,8 @@ type AiQualityByTeacher {
     regraded: Int!
     "Lệch tuyệt đối trung bình trên các bài người này đã sửa điểm"
     averageDelta: Float
+    "Hồ sơ giáo viên, nạp qua DataLoader `userById`. null khi teacherId null."
+    teacher: User
 }
 
 """

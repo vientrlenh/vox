@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -66,6 +67,20 @@ class GradingSchemaBindingTests {
         );
     }
 
+    /**
+     * Field lấy dữ liệu qua {@code @SchemaMapping} + DataLoader chứ không phải property của DTO,
+     * nên cố tình KHÔNG có record component cùng tên -- xem GradingController.
+     *
+     * <p>Liệt kê tường minh thay vì nới lỏng phép kiểm: mọi field còn lại vẫn phải khớp tên, vì
+     * lệch tên là trả {@code null} âm thầm, đúng thứ test này sinh ra để bắt. Thêm resolver mới thì
+     * thêm một dòng ở đây, và việc phải sửa test là chủ ý -- nó buộc người thêm phải nhìn lại.
+     */
+    private static final Set<String> RESOLVER_BACKED_FIELDS = Set.of(
+        "AssignableTeacher.user",
+        "GradingTeacherProgress.teacher",
+        "AiQualityByTeacher.teacher"
+    );
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("typesBackedByDto")
     void should_back_every_schema_field_with_a_dto_component(String typeName, Class<?> dto) {
@@ -73,7 +88,11 @@ class GradingSchemaBindingTests {
             .map(component -> component.getName())
             .toList();
 
-        assertThat(fieldsOf(typeName))
+        var propertyBoundFields = fieldsOf(typeName).stream()
+            .filter(field -> !RESOLVER_BACKED_FIELDS.contains(typeName + "." + field))
+            .toList();
+
+        assertThat(propertyBoundFields)
             .describedAs("field của %s phải có component cùng tên trên %s", typeName, dto.getSimpleName())
             .isNotEmpty()
             .allSatisfy(field -> assertThat(componentNames).contains(field));

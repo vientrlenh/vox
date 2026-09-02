@@ -140,6 +140,14 @@ type AppealReviewerLite {
     load: Int!
     "Đã từng ghi điểm tay cho chính bài này"
     conflicted: Boolean!
+    """
+    Hồ sơ giám khảo, nạp qua DataLoader `userById`. Dùng cho ảnh đại diện trong picker phân công.
+
+    An toàn với luật ẩn danh vì type này CHỈ xuất hiện trong `appealReviewers` -- truy vấn của
+    school admin lúc chọn người chấm. Nó KHÔNG nằm trong AppealSummaryPage/AppealDetail, tức là
+    không với tới được từ `myAppeals` của học sinh. Đừng thêm field kiểu này vào hai type kia.
+    """
+    user: User
 }
 
 extend type Query {

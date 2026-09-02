@@ -18,6 +18,14 @@ import com.sep.vox.domain.repository.ExamRepository;
  * <p>Bắt buộc phải có bước này vì chốt sổ là thao tác một chiều trên cả kỳ thi: admin
  * cần thấy còn bao nhiêu bài chưa ai chấm và bao nhiêu đơn phúc khảo đang dở trước khi
  * quyết định công bố theo điểm AI.
+ *
+ * <p>Rộng hơn người được chốt sổ MỘT bậc, và đó là chủ ý: quyền đọc ở đây là
+ * {@code authorizeSchoolAdminOrExamChair} (chủ tịch của kỳ thi, mọi loại) trong khi
+ * {@link BulkFinalizeExamResultsUseCase} vẫn chỉ nhận school admin hoặc chủ tịch bài trên
+ * lớp. Chủ tịch kỳ thi tập trung bấm được nút công bố kết quả nhưng không chốt sổ được,
+ * nên nếu không đọc được đúng bảng này thì lần bấm nào hỏng họ cũng chỉ nhận một con số
+ * "còn N kết quả chưa RELEASED" mà không có đường nào tra ra N bài đó là bài nào. Con số
+ * ở đây trả lời đúng câu đó — và vẫn đóng phạm vi trong một kỳ thi.
  */
 @Service
 public class PreviewBulkFinalizeUseCase implements IUseCase<UUID, BulkFinalizePreviewInfo> {
@@ -41,10 +49,7 @@ public class PreviewBulkFinalizeUseCase implements IUseCase<UUID, BulkFinalizePr
         var currentUserId = examGradingAccessService.requireActiveUserId();
         var exam = examRepository.findById(examId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
-        // Bài kiểm tra trên lớp: nhà trường không chấm, nên nếu chỉ school admin chốt
-        // sổ được thì giáo viên kẹt cứng — công bố kết quả đòi MỌI bài phải RELEASED
-        // hoặc INVALID (UpdateExamStatusUseCase.requirePublishReadiness).
-        examGradingAccessService.authorizeSchoolAdminOrClassTestChair(
+        examGradingAccessService.authorizeSchoolAdminOrExamChair(
             exam.getSchoolId(), exam.getId(), currentUserId);
         return examGradingQueryRepository.previewBulkFinalize(exam.getSchoolId(), examId);
     }

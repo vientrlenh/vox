@@ -155,11 +155,15 @@ extend type Query {
     appeals(status: AppealStatus, keyword: String, page: Int = 1, size: Int = 20): AppealSummaryPage!
 
     """
-    Đơn phúc khảo của MỘT bài kiểm tra trên lớp, cho chính giáo viên tạo bài. Tách khỏi
-    `appeals` vì màn đó quét toàn trường -- nới nó ra là mở dữ liệu phúc khảo của cả
-    trường cho một giáo viên.
+    Đơn phúc khảo của MỘT kỳ thi, cho chủ tịch kỳ thi đó. Tách khỏi `appeals` vì màn đó
+    quét toàn trường -- nới nó ra là mở dữ liệu phúc khảo của cả trường cho một giáo viên.
+
+    Nhận mọi loại kỳ thi (trước đây tên là `classTestAppeals` và chỉ nhận bài trên lớp):
+    chủ tịch kỳ thi tập trung là người bấm nút công bố kết quả, mà đơn phúc khảo còn mở là
+    một trong hai thứ chặn nút đó. Chỉ trả DANH SÁCH -- quyền duyệt/từ chối đơn và quyền
+    mở chi tiết đơn vẫn thuộc nhà trường.
     """
-    classTestAppeals(
+    examAppeals(
         examId: ID!,
         status: AppealStatus,
         keyword: String,

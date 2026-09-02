@@ -11,13 +11,13 @@ import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
-import com.sep.vox.application.port.input.query.SearchClassTestAppealsQuery;
+import com.sep.vox.application.port.input.query.SearchAppealsByExamQuery;
 import com.sep.vox.application.port.input.query.SearchExamAppealsQuery;
 import com.sep.vox.application.port.input.query.ViewAssignableReviewersQuery;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewAssignableReviewersUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealDetailUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealStatsUseCase;
-import com.sep.vox.application.port.input.usecase.examappeal.ViewClassTestAppealsUseCase;
+import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealsByExamUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealsUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealDetailUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealsUseCase;
@@ -47,7 +47,7 @@ public class ExamAppealController {
     private final ViewAssignableReviewersUseCase viewAssignableReviewersUseCase;
     private final ViewMyAppealsUseCase viewMyAppealsUseCase;
     private final ViewMyAppealDetailUseCase viewMyAppealDetailUseCase;
-    private final ViewClassTestAppealsUseCase viewClassTestAppealsUseCase;
+    private final ViewExamAppealsByExamUseCase viewExamAppealsByExamUseCase;
 
     public ExamAppealController(
             ViewExamAppealsUseCase viewExamAppealsUseCase,
@@ -56,14 +56,14 @@ public class ExamAppealController {
             ViewAssignableReviewersUseCase viewAssignableReviewersUseCase,
             ViewMyAppealsUseCase viewMyAppealsUseCase,
             ViewMyAppealDetailUseCase viewMyAppealDetailUseCase,
-            ViewClassTestAppealsUseCase viewClassTestAppealsUseCase) {
+            ViewExamAppealsByExamUseCase viewExamAppealsByExamUseCase) {
         this.viewExamAppealsUseCase = viewExamAppealsUseCase;
         this.viewExamAppealStatsUseCase = viewExamAppealStatsUseCase;
         this.viewExamAppealDetailUseCase = viewExamAppealDetailUseCase;
         this.viewAssignableReviewersUseCase = viewAssignableReviewersUseCase;
         this.viewMyAppealsUseCase = viewMyAppealsUseCase;
         this.viewMyAppealDetailUseCase = viewMyAppealDetailUseCase;
-        this.viewClassTestAppealsUseCase = viewClassTestAppealsUseCase;
+        this.viewExamAppealsByExamUseCase = viewExamAppealsByExamUseCase;
     }
 
     @QueryMapping(name = "appeals")
@@ -78,16 +78,16 @@ public class ExamAppealController {
             status, keyword, page, size));
     }
 
-    @QueryMapping(name = "classTestAppeals")
-    @PreAuthorize("hasRole('TEACHER')")
-    public PageResult<AppealSummaryInfo> classTestAppeals(
+    @QueryMapping(name = "examAppeals")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    public PageResult<AppealSummaryInfo> examAppeals(
             @Argument(name = "examId") UUID examId,
             @Argument(name = "status") String status,
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         validatePageSize(page, size);
-        return viewClassTestAppealsUseCase.execute(new SearchClassTestAppealsQuery(
+        return viewExamAppealsByExamUseCase.execute(new SearchAppealsByExamQuery(
             examId, status, keyword, page, size));
     }
 

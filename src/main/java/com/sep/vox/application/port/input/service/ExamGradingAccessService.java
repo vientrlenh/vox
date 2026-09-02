@@ -202,6 +202,38 @@ public class ExamGradingAccessService {
     }
 
     /**
+     * CHAIR của kỳ thi này, KHÔNG phân biệt loại kỳ thi — chốt quyền cho các lối ĐỌC
+     * đóng phạm vi trong đúng một kỳ thi.
+     *
+     * <p>Khác {@link #isClassTestChair} ở đúng một điểm: không có cửa {@code CLASS_TEST}.
+     * Cửa đó bảo vệ quyền GHI của luồng chấm — ai được chấm bài nào, bài chuyển sang
+     * trạng thái nào — và lý do nó chặn chủ tịch kỳ thi tập trung là vì bài tập trung do
+     * nhà trường điều phối. Lý do ấy không áp cho việc đọc: chủ tịch bấm được nút công bố
+     * kết quả ({@code UpdateExamStatusUseCase.authorizeMutation}) trong khi
+     * {@code requirePublishReadiness} đòi mọi bài đã RELEASED hoặc INVALID, nên không cho
+     * họ nhìn thứ đang chặn nút đó là bắt họ bấm mù rồi không có đường nào tự gỡ.
+     *
+     * <p>⚠️ CHỈ dùng cho use case ĐỌC. Mọi thao tác điều phối chấm (gán / đổi / gỡ phân
+     * công, chốt sổ) vẫn phải đi qua {@link #isClassTestChair}: hàng đợi giáo viên là tài
+     * nguyên chung của cả trường và cân theo tải toàn trường, nên một chủ tịch không được
+     * tự tiêu nó cho kỳ thi của mình.
+     */
+    public boolean isExamChair(UUID examId, UUID currentUserId) {
+        if (examId == null || currentUserId == null) {
+            return false;
+        }
+        return examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.CHAIR);
+    }
+
+    /** School admin cùng trường, HOẶC chủ tịch của chính kỳ thi đó. Chỉ cho lối ĐỌC — xem {@link #isExamChair}. */
+    public void authorizeSchoolAdminOrExamChair(UUID schoolId, UUID examId, UUID currentUserId) {
+        if (isSchoolAdminOfSchool(schoolId, currentUserId) || isExamChair(examId, currentUserId)) {
+            return;
+        }
+        throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem dữ liệu chấm của kỳ thi này.");
+    }
+
+    /**
      * Bài thuộc một kỳ thi {@code CLASS_TEST}? Dùng để CHẶN school admin điều phối —
      * bài trên lớp do giáo viên tạo bài tự chấm, hai mô hình sở hữu chồng lên nhau là
      * hai bên tranh cùng một {@code active_result_id}.

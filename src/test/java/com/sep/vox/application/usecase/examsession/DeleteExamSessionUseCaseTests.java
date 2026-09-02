@@ -25,6 +25,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSession;
@@ -33,6 +34,7 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -48,6 +50,7 @@ public class DeleteExamSessionUseCaseTests {
     private ExamRepository examRepository;
     private ExamMemberRepository examMemberRepository;
     private ExamCandidateResultRepository examCandidateResultRepository;
+    private ExamResultAppealRepository examResultAppealRepository;
     private UserContextPort userContextPort;
     private SchoolUserRepository schoolUserRepository;
     private UserRoleQueryRepository userRoleQueryRepository;
@@ -67,6 +70,7 @@ public class DeleteExamSessionUseCaseTests {
         examRepository = mock(ExamRepository.class);
         examMemberRepository = mock(ExamMemberRepository.class);
         examCandidateResultRepository = mock(ExamCandidateResultRepository.class);
+        examResultAppealRepository = mock(ExamResultAppealRepository.class);
         userContextPort = mock(UserContextPort.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
@@ -78,7 +82,8 @@ public class DeleteExamSessionUseCaseTests {
             schoolUserRepository,
             userRoleQueryRepository,
             userContextPort,
-            examCandidateResultRepository
+            examCandidateResultRepository,
+            examResultAppealRepository
         );
 
         var session = new ExamSession();
@@ -196,15 +201,21 @@ public class DeleteExamSessionUseCaseTests {
         assertThatThrownBy(() -> delete("Chấm lỗi")).isInstanceOf(ForbiddenException.class);
     }
 
-    /** Chủ tịch chỉ xoá được bài trên lớp; kỳ thi tập trung vẫn chỉ quản trị trường mới đụng được. */
+    /**
+     * Chủ tịch xoá được phiên hỏng của kỳ thi mình phụ trách, kể cả kỳ thi TẬP TRUNG. Vạch cũ chặn
+     * ở đây tự mâu thuẫn: cùng người đó vốn đã xoá được cả thí sinh khỏi kỳ thi tập trung
+     * (DeleteExamCandidateUseCase), tức gỡ được cả con người, mà lại không gỡ nổi một lượt thi hỏng.
+     */
     @Test
-    void should_refuse_a_chair_on_a_centralized_exam() {
+    void should_allow_a_chair_on_a_centralized_exam() {
         givenTeacherCaller();
         exam.setKind(ExamKind.CENTRALIZED);
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, teacherId, ExamMemberRole.CHAIR))
             .thenReturn(true);
 
-        assertThatThrownBy(() -> delete("Chấm lỗi")).isInstanceOf(ForbiddenException.class);
+        delete("Vào phòng thi lỗi");
+
+        verify(examSessionRepository).softDelete(eq(sessionId), any(Instant.class), any());
     }
 
     @Test
@@ -213,6 +224,36 @@ public class DeleteExamSessionUseCaseTests {
         exam.setKind(ExamKind.CLASS_TEST);
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, teacherId, ExamMemberRole.CHAIR))
             .thenReturn(true);
+
+        delete("Chấm lỗi");
+
+        verify(examSessionRepository).softDelete(eq(sessionId), any(Instant.class), any());
+    }
+
+    /**
+     * Đơn phúc khảo đang mở là tranh chấp điểm học sinh đã chính thức nêu — xoá bài lúc này để đơn
+     * treo trỏ vào một dòng đã ẩn.
+     */
+    @Test
+    void should_refuse_when_the_result_has_an_open_appeal() {
+        var result = new ExamCandidateResult();
+        result.setId(UUID.randomUUID());
+        when(examCandidateResultRepository.findBySessionId(sessionId)).thenReturn(Optional.of(result));
+        when(examResultAppealRepository.existsOpenByCandidateResultId(result.getId())).thenReturn(true);
+
+        assertThatThrownBy(() -> delete("Chấm lỗi"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("phúc khảo");
+
+        verify(examSessionRepository, never()).softDelete(any(), any(), any());
+    }
+
+    @Test
+    void should_allow_when_the_result_has_no_open_appeal() {
+        var result = new ExamCandidateResult();
+        result.setId(UUID.randomUUID());
+        when(examCandidateResultRepository.findBySessionId(sessionId)).thenReturn(Optional.of(result));
+        when(examResultAppealRepository.existsOpenByCandidateResultId(result.getId())).thenReturn(false);
 
         delete("Chấm lỗi");
 

@@ -17,7 +17,7 @@ import com.sep.vox.application.port.input.query.ViewAssignableReviewersQuery;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewAssignableReviewersUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealDetailUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealStatsUseCase;
-import com.sep.vox.application.port.input.usecase.examappeal.ViewClassTestAppealsUseCase;
+import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealsByExamUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealsUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealDetailUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealsUseCase;
@@ -50,7 +50,7 @@ public class ExamAppealControllerTests {
             viewAssignableReviewersUseCase,
             viewMyAppealsUseCase,
             viewMyAppealDetailUseCase,
-            mock(ViewClassTestAppealsUseCase.class)
+            mock(ViewExamAppealsByExamUseCase.class)
         );
     }
 

@@ -12,11 +12,11 @@ import com.sep.vox.application.port.input.command.DeleteExamSessionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
-import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -40,9 +40,18 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * <p>Dữ liệu bài làm được giữ NGUYÊN, chỉ ẩn khỏi các luồng đọc. Quản trị trường và chủ tịch hội
  * đồng vẫn thấy được phiên đã xoá (có nhãn "Đã xoá" kèm lý do) — xem {@code ExamSessionJpaEntity}.
  *
- * <p>Phân quyền: SCHOOL_ADMIN xoá được mọi phiên thuộc trường mình (mọi loại kỳ thi). Giáo viên chỉ
- * xoá được phiên của kỳ thi mình làm chủ tịch VÀ chỉ khi đó là CLASS_TEST — kỳ thi tập trung vẫn
- * chỉ quản trị trường mới đụng được, khớp với {@code UpdateExamUseCase.authorizeMutation}.
+ * <p>Phân quyền: SCHOOL_ADMIN xoá được mọi phiên thuộc trường mình; chủ tịch xoá được phiên của kỳ
+ * thi mình làm chủ tịch, KHÔNG phân biệt loại kỳ thi — khớp với
+ * {@code UpdateExamUseCase.authorizeMutation}, nơi chủ tịch kỳ thi tập trung sửa được kỳ thi như
+ * quản trị trường.
+ *
+ * <p>Trước đây nhánh chủ tịch còn đòi thêm {@code CLASS_TEST} và viện dẫn chính
+ * {@code UpdateExamUseCase} làm căn cứ — nhưng chỗ đó CHO PHÉP chủ tịch kỳ thi tập trung, nên căn
+ * cứ ấy nói ngược lại điều kiện nó biện hộ. Vạch cũ còn tự mâu thuẫn theo mức độ phá huỷ: chủ tịch
+ * kỳ thi tập trung vốn đã xoá được cả THÍ SINH ({@code DeleteExamCandidateUseCase},
+ * {@code BulkDeleteExamCandidatesUseCase} đều không chặn theo loại kỳ thi), tức là gỡ được cả con
+ * người, mà lại không gỡ nổi một lượt thi hỏng của chính người đó. Thao tác này an toàn hơn hẳn:
+ * xoá mềm, bắt nhập lý do, và đóng lại khi kỳ thi đã chốt.
  */
 @Service
 public class DeleteExamSessionUseCase implements IUseCase<DeleteExamSessionCommand, Void> {
@@ -54,6 +63,7 @@ public class DeleteExamSessionUseCase implements IUseCase<DeleteExamSessionComma
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
     private final ExamCandidateResultRepository examCandidateResultRepository;
+    private final ExamResultAppealRepository examResultAppealRepository;
 
     public DeleteExamSessionUseCase(
             ExamSessionRepository examSessionRepository,
@@ -62,7 +72,8 @@ public class DeleteExamSessionUseCase implements IUseCase<DeleteExamSessionComma
             SchoolUserRepository schoolUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort,
-            ExamCandidateResultRepository examCandidateResultRepository) {
+            ExamCandidateResultRepository examCandidateResultRepository,
+            ExamResultAppealRepository examResultAppealRepository) {
         this.examSessionRepository = examSessionRepository;
         this.examRepository = examRepository;
         this.examMemberRepository = examMemberRepository;
@@ -70,6 +81,7 @@ public class DeleteExamSessionUseCase implements IUseCase<DeleteExamSessionComma
         this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
         this.examCandidateResultRepository = examCandidateResultRepository;
+        this.examResultAppealRepository = examResultAppealRepository;
     }
 
     @Override
@@ -81,10 +93,23 @@ public class DeleteExamSessionUseCase implements IUseCase<DeleteExamSessionComma
         var exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra của phiên thi này"));
 
-        authorizeDelete(exam.getId(), exam.getSchoolId(), exam.getKind());
+        authorizeDelete(exam.getId(), exam.getSchoolId());
         // Kỳ thi đã chốt sổ thì điểm đã (hoặc sắp) đến tay học sinh — xem Exam#isResultsFinalized.
         if (exam.isResultsFinalized()) {
             throw new IllegalStateException("Không thể xóa bài thi khi kỳ thi đã đóng hoặc đã công bố kết quả");
+        }
+        // Đơn phúc khảo đang mở là tranh chấp điểm mà học sinh đã chính thức nêu: xoá mềm kết quả
+        // sẽ rút mất chính bài đang bị khiếu nại và để đơn treo trỏ vào một dòng đã ẩn.
+        //
+        // Chốt kỳ thi ở trên hiện đã chặn gần hết đường tới đây (đơn chỉ sinh ra sau khi điểm được
+        // trả), nhưng nó canh vòng đời của KỲ THI còn đơn thì bám vào TỪNG bài — hai vòng đời khác
+        // nhau, đừng để cái này ngầm suy ra cái kia. Nhánh chủ tịch vừa mở rộng làm số người bấm
+        // được nút này đông hơn, nên chốt tường minh rẻ hơn là đi chứng minh nó bất khả thi.
+        var candidateResult = examCandidateResultRepository.findBySessionId(sessionId).orElse(null);
+        if (candidateResult != null
+                && examResultAppealRepository.existsOpenByCandidateResultId(candidateResult.getId())) {
+            throw new IllegalStateException(
+                "Bài thi này đang có đơn phúc khảo chưa xử lý xong. Hãy xử lý hoặc từ chối đơn trước khi xoá.");
         }
 
         var reason = input.reason() == null ? "" : input.reason().strip();
@@ -103,7 +128,7 @@ public class DeleteExamSessionUseCase implements IUseCase<DeleteExamSessionComma
         return null;
     }
 
-    private void authorizeDelete(UUID examId, UUID examSchoolId, ExamKind kind) {
+    private void authorizeDelete(UUID examId, UUID examSchoolId) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
@@ -114,8 +139,7 @@ public class DeleteExamSessionUseCase implements IUseCase<DeleteExamSessionComma
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(examSchoolId)) {
             return;
         }
-        if (kind == ExamKind.CLASS_TEST
-                && examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.CHAIR)) {
+        if (examMemberRepository.existsByExamIdAndUserIdAndRole(examId, currentUserId, ExamMemberRole.CHAIR)) {
             return;
         }
         throw new ForbiddenException("Quyền truy cập bị từ chối");

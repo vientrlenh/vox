@@ -37,6 +37,7 @@ class ExamGradingAccessClassTestTests {
 
     private static final UUID CLASS_TEST_ID = UUID.randomUUID();
     private static final UUID CENTRALIZED_ID = UUID.randomUUID();
+    private static final UUID SCHOOL_ID = UUID.randomUUID();
     private static final UUID CHAIR_ID = UUID.randomUUID();
     private static final UUID CLASS_TEST_RESULT_ID = UUID.randomUUID();
     private static final UUID CENTRALIZED_RESULT_ID = UUID.randomUUID();
@@ -90,6 +91,31 @@ class ExamGradingAccessClassTestTests {
     @Test
     void should_not_treat_centralized_chair_as_class_test_chair() {
         assertThat(service.isClassTestChair(CENTRALIZED_ID, CHAIR_ID)).isFalse();
+    }
+
+    /**
+     * Cặp đối chứng của luật trên, và là chỗ dễ trộn lẫn nhất trong service này: CÙNG một người,
+     * CÙNG một kỳ thi tập trung — cửa GHI của luồng chấm đóng, cửa ĐỌC mở. Hai hàm phải trả ngược
+     * nhau ở đây, nếu có ngày chúng trả giống nhau thì một trong hai luật đã bị xoá nhầm.
+     */
+    @Test
+    void should_treat_centralized_chair_as_exam_chair_for_reads() {
+        assertThat(service.isExamChair(CENTRALIZED_ID, CHAIR_ID)).isTrue();
+        assertThat(service.isClassTestChair(CENTRALIZED_ID, CHAIR_ID)).isFalse();
+
+        service.authorizeSchoolAdminOrExamChair(SCHOOL_ID, CENTRALIZED_ID, CHAIR_ID);
+        assertThatThrownBy(() -> service.authorizeSchoolAdminOrClassTestChair(
+                SCHOOL_ID, CENTRALIZED_ID, CHAIR_ID))
+            .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void should_not_treat_a_non_member_as_exam_chair() {
+        assertThat(service.isExamChair(CENTRALIZED_ID, UUID.randomUUID())).isFalse();
+        assertThat(service.isExamChair(null, CHAIR_ID)).isFalse();
+        assertThatThrownBy(() -> service.authorizeSchoolAdminOrExamChair(
+                SCHOOL_ID, CENTRALIZED_ID, UUID.randomUUID()))
+            .isInstanceOf(ForbiddenException.class);
     }
 
     @Test

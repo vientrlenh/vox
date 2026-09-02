@@ -38,6 +38,10 @@ class CreateSchoolUseCaseTests {
     private UserContextPort userContextPort;
     private CreateSchoolUseCase useCase;
 
+    private static final String ALLOWED_AVATAR_HOSTS = "firebasestorage.googleapis.com";
+    private static final String VALID_AVATAR_URL =
+        "https://firebasestorage.googleapis.com/v0/b/vox.appspot.com/o/avatars%2Fa%2Fb.png?alt=media";
+
     private final UUID currentUserId = UUID.randomUUID();
     private final UUID directoryId = UUID.randomUUID();
     private final UUID createdSchoolId = UUID.randomUUID();
@@ -50,14 +54,15 @@ class CreateSchoolUseCaseTests {
         useCase = new CreateSchoolUseCase(
             schoolDirectoryRepository,
             provisionSchoolService,
-            userContextPort
+            userContextPort,
+            ALLOWED_AVATAR_HOSTS
         );
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(provisionSchoolService.provision(any())).thenReturn(createdSchoolId);
     }
 
     @Test
-    void thongTinTruongLayTronTuDanhMucKhiCoDirectoryId() {
+    void should_take_all_school_info_from_directory_when_directory_id_given() {
         givenDirectory(SchoolDirectory.createByAdmin(
             "THPT-A", "Trường THPT A", "01", "Hà Nội", "Ba Đình",
             "thpta.edu.vn", "12 Phố A", Instant.now(), currentUserId));
@@ -73,7 +78,7 @@ class CreateSchoolUseCaseTests {
     }
 
     @Test
-    void danhMucChuaXacMinhVanTaoDuocVaDuocDanhDauVerified() {
+    void should_create_from_unverified_directory_and_mark_it_verified() {
         var unverified = SchoolDirectory.createByUserSubmitted(
             "THPT-B", "Trường THPT B", "02", "Huế", "Phú Vang",
             "thptb.edu.vn", "34 Phố B", Instant.now(), currentUserId);
@@ -87,7 +92,7 @@ class CreateSchoolUseCaseTests {
     }
 
     @Test
-    void danhMucDaXacMinhThiKhongGhiLai() {
+    void should_not_save_directory_when_already_verified() {
         givenDirectory(SchoolDirectory.createByAdmin(
             "THPT-C", "Trường THPT C", "03", "Đà Nẵng", "Hải Châu",
             "thptc.edu.vn", "56 Phố C", Instant.now(), currentUserId));
@@ -98,7 +103,7 @@ class CreateSchoolUseCaseTests {
     }
 
     @Test
-    void dungThongTinTuKhaiDaChuanHoaKhiKhongCoDirectoryId() {
+    void should_use_normalized_self_declared_info_when_no_directory_id() {
         useCase.execute(commandWith(null, "  thpt-d  ", "  Trường   THPT D ", " 78 Phố D ", " THPTD.EDU.VN "));
 
         verify(schoolDirectoryRepository, never()).findById(any());
@@ -110,7 +115,7 @@ class CreateSchoolUseCaseTests {
     }
 
     @Test
-    void traVeIdTruongVuaTao() {
+    void should_return_created_school_id() {
         givenDirectory(SchoolDirectory.createByAdmin(
             "THPT-E", "Trường THPT E", "04", "Cần Thơ", "Ninh Kiều",
             null, "90 Phố E", Instant.now(), currentUserId));
@@ -120,7 +125,7 @@ class CreateSchoolUseCaseTests {
     }
 
     @Test
-    void thieuCaDanhMucLanThongTinTuKhaiThiBaoLoi() {
+    void should_throw_when_neither_directory_nor_self_declared_info_given() {
         assertThatThrownBy(() -> useCase.execute(commandWith(null, null, "Trường THPT F", "12 Phố F", null)))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("danh mục trường");
@@ -129,13 +134,42 @@ class CreateSchoolUseCaseTests {
     }
 
     @Test
-    void khongTimThayDanhMucThiBaoLoi() {
+    void should_throw_when_directory_not_found() {
         when(schoolDirectoryRepository.findById(directoryId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(commandWith(directoryId, null, null, null, null)))
             .isInstanceOf(NotFoundException.class);
 
         verify(provisionSchoolService, never()).provision(any());
+    }
+
+    @Test
+    void should_pass_valid_avatar_url_through_to_provisioning() {
+        var command = commandWith(null, "THPT-A", "THPT A", "1 Phố A", "thpta.edu.vn", VALID_AVATAR_URL);
+
+        useCase.execute(command);
+
+        assertThat(captureProvisioned().avatarUrl()).isEqualTo(VALID_AVATAR_URL);
+    }
+
+    /** Ô này trước đây nhận URL bất kỳ -- chính là lỗ mà AvatarUrlPolicy sinh ra để bịt. */
+    @Test
+    void should_reject_avatar_url_from_foreign_host() {
+        var command = commandWith(null, "THPT-A", "THPT A", "1 Phố A", "thpta.edu.vn",
+            "https://evil.example/pixel.gif");
+
+        assertThatThrownBy(() -> useCase.execute(command))
+            .isInstanceOf(IllegalArgumentException.class);
+        verify(provisionSchoolService, never()).provision(any());
+    }
+
+    @Test
+    void should_create_school_when_avatar_url_is_blank() {
+        var command = commandWith(null, "THPT-A", "THPT A", "1 Phố A", "thpta.edu.vn", "   ");
+
+        useCase.execute(command);
+
+        assertThat(captureProvisioned().avatarUrl()).isNull();
     }
 
     private void givenDirectory(SchoolDirectory directory) {
@@ -150,6 +184,12 @@ class CreateSchoolUseCaseTests {
 
     private CreateSchoolCommand commandWith(
             UUID schoolDirectoryId, String code, String name, String address, String domain) {
+        return commandWith(schoolDirectoryId, code, name, address, domain, null);
+    }
+
+    private CreateSchoolCommand commandWith(
+            UUID schoolDirectoryId, String code, String name, String address, String domain,
+            String adminAvatarUrl) {
         return new CreateSchoolCommand(
             schoolDirectoryId,
             code,
@@ -162,7 +202,7 @@ class CreateSchoolUseCaseTests {
             "  Nguyễn  Văn A ",
             LocalDate.of(1985, 6, 15),
             "  1 Phố Quản Trị ",
-            null
+            adminAvatarUrl
         );
     }
 }

@@ -265,6 +265,18 @@ practice:
     secret: ${PRACTICE_INTERNAL_SECRET:}
 
 app:
+  avatar:
+    # Host được phép xuất hiện trong users.avatar_url, ngăn cách bởi dấu phẩy.
+    #
+    # Ảnh đại diện do CLIENT tự tải lên kho của nó (hiện là Firebase Storage) rồi gửi về đây đúng
+    # một chuỗi URL -- backend không nhận file, nên chuỗi này là thứ duy nhất kiểm được. Bỏ trống
+    # thì chỉ còn ràng buộc "phải là URL https", nghĩa là người dùng trỏ được ảnh sang máy chủ bất
+    # kỳ, và mọi giáo viên mở danh sách chấm sẽ tự gọi sang đó (lộ IP, lộ thời điểm xem, và chủ
+    # host đổi được nội dung ảnh sau lưng).
+    #
+    # Để trống là chấp nhận đánh đổi đó -- tiện lúc dev, KHÔNG nên giữ ở môi trường thật. Với
+    # Firebase Storage, host cần điền là firebasestorage.googleapis.com.
+    allowed-hosts: ${AVATAR_ALLOWED_HOSTS:}
   admin:
     # Tài khoản HTTP Basic cho /admin/** (trang Spring Boot Admin + endpoint đăng ký).
     # KHÔNG đặt giá trị mặc định: sau cửa này là actuator của mọi instance đã đăng ký, kèm

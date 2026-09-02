@@ -3,9 +3,11 @@ package com.sep.vox.application.port.input.usecase.school;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.AvatarUrlPolicy;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateSchoolCommand;
@@ -32,14 +34,17 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
     private final SchoolDirectoryRepository schoolDirectoryRepository;
     private final ProvisionSchoolService provisionSchoolService;
     private final UserContextPort userContextPort;
+    private final String allowedAvatarHosts;
 
     public CreateSchoolUseCase(
             SchoolDirectoryRepository schoolDirectoryRepository,
             ProvisionSchoolService provisionSchoolService,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            @Value("${app.avatar.allowed-hosts:}") String allowedAvatarHosts) {
         this.schoolDirectoryRepository = schoolDirectoryRepository;
         this.provisionSchoolService = provisionSchoolService;
         this.userContextPort = userContextPort;
+        this.allowedAvatarHosts = allowedAvatarHosts;
     }
 
     @Override
@@ -83,7 +88,12 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
             StringNormalization.trimAndCollapseSpaces(input.adminFullName()),
             input.adminDateOfBirth(),
             StringNormalization.trimAndCollapseSpaces(input.adminAddress()),
-            StringNormalization.trimAndCollapseSpaces(input.adminAvatarUrl())
+            // KHÔNG dùng trimAndCollapseSpaces như các trường chữ khác: "gộp khoảng trắng" là thao
+            // tác vô nghĩa với URL, và quan trọng hơn là nó không kiểm gì cả -- trước đây ô này
+            // nhận URL bất kỳ, tức là mọi giáo viên mở danh sách chấm sẽ tự gọi sang host lạ đó.
+            // Xem AvatarUrlPolicy. Đây là đường DUY NHẤT có avatar do người dùng nhập trong nhóm
+            // gọi ProvisionSchoolService; hai đường còn lại (duyệt đơn, xác thực OTP) truyền null.
+            AvatarUrlPolicy.normalizeOrThrow(allowedAvatarHosts, input.adminAvatarUrl())
         );
     }
 

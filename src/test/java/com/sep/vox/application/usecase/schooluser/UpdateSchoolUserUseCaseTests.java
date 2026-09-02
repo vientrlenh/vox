@@ -36,6 +36,10 @@ import com.sep.vox.domain.valueobject.Phone;
 
 public class UpdateSchoolUserUseCaseTests {
 
+    private static final String ALLOWED_AVATAR_HOSTS = "firebasestorage.googleapis.com";
+    private static final String VALID_AVATAR_URL =
+        "https://firebasestorage.googleapis.com/v0/b/vox.appspot.com/o/avatars%2Fa%2Fb.png?alt=media";
+
     private UserContextPort userContextPort;
     private UserRepository userRepository;
     private SchoolUserRepository schoolUserRepository;
@@ -50,7 +54,8 @@ public class UpdateSchoolUserUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         userRepository = mock(UserRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
-        updateSchoolUserUseCase = new UpdateSchoolUserUseCase(userContextPort, userRepository, schoolUserRepository);
+        updateSchoolUserUseCase = new UpdateSchoolUserUseCase(
+            userContextPort, userRepository, schoolUserRepository, ALLOWED_AVATAR_HOSTS);
     }
 
     @Test
@@ -211,13 +216,86 @@ public class UpdateSchoolUserUseCaseTests {
             String phone, boolean phoneProvided,
             String address, boolean addressProvided,
             LocalDate dateOfBirth, boolean dateOfBirthProvided) {
+        return command(
+            fullName, fullNameProvided, phone, phoneProvided,
+            address, addressProvided, dateOfBirth, dateOfBirthProvided,
+            null, false);
+    }
+
+    private UpdateSchoolUserCommand command(
+            String fullName, boolean fullNameProvided,
+            String phone, boolean phoneProvided,
+            String address, boolean addressProvided,
+            LocalDate dateOfBirth, boolean dateOfBirthProvided,
+            String avatarUrl, boolean avatarUrlProvided) {
         return new UpdateSchoolUserCommand(
             schoolId, targetId,
             fullName, fullNameProvided,
             phone, phoneProvided,
             address, addressProvided,
-            dateOfBirth, dateOfBirthProvided
+            dateOfBirth, dateOfBirthProvided,
+            avatarUrl, avatarUrlProvided
         );
+    }
+
+    @Test
+    void should_set_avatar_url_when_host_is_allowed() {
+        wireCallerAndTarget(schoolId);
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var command = command(null, false, null, false, null, false, null, false, VALID_AVATAR_URL, true);
+
+        updateSchoolUserUseCase.execute(command);
+
+        var captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).saveAndFlush(captor.capture());
+        assertThat(captor.getValue().getAvatarUrl()).isEqualTo(VALID_AVATAR_URL);
+    }
+
+    /** avatarUrl = null nhưng CÓ gửi trường: đó là thao tác gỡ ảnh, không phải bỏ qua. */
+    @Test
+    void should_clear_avatar_url_when_explicitly_null() {
+        wireCallerAndTarget(schoolId);
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var command = command(null, false, null, false, null, false, null, false, null, true);
+
+        updateSchoolUserUseCase.execute(command);
+
+        var captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).saveAndFlush(captor.capture());
+        assertThat(captor.getValue().getAvatarUrl()).isNull();
+    }
+
+    /** Chặn trỏ ảnh sang host lạ -- xem AvatarUrlPolicy để biết vì sao đây là điều bắt buộc. */
+    @Test
+    void should_reject_avatar_url_from_foreign_host() {
+        wireCallerAndTarget(schoolId);
+        var command = command(null, false, null, false, null, false, null, false,
+            "https://evil.example/pixel.gif", true);
+
+        assertThrows(IllegalArgumentException.class, () -> updateSchoolUserUseCase.execute(command));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+    }
+
+    @Test
+    void should_reject_avatar_url_with_non_https_scheme() {
+        wireCallerAndTarget(schoolId);
+        var command = command(null, false, null, false, null, false, null, false,
+            "javascript:alert(1)", true);
+
+        assertThrows(IllegalArgumentException.class, () -> updateSchoolUserUseCase.execute(command));
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+    }
+
+    /** Chỉ gửi avatarUrl vẫn là "có ít nhất một trường", không được rơi vào nhánh ném lỗi. */
+    @Test
+    void should_accept_avatar_url_as_the_only_provided_field() {
+        wireCallerAndTarget(schoolId);
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var command = command(null, false, null, false, null, false, null, false, VALID_AVATAR_URL, true);
+
+        var response = updateSchoolUserUseCase.execute(command);
+
+        assertThat(response.id()).isEqualTo(targetId);
     }
 
     private User user(UUID id, String phone) {

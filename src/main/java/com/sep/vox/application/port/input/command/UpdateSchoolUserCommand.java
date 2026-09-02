@@ -13,5 +13,7 @@ public record UpdateSchoolUserCommand(
         String address,
         boolean addressProvided,
         LocalDate dateOfBirth,
-        boolean dateOfBirthProvided) {
+        boolean dateOfBirthProvided,
+        String avatarUrl,
+        boolean avatarUrlProvided) {
 }

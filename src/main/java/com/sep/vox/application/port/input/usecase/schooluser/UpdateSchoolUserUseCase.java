@@ -2,10 +2,12 @@ package com.sep.vox.application.port.input.usecase.schooluser;
 
 import java.time.Instant;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.AvatarUrlPolicy;
 import com.sep.vox.application.common.StringNormalization;
 
 import com.sep.vox.application.exception.DuplicatedException;
@@ -27,17 +29,22 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
+    private final String allowedAvatarHosts;
 
-    public UpdateSchoolUserUseCase(UserContextPort userContextPort, UserRepository userRepository, SchoolUserRepository schoolUserRepository) {
+    public UpdateSchoolUserUseCase(UserContextPort userContextPort, UserRepository userRepository,
+            SchoolUserRepository schoolUserRepository,
+            @Value("${app.avatar.allowed-hosts:}") String allowedAvatarHosts) {
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.schoolUserRepository = schoolUserRepository;
+        this.allowedAvatarHosts = allowedAvatarHosts;
     }
 
     @Override
     @Transactional
     public UpdateSchoolUserResponse execute(UpdateSchoolUserCommand input) {
-        if (!input.fullNameProvided() && !input.phoneProvided() && !input.addressProvided() && !input.dateOfBirthProvided()) {
+        if (!input.fullNameProvided() && !input.phoneProvided() && !input.addressProvided()
+                && !input.dateOfBirthProvided() && !input.avatarUrlProvided()) {
             throw new IllegalArgumentException("Cần cung cấp ít nhất một trường để cập nhật");
         }
 
@@ -88,6 +95,15 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
 
         if (input.dateOfBirthProvided()) {
             target.setDateOfBirth(input.dateOfBirth() != null ? new DateOfBirth(input.dateOfBirth()) : null);
+        }
+
+        // Đây là đường DUY NHẤT đặt ảnh đại diện cho học sinh: UpdateProfileUseCase từ chối học sinh
+        // tự đổi ảnh, vì ảnh chân dung ở sản phẩm này là dữ liệu định danh dùng lúc giám thị điểm
+        // danh. School admin đặt hộ thì tấm ảnh mới có người chịu trách nhiệm.
+        // Vẫn kiểm URL dù người gọi là school admin: nhận URL host lạ đồng nghĩa mọi giáo viên mở
+        // danh sách chấm sẽ tự gọi sang đó. Xem AvatarUrlPolicy.
+        if (input.avatarUrlProvided()) {
+            target.setAvatarUrl(AvatarUrlPolicy.normalizeOrThrow(allowedAvatarHosts, input.avatarUrl()));
         }
 
         target.setUpdatedAt(now);

@@ -1,11 +1,13 @@
 package com.sep.vox.interfaces.graphql.controller;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,9 +16,11 @@ import org.springframework.stereotype.Controller;
 import com.sep.vox.application.port.input.query.ViewUserDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewUsersQuery;
 import com.sep.vox.application.port.input.query.key.UserRolesKey;
+import com.sep.vox.application.port.input.usecase.user.UpdateProfileUseCase;
 import com.sep.vox.application.port.input.usecase.user.ViewProfileUseCase;
 import com.sep.vox.application.port.input.usecase.user.ViewUserDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.user.ViewUsersUseCase;
+import com.sep.vox.interfaces.graphql.mapper.UpdateProfileCommandMapper;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RoleDto;
 import com.sep.vox.domain.dto.SchoolDto;
@@ -33,6 +37,7 @@ public class UserController {
     private final ViewUserDetailsUseCase viewUserDetailsUseCase;
     private final ViewUsersUseCase viewUsersUseCase;
     private final ViewProfileUseCase viewProfileUseCase;
+    private final UpdateProfileUseCase updateProfileUseCase;
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolRepository schoolRepository;
 
@@ -40,11 +45,13 @@ public class UserController {
             ViewUserDetailsUseCase viewUserDetailsUseCase,
             ViewUsersUseCase viewUsersUseCase,
             ViewProfileUseCase viewProfileUseCase,
+            UpdateProfileUseCase updateProfileUseCase,
             SchoolUserRepository schoolUserRepository,
             SchoolRepository schoolRepository) {
         this.viewUserDetailsUseCase = viewUserDetailsUseCase;
         this.viewUsersUseCase = viewUsersUseCase;
         this.viewProfileUseCase = viewProfileUseCase;
+        this.updateProfileUseCase = updateProfileUseCase;
         this.schoolUserRepository = schoolUserRepository;
         this.schoolRepository = schoolRepository;
     }
@@ -70,6 +77,19 @@ public class UserController {
     @PreAuthorize("isAuthenticated()")
     public UserDto profile() {
         return viewProfileUseCase.execute(null);
+    }
+
+    /**
+     * {@code isAuthenticated()} chứ không liệt kê vai: mọi vai đều được sửa hồ sơ của chính mình.
+     * Riêng ảnh đại diện thì học sinh bị từ chối, và luật đó nằm trong use case chứ không ở đây --
+     * nó phụ thuộc vào việc client có gửi trường {@code avatarUrl} hay không, thứ mà
+     * {@code @PreAuthorize} không nhìn thấy.
+     */
+    @MutationMapping(name = "updateProfile")
+    @PreAuthorize("isAuthenticated()")
+    public UserDto updateProfile(@Argument(name = "input") Map<String, Object> input) {
+        var command = UpdateProfileCommandMapper.fromInput(input);
+        return updateProfileUseCase.execute(command);
     }
 
     @SchemaMapping(typeName = "User", field = "roles")

@@ -144,6 +144,12 @@ input UpdateSchoolUserInput {
     phone: String
     address: String
     dateOfBirth: String
+    """
+    Đường dẫn ảnh đại diện do hệ thống cấp; null để gỡ ảnh.
+    Đây là đường DUY NHẤT đặt ảnh cho học sinh -- updateProfile từ chối học sinh tự đổi ảnh,
+    vì ảnh chân dung ở đây là dữ liệu định danh dùng khi giám thị điểm danh.
+    """
+    avatarUrl: String
 }
 
 type SchoolUser {

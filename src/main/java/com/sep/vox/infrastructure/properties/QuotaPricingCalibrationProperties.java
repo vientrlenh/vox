@@ -21,7 +21,7 @@ public record QuotaPricingCalibrationProperties(
 ) implements QuotaPricingCalibrationConfigPort {
 
     private static final int DEFAULT_WINDOW_DAYS = 90;
-    private static final int DEFAULT_MIN_SAMPLE_SESSIONS = 30;
+    private static final int DEFAULT_MIN_SAMPLE_SESSIONS = 10;
     private static final BigDecimal DEFAULT_MAX_CHANGE_RATIO = new BigDecimal("0.20");
     private static final BigDecimal DEFAULT_MIN_RATE_BOUND = new BigDecimal("0.001");
     private static final BigDecimal DEFAULT_MAX_RATE_BOUND = new BigDecimal("1.0");

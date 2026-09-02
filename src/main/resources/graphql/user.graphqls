@@ -53,3 +53,25 @@ extend type Query {
     role(id: ID!): Role
     profile: User
 }
+
+"""
+Mọi trường đều optional và mang ngữ nghĩa PATCH: KHÔNG gửi trường = giữ nguyên, gửi null = xóa.
+Mapper phân biệt hai trường hợp đó bằng Map.containsKey, xem UpdateProfileCommandMapper.
+Vì vậy avatarUrl: null chính là thao tác gỡ ảnh đại diện -- không có mutation removeAvatar riêng.
+
+avatarUrl là URL client nhận được sau khi TỰ tải ảnh lên kho lưu trữ của nó (hiện là Firebase
+Storage). Backend chỉ lưu tham chiếu, không nhận file. URL phải là https và, nếu
+app.avatar.allowed-hosts có cấu hình, phải thuộc host nằm trong danh sách đó.
+"""
+input UpdateProfileInput {
+    fullName: String
+    phone: String
+    address: String
+    dateOfBirth: String
+    avatarUrl: String
+}
+
+extend type Mutation {
+    "Sửa hồ sơ của chính người gọi. Không nhận userId -- sửa người khác đi updateSchoolUser."
+    updateProfile(input: UpdateProfileInput!): User!
+}

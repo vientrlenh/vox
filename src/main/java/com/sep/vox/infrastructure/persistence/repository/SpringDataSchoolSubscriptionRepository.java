@@ -149,8 +149,9 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
     // trừ CẢ hạn mức trường LẪN hạn mức cá nhân (khi có allocation row cho user) cho PRACTICE, nên
     // cửa chặn ở BuildPracticePaperUseCase phải soi đúng 2 thước đó -- trước đây chỉ soi hạn mức
     // trường, học sinh hết hạn mức cá nhân nhưng trường còn dư sẽ lọt cửa, dựng đề xong mới chết ở
-    // lượt nói đầu. COALESCE về phần của trường khi user chưa có allocation row (ConsumeQuotaService
-    // cũng bỏ qua kiểm tra cá nhân trong case đó, qua .ifPresent) -- không được LEAST thẳng với NULL,
+    // lượt nói đầu. COALESCE về 0 khi user CHƯA có allocation row: trường phải chủ động phân hạn mức
+    // riêng (thủ công hoặc "Chia đều tự động") thì học sinh mới luyện tập được -- chưa phân nghĩa là
+    // chặn hẳn, không còn rơi về pool chung của trường như trước. Không được LEAST thẳng với NULL,
     // Postgres trả NULL cho cả biểu thức.
     //
     // Vế của TRƯỜNG cộng thêm số dư ví tự nạp, vế CÁ NHÂN thì không: từ khi ConsumeQuotaService trừ
@@ -165,8 +166,7 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
     @Query(value = """
         SELECT LEAST(
             school_funds.amount_vnd,
-            COALESCE(user_allocation.allocated_amount_vnd - user_allocation.used_amount_vnd,
-                     school_funds.amount_vnd)
+            COALESCE(user_allocation.allocated_amount_vnd - user_allocation.used_amount_vnd, 0)
         )
         FROM school_users school_user
         JOIN school_subscriptions subscription

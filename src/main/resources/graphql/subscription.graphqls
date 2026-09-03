@@ -223,7 +223,7 @@ extend type Query {
     subscriptionUsage(schoolId: ID!): [SchoolSubscriptionQuotaRecord!]!
     "null = giáo viên không có hạn mức cá nhân riêng, tức chỉ ví EXAM của trường áp dụng"
     myExamQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
-    "null = học sinh không có hạn mức cá nhân riêng, tức chỉ ví PRACTICE của trường áp dụng"
+    "null = trường CHƯA phân hạn mức PRACTICE riêng cho học sinh này, tức bị chặn hoàn toàn"
     myPracticeQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
 
     """

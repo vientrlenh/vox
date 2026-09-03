@@ -6,7 +6,8 @@ import java.util.UUID;
 public record AllocateExamQuotaCommand(
     UUID schoolId,
     String mode,
-    List<AllocateUserQuotaAmountCommand> allocations
+    List<AllocateUserQuotaAmountCommand> allocations,
+    boolean confirmWalletDraw
 ) {
 
 }

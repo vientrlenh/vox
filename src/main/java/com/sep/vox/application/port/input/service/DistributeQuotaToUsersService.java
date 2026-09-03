@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.WalletDrawConfirmationRequiredException;
 import com.sep.vox.application.port.input.command.AllocateUserQuotaAmountCommand;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPageResponse;
@@ -27,6 +28,7 @@ import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocati
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RoleRepository;
+import com.sep.vox.domain.repository.SchoolBalanceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
@@ -51,6 +53,7 @@ public class DistributeQuotaToUsersService {
     private final RoleRepository roleRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolQuotaPolicyRepository schoolQuotaPolicyRepository;
+    private final SchoolBalanceRepository schoolBalanceRepository;
 
     public DistributeQuotaToUsersService(
             UserContextPort userContextPort,
@@ -59,7 +62,8 @@ public class DistributeQuotaToUsersService {
             SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
             RoleRepository roleRepository,
             SchoolUserRepository schoolUserRepository,
-            SchoolQuotaPolicyRepository schoolQuotaPolicyRepository) {
+            SchoolQuotaPolicyRepository schoolQuotaPolicyRepository,
+            SchoolBalanceRepository schoolBalanceRepository) {
         this.userContextPort = userContextPort;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
@@ -67,10 +71,11 @@ public class DistributeQuotaToUsersService {
         this.roleRepository = roleRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.schoolQuotaPolicyRepository = schoolQuotaPolicyRepository;
+        this.schoolBalanceRepository = schoolBalanceRepository;
     }
 
     public QuotaUserAllocationSummaryResponse distribute(UUID schoolId, QuotaType quotaType, String roleCode,
-            DistributionMode mode, List<AllocateUserQuotaAmountCommand> allocations) {
+            DistributionMode mode, List<AllocateUserQuotaAmountCommand> allocations, boolean confirmWalletDraw) {
         requireSchoolAdminAccess(schoolId);
 
         var subscription = findActiveSubscription(schoolId);
@@ -92,12 +97,26 @@ public class DistributeQuotaToUsersService {
 
         var targetAmounts = mode == DistributionMode.AUTO
             ? computeAutoSplit(eligibleUserIds, distributableVnd, existing)
-            : computeManualAmounts(allocations, eligibleUserIds, existing, distributableVnd);
+            : computeManualAmounts(allocations, eligibleUserIds, existing, distributableVnd,
+                walletHeadroomVnd(schoolId), confirmWalletDraw);
 
         targetAmounts.forEach((userId, amount) ->
             subscriptionQuotaUserAllocationRepository.upsertAllocation(subscription.getId(), quotaType, userId, amount));
 
         return buildSummary(subscription.getId(), quotaType, pool, eligibleUserIds);
+    }
+
+    /**
+     * Phần ví tự nạp CÓ THỂ ăn thêm ngoài {@code distributableVnd} khi nới trần cá nhân của MỘT
+     * người -- không phải một túi tiền dành riêng, chỉ là trần soft-ceiling giống hệt cách pool đã
+     * vận hành (xem ConsumeQuotaService.chargeOverage, nơi tiền thật sự bị trừ). Kẹp về 0: âm là nợ
+     * của trường, không phải phần chia được thêm.
+     */
+    private BigDecimal walletHeadroomVnd(UUID schoolId) {
+        return schoolBalanceRepository.findBySchoolId(schoolId)
+            .map(balance -> orZero(balance.getBalanceVnd()))
+            .orElse(BigDecimal.ZERO)
+            .max(BigDecimal.ZERO);
     }
 
     /**
@@ -148,6 +167,7 @@ public class DistributeQuotaToUsersService {
             distributed,
             policy.getDistributableRatio(),
             policy.distributableAmountOf(orZero(pool.getTotalAllocatedAmountVnd())),
+            walletHeadroomVnd(schoolId),
             rows,
             userPage.page(),
             userPage.size(),
@@ -185,7 +205,8 @@ public class DistributeQuotaToUsersService {
     }
 
     private Map<UUID, BigDecimal> computeManualAmounts(List<AllocateUserQuotaAmountCommand> allocations, List<UUID> eligibleUserIds,
-            Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing, BigDecimal distributableVnd) {
+            Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing, BigDecimal distributableVnd,
+            BigDecimal walletHeadroomVnd, boolean confirmWalletDraw) {
         if (allocations == null || allocations.isEmpty()) {
             throw new IllegalArgumentException("Danh sách phân bổ không được để trống");
         }
@@ -215,9 +236,20 @@ public class DistributeQuotaToUsersService {
             .filter(e -> !result.containsKey(e.getKey()))
             .map(e -> orZero(e.getValue().getAllocatedAmountVnd()))
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
-        if (sumInRequest.add(sumOthers).compareTo(distributableVnd) > 0) {
-            throw new IllegalArgumentException(
-                "Tổng hạn mức phân bổ vượt quá phần được phép chia của trường");
+
+        // Vượt distributableVnd không còn bị từ chối thẳng nữa: phần vượt có thể ăn vào ví tự nạp của
+        // trường (school_balances) -- CHỈ nới TRẦN, không giữ tiền, y hệt cách ConsumeQuotaService đã
+        // tự động rút ví khi tiêu thật vượt pool. Đòi confirmWalletDraw vì ví đó dùng chung cho cả
+        // EXAM lẫn PRACTICE, quản trị viên phải biết mình đang ăn vào phần chung đó.
+        var overDistributableVnd = sumInRequest.add(sumOthers).subtract(distributableVnd);
+        if (overDistributableVnd.signum() > 0) {
+            if (overDistributableVnd.compareTo(walletHeadroomVnd) > 0) {
+                throw new IllegalArgumentException(
+                    "Tổng hạn mức phân bổ vượt quá phần được phép chia của trường lẫn số dư ví tự nạp");
+            }
+            if (!confirmWalletDraw) {
+                throw new WalletDrawConfirmationRequiredException(overDistributableVnd, walletHeadroomVnd);
+            }
         }
 
         return result;

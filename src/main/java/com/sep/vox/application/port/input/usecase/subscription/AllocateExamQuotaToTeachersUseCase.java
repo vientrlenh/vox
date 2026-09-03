@@ -34,7 +34,8 @@ public class AllocateExamQuotaToTeachersUseCase implements IUseCase<AllocateExam
     @Transactional
     public QuotaUserAllocationSummaryResponse execute(AllocateExamQuotaCommand input) {
         return distributeQuotaToUsersService.distribute(
-                input.schoolId(), QuotaType.EXAM, SchoolRoleCodes.TEACHER, fromString(input.mode()), input.allocations()
+                input.schoolId(), QuotaType.EXAM, SchoolRoleCodes.TEACHER, fromString(input.mode()),
+                input.allocations(), input.confirmWalletDraw()
         );
     }
 

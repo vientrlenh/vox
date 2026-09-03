@@ -14,11 +14,17 @@ public final class AllocateQuotaCommandMapper {
     }
 
     public static AllocateExamQuotaCommand toExamCommand(UUID schoolId, AllocateQuotaRequest request) {
-        return new AllocateExamQuotaCommand(schoolId, request.mode(), toAllocations(request));
+        return new AllocateExamQuotaCommand(
+            schoolId, request.mode(), toAllocations(request), confirmWalletDraw(request));
     }
 
     public static AllocatePracticeQuotaCommand toPracticeCommand(UUID schoolId, AllocateQuotaRequest request) {
-        return new AllocatePracticeQuotaCommand(schoolId, request.mode(), toAllocations(request));
+        return new AllocatePracticeQuotaCommand(
+            schoolId, request.mode(), toAllocations(request), confirmWalletDraw(request));
+    }
+
+    private static boolean confirmWalletDraw(AllocateQuotaRequest request) {
+        return Boolean.TRUE.equals(request.confirmWalletDraw());
     }
 
     private static List<AllocateUserQuotaAmountCommand> toAllocations(AllocateQuotaRequest request) {

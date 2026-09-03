@@ -282,6 +282,12 @@ type SchoolQuotaUserAllocationPage {
     dùng để từ chối một lần chia vượt trần; client tự nhân lần nữa là mở đường cho hai bên lệch nhau.
     """
     distributableAmountVnd: Float!
+    """
+    Phần ví TỰ NẠP của trường (school_balances) CÓ THỂ ăn thêm ngoài distributableAmountVnd khi nới
+    trần cá nhân của MỘT người -- không phải một túi tiền dành riêng, và dùng CHUNG cho cả EXAM lẫn
+    PRACTICE. Đã kẹp về 0, âm là nợ của trường (không phải phần chia được thêm).
+    """
+    walletBalanceVnd: Float!
     content: [SchoolQuotaUserAllocation!]!
     page: Int!
     size: Int!

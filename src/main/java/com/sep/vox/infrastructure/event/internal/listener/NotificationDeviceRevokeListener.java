@@ -3,6 +3,8 @@ package com.sep.vox.infrastructure.event.internal.listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -30,7 +32,27 @@ public class NotificationDeviceRevokeListener {
         this.notificationDeviceRepository = notificationDeviceRepository;
     }
 
+    /**
+     * {@code REQUIRES_NEW}, KHÔNG phải {@code REQUIRED} mặc định -- và đây là điều kiện để câu
+     * DELETE bên dưới chạy được, không phải một lựa chọn về phạm vi giao dịch.
+     *
+     * <p>Lúc callback AFTER_COMMIT chạy, {@code EntityManagerHolder} của giao dịch VỪA COMMIT vẫn
+     * còn gắn vào thread -- Spring chỉ gỡ nó ở {@code cleanupAfterCompletion}, tức là sau các
+     * callback. Nên {@code REQUIRED} nhìn thấy "đã có giao dịch" và THAM GIA vào nó thay vì mở
+     * giao dịch mới, trong khi giao dịch đó đã commit xong và không còn
+     * {@code EntityTransaction} nào sống. Hibernate từ chối câu DELETE với
+     * {@code TransactionRequiredException: No active transaction for update or delete query}, và
+     * {@code TransactionSynchronizationUtils} NUỐT ngoại lệ đó (chỉ log ERROR) -- nên /logout vẫn
+     * trả 200 trong khi thiết bị nhận thông báo không hề bị gỡ. Đúng kiểu hỏng im lặng: trên máy
+     * phòng lab, thông báo điểm của người vừa rời đi vẫn hiện cho người ngồi xuống sau.
+     *
+     * <p>{@code @Transactional} trên {@code NotificationDeviceRepositoryImpl#deleteByUserIdAndDeviceId}
+     * KHÔNG cứu được: nó cũng là {@code REQUIRED}. Cùng annotation đó chạy tốt ở
+     * {@code deleteByLastSeenAtBefore} chỉ vì {@code @Scheduled} gọi từ một thread sạch, không có
+     * gì gắn sẵn.
+     */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handle(DeviceSessionRevokedEvent event) {
         var removed = notificationDeviceRepository.deleteByUserIdAndDeviceId(event.userId(), event.deviceId());
         if (removed > 0) {

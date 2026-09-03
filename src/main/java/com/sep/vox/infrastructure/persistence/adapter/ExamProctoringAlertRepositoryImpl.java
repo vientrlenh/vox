@@ -54,6 +54,18 @@ public class ExamProctoringAlertRepositoryImpl implements ExamProctoringAlertRep
             .toList();
     }
 
+    /**
+     * {@code CRITICAL} viết cứng ở đây là mức duy nhất được coi là "nghiêm trọng" -- khớp đúng
+     * {@code getAlertSeverity} bên FE, nơi chỉ CRITICAL hiện nhãn đỏ "Nghiêm trọng". WARNING
+     * (mất mặt khỏi camera, rời cửa sổ) là chuyện thường gặp trong một ca thi thật; coi nó là
+     * nghiêm trọng thì gần như mọi bài đều rơi sang chờ soát và việc soát mất hết ý nghĩa.
+     */
+    @Override
+    public boolean hasCriticalAlert(UUID examSessionId) {
+        return springDataExamProctoringAlertRepository
+            .existsByExamSessionIdAndLevelIgnoreCase(examSessionId, "CRITICAL");
+    }
+
     @Override
     public List<ExamProctoringAlert> findByScheduleIdOrderByCapturedAt(UUID scheduleId) {
         return springDataExamProctoringAlertRepository.findByScheduleIdOrderByCapturedAtAsc(scheduleId)

@@ -16,6 +16,19 @@ public interface SpringDataExamProctoringAlertRepository extends JpaRepository<E
     List<ExamProctoringAlertJpaEntity> findByExamSessionIdOrderByCapturedAtAsc(UUID examSessionId);
 
     /**
+     * Phiên này có cảnh báo giám sát mức NGHIÊM TRỌNG nào không.
+     *
+     * <p>{@code exists} chứ không nạp danh sách rồi lọc: câu hỏi ở đây là có/không, và hàm được gọi
+     * một lần cho MỖI câu trả lời khi bộ chấm ghi kết quả -- bài 4 câu là 4 lượt. Nạp cả danh sách
+     * để rồi vứt đi là trả giá cho thứ không dùng.
+     *
+     * <p>So sánh không phân biệt hoa thường và bỏ khoảng trắng thừa, khớp đúng cách
+     * {@code getAlertSeverity} bên FE đọc cột này -- nguồn ghi cảnh báo là sự kiện ngoài, không có
+     * gì bảo đảm nó luôn viết hoa chuẩn.
+     */
+    boolean existsByExamSessionIdAndLevelIgnoreCase(UUID examSessionId, String level);
+
+    /**
      * Mọi cảnh báo của một ca thi, gộp qua tất cả phiên thi trong ca.
      *
      * <p>Bảng cảnh báo chỉ biết tới phiên thi, còn ca thi thì nằm cách đó hai chặng

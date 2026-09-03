@@ -87,6 +87,7 @@ public class PracticeQuestionSelectionService {
      * (câu đầu tiên) và ResolveNextPracticeQuestionUseCase (các câu sau trong phiên).
      */
     public PracticeFocusInfo resolveFocus(UUID studentId, String forcedSubAttribute) {
+        //Code này đã bỏ dead code chưa xóa
         if (forcedSubAttribute != null) {
             var forcedCriterion = SubAttributePolicy.criterionForSubAttribute(forcedSubAttribute);
             if (forcedCriterion == null) {
@@ -99,6 +100,7 @@ public class PracticeQuestionSelectionService {
                 Map.of(forcedCriterion, List.of(forcedSubAttribute))
             );
         }
+        //hết code bỏ dead code
 
         // Tiêu chí điểm THẤP nhất luyện trước. Nguồn là điểm đã chấm, không còn là hồ sơ điểm
         // yếu (đã gỡ khỏi hệ thống) -- xem CriterionScoreAverageRepository để biết đổi những gì.

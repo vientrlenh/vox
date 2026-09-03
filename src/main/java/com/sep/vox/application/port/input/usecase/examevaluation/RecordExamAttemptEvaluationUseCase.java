@@ -43,6 +43,7 @@ import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationTurnRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.ExamProctoringAlertRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
@@ -69,6 +70,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
     private final TransactionTemplate phaseOneTransactionTemplate;
     private final ConfidenceReviewCalculator confidenceReviewCalculator;
     private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
+    private final ExamProctoringAlertRepository examProctoringAlertRepository;
 
     public RecordExamAttemptEvaluationUseCase(
             ExamItemResponseRepository examItemResponseRepository,
@@ -85,7 +87,8 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             PlatformTransactionManager transactionManager,
             JsonSerializationPort jsonSerializationPort,
             ConfidenceReviewCalculator confidenceReviewCalculator,
-            ClassTestGradingAssignmentService classTestGradingAssignmentService) {
+            ClassTestGradingAssignmentService classTestGradingAssignmentService,
+            ExamProctoringAlertRepository examProctoringAlertRepository) {
         this.examItemResponseRepository = examItemResponseRepository;
         this.examItemEvaluationRepository = examItemEvaluationRepository;
         this.examItemCriterionScoreRepository = examItemCriterionScoreRepository;
@@ -102,6 +105,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
         this.phaseOneTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.confidenceReviewCalculator = confidenceReviewCalculator;
         this.classTestGradingAssignmentService = classTestGradingAssignmentService;
+        this.examProctoringAlertRepository = examProctoringAlertRepository;
     }
 
     @Override
@@ -201,16 +205,39 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             boolean confidenceRequiresReview = thresholdPercent != null
                 ? belowThreshold
                 : confidenceDecision.requiresHumanReview();
-            boolean requiresHumanReview = hasCriticalValidityFlag || confidenceRequiresReview;
+            // Cảnh báo giám sát mức CRITICAL (nhiều người trong khung hình, phát hiện điện thoại,
+            // vật thể cấm) -> luôn đưa sang người soát.
+            //
+            // KHÔNG bị ngưỡng nhà trường bỏ qua, cùng lý do với cờ validity: đây là câu hỏi THỨ BA,
+            // khác hẳn hai câu kia. Ngưỡng tin cậy trả lời "chấm tin được tới đâu", validity trả lời
+            // "câu này có chấm được không", còn cái này trả lời "bài này có đáng tin về mặt liêm
+            // chính không". Một bài AI chấm rất chắc tay (confidence 0.95) mà camera ghi được hai
+            // người ngồi cùng thì con số 0.95 kia không nói gì về việc ai đang nói.
+            //
+            // Chỉ CRITICAL, không tính WARNING: mất mặt khỏi camera hay rời cửa sổ là chuyện xảy ra
+            // thường xuyên trong một ca thi thật (16 lượt PERSON_MISSING trong một phiên là số đo
+            // thật), tính cả vào thì gần như mọi bài đều rơi sang chờ soát và việc soát mất ý nghĩa.
+            //
+            // Truy vấn theo PHIÊN nên mọi câu trong cùng phiên đều nhận cùng kết quả -- đúng ý muốn:
+            // vi phạm là của cả buổi thi, không phải của riêng một câu.
+            boolean hasCriticalProctoringAlert =
+                examProctoringAlertRepository.hasCriticalAlert(response.getSessionId());
+            boolean requiresHumanReview =
+                hasCriticalValidityFlag || hasCriticalProctoringAlert || confidenceRequiresReview;
+            // Thứ tự ưu tiên của mã lý do: validity -> giám sát -> tin cậy. Chỉ hiện MỘT mã, nên
+            // xếp cái cụ thể và hành động được lên trước; "điểm tin cậy thấp" là lý do mơ hồ nhất
+            // trong ba cái và cũng là cái người soát ít làm được gì nhất.
             String reviewReasonCode = hasCriticalValidityFlag
                 ? "VALIDITY_FLAGGED"
-                : (
-                    !confidenceRequiresReview
-                        ? null
-                        : thresholdPercent != null
-                            ? "CONFIDENCE_BELOW_THRESHOLD"
-                            : String.join(",", confidenceDecision.reviewReasons())
-                );
+                : hasCriticalProctoringAlert
+                    ? "PROCTORING_CRITICAL"
+                    : (
+                        !confidenceRequiresReview
+                            ? null
+                            : thresholdPercent != null
+                                ? "CONFIDENCE_BELOW_THRESHOLD"
+                                : String.join(",", confidenceDecision.reviewReasons())
+                    );
             var requiresRetake = requiresRetake(validity);
             boolean markedInvalid = hasCriticalValidityFlag
                 || (validity != null && Boolean.FALSE.equals(validity.validForScoring()));

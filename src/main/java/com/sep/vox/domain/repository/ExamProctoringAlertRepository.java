@@ -17,6 +17,15 @@ public interface ExamProctoringAlertRepository {
 
     List<ExamProctoringAlert> findByExamSessionIdOrderByCapturedAt(UUID examSessionId);
 
+    /**
+     * Phiên này có cảnh báo giám sát mức {@code CRITICAL} nào không.
+     *
+     * <p>Dùng lúc ghi kết quả chấm để đẩy bài sang chờ người soát -- xem
+     * {@code RecordExamAttemptEvaluationUseCase}. Trả boolean chứ không trả danh sách vì nơi gọi
+     * chỉ cần biết có hay không.
+     */
+    boolean hasCriticalAlert(UUID examSessionId);
+
     /** Cảnh báo của cả ca thi, gộp qua mọi phiên thi trong ca -- cho màn giám sát trực tiếp. */
     List<ExamProctoringAlert> findByScheduleIdOrderByCapturedAt(UUID scheduleId);
 }

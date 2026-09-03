@@ -39,6 +39,7 @@ import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationTurnRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.ExamProctoringAlertRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
@@ -66,6 +67,7 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
     private ExamRepository examRepository;
     private AssessmentPolicyRepository assessmentPolicyRepository;
     private RubricVersionRepository rubricVersionRepository;
+    private ExamProctoringAlertRepository examProctoringAlertRepository;
     private UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
     private CompleteExamSessionGradingUseCase completeExamSessionGradingUseCase;
     private JsonSerializationPort jsonSerializationPort;
@@ -86,6 +88,7 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
         examItemEvaluationTurnRepository = mock(ExamItemEvaluationTurnRepository.class);
         rubricCriterionRepository = mock(RubricCriterionRepository.class);
         examSessionRepository = mock(ExamSessionRepository.class);
+        examProctoringAlertRepository = mock(ExamProctoringAlertRepository.class);
         examRepository = mock(ExamRepository.class);
         assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
         rubricVersionRepository = mock(RubricVersionRepository.class);
@@ -103,7 +106,12 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
             assessmentPolicyRepository, rubricVersionRepository, upsertExamCandidateResultUseCase,
             completeExamSessionGradingUseCase,
             transactionManager, jsonSerializationPort, new ConfidenceReviewCalculator(),
-            mock(ClassTestGradingAssignmentService.class));
+            mock(ClassTestGradingAssignmentService.class), examProctoringAlertRepository);
+
+        // Mặc định: KHÔNG có cảnh báo giám sát nghiêm trọng. Các test ở đây kiểm luật chặn ghi đè
+        // và luật tin cậy, nên phải loại hẳn biến giám sát ra khỏi kết quả -- để mock trả false
+        // theo mặc định của Mockito cũng ra kết quả này, nhưng nói rõ thì đọc test không phải đoán.
+        when(examProctoringAlertRepository.hasCriticalAlert(any())).thenReturn(false);
 
         when(examItemResponseRepository.findById(responseId)).thenReturn(Optional.of(
             new ExamItemResponse(responseId, sessionId, paperItemId, null, null, null, null, null)));
@@ -195,5 +203,48 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
         var stored = examItemEvaluationRepository.findLatestByResponseId(responseId).orElseThrow();
         assertThat(stored.getItemScore()).isEqualByComparingTo("8.00");
         assertThat(stored.getStatus()).isEqualTo(ExamItemEvaluationStatus.FINALIZED);
+    }
+
+    /**
+     * Cảnh báo giám sát mức CRITICAL đẩy bài sang người soát, KHÔNG phụ thuộc điểm tin cậy.
+     *
+     * <p>Payload dùng ở đây là payload bình thường -- không cờ validity, không tín hiệu xấu -- nên
+     * nếu thiếu luật giám sát thì {@code requiresHumanReview} phải là {@code false}. Đó chính là
+     * điều kiện làm cho test này chứng minh được luật mới, thay vì đúng nhờ một lý do khác.
+     */
+    @Test
+    void should_require_human_review_when_the_session_has_a_critical_proctoring_alert() {
+        when(examProctoringAlertRepository.hasCriticalAlert(sessionId)).thenReturn(true);
+        when(examItemEvaluationRepository.findLatestByResponseId(responseId)).thenReturn(Optional.empty());
+        var saved = new java.util.concurrent.atomic.AtomicReference<ExamItemEvaluation>();
+        when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> {
+            var evaluation = (ExamItemEvaluation) invocation.getArgument(0);
+            evaluation.setId(UUID.randomUUID());
+            saved.set(evaluation);
+            return evaluation;
+        });
+
+        useCase.execute(command());
+
+        assertThat(saved.get().isRequiresHumanReview()).isTrue();
+        assertThat(saved.get().getReviewReasonCode()).isEqualTo("PROCTORING_CRITICAL");
+    }
+
+    /** Không có cảnh báo nghiêm trọng thì luật này không được tự ý bật lên. */
+    @Test
+    void should_not_require_human_review_when_there_is_no_critical_proctoring_alert() {
+        when(examProctoringAlertRepository.hasCriticalAlert(sessionId)).thenReturn(false);
+        when(examItemEvaluationRepository.findLatestByResponseId(responseId)).thenReturn(Optional.empty());
+        var saved = new java.util.concurrent.atomic.AtomicReference<ExamItemEvaluation>();
+        when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> {
+            var evaluation = (ExamItemEvaluation) invocation.getArgument(0);
+            evaluation.setId(UUID.randomUUID());
+            saved.set(evaluation);
+            return evaluation;
+        });
+
+        useCase.execute(command());
+
+        assertThat(saved.get().getReviewReasonCode()).isNotEqualTo("PROCTORING_CRITICAL");
     }
 }

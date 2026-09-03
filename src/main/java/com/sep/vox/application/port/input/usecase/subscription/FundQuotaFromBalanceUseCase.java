@@ -37,9 +37,16 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
  * KHÔNG một dòng nào của ConsumeQuotaService phải sửa. Phần chưa tiêu ở lại ví của trường để chia cho
  * người khác, thay vì mắc kẹt trên tên một học sinh không bao giờ vào luyện.
  *
- * <p><b>MỘT CHIỀU.</b> Không có đường chuyển ngược về ví, cũng không chuyển được sang loại quota kia;
- * nhầm ví thì chỉ System Admin gỡ được bằng một dòng ADJUSTMENT. Đó là lý do giao diện phải nói to
- * loại ví trước khi xác nhận.
+ * <p><b>MỘT CHIỀU, VÀ HIỆN CHƯA GỠ ĐƯỢC.</b> Không có đường chuyển ngược về ví, cũng không chuyển
+ * được sang loại quota kia. Nhầm ví thì <b>không có cách sửa</b> -- và đừng tưởng một dòng ADJUSTMENT
+ * là cách: nó chỉ CỘNG tiền trở lại ví, trong khi mọi lệnh ghi school_subscription_quota_records
+ * ({@code addAllocation}, {@code addFundingFromBalance}) đều chỉ biết cộng, không câu nào hạ được
+ * total_allocated_amount_vnd/funded_from_balance_vnd xuống. Làm vậy là trường vừa lấy lại tiền vừa
+ * giữ nguyên ví hạn mức đã phình: sinh tiền từ hư không.
+ *
+ * <p>Gỡ thật thì phải là một đường đi ĐÔI trong cùng transaction -- bút toán cộng ví ĐI KÈM một lệnh
+ * hạ ví hạn mức, kẹp sàn ở phần đã tiêu để không đẩy funded xuống dưới 0 hay total xuống dưới used.
+ * Chưa có đường đó, nên tuyến phòng thủ duy nhất là giao diện: phải nói to loại ví trước khi xác nhận.
  *
  * <p><b>Thứ tự trong method là bắt buộc, không phải tuỳ tiện</b> -- xem javadoc của
  * {@link SchoolBalanceRepository}: KHÓA dòng số dư trước, tính ở Java, rồi save + ghi bút toán, tất cả

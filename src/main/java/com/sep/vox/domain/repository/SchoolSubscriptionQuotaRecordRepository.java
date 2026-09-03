@@ -1,6 +1,7 @@
 package com.sep.vox.domain.repository;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,6 +22,18 @@ public interface SchoolSubscriptionQuotaRecordRepository {
      * QUOTA_FUNDING trong cùng transaction -- xem FundQuotaFromBalanceUseCase.
      */
     void addFundingFromBalance(UUID quotaId, BigDecimal amount);
+
+    /**
+     * Ví của những kỳ ĐÃ tới ngày bắt đầu mà còn một cái hẹn mang tiền tự nạp sang (V13). Rỗng ở trạng
+     * thái bình thường -- chỉ gia hạn SỚM mới sinh ra hẹn, và chỉ tới lần job kế tiếp.
+     */
+    List<SchoolSubscriptionQuotaRecord> findDueFundingCarries(Instant now);
+
+    /**
+     * Xoá cái hẹn của một ví. Gọi SAU khi đã cộng tiền, trong cùng transaction -- đây là thứ biến phép
+     * mang sang thành đúng một lần.
+     */
+    void clearFundingCarry(UUID quotaId);
 
     /** returns false if usedAmountVnd + amount would exceed totalAllocatedAmountVnd. */
     boolean tryConsume(UUID quotaId, BigDecimal amount);

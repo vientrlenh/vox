@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -70,4 +71,37 @@ public interface SpringDataSchoolSubscriptionQuotaRecordRepository extends JpaRe
         WHERE q.id = :id
         """)
     void addFundingFromBalance(@Param("id") UUID id, @Param("amount") BigDecimal amount);
+
+    /**
+     * Những cái hẹn mang tiền sang ĐÃ TỚI HẠN: ví của một kỳ đã bắt đầu chạy mà còn trỏ về kỳ nguồn.
+     *
+     * <p>Lọc theo {@code startDate} chứ không theo status của kỳ nguồn: kỳ mới bắt đầu tiêu được ngay
+     * khi tới ngày (findInForceBySchoolId soi khoảng ngày), trong khi SubscriptionExpiryJob có thể mất
+     * tới một giờ mới đưa kỳ cũ sang EXPIRED. Bám vào status là để tiền hiện ra muộn hơn cả lúc nó
+     * đáng được tiêu.
+     *
+     * <p>Không lọc kỳ nguồn phải kết thúc rồi: tới ngày kỳ mới bắt đầu thì kỳ cũ hết hạn theo đúng
+     * định nghĩa (kỳ mới nối vào endDate của nó -- xem nextPeriodStart).
+     */
+    @Query("""
+        SELECT q FROM SchoolSubscriptionQuotaRecordJpaEntity q
+        JOIN SchoolSubscriptionJpaEntity s ON s.id = q.schoolSubscriptionId
+        WHERE q.carryFundingFromSubscriptionId IS NOT NULL
+          AND s.startDate <= :now
+        """)
+    List<SchoolSubscriptionQuotaRecordJpaEntity> findDueFundingCarries(@Param("now") Instant now);
+
+    /**
+     * Xoá cái hẹn -- biến phép mang sang thành ĐÚNG MỘT LẦN.
+     *
+     * <p>clearAutomatically vì job đọc bản ghi rồi mới cộng tiền rồi mới gọi câu này; để entity cũ nằm
+     * lại trong persistence context là mở đường cho một lần đọc sau đó thấy cái hẹn vẫn còn.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        UPDATE SchoolSubscriptionQuotaRecordJpaEntity q
+        SET q.carryFundingFromSubscriptionId = NULL
+        WHERE q.id = :id
+        """)
+    void clearFundingCarry(@Param("id") UUID id);
 }

@@ -17,6 +17,11 @@ public class SchoolSubscriptionQuotaRecord {
      * lệch nhau; DB có CHECK giữ {@code 0 <= funded <= total}.
      */
     private BigDecimal fundedFromBalanceVnd = BigDecimal.ZERO;
+    /**
+     * Kỳ nguồn mà ví này còn PHẢI nhận tiền tự nạp chưa tiêu -- một cái hẹn, không phải một số tiền.
+     * Chỉ khác null ở kỳ sinh ra từ một lần gia hạn SỚM, và chỉ tới lần job kế tiếp. Xem V13.
+     */
+    private UUID carryFundingFromSubscriptionId;
 
     public SchoolSubscriptionQuotaRecord() {}
 
@@ -56,6 +61,22 @@ public class SchoolSubscriptionQuotaRecord {
         var carried = carriedFundingVnd == null ? BigDecimal.ZERO : carriedFundingVnd.max(BigDecimal.ZERO);
         return new SchoolSubscriptionQuotaRecord(
             null, schoolSubscriptionId, quotaType, included.add(carried), BigDecimal.ZERO, carried);
+    }
+
+    /**
+     * Bản ghi hạn mức của một kỳ TƯƠNG LAI (gia hạn sớm): đúng định mức gói, chưa mang gì sang, cộng
+     * một cái HẸN trỏ về kỳ nguồn.
+     *
+     * <p>Phần tiền tự nạp CỐ Ý để trống ở đây. Kỳ nguồn vẫn đang chạy, vẫn tiêu được và vẫn nạp thêm
+     * được cho tới ranh giới, nên mọi con số chốt tại thời điểm này đều có thể sai đi trước khi kỳ mới
+     * kịp bắt đầu -- chốt sớm là nhân đôi tiền hoặc làm bốc hơi tiền, tùy trường làm gì trong quãng đó.
+     * Xem V13 và {@code CarryQuotaFundingAtPeriodStartService}.
+     */
+    public static SchoolSubscriptionQuotaRecord seededPendingCarry(UUID schoolSubscriptionId,
+            QuotaType quotaType, BigDecimal planIncludedAmountVnd, UUID carryFundingFromSubscriptionId) {
+        var record = seeded(schoolSubscriptionId, quotaType, planIncludedAmountVnd, BigDecimal.ZERO);
+        record.setCarryFundingFromSubscriptionId(carryFundingFromSubscriptionId);
+        return record;
     }
 
     /**
@@ -122,5 +143,13 @@ public class SchoolSubscriptionQuotaRecord {
 
     public void setFundedFromBalanceVnd(BigDecimal fundedFromBalanceVnd) {
         this.fundedFromBalanceVnd = fundedFromBalanceVnd;
+    }
+
+    public UUID getCarryFundingFromSubscriptionId() {
+        return carryFundingFromSubscriptionId;
+    }
+
+    public void setCarryFundingFromSubscriptionId(UUID carryFundingFromSubscriptionId) {
+        this.carryFundingFromSubscriptionId = carryFundingFromSubscriptionId;
     }
 }

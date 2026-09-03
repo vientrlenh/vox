@@ -14,8 +14,10 @@ public enum SchoolBalanceEntryType {
      * sang một túi khác của cùng nhà trường, nên không có cost_usd/fx_rate_used và không gắn phiên
      * nào.
      *
-     * <p>Một CHIỀU: không có đường chuyển ngược về ví, cũng không chuyển được sang loại quota kia.
-     * Nhầm ví thì chỉ System Admin gỡ được bằng một dòng ADJUSTMENT.
+     * <p>Một CHIỀU và HIỆN CHƯA gỡ được: không có đường chuyển ngược về ví, không chuyển được sang
+     * loại quota kia, và một dòng ADJUSTMENT KHÔNG phải cách sửa -- nó cộng tiền lại vào ví nhưng
+     * không hạ được ví hạn mức (mọi lệnh ghi school_subscription_quota_records đều chỉ cộng), nên
+     * trường sẽ giữ cả hai. Xem FundQuotaFromBalanceUseCase.
      *
      * <p>Bắt buộc có actor + quotaType -- xem chk_school_balance_entries_quota_funding_traceable (V12).
      */

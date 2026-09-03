@@ -54,16 +54,29 @@ public class SchoolSubscriptionQuotaRecordJpaEntity {
     })
     private BigDecimal fundedFromBalanceVnd;
 
+    // Cái hẹn "còn phải nhận tiền tự nạp chưa tiêu của kỳ nguồn" -- xem V13. NULL ở gần như mọi dòng;
+    // chỉ kỳ sinh ra từ một lần gia hạn SỚM mới mang giá trị, và chỉ tới lần job kế tiếp.
+    @Column(name = "carry_funding_from_subscription_id", check = {
+        @CheckConstraint(
+            name = "chk_school_subscription_quota_records_carry_not_self",
+            constraint = "carry_funding_from_subscription_id IS NULL"
+                + " OR carry_funding_from_subscription_id <> school_subscription_id"
+        )
+    })
+    private UUID carryFundingFromSubscriptionId;
+
     protected SchoolSubscriptionQuotaRecordJpaEntity() {}
 
     public SchoolSubscriptionQuotaRecordJpaEntity(UUID id, UUID schoolSubscriptionId, String quotaType,
-            BigDecimal totalAllocatedAmountVnd, BigDecimal usedAmountVnd, BigDecimal fundedFromBalanceVnd) {
+            BigDecimal totalAllocatedAmountVnd, BigDecimal usedAmountVnd, BigDecimal fundedFromBalanceVnd,
+            UUID carryFundingFromSubscriptionId) {
         this.id = id;
         this.schoolSubscriptionId = schoolSubscriptionId;
         this.quotaType = quotaType;
         this.totalAllocatedAmountVnd = totalAllocatedAmountVnd;
         this.usedAmountVnd = usedAmountVnd;
         this.fundedFromBalanceVnd = fundedFromBalanceVnd == null ? BigDecimal.ZERO : fundedFromBalanceVnd;
+        this.carryFundingFromSubscriptionId = carryFundingFromSubscriptionId;
     }
 
     public UUID getId() {
@@ -112,5 +125,13 @@ public class SchoolSubscriptionQuotaRecordJpaEntity {
 
     public void setFundedFromBalanceVnd(BigDecimal fundedFromBalanceVnd) {
         this.fundedFromBalanceVnd = fundedFromBalanceVnd;
+    }
+
+    public UUID getCarryFundingFromSubscriptionId() {
+        return carryFundingFromSubscriptionId;
+    }
+
+    public void setCarryFundingFromSubscriptionId(UUID carryFundingFromSubscriptionId) {
+        this.carryFundingFromSubscriptionId = carryFundingFromSubscriptionId;
     }
 }

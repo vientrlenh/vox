@@ -24,7 +24,8 @@ public class AllocatePracticeQuotaToStudentsUseCase implements IUseCase<Allocate
     @Transactional
     public QuotaUserAllocationSummaryResponse execute(AllocatePracticeQuotaCommand input) {
         return distributeQuotaToUsersService.distribute(
-            input.schoolId(), QuotaType.PRACTICE, SchoolRoleCodes.STUDENT, fromString(input.mode()), input.allocations()
+            input.schoolId(), QuotaType.PRACTICE, SchoolRoleCodes.STUDENT, fromString(input.mode()),
+            input.allocations(), input.confirmWalletDraw()
         );
     }
 

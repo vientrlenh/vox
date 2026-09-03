@@ -15,8 +15,13 @@ public record AllocateQuotaRequest(
     String mode,
 
     // Bỏ @NotEmpty, do mode auto không cần list này
-    // Vẫn giữ @Valid, dùng cho validate các trường trong record nếu có xuất hiện 
+    // Vẫn giữ @Valid, dùng cho validate các trường trong record nếu có xuất hiện
     @Valid
-    List<AllocateUserQuotaAmountRequest> allocations
+    List<AllocateUserQuotaAmountRequest> allocations,
+
+    // Nullable: client cũ chưa gửi field này phải coi như false ở mapper, không phải lỗi validation.
+    // true = quản trị viên đã xác nhận phần vượt pool sẽ ăn vào ví tự nạp của trường (xem
+    // DistributeQuotaToUsersService.computeManualAmounts / WalletDrawConfirmationRequiredException).
+    Boolean confirmWalletDraw
 ) {
 }

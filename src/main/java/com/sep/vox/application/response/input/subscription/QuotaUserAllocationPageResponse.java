@@ -26,6 +26,10 @@ import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
  *                               vì để client tự nhân: đây là con số mà backend dùng để từ chối, nên
  *                               một phép nhân thứ hai ở client là một cơ hội để hai bên lệch nhau
  *                               vài phần triệu đồng rồi báo lỗi ở chỗ người dùng không hiểu nổi
+ * @param walletBalanceVnd       phần ví TỰ NẠP của trường (school_balances) CÓ THỂ ăn thêm ngoài
+ *                               distributableAmountVnd khi nới trần cá nhân của MỘT người -- không
+ *                               phải một túi tiền dành riêng, và dùng CHUNG cho cả EXAM lẫn PRACTICE
+ *                               (xem WalletDrawConfirmationRequiredException). Đã kẹp về 0, âm là nợ.
  * @param content                người đủ điều kiện ở trang đang xem, kể cả người chưa được chia gì
  */
 public record QuotaUserAllocationPageResponse(
@@ -33,6 +37,7 @@ public record QuotaUserAllocationPageResponse(
     BigDecimal distributedAmountVnd,
     BigDecimal distributableRatio,
     BigDecimal distributableAmountVnd,
+    BigDecimal walletBalanceVnd,
     List<Row> content,
     int page,
     int size,

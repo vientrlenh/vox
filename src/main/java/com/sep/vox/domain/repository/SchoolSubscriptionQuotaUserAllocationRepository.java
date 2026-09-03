@@ -28,6 +28,20 @@ public interface SchoolSubscriptionQuotaUserAllocationRepository {
      */
     BigDecimal sumUnusedAllocation(UUID schoolSubscriptionId, QuotaType quotaType);
 
+    /**
+     * Tổng đã chia cho những người CÒN đủ điều kiện nhận (đang ACTIVE, còn thuộc trường, còn đúng vai
+     * trò). Đây là con số đem so với trần phân phối -- xem javadoc ở tầng Spring Data cho lý do vì sao
+     * cộng tất là sai. Không bao giờ null.
+     */
+    BigDecimal sumAllocatedForEligibleUsers(
+        UUID schoolSubscriptionId, QuotaType quotaType, UUID schoolId, UUID roleId, String userStatus);
+
+    /**
+     * Tổng đã chia trên MỌI dòng, kể cả người không còn đủ điều kiện. Chỉ để hiện phần chênh so với
+     * {@link #sumAllocatedForEligibleUsers}, KHÔNG dùng để chặn. Không bao giờ null.
+     */
+    BigDecimal sumAllocated(UUID schoolSubscriptionId, QuotaType quotaType);
+
     /** Unconditional -- always succeeds, can push usedAmountVnd above allocatedAmountVnd (debt). */
     void addUsage(UUID id, BigDecimal amount);
 }

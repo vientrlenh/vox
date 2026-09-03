@@ -48,4 +48,26 @@ public interface SpringDataSchoolSubscriptionQuotaRecordRepository extends JpaRe
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE SchoolSubscriptionQuotaRecordJpaEntity q SET q.usedAmountVnd = q.usedAmountVnd + :amount WHERE q.id = :id")
     void addUsage(@Param("id") UUID id, @Param("amount") BigDecimal amount);
+
+    /**
+     * Nạp tiền tự nạp vào ví hạn mức: cộng vào total VÀ ghi nhận phần đến từ ví, trong CÙNG MỘT câu
+     * lệnh.
+     *
+     * <p>KHÔNG tách thành addAllocation() rồi cộng funded riêng: hai câu lệnh là hai cơ hội để một cái
+     * chạy còn cái kia không, và hậu quả không đối xứng. Cộng total mà quên funded thì tiền trường bỏ
+     * ra biến mất vào ngày gia hạn (đúng lỗi mà V12 sinh ra để chặn); cộng funded mà quên total thì vi
+     * phạm thẳng chk_..._funded_within_total. Một câu lệnh thì không có trạng thái ở giữa.
+     *
+     * <p>Cặp cờ clearAutomatically/flushAutomatically theo đúng quy tắc chung của repo này: use case
+     * đọc lại chính dòng vừa cộng trong cùng transaction để trả về ví SAU khi nạp, và bút toán trừ ví
+     * đang nằm chờ trong persistence context lúc câu này chạy.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        UPDATE SchoolSubscriptionQuotaRecordJpaEntity q
+        SET q.totalAllocatedAmountVnd = q.totalAllocatedAmountVnd + :amount,
+            q.fundedFromBalanceVnd = q.fundedFromBalanceVnd + :amount
+        WHERE q.id = :id
+        """)
+    void addFundingFromBalance(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 }

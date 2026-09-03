@@ -135,7 +135,7 @@ class LogoutNotificationDeviceCleanUpTests extends ContainerTestConfig {
         logoutUseCase.execute(new LogoutCommand(rawRefreshToken, DEVICE_ID));
 
         assertThat(notificationDeviceRepository.findByUserId(userId))
-            .extracting(NotificationDevice::getDeviceId)
+            .extracting(device -> device.getDeviceId())
             .containsExactly(OTHER_DEVICE_ID);
     }
 

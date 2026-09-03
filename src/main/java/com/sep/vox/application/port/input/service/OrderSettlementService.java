@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.service;
 
 import java.time.Instant;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,6 +20,7 @@ import com.sep.vox.domain.common.AggregateTypeConstant;
 import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.invoice.Invoice;
 import com.sep.vox.domain.model.invoice.InvoiceSourceType;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderItemType;
@@ -36,6 +39,7 @@ import com.sep.vox.domain.repository.PaymentRecordRepository;
 import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
 import com.sep.vox.domain.repository.SchoolBalanceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
+import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -69,6 +73,7 @@ public class OrderSettlementService {
     private final SchoolBalanceEntryRepository schoolBalanceEntryRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolSubscriptionQuotaRecordRepository quotaRecordRepository;
+    private final SchoolSubscriptionQuotaUserAllocationRepository quotaUserAllocationRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository;
     private final SchoolDebtNotificationService schoolDebtNotificationService;
@@ -85,6 +90,7 @@ public class OrderSettlementService {
             SchoolBalanceEntryRepository schoolBalanceEntryRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SchoolSubscriptionQuotaRecordRepository quotaRecordRepository,
+            SchoolSubscriptionQuotaUserAllocationRepository quotaUserAllocationRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
             SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository,
             SchoolDebtNotificationService schoolDebtNotificationService,
@@ -99,6 +105,7 @@ public class OrderSettlementService {
         this.schoolBalanceEntryRepository = schoolBalanceEntryRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.quotaRecordRepository = quotaRecordRepository;
+        this.quotaUserAllocationRepository = quotaUserAllocationRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.subscriptionPlanQuotaRepository = subscriptionPlanQuotaRepository;
         this.schoolDebtNotificationService = schoolDebtNotificationService;
@@ -299,6 +306,14 @@ public class OrderSettlementService {
      * đúng một kỳ đang hiệu lực. Xem SchoolSubscription.activate.
      */
     private UUID activateSubscription(Order order, Instant now) {
+        // Chốt kỳ nguồn TRƯỚC mọi thao tác ghi: cutOverToUpgrade sẽ kéo endDate của các kỳ chưa kết
+        // thúc về hiện tại, và save() bên dưới thêm một kỳ mới -- hỏi "kỳ gần đây nhất" sau bất kỳ
+        // việc nào trong hai việc đó là hỏi về một thế giới đã đổi.
+        var previousSubscriptionId = schoolSubscriptionRepository
+            .findMostRecentBySchoolId(order.getSchoolId())
+            .map(previous -> previous.getId())
+            .orElse(null);
+
         var planId = orderItemRepository.findByOrderId(order.getId()).stream()
             .filter(item -> item.getType() == OrderItemType.SUBSCRIPTION)
             .map(item -> item.getItemId())
@@ -320,7 +335,8 @@ public class OrderSettlementService {
         var subscription = schoolSubscriptionRepository.save(SchoolSubscription.activate(
             order.getSchoolId(), plan, order.getSubtotalAmountVnd(), startsAt, now));
 
-        seedQuotaRecords(subscription.getId(), planId);
+        seedQuotaRecords(subscription.getId(), planId, previousSubscriptionId);
+        carryForwardUserAllocations(previousSubscriptionId, subscription.getId());
 
         if (startsAt.isAfter(now)) {
             LOGGER.info("Gia hạn sớm gói {} cho trường {} từ đơn {} -- kỳ mới chạy {} tới {}",
@@ -383,16 +399,109 @@ public class OrderSettlementService {
      *
      * <p>Phải CHÉP chứ không đọc thẳng từ plan mỗi lần dùng: định mức gói có thể đổi giữa chừng, mà
      * kỳ đang chạy phải giữ nguyên số đã bán. Đây cũng là chỗ used_amount_vnd bắt đầu lại từ 0 cho
-     * kỳ mới -- còn tiền TỰ NẠP thì không đụng tới, nó nằm ở school_balances và sống xuyên kỳ.
+     * kỳ mới -- còn số dư ví tự nạp thì không đụng tới, nó nằm ở school_balances và sống xuyên kỳ.
+     *
+     * <p><b>Tiền trường đã nạp VÀO ví hạn mức thì phải mang sang.</b> Nó không nằm ở school_balances
+     * nữa (đã rời ví khi nạp, kèm bút toán QUOTA_FUNDING) mà nằm ngay trong bản ghi bị dựng lại ở đây
+     * -- nên không mang sang là XOÁ TIỀN THẬT của trường vào đúng ngày họ gia hạn. Khác hẳn ca mất
+     * trần chi cá nhân: trần chi thì quản trị viên chia lại được, tiền thì không.
+     *
+     * <p>Chỉ mang phần CHƯA TIÊU, theo quy ước "tiền gói tiêu trước, tiền tự nạp tiêu sau" -- xem
+     * {@link SchoolSubscriptionQuotaRecord#unspentFundedVnd()}.
      */
-    private void seedQuotaRecords(UUID subscriptionId, UUID planId) {
+    private void seedQuotaRecords(UUID subscriptionId, UUID planId, UUID previousSubscriptionId) {
+        var carriedByType = unspentFundingByQuotaType(previousSubscriptionId);
+
         List<SchoolSubscriptionQuotaRecord> records = subscriptionPlanQuotaRepository
             .findBySubscriptionPlanId(planId).stream()
-            .map(planQuota -> new SchoolSubscriptionQuotaRecord(
-                subscriptionId, planQuota.getQuotaType(), planQuota.getIncludedAmountVnd(), BigDecimal.ZERO))
+            .map(planQuota -> SchoolSubscriptionQuotaRecord.seeded(
+                subscriptionId,
+                planQuota.getQuotaType(),
+                planQuota.getIncludedAmountVnd(),
+                carriedByType.getOrDefault(planQuota.getQuotaType(), BigDecimal.ZERO)))
             .toList();
 
         records.forEach(quotaRecordRepository::save);
+
+        records.stream()
+            .filter(record -> record.getFundedFromBalanceVnd().signum() > 0)
+            .forEach(record -> LOGGER.info("Chuyển {}đ tiền tự nạp chưa tiêu của ví {} sang kỳ {}",
+                record.getFundedFromBalanceVnd(), record.getQuotaType(), subscriptionId));
+
+        var seededTypes = records.stream().map(record -> record.getQuotaType()).toList();
+        carriedByType.forEach((quotaType, amountVnd) -> {
+            if (!seededTypes.contains(quotaType)) {
+                LOGGER.warn(
+                    "Kỳ {} không có ví {} nên {}đ tiền tự nạp chưa tiêu của kỳ {} không mang sang được"
+                        + " -- gói mới không còn loại hạn mức này.",
+                    subscriptionId, quotaType, amountVnd, previousSubscriptionId);
+            }
+        });
+    }
+
+    /**
+     * Phần tiền tự nạp còn chưa tiêu của kỳ cũ, theo từng loại ví.
+     *
+     * <p>Gói mới có thể KHÔNG còn loại ví mà kỳ cũ có (nhà trường đổi sang gói không kèm PRACTICE
+     * chẳng hạn). Khi đó tiền của loại đó không có chỗ nào để mang sang và nằm lại ở kỳ cũ -- một ca
+     * hiếm và chưa có đường xử lý, nên ghi log WARN để lộ ra thay vì lặng lẽ bốc hơi.
+     */
+    private Map<QuotaType, BigDecimal> unspentFundingByQuotaType(UUID previousSubscriptionId) {
+        if (previousSubscriptionId == null) {
+            return Map.of();
+        }
+        var carried = new EnumMap<QuotaType, BigDecimal>(QuotaType.class);
+        for (var record : quotaRecordRepository.findBySchoolSubscriptionId(previousSubscriptionId)) {
+            var unspent = record.unspentFundedVnd();
+            if (unspent.signum() > 0) {
+                carried.put(record.getQuotaType(), unspent);
+            }
+        }
+        return carried;
+    }
+
+    /**
+     * Chép trần chi CÁ NHÂN của kỳ cũ sang kỳ mới.
+     *
+     * <p>Bản ghi phân bổ gắn với {@code school_subscription_id}, mà mỗi kỳ là một dòng subscription
+     * mới, nên nếu không chép thì mọi trần cá nhân BIẾN MẤT đúng lúc kỳ mới bắt đầu -- và hai ví hỏng
+     * theo hai chiều ngược nhau, cùng im lặng như nhau:
+     *
+     * <ul>
+     *   <li>PRACTICE: {@code findPracticeSpendableFundsVnd} lấy LEAST với COALESCE(...,0), nên không
+     *       có dòng nghĩa là 0 -- CẢ TRƯỜNG mất quyền luyện nói cho tới khi có người vào chia lại,
+     *       ngay sau khi trường vừa trả tiền gia hạn.</li>
+     *   <li>EXAM: {@code ClassTestTokenQuotaGuardService.remainingUserAllocation} trả null khi không
+     *       có dòng, và cửa chặn bỏ qua null -- mọi giáo viên thành không còn trần chi nào.</li>
+     * </ul>
+     *
+     * <p>Chép TRẦN, KHÔNG chép phần đã tiêu: {@code upsertAllocation} dựng dòng mới với
+     * {@code used = 0}, đúng bằng cách {@link #seedQuotaRecords} cho ví cấp trường bắt đầu lại từ 0.
+     * Kỳ mới là một ngân sách mới, ở cả hai cấp.
+     *
+     * <p><b>Ảnh chụp lấy tại thời điểm TRẢ TIỀN, không phải lúc kỳ mới chạy.</b> Với gia hạn sớm, hai
+     * mốc đó cách nhau và mọi thay đổi phân bổ trong quãng giữa sẽ không theo sang. Chấp nhận có ý:
+     * bám đúng mốc bắt đầu thì phải có thêm một job quét kỳ tới hạn, trong khi cái giá của việc lệch
+     * chỉ là vài con số cũ mà quản trị trường sửa lại được bất cứ lúc nào -- còn cái giá của việc
+     * không chép gì cả là cả trường đứng hình.
+     */
+    private void carryForwardUserAllocations(UUID previousSubscriptionId, UUID newSubscriptionId) {
+        if (previousSubscriptionId == null) {
+            return;
+        }
+
+        for (var quotaType : QuotaType.values()) {
+            var carried = quotaUserAllocationRepository
+                .findBySchoolSubscriptionIdAndQuotaType(previousSubscriptionId, quotaType);
+            for (var allocation : carried) {
+                quotaUserAllocationRepository.upsertAllocation(
+                    newSubscriptionId, quotaType, allocation.getUserId(), allocation.getAllocatedAmountVnd());
+            }
+            if (!carried.isEmpty()) {
+                LOGGER.info("Chuyển {} trần chi cá nhân {} từ kỳ {} sang kỳ {}",
+                    carried.size(), quotaType, previousSubscriptionId, newSubscriptionId);
+            }
+        }
     }
 
     /**

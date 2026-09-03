@@ -49,6 +49,59 @@ public interface SpringDataSchoolSubscriptionQuotaUserAllocationRepository exten
         @Param("schoolSubscriptionId") UUID schoolSubscriptionId,
         @Param("quotaType") String quotaType);
 
+    /**
+     * Tổng đã chia cho những người CÒN đủ điều kiện nhận -- cùng phép lọc mà màn chia hạn mức dùng để
+     * dựng danh sách ({@code SchoolUserRepository.findBySchoolId} với status ACTIVE + roleId).
+     *
+     * <p>Phải lọc chứ không cộng tất: dòng phân bổ KHÔNG bị xoá khi giáo viên nghỉ việc hay học sinh
+     * ra trường, nên cộng tất là đếm cả phần đứng tên những người không còn xuất hiện ở bất kỳ trang
+     * nào của bảng. Trường nhìn thấy "đã chia" lớn hơn tổng các dòng đang hiện, và tới lúc phần vô
+     * hình đó chạm trần thì mọi lần chia tiếp đều bị từ chối mà không màn hình nào giải thích nổi.
+     *
+     * <p>Bỏ họ khỏi tổng KHÔNG tạo ra tiền từ hư không: phần họ đã TIÊU vẫn nằm nguyên ở
+     * {@code used_amount_vnd} của ví trường (ConsumeQuotaService.consumeUserAllocation cộng dồn cùng
+     * khoản vào cả hai bộ đếm). Thứ thôi chiếm chỗ trong trần chỉ là phần CHƯA ai tiêu được nữa.
+     *
+     * <p>Dòng của họ cũng KHÔNG bị xoá: nếu tài khoản được kích hoạt lại thì trần cũ trở lại nguyên
+     * vẹn, và giữ lại thì sổ sách vẫn tra ngược được ai từng được cấp bao nhiêu.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(a.allocatedAmountVnd), 0)
+        FROM SchoolSubscriptionQuotaUserAllocationJpaEntity a
+        JOIN SchoolUserJpaEntity su ON su.userId = a.userId
+        JOIN UserJpaEntity u ON u.id = a.userId
+        WHERE a.schoolSubscriptionId = :schoolSubscriptionId
+          AND a.quotaType = :quotaType
+          AND su.schoolId = :schoolId
+          AND u.status = :status
+          AND EXISTS (
+              SELECT 1 FROM UserRoleJpaEntity ur
+              WHERE ur.userId = a.userId AND ur.roleId = :roleId)
+        """)
+    BigDecimal sumAllocatedForEligibleUsers(
+        @Param("schoolSubscriptionId") UUID schoolSubscriptionId,
+        @Param("quotaType") String quotaType,
+        @Param("schoolId") UUID schoolId,
+        @Param("roleId") UUID roleId,
+        @Param("status") String status);
+
+    /**
+     * Tổng đã chia trên MỌI dòng, kể cả người không còn đủ điều kiện.
+     *
+     * <p>Chỉ dùng để hiện phần chênh so với {@link #sumAllocatedForEligibleUsers} -- con số đó mới là
+     * con số đem so với trần. Có mặt ở đây để phần "vô hình" được nói thành lời trên giao diện thay vì
+     * bị lặng lẽ loại khỏi phép tính.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(a.allocatedAmountVnd), 0)
+        FROM SchoolSubscriptionQuotaUserAllocationJpaEntity a
+        WHERE a.schoolSubscriptionId = :schoolSubscriptionId
+          AND a.quotaType = :quotaType
+        """)
+    BigDecimal sumAllocated(
+        @Param("schoolSubscriptionId") UUID schoolSubscriptionId,
+        @Param("quotaType") String quotaType);
+
     // clearAutomatically=true -- cùng lý do với SpringDataSchoolSubscriptionQuotaRecordRepository.addUsage:
     // tránh Hibernate trả về entity cache cũ nếu có chỗ nào sau này đọc lại trong cùng transaction.
     //

@@ -15,6 +15,13 @@ public interface SchoolSubscriptionQuotaRecordRepository {
     Optional<SchoolSubscriptionQuotaRecord> findBySchoolSubscriptionIdAndQuotaType(UUID schoolSubscriptionId, QuotaType quotaType);
     void addAllocation(UUID quotaId, BigDecimal amount);
 
+    /**
+     * Chuyển tiền từ ví tự nạp vào ví hạn mức: cộng vào cả {@code totalAllocatedAmountVnd} lẫn
+     * {@code fundedFromBalanceVnd} trong cùng một câu lệnh. Chỗ gọi PHẢI đã trừ ví và ghi bút toán
+     * QUOTA_FUNDING trong cùng transaction -- xem FundQuotaFromBalanceUseCase.
+     */
+    void addFundingFromBalance(UUID quotaId, BigDecimal amount);
+
     /** returns false if usedAmountVnd + amount would exceed totalAllocatedAmountVnd. */
     boolean tryConsume(UUID quotaId, BigDecimal amount);
 

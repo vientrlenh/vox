@@ -143,30 +143,43 @@ public class DistributeQuotaToUsersService {
 
         var existing = fetchExistingAllocationsByUserId(subscription.getId(), quotaType);
 
+        // null (không phải 0) cho người CHƯA có dòng phân bổ: hai trạng thái đó cho hành vi ngược
+        // nhau ở cửa chặn, nên gộp chúng thành cùng một số 0 là giấu mất thông tin mà quản trị trường
+        // cần nhất -- xem javadoc của Row.
         var rows = userPage.content().stream()
             .map(schoolUser -> schoolUser.getUserId())
             .map(userId -> {
                 var allocation = existing.get(userId);
                 return new QuotaUserAllocationPageResponse.Row(
                     userId,
-                    allocation == null ? BigDecimal.ZERO : orZero(allocation.getAllocatedAmountVnd()),
+                    allocation == null ? null : orZero(allocation.getAllocatedAmountVnd()),
                     allocation == null ? BigDecimal.ZERO : orZero(allocation.getUsedAmountVnd()));
             })
             .toList();
 
         // Tổng trên TOÀN BỘ tập, không phải trang đang xem -- giao diện dùng nó để biết còn chia được
         // bao nhiêu, mà cộng cột của một trang thì ra số sai ngay từ trang thứ hai.
-        var distributed = existing.values().stream()
-            .map(allocation -> orZero(allocation.getAllocatedAmountVnd()))
-            .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+        //
+        // Cộng ở DB chứ không cộng `existing` trong bộ nhớ: phép cộng phải loại người không còn đủ
+        // điều kiện (xem sumAllocatedForEligibleUsers), mà lọc được ở tầng Java thì phải nạp trước
+        // toàn bộ danh sách người đủ điều kiện của trường -- đúng cái mà việc phân trang màn này sinh
+        // ra để tránh.
+        var distributed = subscriptionQuotaUserAllocationRepository.sumAllocatedForEligibleUsers(
+            subscription.getId(), quotaType, schoolId, role.getId(), UserStatus.ACTIVE.name());
+        var orphaned = subscriptionQuotaUserAllocationRepository
+            .sumAllocated(subscription.getId(), quotaType)
+            .subtract(distributed)
+            .max(BigDecimal.ZERO);
 
         var policy = schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, quotaType);
 
         return new QuotaUserAllocationPageResponse(
             SchoolSubscriptionQuotaRecordDto.toDto(pool),
             distributed,
+            orphaned,
             policy.getDistributableRatio(),
             policy.distributableAmountOf(orZero(pool.getTotalAllocatedAmountVnd())),
+            spendableFundsVnd(pool, schoolId),
             walletHeadroomVnd(schoolId),
             rows,
             userPage.page(),
@@ -176,10 +189,47 @@ public class DistributeQuotaToUsersService {
         );
     }
 
+    /**
+     * Số tiền trường THẬT SỰ còn trả được cho loại hạn mức này = hạn mức kèm gói còn lại + số dư ví
+     * tự nạp (âm kẹp về 0, vì âm là nợ và nợ đã bị chặn ở một cửa riêng).
+     *
+     * <p>Sinh ra để trả lời một câu mà trần phân phối KHÔNG trả lời được. Trần tính trên
+     * {@code total_allocated} và không hề nhỏ đi khi ví bị tiêu, nên một trường đã tiêu cạn ví vẫn
+     * chia tiếp được tới hết trần mà không có gì cản -- rồi giáo viên bị chặn lúc bấm mở kỳ thi, học
+     * sinh bị chặn giữa buổi luyện, và cả hai đều vừa được báo là mình còn hạn mức.
+     *
+     * <p>CỐ Ý chỉ để cảnh báo, không đem chặn ở đây: trần chi cá nhân là một giới hạn nội bộ, ổn định
+     * suốt kỳ, chứ không phải một phép giữ tiền. Nếu lấy nó làm điều kiện chia thì trần của mọi người
+     * sẽ co lại mỗi khi có ai đó tiêu, và quản trị trường phải chia lại liên tục trong kỳ. Việc CHẶN
+     * vẫn nằm đúng chỗ cũ, ngay trước lúc tốn tiền: ClassTestTokenQuotaGuardService cho đường thi,
+     * findPracticeSpendableFundsVnd cho đường luyện.
+     *
+     * <p>Công thức phải khớp TỪNG ĐỒNG với {@code ClassTestTokenQuotaGuardService.spendableSchoolFundsVnd}
+     * -- một cảnh báo lệch khỏi cửa chặn thật thì hoặc dọa người dùng về khoản vẫn chi được, hoặc để
+     * họ yên tâm về khoản sắp bị từ chối. Ba nơi đang chép lại cùng công thức này (thêm
+     * {@code SchoolFundingResponse}); gom về một chỗ là việc đáng làm khi có dịp sửa cả ba.
+     */
+    private BigDecimal spendableFundsVnd(SchoolSubscriptionQuotaRecord pool, UUID schoolId) {
+        return orZero(pool.getTotalAllocatedAmountVnd())
+            .subtract(orZero(pool.getUsedAmountVnd()))
+            .add(walletHeadroomVnd(schoolId));
+    }
+
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
+    /**
+     * Chia đều TOÀN BỘ phần được phép chia cho những người đủ điều kiện, ghi đè mọi phân bổ cũ của họ.
+     *
+     * <p>Không cần trừ đi phần của người KHÔNG còn đủ điều kiện, và đó là hệ quả trực tiếp của việc
+     * sumOthers/distributedAmountVnd chỉ đếm người đủ điều kiện: sau lượt chia này, tổng trên tập
+     * được đếm đúng bằng {@code distributableVnd}, không dư một đồng.
+     *
+     * <p>Trước khi có phép lọc đó thì chính hàm này đẩy trường vượt trần của chính mình -- nó phát
+     * hết phần được phép chia cho người đủ điều kiện, trong khi dòng của người đã nghỉ vẫn được cộng
+     * vào tổng, nên ngay sau một lần "chia đều tự động" là mọi lần sửa tay đều bị từ chối.
+     */
     private Map<UUID, BigDecimal> computeAutoSplit(List<UUID> eligibleUserIds, BigDecimal distributableVnd,
             Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing) {
         var count = eligibleUserIds.size();
@@ -232,8 +282,18 @@ public class DistributeQuotaToUsersService {
         }
 
         var sumInRequest = result.values().stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+        // Chỉ cộng phần của những người CÒN đủ điều kiện. Dòng phân bổ không bị xoá khi giáo viên
+        // nghỉ việc hay học sinh ra trường, nên cộng cả những dòng đó là để một khoản không ai với
+        // tới được chiếm chỗ trong trần -- mà chủ trường thì không thấy nó ở bất kỳ trang nào của
+        // bảng để mà thu bớt. Đủ nhiều dòng như thế là mọi lần chia đều bị từ chối với một câu báo
+        // lỗi không khớp gì với những con số đang hiện trên màn hình.
+        //
+        // Cùng phép lọc với fetchEligibleUserIds, và cũng chính là tập mà viewPage cộng để ra
+        // distributedAmountVnd -- hai bên phải đếm cùng một tập, nếu không thì con số giao diện dùng
+        // để tính "còn chia được" sẽ không phải con số backend dùng để từ chối.
         var sumOthers = existing.entrySet().stream()
             .filter(e -> !result.containsKey(e.getKey()))
+            .filter(e -> eligibleSet.contains(e.getKey()))
             .map(e -> orZero(e.getValue().getAllocatedAmountVnd()))
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 

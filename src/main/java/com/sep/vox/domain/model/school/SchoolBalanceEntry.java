@@ -257,6 +257,43 @@ public class SchoolBalanceEntry {
     }
 
     /**
+     * Bút toán CHUYỂN tiền từ ví tự nạp sang ví hạn mức của một loại quota.
+     *
+     * <p>Nhận số DƯƠNG và tự đảo dấu, cùng lý do với {@link #overageCharge}: ràng buộc
+     * chk_school_balance_entries_quota_funding_traceable đòi {@code amount_vnd < 0}, và bắt chỗ gọi tự
+     * nhớ {@code .negate()} là chừa sẵn một chỗ để quên.
+     *
+     * <p>{@code costUsd}/{@code fxRateUsed} null và cả hai cột phiên đều null -- ràng buộc trên đòi
+     * đúng như vậy: đây không phải một khoản chi cho AI mà là tiền đổi túi, nên không có hóa đơn nhà
+     * cung cấp nào để đối soát và không có phiên nào gây ra nó.
+     *
+     * <p>{@code actorId} BẮT BUỘC, khác hẳn OVERAGE_CHARGE do hệ thống tự sinh: đây là quyết định của
+     * một con người và không có đường hoàn lại, nên sổ phải nói được ai đã bấm. {@code reason} thì
+     * tuỳ chọn -- đây là thao tác thường ngày, không phải một lần sửa tay như ADJUSTMENT, và bắt gõ
+     * lý do cho mỗi lần nạp chỉ đẻ ra một ô người dùng gõ cho xong.
+     */
+    public static SchoolBalanceEntry forQuotaFunding(UUID schoolId, UUID subscriptionId,
+            QuotaType quotaType, BigDecimal fundedVnd, BigDecimal balanceAfterVnd, UUID actorId,
+            String reason, Instant now) {
+        return new SchoolBalanceEntry(
+            schoolId,
+            subscriptionId,
+            SchoolBalanceEntryType.QUOTA_FUNDING,
+            fundedVnd.negate(),
+            balanceAfterVnd,
+            null,
+            null,
+            null,
+            quotaType,
+            null,
+            null,
+            actorId,
+            reason,
+            now
+        );
+    }
+
+    /**
      * Truyền vào số DƯƠNG, factory tự đảo dấu: chk_school_balance_entries_overage_traceable đòi
      * amount_vnd &lt; 0, và bắt chỗ gọi tự nhớ .negate() là chừa sẵn một chỗ để quên. Cùng ràng buộc
      * đó đòi quotaType/costUsd/fxRateUsed NOT NULL và ĐÚNG MỘT trong hai cột session được set -- gom

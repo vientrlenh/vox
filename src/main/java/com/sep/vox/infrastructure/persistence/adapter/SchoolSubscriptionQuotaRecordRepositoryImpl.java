@@ -59,6 +59,11 @@ public class SchoolSubscriptionQuotaRecordRepositoryImpl implements SchoolSubscr
     }
 
     @Override
+    public void addFundingFromBalance(UUID quotaId, BigDecimal amount) {
+        springDataSchoolSubscriptionQuotaRecordRepository.addFundingFromBalance(quotaId, amount);
+    }
+
+    @Override
     public void addUsage(UUID quotaId, BigDecimal amount) {
         springDataSchoolSubscriptionQuotaRecordRepository.addUsage(quotaId, amount);
     }

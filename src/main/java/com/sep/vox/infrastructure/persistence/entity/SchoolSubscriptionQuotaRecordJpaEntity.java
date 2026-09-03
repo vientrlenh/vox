@@ -44,14 +44,26 @@ public class SchoolSubscriptionQuotaRecordJpaEntity {
     @Column(name = "used_amount_vnd", nullable = false, precision = 18, scale = 6)
     private BigDecimal usedAmountVnd;
 
+    // Phần của total đến từ ví tự nạp thay vì từ gói -- xem V12. Luôn tăng CÙNG total trong một câu
+    // UPDATE (addFundingFromBalance), nên hai cột không lệch được; CHECK ở DB giữ 0 <= funded <= total.
+    @Column(name = "funded_from_balance_vnd", nullable = false, precision = 18, scale = 6, check = {
+        @CheckConstraint(
+            name = "chk_school_subscription_quota_records_funded_within_total",
+            constraint = "funded_from_balance_vnd >= 0 AND funded_from_balance_vnd <= total_allocated_amount_vnd"
+        )
+    })
+    private BigDecimal fundedFromBalanceVnd;
+
     protected SchoolSubscriptionQuotaRecordJpaEntity() {}
 
-    public SchoolSubscriptionQuotaRecordJpaEntity(UUID id, UUID schoolSubscriptionId, String quotaType, BigDecimal totalAllocatedAmountVnd, BigDecimal usedAmountVnd) {
+    public SchoolSubscriptionQuotaRecordJpaEntity(UUID id, UUID schoolSubscriptionId, String quotaType,
+            BigDecimal totalAllocatedAmountVnd, BigDecimal usedAmountVnd, BigDecimal fundedFromBalanceVnd) {
         this.id = id;
         this.schoolSubscriptionId = schoolSubscriptionId;
         this.quotaType = quotaType;
         this.totalAllocatedAmountVnd = totalAllocatedAmountVnd;
         this.usedAmountVnd = usedAmountVnd;
+        this.fundedFromBalanceVnd = fundedFromBalanceVnd == null ? BigDecimal.ZERO : fundedFromBalanceVnd;
     }
 
     public UUID getId() {
@@ -92,5 +104,13 @@ public class SchoolSubscriptionQuotaRecordJpaEntity {
 
     public void setUsedAmountVnd(BigDecimal usedAmountVnd) {
         this.usedAmountVnd = usedAmountVnd;
+    }
+
+    public BigDecimal getFundedFromBalanceVnd() {
+        return fundedFromBalanceVnd;
+    }
+
+    public void setFundedFromBalanceVnd(BigDecimal fundedFromBalanceVnd) {
+        this.fundedFromBalanceVnd = fundedFromBalanceVnd;
     }
 }

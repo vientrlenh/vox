@@ -14,7 +14,8 @@ public final class SchoolSubscriptionQuotaRecordMapper {
             jpa.getSchoolSubscriptionId(),
             fromString(jpa.getQuotaType()),
             jpa.getTotalAllocatedAmountVnd(),
-            jpa.getUsedAmountVnd()
+            jpa.getUsedAmountVnd(),
+            jpa.getFundedFromBalanceVnd()
         );
     }
 
@@ -24,7 +25,8 @@ public final class SchoolSubscriptionQuotaRecordMapper {
             domain.getSchoolSubscriptionId(),
             valueOf(domain.getQuotaType()),
             domain.getTotalAllocatedAmountVnd(),
-            domain.getUsedAmountVnd()
+            domain.getUsedAmountVnd(),
+            domain.getFundedFromBalanceVnd()
         );
     }
 

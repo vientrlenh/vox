@@ -142,6 +142,15 @@ type SchoolSubscriptionQuotaRecord {
     OVERAGE_CHARGE, chứ không đẩy con số này lên quá trần.
     """
     usedAmountVnd: Float!
+    """
+    Phần của totalAllocatedAmountVnd do TRƯỜNG tự nạp từ ví sang, thay vì do gói cấp (V12).
+
+    Sau lần nạp đầu tiên thì totalAllocatedAmountVnd đã trộn hai nguồn, nên đây là con số duy nhất
+    trả lời được "gói cho bao nhiêu, trường bỏ thêm bao nhiêu". Cũng là phần DUY NHẤT sống sót qua
+    lần gia hạn kế tiếp: định mức gói được cấp lại theo gói mới, còn phần này được mang sang theo
+    số CHƯA TIÊU (quy ước: tiền gói tiêu trước, tiền tự nạp tiêu sau).
+    """
+    fundedFromBalanceVnd: Float!
     # KHÔNG còn isLocked ở đây. Nó từng là phép so usedAmountVnd > totalAllocatedAmountVnd, mà điều
     # kiện đó giờ không thể xảy ra nữa (xem trên). "Trường có đang bị khóa không" là một sự thật cấp
     # TRƯỜNG -- số dư ví tự nạp âm, xem SchoolSubscriptionDebtGuardService -- chứ không phải thuộc
@@ -251,8 +260,19 @@ hạn mức của trường áp dụng -- xem ConsumeQuotaService.
 """
 type SchoolQuotaUserAllocation {
     userId: ID!
-    "0 với người chưa được chia gì -- dòng ảo, không có trong DB."
-    allocatedAmountVnd: Float!
+    """
+    null = CHƯA CHIA (không có dòng trong DB), khác hẳn 0 -- hai trạng thái này cho hành vi NGƯỢC
+    NHAU ở cửa chặn.
+
+    Chưa chia thì không bị chặn theo cá nhân: giáo viên tiêu thoải mái trong ví trường
+    (remainingUserAllocation trả null thì cửa chặn bỏ qua), còn học sinh thì ngược lại -- LEAST(...)
+    trong findPracticeSpendableFundsVnd kéo về 0 nên không luyện được lượt nào. Có dòng và bằng 0 thì
+    bị chặn hẳn, ở cả hai loại.
+
+    Client phải hiện hai nhãn khác nhau. Gộp thành cùng một số 0 sẽ giấu mất việc nửa số giáo viên
+    của trường đang không có trần chi nào.
+    """
+    allocatedAmountVnd: Float
     usedAmountVnd: Float!
     """
     Người được chia. Nối qua data loader userById nên một trang N dòng chỉ tốn thêm ĐÚNG MỘT truy vấn
@@ -270,8 +290,17 @@ cột phân bổ của trang đó ra số sai ngay từ trang thứ hai.
 type SchoolQuotaUserAllocationPage {
     "Ví hạn mức cấp trường -- EXAM khi chia cho giáo viên, PRACTICE khi chia cho học sinh."
     pool: SchoolSubscriptionQuotaRecord!
-    "Tổng đã chia cho TẤT CẢ người dùng, không phải chỉ trang này."
+    """
+    Tổng đã chia cho những người CÒN đủ điều kiện, trên toàn bộ tập chứ không phải chỉ trang này.
+    Người đã nghỉ việc / ra trường / đổi vai trò KHÔNG được cộng vào -- xem orphanedAmountVnd.
+    """
     distributedAmountVnd: Float!
+    """
+    Phần đang đứng tên những người KHÔNG còn đủ điều kiện. Không tính vào trần và không hiện ở bất kỳ
+    trang nào của bảng, nên phải nói thành lời: nếu không, tổng trên màn hình và tổng các dòng lệch
+    nhau mà không ai giải thích được. Thường là 0.
+    """
+    orphanedAmountVnd: Float!
     """
     Trần phân phối của trường cho loại hạn mức này, 0..1. Mặc định 1.0 = chia được toàn bộ ví.
     Thuộc về TRƯỜNG nên sống xuyên qua mọi lần gia hạn -- xem school_quota_policies (V5).
@@ -282,6 +311,16 @@ type SchoolQuotaUserAllocationPage {
     dùng để từ chối một lần chia vượt trần; client tự nhân lần nữa là mở đường cho hai bên lệch nhau.
     """
     distributableAmountVnd: Float!
+    """
+    Số tiền trường THẬT SỰ còn trả được cho loại hạn mức này = hạn mức kèm gói còn lại + số dư ví tự
+    nạp (kẹp 0).
+
+    KHÁC HẲN distributableAmountVnd: trần đó tính trên total_allocated và KHÔNG hề nhỏ đi khi ví bị
+    tiêu, nên một trường đã tiêu cạn ví vẫn chia tiếp được tới hết trần. Dùng để CẢNH BÁO, không phải
+    để chặn -- trần chi cá nhân phải ổn định suốt kỳ, còn việc chặn thì đã nằm đúng chỗ ngay trước lúc
+    tốn tiền (ClassTestTokenQuotaGuardService / findPracticeSpendableFundsVnd).
+    """
+    spendableFundsVnd: Float!
     """
     Phần ví TỰ NẠP của trường (school_balances) CÓ THỂ ăn thêm ngoài distributableAmountVnd khi nới
     trần cá nhân của MỘT người -- không phải một túi tiền dành riêng, và dùng CHUNG cho cả EXAM lẫn

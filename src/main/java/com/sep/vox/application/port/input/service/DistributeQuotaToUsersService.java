@@ -2,6 +2,8 @@ package com.sep.vox.application.port.input.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -10,6 +12,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -22,18 +25,21 @@ import com.sep.vox.domain.common.DistributionMode;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
 import com.sep.vox.domain.model.metering.QuotaType;
+import com.sep.vox.domain.model.school.SchoolBalanceEntry;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RoleRepository;
+import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
 import com.sep.vox.domain.repository.SchoolBalanceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SchoolQuotaPolicyRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
+import com.sep.vox.domain.repository.UserRepository;
 
 @Service
 public class DistributeQuotaToUsersService {
@@ -54,6 +60,8 @@ public class DistributeQuotaToUsersService {
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolQuotaPolicyRepository schoolQuotaPolicyRepository;
     private final SchoolBalanceRepository schoolBalanceRepository;
+    private final SchoolBalanceEntryRepository schoolBalanceEntryRepository;
+    private final UserRepository userRepository;
 
     public DistributeQuotaToUsersService(
             UserContextPort userContextPort,
@@ -63,7 +71,9 @@ public class DistributeQuotaToUsersService {
             RoleRepository roleRepository,
             SchoolUserRepository schoolUserRepository,
             SchoolQuotaPolicyRepository schoolQuotaPolicyRepository,
-            SchoolBalanceRepository schoolBalanceRepository) {
+            SchoolBalanceRepository schoolBalanceRepository,
+            SchoolBalanceEntryRepository schoolBalanceEntryRepository,
+            UserRepository userRepository) {
         this.userContextPort = userContextPort;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
@@ -72,8 +82,19 @@ public class DistributeQuotaToUsersService {
         this.schoolUserRepository = schoolUserRepository;
         this.schoolQuotaPolicyRepository = schoolQuotaPolicyRepository;
         this.schoolBalanceRepository = schoolBalanceRepository;
+        this.schoolBalanceEntryRepository = schoolBalanceEntryRepository;
+        this.userRepository = userRepository;
     }
 
+    /**
+     * Một lần cấp/hạ hạn mức cá nhân của MỘT người kéo theo trích/hoàn ví tự nạp -- xem
+     * {@link #computeManualAmounts}. {@code deltaVnd} dương = trích thêm (ăn vào ví), âm = hoàn lại.
+     */
+    private record WalletDraw(UUID userId, BigDecimal deltaVnd) {}
+
+    private record ManualAllocationResult(Map<UUID, BigDecimal> targetAmounts, List<WalletDraw> walletDraws) {}
+
+    @Transactional
     public QuotaUserAllocationSummaryResponse distribute(UUID schoolId, QuotaType quotaType, String roleCode,
             DistributionMode mode, List<AllocateUserQuotaAmountCommand> allocations, boolean confirmWalletDraw) {
         requireSchoolAdminAccess(schoolId);
@@ -95,15 +116,65 @@ public class DistributeQuotaToUsersService {
         var policy = schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, quotaType);
         var distributableVnd = policy.distributableAmountOf(orZero(pool.getTotalAllocatedAmountVnd()));
 
-        var targetAmounts = mode == DistributionMode.AUTO
-            ? computeAutoSplit(eligibleUserIds, distributableVnd, existing)
-            : computeManualAmounts(allocations, eligibleUserIds, existing, distributableVnd,
+        List<WalletDraw> walletDraws = List.of();
+        Map<UUID, BigDecimal> targetAmounts;
+        if (mode == DistributionMode.AUTO) {
+            // AUTO chia đều đúng distributableVnd, không bao giờ vượt pool -- không có ví nào để trích.
+            targetAmounts = computeAutoSplit(eligibleUserIds, distributableVnd, existing);
+        } else {
+            var manual = computeManualAmounts(allocations, eligibleUserIds, existing, distributableVnd,
                 walletHeadroomVnd(schoolId), confirmWalletDraw);
+            targetAmounts = manual.targetAmounts();
+            walletDraws = manual.walletDraws();
+        }
 
         targetAmounts.forEach((userId, amount) ->
             subscriptionQuotaUserAllocationRepository.upsertAllocation(subscription.getId(), quotaType, userId, amount));
 
+        if (!walletDraws.isEmpty()) {
+            applyWalletDraws(schoolId, subscription.getId(), quotaType, walletDraws);
+        }
+
         return buildSummary(subscription.getId(), quotaType, pool, eligibleUserIds);
+    }
+
+    /**
+     * Trừ/hoàn THẬT {@code school_balances} cho từng người đã kéo ví, và ghi lại đúng một bút toán
+     * ALLOCATION_DRAW mỗi người -- cùng đường ghi DUY NHẤT mà {@code SchoolBalanceRepository} đòi hỏi:
+     * khoá dòng MỘT lần rồi tính/lưu/ghi entry tuần tự trong cùng transaction, giống hệt cách
+     * {@code ConsumeQuotaService.chargeOverage} đã làm.
+     */
+    private void applyWalletDraws(UUID schoolId, UUID subscriptionId, QuotaType quotaType,
+            List<WalletDraw> walletDraws) {
+        var now = Instant.now();
+        var actorId = userContextPort.getCurrentAuthenticatedUserId();
+        var balance = schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(schoolId, now);
+        var emailByUserId = emailsOf(walletDraws.stream().map(WalletDraw::userId).toList());
+
+        for (var draw : walletDraws) {
+            var balanceAfterVnd = balance.apply(draw.deltaVnd().negate(), now);
+            var who = emailByUserId.getOrDefault(draw.userId(), draw.userId().toString());
+            var reason = draw.deltaVnd().signum() > 0
+                ? "Cấp hạn mức cá nhân " + quotaType + " cho " + who + ", ăn vào ví tự nạp"
+                : "Hạ hạn mức cá nhân " + quotaType + " của " + who + ", hoàn lại ví tự nạp";
+            schoolBalanceEntryRepository.save(SchoolBalanceEntry.forAllocationDraw(
+                schoolId, subscriptionId, quotaType, draw.userId(), actorId,
+                draw.deltaVnd().negate(), balanceAfterVnd, reason, now));
+        }
+
+        schoolBalanceRepository.save(balance);
+    }
+
+    /**
+     * Email hiện lên "Sao kê" thay vì UUID trần -- trường không quan tâm id, chỉ cần biết cấp cho ai.
+     * Chốt lại NGAY LÚC GHI (bake vào {@code reason}, không phải LEFT JOIN lúc đọc): sổ cái
+     * append-only, nên đây là bản chụp đúng thời điểm phát sinh -- user đổi email sau đó không viết
+     * lại lịch sử, giống các cột snapshot khác trong sổ audit (vd {@code SchoolDebtEvent
+     * .totalAllocatedVnd}). Gộp thành 1 lần {@code findByIdIn} thay vì query riêng từng người.
+     */
+    private Map<UUID, String> emailsOf(List<UUID> userIds) {
+        return userRepository.findByIdIn(userIds).stream()
+            .collect(Collectors.toMap(user -> user.getId(), user -> user.getEmail().value()));
     }
 
     /**
@@ -204,7 +275,7 @@ public class DistributeQuotaToUsersService {
         return result;
     }
 
-    private Map<UUID, BigDecimal> computeManualAmounts(List<AllocateUserQuotaAmountCommand> allocations, List<UUID> eligibleUserIds,
+    private ManualAllocationResult computeManualAmounts(List<AllocateUserQuotaAmountCommand> allocations, List<UUID> eligibleUserIds,
             Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing, BigDecimal distributableVnd,
             BigDecimal walletHeadroomVnd, boolean confirmWalletDraw) {
         if (allocations == null || allocations.isEmpty()) {
@@ -238,9 +309,9 @@ public class DistributeQuotaToUsersService {
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
         // Vượt distributableVnd không còn bị từ chối thẳng nữa: phần vượt có thể ăn vào ví tự nạp của
-        // trường (school_balances) -- CHỈ nới TRẦN, không giữ tiền, y hệt cách ConsumeQuotaService đã
-        // tự động rút ví khi tiêu thật vượt pool. Đòi confirmWalletDraw vì ví đó dùng chung cho cả
-        // EXAM lẫn PRACTICE, quản trị viên phải biết mình đang ăn vào phần chung đó.
+        // trường (school_balances) -- CHỈ nới TRẦN lúc kiểm tra, còn trừ THẬT + ghi sổ nằm ở
+        // applyWalletDraws, tính riêng cho từng người ngay dưới đây. Đòi confirmWalletDraw vì ví đó
+        // dùng chung cho cả EXAM lẫn PRACTICE, quản trị viên phải biết mình đang ăn vào phần chung đó.
         var overDistributableVnd = sumInRequest.add(sumOthers).subtract(distributableVnd);
         if (overDistributableVnd.signum() > 0) {
             if (overDistributableVnd.compareTo(walletHeadroomVnd) > 0) {
@@ -252,7 +323,49 @@ public class DistributeQuotaToUsersService {
             }
         }
 
-        return result;
+        var walletDraws = computeWalletDraws(allocations, existing, distributableVnd, sumOthers);
+        return new ManualAllocationResult(result, walletDraws);
+    }
+
+    /**
+     * Ai gây ra bao nhiêu phần vượt pool, tính TUẦN TỰ theo đúng thứ tự request -- không chỉ MỘT tổng
+     * {@code overDistributableVnd} như phần kiểm tra trần ở trên. Mỗi bút toán ALLOCATION_DRAW phải
+     * quy được về đúng MỘT người (cùng tinh thần {@code chk_school_balance_entries_overage_traceable}
+     * đã đòi cho OVERAGE_CHARGE), nên chạy một tổng chạy (running total) qua từng item, so phần vượt
+     * TRƯỚC/SAU của riêng item đó.
+     *
+     * <p>FE hiện luôn gửi đúng 1 item/lần lưu (xem AllocateQuotaDialog) nên trong thực tế danh sách
+     * trả về không quá 1 phần tử -- vòng lặp này chỉ tổng quát hoá đúng cho trường hợp bulk-edit sau
+     * này, không đổi hành vi của trường hợp phổ biến.
+     */
+    private List<WalletDraw> computeWalletDraws(List<AllocateUserQuotaAmountCommand> allocations,
+            Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing, BigDecimal distributableVnd,
+            BigDecimal sumOthers) {
+        // Điểm xuất phát = tổng THẬT trên toàn trường TRƯỚC khi áp request này, không phải sumOthers
+        // suông -- sumOthers cố ý loại người có trong request (xem chỗ gọi), nên phải cộng lại đúng
+        // giá trị CŨ của từng người trong request thì mới ra đúng tổng hiện tại.
+        var runningTotal = sumOthers;
+        for (var item : allocations) {
+            runningTotal = runningTotal.add(oldAmountOf(item.userId(), existing));
+        }
+
+        var draws = new ArrayList<WalletDraw>();
+        for (var item : allocations) {
+            var oldAmount = oldAmountOf(item.userId(), existing);
+            var overageBefore = runningTotal.subtract(distributableVnd).max(BigDecimal.ZERO);
+            runningTotal = runningTotal.subtract(oldAmount).add(item.amountVnd());
+            var overageAfter = runningTotal.subtract(distributableVnd).max(BigDecimal.ZERO);
+            var delta = overageAfter.subtract(overageBefore);
+            if (delta.signum() != 0) {
+                draws.add(new WalletDraw(item.userId(), delta));
+            }
+        }
+        return draws;
+    }
+
+    private static BigDecimal oldAmountOf(UUID userId, Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing) {
+        var allocation = existing.get(userId);
+        return allocation == null ? BigDecimal.ZERO : orZero(allocation.getAllocatedAmountVnd());
     }
 
     private static BigDecimal usedQuantityOrZero(SchoolSubscriptionQuotaUserAllocation allocation) {

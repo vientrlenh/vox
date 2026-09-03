@@ -31,7 +31,8 @@ public record SchoolBalanceEntryDto(
     String costUsd,
     String fxRateUsed,
     String reason,
-    UUID actorId
+    UUID actorId,
+    UUID targetUserId
 ) {
 
     public static SchoolBalanceEntryDto toDto(SchoolBalanceEntry entry) {
@@ -51,7 +52,8 @@ public record SchoolBalanceEntryDto(
             DecimalText.of(entry.getCostUsd()),
             DecimalText.of(entry.getFxRateUsed()),
             entry.getReason(),
-            entry.getActorId()
+            entry.getActorId(),
+            entry.getTargetUserId()
         );
     }
 }

@@ -24,6 +24,7 @@ public final class SchoolBalanceEntryMapper {
             jpa.getCostUsd(),
             jpa.getFxRateUsed(),
             jpa.getActorId(),
+            jpa.getTargetUserId(),
             jpa.getReason(),
             jpa.getOccurredAt()
         );
@@ -44,6 +45,7 @@ public final class SchoolBalanceEntryMapper {
             domain.getCostUsd(),
             domain.getFxRateUsed(),
             domain.getActorId(),
+            domain.getTargetUserId(),
             domain.getReason(),
             domain.getOccurredAt()
         );

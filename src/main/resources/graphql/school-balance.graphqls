@@ -37,6 +37,11 @@ enum SchoolBalanceEntryType {
     REFUND
     "Quản trị hệ thống sửa tay. Bắt buộc có người thực hiện và lý do."
     ADJUSTMENT
+    """
+    Trích/hoàn ví tự nạp do trường cấp hạn mức cá nhân (giáo viên/học sinh) vượt phần pool của gói.
+    Âm = cấp hạn mức, ăn vào ví. Dương = hạ hạn mức, hoàn lại phần đã ăn.
+    """
+    ALLOCATION_DRAW
 }
 
 """
@@ -110,6 +115,8 @@ type SchoolBalanceEntry {
     màn hình thật sự cần, không phải làm sẵn.
     """
     actorId: ID
+    "ALLOCATION_DRAW: người được cấp/hạ hạn mức cá nhân. null với mọi loại còn lại."
+    targetUserId: ID
 }
 
 type SchoolBalanceEntryPage {

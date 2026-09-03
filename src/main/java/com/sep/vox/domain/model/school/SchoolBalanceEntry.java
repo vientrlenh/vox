@@ -37,8 +37,10 @@ public class SchoolBalanceEntry {
     private BigDecimal costUsd;
     /** Tỷ giá đã dùng để quy đổi costUsd sang amountVnd -- chốt lại vì tỷ giá đổi hằng ngày. */
     private BigDecimal fxRateUsed;
-    /** Người thực hiện: bắt buộc với ADJUSTMENT. */
+    /** Người thực hiện: bắt buộc với ADJUSTMENT/ALLOCATION_DRAW. */
     private UUID actorId;
+    /** Người ĐƯỢC cấp/hạ hạn mức: bắt buộc với ALLOCATION_DRAW, null với mọi loại khác. */
+    private UUID targetUserId;
     private String reason;
     private Instant occurredAt;
 
@@ -47,7 +49,8 @@ public class SchoolBalanceEntry {
     public SchoolBalanceEntry(UUID id, UUID schoolId, UUID subscriptionId, SchoolBalanceEntryType entryType,
             BigDecimal amountVnd, BigDecimal balanceAfterVnd, UUID orderId, UUID examSessionId,
             UUID practiceSessionId, QuotaType quotaType,
-            BigDecimal costUsd, BigDecimal fxRateUsed, UUID actorId, String reason, Instant occurredAt) {
+            BigDecimal costUsd, BigDecimal fxRateUsed, UUID actorId, UUID targetUserId, String reason,
+            Instant occurredAt) {
         this.id = id;
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
@@ -61,6 +64,7 @@ public class SchoolBalanceEntry {
         this.costUsd = costUsd;
         this.fxRateUsed = fxRateUsed;
         this.actorId = actorId;
+        this.targetUserId = targetUserId;
         this.reason = reason;
         this.occurredAt = occurredAt;
     }
@@ -68,7 +72,8 @@ public class SchoolBalanceEntry {
     public SchoolBalanceEntry(UUID schoolId, UUID subscriptionId, SchoolBalanceEntryType entryType,
             BigDecimal amountVnd, BigDecimal balanceAfterVnd, UUID orderId, UUID examSessionId,
             UUID practiceSessionId, QuotaType quotaType,
-            BigDecimal costUsd, BigDecimal fxRateUsed, UUID actorId, String reason, Instant occurredAt) {
+            BigDecimal costUsd, BigDecimal fxRateUsed, UUID actorId, UUID targetUserId, String reason,
+            Instant occurredAt) {
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
         this.entryType = entryType;
@@ -81,6 +86,7 @@ public class SchoolBalanceEntry {
         this.costUsd = costUsd;
         this.fxRateUsed = fxRateUsed;
         this.actorId = actorId;
+        this.targetUserId = targetUserId;
         this.reason = reason;
         this.occurredAt = occurredAt;
     }
@@ -189,6 +195,14 @@ public class SchoolBalanceEntry {
         this.actorId = actorId;
     }
 
+    public UUID getTargetUserId() {
+        return targetUserId;
+    }
+
+    public void setTargetUserId(UUID targetUserId) {
+        this.targetUserId = targetUserId;
+    }
+
     public String getReason() {
         return reason;
     }
@@ -217,19 +231,50 @@ public class SchoolBalanceEntry {
     public static SchoolBalanceEntry forTopUp(UUID schoolId, UUID subscriptionId, UUID orderId,
             BigDecimal creditedAmountVnd, BigDecimal balanceAfterVnd, Instant now) {
         return new SchoolBalanceEntry(
-            schoolId, 
-            subscriptionId, 
-            SchoolBalanceEntryType.TOP_UP, 
-            creditedAmountVnd, 
-            balanceAfterVnd, 
-            orderId, 
-            null, 
-            null, 
-            null, 
-            null, 
-            null, 
-            null, 
-            null, 
+            schoolId,
+            subscriptionId,
+            SchoolBalanceEntryType.TOP_UP,
+            creditedAmountVnd,
+            balanceAfterVnd,
+            orderId,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            now
+        );
+    }
+
+    /**
+     * Bút toán TRÍCH/HOÀN ví tự nạp do cấp/hạ hạn mức cá nhân vượt pool
+     * (DistributeQuotaToUsersService.computeManualAmounts).
+     *
+     * <p>Nhận thẳng {@code deltaVnd} đã có dấu đúng -- KHÔNG auto-negate như
+     * {@link #overageCharge}: chiều này có thể dương (hạ hạn mức, hoàn lại ví) hoặc âm (cấp hạn mức,
+     * ăn vào ví) tuỳ nghiệp vụ, không phải lúc nào cũng trừ như OVERAGE_CHARGE.
+     */
+    public static SchoolBalanceEntry forAllocationDraw(UUID schoolId, UUID subscriptionId,
+            QuotaType quotaType, UUID targetUserId, UUID actorId, BigDecimal deltaVnd,
+            BigDecimal balanceAfterVnd, String reason, Instant now) {
+        return new SchoolBalanceEntry(
+            schoolId,
+            subscriptionId,
+            SchoolBalanceEntryType.ALLOCATION_DRAW,
+            deltaVnd,
+            balanceAfterVnd,
+            null,
+            null,
+            null,
+            quotaType,
+            null,
+            null,
+            actorId,
+            targetUserId,
+            reason,
             now
         );
     }
@@ -281,6 +326,7 @@ public class SchoolBalanceEntry {
             quotaType,
             costUsd,
             fxRateUsed,
+            null,
             null,
             null,
             now

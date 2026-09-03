@@ -41,7 +41,7 @@ public class SchoolBalanceEntryJpaEntity {
     @Column(name = "entry_type", nullable = false, updatable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_school_balance_entries_entry_type_valid",
-            constraint = "entry_type IN ('TOP_UP', 'OVERAGE_CHARGE', 'REFUND', 'ADJUSTMENT')"
+            constraint = "entry_type IN ('TOP_UP', 'OVERAGE_CHARGE', 'REFUND', 'ADJUSTMENT', 'ALLOCATION_DRAW')"
         )
     })
     private String entryType;
@@ -91,6 +91,9 @@ public class SchoolBalanceEntryJpaEntity {
     @Column(name = "actor_id", updatable = false)
     private UUID actorId;
 
+    @Column(name = "target_user_id", updatable = false)
+    private UUID targetUserId;
+
     @Column(name = "reason", updatable = false, length = 2048)
     private String reason;
 
@@ -102,7 +105,8 @@ public class SchoolBalanceEntryJpaEntity {
     public SchoolBalanceEntryJpaEntity(UUID id, UUID schoolId, UUID subscriptionId, String entryType,
             BigDecimal amountVnd, BigDecimal balanceAfterVnd, UUID orderId, UUID examSessionId,
             UUID practiceSessionId, String quotaType,
-            BigDecimal costUsd, BigDecimal fxRateUsed, UUID actorId, String reason, Instant occurredAt) {
+            BigDecimal costUsd, BigDecimal fxRateUsed, UUID actorId, UUID targetUserId, String reason,
+            Instant occurredAt) {
         this.id = id;
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
@@ -116,6 +120,7 @@ public class SchoolBalanceEntryJpaEntity {
         this.costUsd = costUsd;
         this.fxRateUsed = fxRateUsed;
         this.actorId = actorId;
+        this.targetUserId = targetUserId;
         this.reason = reason;
         this.occurredAt = occurredAt;
     }
@@ -222,6 +227,14 @@ public class SchoolBalanceEntryJpaEntity {
 
     public void setActorId(UUID actorId) {
         this.actorId = actorId;
+    }
+
+    public UUID getTargetUserId() {
+        return targetUserId;
+    }
+
+    public void setTargetUserId(UUID targetUserId) {
+        this.targetUserId = targetUserId;
     }
 
     public String getReason() {

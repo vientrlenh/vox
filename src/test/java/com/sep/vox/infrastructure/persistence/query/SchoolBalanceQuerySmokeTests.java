@@ -157,6 +157,6 @@ class SchoolBalanceQuerySmokeTests extends ContainerTestConfig {
         return new SchoolBalanceEntry(
             schoolId, null, SchoolBalanceEntryType.OVERAGE_CHARGE,
             amountVnd, amountVnd, null, UUID.randomUUID(), null, QuotaType.EXAM,
-            new BigDecimal("0.001000"), new BigDecimal("26647.5000"), null, null, occurredAt);
+            new BigDecimal("0.001000"), new BigDecimal("26647.5000"), null, null, null, occurredAt);
     }
 }

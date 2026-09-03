@@ -19,6 +19,7 @@ import com.sep.vox.application.port.input.command.LogoutCommand;
 import com.sep.vox.application.port.input.command.RefreshCommand;
 import com.sep.vox.application.port.input.command.ResetPasswordCommand;
 import com.sep.vox.application.port.input.command.SendResetPasswordOtpCommand;
+import com.sep.vox.application.port.input.usecase.auth.GoogleTokenLoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.LogoutUseCase;
 import com.sep.vox.application.port.input.usecase.auth.RefreshUseCase;
@@ -51,6 +52,7 @@ public class AuthControllerTests {
     private ResetPasswordUseCase resetPasswordUseCase;
     private RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase;
     private VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase;
+    private GoogleTokenLoginUseCase googleTokenLoginUseCase;
     private CookieManagerPort cookieManagerPort;
     private AuthController authController;
 
@@ -66,8 +68,9 @@ public class AuthControllerTests {
         resetPasswordUseCase = mock(ResetPasswordUseCase.class);
         registerBySelfDeclaredUseCase = mock(RegisterBySelfDeclaredUseCase.class);
         verifyRegisterFormOtpUseCase = mock(VerifyRegisterFormOtpUseCase.class);
+        googleTokenLoginUseCase = mock(GoogleTokenLoginUseCase.class);
         cookieManagerPort = mock(CookieManagerPort.class);
-        authController = new AuthController(loginUseCase, registerFromSchoolDirectoryUseCase, setUpPasswordUseCase, refreshUseCase, logoutUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, cookieManagerPort);
+        authController = new AuthController(loginUseCase, registerFromSchoolDirectoryUseCase, setUpPasswordUseCase, refreshUseCase, logoutUseCase, sendResetPasswordOtpUseCase, resetPasswordUseCase, registerBySelfDeclaredUseCase, verifyRegisterFormOtpUseCase, googleTokenLoginUseCase, cookieManagerPort);
     }
 
 

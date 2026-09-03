@@ -333,6 +333,20 @@ app:
       paper-target-question-count: ${PERSONALIZATION_PAPER_TARGET_QUESTION_COUNT:4}
       online-candidate-count: ${PERSONALIZATION_ONLINE_CANDIDATE_COUNT:2}
       online-budget: ${PERSONALIZATION_ONLINE_GENERATION_BUDGET:45s}
+  # Kiểm chứng ID token Google do ứng dụng NATIVE (Flutter, WPF) nộp lên
+  # POST /api/v1/auth/oauth2/google/token. KHÔNG liên quan tới luồng redirect của web ở
+  # spring.security.oauth2 phía trên -- luồng đó do Spring Security tự kiểm token.
+  oauth2:
+    google:
+      # Danh sách client ID CỦA MÌNH được chấp nhận trong claim `aud`. Bỏ trống thì mọi lần
+      # đăng nhập Google từ native bị từ chối (web không ảnh hưởng).
+      #
+      # Phải liệt kê ĐỦ vì mỗi client gửi một `aud` khác nhau:
+      #   - Flutter (Android/iOS) gửi client ID WEB -- đó là việc mà serverClientId của
+      #     google_sign_in làm, nên giá trị này TRÙNG với GOOGLE_CLIENT_ID ở trên;
+      #   - WPF gửi client ID DESKTOP riêng của nó.
+      # Đặt đúng một giá trị là một trong hai client luôn bị từ chối.
+      allowed-audiences: ${GOOGLE_ALLOWED_AUDIENCES:}
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-url: ${OAUTH2_URL}

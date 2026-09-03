@@ -16,7 +16,8 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationReposi
  * SchoolSubscriptionQuotaUserAllocation loại PRACTICE chỉ SCHOOL_ADMIN gọi được và trả cả trường,
  * không lọc theo người gọi (xem ViewPracticeQuotaUserAllocationsUseCase).
  *
- * <p>null = không có allocation riêng, tức không bị chặn theo cá nhân (chỉ pool của trường áp dụng).
+ * <p>null = trường CHƯA phân hạn mức riêng cho học sinh này, tức bị chặn hoàn toàn (xem
+ * SchoolSubscriptionRepository.findPracticeSpendableFundsVnd -- không còn rơi về pool trường).
  */
 @Service
 public class ViewMyPracticeQuotaAllocationUseCase implements IUseCase<Void, SchoolSubscriptionQuotaUserAllocationDto> {

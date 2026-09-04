@@ -41,7 +41,7 @@ public class SchoolBalanceEntryJpaEntity {
     @Column(name = "entry_type", nullable = false, updatable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_school_balance_entries_entry_type_valid",
-            constraint = "entry_type IN ('TOP_UP', 'OVERAGE_CHARGE', 'REFUND', 'ADJUSTMENT')"
+            constraint = "entry_type IN ('TOP_UP', 'OVERAGE_CHARGE', 'QUOTA_FUNDING', 'REFUND', 'ADJUSTMENT')"
         )
     })
     private String entryType;

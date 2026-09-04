@@ -67,6 +67,21 @@ public class SchoolSubscriptionQuotaUserAllocationRepositoryImpl implements Scho
         return sum == null ? BigDecimal.ZERO : sum;
     }
 
+    /** Kẹp null một lần nữa ở đây, cùng lý do với {@link #sumUnusedAllocation}. */
+    @Override
+    public BigDecimal sumAllocatedForEligibleUsers(
+            UUID schoolSubscriptionId, QuotaType quotaType, UUID schoolId, UUID roleId, String userStatus) {
+        var sum = springDataRepository.sumAllocatedForEligibleUsers(
+            schoolSubscriptionId, quotaType.name(), schoolId, roleId, userStatus);
+        return sum == null ? BigDecimal.ZERO : sum;
+    }
+
+    @Override
+    public BigDecimal sumAllocated(UUID schoolSubscriptionId, QuotaType quotaType) {
+        var sum = springDataRepository.sumAllocated(schoolSubscriptionId, quotaType.name());
+        return sum == null ? BigDecimal.ZERO : sum;
+    }
+
     @Override
     public void addUsage(UUID id, BigDecimal amount) {
         springDataRepository.addUsage(id, amount);

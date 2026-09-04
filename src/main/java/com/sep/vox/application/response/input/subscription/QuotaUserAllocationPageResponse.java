@@ -20,12 +20,27 @@ import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
  *
  * @param pool                   ví hạn mức cấp trường -- EXAM khi chia cho giáo viên, PRACTICE khi
  *                               chia cho học sinh
- * @param distributedAmountVnd   tổng đã chia cho TẤT CẢ người dùng, không phải chỉ trang này
+ * @param distributedAmountVnd   tổng đã chia cho những người CÒN đủ điều kiện, trên toàn bộ tập chứ
+ *                               không phải chỉ trang này. Người đã nghỉ/ra trường KHÔNG được cộng vào
+ *                               -- xem {@code orphanedAmountVnd}
+ * @param orphanedAmountVnd      phần đang đứng tên những người KHÔNG còn đủ điều kiện (đã vô hiệu
+ *                               hoá, rời trường, đổi vai trò). Không tính vào trần và không hiện ở
+ *                               bất kỳ trang nào của bảng, nên phải nói thành lời ở đây: nếu không,
+ *                               tổng trên màn hình và tổng các dòng lệch nhau mà không ai giải thích
+ *                               được. Thường là 0
  * @param distributableRatio     trần phân phối của trường cho loại hạn mức này, 0..1
  * @param distributableAmountVnd phần ví được phép chia ra = pool x distributableRatio. Trả sẵn thay
  *                               vì để client tự nhân: đây là con số mà backend dùng để từ chối, nên
  *                               một phép nhân thứ hai ở client là một cơ hội để hai bên lệch nhau
  *                               vài phần triệu đồng rồi báo lỗi ở chỗ người dùng không hiểu nổi
+ * @param spendableFundsVnd      số tiền trường THẬT SỰ còn trả được cho loại hạn mức này = hạn mức
+ *                               kèm gói còn lại + số dư ví tự nạp (kẹp 0). KHÁC HẲN
+ *                               distributableAmountVnd, vốn tính trên total_allocated và không hề
+ *                               giảm khi ví bị tiêu: một trường đã tiêu cạn ví vẫn chia tiếp được
+ *                               trong trần, và trần đó không nói lên điều gì về khả năng chi trả.
+ *                               Giao diện dùng nó để CẢNH BÁO, không phải để chặn -- trần chi là
+ *                               trần chi, còn chặn thì đã có cửa chặn thật lúc mở kỳ thi / dựng đề
+ *                               luyện (ClassTestTokenQuotaGuardService, findPracticeSpendableFundsVnd)
  * @param walletBalanceVnd       phần ví TỰ NẠP của trường (school_balances) CÓ THỂ ăn thêm ngoài
  *                               distributableAmountVnd khi nới trần cá nhân của MỘT người -- không
  *                               phải một túi tiền dành riêng, và dùng CHUNG cho cả EXAM lẫn PRACTICE
@@ -35,8 +50,10 @@ import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 public record QuotaUserAllocationPageResponse(
     SchoolSubscriptionQuotaRecordDto pool,
     BigDecimal distributedAmountVnd,
+    BigDecimal orphanedAmountVnd,
     BigDecimal distributableRatio,
     BigDecimal distributableAmountVnd,
+    BigDecimal spendableFundsVnd,
     BigDecimal walletBalanceVnd,
     List<Row> content,
     int page,
@@ -53,9 +70,23 @@ public record QuotaUserAllocationPageResponse(
      * cột "Họ tên" luôn hiện dấu gạch: {@code SchoolSubscriptionQuotaUserAllocationDto} chưa bao giờ
      * có trường tên, còn client thì khai sẵn một trường như thế và không bao giờ nhận được giá trị.
      *
-     * <p>{@code allocatedAmountVnd} = 0 với người chưa được chia gì. Đó là dòng ẢO, không có trong
-     * DB -- màn chia hạn mức phải hiện được cả người đang có 0 thì quản trị trường mới biết còn ai
-     * chưa chia.
+     * <p><b>{@code allocatedAmountVnd} null = CHƯA CHIA, khác hẳn 0.</b> Hai trạng thái này cho ra
+     * hành vi NGƯỢC NHAU và trước đây bị gộp thành cùng một số 0 trên màn hình:
+     *
+     * <ul>
+     *   <li>chưa có dòng phân bổ (null) = KHÔNG bị chặn theo cá nhân. Với giáo viên nghĩa là tiêu
+     *       thoải mái trong ví trường ({@code ClassTestTokenQuotaGuardService.remainingUserAllocation}
+     *       trả null thì cửa chặn bỏ qua luôn); với học sinh thì ngược lại, LEAST(...) trong
+     *       {@code findPracticeSpendableFundsVnd} kéo về 0 nên em không luyện được lượt nào.</li>
+     *   <li>có dòng và bằng 0 = bị chặn hẳn, ở cả hai loại.</li>
+     * </ul>
+     *
+     * <p>Nên một trường có nửa số giáo viên "0 ₫" có thể đang là nửa số giáo viên KHÔNG có trần chi
+     * nào cả -- và trên bảng cũ thì hai ca đó trông y hệt nhau. Client phải hiện thành hai nhãn khác
+     * nhau ("Chưa phân bổ" vs "0 ₫"), nên kiểu dữ liệu ở đây phải phân biệt được chúng.
+     *
+     * <p>{@code usedAmountVnd} thì luôn có số: chưa có dòng nghĩa là chưa tiêu đồng nào qua trần cá
+     * nhân, và 0 ở đó không mơ hồ.
      */
     public record Row(
         UUID userId,

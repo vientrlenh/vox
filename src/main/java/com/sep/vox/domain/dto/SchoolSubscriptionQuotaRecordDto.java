@@ -7,13 +7,21 @@ import java.util.UUID;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 
-/** Một ví hạn mức cấp TRƯỜNG của kỳ đăng ký hiện tại. */
+/**
+ * Một ví hạn mức cấp TRƯỜNG của kỳ đăng ký hiện tại.
+ *
+ * @param fundedFromBalanceVnd phần của {@code totalAllocatedAmountVnd} do trường tự nạp từ ví thay vì
+ *                             do gói cấp (V12). Sau lần nạp đầu tiên thì total đã trộn hai nguồn, nên
+ *                             đây là con số duy nhất trả lời được "gói cho bao nhiêu, mình bỏ thêm
+ *                             bao nhiêu" -- và cũng là phần DUY NHẤT sống sót qua lần gia hạn kế tiếp.
+ */
 public record SchoolSubscriptionQuotaRecordDto(
     UUID id,
     UUID schoolSubscriptionId,
     String quotaType,
     BigDecimal totalAllocatedAmountVnd,
-    BigDecimal usedAmountVnd
+    BigDecimal usedAmountVnd,
+    BigDecimal fundedFromBalanceVnd
 ) {
 
     public static SchoolSubscriptionQuotaRecordDto toDto(SchoolSubscriptionQuotaRecord domain) {
@@ -22,7 +30,8 @@ public record SchoolSubscriptionQuotaRecordDto(
             domain.getSchoolSubscriptionId(),
             valueOf(domain.getQuotaType()),
             domain.getTotalAllocatedAmountVnd(),
-            domain.getUsedAmountVnd()
+            domain.getUsedAmountVnd(),
+            domain.getFundedFromBalanceVnd()
         );
     }
 

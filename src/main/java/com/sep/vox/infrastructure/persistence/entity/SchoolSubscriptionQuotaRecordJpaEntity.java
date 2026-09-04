@@ -44,14 +44,39 @@ public class SchoolSubscriptionQuotaRecordJpaEntity {
     @Column(name = "used_amount_vnd", nullable = false, precision = 18, scale = 6)
     private BigDecimal usedAmountVnd;
 
+    // Phần của total đến từ ví tự nạp thay vì từ gói -- xem V12. Luôn tăng CÙNG total trong một câu
+    // UPDATE (addFundingFromBalance), nên hai cột không lệch được; CHECK ở DB giữ 0 <= funded <= total.
+    @Column(name = "funded_from_balance_vnd", nullable = false, precision = 18, scale = 6, check = {
+        @CheckConstraint(
+            name = "chk_school_subscription_quota_records_funded_within_total",
+            constraint = "funded_from_balance_vnd >= 0 AND funded_from_balance_vnd <= total_allocated_amount_vnd"
+        )
+    })
+    private BigDecimal fundedFromBalanceVnd;
+
+    // Cái hẹn "còn phải nhận tiền tự nạp chưa tiêu của kỳ nguồn" -- xem V13. NULL ở gần như mọi dòng;
+    // chỉ kỳ sinh ra từ một lần gia hạn SỚM mới mang giá trị, và chỉ tới lần job kế tiếp.
+    @Column(name = "carry_funding_from_subscription_id", check = {
+        @CheckConstraint(
+            name = "chk_school_subscription_quota_records_carry_not_self",
+            constraint = "carry_funding_from_subscription_id IS NULL"
+                + " OR carry_funding_from_subscription_id <> school_subscription_id"
+        )
+    })
+    private UUID carryFundingFromSubscriptionId;
+
     protected SchoolSubscriptionQuotaRecordJpaEntity() {}
 
-    public SchoolSubscriptionQuotaRecordJpaEntity(UUID id, UUID schoolSubscriptionId, String quotaType, BigDecimal totalAllocatedAmountVnd, BigDecimal usedAmountVnd) {
+    public SchoolSubscriptionQuotaRecordJpaEntity(UUID id, UUID schoolSubscriptionId, String quotaType,
+            BigDecimal totalAllocatedAmountVnd, BigDecimal usedAmountVnd, BigDecimal fundedFromBalanceVnd,
+            UUID carryFundingFromSubscriptionId) {
         this.id = id;
         this.schoolSubscriptionId = schoolSubscriptionId;
         this.quotaType = quotaType;
         this.totalAllocatedAmountVnd = totalAllocatedAmountVnd;
         this.usedAmountVnd = usedAmountVnd;
+        this.fundedFromBalanceVnd = fundedFromBalanceVnd == null ? BigDecimal.ZERO : fundedFromBalanceVnd;
+        this.carryFundingFromSubscriptionId = carryFundingFromSubscriptionId;
     }
 
     public UUID getId() {
@@ -92,5 +117,21 @@ public class SchoolSubscriptionQuotaRecordJpaEntity {
 
     public void setUsedAmountVnd(BigDecimal usedAmountVnd) {
         this.usedAmountVnd = usedAmountVnd;
+    }
+
+    public BigDecimal getFundedFromBalanceVnd() {
+        return fundedFromBalanceVnd;
+    }
+
+    public void setFundedFromBalanceVnd(BigDecimal fundedFromBalanceVnd) {
+        this.fundedFromBalanceVnd = fundedFromBalanceVnd;
+    }
+
+    public UUID getCarryFundingFromSubscriptionId() {
+        return carryFundingFromSubscriptionId;
+    }
+
+    public void setCarryFundingFromSubscriptionId(UUID carryFundingFromSubscriptionId) {
+        this.carryFundingFromSubscriptionId = carryFundingFromSubscriptionId;
     }
 }

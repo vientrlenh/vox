@@ -34,8 +34,12 @@ import com.sep.vox.application.port.input.usecase.subscription.ForceSuspendSubsc
 import com.sep.vox.application.port.input.usecase.subscription.PublishSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.UnsuspendSubscriptionUseCase;
 import com.sep.vox.application.port.input.command.SetQuotaDistributionPolicyCommand;
+import com.sep.vox.application.port.input.command.FundQuotaFromBalanceCommand;
 import com.sep.vox.application.port.input.usecase.subscription.SetQuotaDistributionPolicyUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.FundQuotaFromBalanceUseCase;
+import com.sep.vox.application.response.input.subscription.QuotaFundingResponse;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;
+import com.sep.vox.interfaces.rest.dto.request.FundQuotaFromBalanceRequest;
 import com.sep.vox.interfaces.rest.dto.request.SetQuotaDistributionPolicyRequest;
 
 import java.math.BigDecimal;
@@ -65,6 +69,7 @@ public class SubscriptionController {
     private final AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase;
     private final AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase;
     private final SetQuotaDistributionPolicyUseCase setQuotaDistributionPolicyUseCase;
+    private final FundQuotaFromBalanceUseCase fundQuotaFromBalanceUseCase;
 
     public SubscriptionController(
             CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase,
@@ -78,7 +83,8 @@ public class SubscriptionController {
             UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase,
             AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase,
             AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase,
-            SetQuotaDistributionPolicyUseCase setQuotaDistributionPolicyUseCase) {
+            SetQuotaDistributionPolicyUseCase setQuotaDistributionPolicyUseCase,
+            FundQuotaFromBalanceUseCase fundQuotaFromBalanceUseCase) {
         this.createSubscriptionPlanUseCase = createSubscriptionPlanUseCase;
         this.createSubscriptionPlanReplacementUseCase = createSubscriptionPlanReplacementUseCase;
         this.archiveSubscriptionPlanUseCase = archiveSubscriptionPlanUseCase;
@@ -91,6 +97,7 @@ public class SubscriptionController {
         this.allocateExamQuotaToTeachersUseCase = allocateExamQuotaToTeachersUseCase;
         this.allocatePracticeQuotaToStudentsUseCase = allocatePracticeQuotaToStudentsUseCase;
         this.setQuotaDistributionPolicyUseCase = setQuotaDistributionPolicyUseCase;
+        this.fundQuotaFromBalanceUseCase = fundQuotaFromBalanceUseCase;
     }
 
     @PostMapping
@@ -229,6 +236,27 @@ public class SubscriptionController {
      * theo subscription. Bản ghi hạn mức được dựng lại mỗi kỳ, đặt chính sách ở đó là để nó biến mất
      * sau mỗi lần gia hạn (xem V5).
      */
+    /**
+     * Chuyển tiền từ ví tự nạp của trường sang ví hạn mức của {@code quotaType}.
+     *
+     * <p>POST chứ không PUT: đây là một phép CỘNG DỒN, không phải đặt một giá trị. Gọi hai lần là nạp
+     * hai lần -- khác hẳn endpoint chia hạn mức ngay trên (đặt số tuyệt đối nên bấm lại vô hại) và
+     * khác endpoint đặt trần. Giao diện phải chặn bấm đúp; chưa có khoá idempotency ở tầng này.
+     *
+     * <p>Thao tác MỘT CHIỀU và không hoàn lại được: tiền đã vào ví hạn mức thì không quay về ví tự
+     * nạp, cũng không chuyển sang loại quota kia. Xem FundQuotaFromBalanceUseCase.
+     */
+    @PostMapping("/schools/{schoolId}/quota-funding/{quotaType}")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
+    public ResponseEntity<ApiResponse<QuotaFundingResponse>> fundQuotaFromBalance(
+            @PathVariable(name = "schoolId") UUID schoolId,
+            @PathVariable(name = "quotaType") String quotaType,
+            @Valid @RequestBody FundQuotaFromBalanceRequest request) {
+        var data = fundQuotaFromBalanceUseCase.execute(
+            new FundQuotaFromBalanceCommand(schoolId, quotaType, request.amountVnd(), request.reason()));
+        return ResponseEntity.ok(ApiResponse.success("Nạp tiền vào hạn mức thành công", data));
+    }
+
     @PutMapping("/schools/{schoolId}/quota-policies/{quotaType}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<BigDecimal>> setQuotaDistributionPolicy(

@@ -1,5 +1,7 @@
 package com.sep.vox.domain.model.metering;
 
+import com.sep.vox.domain.model.user.SchoolRoleCodes;
+
 /**
  * Hai VÍ hạn mức cấp trường, đều tính bằng VND. Mỗi giá trị ở đây là một túi tiền RIÊNG: tiêu hết
  * túi này không đụng tới túi kia, và mỗi hoạt động chỉ trừ vào ĐÚNG MỘT túi.
@@ -32,5 +34,20 @@ public enum QuotaType {
     /** Chấm thi -- mọi ExamKind (CENTRALIZED lẫn CLASS_TEST) đều trừ vào đây. */
     EXAM,
     /** Học sinh tự luyện nói. */
-    PRACTICE
+    PRACTICE;
+
+    /**
+     * Vai trò nhận trần chi cá nhân của ví này: EXAM chia cho GIÁO VIÊN, PRACTICE chia cho HỌC SINH.
+     *
+     * <p>Đặt ở đây vì đã có ba chỗ cần đúng một câu trả lời -- hai use case chia hạn mức
+     * (AllocateExamQuotaToTeachers / AllocatePracticeQuotaToStudents) và phép lọc "còn đủ điều kiện"
+     * lúc mang trần sang kỳ mới (OrderSettlementService.carryForwardUserAllocations). Ánh xạ này quyết
+     * định AI giữ được trần qua một lần gia hạn, nên hai bên lệch nhau là mất trần của người thật.
+     */
+    public String allocationRoleCode() {
+        return switch (this) {
+            case EXAM -> SchoolRoleCodes.TEACHER;
+            case PRACTICE -> SchoolRoleCodes.STUDENT;
+        };
+    }
 }

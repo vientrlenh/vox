@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -56,6 +57,23 @@ public class SchoolSubscriptionQuotaRecordRepositoryImpl implements SchoolSubscr
     @Override
     public void addAllocation(UUID quotaId, BigDecimal amount) {
         springDataSchoolSubscriptionQuotaRecordRepository.addAllocation(quotaId, amount);
+    }
+
+    @Override
+    public void addFundingFromBalance(UUID quotaId, BigDecimal amount) {
+        springDataSchoolSubscriptionQuotaRecordRepository.addFundingFromBalance(quotaId, amount);
+    }
+
+    @Override
+    public List<SchoolSubscriptionQuotaRecord> findDueFundingCarries(Instant now) {
+        return springDataSchoolSubscriptionQuotaRecordRepository.findDueFundingCarries(now).stream()
+            .map(SchoolSubscriptionQuotaRecordMapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public void clearFundingCarry(UUID quotaId) {
+        springDataSchoolSubscriptionQuotaRecordRepository.clearFundingCarry(quotaId);
     }
 
     @Override

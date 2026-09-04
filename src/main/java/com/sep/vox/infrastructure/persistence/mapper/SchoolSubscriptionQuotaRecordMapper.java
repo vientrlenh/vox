@@ -9,13 +9,16 @@ public final class SchoolSubscriptionQuotaRecordMapper {
     private SchoolSubscriptionQuotaRecordMapper() {}
 
     public static SchoolSubscriptionQuotaRecord toDomain(SchoolSubscriptionQuotaRecordJpaEntity jpa) {
-        return new SchoolSubscriptionQuotaRecord(
+        var domain = new SchoolSubscriptionQuotaRecord(
             jpa.getId(),
             jpa.getSchoolSubscriptionId(),
             fromString(jpa.getQuotaType()),
             jpa.getTotalAllocatedAmountVnd(),
-            jpa.getUsedAmountVnd()
+            jpa.getUsedAmountVnd(),
+            jpa.getFundedFromBalanceVnd()
         );
+        domain.setCarryFundingFromSubscriptionId(jpa.getCarryFundingFromSubscriptionId());
+        return domain;
     }
 
     public static SchoolSubscriptionQuotaRecordJpaEntity toJpa(SchoolSubscriptionQuotaRecord domain) {
@@ -24,7 +27,9 @@ public final class SchoolSubscriptionQuotaRecordMapper {
             domain.getSchoolSubscriptionId(),
             valueOf(domain.getQuotaType()),
             domain.getTotalAllocatedAmountVnd(),
-            domain.getUsedAmountVnd()
+            domain.getUsedAmountVnd(),
+            domain.getFundedFromBalanceVnd(),
+            domain.getCarryFundingFromSubscriptionId()
         );
     }
 

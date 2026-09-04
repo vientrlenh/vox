@@ -407,6 +407,16 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
      * hoặc INVALID (2 trạng thái "đã xử lý xong, sẵn sàng chốt") - còn bất kỳ trạng thái
      * nào khác (PENDING_REVIEW chưa duyệt, FINAL/APPEALED/RE_GRADING/RETAKE_REQUIRED từ
      * luồng phúc khảo/nghi vấn) đều chặn publish cho tới khi được xử lý dứt điểm.
+     *
+     * <p>PHIÊN/KẾT QUẢ ĐÃ XOÁ MỀM (status DELETED) PHẢI LOẠI KHỎI CẢ HAI VÒNG LẶP DƯỚI ĐÂY.
+     * Xoá mềm không xoá dòng, chỉ đổi status -- {@code findByCandidateId}/{@code findByExamId}
+     * không tự lọc theo status, nên nếu không loại tường minh thì một học sinh thi hỏng, bị
+     * xoá phiên, rồi thi lại (DeleteExamSessionUseCase) sẽ chặn publish CỦA CẢ KỲ THI vĩnh
+     * viễn: DELETED không bao giờ tự chuyển thành RELEASED/INVALID (ExamCandidateResultFinalizationService.
+     * finalizeForPublish cũng cố tình bỏ qua DELETED, xem "ngoài phạm vi, giữ nguyên" ở đó),
+     * và phiên đã xoá thì hiển nhiên không có kết quả MỚI để mà lấp vào. Đo thật: chặn ở đúng
+     * dòng "Còn N kết quả chưa ở trạng thái RELEASED hoặc INVALID" dù kỳ thi không còn kết quả
+     * nào đang treo thật sự -- phiên thay thế đã chấm xong, chỉ có phiên CŨ đã xoá là đứng yên.
      */
     private void requirePublishReadiness(UUID examId) {
         var missingResultCount = examCandidateRepository.findByExamId(examId).stream()
@@ -414,7 +424,11 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             .flatMap(candidate -> examSessionRepository.findByCandidateId(candidate.getId()).stream())
             .filter(session -> examId.equals(session.getExamId()))
             .filter(session -> session.getStatus() != ExamSessionStatus.IN_PROGRESS
-                && session.getStatus() != ExamSessionStatus.INTERRUPTED)
+                && session.getStatus() != ExamSessionStatus.INTERRUPTED
+                // Phiên đã xoá không bao giờ "có kết quả" (kết quả của nó cũng đã bị xoá theo,
+                // xem DeleteExamSessionUseCase), nhưng KHÔNG PHẢI thứ đang chặn publish -- nó bị
+                // bỏ qua có chủ đích, không phải bị bỏ sót.
+                && session.getStatus() != ExamSessionStatus.DELETED)
             .filter(session -> examCandidateResultRepository.findBySessionId(session.getId()).isEmpty())
             .count();
         if (missingResultCount > 0) {
@@ -424,7 +438,8 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
 
         var notReadyCount = examCandidateResultRepository.findByExamId(examId).stream()
             .filter(result -> result.getStatus() != ExamCandidateResultStatus.RELEASED
-                && result.getStatus() != ExamCandidateResultStatus.INVALID)
+                && result.getStatus() != ExamCandidateResultStatus.INVALID
+                && result.getStatus() != ExamCandidateResultStatus.DELETED)
             .count();
         if (notReadyCount > 0) {
             throw new IllegalStateException(

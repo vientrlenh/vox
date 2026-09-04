@@ -205,8 +205,9 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             boolean confidenceRequiresReview = thresholdPercent != null
                 ? belowThreshold
                 : confidenceDecision.requiresHumanReview();
-            // Cảnh báo giám sát mức CRITICAL (nhiều người trong khung hình, phát hiện điện thoại,
-            // vật thể cấm) -> luôn đưa sang người soát.
+            // Cảnh báo giám sát đặt nghi vấn LIÊM CHÍNH (nhiều người trong khung hình, phát hiện
+            // điện thoại, vật thể cấm) -> luôn đưa sang người soát. Danh sách ở
+            // ExamProctoringAlert.INTEGRITY_ALERT_TYPES.
             //
             // KHÔNG bị ngưỡng nhà trường bỏ qua, cùng lý do với cờ validity: đây là câu hỏi THỨ BA,
             // khác hẳn hai câu kia. Ngưỡng tin cậy trả lời "chấm tin được tới đâu", validity trả lời
@@ -214,23 +215,35 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             // chính không". Một bài AI chấm rất chắc tay (confidence 0.95) mà camera ghi được hai
             // người ngồi cùng thì con số 0.95 kia không nói gì về việc ai đang nói.
             //
-            // Chỉ CRITICAL, không tính WARNING: mất mặt khỏi camera hay rời cửa sổ là chuyện xảy ra
-            // thường xuyên trong một ca thi thật (16 lượt PERSON_MISSING trong một phiên là số đo
-            // thật), tính cả vào thì gần như mọi bài đều rơi sang chờ soát và việc soát mất ý nghĩa.
+            // Theo LOẠI, KHÔNG theo level. Trước đây cửa này hỏi level = 'CRITICAL', và khi
+            // MULTIPLE_PERSONS bị hạ xuống WARNING (vox-streaming 4cc6598) thì đúng cái ví dụ ở đoạn
+            // trên -- hai người ngồi cùng -- lặng lẽ rơi ra khỏi luật này. Không ai quyết định điều
+            // đó. Level là thang "giám thị phải chạy tới ngay hay không", một câu hỏi về thao tác
+            // trong lúc thi; nó không phải thang để hỏi một bài đã thi xong có đáng tin hay không.
+            //
+            // Danh sách CỐ Ý hẹp, giữ nguyên tinh thần của bản cũ: mất mặt khỏi camera hay rời cửa sổ
+            // là chuyện xảy ra thường xuyên trong một ca thi thật (16 lượt PERSON_MISSING trong một
+            // phiên là số đo thật), tính cả vào thì gần như mọi bài đều rơi sang chờ soát và việc
+            // soát mất ý nghĩa.
             //
             // Truy vấn theo PHIÊN nên mọi câu trong cùng phiên đều nhận cùng kết quả -- đúng ý muốn:
             // vi phạm là của cả buổi thi, không phải của riêng một câu.
-            boolean hasCriticalProctoringAlert =
-                examProctoringAlertRepository.hasCriticalAlert(response.getSessionId());
+            boolean hasIntegrityProctoringAlert =
+                examProctoringAlertRepository.hasIntegrityAlert(response.getSessionId());
             boolean requiresHumanReview =
-                hasCriticalValidityFlag || hasCriticalProctoringAlert || confidenceRequiresReview;
+                hasCriticalValidityFlag || hasIntegrityProctoringAlert || confidenceRequiresReview;
             // Thứ tự ưu tiên của mã lý do: validity -> giám sát -> tin cậy. Chỉ hiện MỘT mã, nên
             // xếp cái cụ thể và hành động được lên trước; "điểm tin cậy thấp" là lý do mơ hồ nhất
             // trong ba cái và cũng là cái người soát ít làm được gì nhất.
+            // PROCTORING_INTEGRITY, không phải PROCTORING_CRITICAL như trước: mã cũ đặt tên theo MỨC
+            // ĐỘ của cảnh báo, mà mức độ giờ không còn là thứ quyết định luật này -- một mã lý do tự
+            // mâu thuẫn với chính điều kiện sinh ra nó. Cùng lý do vox-streaming đổi
+            // CRITICAL_VIOLATION thành UNCOOPERATIVE_CANDIDATE. Bản ghi cũ giữ nguyên mã cũ (sổ thì
+            // không viết lại), nên bảng nhãn phía FE phải hiểu CẢ HAI.
             String reviewReasonCode = hasCriticalValidityFlag
                 ? "VALIDITY_FLAGGED"
-                : hasCriticalProctoringAlert
-                    ? "PROCTORING_CRITICAL"
+                : hasIntegrityProctoringAlert
+                    ? "PROCTORING_INTEGRITY"
                     : (
                         !confidenceRequiresReview
                             ? null

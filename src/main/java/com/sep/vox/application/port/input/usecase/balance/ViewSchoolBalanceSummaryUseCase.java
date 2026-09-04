@@ -16,10 +16,14 @@ import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
 /**
  * Cộng dồn sổ cái ví theo một khoảng thời gian.
  *
- * <p>Bốn lượt cộng dồn riêng chứ không một câu GROUP BY: mỗi lượt dùng lại đúng
+ * <p>Năm lượt cộng dồn riêng chứ không một câu GROUP BY: mỗi lượt dùng lại đúng
  * {@code sumAmountBySchoolIdAndEntryTypeInRange} đã có sẵn (đã COALESCE về 0, đã theo khoảng nửa mở),
- * và cả bốn đều chạy trên {@code idx_school_balance_entries_school_occurred}. Thêm một câu SQL mới
- * chỉ để gộp bốn phép cộng vào một lượt quét là đổi một thứ đang đúng lấy một thứ phải kiểm lại.
+ * và cả năm đều chạy trên {@code idx_school_balance_entries_school_occurred}. Thêm một câu SQL mới
+ * chỉ để gộp năm phép cộng vào một lượt quét là đổi một thứ đang đúng lấy một thứ phải kiểm lại.
+ *
+ * <p>Phải cộng dồn ĐỦ mọi loại của {@code SchoolBalanceEntryType}: ô tổng trên trang sao kê tồn tại
+ * để giải thích mọi thay đổi của số dư, nên bỏ sót một loại là để lại một khoảng tụt không ai giải
+ * thích được. QUOTA_FUNDING từng bị bỏ sót đúng như vậy.
  */
 @Service
 public class ViewSchoolBalanceSummaryUseCase
@@ -47,6 +51,7 @@ public class ViewSchoolBalanceSummaryUseCase
             sum(input, SchoolBalanceEntryType.TOP_UP, from, to),
             sum(input, SchoolBalanceEntryType.REFUND, from, to),
             sum(input, SchoolBalanceEntryType.OVERAGE_CHARGE, from, to),
+            sum(input, SchoolBalanceEntryType.QUOTA_FUNDING, from, to),
             sum(input, SchoolBalanceEntryType.ADJUSTMENT, from, to)
         );
     }

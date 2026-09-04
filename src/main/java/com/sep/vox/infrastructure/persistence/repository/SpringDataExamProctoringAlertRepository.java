@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,17 +17,27 @@ public interface SpringDataExamProctoringAlertRepository extends JpaRepository<E
     List<ExamProctoringAlertJpaEntity> findByExamSessionIdOrderByCapturedAtAsc(UUID examSessionId);
 
     /**
-     * Phiên này có cảnh báo giám sát mức NGHIÊM TRỌNG nào không.
+     * Phiên này có cảnh báo nào thuộc nhóm đặt nghi vấn về LIÊM CHÍNH của bài không.
      *
      * <p>{@code exists} chứ không nạp danh sách rồi lọc: câu hỏi ở đây là có/không, và hàm được gọi
      * một lần cho MỖI câu trả lời khi bộ chấm ghi kết quả -- bài 4 câu là 4 lượt. Nạp cả danh sách
      * để rồi vứt đi là trả giá cho thứ không dùng.
      *
-     * <p>So sánh không phân biệt hoa thường và bỏ khoảng trắng thừa, khớp đúng cách
-     * {@code getAlertSeverity} bên FE đọc cột này -- nguồn ghi cảnh báo là sự kiện ngoài, không có
-     * gì bảo đảm nó luôn viết hoa chuẩn.
+     * <p>{@code UPPER(...)} vì nguồn ghi cảnh báo là sự kiện ngoài, không có gì bảo đảm nó luôn viết
+     * hoa chuẩn -- cùng lý do mà bản trước so sánh {@code level} theo kiểu IgnoreCase. Danh sách
+     * truyền vào đã là chữ hoa (xem {@code ExamProctoringAlert.INTEGRITY_ALERT_TYPES}).
+     *
+     * <p>Câu trước hỏi theo {@code level = 'CRITICAL'}; vì sao đổi sang hỏi theo LOẠI, xem javadoc
+     * của {@code INTEGRITY_ALERT_TYPES}.
      */
-    boolean existsByExamSessionIdAndLevelIgnoreCase(UUID examSessionId, String level);
+    @Query("""
+        SELECT COUNT(alert) > 0 FROM ExamProctoringAlertJpaEntity alert
+        WHERE alert.examSessionId = :examSessionId
+          AND UPPER(TRIM(alert.alertType)) IN :alertTypes
+    """)
+    boolean existsIntegrityAlert(
+        @Param("examSessionId") UUID examSessionId,
+        @Param("alertTypes") Collection<String> alertTypes);
 
     /**
      * Mọi cảnh báo của một ca thi, gộp qua tất cả phiên thi trong ca.

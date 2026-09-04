@@ -2,6 +2,7 @@ package com.sep.vox.domain.model.exam;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -19,6 +20,36 @@ import java.util.UUID;
  * quyết định uphold/regrade/invalidate, và cờ nghi vấn trên phiên thi.
  */
 public class ExamProctoringAlert {
+
+    /**
+     * Những loại cảnh báo đặt câu hỏi "bài này có phải do CHÍNH thí sinh làm không" -- và vì thế
+     * buộc bài phải qua tay người soát. Xem {@code RecordExamAttemptEvaluationUseCase}.
+     *
+     * <p><b>Theo LOẠI, không theo {@code level}.</b> Trước đây cửa này hỏi {@code level = 'CRITICAL'},
+     * và đó là dùng một cái thang để trả lời hai câu hỏi khác nhau. Thang mức của vox-streaming
+     * ({@code DefaultAlertLevel}) định nghĩa theo VIỆC GIÁM THỊ PHẢI LÀM NGAY TRONG LÚC THI --
+     * "CRITICAL: giám thị đứng dậy đi tới chỗ thí sinh". Còn cửa này hỏi một câu hoàn toàn khác:
+     * bài đã thi xong rồi, kết quả có đáng tin về mặt liêm chính không.
+     *
+     * <p>Hai câu đó tách nhau ra đúng lúc MULTIPLE_PERSONS bị hạ từ CRITICAL xuống WARNING
+     * (vox-streaming {@code 4cc6598}). Việc hạ mức là đúng trên thang thao tác: hai người trong khung
+     * không nhất thiết bắt giám thị chạy tới. Nhưng nó lặng lẽ kéo theo cửa liêm chính, và từ đó một
+     * phiên có người thứ hai ngồi cùng KHÔNG còn bị đẩy sang người soát nữa -- không ai quyết định
+     * điều đó, nó rơi ra từ một thay đổi về màu sắc cảnh báo.
+     *
+     * <p>Bám vào LOẠI còn chữa luôn vết nứt theo thời gian: {@code level} được đóng dấu lúc ghi và
+     * không bao giờ tính lại, nên bản ghi cũ vẫn mang CRITICAL còn bản ghi mới mang WARNING cho cùng
+     * một sự việc. Hỏi theo level nghĩa là hai bài thi giống hệt nhau nhận hai kết cục khác nhau chỉ
+     * vì chúng nằm hai bên một lần deploy. Loại thì chưa từng đổi.
+     */
+    public static final Set<String> INTEGRITY_ALERT_TYPES = Set.of(
+        // Người thứ hai trong khung: tín hiệu liêm chính mạnh nhất mà hệ có với một bài thi NÓI --
+        // câu hỏi "ai đang trả lời" là câu hỏi mà điểm số không trả lời được.
+        "MULTIPLE_PERSONS",
+        "PHONE_DETECTED",
+        "PROHIBITED_OBJECT"
+    );
+
     private UUID id;
     private String eventId;
     private UUID examSessionId;

@@ -111,7 +111,7 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
         // Mặc định: KHÔNG có cảnh báo giám sát nghiêm trọng. Các test ở đây kiểm luật chặn ghi đè
         // và luật tin cậy, nên phải loại hẳn biến giám sát ra khỏi kết quả -- để mock trả false
         // theo mặc định của Mockito cũng ra kết quả này, nhưng nói rõ thì đọc test không phải đoán.
-        when(examProctoringAlertRepository.hasCriticalAlert(any())).thenReturn(false);
+        when(examProctoringAlertRepository.hasIntegrityAlert(any())).thenReturn(false);
 
         when(examItemResponseRepository.findById(responseId)).thenReturn(Optional.of(
             new ExamItemResponse(responseId, sessionId, paperItemId, null, null, null, null, null)));
@@ -206,15 +206,19 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
     }
 
     /**
-     * Cảnh báo giám sát mức CRITICAL đẩy bài sang người soát, KHÔNG phụ thuộc điểm tin cậy.
+     * Cảnh báo giám sát đặt nghi vấn liêm chính đẩy bài sang người soát, KHÔNG phụ thuộc điểm tin cậy.
      *
      * <p>Payload dùng ở đây là payload bình thường -- không cờ validity, không tín hiệu xấu -- nên
      * nếu thiếu luật giám sát thì {@code requiresHumanReview} phải là {@code false}. Đó chính là
      * điều kiện làm cho test này chứng minh được luật mới, thay vì đúng nhờ một lý do khác.
+     *
+     * <p>Test này mock thẳng repository nên nó KHÔNG chốt được loại cảnh báo nào thuộc nhóm liêm
+     * chính -- và đó đúng là lý do việc hạ mức MULTIPLE_PERSONS đi qua đây mà không làm đỏ gì cả.
+     * Phần đó nằm ở {@code ExamProctoringAlertIntegrityTypesTests}.
      */
     @Test
-    void should_require_human_review_when_the_session_has_a_critical_proctoring_alert() {
-        when(examProctoringAlertRepository.hasCriticalAlert(sessionId)).thenReturn(true);
+    void should_require_human_review_when_the_session_has_an_integrity_proctoring_alert() {
+        when(examProctoringAlertRepository.hasIntegrityAlert(sessionId)).thenReturn(true);
         when(examItemEvaluationRepository.findLatestByResponseId(responseId)).thenReturn(Optional.empty());
         var saved = new java.util.concurrent.atomic.AtomicReference<ExamItemEvaluation>();
         when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> {
@@ -227,13 +231,13 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
         useCase.execute(command());
 
         assertThat(saved.get().isRequiresHumanReview()).isTrue();
-        assertThat(saved.get().getReviewReasonCode()).isEqualTo("PROCTORING_CRITICAL");
+        assertThat(saved.get().getReviewReasonCode()).isEqualTo("PROCTORING_INTEGRITY");
     }
 
-    /** Không có cảnh báo nghiêm trọng thì luật này không được tự ý bật lên. */
+    /** Không có cảnh báo liêm chính thì luật này không được tự ý bật lên. */
     @Test
-    void should_not_require_human_review_when_there_is_no_critical_proctoring_alert() {
-        when(examProctoringAlertRepository.hasCriticalAlert(sessionId)).thenReturn(false);
+    void should_not_require_human_review_when_there_is_no_integrity_proctoring_alert() {
+        when(examProctoringAlertRepository.hasIntegrityAlert(sessionId)).thenReturn(false);
         when(examItemEvaluationRepository.findLatestByResponseId(responseId)).thenReturn(Optional.empty());
         var saved = new java.util.concurrent.atomic.AtomicReference<ExamItemEvaluation>();
         when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> {
@@ -245,6 +249,6 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
 
         useCase.execute(command());
 
-        assertThat(saved.get().getReviewReasonCode()).isNotEqualTo("PROCTORING_CRITICAL");
+        assertThat(saved.get().getReviewReasonCode()).isNotEqualTo("PROCTORING_INTEGRITY");
     }
 }

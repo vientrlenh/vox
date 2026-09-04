@@ -55,15 +55,18 @@ public class ExamProctoringAlertRepositoryImpl implements ExamProctoringAlertRep
     }
 
     /**
-     * {@code CRITICAL} viết cứng ở đây là mức duy nhất được coi là "nghiêm trọng" -- khớp đúng
-     * {@code getAlertSeverity} bên FE, nơi chỉ CRITICAL hiện nhãn đỏ "Nghiêm trọng". WARNING
-     * (mất mặt khỏi camera, rời cửa sổ) là chuyện thường gặp trong một ca thi thật; coi nó là
-     * nghiêm trọng thì gần như mọi bài đều rơi sang chờ soát và việc soát mất hết ý nghĩa.
+     * Danh sách loại nằm ở {@link ExamProctoringAlert#INTEGRITY_ALERT_TYPES} chứ không viết cứng ở
+     * đây: đó là một quyết định nghiệp vụ ("cảnh báo nào khiến bài mất đáng tin"), không phải một chi
+     * tiết lưu trữ. Adapter chỉ dịch nó thành một câu truy vấn.
+     *
+     * <p>Cố tình KHÔNG lọc thêm theo {@code level}: hai điều kiện thì bản ghi cũ (MULTIPLE_PERSONS
+     * mang CRITICAL) và bản ghi mới (mang WARNING) lại rơi về hai nhánh khác nhau -- đúng vết nứt
+     * đang phải vá.
      */
     @Override
-    public boolean hasCriticalAlert(UUID examSessionId) {
+    public boolean hasIntegrityAlert(UUID examSessionId) {
         return springDataExamProctoringAlertRepository
-            .existsByExamSessionIdAndLevelIgnoreCase(examSessionId, "CRITICAL");
+            .existsIntegrityAlert(examSessionId, ExamProctoringAlert.INTEGRITY_ALERT_TYPES);
     }
 
     @Override

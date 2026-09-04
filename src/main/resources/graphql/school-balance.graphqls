@@ -33,6 +33,15 @@ enum SchoolBalanceEntryType {
     đồng tiền. Vì thế tổng cột số tiền của sổ này KHÔNG phải tổng chi phí AI của trường.
     """
     OVERAGE_CHARGE
+    """
+    Trường chuyển tiền từ ví tự nạp sang ví HẠN MỨC của một loại quota. Tiền RỜI ví nhưng KHÔNG phải
+    một khoản chi cho AI -- nó sang một túi khác của cùng nhà trường, nên không có costUsd/fxRateUsed
+    và không gắn phiên nào. Bắt buộc có quotaType và actorId (V12).
+
+    MỘT CHIỀU và hiện chưa gỡ được: không chuyển ngược về ví, không chuyển sang loại quota kia, và
+    một dòng ADJUSTMENT KHÔNG phải cách sửa. Xem FundQuotaFromBalanceUseCase.
+    """
+    QUOTA_FUNDING
     "Hoàn tiền -- luôn gắn với đơn gốc."
     REFUND
     "Quản trị hệ thống sửa tay. Bắt buộc có người thực hiện và lý do."
@@ -90,7 +99,11 @@ type SchoolBalanceEntry {
     examSessionId: ID
     "OVERAGE_CHARGE. Đúng MỘT trong hai field session có giá trị."
     practiceSessionId: ID
-    "OVERAGE_CHARGE. Ví hạn mức đã đẩy khoản này sang -- chiều BÁO CÁO, không phải ví riêng."
+    """
+    OVERAGE_CHARGE: ví hạn mức đã đẩy khoản này sang -- chiều BÁO CÁO, không phải ví riêng.
+    QUOTA_FUNDING: ví hạn mức tiền vừa ĐI VÀO -- chiều ngược lại, và là thông tin không thể suy ra từ
+    đâu khác trên dòng. Bắt buộc có ở cả hai loại.
+    """
     quotaType: QuotaType
     "OVERAGE_CHARGE. Chi phí GỐC nhà cung cấp tính. Giữ USD để đối soát ngược với hoá đơn Azure."
     costUsd: String
@@ -100,10 +113,12 @@ type SchoolBalanceEntry {
     giá của một lượt gọi lẻ thì phép đối soát ngược không ra.
     """
     fxRateUsed: String
-    "ADJUSTMENT: bắt buộc có. REFUND: có thể có."
+    "ADJUSTMENT: bắt buộc có. REFUND, QUOTA_FUNDING: có thể có."
     reason: String
     """
-    ADJUSTMENT: người thực hiện. null với mọi loại còn lại -- chúng do hệ thống ghi, không do ai bấm.
+    ADJUSTMENT: quản trị HỆ THỐNG đã sửa tay. QUOTA_FUNDING: quản trị TRƯỜNG đã bấm nạp. null với
+    mọi loại còn lại -- chúng do hệ thống ghi, không do ai bấm. Hai vai khác nhau nên client phải rẽ
+    theo entryType để đặt nhãn, đừng đọc mỗi actorId != null.
 
     Id thô chứ không phải tên, cùng cách SchoolDebtEvent trả triggerExamSessionId: hiện tên đòi một
     LEFT JOIN sang users, và khi đó DTO không còn dựng được từ một mình domain model. Đáng làm khi có
@@ -131,6 +146,18 @@ type SchoolBalanceSummary {
     creditedVnd: String!
     "OVERAGE_CHARGE. Luôn <= 0."
     overageChargedVnd: String!
+    """
+    QUOTA_FUNDING. Luôn <= 0.
+
+    Nhóm RIÊNG, không gộp vào overageChargedVnd dù cùng dấu: khoản này KHÔNG phải tiền đã tiêu, nó
+    vẫn là tiền của trường, chỉ nằm ở ví hạn mức thay vì ví tự nạp. Gộp hai thứ làm một là nói với
+    hiệu trưởng rằng trường đã chi một khoản chưa hề chi.
+
+    Có mặt ở đây vì bốn nhóm này phải giải thích ĐỦ mọi thay đổi của số dư trong dải. Thiếu nhóm nào
+    thì sao kê hiện một ví tụt đi mà không ô tổng nào nói vì sao -- đúng chỗ một sổ đối soát không
+    được phép im lặng.
+    """
+    quotaFundedVnd: String!
     "ADJUSTMENT. Dấu nào cũng có thể."
     adjustedVnd: String!
 }

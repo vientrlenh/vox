@@ -14,9 +14,18 @@ public enum ExamSessionStatus {
     GRADING_FAILED, // AI chấm lỗi
     /**
      * Đã xoá mềm (xem {@code DeleteExamSessionUseCase}). Không phải một bước trong vòng đời bài thi
-     * mà là điểm dừng: phiên ở trạng thái này bị ẩn khỏi mọi luồng đọc bằng
-     * {@code @SQLRestriction("deleted_at IS NULL")} trên {@code ExamSessionJpaEntity}, nên trên thực
-     * tế không luồng nghiệp vụ nào còn nhìn thấy nó để mà chuyển trạng thái tiếp.
+     * mà là điểm dừng.
+     *
+     * <p>KHÔNG bị Hibernate tự lọc -- {@code ExamSessionJpaEntity} cố tình không dùng
+     * {@code @SQLRestriction} (xem chú thích ở đó), vì quản trị trường/chủ tịch hội đồng vẫn phải
+     * đọc được phiên đã xoá để giải trình. Nghĩa là {@code findByCandidateId} và mọi truy vấn khác
+     * trên bảng này VẪN TRẢ VỀ dòng DELETED -- người viết truy vấn/luồng nghiệp vụ mới phải tự loại
+     * nó ra khi cần, không có tấm lưới nào ở tầng ORM đỡ hộ.
+     *
+     * <p>Từng bị hiểu nhầm là có {@code @SQLRestriction} (chú thích cũ ở đây nói vậy, sai với thực
+     * tế) -- {@code UpdateExamStatusUseCase.requirePublishReadiness} là nạn nhân thật của hiểu nhầm
+     * đó: thiếu bộ lọc DELETED khiến một học sinh thi hỏng, bị xoá phiên, thi lại là chặn công bố
+     * kết quả của CẢ KỲ THI vĩnh viễn.
      */
     DELETED;
 

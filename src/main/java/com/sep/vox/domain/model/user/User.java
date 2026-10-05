@@ -4,39 +4,40 @@ import java.time.LocalDate;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.valueobject.DateOfBirth;
+import com.sep.vox.domain.common.BaseModel;
+import com.sep.vox.domain.valueobject.BirthDate;
 import com.sep.vox.domain.valueobject.Email;
-import com.sep.vox.domain.valueobject.FullName;
+import com.sep.vox.domain.valueobject.Name;
 import com.sep.vox.domain.valueobject.Phone;
 
-public class User {
-    private UUID id;
+public class User extends BaseModel {
     private Email email;
     private String passwordHash;
+    private UserRole role;
     private Phone phone;
-    private FullName fullName;
+    private Name fullName;
     private Gender gender;
-    private DateOfBirth dateOfBirth;
+    private BirthDate birthDate;
     private String address;
     private String avatarUrl;
     private UserStatus status;
-    private Instant createdAt;
     private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public User() {}
 
-    public User(UUID id, Email email, String passwordHash, Phone phone,
-            FullName fullName, Gender gender, DateOfBirth dateOfBirth, String address, String avatarUrl, UserStatus status,
+    public User(UUID id, Email email, String passwordHash, UserRole role, Phone phone,
+            Name fullName, Gender gender, BirthDate birthDate, String address, String avatarUrl, UserStatus status,
             Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
         this.email = email;
         this.passwordHash = passwordHash;
+        this.role = role;
         this.phone = phone;
         this.fullName = fullName;
         this.gender = gender;
-        this.dateOfBirth = dateOfBirth;
+        this.birthDate = birthDate;
         this.address = address;
         this.avatarUrl = avatarUrl;
         this.status = status;
@@ -46,24 +47,111 @@ public class User {
         this.updatedBy = updatedBy;
     }
 
-    public User(Email email, String passwordHash, Phone phone,
-            FullName fullName, Gender gender, DateOfBirth dateOfBirth, String address, String avatarUrl, UserStatus status,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
+    public User(Builder builder) {
+        this.id = builder.id;
+        this.email = builder.email;
+        this.passwordHash = builder.passwordHash;
+        this.role = builder.role;
+        this.phone = builder.phone;
+        this.fullName = builder.fullName;
+        this.gender = builder.gender;
+        this.birthDate = builder.birthDate;
+        this.address = builder.address;
+        this.avatarUrl = builder.avatarUrl;
+        this.status = builder.status;
+        this.createdAt = builder.createdAt;
+        this.updatedAt = builder.updatedAt;
+        this.createdBy = builder.createdBy;
+        this.updatedBy = builder.updatedBy;
+    }
+
+    public Email getEmail() {
+        return email;
+    }
+
+    public void setEmail(Email email) {
         this.email = email;
-        this.passwordHash = passwordHash;
-        this.phone = phone;
-        this.fullName = fullName;
-        this.gender = gender;
-        this.dateOfBirth = dateOfBirth;
-        this.address = address;
-        this.avatarUrl = avatarUrl;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
     }
 
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public UserRole getRole() {
+        return role;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
+    }
+
+    public Phone getPhone() {
+        return phone;
+    }
+
+    public void setPhone(Phone phone) {
+        this.phone = phone;
+    }
+
+    public Name getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(Name fullName) {
+        this.fullName = fullName;
+    }
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public void setGender(Gender gender) {
+        this.gender = gender;
+    }
+
+    public BirthDate getBirthDate() {
+        return birthDate;
+    }
+
+    public void setBirthDate(BirthDate birthDate) {
+        this.birthDate = birthDate;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public UserStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(UserStatus status) {
+        this.status = status;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 
     public UUID getCreatedBy() {
         return createdBy;
@@ -81,161 +169,107 @@ public class User {
         this.updatedBy = updatedBy;
     }
 
-    public UUID getId() {
-        return id;
+    public static Builder builder() {
+        return new User.Builder();
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    public static User createStudent() {
+        return User.builder()
+            .build();
     }
 
-    public Email getEmail() {
-        return email;
-    }
-    public void setEmail(Email email) {
-        this.email = email;
-    }
+    public static class Builder { 
+        private UUID id;
+        private Email email;
+        private String passwordHash;
+        private UserRole role;
+        private Phone phone;
+        private Name fullName;
+        private Gender gender;
+        private BirthDate birthDate;
+        private String address;
+        private String avatarUrl;
+        private UserStatus status;
+        private Instant createdAt;
+        private Instant updatedAt;
+        private UUID createdBy;
+        private UUID updatedBy;
 
-    public String getPasswordHash() {
-        return passwordHash;
-    }
+        public Builder() {}
 
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
-    }
+        public Builder id(UUID id) {
+            this.id = id;
+            return this;
+        }
 
-    public Phone getPhone() {
-        return phone;
-    }
+        public Builder email(Email email) {
+            this.email = email;
+            return this;
+        } 
 
-    public void setPhone(Phone phone) {
-        this.phone = phone;
-    }
+        public Builder passwordHash(String passwordHash) {
+            this.passwordHash = passwordHash;
+            return this;
+        }
 
-    public FullName getFullName() {
-        return fullName;
-    }
+        public Builder role(UserRole role) {
+            this.role = role;
+            return this;
+        }
 
-    public void setFullName(FullName fullName) {
-        this.fullName = fullName;
-    }
+        public Builder fullName(Name fullName) {
+            this.fullName = fullName;
+            return this;
+        }
 
-    public Gender getGender() {
-        return gender;
-    }
+        public Builder gender(Gender gender) {
+            this.gender = gender;
+            return this;
+        }
 
-    public void setGender(Gender gender) {
-        this.gender = gender;
-    }
+        public Builder birthDate(BirthDate birthDate) {
+            this.birthDate = birthDate;
+            return this;
+        }
 
-    public DateOfBirth getDateOfBirth() {
-        return dateOfBirth;
-    }
+        public Builder address(String address) {
+            this.address = address;
+            return this;
+        }
 
-    public void setDateOfBirth(DateOfBirth dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
+        public Builder avatarUrl(String avatarUrl) {
+            this.avatarUrl = avatarUrl;
+            return this;
+        }
 
-    public String getAddress() {
-        return address;
-    }
+        public Builder status(UserStatus status) {
+            this.status = status;
+            return this;
+        }
 
-    public void setAddress(String address) {
-        this.address = address;
-    }
+        public Builder createdAt(Instant createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
+        public Builder updatedAt(Instant updatedAt) {
+            this.updatedAt = updatedAt;
+            return this;
+        }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-    
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        public Builder createdBy(UUID createdBy) {
+            this.createdBy = createdBy;
+            return this;
+        }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        public Builder updatedBy(UUID updatedBy) {
+            this.updatedBy = updatedBy;
+            return this;
+        }
 
-    public UserStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(UserStatus status) {
-        this.status = status;
-    }
-
-
-
-    /**
-     * Người dùng do trường import/tạo tay nằm ở trạng thái INACTIVE cho tới khi họ tự đặt mật khẩu
-     * qua mail mời, nhưng trường vẫn phải xếp lớp cho họ ngay từ đầu năm. Vì vậy chỉ tài khoản đã
-     * bị khoá hoặc vô hiệu hoá mới không được thêm vào lớp.
-     */
-    public boolean canBeAssignedToSchoolClass() {
-        return status != UserStatus.DISABLED && status != UserStatus.LOCKED;
-    }
-
-    public void updatePasswordAndActivate(String passwordHash, Instant now) {
-        this.passwordHash = passwordHash;
-        this.status = UserStatus.ACTIVE;
-        this.updatedAt = now;
-    }
-
-    private static final String PASSWORD_NOT_SET = "__PASSWORD_NOT_SET__";
-
-    
-    public static User createSchoolAdmin(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdUserId, Instant now) {
-        return new User(
-            new Email(email), 
-            PASSWORD_NOT_SET, 
-            new Phone(phone), 
-            new FullName(fullName), 
-            null, 
-            new DateOfBirth(dateOfBirth), 
-            address, 
-            avatarUrl,
-            UserStatus.INACTIVE, 
-            now, 
-            now, 
-            createdUserId, 
-            createdUserId
-        );
-    }
-
-    public String getAvatarUrl() {
-        return avatarUrl;
-    }
-
-    public void setAvatarUrl(String avatarUrl) {
-        this.avatarUrl = avatarUrl;
-    }
-
-    public static User create(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, Instant now) {
-        return new User(
-            new Email(email),
-            PASSWORD_NOT_SET,
-            new Phone(phone),
-            new FullName(fullName),
-            null,
-            new DateOfBirth(dateOfBirth),
-            address,
-            avatarUrl,
-            UserStatus.INACTIVE,
-            now,
-            now,
-            createdBy,
-            createdBy
-        );
-    }
-
-    public void softDelete(UUID updatedBy, Instant now) {
-        this.status = UserStatus.DISABLED;
-        this.updatedBy = updatedBy;
-        this.updatedAt = now;
+        public User build() {
+            return new User(this);
+        }
     }
 
 }

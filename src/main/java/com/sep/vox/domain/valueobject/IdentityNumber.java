@@ -11,4 +11,12 @@ public record IdentityNumber(String value) {
             throw new IllegalArgumentException("Định dạng mã định danh không hợp lệ");
         }
     }
+
+    public static IdentityNumber from(String identityNumber) {
+        return identityNumber == null ? null : new IdentityNumber(identityNumber);
+    }
+
+    public static String valueOf(IdentityNumber identityNumber) {
+        return identityNumber == null ? null : identityNumber.value;
+    }
 }

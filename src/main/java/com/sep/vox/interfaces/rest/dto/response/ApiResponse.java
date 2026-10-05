@@ -1,12 +1,20 @@
 package com.sep.vox.interfaces.rest.dto.response;
 
-public record ApiResponse<T>(String message, T data) {
+public record ApiResponse<T>(
+    boolean success, 
+    String message, 
+    T data
+) {
 
     public static <T> ApiResponse<T> success(String message, T data) {
-        return new ApiResponse<T>(message, data);
+        return new ApiResponse<T>(true, message, data);
     }
 
-    public static <T> ApiResponse<T> success(String message) {
-        return new ApiResponse<T>(message, null);
+    public static ApiResponse<Void> success(String message) {
+        return new ApiResponse<>(true, message, null);
+    }
+
+    public static ApiResponse<Void> error(String message) {
+        return new ApiResponse<>(false, message, null);
     }
 }

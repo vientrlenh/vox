@@ -13,4 +13,12 @@ public record PostalCode(
             throw new IllegalArgumentException("Định dạng mã bưu chính không hợp lệ");
         }
     }
+
+    public static PostalCode from(String postalCode) {
+        return postalCode == null ? null : new PostalCode(postalCode);
+    }
+
+    public static String valueOf(PostalCode postalCode) {
+        return postalCode == null ? null : postalCode.value;
+    }
 }

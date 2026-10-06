@@ -12,10 +12,10 @@ public record RefreshTokenProperties(
         if (seed == null || seed.strip().isBlank()) {
             throw new IllegalStateException("Refresh token seed is not configured in configuration properties");
         }
-        if (expirationMs == null || expirationMs == 0L) {
+        if (expirationMs == null || expirationMs <= 0L) {
             expirationMs = 60480000L;
         }
-        if (length == null || length == 0) {
+        if (length == null || length <= 0) {
             length = 64;
         }
     }

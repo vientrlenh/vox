@@ -1,6 +1,6 @@
 package com.sep.vox.application.response.output;
 
-public record GeneratedPasswordSetUpToken(
+public record SecurePasswordToken(
     String rawToken,
     String hashedToken
 ) {

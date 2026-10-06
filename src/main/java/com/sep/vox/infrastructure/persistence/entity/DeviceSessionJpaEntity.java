@@ -6,28 +6,26 @@ import java.util.UUID;
 import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
+import com.sep.vox.infrastructure.shared.BaseEntity;
+
 import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "device_sessions", indexes = {
     @Index(columnList = "user_id", name = "idx_device_sessions_users")
 })
-public class DeviceSessionJpaEntity {
-    @Id
-    @Generated(event = EventType.INSERT)
-    @Column(
-        name = "id", 
-        updatable = false,
-        nullable = false,
-        insertable = false,
-        columnDefinition = "UUID default uuidv7()"
-    )
-    private UUID id;
+@Getter 
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SuperBuilder 
+public class DeviceSessionJpaEntity extends BaseEntity {
 
     @Column(name = "user_id", nullable = false, updatable = false)
     private UUID userId;
@@ -55,95 +53,4 @@ public class DeviceSessionJpaEntity {
     @Column(name = "revoked_at")
     private Instant revokedAt;
 
-    protected DeviceSessionJpaEntity() {}
-
-    public DeviceSessionJpaEntity(UUID id, UUID userId, String deviceId, String deviceName, String platform,
-            String ipAddress, String userAgent, Instant revokedAt) {
-        this.id = id;
-        this.userId = userId;
-        this.deviceId = deviceId;
-        this.deviceName = deviceName;
-        this.platform = platform;
-        this.ipAddress = ipAddress;
-        this.userAgent = userAgent;
-        this.revokedAt = revokedAt;
-    }
-
-    public DeviceSessionJpaEntity(UUID userId, String deviceId, String deviceName, String platform, String ipAddress,
-            String userAgent, Instant revokedAt) {
-        this.userId = userId;
-        this.deviceId = deviceId;
-        this.deviceName = deviceName;
-        this.platform = platform;
-        this.ipAddress = ipAddress;
-        this.userAgent = userAgent;
-        this.revokedAt = revokedAt;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public void setUserId(UUID userId) {
-        this.userId = userId;
-    }
-
-    public String getDeviceId() {
-        return deviceId;
-    }
-
-    public void setDeviceId(String deviceId) {
-        this.deviceId = deviceId;
-    }
-
-    public String getDeviceName() {
-        return deviceName;
-    }
-
-    public void setDeviceName(String deviceName) {
-        this.deviceName = deviceName;
-    }
-
-    public String getPlatform() {
-        return platform;
-    }
-
-    public void setPlatform(String platform) {
-        this.platform = platform;
-    }
-
-    public String getIpAddress() {
-        return ipAddress;
-    }
-
-    public void setIpAddress(String ipAddress) {
-        this.ipAddress = ipAddress;
-    }
-
-    public String getUserAgent() {
-        return userAgent;
-    }
-
-    public void setUserAgent(String userAgent) {
-        this.userAgent = userAgent;
-    }
-
-    public Instant getRevokedAt() {
-        return revokedAt;
-    }
-
-    public void setRevokedAt(Instant revokedAt) {
-        this.revokedAt = revokedAt;
-    }
-
-    
-    
 }

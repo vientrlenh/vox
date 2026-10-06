@@ -266,6 +266,11 @@ app:
     seed: ${REFRESH_TOKEN_SEED:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789}
     expiration-ms: ${REFRESH_TOKEN_EXPIRATION_MS:60480000}
     length: ${REFRESH_TOKEN_LENGTH:64}
+  secure-token: 
+    seed: ${SECURE_TOKEN_SEED:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz}
+    length: ${SECURE_TOKEN_LENGTH:32}
+  otp: 
+    seed: ${OTP_SEED:0123456789}
   avatar:
     # Host được phép xuất hiện trong users.avatar_url, ngăn cách bởi dấu phẩy.
     #

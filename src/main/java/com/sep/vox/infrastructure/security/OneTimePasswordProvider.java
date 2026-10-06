@@ -4,25 +4,27 @@ package com.sep.vox.infrastructure.security;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.output.OneTimePasswordPort;
+import com.sep.vox.infrastructure.properties.OtpProperties;
+import com.sep.vox.infrastructure.shared.SecureRandomGenerator;
+import com.sep.vox.infrastructure.shared.TokenHasher;
+
+import lombok.RequiredArgsConstructor;
 
 @Component
+@RequiredArgsConstructor 
 public class OneTimePasswordProvider implements OneTimePasswordPort {
 
-    private final SecureTokenProvider secureTokenProvider;
-
-    public OneTimePasswordProvider(SecureTokenProvider secureTokenProvider) {
-        this.secureTokenProvider = secureTokenProvider;
-    }
+    private final OtpProperties otpProperties;
 
     @Override
-    public String generate(int size) {
-        return secureTokenProvider.generateDigits(size);
+    public String generateOtp(int size) {
+        String seed = otpProperties.seed();
+        return SecureRandomGenerator.generateRaw(seed, size);
     }
 
     @Override
     public String hash(String otp) {
-        return secureTokenProvider.sha256(otp);
+        return TokenHasher.sha256(otp);
     }
-
     
 }

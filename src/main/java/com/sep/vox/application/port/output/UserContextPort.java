@@ -4,10 +4,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface UserContextPort {
-    UUID getCurrentAuthenticatedUserId();
-    Optional<UUID> findCurrentAuthenticatedUserId();
+    Optional<UUID> getCurrentAuthenticatedUserId();
     boolean isSystemAdmin();
-    UUID getCurrentSchoolId();
+    Optional<UUID> getCurrentSchoolId();
     boolean isSchoolAdmin();
     boolean isTeacher();
 }

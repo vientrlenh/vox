@@ -1,7 +1,5 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import java.time.LocalDate;
-
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.model.registerform.RegisterFormVerificationMethod;
@@ -15,109 +13,78 @@ import com.sep.vox.domain.valueobject.SchoolDomain;
 import com.sep.vox.domain.valueobject.PositiveInteger;
 import com.sep.vox.infrastructure.persistence.entity.RegisterFormJpaEntity;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j 
 public final class RegisterFormMapper {
+
+    private RegisterFormMapper() {}
     
     public static RegisterForm toDomain(RegisterFormJpaEntity jpa) {
-        return new RegisterForm(
-            jpa.getId(), 
-            jpa.getSchoolDirectoryId(), 
-            jpa.getSchoolName(), 
-            new SchoolDomain(jpa.getSchoolDomain()), 
-            jpa.getSchoolDistrict(), 
-            jpa.getSchoolProvince(), 
-            jpa.getSchoolAddress(),
-            new FullName(jpa.getContactFullName()), 
-            new IdentityNumber(jpa.getIdentityNumber()), 
-            new Phone(jpa.getContactPhone()),
-            new Email(jpa.getContactEmail()), 
-            new DateOfBirth(jpa.getDateOfBirth()), 
-            jpa.getContactAddress(), 
-            new PostalCode(jpa.getPostalCode()), 
-            jpa.getPosition(), 
-            new StudentCount(jpa.getStudentCount()), 
-            verificationMethodFromString(jpa.getVerificationMethod()), 
-            jpa.getVerifiedAt(), 
-            jpa.getRejectedReason(), 
-            statusFromString(jpa.getStatus()), 
-            jpa.getCreatedAt(), 
-            jpa.getUpdatedAt(), 
-            jpa.getReviewedBy()
-        );
+        try {
+            return RegisterForm.builder()
+                .id(jpa.getId())
+                .schoolDirectoryId(jpa.getSchoolDirectoryId())
+                .schoolName(Name.from(jpa.getSchoolName()))
+                .schoolDomain(SchoolDomain.from(jpa.getSchoolDomain()))
+                .schoolWardId(jpa.getSchoolWardId())
+                .schoolCityId(jpa.getSchoolCityId())
+                .schoolProvinceId(jpa.getSchoolProvinceId())
+                .schoolStreetAddress(jpa.getSchoolStreetAddress())
+                .contactFullName(Name.from(jpa.getContactFullName()))
+                .identityNumber(IdentityNumber.from(jpa.getIdentityNumber()))
+                .contactPhone(Phone.from(jpa.getContactPhone()))
+                .contactEmail(Email.from(jpa.getContactEmail()))
+                .birthDate(BirthDate.from(jpa.getBirthDate()))
+                .contactAddress(jpa.getContactAddress())
+                .postalCode(PostalCode.from(jpa.getPostalCode()))
+                .studentCount(PositiveInteger.from(jpa.getStudentCount()))
+                .verificationMethod(RegisterFormVerificationMethod.from(jpa.getVerificationMethod()))
+                .verifiedAt(jpa.getVerifiedAt())
+                .rejectReason(jpa.getRejectReason())
+                .rejectedAt(jpa.getRejectedAt())
+                .status(RegisterFormStatus.from(jpa.getStatus()))
+                .createdAt(jpa.getCreatedAt())
+                .reviewedBy(jpa.getReviewedBy())
+                .build();
+        } catch (Exception ex) {
+            log.error("An error occurred when mapping form entity to form model: {}", ex.getMessage(), ex);
+            throw new IllegalStateException("A problem occurred when converting entity to model");
+        }
+
     }
 
-    public static RegisterFormJpaEntity toJpa(RegisterForm registerForm) {
-        return new RegisterFormJpaEntity(
-            registerForm.getId(), 
-            registerForm.getSchoolDirectoryId(), 
-            registerForm.getSchoolName(),
-            valueOf(registerForm.getSchoolDomain()), 
-            registerForm.getSchoolDistrict(), 
-            registerForm.getSchoolProvince(), 
-            registerForm.getSchoolAddress(), 
-            valueOf(registerForm.getContactFullName()), 
-            valueOf(registerForm.getIdentityNumber()), 
-            valueOf(registerForm.getContactPhone()), 
-            valueOf(registerForm.getContactEmail()), 
-            valueOf(registerForm.getDateOfBirth()), 
-            registerForm.getContactAddress(), 
-            valueOf(registerForm.getPostalCode()), 
-            registerForm.getPosition(), 
-            valueOf(registerForm.getStudentCount()), 
-            valueOf(registerForm.getVerificationMethod()), 
-            registerForm.getVerifiedAt(), 
-            registerForm.getRejectedReason(), 
-            valueOf(registerForm.getStatus()), 
-            registerForm.getCreatedAt(), 
-            registerForm.getUpdatedAt(), 
-            registerForm.getReviewedBy()
-        );
-    }
-
-    private static String valueOf(FullName fullName) {
-        return fullName == null ? null : fullName.value();
-    }
-
-    private static String valueOf(IdentityNumber identityNumber) {
-        return identityNumber == null ? null : identityNumber.value();
-    }
-
-    private static String valueOf(Phone phone) {
-        return phone == null ? null : phone.value();
-    }
-
-    private static String valueOf(Email email) {
-        return email == null ? null : email.value();
-    }
-
-    private static String valueOf(SchoolDomain schoolDomain) {
-        return schoolDomain == null ? null : schoolDomain.value();
-    }
-
-    private static String valueOf(PostalCode postalCode) {
-        return postalCode == null ? null : postalCode.value();
-    }
-
-    private static int valueOf(StudentCount studentCount) {
-        return studentCount == null ? 0 : studentCount.value();
-    }
-
-    private static LocalDate valueOf(DateOfBirth dateOfBirth) {
-        return dateOfBirth == null ? null : dateOfBirth.value();
-    }
-
-    private static RegisterFormVerificationMethod verificationMethodFromString(String method) {
-        return method == null ? null : RegisterFormVerificationMethod.valueOf(method);
-    }
-
-    private static RegisterFormStatus statusFromString(String status) {
-        return status == null ? null : RegisterFormStatus.valueOf(status);
-    }
-
-    private static String valueOf(RegisterFormVerificationMethod method) {
-        return method == null ? null : method.name();
-    }
-
-    private static String valueOf(RegisterFormStatus status) {
-        return status == null ? null : status.name();
+    public static RegisterFormJpaEntity toJpa(RegisterForm form) {
+        try {
+            return RegisterFormJpaEntity.builder()
+                .id(form.getId())
+                .schoolDirectoryId(form.getSchoolDirectoryId())
+                .schoolName(Name.valueOf(form.getSchoolName()))
+                .schoolDomain(SchoolDomain.valueOf(form.getSchoolDomain()))
+                .schoolWardId(form.getSchoolWardId())
+                .schoolCityId(form.getSchoolCityId())
+                .schoolProvinceId(form.getSchoolProvinceId())
+                .schoolStreetAddress(form.getSchoolStreetAddress())
+                .contactFullName(Name.valueOf(form.getContactFullName()))
+                .identityNumber(IdentityNumber.valueOf(form.getIdentityNumber()))
+                .contactPhone(Phone.valueOf(form.getContactPhone()))
+                .contactEmail(Email.valueOf(form.getContactEmail()))
+                .birthDate(BirthDate.valueOf(form.getBirthDate()))
+                .contactAddress(form.getContactAddress())
+                .postalCode(PostalCode.valueOf(form.getPostalCode()))
+                .studentCount(PositiveInteger.valueOf(form.getStudentCount()))
+                .verificationMethod(RegisterFormVerificationMethod.value(form.getVerificationMethod()))
+                .verifiedAt(form.getVerifiedAt())
+                .rejectReason(form.getRejectReason())
+                .rejectedAt(form.getRejectedAt())
+                .status(RegisterFormStatus.value(form.getStatus()))
+                .createdAt(form.getCreatedAt())
+                .reviewedBy(form.getReviewedBy())
+                .build();
+        } catch (Exception ex) {
+            log.error("An error occurred when mapping form model to form entity: {}", ex.getMessage(), ex);
+            throw new IllegalStateException("A problem occurred when converting model to entity");
+        }
+        
     }
 }

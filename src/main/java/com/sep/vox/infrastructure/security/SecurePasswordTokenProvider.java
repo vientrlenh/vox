@@ -4,30 +4,33 @@ package com.sep.vox.infrastructure.security;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
-import com.sep.vox.application.response.output.GeneratedPasswordSetUpToken;
+import com.sep.vox.application.response.output.SecurePasswordToken;
+import com.sep.vox.infrastructure.properties.SecureTokenProperties;
+import com.sep.vox.infrastructure.shared.SecureRandomGenerator;
+import com.sep.vox.infrastructure.shared.TokenHasher;
+
+import lombok.RequiredArgsConstructor;
 
 @Component
+@RequiredArgsConstructor 
 public class SecurePasswordTokenProvider implements PasswordSetUpTokenPort {
 
-    private final SecureTokenProvider secureTokenProvider;
-
-    public SecurePasswordTokenProvider(SecureTokenProvider secureTokenProvider) {
-        this.secureTokenProvider = secureTokenProvider;
-    }
-
-    private static final int TOKEN_LENGTH = 32;
+    private final SecureTokenProperties secureTokenProperties;
 
     @Override
-    public GeneratedPasswordSetUpToken generateToken() {
-        var token = secureTokenProvider.generateToken(TOKEN_LENGTH);
-        var hashedToken = secureTokenProvider.sha512(token);
-        return new GeneratedPasswordSetUpToken(token, hashedToken);
+    public SecurePasswordToken generateToken() {
+        String seed = secureTokenProperties.seed();
+        int length = secureTokenProperties.length();
+        String rawToken = SecureRandomGenerator.generateRaw(seed, length);
+        String hashedToken = hash(rawToken);
+        return new SecurePasswordToken(rawToken, hashedToken);
     }
 
     @Override
     public String hash(String rawToken) {
-        return secureTokenProvider.sha512(rawToken);
+        return TokenHasher.sha512(rawToken);
     }
+
 
 
 

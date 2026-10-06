@@ -1,8 +1,8 @@
 package com.sep.vox.application.port.output;
 
-import com.sep.vox.application.response.output.GeneratedPasswordSetUpToken;
+import com.sep.vox.application.response.output.SecurePasswordToken;
 
 public interface PasswordSetUpTokenPort {
-    GeneratedPasswordSetUpToken generateToken();
+    SecurePasswordToken generateToken();
     String hash(String rawToken);
 }

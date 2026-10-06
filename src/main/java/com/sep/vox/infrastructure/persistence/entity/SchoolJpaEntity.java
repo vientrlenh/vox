@@ -3,15 +3,17 @@ package com.sep.vox.infrastructure.persistence.entity;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.hibernate.annotations.Generated;
-import org.hibernate.generator.EventType;
+import org.hibernate.annotations.UpdateTimestamp;
+import com.sep.vox.infrastructure.shared.BaseEntity;
 
 import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "schools", indexes = {
@@ -19,18 +21,10 @@ import jakarta.persistence.Table;
     @Index(columnList = "name", name = "idx_schools_name"),
     @Index(columnList = "code, domain", name = "idx_schools_code_domain", unique = true)
 })
-public class SchoolJpaEntity {
-    
-    @Id
-    @Generated(event = EventType.INSERT)
-    @Column(
-        name = "id", 
-        nullable = false,
-        updatable = false,
-        insertable = false,
-        columnDefinition = "UUID DEFAULT uuidv7()"
-    )
-    private UUID id;
+@Getter 
+@NoArgsConstructor 
+@SuperBuilder 
+public class SchoolJpaEntity extends BaseEntity {
 
     @Column(name = "code", length = 100, nullable = false)
     private String code;
@@ -41,6 +35,15 @@ public class SchoolJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
+    @Column(name = "ward_id", nullable = false)
+    private UUID wardId;
+
+    @Column(name = "city_id")
+    private UUID cityId;
+
+    @Column(name = "province_id", nullable = false)
+    private UUID provinceId;
+
     @Column(name = "contact_phone", length = 20, nullable = false)
     private String contactPhone;
 
@@ -50,180 +53,35 @@ public class SchoolJpaEntity {
     @Column(name = "domain", length = 100)
     private String domain;
 
-    @Column(name = "address", length = 512, nullable = false)
-    private String address;
+    @Column(name = "street_address", length = 512, nullable = false)
+    private String streetAddress;
 
     @Column(name = "student_count", nullable = false, check = @CheckConstraint(
         name = "chk_student_count_positive", 
-        constraint = "student_count > 0"
+        constraint = "student_count >= 0"
     ))
-    private int studentCount;
+    private Integer studentCount;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+    @Column(name = "status", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_schools_status_valid", 
+            constraint = "status IN ('INACTIVE', 'ACTIVE')"
+        )
+    })
+    private String status;
 
     @Column(name = "updated_at", nullable = false)
+    @UpdateTimestamp 
     private Instant updatedAt;
 
-    @Column(name = "created_by", nullable = false, updatable = false)
+    @Column(name = "registered_by", nullable = false, updatable = false)
+    private UUID registeredBy;
+
+    @Column(name = "created_by", updatable = false)
     private UUID createdBy;
 
-    @Column(name = "updated_by", nullable = false)
+    @Column(name = "updated_by")
     private UUID updatedBy;
-
-    protected SchoolJpaEntity() { }
-
-    public SchoolJpaEntity(UUID id, String code, String name, String description, String contactPhone,
-            String contactEmail, String domain, String address, int studentCount, boolean isActive,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.contactPhone = contactPhone;
-        this.contactEmail = contactEmail;
-        this.domain = domain;
-        this.address = address;
-        this.studentCount = studentCount;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public SchoolJpaEntity(String code, String name, String description, String contactPhone, String contactEmail,
-            String domain, String address, int studentCount, boolean isActive, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.contactPhone = contactPhone;
-        this.contactEmail = contactEmail;
-        this.domain = domain;
-        this.address = address;
-        this.studentCount = studentCount;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getContactPhone() {
-        return contactPhone;
-    }
-
-    public void setContactPhone(String contactPhone) {
-        this.contactPhone = contactPhone;
-    }
-
-    public String getContactEmail() {
-        return contactEmail;
-    }
-
-    public void setContactEmail(String contactEmail) {
-        this.contactEmail = contactEmail;
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
-    public void setDomain(String domain) {
-        this.domain = domain;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public int getStudentCount() {
-        return studentCount;
-    }
-
-    public void setStudentCount(int studentCount) {
-        this.studentCount = studentCount;
-    }
-
-    public boolean isActive() {
-        return isActive;
-    }
-
-    public void setActive(boolean isActive) {
-        this.isActive = isActive;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
 
     
 }

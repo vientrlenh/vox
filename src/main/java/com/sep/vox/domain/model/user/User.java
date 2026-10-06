@@ -1,6 +1,5 @@
 package com.sep.vox.domain.model.user;
 
-import java.time.LocalDate;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -25,12 +24,10 @@ public class User extends BaseModel {
     private UUID createdBy;
     private UUID updatedBy;
 
-    public User() {}
+    protected User() {}
 
-    public User(UUID id, Email email, String passwordHash, UserRole role, Phone phone,
-            Name fullName, Gender gender, BirthDate birthDate, String address, String avatarUrl, UserStatus status,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
+    public User(Email email, String passwordHash, UserRole role, Phone phone,
+            Name fullName, Gender gender, BirthDate birthDate, String address, String avatarUrl, UserStatus status, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.role = role;
@@ -41,14 +38,13 @@ public class User extends BaseModel {
         this.address = address;
         this.avatarUrl = avatarUrl;
         this.status = status;
-        this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
     public User(Builder builder) {
-        this.id = builder.id;
+        super(builder.id, builder.createdAt);
         this.email = builder.email;
         this.passwordHash = builder.passwordHash;
         this.role = builder.role;
@@ -59,7 +55,6 @@ public class User extends BaseModel {
         this.address = builder.address;
         this.avatarUrl = builder.avatarUrl;
         this.status = builder.status;
-        this.createdAt = builder.createdAt;
         this.updatedAt = builder.updatedAt;
         this.createdBy = builder.createdBy;
         this.updatedBy = builder.updatedBy;
@@ -216,6 +211,11 @@ public class User extends BaseModel {
             this.role = role;
             return this;
         }
+
+        public Builder phone(Phone phone) {
+            this.phone = phone;
+            return this;
+        } 
 
         public Builder fullName(Name fullName) {
             this.fullName = fullName;

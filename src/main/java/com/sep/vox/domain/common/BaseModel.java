@@ -4,8 +4,15 @@ import java.time.Instant;
 import java.util.UUID;
 
 public abstract class BaseModel {
-    protected UUID id;
-    protected Instant createdAt;
+    private UUID id;
+    private Instant createdAt;
+
+    protected BaseModel() {}
+
+    protected BaseModel(UUID id, Instant createdAt) {
+        this.id = id;
+        this.createdAt = createdAt;
+    }
 
     public UUID getId() {
         return id;

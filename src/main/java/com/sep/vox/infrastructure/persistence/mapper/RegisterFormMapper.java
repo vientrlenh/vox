@@ -5,14 +5,14 @@ import java.time.LocalDate;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.model.registerform.RegisterFormVerificationMethod;
-import com.sep.vox.domain.valueobject.DateOfBirth;
+import com.sep.vox.domain.valueobject.BirthDate;
 import com.sep.vox.domain.valueobject.Email;
-import com.sep.vox.domain.valueobject.FullName;
+import com.sep.vox.domain.valueobject.Name;
 import com.sep.vox.domain.valueobject.IdentityNumber;
 import com.sep.vox.domain.valueobject.Phone;
 import com.sep.vox.domain.valueobject.PostalCode;
 import com.sep.vox.domain.valueobject.SchoolDomain;
-import com.sep.vox.domain.valueobject.StudentCount;
+import com.sep.vox.domain.valueobject.PositiveInteger;
 import com.sep.vox.infrastructure.persistence.entity.RegisterFormJpaEntity;
 
 public final class RegisterFormMapper {

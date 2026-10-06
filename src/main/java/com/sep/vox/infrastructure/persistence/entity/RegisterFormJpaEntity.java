@@ -4,15 +4,18 @@ import java.time.LocalDate;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.hibernate.annotations.Generated;
-import org.hibernate.generator.EventType;
+import com.sep.vox.infrastructure.common.BaseEntity;
 
 import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "register_forms", indexes = {
@@ -20,17 +23,11 @@ import jakarta.persistence.Table;
         @Index(columnList = "contact_phone", name = "idx_register_phone"),
         @Index(columnList = "contact_email", name = "idx_register_email")
 })
-public class RegisterFormJpaEntity {
-    @Id
-    @Generated(event = EventType.INSERT)
-    @Column(
-        name = "id", 
-        nullable = false, 
-        updatable = false, 
-        insertable = false, 
-        columnDefinition = "UUID default uuidv7()"
-    )
-    private UUID id;
+@Getter 
+@Setter 
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SuperBuilder 
+public class RegisterFormJpaEntity extends BaseEntity {
 
     @Column(name = "school_directory_id", updatable = false)
     private UUID schoolDirectoryId;
@@ -41,14 +38,17 @@ public class RegisterFormJpaEntity {
     @Column(name = "school_domain", updatable = false, length = 100)
     private String schoolDomain;
 
-    @Column(name = "school_district", length = 255)
-    private String schoolDistrict;
+    @Column(name = "school_ward_id", updatable = false)
+    private UUID schoolWardId;
 
-    @Column(name = "school_province", length = 255)
-    private String schoolProvince; 
+    @Column(name = "school_city_id", updatable = false)
+    private UUID schoolCityId;
 
-    @Column(name = "school_address",  length = 512)
-    private String schoolAddress;
+    @Column(name = "school_province_id", updatable = false)
+    private UUID schoolProvinceId; 
+
+    @Column(name = "school_street_address",  length = 512)
+    private String schoolStreetAddress;
 
     @Column(name = "contact_full_name", nullable = false, updatable = false, length = 255)
     private String contactFullName;
@@ -62,8 +62,8 @@ public class RegisterFormJpaEntity {
     @Column(name = "contact_email", nullable = false, updatable = false, length = 255)
     private String contactEmail;
 
-    @Column(name = "date_of_birth", nullable = false, updatable = false)
-    private LocalDate dateOfBirth;
+    @Column(name = "birth_date", nullable = false, updatable = false)
+    private LocalDate birthDate;
 
     @Column(name = "contact_address", nullable = false, updatable = false, length = 512)
     private String contactAddress;
@@ -71,11 +71,8 @@ public class RegisterFormJpaEntity {
     @Column(name = "postal_code", nullable = false, updatable = false, length = 10)
     private String postalCode;
 
-    @Column(name = "position", nullable = false, updatable = false, length = 50)
-    private String position;
-
     @Column(name = "student_count", nullable = false, updatable = false)
-    private int studentCount;
+    private Integer studentCount;
 
     @Column(name = "verification_method", nullable = false, length = 20, check = {
         @CheckConstraint(
@@ -88,8 +85,11 @@ public class RegisterFormJpaEntity {
     @Column(name = "verified_at")
     private Instant verifiedAt;
 
-    @Column(name = "rejected_reason", length = 255)
-    private String rejectedReason;
+    @Column(name = "reject_reason", length = 255)
+    private String rejectReason;
+
+    @Column(name = "rejected_at")
+    private Instant rejectedAt;
 
     @Column(name = "status", length = 20, nullable = false, check = {
         @CheckConstraint(
@@ -102,231 +102,8 @@ public class RegisterFormJpaEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
-
     @Column(name = "reviewed_by")
     private UUID reviewedBy;
-
-    protected RegisterFormJpaEntity() {
-    }
-
-    public RegisterFormJpaEntity(UUID id, UUID schoolDirectoryId, String schoolName, String schoolDomain, 
-            String schoolDistrict, String schoolProvince, String schoolAddress, String contactFullName,
-            String identityNumber, String contactPhone, String contactEmail, LocalDate dateOfBirth,
-            String contactAddress, String postalCode, String position, int studentCount, String verificationMethod,
-            Instant verifiedAt, String rejectedReason, String status, Instant createdAt,
-            Instant updatedAt, UUID reviewedBy) {
-        this.id = id;
-        this.schoolDirectoryId = schoolDirectoryId;
-        this.schoolName = schoolName;
-        this.schoolDomain = schoolDomain;
-        this.schoolDistrict = schoolDistrict;
-        this.schoolProvince = schoolProvince;
-        this.schoolAddress = schoolAddress;
-        this.contactFullName = contactFullName;
-        this.identityNumber = identityNumber;
-        this.contactPhone = contactPhone;
-        this.contactEmail = contactEmail;
-        this.dateOfBirth = dateOfBirth;
-        this.contactAddress = contactAddress;
-        this.postalCode = postalCode;
-        this.position = position;
-        this.studentCount = studentCount;
-        this.verificationMethod = verificationMethod;
-        this.verifiedAt = verifiedAt;
-        this.rejectedReason = rejectedReason;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.reviewedBy = reviewedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public UUID getSchoolDirectoryId() {
-        return schoolDirectoryId;
-    }
-
-    public void setSchoolDirectoryId(UUID schoolDirectoryId) {
-        this.schoolDirectoryId = schoolDirectoryId;
-    }
-
-    public String getSchoolDomain() {
-        return schoolDomain;
-    }
-
-    public void setSchoolDomain(String schoolDomain) {
-        this.schoolDomain = schoolDomain;
-    }
-
-    public String getSchoolName() {
-        return schoolName;
-    }
-
-    public void setSchoolName(String schoolName) {
-        this.schoolName = schoolName;
-    }
-
-    public String getSchoolDistrict() {
-        return schoolDistrict;
-    }
-
-    public void setSchoolDistrict(String schoolDistrict) {
-        this.schoolDistrict = schoolDistrict;
-    }
-
-    public String getSchoolProvince() {
-        return schoolProvince;
-    }
-
-    public void setSchoolProvince(String schoolProvince) {
-        this.schoolProvince = schoolProvince;
-    }
-
-    public String getSchoolAddress() {
-        return schoolAddress;
-    }
-
-    public void setSchoolAddress(String schoolAddress) {
-        this.schoolAddress = schoolAddress;
-    }
-
-    public String getContactFullName() {
-        return contactFullName;
-    }
-
-    public void setContactFullName(String contactFullName) {
-        this.contactFullName = contactFullName;
-    }
-
-    public String getIdentityNumber() {
-        return identityNumber;
-    }
-
-    public void setIdentityNumber(String identityNumber) {
-        this.identityNumber = identityNumber;
-    }
-
-    public String getContactPhone() {
-        return contactPhone;
-    }
-
-    public void setContactPhone(String contactPhone) {
-        this.contactPhone = contactPhone;
-    }
-
-    public String getContactEmail() {
-        return contactEmail;
-    }
-
-    public void setContactEmail(String contactEmail) {
-        this.contactEmail = contactEmail;
-    }
-
-    public LocalDate getDateOfBirth() {
-        return dateOfBirth;
-    }
-
-    public void setDateOfBirth(LocalDate dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
-
-    public String getContactAddress() {
-        return contactAddress;
-    }
-
-    public void setContactAddress(String contactAddress) {
-        this.contactAddress = contactAddress;
-    }
-
-    public String getPostalCode() {
-        return postalCode;
-    }
-
-    public void setPostalCode(String postalCode) {
-        this.postalCode = postalCode;
-    }
-
-    public String getPosition() {
-        return position;
-    }
-
-    public void setPosition(String position) {
-        this.position = position;
-    }
-
-    public int getStudentCount() {
-        return studentCount;
-    }
-
-    public void setStudentCount(int studentCount) {
-        this.studentCount = studentCount;
-    }
-
-    public String getVerificationMethod() {
-        return verificationMethod;
-    }
-
-    public void setVerificationMethod(String verificationMethod) {
-        this.verificationMethod = verificationMethod;
-    }
-
-    public Instant getVerifiedAt() {
-        return verifiedAt;
-    }
-
-    public void setVerifiedAt(Instant verifiedAt) {
-        this.verifiedAt = verifiedAt;
-    }
-
-    public String getRejectedReason() {
-        return rejectedReason;
-    }
-
-    public void setRejectedReason(String rejectedReason) {
-        this.rejectedReason = rejectedReason;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getReviewedBy() {
-        return reviewedBy;
-    }
-
-    public void setReviewedBy(UUID reviewedBy) {
-        this.reviewedBy = reviewedBy;
-    }
-
-    
 
     
 }

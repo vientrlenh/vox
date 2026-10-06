@@ -17,26 +17,23 @@ public class Area extends BaseModel {
 
     public Area() {}
 
-    public Area(UUID id, Code code, Name name, AreaLevel level, UUID parentId, Instant effectiveFrom, Instant effectiveTo, Instant createdAt) {
-        this.id = id;
+    public Area(Code code, Name name, AreaLevel level, UUID parentId, Instant effectiveFrom, Instant effectiveTo) {
         this.code = code;
         this.name = name;
         this.level = level;
         this.parentId = parentId;
         this.effectiveFrom = effectiveFrom;
         this.effectiveTo = effectiveTo;
-        this.createdAt = createdAt;
     }
 
     public Area(Builder builder) {
-        this.id = builder.id;
+        super(builder.id, builder.createdAt);
         this.code = builder.code;
         this.name = builder.name;
         this.level = builder.level;
         this.parentId = builder.parentId;
         this.effectiveFrom = builder.effectiveFrom;
         this.effectiveTo = builder.effectiveTo;
-        this.createdAt = builder.createdAt;
     }
 
     public Code getCode() {
@@ -88,6 +85,7 @@ public class Area extends BaseModel {
     }
 
     public static Builder builder() {
+        
         return new Area.Builder();
     }
 

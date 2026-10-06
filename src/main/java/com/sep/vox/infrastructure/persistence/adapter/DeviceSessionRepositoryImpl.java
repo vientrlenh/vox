@@ -46,7 +46,6 @@ public class DeviceSessionRepositoryImpl implements DeviceSessionRepository {
     public int revokeDeviceSession(UUID id, Instant now) {
         return springDataDeviceSessionRepository.revokeDeviceSession(id, now);
     }
-
    
     
 }

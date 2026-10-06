@@ -2,7 +2,7 @@ package com.sep.vox.application.response.input.dashboard;
 
 import java.util.UUID;
 
-import com.sep.vox.application.query.dto.SchoolGradingFailureDto;
+import com.sep.vox.application.projection.dto.SchoolGradingFailureDto;
 
 /** Một dòng trên màn "AI chấm lỗi, chưa ai xử lý" của nhà trường. */
 public record SchoolGradingFailureResponse(

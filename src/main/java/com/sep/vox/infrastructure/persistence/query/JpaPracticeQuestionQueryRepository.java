@@ -5,8 +5,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.QuestionEvaluationInfo;
-import com.sep.vox.application.query.repository.PracticeQuestionQueryRepository;
+import com.sep.vox.application.projection.dto.QuestionEvaluationInfo;
+import com.sep.vox.application.projection.repository.PracticeQuestionQueryRepository;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeQuestionRepository;
 
 @Repository

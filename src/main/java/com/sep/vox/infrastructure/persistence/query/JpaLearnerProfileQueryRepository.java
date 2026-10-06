@@ -5,8 +5,8 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.LearnerProfileInfo;
-import com.sep.vox.application.query.repository.LearnerProfileQueryRepository;
+import com.sep.vox.application.projection.dto.LearnerProfileInfo;
+import com.sep.vox.application.projection.repository.LearnerProfileQueryRepository;
 import com.sep.vox.infrastructure.persistence.entity.FrameworkResultBandJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataLearnerProfileRepository;
 

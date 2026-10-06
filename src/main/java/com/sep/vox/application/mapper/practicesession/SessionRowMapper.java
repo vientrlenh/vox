@@ -1,6 +1,6 @@
 package com.sep.vox.application.mapper.practicesession;
 
-import com.sep.vox.application.query.dto.SessionRowInfo;
+import com.sep.vox.application.projection.dto.SessionRowInfo;
 import com.sep.vox.domain.dto.personalization.PracticeSessionDto;
 
 public final class SessionRowMapper {

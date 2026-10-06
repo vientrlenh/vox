@@ -5,8 +5,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService;
-import com.sep.vox.application.query.dto.AppealStatsInfo;
-import com.sep.vox.application.query.repository.ExamAppealQueryRepository;
+import com.sep.vox.application.projection.dto.AppealStatsInfo;
+import com.sep.vox.application.projection.repository.ExamAppealQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service

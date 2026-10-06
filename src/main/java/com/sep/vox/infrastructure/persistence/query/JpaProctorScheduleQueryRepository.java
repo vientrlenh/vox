@@ -6,8 +6,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.ProctorScheduleSummary;
-import com.sep.vox.application.query.repository.ProctorScheduleQueryRepository;
+import com.sep.vox.application.projection.dto.ProctorScheduleSummary;
+import com.sep.vox.application.projection.repository.ProctorScheduleQueryRepository;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 
 import jakarta.persistence.EntityManager;

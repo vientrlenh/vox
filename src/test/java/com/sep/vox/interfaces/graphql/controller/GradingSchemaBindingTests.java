@@ -18,18 +18,18 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import com.sep.vox.application.query.dto.AiQualityReportInfo;
-import com.sep.vox.application.query.dto.AssignableTeacherInfo;
-import com.sep.vox.application.query.dto.GradingAssignmentRowInfo;
-import com.sep.vox.application.query.dto.GradingCriterionMetaInfo;
-import com.sep.vox.application.query.dto.GradingCriterionScoreInfo;
-import com.sep.vox.application.query.dto.GradingExamOptionInfo;
-import com.sep.vox.application.query.dto.GradingStatsInfo;
-import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
-import com.sep.vox.application.query.dto.GradingTaskInfo;
-import com.sep.vox.application.query.dto.GradingTaskItemInfo;
-import com.sep.vox.application.query.dto.GradingTurnInfo;
-import com.sep.vox.application.query.dto.ResultStatusHistoryInfo;
+import com.sep.vox.application.projection.dto.AiQualityReportInfo;
+import com.sep.vox.application.projection.dto.AssignableTeacherInfo;
+import com.sep.vox.application.projection.dto.GradingAssignmentRowInfo;
+import com.sep.vox.application.projection.dto.GradingCriterionMetaInfo;
+import com.sep.vox.application.projection.dto.GradingCriterionScoreInfo;
+import com.sep.vox.application.projection.dto.GradingExamOptionInfo;
+import com.sep.vox.application.projection.dto.GradingStatsInfo;
+import com.sep.vox.application.projection.dto.GradingTaskDetailInfo;
+import com.sep.vox.application.projection.dto.GradingTaskInfo;
+import com.sep.vox.application.projection.dto.GradingTaskItemInfo;
+import com.sep.vox.application.projection.dto.GradingTurnInfo;
+import com.sep.vox.application.projection.dto.ResultStatusHistoryInfo;
 
 /**
  * Spring GraphQL nối field với property theo TÊN. Lệch một chữ thì field đó trả

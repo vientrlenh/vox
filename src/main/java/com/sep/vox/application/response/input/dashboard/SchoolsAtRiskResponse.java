@@ -1,7 +1,7 @@
 package com.sep.vox.application.response.input.dashboard;
 
-import com.sep.vox.application.query.dto.SchoolAtRiskDto;
-import com.sep.vox.application.query.dto.SchoolRiskBucket;
+import com.sep.vox.application.projection.dto.SchoolAtRiskDto;
+import com.sep.vox.application.projection.dto.SchoolRiskBucket;
 import com.sep.vox.domain.common.PageResult;
 
 /**

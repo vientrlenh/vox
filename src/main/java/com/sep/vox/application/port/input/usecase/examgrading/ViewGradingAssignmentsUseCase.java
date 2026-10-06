@@ -6,9 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.SearchGradingAssignmentsQuery;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.dto.GradingAssignmentFilter;
-import com.sep.vox.application.query.dto.GradingAssignmentRowInfo;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.projection.dto.GradingAssignmentFilter;
+import com.sep.vox.application.projection.dto.GradingAssignmentRowInfo;
+import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.service.exam.GradingScopeKind;
 

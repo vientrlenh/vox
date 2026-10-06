@@ -13,7 +13,7 @@ import com.sep.vox.application.port.input.service.ExamAppealAccessService;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.common.AggregateTypeConstant;
 import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;

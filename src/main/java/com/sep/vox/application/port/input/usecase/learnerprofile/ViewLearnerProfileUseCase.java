@@ -5,8 +5,8 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.mapper.learnerprofile.LearnerProfileResponseMapper;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.projection.repository.LearnerProfileQueryRepository;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.LearnerProfile;
-import com.sep.vox.application.query.repository.LearnerProfileQueryRepository;
 
 @Service
 public class ViewLearnerProfileUseCase implements IUseCase<Void, LearnerProfile> {

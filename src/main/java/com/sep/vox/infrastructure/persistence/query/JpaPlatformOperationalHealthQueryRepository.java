@@ -7,9 +7,9 @@ import java.util.List;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.GradingOutcomeBucketDto;
-import com.sep.vox.application.query.dto.LiveSessionCountsDto;
-import com.sep.vox.application.query.repository.PlatformOperationalHealthQueryRepository;
+import com.sep.vox.application.projection.dto.GradingOutcomeBucketDto;
+import com.sep.vox.application.projection.dto.LiveSessionCountsDto;
+import com.sep.vox.application.projection.repository.PlatformOperationalHealthQueryRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

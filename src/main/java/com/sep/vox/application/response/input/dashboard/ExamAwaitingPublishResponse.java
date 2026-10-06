@@ -2,7 +2,7 @@ package com.sep.vox.application.response.input.dashboard;
 
 import java.util.UUID;
 
-import com.sep.vox.application.query.dto.ExamAwaitingPublishDto;
+import com.sep.vox.application.projection.dto.ExamAwaitingPublishDto;
 
 /** Kỳ thi đã đóng còn bài chưa có điểm — công bố là đóng vĩnh viễn mọi lối ra cho những bài đó. */
 public record ExamAwaitingPublishResponse(

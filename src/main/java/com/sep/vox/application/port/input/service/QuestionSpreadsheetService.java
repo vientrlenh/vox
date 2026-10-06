@@ -20,7 +20,7 @@ import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.mapper.QuestionDtoMapper;
 import com.sep.vox.domain.model.question.QuestionSharing;

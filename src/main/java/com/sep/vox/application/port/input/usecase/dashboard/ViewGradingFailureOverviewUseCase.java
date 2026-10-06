@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewGradingFailureOverviewQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.repository.GradingFailureQueryRepository;
+import com.sep.vox.application.projection.repository.GradingFailureQueryRepository;
 import com.sep.vox.application.response.input.dashboard.GradingFailureOverviewResponse;
 import com.sep.vox.domain.common.ZoneConstant;
 

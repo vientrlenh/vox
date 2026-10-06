@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewTeacherDashboardUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.ResolveExamCandidateAttemptsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.ExamCandidateAttempts;
+import com.sep.vox.application.projection.dto.ExamCandidateAttempts;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;

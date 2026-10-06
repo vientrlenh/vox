@@ -16,11 +16,16 @@ import com.sep.vox.infrastructure.persistence.entity.RefreshTokenJpaEntity;
 import jakarta.persistence.LockModeType;
 
 public interface SpringDataRefreshTokenRepository extends JpaRepository<RefreshTokenJpaEntity, UUID> {
-    List<RefreshTokenJpaEntity> findBySessionId(UUID sessionId);
+
+    List<RefreshTokenJpaEntity> findByDeviceSessionId(UUID deviceSessionId);
+
     Optional<RefreshTokenJpaEntity> findByTokenHash(String tokenHash);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT r FROM RefreshTokenJpaEntity r WHERE r.tokenHash = :tokenHash")
+    @Query("""
+        SELECT r FROM RefreshTokenJpaEntity r 
+        WHERE r.tokenHash = :tokenHash 
+    """)
     Optional<RefreshTokenJpaEntity> findByTokenHashForUpdate(@Param("tokenHash") String tokenHash);
 
     @Modifying
@@ -33,4 +38,6 @@ public interface SpringDataRefreshTokenRepository extends JpaRepository<RefreshT
             AND r.expiredAt > :now
     """)
     int markUsedAndReplacedBy(@Param("oldTokenId") UUID oldTokenId, @Param("newTokenId") UUID newTokenId, @Param("now") Instant now);
+
+    boolean existsByTokenHash(String tokenHash);
 }

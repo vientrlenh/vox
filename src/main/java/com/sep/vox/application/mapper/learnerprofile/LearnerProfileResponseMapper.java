@@ -2,9 +2,9 @@ package com.sep.vox.application.mapper.learnerprofile;
 
 import java.util.List;
 
+import com.sep.vox.application.projection.dto.LearnerProfileInfo;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.InterestQuizItem;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.LearnerProfile;
-import com.sep.vox.application.query.dto.LearnerProfileInfo;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
 
 public final class LearnerProfileResponseMapper {

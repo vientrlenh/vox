@@ -30,10 +30,10 @@ import com.sep.vox.application.port.input.usecase.dashboard.ViewSchoolsAtRiskUse
 import com.sep.vox.application.port.input.usecase.dashboard.ViewSystemAdminDashboardUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewQuestionBankStatsUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewTeacherDashboardUseCase;
-import com.sep.vox.application.query.dto.GradingFailureSessionDto;
-import com.sep.vox.application.query.dto.NearestCentralizedExamDto;
-import com.sep.vox.application.query.dto.QuestionBankStatsDto;
-import com.sep.vox.application.query.dto.SchoolRiskBucket;
+import com.sep.vox.application.projection.dto.GradingFailureSessionDto;
+import com.sep.vox.application.projection.dto.NearestCentralizedExamDto;
+import com.sep.vox.application.projection.dto.QuestionBankStatsDto;
+import com.sep.vox.application.projection.dto.SchoolRiskBucket;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.application.response.input.dashboard.GradingFailureOverviewResponse;
 import com.sep.vox.application.response.input.dashboard.PlatformBusinessHealthResponse;

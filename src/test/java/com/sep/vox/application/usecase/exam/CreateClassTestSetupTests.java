@@ -32,8 +32,8 @@ import com.sep.vox.application.port.input.service.SchoolSubscriptionActiveGuardS
 import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.exam.CreateClassTestUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.UserRoleInfo;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.dto.UserRoleInfo;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;

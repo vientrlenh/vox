@@ -20,7 +20,7 @@ import com.sep.vox.application.port.input.command.AssignExamPapersCommand;
 import com.sep.vox.application.port.input.command.ExamPaperAssignmentItem;
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamPapersUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;

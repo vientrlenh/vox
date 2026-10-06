@@ -21,7 +21,7 @@ import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperStatu
 import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessService;
 import com.sep.vox.domain.model.exam.ExamMember;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;

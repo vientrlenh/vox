@@ -5,8 +5,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.SessionCostDto;
-import com.sep.vox.application.query.repository.SessionCostQueryRepository;
+import com.sep.vox.application.projection.dto.SessionCostDto;
+import com.sep.vox.application.projection.repository.SessionCostQueryRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

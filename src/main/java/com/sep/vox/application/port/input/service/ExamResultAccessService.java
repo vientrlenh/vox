@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamItemResponse;
 import com.sep.vox.domain.model.exam.ExamMemberRole;

@@ -22,6 +22,8 @@ import com.sep.vox.application.mapper.importfile.ImportRowResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportRowsQuery;
 import com.sep.vox.application.port.input.usecase.importfile.ViewImportRowsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.projection.dto.UserRoleInfo;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
@@ -38,8 +40,6 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import com.sep.vox.application.query.dto.UserRoleInfo;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 
 class ViewImportRowsUseCaseTests {
 

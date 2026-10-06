@@ -9,7 +9,7 @@ import com.sep.vox.application.port.input.command.AddExamScheduleProctorCommand;
 import com.sep.vox.application.port.input.service.ExamScheduleManageAccessService;
 import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamScheduleProctorDto;
 import com.sep.vox.domain.mapper.ExamScheduleProctorDtoMapper;
 import com.sep.vox.domain.model.exam.ExamScheduleProctor;

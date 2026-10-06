@@ -11,10 +11,10 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.ExamAwaitingPublishDto;
-import com.sep.vox.application.query.dto.SchoolGradingFailureDto;
-import com.sep.vox.application.query.dto.SchoolUnscoredWorkloadDto;
-import com.sep.vox.application.query.repository.SchoolWorkloadQueryRepository;
+import com.sep.vox.application.projection.dto.ExamAwaitingPublishDto;
+import com.sep.vox.application.projection.dto.SchoolGradingFailureDto;
+import com.sep.vox.application.projection.dto.SchoolUnscoredWorkloadDto;
+import com.sep.vox.application.projection.repository.SchoolWorkloadQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.ExamSession;
 

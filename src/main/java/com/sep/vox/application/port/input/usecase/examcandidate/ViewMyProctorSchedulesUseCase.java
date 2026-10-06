@@ -8,9 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.ProctorScheduleSummary;
-import com.sep.vox.application.query.repository.ProctorScheduleQueryRepository;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.dto.ProctorScheduleSummary;
+import com.sep.vox.application.projection.repository.ProctorScheduleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service

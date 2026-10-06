@@ -19,7 +19,7 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.GradingSampleSelector;
 import com.sep.vox.application.port.input.service.RoundRobinLoadBalancer;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.GradingRoundPolicy;
 import com.sep.vox.domain.model.exam.GradingRoundType;
@@ -113,7 +113,7 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
         // công cho ba chế độ còn lại là lãng phí thấy rõ.
         var riskInfos = selectionMode == GradingSampleSelectionMode.RISK_BASED
             ? examGradingQueryRepository.findRiskInfos(candidates)
-            : List.<com.sep.vox.application.query.dto.GradingRiskInfo>of();
+            : List.<com.sep.vox.application.projection.dto.GradingRiskInfo>of();
         var selected = gradingSampleSelector.select(
             selectionMode, candidates, command.percent(), command.candidateResultIds(), riskInfos);
         if (selected.isEmpty()) {

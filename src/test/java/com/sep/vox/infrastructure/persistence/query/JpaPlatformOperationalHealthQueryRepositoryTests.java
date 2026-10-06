@@ -15,7 +15,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.application.query.repository.PlatformOperationalHealthQueryRepository;
+import com.sep.vox.application.projection.repository.PlatformOperationalHealthQueryRepository;
 import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.common.ZoneConstant;
 

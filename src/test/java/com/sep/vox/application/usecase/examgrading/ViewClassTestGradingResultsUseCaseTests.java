@@ -21,8 +21,8 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewClassTestGradingResultsQuery;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewClassTestGradingResultsUseCase;
-import com.sep.vox.application.query.dto.GradingAssignmentFilter;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.projection.dto.GradingAssignmentFilter;
+import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 
 /**

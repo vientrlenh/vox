@@ -5,8 +5,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.ExamStatusCountsDto;
-import com.sep.vox.application.query.repository.ExamStatusCountsQueryRepository;
+import com.sep.vox.application.projection.dto.ExamStatusCountsDto;
+import com.sep.vox.application.projection.repository.ExamStatusCountsQueryRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

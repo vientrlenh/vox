@@ -21,10 +21,10 @@ import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealsByEx
 import com.sep.vox.application.port.input.usecase.examappeal.ViewExamAppealsUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealDetailUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealsUseCase;
-import com.sep.vox.application.query.dto.AppealDetailInfo;
-import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
-import com.sep.vox.application.query.dto.AppealStatsInfo;
-import com.sep.vox.application.query.dto.AppealSummaryInfo;
+import com.sep.vox.application.projection.dto.AppealDetailInfo;
+import com.sep.vox.application.projection.dto.AppealReviewerLiteInfo;
+import com.sep.vox.application.projection.dto.AppealStatsInfo;
+import com.sep.vox.application.projection.dto.AppealSummaryInfo;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.interfaces.shared.PageArguments;

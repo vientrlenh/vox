@@ -8,8 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.dto.AppealDetailInfo;
-import com.sep.vox.application.query.repository.ExamAppealQueryRepository;
+import com.sep.vox.application.projection.dto.AppealDetailInfo;
+import com.sep.vox.application.projection.repository.ExamAppealQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service

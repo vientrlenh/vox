@@ -2,7 +2,7 @@ package com.sep.vox.application.response.input.dashboard;
 
 import java.time.Instant;
 
-import com.sep.vox.application.query.dto.SchoolUnscoredWorkloadDto;
+import com.sep.vox.application.projection.dto.SchoolUnscoredWorkloadDto;
 import com.sep.vox.domain.common.BusinessDays;
 
 /**

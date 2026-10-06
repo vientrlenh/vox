@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.application.query.dto.CurrentPolicyInfo;
+import com.sep.vox.application.projection.dto.CurrentPolicyInfo;
 import com.sep.vox.infrastructure.persistence.entity.AssessmentPolicyJpaEntity;
 
 public interface SpringDataAssessmentPolicyRepository extends JpaRepository<AssessmentPolicyJpaEntity, UUID> {

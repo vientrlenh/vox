@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewPlatformOperationalHealthQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.repository.PlatformOperationalHealthQueryRepository;
+import com.sep.vox.application.projection.repository.PlatformOperationalHealthQueryRepository;
 import com.sep.vox.application.response.input.dashboard.GradingOutcomeBucketResponse;
 import com.sep.vox.application.response.input.dashboard.PlatformOperationalHealthResponse;
 import com.sep.vox.domain.common.ZoneConstant;

@@ -4,8 +4,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.QuestionBankStatsDto;
-import com.sep.vox.application.query.repository.QuestionBankStatsQueryRepository;
+import com.sep.vox.application.projection.dto.QuestionBankStatsDto;
+import com.sep.vox.application.projection.repository.QuestionBankStatsQueryRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

@@ -20,7 +20,7 @@ import com.sep.vox.application.port.input.command.UpdateQuestionStatusCommand;
 import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.question.UpdateQuestionStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;

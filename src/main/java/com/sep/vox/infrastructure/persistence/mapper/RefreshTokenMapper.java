@@ -6,26 +6,27 @@ import com.sep.vox.infrastructure.persistence.entity.RefreshTokenJpaEntity;
 public final class RefreshTokenMapper {
     
     public static RefreshToken toDomain(RefreshTokenJpaEntity jpa) {
-        return new RefreshToken(
-            jpa.getId(), 
-            jpa.getSessionId(), 
-            jpa.getTokenHash(), 
-            jpa.getIssuedAt(), 
-            jpa.getExpiredAt(), 
-            jpa.getUsedAt(), 
-            jpa.getReplacedBy()
-        );
+        return RefreshToken.builder()
+            .id(jpa.getId())
+            .deviceSessionId(jpa.getDeviceSessionId())
+            .tokenHash(jpa.getTokenHash())
+            .createdAt(jpa.getCreatedAt())
+            .expiresAt(jpa.getExpiresAt())
+            .usedAt(jpa.getUsedAt())
+            .replacedBy(jpa.getReplacedBy())
+            .build();
     }
 
+
     public static RefreshTokenJpaEntity toJpa(RefreshToken token) {
-        return new RefreshTokenJpaEntity(
-            token.getId(), 
-            token.getSessionId(), 
-            token.getTokenHash(), 
-            token.getIssuedAt(), 
-            token.getExpiredAt(), 
-            token.getUsedAt(),
-            token.getReplacedBy()
-        );
+        return RefreshTokenJpaEntity.builder()
+            .id(token.getId())
+            .deviceSessionId(token.getDeviceSessionId())
+            .tokenHash(token.getTokenHash())
+            .createdAt(token.getCreatedAt())
+            .expiresAt(token.getExpiresAt())
+            .usedAt(token.getUsedAt())
+            .replacedBy(token.getReplacedBy())
+            .build();
     }
 }

@@ -14,7 +14,7 @@ import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.AuthTokenPort;
 import com.sep.vox.application.port.output.SessionTokenManagerPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.output.GeneratedSessionToken;
 import com.sep.vox.domain.model.devicesession.DeviceSession;

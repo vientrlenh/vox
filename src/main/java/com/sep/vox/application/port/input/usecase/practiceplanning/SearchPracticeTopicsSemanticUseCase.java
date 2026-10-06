@@ -11,7 +11,7 @@ import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentSe
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.TopicGenerationPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.PracticeTopicQueryRepository;
+import com.sep.vox.application.projection.repository.PracticeTopicQueryRepository;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
 
 
@@ -67,7 +67,7 @@ public class SearchPracticeTopicsSemanticUseCase
         var minutes = enrichmentService.minutesForStudent(studentId);
         return rows.stream()
             .sorted(Comparator.comparingDouble(
-                (com.sep.vox.application.query.dto.TopicSearchRowInfo row) ->
+                (com.sep.vox.application.projection.dto.TopicSearchRowInfo row) ->
                     -rankByTopicId.getOrDefault(row.getId(), 0.0)
             ))
             .map(row -> new PracticeTopicOffer(

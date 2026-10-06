@@ -7,8 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.NearestCentralizedExamDto;
-import com.sep.vox.application.query.repository.NearestCentralizedExamQueryRepository;
+import com.sep.vox.application.projection.dto.NearestCentralizedExamDto;
+import com.sep.vox.application.projection.repository.NearestCentralizedExamQueryRepository;
 
 /** Kỳ thi tập trung gần thời điểm hiện tại nhất của trường — dùng cho dashboard school admin. */
 @Service

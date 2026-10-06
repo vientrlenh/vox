@@ -26,8 +26,8 @@ import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardServic
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService.ExamDirectoryScope;
 import com.sep.vox.application.port.input.usecase.examcandidate.AddExamCandidateUseCase;
-import com.sep.vox.application.query.dto.UserRoleInfo;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.dto.UserRoleInfo;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamKind;

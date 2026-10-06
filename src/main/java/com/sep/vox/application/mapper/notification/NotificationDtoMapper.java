@@ -3,7 +3,7 @@ package com.sep.vox.application.mapper.notification;
 import java.time.Instant;
 import java.util.List;
 
-import com.sep.vox.application.query.dto.NotificationDto;
+import com.sep.vox.application.projection.dto.NotificationDto;
 import com.sep.vox.domain.model.notification.Notification;
 
 public final class NotificationDtoMapper {

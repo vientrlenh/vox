@@ -23,8 +23,8 @@ import com.sep.vox.application.port.input.command.BulkFinalizeExamResultsCommand
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.usecase.examgrading.BulkFinalizeExamResultsUseCase;
-import com.sep.vox.application.query.dto.BulkFinalizePreviewInfo;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.projection.dto.BulkFinalizePreviewInfo;
+import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;

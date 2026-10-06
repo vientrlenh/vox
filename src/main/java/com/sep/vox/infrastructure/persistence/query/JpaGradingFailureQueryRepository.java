@@ -9,10 +9,10 @@ import java.util.List;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.GradingFailureGroupDto;
-import com.sep.vox.application.query.dto.GradingFailureSessionDto;
-import com.sep.vox.application.query.dto.GradingFailureTotalsDto;
-import com.sep.vox.application.query.repository.GradingFailureQueryRepository;
+import com.sep.vox.application.projection.dto.GradingFailureGroupDto;
+import com.sep.vox.application.projection.dto.GradingFailureSessionDto;
+import com.sep.vox.application.projection.dto.GradingFailureTotalsDto;
+import com.sep.vox.application.projection.repository.GradingFailureQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 
 import jakarta.persistence.EntityManager;

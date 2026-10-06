@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
-import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
+import com.sep.vox.application.projection.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.TeacherPracticeSessionDetail;
 import com.sep.vox.domain.dto.personalization.TeacherPracticeSessionDetailDto;
 import com.sep.vox.domain.dto.personalization.TeacherPracticeTurnViewDto;

@@ -16,15 +16,15 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.AppealCriterionScoreInfo;
-import com.sep.vox.application.query.dto.AppealDetailInfo;
-import com.sep.vox.application.query.dto.AppealItemInfo;
-import com.sep.vox.application.query.dto.AppealReviewerInfo;
-import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
-import com.sep.vox.application.query.dto.AppealStatsInfo;
-import com.sep.vox.application.query.dto.AppealSummaryInfo;
-import com.sep.vox.application.query.dto.AppealTurnInfo;
-import com.sep.vox.application.query.repository.ExamAppealQueryRepository;
+import com.sep.vox.application.projection.dto.AppealCriterionScoreInfo;
+import com.sep.vox.application.projection.dto.AppealDetailInfo;
+import com.sep.vox.application.projection.dto.AppealItemInfo;
+import com.sep.vox.application.projection.dto.AppealReviewerInfo;
+import com.sep.vox.application.projection.dto.AppealReviewerLiteInfo;
+import com.sep.vox.application.projection.dto.AppealStatsInfo;
+import com.sep.vox.application.projection.dto.AppealSummaryInfo;
+import com.sep.vox.application.projection.dto.AppealTurnInfo;
+import com.sep.vox.application.projection.repository.ExamAppealQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
 

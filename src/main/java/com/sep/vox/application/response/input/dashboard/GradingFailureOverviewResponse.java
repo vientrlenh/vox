@@ -2,7 +2,7 @@ package com.sep.vox.application.response.input.dashboard;
 
 import java.util.List;
 
-import com.sep.vox.application.query.dto.GradingFailureGroupDto;
+import com.sep.vox.application.projection.dto.GradingFailureGroupDto;
 
 /**
  * Trang phân loại phiên chấm lỗi: dải tóm tắt cộng danh sách nhóm nguyên nhân.

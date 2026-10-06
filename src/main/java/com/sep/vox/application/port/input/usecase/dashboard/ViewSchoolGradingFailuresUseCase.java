@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.SearchSchoolGradingFailuresQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.SchoolWorkloadQueryRepository;
+import com.sep.vox.application.projection.repository.SchoolWorkloadQueryRepository;
 import com.sep.vox.application.response.input.dashboard.SchoolGradingFailurePageResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolGradingFailureResponse;
 

@@ -11,7 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.query.repository.QuestionQueryRepository;
+import com.sep.vox.application.projection.repository.QuestionQueryRepository;
 import com.sep.vox.config.ContainerTestConfig;
 
 /**

@@ -8,7 +8,7 @@ import com.sep.vox.application.mapper.notification.NotificationDtoMapper;
 import com.sep.vox.application.port.input.query.ViewMyNotificationQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.NotificationDto;
+import com.sep.vox.application.projection.dto.NotificationDto;
 import com.sep.vox.domain.repository.NotificationRepository;
 
 /**

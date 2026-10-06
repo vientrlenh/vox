@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.PracticeTopicQueryRepository;
+import com.sep.vox.application.projection.repository.PracticeTopicQueryRepository;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
 
 @Service

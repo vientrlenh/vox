@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.PracticeSessionEndedEvent;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
+import com.sep.vox.application.projection.repository.PracticeSessionQueryRepository;
 
 /**
  * Việc phải làm SAU KHI một phiên luyện đóng lại, bất kể nó đóng bằng cách nào.

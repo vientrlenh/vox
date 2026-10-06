@@ -16,8 +16,8 @@ import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentSe
 import com.sep.vox.application.port.input.service.TopicSuggestionService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.QuestionTopicInfo;
-import com.sep.vox.application.query.repository.PracticeTopicQueryRepository;
+import com.sep.vox.application.projection.dto.QuestionTopicInfo;
+import com.sep.vox.application.projection.repository.PracticeTopicQueryRepository;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.service.personalization.TensePolicy;

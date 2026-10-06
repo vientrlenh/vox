@@ -1,6 +1,7 @@
 package com.sep.vox.domain.model.user;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.BaseModel;
@@ -162,6 +163,20 @@ public class User extends BaseModel {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public boolean isSystemAdmin() {
+        return this.role == UserRole.SYSTEM_ADMIN;
+    }
+
+    public List<String> roleStrs() {
+        return List.of(this.role.name());
+    }
+
+    public void updatePasswordAndActivate(String hashedPassword, Instant now) {
+        this.passwordHash = hashedPassword;
+        this.updatedAt = now;
+        this.status = UserStatus.ACTIVE;
     }
 
     public static Builder builder() {

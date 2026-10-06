@@ -7,8 +7,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.MonitoredExamSummary;
-import com.sep.vox.application.query.repository.MonitoredExamQueryRepository;
+import com.sep.vox.application.projection.dto.MonitoredExamSummary;
+import com.sep.vox.application.projection.repository.MonitoredExamQueryRepository;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 
 import jakarta.persistence.EntityManager;

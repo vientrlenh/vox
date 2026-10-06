@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.ResolveExamCandidateAttemptsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.ExamCandidateAttempts;
+import com.sep.vox.application.projection.dto.ExamCandidateAttempts;
 import com.sep.vox.application.response.input.dashboard.ExamStatusCountResponse;
 import com.sep.vox.application.response.input.dashboard.GradingStatsResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolClassScoreStatsResponse;

@@ -10,54 +10,51 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.mapper.auth.LoginResponseMapper;
-import com.sep.vox.application.port.input.command.ClientDeviceCommand;
 import com.sep.vox.application.port.input.command.LoginCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.AuthTokenPort;
 import com.sep.vox.application.port.output.AuthenticationManagerPort;
 import com.sep.vox.application.port.output.SessionTokenManagerPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.SchoolUserProjectionRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.output.AuthenticatedInfo;
-import com.sep.vox.application.response.output.GeneratedSessionToken;
+import com.sep.vox.application.response.output.SessionToken;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
-import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
 import com.sep.vox.domain.repository.RefreshTokenRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.valueobject.Email;
 
 @Service
 public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
 
-    private final AuthenticationManagerPort authenticationManagerPort;
+
     private final UserRepository userRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
-    private final AuthTokenPort authTokenPort;
-    private final SessionTokenManagerPort sessionTokenManagerPort;
     private final DeviceSessionRepository deviceSessionRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final SchoolUserRepository schoolUserRepository;
+    private final SchoolUserProjectionRepository schoolUserProjectionRepository;
+    private final AuthenticationManagerPort authenticationManagerPort;
+    private final AuthTokenPort authTokenPort;
+    private final SessionTokenManagerPort sessionTokenManagerPort;
 
-    public LoginUseCase(AuthenticationManagerPort authenticationManagerPort, 
-                        UserRepository userRepository, 
-                        UserRoleQueryRepository userRoleQueryRepository,
-                        AuthTokenPort authTokenPort, 
-                        SessionTokenManagerPort sessionTokenManagerPort, 
+    public LoginUseCase(UserRepository userRepository,  
                         DeviceSessionRepository deviceSessionRepository, 
                         RefreshTokenRepository refreshTokenRepository,
-                        SchoolUserRepository schoolUserRepository) {
-        this.authenticationManagerPort = authenticationManagerPort;
+                        SchoolUserProjectionRepository schoolUserProjectionRepository,
+                        AuthenticationManagerPort authenticationManagerPort, 
+                        AuthTokenPort authTokenPort, 
+                        SessionTokenManagerPort sessionTokenManagerPort) {
         this.userRepository = userRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.authTokenPort = authTokenPort;
-        this.sessionTokenManagerPort = sessionTokenManagerPort;
         this.deviceSessionRepository = deviceSessionRepository;
         this.refreshTokenRepository = refreshTokenRepository;
-        this.schoolUserRepository = schoolUserRepository;
+        this.schoolUserProjectionRepository = schoolUserProjectionRepository;
+        this.authenticationManagerPort = authenticationManagerPort;
+        this.authTokenPort = authTokenPort;
+        this.sessionTokenManagerPort = sessionTokenManagerPort;
     }
 
     @Override
@@ -69,18 +66,23 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
         AuthenticatedInfo userInfo = authenticationManagerPort.setAuthenticationAndGetInfo(command.login(), command.password());
         User user = userRepository.findById(userInfo.userId())
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        var userRoles = getUserRoles(user.getId());
         
-        var deviceSession = createDeviceSession(userId, command);
-        var schoolId = schoolUserRepository.findByUserId(user.getId())
-            .map(su -> su.getSchoolId())
-            .orElse(null);
-        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), schoolId, user.getEmail().value(), userRoles);
-        var sessionToken = sessionTokenManagerPort.generateToken();
+        DeviceSession deviceSession = createDeviceSession(user.getId(), command);
+        UUID schoolId = null;
+        if (user.isSystemAdmin()) {
+            schoolId = schoolUserProjectionRepository.findSchoolIdByUserId(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User is not in any school"));
+        }
+        String accessToken = authTokenPort.generateToken(
+            user.getId(), 
+            schoolId, 
+            Email.valueOf(user.getEmail()), 
+            user.roleStrs()
+        );
+        SessionToken sessionToken = createSessionToken();
         createRefreshToken(deviceSession, sessionToken, now);
 
-        return LoginResponseMapper.toResponse(accessToken, sessionToken.rawToken(), userRoles);
+        return LoginResponse.toResponse(accessToken, sessionToken.rawToken(), Email.valueOf(user.getEmail()));
     }
 
     private LoginCommand normalize(LoginCommand input) {
@@ -89,44 +91,35 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
             input.password(), 
             StringNormalization.trimAndCollapseSpaces(input.ipAddress()),
             StringNormalization.trimAndCollapseSpaces(input.userAgent()),
-            new ClientDeviceCommand(
-                StringNormalization.trimAndCollapseSpaces(input.device().deviceId()),
-                StringNormalization.trimAndCollapseSpaces(input.device().deviceName()),
-                StringNormalization.trimAndCollapseSpaces(input.device().platform())
-            )
+            StringNormalization.trimAndCollapseSpaces(input.deviceId()),
+            StringNormalization.trimAndCollapseSpaces(input.deviceName()),
+            input.platform()
         );
     }
 
-    private List<String> getUserRoles(UUID userId) {
-        return userRoleQueryRepository.findByUserIdWithRoleInfo(userId)
-            .stream()
-            .map(ur -> ur.roleCode())
-            .toList();
-    }
-    
-    private SessionPlatform sessionPlatformFromRequest(String platform) {
-        try {
-            platform = platform.toUpperCase(Locale.ROOT);
-            return SessionPlatform.valueOf(platform);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Nền tảng " + platform + " hiện không được hỗ trợ");
+    private SessionToken createSessionToken() {
+        SessionToken sessionToken = sessionTokenManagerPort.generateToken();
+        while (refreshTokenRepository.existsByTokenHash(sessionToken.hashedToken())) {
+            SessionToken newSessionToken = sessionTokenManagerPort.generateToken();
+            sessionToken = newSessionToken;
         }
+        return sessionToken;
     }
 
     private DeviceSession createDeviceSession(UUID userId, LoginCommand command) {
-        var deviceSession = DeviceSession.create(
+        DeviceSession deviceSession = DeviceSession.create(
             userId, 
-            command.device().deviceId(), 
-            command.device().deviceName(), 
-            sessionPlatformFromRequest(command.device().platform()), 
+            command.deviceId(), 
+            command.deviceName(), 
+            command.platform(),
             command.ipAddress(), 
             command.userAgent()
         );
         return deviceSessionRepository.save(deviceSession);
     }
 
-    private void createRefreshToken(DeviceSession deviceSession, GeneratedSessionToken sessionToken, Instant now) {
-        var refreshToken = RefreshToken.createFresh(deviceSession.getId(), sessionToken.hashedToken(), now);
+    private void createRefreshToken(DeviceSession deviceSession, SessionToken sessionToken, Instant now) {
+        RefreshToken refreshToken = RefreshToken.createFresh(deviceSession.getId(), sessionToken.hashedToken(), now);
         refreshTokenRepository.save(refreshToken);
     }
 }

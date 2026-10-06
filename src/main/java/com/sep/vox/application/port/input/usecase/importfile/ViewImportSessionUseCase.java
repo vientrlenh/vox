@@ -12,7 +12,7 @@ import com.sep.vox.application.mapper.importfile.ImportSessionResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportSessionQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.importfile.ImportSessionDetailsResponse;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.school.SchoolUser;

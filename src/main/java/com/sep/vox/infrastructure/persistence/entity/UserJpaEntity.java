@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.infrastructure.common.BaseEntity;
+import com.sep.vox.infrastructure.shared.BaseEntity;
 
 import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;

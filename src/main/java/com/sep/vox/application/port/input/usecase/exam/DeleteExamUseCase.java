@@ -13,7 +13,7 @@ import com.sep.vox.application.port.input.command.DeleteExamCommand;
 import com.sep.vox.application.port.input.service.ExamScheduleClosureService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.exam.DeleteExamResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;

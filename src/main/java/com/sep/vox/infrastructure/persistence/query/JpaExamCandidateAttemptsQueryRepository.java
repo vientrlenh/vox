@@ -6,8 +6,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.ExamAttemptSummary;
-import com.sep.vox.application.query.repository.ExamCandidateAttemptsQueryRepository;
+import com.sep.vox.application.projection.dto.ExamAttemptSummary;
+import com.sep.vox.application.projection.repository.ExamCandidateAttemptsQueryRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

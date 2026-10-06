@@ -8,8 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.projection.dto.GradingTaskDetailInfo;
+import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 
 /**
  * Màn chấm của giáo viên.

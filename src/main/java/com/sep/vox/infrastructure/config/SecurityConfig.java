@@ -170,12 +170,6 @@ public class SecurityConfig {
     // Origin theo chuẩn trình duyệt: scheme://host[:port], không path, không '/' cuối.
     private static final Pattern ORIGIN_PATTERN = Pattern.compile("^https?://[^/\\s]+$");
 
-    private static final int ARGON2_SALT_LENGTH = 16;
-    private static final int ARGON2_HASH_LENGTH = 32;
-    private static final int ARGON2_PARALLELISM = 1;
-    private static final int ARGON2_MEMORY = 1 << 12;
-    private static final int ARGON2_ITERATION = 3;
-
     
     /**
      * Chain CHỈ dành cho lời gọi đăng ký của SBA client: {@code POST /admin/instances}.
@@ -197,8 +191,8 @@ public class SecurityConfig {
      * method đó, và cân nhắc luôn việc nút gỡ đăng ký trên UI dùng chung path.
      */
     @Bean
-    @Order(1)
-    public SecurityFilterChain adminRegistrationFilterChain(HttpSecurity http) throws Exception {
+    @Order(1) 
+    SecurityFilterChain adminRegistrationFilterChain(HttpSecurity http) throws Exception {
         http
             .securityMatcher(PathPatternRequestMatcher.withDefaults()
                 .matcher(HttpMethod.POST, ADMIN_CONSOLE_REGISTRATION_PATH))
@@ -246,8 +240,8 @@ public class SecurityConfig {
      * tệ hơn: ném thẳng "Cannot create a session after the response has been committed").
      */
     @Bean
-    @Order(2)
-    public SecurityFilterChain adminConsoleFilterChain(HttpSecurity http) throws Exception {
+    @Order(2) 
+    SecurityFilterChain adminConsoleFilterChain(HttpSecurity http) throws Exception {
         var csrfRequestHandler = new CsrfTokenRequestAttributeHandler();
         csrfRequestHandler.setCsrfRequestAttributeName(null);
 
@@ -348,8 +342,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(3)
-    public SecurityFilterChain configure(HttpSecurity http) {
+    @Order(3) 
+    SecurityFilterChain configure(HttpSecurity http) {
         // Xem khối chú thích ở CSRF_PROTECTED_API_PATHS. Đọc LƯỜI là cookie chỉ được ghi ở đúng
         // request /refresh -- tức là muộn hơn một nhịp so với lúc client cần nó.
         var apiCsrfRequestHandler = new CsrfTokenRequestAttributeHandler();
@@ -404,13 +398,13 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) {
+    @Bean 
+    AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) {
         return configuration.getAuthenticationManager();
     }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    @Bean 
+    CorsConfigurationSource corsConfigurationSource() {
         var allowedOrigins = validatedAllowedOrigins();
 
         var config = new CorsConfiguration();
@@ -471,20 +465,9 @@ public class SecurityConfig {
         return allowedOrigins;
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new Argon2PasswordEncoder(
-            ARGON2_SALT_LENGTH, 
-            ARGON2_HASH_LENGTH, 
-            ARGON2_PARALLELISM, 
-            ARGON2_MEMORY, 
-            ARGON2_ITERATION
-        );
+    @Bean 
+    PasswordEncoder passwordEncoder() {
+        return Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
     }
 
-
-    @Bean
-    public PasswordEncoderPort passwordEncoderPort() {
-        return new Argon2PasswordEncodeProvider(passwordEncoder());
-    }
 }

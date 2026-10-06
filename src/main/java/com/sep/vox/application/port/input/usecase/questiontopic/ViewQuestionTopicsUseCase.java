@@ -7,7 +7,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewQuestionTopicsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionTopicDto;
 import com.sep.vox.domain.mapper.QuestionTopicDtoMapper;

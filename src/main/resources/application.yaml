@@ -226,13 +226,6 @@ springdoc:
   api-docs:
     path: /v3/api-spec
 
-
-jwt:
-  secret: ${JWT_SECRET}
-  expiration-ms: ${JWT_EXPIRATION_MS:900000}
-  stream:
-    secret: ${JWT_STREAM_SECRET}
-
 logging:
   file: 
     name: logs/vox.log
@@ -266,6 +259,13 @@ practice:
     secret: ${PRACTICE_INTERNAL_SECRET:}
 
 app:
+  jwt: 
+    secret: ${JWT_SECRET:}
+    expiration-ms: ${JWT_EXPIRATION_MS:0}
+  refresh-token: 
+    seed: ${REFRESH_TOKEN_SEED:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789}
+    expiration-ms: ${REFRESH_TOKEN_EXPIRATION_MS:60480000}
+    length: ${REFRESH_TOKEN_LENGTH:64}
   avatar:
     # Host được phép xuất hiện trong users.avatar_url, ngăn cách bởi dấu phẩy.
     #

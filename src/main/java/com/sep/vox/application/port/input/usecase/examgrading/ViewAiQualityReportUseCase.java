@@ -6,8 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.ViewAiQualityReportQuery;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.dto.AiQualityReportInfo;
-import com.sep.vox.application.query.repository.ExamResultAuditQueryRepository;
+import com.sep.vox.application.projection.dto.AiQualityReportInfo;
+import com.sep.vox.application.projection.repository.ExamResultAuditQueryRepository;
 
 /**
  * "AI chấm lệch bao nhiêu", tính từ chính kết quả hậu kiểm đã có.

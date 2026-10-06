@@ -15,7 +15,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;

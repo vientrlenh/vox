@@ -8,7 +8,7 @@ import com.sep.vox.application.port.input.query.ViewStudentPracticeSessionDetail
 import com.sep.vox.application.port.input.service.PracticeSessionDetailAssemblyService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
+import com.sep.vox.application.projection.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.TeacherPracticeSessionDetail;
 
 /**

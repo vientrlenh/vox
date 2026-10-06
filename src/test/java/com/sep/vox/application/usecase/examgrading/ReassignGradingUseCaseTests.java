@@ -21,7 +21,7 @@ import com.sep.vox.application.port.input.command.ReassignGradingCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.application.port.input.usecase.examgrading.ReassignGradingUseCase;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;

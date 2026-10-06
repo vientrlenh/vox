@@ -8,8 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.service.ProctorScheduleAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.dto.ProctorCandidateSummary;
-import com.sep.vox.application.query.repository.ProctorScheduleCandidatesQueryRepository;
+import com.sep.vox.application.projection.dto.ProctorCandidateSummary;
+import com.sep.vox.application.projection.repository.ProctorScheduleCandidatesQueryRepository;
 
 @Service
 public class ViewMyProctorScheduleCandidatesUseCase implements IUseCase<UUID, List<ProctorCandidateSummary>> {

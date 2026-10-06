@@ -6,8 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.ViewGradingStatsQuery;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.dto.GradingStatsInfo;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.projection.dto.GradingStatsInfo;
+import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.service.exam.GradingScopeKind;
 
 /** Thẻ số đầu màn phân công — không có màn riêng cho thống kê. */

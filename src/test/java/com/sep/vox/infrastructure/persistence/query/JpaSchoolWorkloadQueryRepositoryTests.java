@@ -14,7 +14,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.application.query.repository.SchoolWorkloadQueryRepository;
+import com.sep.vox.application.projection.repository.SchoolWorkloadQueryRepository;
 import com.sep.vox.config.ContainerTestConfig;
 
 import jakarta.persistence.EntityManager;

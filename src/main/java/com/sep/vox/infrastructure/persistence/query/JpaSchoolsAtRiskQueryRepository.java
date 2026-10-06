@@ -10,9 +10,9 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.SchoolAtRiskDto;
-import com.sep.vox.application.query.dto.SchoolRiskBucket;
-import com.sep.vox.application.query.repository.SchoolsAtRiskQueryRepository;
+import com.sep.vox.application.projection.dto.SchoolAtRiskDto;
+import com.sep.vox.application.projection.dto.SchoolRiskBucket;
+import com.sep.vox.application.projection.repository.SchoolsAtRiskQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 
 import jakarta.persistence.EntityManager;

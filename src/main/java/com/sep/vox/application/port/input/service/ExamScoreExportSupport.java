@@ -7,9 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ExportExamScoresQuery;
-import com.sep.vox.application.query.dto.ExamScoreRowInfo;
-import com.sep.vox.application.query.dto.GradingAssignmentFilter;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.projection.dto.ExamScoreRowInfo;
+import com.sep.vox.application.projection.dto.GradingAssignmentFilter;
+import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.service.exam.GradingScopeKind;
 
 /**

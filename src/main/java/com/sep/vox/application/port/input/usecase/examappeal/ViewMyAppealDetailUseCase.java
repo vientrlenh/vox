@@ -8,8 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.AppealDetailInfo;
-import com.sep.vox.application.query.repository.ExamAppealQueryRepository;
+import com.sep.vox.application.projection.dto.AppealDetailInfo;
+import com.sep.vox.application.projection.repository.ExamAppealQueryRepository;
 
 // Dùng chung type AppealDetailInfo với school admin theo quyết định của chủ dự án -- field
 // reviewer vẫn tồn tại trên type này, nhưng FE (web/mobile) không được hỏi/hiện field đó cho

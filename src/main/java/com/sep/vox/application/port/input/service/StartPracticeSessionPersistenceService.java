@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
 import com.sep.vox.application.mapper.practicesession.SessionRowMapper;
-import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
+import com.sep.vox.application.projection.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeSession;
 import com.sep.vox.domain.repository.PracticePaperRepository;
 import com.sep.vox.domain.repository.PracticeSessionRepository;

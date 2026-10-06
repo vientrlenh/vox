@@ -17,7 +17,7 @@ import com.sep.vox.application.port.input.command.CreateQuestionEvaluationGuideC
 import com.sep.vox.application.port.input.command.CreateSystemQuestionBankQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.question.CreateQuestionResponse;
 import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
 import com.sep.vox.domain.mapper.QuestionEvaluationGuideDtoMapper;

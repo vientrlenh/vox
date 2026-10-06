@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.RoleConstant;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.service.question.QuestionStatusTransition;
 

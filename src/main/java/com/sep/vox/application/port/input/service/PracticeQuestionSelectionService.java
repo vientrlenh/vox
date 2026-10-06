@@ -17,7 +17,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import com.sep.vox.application.port.output.PracticeGenerationConfigPort;
 import com.sep.vox.application.port.output.QuestionDiversityPort;
-import com.sep.vox.application.query.dto.PracticeFocusInfo;
+import com.sep.vox.application.projection.dto.PracticeFocusInfo;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.repository.CriterionScoreAverageRepository;

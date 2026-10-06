@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.query.dto.PracticeFocusInfo;
+import com.sep.vox.application.projection.dto.PracticeFocusInfo;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.repository.PracticeItemResponseRepository;

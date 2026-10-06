@@ -24,8 +24,8 @@ import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.usecase.dashboard.ViewSchoolAdminDashboardUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.SchoolUnscoredWorkloadDto;
-import com.sep.vox.application.query.repository.SchoolWorkloadQueryRepository;
+import com.sep.vox.application.projection.dto.SchoolUnscoredWorkloadDto;
+import com.sep.vox.application.projection.repository.SchoolWorkloadQueryRepository;
 import com.sep.vox.application.response.input.dashboard.SchoolMonthlySpendingResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.common.ZoneConstant;

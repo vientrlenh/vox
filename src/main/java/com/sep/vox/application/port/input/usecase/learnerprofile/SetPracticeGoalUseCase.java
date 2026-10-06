@@ -7,8 +7,8 @@ import com.sep.vox.application.mapper.learnerprofile.LearnerProfileResponseMappe
 import com.sep.vox.application.port.input.command.SetPracticeGoalCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.projection.repository.LearnerProfileQueryRepository;
 import com.sep.vox.application.port.input.service.LearnerProfileCommandService;
-import com.sep.vox.application.query.repository.LearnerProfileQueryRepository;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.LearnerProfile;
 
 @Service

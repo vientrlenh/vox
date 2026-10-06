@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,4 +24,7 @@ public interface SpringDataDeviceSessionRepository extends JpaRepository<DeviceS
             AND d.revokedAt IS NULL
     """)
     int revokeDeviceSession(@Param("id") UUID id, @Param("now") Instant now);
+
+    
+    Optional<DeviceSessionJpaEntity> findByDeviceIdAndTokenHash(@Param("deviceId") String deviceId, @Param("tokenHash") String tokenHash);
 }

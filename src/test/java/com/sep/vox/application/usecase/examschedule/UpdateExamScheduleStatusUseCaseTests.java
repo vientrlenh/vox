@@ -25,7 +25,7 @@ import com.sep.vox.application.port.input.service.ExamScheduleCandidateConflictV
 import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.query;
 
-import com.sep.vox.application.query.dto.SchoolRiskBucket;
+import com.sep.vox.application.projection.dto.SchoolRiskBucket;
 
 /**
  * @param bucket  nhóm đang mở; bắt buộc — trang này luôn đứng trong đúng một nhóm

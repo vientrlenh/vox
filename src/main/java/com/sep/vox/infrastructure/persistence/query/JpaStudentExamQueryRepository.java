@@ -7,8 +7,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.StudentExamRowInfo;
-import com.sep.vox.application.query.repository.StudentExamQueryRepository;
+import com.sep.vox.application.projection.dto.StudentExamRowInfo;
+import com.sep.vox.application.projection.repository.StudentExamQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;

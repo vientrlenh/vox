@@ -20,9 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.metering.QuotaPricingCalibration;
 import com.sep.vox.domain.model.metering.QuotaPricingSource;
-import com.sep.vox.application.query.repository.SessionCostQueryRepository;
 import com.sep.vox.application.port.output.QuotaPricingCalibrationConfigPort;
 import com.sep.vox.application.port.output.QuotaPricingConfigPort;
+import com.sep.vox.application.projection.repository.SessionCostQueryRepository;
 
 /**
  * Tự tính lại estimatedCostPer{Exam,Practice}SecondUsd (xem QuotaPricingProperties) từ chi phí AI

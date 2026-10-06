@@ -23,7 +23,7 @@ import com.sep.vox.application.mapper.examgrading.GradingResultCode;
 import com.sep.vox.application.port.input.query.ExportExamScoresQuery;
 import com.sep.vox.application.port.input.service.ExamScoreExportSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.dto.ExamScoreRowInfo;
+import com.sep.vox.application.projection.dto.ExamScoreRowInfo;
 import com.sep.vox.domain.model.exam.ExamKind;
 
 /**

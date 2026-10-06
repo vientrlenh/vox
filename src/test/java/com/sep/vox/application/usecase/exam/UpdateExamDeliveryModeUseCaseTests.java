@@ -19,7 +19,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.UpdateExamDeliveryModeCommand;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamDeliveryModeUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamDeliveryMode;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -96,7 +96,7 @@ class UpdateExamDeliveryModeUseCaseTests {
         when(schoolUserRepository.findByUserId(userId))
             .thenReturn(Optional.of(new com.sep.vox.domain.model.school.SchoolUser(schoolId, userId, null, null)));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId))
-            .thenReturn(List.of(new com.sep.vox.application.query.dto.UserRoleInfo(
+            .thenReturn(List.of(new com.sep.vox.application.projection.dto.UserRoleInfo(
                 UUID.randomUUID(), userId, UUID.randomUUID(), null, "SCHOOL_ADMIN", "School Admin")));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examRepository.save(exam)).thenAnswer(inv -> inv.getArgument(0));

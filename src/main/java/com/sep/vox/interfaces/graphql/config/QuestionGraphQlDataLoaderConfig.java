@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.dto.QuestionBankDto;
 import com.sep.vox.domain.dto.QuestionBankGradeDto;

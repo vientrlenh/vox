@@ -9,7 +9,7 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.mapper.SchoolUserDtoMapper;

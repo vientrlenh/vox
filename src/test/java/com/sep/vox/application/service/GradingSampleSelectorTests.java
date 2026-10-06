@@ -11,7 +11,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.service.GradingSampleSelector;
-import com.sep.vox.application.query.dto.GradingRiskInfo;
+import com.sep.vox.application.projection.dto.GradingRiskInfo;
 import com.sep.vox.domain.model.exam.GradingSampleSelectionMode;
 
 /**

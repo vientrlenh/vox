@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.repository.SubscriptionPlanQueryRepository;
+import com.sep.vox.application.projection.repository.SubscriptionPlanQueryRepository;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
 

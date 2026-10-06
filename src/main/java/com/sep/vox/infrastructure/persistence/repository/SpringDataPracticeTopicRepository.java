@@ -9,11 +9,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.application.query.dto.DimensionScoreInfo;
-import com.sep.vox.application.query.dto.RankedTopicInfo;
-import com.sep.vox.application.query.dto.TopicDimensionInfo;
-import com.sep.vox.application.query.dto.TopicNameCardInfo;
-import com.sep.vox.application.query.dto.TopicSearchRowInfo;
+import com.sep.vox.application.projection.dto.DimensionScoreInfo;
+import com.sep.vox.application.projection.dto.RankedTopicInfo;
+import com.sep.vox.application.projection.dto.TopicDimensionInfo;
+import com.sep.vox.application.projection.dto.TopicNameCardInfo;
+import com.sep.vox.application.projection.dto.TopicSearchRowInfo;
 import com.sep.vox.infrastructure.persistence.entity.PracticeTopicJpaEntity;
 
 public interface SpringDataPracticeTopicRepository
@@ -239,7 +239,7 @@ public interface SpringDataPracticeTopicRepository
           )
         ORDER BY qt.name
         """, nativeQuery = true)
-    List<com.sep.vox.application.query.dto.QuestionTopicInfo> findPublishedExamTopics(
+    List<com.sep.vox.application.projection.dto.QuestionTopicInfo> findPublishedExamTopics(
         @Param("schoolId") UUID schoolId,
         @Param("gradeId") UUID gradeId
     );

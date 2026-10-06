@@ -33,9 +33,9 @@ import com.sep.vox.application.port.input.query.ExportExamScoresQuery;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.ExamScoreExportSupport;
 import com.sep.vox.application.port.input.usecase.examgrading.ExportExamScoresExcelUseCase;
-import com.sep.vox.application.query.dto.ExamScoreRowInfo;
-import com.sep.vox.application.query.dto.GradingAssignmentFilter;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.projection.dto.ExamScoreRowInfo;
+import com.sep.vox.application.projection.dto.GradingAssignmentFilter;
+import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 
 /**
  * Bản .xlsx bỏ được BOM và quote của CSV, nhưng KHÔNG bỏ được guard công thức: rủi ro nằm

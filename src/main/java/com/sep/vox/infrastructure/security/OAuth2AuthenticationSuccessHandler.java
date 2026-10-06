@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.ClientDeviceCommand;
 import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
 import com.sep.vox.application.port.output.CookieManagerPort;

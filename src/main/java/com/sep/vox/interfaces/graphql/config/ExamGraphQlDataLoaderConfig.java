@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
 import com.sep.vox.application.port.input.usecase.examevaluation.ResolveExamCandidateAttemptsUseCase;
-import com.sep.vox.application.query.dto.ExamCandidateAttempts;
+import com.sep.vox.application.projection.dto.ExamCandidateAttempts;
 import com.sep.vox.domain.dto.ExamBlueprintDto;
 import com.sep.vox.domain.dto.ExamBlueprintSlotDto;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;

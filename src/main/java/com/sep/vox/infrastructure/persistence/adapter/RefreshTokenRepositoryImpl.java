@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
 import com.sep.vox.domain.repository.RefreshTokenRepository;
+import com.sep.vox.infrastructure.persistence.entity.RefreshTokenJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.RefreshTokenMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRefreshTokenRepository;
 
@@ -22,8 +23,8 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
     }
 
     @Override
-    public List<RefreshToken> findBySessionId(UUID sessionId) {
-        return springDataRefreshTokenRepository.findBySessionId(sessionId)
+    public List<RefreshToken> findByDeviceSessionId(UUID deviceSessionId) {
+        return springDataRefreshTokenRepository.findByDeviceSessionId(deviceSessionId)
             .stream()
             .map(RefreshTokenMapper::toDomain)
             .toList();
@@ -37,26 +38,25 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
 
     @Override
     public RefreshToken save(RefreshToken token) {
-        var entity = RefreshTokenMapper.toJpa(token);
-        var saved = springDataRefreshTokenRepository.save(entity);
+        RefreshTokenJpaEntity entity = RefreshTokenMapper.toJpa(token);
+        RefreshTokenJpaEntity saved = springDataRefreshTokenRepository.save(entity);
         return RefreshTokenMapper.toDomain(saved);
     }
 
     @Override
-    public Optional<RefreshToken> findByTokenHash(String tokenHash) {
-        return springDataRefreshTokenRepository.findByTokenHash(tokenHash)
-            .map(RefreshTokenMapper::toDomain);
-    }
-
-    @Override
-    public Optional<RefreshToken> findByTokenHashForUpdate(String token) {
-        return springDataRefreshTokenRepository.findByTokenHashForUpdate(token)
+    public Optional<RefreshToken> findByTokenHashForUpdate(String tokenHash) {
+        return springDataRefreshTokenRepository.findByTokenHashForUpdate(tokenHash)
             .map(RefreshTokenMapper::toDomain);
     }
 
     @Override
     public int markUsedAndReplacedBy(UUID oldTokenId, UUID newTokenId, Instant now) {
         return springDataRefreshTokenRepository.markUsedAndReplacedBy(oldTokenId, newTokenId, now);
+    }
+
+    @Override
+    public boolean existsByTokenHash(String tokenHash) {
+        return springDataRefreshTokenRepository.existsByTokenHash(tokenHash);
     }
     
 }

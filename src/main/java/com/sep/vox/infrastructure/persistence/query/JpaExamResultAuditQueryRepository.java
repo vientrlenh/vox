@@ -10,9 +10,9 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.AiQualityReportInfo;
-import com.sep.vox.application.query.dto.ResultStatusHistoryInfo;
-import com.sep.vox.application.query.repository.ExamResultAuditQueryRepository;
+import com.sep.vox.application.projection.dto.AiQualityReportInfo;
+import com.sep.vox.application.projection.dto.ResultStatusHistoryInfo;
+import com.sep.vox.application.projection.repository.ExamResultAuditQueryRepository;
 import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
 import com.sep.vox.domain.model.exam.GradingOutcome;
 import com.sep.vox.domain.model.exam.GradingRoundType;

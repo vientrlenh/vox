@@ -16,8 +16,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.query.dto.GradingAssignmentFilter;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.projection.dto.GradingAssignmentFilter;
+import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntity;

@@ -12,4 +12,5 @@ public interface DeviceSessionRepository {
     Optional<DeviceSession> findById(UUID id);
     List<DeviceSession> findByUserId(UUID userId);
     int revokeDeviceSession(UUID id, Instant now);
+    
 }

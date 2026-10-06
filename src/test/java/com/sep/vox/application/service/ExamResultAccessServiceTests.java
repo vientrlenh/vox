@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.service.ExamResultAccessService;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
@@ -181,7 +181,7 @@ class ExamResultAccessServiceTests {
         schoolUser.setSchoolId(SCHOOL_ID);
         when(schoolUserRepository.findByUserId(adminId)).thenReturn(Optional.of(schoolUser));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(adminId)).thenReturn(List.of(
-            new com.sep.vox.application.query.dto.UserRoleInfo(
+            new com.sep.vox.application.projection.dto.UserRoleInfo(
                 UUID.randomUUID(), adminId, UUID.randomUUID(), Instant.now(),
                 "SCHOOL_ADMIN", "School Admin")));
     }

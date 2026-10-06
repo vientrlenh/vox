@@ -22,8 +22,8 @@ import com.sep.vox.application.port.input.service.ExamScheduleManageAccessServic
 import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.usecase.examschedule.AddExamScheduleProctorUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.UserRoleInfo;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.dto.UserRoleInfo;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;

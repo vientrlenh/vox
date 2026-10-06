@@ -20,7 +20,7 @@ import com.sep.vox.application.port.input.usecase.question.ViewQuestionStatusCou
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForExamPaperUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.QuestionStatusCountInfo;
+import com.sep.vox.application.projection.dto.QuestionStatusCountInfo;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.dto.QuestionBankDto;

@@ -20,13 +20,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.service.QuotaPricingCalibrationService;
+import com.sep.vox.application.projection.dto.SessionCostDto;
+import com.sep.vox.application.projection.repository.SessionCostQueryRepository;
 import com.sep.vox.domain.model.metering.QuotaPricingCalibration;
 import com.sep.vox.domain.model.metering.QuotaPricingSource;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
 import com.sep.vox.domain.repository.QuotaPricingCalibrationRepository;
-import com.sep.vox.application.query.dto.SessionCostDto;
-import com.sep.vox.application.query.repository.SessionCostQueryRepository;
 import com.sep.vox.domain.repository.SessionDurationAggregate;
 import com.sep.vox.infrastructure.properties.QuotaPricingCalibrationProperties;
 import com.sep.vox.infrastructure.properties.QuotaPricingProperties;

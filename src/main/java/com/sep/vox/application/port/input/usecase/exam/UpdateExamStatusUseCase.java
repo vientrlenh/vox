@@ -24,7 +24,7 @@ import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;

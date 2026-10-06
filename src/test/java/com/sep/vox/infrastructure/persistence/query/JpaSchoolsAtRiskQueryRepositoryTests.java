@@ -16,9 +16,9 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.application.query.dto.SchoolRiskBucket;
-import com.sep.vox.application.query.repository.PlatformBusinessHealthQueryRepository;
-import com.sep.vox.application.query.repository.SchoolsAtRiskQueryRepository;
+import com.sep.vox.application.projection.dto.SchoolRiskBucket;
+import com.sep.vox.application.projection.repository.PlatformBusinessHealthQueryRepository;
+import com.sep.vox.application.projection.repository.SchoolsAtRiskQueryRepository;
 import com.sep.vox.config.ContainerTestConfig;
 
 import jakarta.persistence.EntityManager;

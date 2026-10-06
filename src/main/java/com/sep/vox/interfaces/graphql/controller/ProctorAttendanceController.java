@@ -13,9 +13,9 @@ import com.sep.vox.application.port.input.usecase.examcandidate.ViewMyProctorSch
 import com.sep.vox.application.port.input.usecase.proctoring.ViewMonitorableExamUseCase;
 import com.sep.vox.application.port.input.usecase.proctoring.ViewMonitorableExamsUseCase;
 import com.sep.vox.application.port.input.usecase.proctoring.ViewScheduleProctoringAlertsUseCase;
-import com.sep.vox.application.query.dto.MonitoredExamSummary;
-import com.sep.vox.application.query.dto.ProctorCandidateSummary;
-import com.sep.vox.application.query.dto.ProctorScheduleSummary;
+import com.sep.vox.application.projection.dto.MonitoredExamSummary;
+import com.sep.vox.application.projection.dto.ProctorCandidateSummary;
+import com.sep.vox.application.projection.dto.ProctorScheduleSummary;
 import com.sep.vox.domain.dto.ExamProctoringAlertDto;
 
 @Controller("graphqlProctorAttendanceController")

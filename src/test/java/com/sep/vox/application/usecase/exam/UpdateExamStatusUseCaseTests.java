@@ -32,8 +32,8 @@ import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockSer
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamStatusUseCase;
 import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.UserRoleInfo;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.dto.UserRoleInfo;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamKind;

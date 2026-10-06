@@ -14,11 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewMyExamsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.dto.ExamAttemptSummary;
-import com.sep.vox.application.query.dto.StudentExamRowInfo;
-import com.sep.vox.application.query.repository.ExamCandidateAttemptsQueryRepository;
-import com.sep.vox.application.query.repository.StudentExamQueryRepository;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.projection.dto.ExamAttemptSummary;
+import com.sep.vox.application.projection.dto.StudentExamRowInfo;
+import com.sep.vox.application.projection.repository.ExamCandidateAttemptsQueryRepository;
+import com.sep.vox.application.projection.repository.StudentExamQueryRepository;
 import com.sep.vox.application.response.input.exam.StudentExamSessionSummaryResponse;
 import com.sep.vox.application.response.input.exam.StudentExamSummaryResponse;
 import com.sep.vox.domain.common.PageResult;

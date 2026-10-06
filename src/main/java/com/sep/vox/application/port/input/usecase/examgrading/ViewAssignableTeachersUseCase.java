@@ -8,8 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.ViewAssignableTeachersQuery;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.dto.AssignableTeacherInfo;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.projection.dto.AssignableTeacherInfo;
+import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 
 /** Nguồn chung cho cả modal auto-assign lẫn dropdown gán tay / đổi giáo viên. */
 @Service

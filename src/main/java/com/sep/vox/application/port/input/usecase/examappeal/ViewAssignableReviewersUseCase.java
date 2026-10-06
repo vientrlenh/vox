@@ -9,8 +9,8 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewAssignableReviewersQuery;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
-import com.sep.vox.application.query.repository.ExamAppealQueryRepository;
+import com.sep.vox.application.projection.dto.AppealReviewerLiteInfo;
+import com.sep.vox.application.projection.repository.ExamAppealQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**

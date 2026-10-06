@@ -11,9 +11,9 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.event.PracticeAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.application.query.dto.CriterionFrameworkInfo;
-import com.sep.vox.application.query.repository.PracticeQuestionQueryRepository;
-import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
+import com.sep.vox.application.projection.dto.CriterionFrameworkInfo;
+import com.sep.vox.application.projection.repository.PracticeQuestionQueryRepository;
+import com.sep.vox.application.projection.repository.PracticeSessionQueryRepository;
 import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
 import com.sep.vox.application.exception.NotFoundException;
 

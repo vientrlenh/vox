@@ -8,8 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.ViewGradingFailureSessionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewGradingFailureOverviewUseCase.GradingFailureWindow;
-import com.sep.vox.application.query.dto.GradingFailureSessionDto;
-import com.sep.vox.application.query.repository.GradingFailureQueryRepository;
+import com.sep.vox.application.projection.dto.GradingFailureSessionDto;
+import com.sep.vox.application.projection.repository.GradingFailureQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 
 /** Danh sách phiên trong MỘT nhóm nguyên nhân trên trang phân loại phiên chấm lỗi. */

@@ -13,7 +13,7 @@ import com.sep.vox.application.mapper.importfile.ImportRowResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportRowsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.importfile.ImportRowResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;

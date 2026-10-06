@@ -20,7 +20,7 @@ import com.sep.vox.application.port.input.usecase.examgrading.BulkFinalizeExamRe
 import com.sep.vox.application.port.input.usecase.examgrading.ExportExamScoresExcelUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ExportExamScoresUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.PreviewBulkFinalizeUseCase;
-import com.sep.vox.application.query.dto.BulkFinalizePreviewInfo;
+import com.sep.vox.application.projection.dto.BulkFinalizePreviewInfo;
 import com.sep.vox.interfaces.rest.dto.request.BulkFinalizeExamResultsRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 

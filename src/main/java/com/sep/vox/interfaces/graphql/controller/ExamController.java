@@ -28,7 +28,7 @@ import com.sep.vox.application.port.input.usecase.exam.ViewExamsUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ViewMyExamRoleUseCase;
 import com.sep.vox.application.port.input.usecase.exampaper.ViewExamPaperDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.ExamStatusCountsDto;
+import com.sep.vox.application.projection.dto.ExamStatusCountsDto;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.ExamBlueprintDto;
 import com.sep.vox.domain.dto.ExamBlueprintSlotDto;

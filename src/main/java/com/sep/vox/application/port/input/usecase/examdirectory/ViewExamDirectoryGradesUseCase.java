@@ -8,8 +8,8 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewExamDirectoryQuery;
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.query.dto.ExamDirectoryGradeInfo;
-import com.sep.vox.application.query.repository.ExamDirectoryQueryRepository;
+import com.sep.vox.application.projection.dto.ExamDirectoryGradeInfo;
+import com.sep.vox.application.projection.repository.ExamDirectoryQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 
 /**

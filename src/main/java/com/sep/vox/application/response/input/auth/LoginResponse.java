@@ -1,11 +1,11 @@
 package com.sep.vox.application.response.input.auth;
 
-import java.util.List;
-
 public record LoginResponse(
+    String email,
     String accessToken,
-    String refreshToken,
-    List<String> roles
+    String refreshToken
 ) {
-    
+    public static LoginResponse toResponse(String email, String accessToken, String refreshToken) {
+        return new LoginResponse(email, accessToken, refreshToken);
+    }
 }

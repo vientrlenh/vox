@@ -5,11 +5,14 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.SetUpPasswordCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.PasswordEncoderPort;
 import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
@@ -17,36 +20,48 @@ import com.sep.vox.domain.repository.UserRepository;
 public class SetUpPasswordUseCase implements IUseCase<SetUpPasswordCommand, Void>{
 
     private final PasswordSetUpTokenRepository passwordSetUpTokenRepository;
-    private final PasswordSetUpTokenPort passwordSetUpTokenPort;
     private final UserRepository userRepository;
+    private final PasswordSetUpTokenPort passwordSetUpTokenPort;
     private final PasswordEncoderPort passwordEncoderPort;
 
-    public SetUpPasswordUseCase(PasswordSetUpTokenRepository passwordSetUpTokenRepository, PasswordSetUpTokenPort passwordSetUpTokenPort, UserRepository userRepository, PasswordEncoderPort passwordEncoderPort) {
+    public SetUpPasswordUseCase(
+        PasswordSetUpTokenRepository passwordSetUpTokenRepository, 
+        UserRepository userRepository,
+        PasswordSetUpTokenPort passwordSetUpTokenPort,  
+        PasswordEncoderPort passwordEncoderPort
+    ) {
         this.passwordSetUpTokenRepository = passwordSetUpTokenRepository;
-        this.passwordSetUpTokenPort = passwordSetUpTokenPort;
         this.userRepository = userRepository;
+        this.passwordSetUpTokenPort = passwordSetUpTokenPort;
         this.passwordEncoderPort = passwordEncoderPort;
     }
 
     @Override
     @Transactional
     public Void execute(SetUpPasswordCommand input) {
-        var now = Instant.now();
-        var hashedToken = passwordSetUpTokenPort.hash(input.token());
+        SetUpPasswordCommand normalized = normalize(input);
+
+        Instant now = Instant.now();
+        String hashedToken = passwordSetUpTokenPort.hash(normalized.token());
         
-        var updatedTokenRows = passwordSetUpTokenRepository.updateUsedToken(input.userId(), hashedToken, now);
-        if (updatedTokenRows == 0) {
-            throw new IllegalArgumentException("Token không hợp lệ hoặc đã hết hạn");
+        int rowAffected = passwordSetUpTokenRepository.updateUsedToken(normalized.userId(), hashedToken, now);
+        if (rowAffected == 0) {
+            throw new UnauthorizedException("Invalid or expired password set up token");
         }
 
-        var passwordHash = passwordEncoderPort.hash(input.password());
-        var user = userRepository.findById(input.userId())
-            .orElseThrow(() -> new NotFoundException("Không tỉm thấy người dùng"));
-        user.updatePasswordAndActivate(passwordHash, now);
+        String hashedPassword = passwordEncoderPort.hash(input.password());
+        User user = userRepository.findByIdForUpdate(input.userId())
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        user.updatePasswordAndActivate(hashedPassword, now);
         userRepository.save(user);
-
         return null;
     }
     
-
+    private SetUpPasswordCommand normalize(SetUpPasswordCommand input) {
+        return new SetUpPasswordCommand(
+            input.userId(), 
+            StringNormalization.trimAndCollapseSpaces(input.token()), 
+            input.password()
+        );
+    }
 }

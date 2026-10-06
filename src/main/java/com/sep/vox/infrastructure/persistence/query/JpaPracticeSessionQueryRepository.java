@@ -6,9 +6,9 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.CriterionFrameworkInfo;
-import com.sep.vox.application.query.dto.SessionRowInfo;
-import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
+import com.sep.vox.application.projection.dto.CriterionFrameworkInfo;
+import com.sep.vox.application.projection.dto.SessionRowInfo;
+import com.sep.vox.application.projection.repository.PracticeSessionQueryRepository;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeSessionRepository;
 
 @Repository
@@ -46,7 +46,7 @@ public class JpaPracticeSessionQueryRepository implements PracticeSessionQueryRe
     }
 
     @Override
-    public com.sep.vox.application.query.dto.PracticeDashboardCountsInfo findDashboardCounts(UUID studentId) {
+    public com.sep.vox.application.projection.dto.PracticeDashboardCountsInfo findDashboardCounts(UUID studentId) {
         return repository.findDashboardCounts(studentId);
     }
 

@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.CanViewExamBlueprintDataQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 

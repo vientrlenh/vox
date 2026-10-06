@@ -7,9 +7,9 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewExamStatusCountsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.dto.ExamStatusCountsDto;
-import com.sep.vox.application.query.repository.ExamStatusCountsQueryRepository;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.dto.ExamStatusCountsDto;
+import com.sep.vox.application.projection.repository.ExamStatusCountsQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service

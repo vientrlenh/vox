@@ -19,7 +19,7 @@ import com.sep.vox.application.port.input.query.ViewMyGradingTasksQuery;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewMyGradingExamsUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewMyGradingTasksUseCase;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 
 /**

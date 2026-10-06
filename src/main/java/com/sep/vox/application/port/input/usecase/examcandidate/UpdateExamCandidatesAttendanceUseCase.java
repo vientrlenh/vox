@@ -16,7 +16,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateExamCandidatesAttendanceCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
 import com.sep.vox.domain.model.exam.Exam;

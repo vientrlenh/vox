@@ -16,7 +16,7 @@ import com.sep.vox.application.port.input.service.PracticeGradingFlushService;
 import com.sep.vox.application.port.input.service.PracticeSessionClosedHandler;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
+import com.sep.vox.application.projection.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeSession;
 import com.sep.vox.domain.repository.PracticeItemEvaluationRepository;
 import com.sep.vox.domain.repository.PracticeSessionRepository;

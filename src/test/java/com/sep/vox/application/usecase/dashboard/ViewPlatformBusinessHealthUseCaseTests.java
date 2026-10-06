@@ -17,8 +17,8 @@ import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.query.ViewPlatformBusinessHealthQuery;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformBusinessHealthUseCase;
-import com.sep.vox.application.query.dto.SchoolSubscriptionHealthDto;
-import com.sep.vox.application.query.repository.PlatformBusinessHealthQueryRepository;
+import com.sep.vox.application.projection.dto.SchoolSubscriptionHealthDto;
+import com.sep.vox.application.projection.repository.PlatformBusinessHealthQueryRepository;
 import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.repository.OrderRepository;

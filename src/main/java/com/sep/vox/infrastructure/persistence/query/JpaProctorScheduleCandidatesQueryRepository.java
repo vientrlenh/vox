@@ -8,8 +8,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.ProctorCandidateSummary;
-import com.sep.vox.application.query.repository.ProctorScheduleCandidatesQueryRepository;
+import com.sep.vox.application.projection.dto.ProctorCandidateSummary;
+import com.sep.vox.application.projection.repository.ProctorScheduleCandidatesQueryRepository;
 import com.sep.vox.infrastructure.persistence.entity.ExamSessionJpaEntity;
 
 import jakarta.persistence.EntityManager;

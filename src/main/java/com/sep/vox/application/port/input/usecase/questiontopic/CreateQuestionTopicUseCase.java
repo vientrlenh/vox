@@ -12,7 +12,7 @@ import com.sep.vox.application.mapper.questiontopic.CreateQuestionTopicResponseM
 import com.sep.vox.application.port.input.command.CreateQuestionTopicCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.questiontopic.CreateQuestionTopicResponse;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionTopic;

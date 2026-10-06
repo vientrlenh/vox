@@ -24,7 +24,7 @@ import com.sep.vox.application.port.input.command.DeleteExamCommand;
 import com.sep.vox.application.port.input.usecase.exam.DeleteExamUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;

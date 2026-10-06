@@ -5,8 +5,8 @@ import java.time.Instant;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.SchoolSubscriptionHealthDto;
-import com.sep.vox.application.query.repository.PlatformBusinessHealthQueryRepository;
+import com.sep.vox.application.projection.dto.SchoolSubscriptionHealthDto;
+import com.sep.vox.application.projection.repository.PlatformBusinessHealthQueryRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

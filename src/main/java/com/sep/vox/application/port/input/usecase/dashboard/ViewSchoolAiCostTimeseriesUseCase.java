@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.ViewSchoolAiCostQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.SchoolAiCostQueryRepository;
+import com.sep.vox.application.projection.repository.SchoolAiCostQueryRepository;
 import com.sep.vox.application.response.input.dashboard.SchoolAiCostTimeseriesResponse;
 import com.sep.vox.domain.common.DecimalText;
 

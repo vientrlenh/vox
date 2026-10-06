@@ -8,10 +8,10 @@ import java.util.UUID;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
 
 public interface RefreshTokenRepository {
-    List<RefreshToken> findBySessionId(UUID sessionId);
+    List<RefreshToken> findByDeviceSessionId(UUID sessionId);
     Optional<RefreshToken> findById(UUID id);
     RefreshToken save(RefreshToken token);
-    Optional<RefreshToken> findByTokenHash(String tokenHash);
-    Optional<RefreshToken> findByTokenHashForUpdate(String token);
+    boolean existsByTokenHash(String tokenHash);
+    Optional<RefreshToken> findByTokenHashForUpdate(String tokenHash);
     int markUsedAndReplacedBy(UUID oldTokenId, UUID newTokenId, Instant now);
 }

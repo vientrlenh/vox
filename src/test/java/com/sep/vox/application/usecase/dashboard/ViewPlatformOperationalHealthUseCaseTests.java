@@ -17,9 +17,9 @@ import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.query.ViewPlatformOperationalHealthQuery;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformOperationalHealthUseCase;
-import com.sep.vox.application.query.dto.GradingOutcomeBucketDto;
-import com.sep.vox.application.query.dto.LiveSessionCountsDto;
-import com.sep.vox.application.query.repository.PlatformOperationalHealthQueryRepository;
+import com.sep.vox.application.projection.dto.GradingOutcomeBucketDto;
+import com.sep.vox.application.projection.dto.LiveSessionCountsDto;
+import com.sep.vox.application.projection.repository.PlatformOperationalHealthQueryRepository;
 import com.sep.vox.domain.common.ZoneConstant;
 
 /**

@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.ViewSubscriptionPlansQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.SubscriptionPlanQueryRepository;
+import com.sep.vox.application.projection.repository.SubscriptionPlanQueryRepository;
 import com.sep.vox.application.response.input.subscription.ViewSubscriptionPlansResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;

@@ -27,7 +27,7 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.GradingSampleSelector;
 import com.sep.vox.application.port.input.service.RoundRobinLoadBalancer;
 import com.sep.vox.application.port.input.usecase.examgrading.AutoAssignGradingUseCase;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
 import com.sep.vox.domain.model.exam.GradingRoundType;

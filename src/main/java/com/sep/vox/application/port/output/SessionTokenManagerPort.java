@@ -1,10 +1,11 @@
 package com.sep.vox.application.port.output;
 
+import java.time.Instant;
+import java.util.UUID;
 
-
-import com.sep.vox.application.response.output.GeneratedSessionToken;
+import com.sep.vox.application.response.output.SessionToken;
 
 public interface SessionTokenManagerPort {
-    GeneratedSessionToken generateToken();
-    String hash(String token);
+    SessionToken generateToken();
+    String hash(String rawToken);
 }

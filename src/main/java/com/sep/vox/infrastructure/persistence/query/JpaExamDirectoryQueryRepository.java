@@ -6,9 +6,9 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.query.dto.ExamDirectoryGradeInfo;
-import com.sep.vox.application.query.dto.ExamDirectoryUserInfo;
-import com.sep.vox.application.query.repository.ExamDirectoryQueryRepository;
+import com.sep.vox.application.projection.dto.ExamDirectoryGradeInfo;
+import com.sep.vox.application.projection.dto.ExamDirectoryUserInfo;
+import com.sep.vox.application.projection.repository.ExamDirectoryQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.common.VnSearchKey;
 

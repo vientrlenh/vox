@@ -10,9 +10,9 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.application.query.dto.CriterionFrameworkInfo;
-import com.sep.vox.application.query.dto.PracticeDashboardCountsInfo;
-import com.sep.vox.application.query.dto.SessionRowInfo;
+import com.sep.vox.application.projection.dto.CriterionFrameworkInfo;
+import com.sep.vox.application.projection.dto.PracticeDashboardCountsInfo;
+import com.sep.vox.application.projection.dto.SessionRowInfo;
 import com.sep.vox.infrastructure.persistence.entity.PracticeSessionJpaEntity;
 
 public interface SpringDataPracticeSessionRepository

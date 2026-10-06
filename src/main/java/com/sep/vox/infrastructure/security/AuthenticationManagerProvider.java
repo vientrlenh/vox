@@ -1,15 +1,18 @@
 package com.sep.vox.infrastructure.security;
 
-import java.util.UUID;
-
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.AuthenticationManagerPort;
-import com.sep.vox.infrastructure.exception.InfrastructureException;
+import com.sep.vox.application.response.output.AuthenticatedInfo;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j 
 public class AuthenticationManagerProvider implements AuthenticationManagerPort {
 
     private final AuthenticationManager authenticationManager;
@@ -19,22 +22,14 @@ public class AuthenticationManagerProvider implements AuthenticationManagerPort 
     }
 
     @Override
-    public String setAuthenticationAndGetUserEmail(String login, String password) {
-        var authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(login, password));
-        var userDetails = (CustomUserDetails) authentication.getPrincipal();
-        if (userDetails == null) 
-            return "";
-        return userDetails.getUsername();
-    }
-
-    @Override
-    public UUID setAuthenticationAndGetUserId(String login, String password) {
-        var authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(login, password));
-        var userDetails = (CustomUserDetails) authentication.getPrincipal();
+    public AuthenticatedInfo setAuthenticationAndGetInfo(String login, String password) {
+        Authentication authentication = authenticationManager.authenticate(UsernamePasswordAuthenticationToken.unauthenticated(login, password));
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         if (userDetails == null) {
-            throw new InfrastructureException("An unexpected error when setting username password authentication token");
+            log.error("Authentication manager set authentication failed");
+            throw new UnauthorizedException("Authentication set failed");
         }
-        return userDetails.getId();
+        return new AuthenticatedInfo(userDetails.getId(), userDetails.getUsername());
     }
     
 }

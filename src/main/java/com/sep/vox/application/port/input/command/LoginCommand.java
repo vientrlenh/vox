@@ -5,7 +5,9 @@ public record LoginCommand(
     String password,
     String ipAddress,
     String userAgent,
-    ClientDeviceCommand device
+    String deviceId, 
+    String deviceName, 
+    
 ) {
     
 }

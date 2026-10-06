@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.auth.LoginResponseMapper;
 import com.sep.vox.application.port.input.command.ClientDeviceCommand;
 import com.sep.vox.application.port.input.command.LoginCommand;
@@ -19,10 +19,12 @@ import com.sep.vox.application.port.output.AuthenticationManagerPort;
 import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.auth.LoginResponse;
+import com.sep.vox.application.response.output.AuthenticatedInfo;
 import com.sep.vox.application.response.output.GeneratedSessionToken;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
 import com.sep.vox.domain.repository.RefreshTokenRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -61,12 +63,12 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
     @Override
     @Transactional
     public LoginResponse execute(LoginCommand input) {
-        var command = normalize(input);
-        var now = Instant.now();
+        LoginCommand command = normalize(input);
+        Instant now = Instant.now();
 
-        var userId = authenticationManagerPort.setAuthenticationAndGetUserId(command.login(), command.password());
-        var user = userRepository.findById(userId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        AuthenticatedInfo userInfo = authenticationManagerPort.setAuthenticationAndGetInfo(command.login(), command.password());
+        User user = userRepository.findById(userInfo.userId())
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         var userRoles = getUserRoles(user.getId());
         

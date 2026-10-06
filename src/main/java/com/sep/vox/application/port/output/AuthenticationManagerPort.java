@@ -1,8 +1,8 @@
 package com.sep.vox.application.port.output;
 
-import java.util.UUID;
+
+import com.sep.vox.application.response.output.AuthenticatedInfo;
 
 public interface AuthenticationManagerPort {
-    String setAuthenticationAndGetUserEmail(String login, String password);
-    UUID setAuthenticationAndGetUserId(String login, String password);
+    AuthenticatedInfo setAuthenticationAndGetInfo(String login, String password);
 }

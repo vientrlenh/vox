@@ -2,7 +2,6 @@ package com.sep.vox.domain.model.registerform;
 
 import java.time.LocalDate;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.BaseModel;
@@ -41,13 +40,12 @@ public class RegisterForm extends BaseModel {
     public RegisterForm() {
     }
 
-    public RegisterForm(UUID id, UUID schoolDirectoryId, Name schoolName, SchoolDomain schoolDomain,
+    public RegisterForm(UUID schoolDirectoryId, Name schoolName, SchoolDomain schoolDomain,
             UUID schoolWardId, UUID schoolCityId, UUID schoolProvinceId, String schoolStreetAddress, Name contactFullName,
             IdentityNumber identityNumber, Phone contactPhone, Email contactEmail, BirthDate birthDate,
             String contactAddress, PostalCode postalCode, PositiveInteger studentCount,
             RegisterFormVerificationMethod verificationMethod, Instant verifiedAt, String rejectReason, Instant rejectedAt, 
-            RegisterFormStatus status, Instant createdAt, UUID reviewedBy) {
-        this.id = id;
+            RegisterFormStatus status, UUID reviewedBy) {
         this.schoolDirectoryId = schoolDirectoryId;
         this.schoolName = schoolName;
         this.schoolDomain = schoolDomain;
@@ -68,12 +66,11 @@ public class RegisterForm extends BaseModel {
         this.rejectReason = rejectReason;
         this.rejectedAt = rejectedAt;
         this.status = status;
-        this.createdAt = createdAt;
         this.reviewedBy = reviewedBy;
     }
 
     public RegisterForm(Builder builder) {
-        this.id = builder.id;
+        super(builder.id, builder.createdAt);
         this.schoolDirectoryId = builder.schoolDirectoryId;
         this.schoolName = builder.schoolName;
         this.schoolDomain = builder.schoolDomain;
@@ -94,16 +91,7 @@ public class RegisterForm extends BaseModel {
         this.rejectReason = builder.rejectReason;
         this.rejectedAt = builder.rejectedAt;
         this.status = builder.status;
-        this.createdAt = builder.createdAt;
         this.reviewedBy = builder.reviewedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
     }
 
     public UUID getSchoolDirectoryId() {

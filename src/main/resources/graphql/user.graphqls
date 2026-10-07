@@ -1,15 +1,27 @@
+enum UserRole {
+    SYSTEM_ADMIN 
+    SCHOOL_ADMIN 
+    TEACHER 
+    STUDENT
+}
+
+enum Gender {
+    MALE 
+    FEMALE
+}
+
 type User {
     id: ID!
     email: String!
-    phone: String!
-    fullName: String
-    gender: String 
+    role: UserRole!
+    phone: String
+    fullName: String!
+    gender: Gender 
     dateOfBirth: String 
     address: String 
     avatarUrl: String
     createdAt: String
     updatedAt: String
-    roles: [Role!]
     school: School
 }
 
@@ -18,6 +30,7 @@ type UserPage {
     page: Int!
     size: Int!
     totalElements: Int!
+    totalPages: Int!
 }
 
 type Role {

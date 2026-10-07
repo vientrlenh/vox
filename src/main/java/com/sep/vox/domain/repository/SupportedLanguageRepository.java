@@ -8,7 +8,7 @@ import java.util.UUID;
 
 
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
+import com.sep.vox.domain.model.language.SupportedLanguage;
 
 public interface SupportedLanguageRepository {
     Optional<SupportedLanguage> findById(UUID id);

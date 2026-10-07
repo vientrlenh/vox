@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,8 +33,8 @@ public record RegisterFromSchoolDirectoryRequest(
     @Email(message = "Email không hợp lệ")
     String contactEmail,
 
-    @NotBlank(message = "Ngày sinh không được để trống")
-    String dateOfBirth,
+    @NotNull(message = "Ngày sinh không được để trống")
+    LocalDate birthDate,
 
     @NotBlank(message = "Địa chỉ liên hệ không được để trống")
     @Size(max = 512, message = "Địa chỉ liên hệ không được vượt quá 512 ký tự")
@@ -43,10 +44,6 @@ public record RegisterFromSchoolDirectoryRequest(
     @Size(max = 10, message = "Mã bưu chính không được vượt quá 10 ký tự")
     String postalCode,
 
-    @NotBlank(message = "Chức vụ không được để trống")
-    @Size(max = 50, message = "Chức vụ không được vượt quá 50 ký tự")
-    String position,
-
     @NotNull(message = "Số học sinh không được để trống")
     @Min(value = 1, message = "Số học sinh không được nhỏ hơn 1")   
     @Max(value = Integer.MAX_VALUE, message = "Số học sinh không được vượt quá " + Integer.MAX_VALUE)
@@ -54,5 +51,4 @@ public record RegisterFromSchoolDirectoryRequest(
 
     List<String> documentUrls
 ) {
-    
 }

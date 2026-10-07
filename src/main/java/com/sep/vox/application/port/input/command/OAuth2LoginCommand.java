@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.command;
 
+import com.sep.vox.domain.model.platform.Platform;
+
 public record OAuth2LoginCommand(
     String provider,
     String providerUserId,
@@ -9,7 +11,9 @@ public record OAuth2LoginCommand(
     String avatarUrl,
     String ipAddress, 
     String userAgent, 
-    ClientDeviceCommand device
+    String deviceId, 
+    String deviceName, 
+    Platform platform
 ) {
     
 }

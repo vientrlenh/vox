@@ -1,32 +1,27 @@
 package com.sep.vox.infrastructure.security;
 
 
+import java.util.UUID;
+
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
+import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.projection.repository.SchoolUserProjectionRepository;
 import com.sep.vox.domain.model.user.User;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor 
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
-    private final SchoolUserRepository schoolUserRepository;
-
-    public CustomUserDetailsService(UserRepository userRepository, UserRoleQueryRepository userRoleQueryRepository, SchoolUserRepository schoolUserRepository) {
-        this.userRepository = userRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.schoolUserRepository = schoolUserRepository;
-    }
+    private final SchoolUserProjectionRepository schoolUserProjectionRepository;
 
     @Override
-    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
         User user;
         if (login.contains("@")) {
@@ -36,15 +31,12 @@ public class CustomUserDetailsService implements UserDetailsService {
             user = userRepository.findByPhone(login)
                 .orElseThrow(() -> new UsernameNotFoundException("Thông tin đăng nhập sai"));
         } 
-        var userRoleWithInfo = userRoleQueryRepository.findByUserIdWithRoleInfo(user.getId());
-        var roles = userRoleWithInfo
-            .stream()
-            .map(role -> role.roleCode())
-            .toList();
-        var schoolUser = schoolUserRepository.findByUserId(user.getId())
-            .orElse(null);
-        var schoolId = schoolUser == null ? null : schoolUser.getSchoolId();
-        return CustomUserDetails.createFromUser(user, schoolId, roles);
+        UUID schoolId = null;
+        if (!user.isSystemAdmin()) {
+            schoolId = schoolUserProjectionRepository.findSchoolIdByUserId(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User does not belong to any school"));
+        }
+        return CustomUserDetails.createFromUser(user, schoolId, user.roleStrs());
     }
     
 }

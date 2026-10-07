@@ -84,6 +84,16 @@ public class RefreshToken extends BaseModel {
             .build();
     }
 
+    public static RefreshToken replace(UUID deviceSessionId, String tokenHash, Instant expiresAt, Instant usedAt, UUID replacedBy) {
+        return RefreshToken.builder()
+            .deviceSessionId(deviceSessionId)
+            .tokenHash(tokenHash)
+            .expiresAt(expiresAt)
+            .usedAt(usedAt)
+            .replacedBy(replacedBy)
+            .build();
+    }
+
     public boolean isUsed() {
         return this.usedAt != null;
     }

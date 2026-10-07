@@ -10,10 +10,9 @@ public record RegisterFromSchoolDirectoryCommand(
     String identityNumber,
     String contactPhone,
     String contactEmail,
-    LocalDate dateOfBirth,
+    LocalDate birthDate,
     String contactAddress,
     String postalCode,
-    String position,
     int studentCount, 
     List<String> documentUrls
 ) {

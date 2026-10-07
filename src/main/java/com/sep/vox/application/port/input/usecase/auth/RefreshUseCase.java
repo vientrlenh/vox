@@ -13,6 +13,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.RefreshCommand;
+import com.sep.vox.application.port.input.service.AuthService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.AuthTokenPort;
 import com.sep.vox.application.port.output.SessionTokenManagerPort;
@@ -36,7 +37,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
     private final SchoolUserProjectionRepository schoolUserProjectionRepository;
     private final SessionTokenManagerPort sessionTokenManagerPort;
     private final AuthTokenPort authTokenPort;
-    private final PlatformTransactionManager platformTransactionManager;
+    private final AuthService authService;
 
 
     public RefreshUseCase(
@@ -46,7 +47,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
         SchoolUserProjectionRepository schoolUserProjectionRepository,
         SessionTokenManagerPort sessionTokenManagerPort,  
         AuthTokenPort authTokenPort,  
-        PlatformTransactionManager platformTransactionManager
+        AuthService authService
     ) {
         this.deviceSessionRepository = deviceSessionRepository;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -54,7 +55,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
         this.schoolUserProjectionRepository = schoolUserProjectionRepository;
         this.sessionTokenManagerPort = sessionTokenManagerPort;
         this.authTokenPort = authTokenPort;
-        this.platformTransactionManager = platformTransactionManager;
+        this.authService = authService;
     }
 
     private static final String INVALID_REFRESH_TOKEN_MSG = "Invalid requested refresh token";
@@ -75,7 +76,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
         validateValidRequest(refreshToken, deviceSession, now, command);
         
         SessionToken newSessionToken = sessionTokenManagerPort.generateToken();
-        RefreshToken newRefreshToken = createNewRefreshToken(newSessionToken, deviceSession, refreshToken, now);
+        RefreshToken newRefreshToken = authService.createRefreshToken(newSessionToken, deviceSession, refreshToken, now);
         markOldTokenAsUsed(refreshToken.getId(), newRefreshToken.getId(), deviceSession.getId(), now);
 
         User user = userRepository.findById(deviceSession.getUserId())
@@ -101,15 +102,13 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
         );
     }
 
-
-
     private void validateValidRequest(RefreshToken refreshToken, DeviceSession deviceSession, Instant now, RefreshCommand command) {
         if (refreshToken.isExpired(now)) {
             throw new UnauthorizedException(INVALID_REFRESH_TOKEN_MSG);
         }
         
         if (refreshToken.isUsed() || deviceSession.isDeviceIdMismatches(command.deviceId())) {
-            revokeSession(deviceSession.getId(), now);
+            authService.revokeDeviceSession(deviceSession.getId(), now);
             throw new UnauthorizedException(INVALID_REFRESH_TOKEN_MSG);
         }
         if (deviceSession.isRevoked()) {
@@ -117,29 +116,11 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
         }
     }
 
-    private RefreshToken createNewRefreshToken(SessionToken newToken, DeviceSession deviceSession, RefreshToken refreshToken, Instant now) {
-        RefreshToken newRefreshToken = RefreshToken.createFresh(deviceSession.getId(), newToken.hashedToken(), now);
-        return refreshTokenRepository.save(newRefreshToken);
-    }
-
     private void markOldTokenAsUsed(UUID oldTokenId, UUID newTokenId, UUID sessionId, Instant now) {
         int rowAffected = refreshTokenRepository.markUsedAndReplacedBy(oldTokenId, newTokenId, now);
         if (rowAffected == 0) {
-            revokeSession(sessionId, now);
+            authService.revokeDeviceSession(sessionId, now);
             throw new UnauthorizedException("Invalid requested refresh token");
         }
-    }
-
-    private void revokeSession(UUID sessionId, Instant now) {
-        TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
-        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        tx.executeWithoutResult(status -> {
-            DeviceSession sessionToBeRevoked = deviceSessionRepository.findById(sessionId)
-                .orElse(null);
-            int revoked = deviceSessionRepository.revokeDeviceSession(sessionId, now);
-            if (revoked == 0 || sessionToBeRevoked == null) {
-                return;
-            }
-        });
     }
 }

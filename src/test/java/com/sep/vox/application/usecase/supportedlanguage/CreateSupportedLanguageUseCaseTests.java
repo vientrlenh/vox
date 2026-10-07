@@ -18,7 +18,7 @@ import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.CreateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.CreateSupportedLanguageUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
+import com.sep.vox.domain.model.language.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.valueobject.LanguageCode;
 

@@ -8,12 +8,12 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 
 @RestController
-@RequestMapping("/api")
-public class StatusController {
+@RequestMapping("/api/v1/status")
+public class RestApiStatusController {
 
-    @GetMapping("/v1/status")
-    public ResponseEntity<ApiResponse<Object>> ping() {
-        var response = ApiResponse.success("Máy chủ đang hoạt động");
+    @GetMapping
+    public ResponseEntity<ApiResponse<Void>> ping() {
+        ApiResponse<Void> response = ApiResponse.success("Server is alive");
         return ResponseEntity.ok(response);
     }
 }

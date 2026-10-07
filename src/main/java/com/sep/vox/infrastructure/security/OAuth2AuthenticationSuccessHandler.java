@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -16,50 +17,52 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
 import com.sep.vox.application.port.output.CookieManagerPort;
+import com.sep.vox.application.response.input.auth.LoginResponse;
+import com.sep.vox.domain.model.platform.Platform;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j 
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final OAuth2LoginUseCase oAuth2LoginUseCase;
     private final CookieManagerPort cookieManagerPort;
+    private final String returnUrl;
 
-    public OAuth2AuthenticationSuccessHandler(OAuth2LoginUseCase oAuth2LoginUseCase, CookieManagerPort cookieManagerPort) {
+    public OAuth2AuthenticationSuccessHandler(
+        OAuth2LoginUseCase oAuth2LoginUseCase, 
+        CookieManagerPort cookieManagerPort, 
+        @Value("${app.frontend.oauth2-url}") String returnUrl
+    ) {
         this.oAuth2LoginUseCase = oAuth2LoginUseCase;
         this.cookieManagerPort = cookieManagerPort;
+        this.returnUrl = returnUrl;
     }
 
     private static final long REFRESH_TOKEN_COOKIE_TTL_SECONDS = 259200L;
     private static final String REFRESH_TOKEN_KEY_NAME = "refresh_token";
-    private static final Logger LOGGER = LoggerFactory.getLogger(OAuth2AuthenticationSuccessHandler.class);
-
-    @Value("${app.frontend.oauth2-url}")
-    private String returnUrl;
+    
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException, ServletException {
         try {
-            var oauth2Token = (OAuth2AuthenticationToken) authentication;
-            var provider = oauth2Token.getAuthorizedClientRegistrationId();
-            var user = oauth2Token.getPrincipal();
+            OAuth2AuthenticationToken oauth2Token = (OAuth2AuthenticationToken) authentication;
+            String provider = oauth2Token.getAuthorizedClientRegistrationId();
+            OAuth2User user = oauth2Token.getPrincipal();
 
-            var session = request.getSession(false);
+            HttpSession session = request.getSession(false);
             if (session == null) {
-                throw new UnauthorizedException("Đăng nhập thất bại");
+                throw new UnauthorizedException("Login failed");
             }
-            var deviceId = (String) session.getAttribute("oauth2_device_id");
-            var deviceName = (String) session.getAttribute("oauth2_device_name");
-            var platform = (String) session.getAttribute("oauth2_platform");
-            var device = new ClientDeviceCommand(
-                deviceId, 
-                deviceName, 
-                platform
-            );
+            String deviceId = (String) session.getAttribute("oauth2_device_id");
+            String deviceName = (String) session.getAttribute("oauth2_device_name");
+            Platform platform = (Platform) session.getAttribute("oauth2_platform");
 
             var command = new OAuth2LoginCommand(
                 provider, 
@@ -70,17 +73,19 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 user.getAttribute("picture"), 
                 ipAddress(request), 
                 request.getHeader("User-Agent"), 
-                device
+                deviceId, 
+                deviceName, 
+                platform
             );
 
-            var data = oAuth2LoginUseCase.execute(command);
+            LoginResponse data = oAuth2LoginUseCase.execute(command);
             cookieManagerPort.setCookie(response, REFRESH_TOKEN_KEY_NAME, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
             clearSession(session);
             redirect(response, returnUrl, "token", data.accessToken());
         } catch (IllegalArgumentException e) {
             redirect(response, returnUrl, "error", "unsupported_platform");
         } catch (Exception e) {
-            LOGGER.error("OAuth2 login failed: ", e);
+            log.error("OAuth2 login failed: ", e);
             redirect(response, returnUrl, "error", "login_failed");
         }
         

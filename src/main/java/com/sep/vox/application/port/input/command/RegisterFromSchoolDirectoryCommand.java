@@ -13,7 +13,7 @@ public record RegisterFromSchoolDirectoryCommand(
     LocalDate birthDate,
     String contactAddress,
     String postalCode,
-    int studentCount, 
+    Integer studentCount, 
     List<String> documentUrls
 ) {
     

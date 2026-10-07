@@ -18,7 +18,6 @@ import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.RefreshTokenProjectionRepository;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
-import com.sep.vox.domain.repository.RefreshTokenRepository;
 
 @Service
 public class LogoutUseCase implements IUseCase<LogoutCommand, Void> {

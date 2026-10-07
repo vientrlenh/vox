@@ -10,11 +10,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record RegisterBySelfDeclaredRequest(
-    @NotBlank(message = "Tên trường không được để trống")
-    @Size(max = 255, message = "Tên trường không được vượt quá 255 ký tự")
+    @NotBlank(message = "School name is required")
+    @Size(max = 255, message = "School name must not exceed 255 characters")
     String schoolName, 
 
-    @Size(max = 100, message = "Tên miền của trường không được vượt quá 100 ký tự")
+    @Size(max = 100, message = "School domain must not exceed 100 characters")
     String schoolDomain, 
 
     @NotBlank(message = "Phường của trường không được để trống")

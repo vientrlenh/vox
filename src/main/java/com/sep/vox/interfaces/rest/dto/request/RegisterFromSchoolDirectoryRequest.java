@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.RegisterFromSchoolDirectoryCommand;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
@@ -51,4 +52,19 @@ public record RegisterFromSchoolDirectoryRequest(
 
     List<String> documentUrls
 ) {
+
+    public static RegisterFromSchoolDirectoryCommand toCommand(RegisterFromSchoolDirectoryRequest request) {
+        return new RegisterFromSchoolDirectoryCommand(
+            request.schoolDirectoryId, 
+            request.contactFullName, 
+            request.identityNumber,
+            request.contactPhone, 
+            request.contactEmail,
+            request.birthDate, 
+            request.contactAddress, 
+            request.postalCode, 
+            request.studentCount, 
+            request.documentUrls
+        );
+    }
 }

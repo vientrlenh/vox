@@ -13,8 +13,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sep.vox.application.port.input.command.GoogleTokenLoginCommand;
 import com.sep.vox.application.port.input.command.LoginCommand;
+import com.sep.vox.application.port.input.command.RefreshCommand;
 import com.sep.vox.application.port.input.command.RegisterFromSchoolDirectoryCommand;
+import com.sep.vox.application.port.input.command.ResetPasswordCommand;
+import com.sep.vox.application.port.input.command.SendResetPasswordOtpCommand;
 import com.sep.vox.application.port.input.usecase.auth.GoogleTokenLoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.LogoutUseCase;
@@ -41,7 +45,6 @@ import com.sep.vox.interfaces.rest.dto.request.SetUpPasswordRequest;
 
 import com.sep.vox.interfaces.rest.dto.request.VerifyRegisterFormOtpRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.GoogleTokenLoginCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.LogoutCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RefreshCommandMapper;
@@ -92,38 +95,38 @@ public class RestApiAuthController {
     private static final long REFRESH_TOKEN_COOKIE_TTL_SECONDS = 259200L;
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
-        String ipAddress = IpAddressReceiver.getClientIp(servletRequest);
-        String userAgent = servletRequest.getHeader("User-Agent");
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request, HttpServletRequest req, HttpServletResponse res) {
+        String ipAddress = IpAddressReceiver.getClientIp(req);
+        String userAgent = req.getHeader("User-Agent");
 
         LoginCommand command = LoginRequest.toCommand(request, ipAddress, userAgent);
         LoginResponse data = loginUseCase.execute(command);
-        cookieManagerPort.setCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
+        cookieManagerPort.setCookie(res, REFRESH_TOKEN_COOKIE_KEY, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
 
-        ApiResponse<LoginResponse> response = ApiResponse.success("Đăng nhập thành công", LoginResponse.toResponse(data.email(), data.accessToken(), ""));
+        ApiResponse<LoginResponse> response = ApiResponse.success("Login successfully", LoginResponse.toResponse(data.email(), data.accessToken(), ""));
 
         return ResponseEntity.ok(response);
     }
 
 
     @PostMapping("/register/school-directory")
-    public ResponseEntity<ApiResponse<RegisterFromSchoolDirectoryResponse>> registerSchoolDirectory(@Valid @RequestBody RegisterFromSchoolDirectoryRequest request) {
-        RegisterFromSchoolDirectoryCommand command = RegisterFromSchoolDirectoryCommandMapper.fromRequest(request);
-        var data = registerFromSchoolDirectoryUseCase.execute(command);
-        var response = ApiResponse.success("Yêu cầu thành công", data);
+    public ResponseEntity<ApiResponse<RegisterFromSchoolDirectoryResponse>> registerFromSchoolDirectory(@Valid @RequestBody RegisterFromSchoolDirectoryRequest request) {
+        RegisterFromSchoolDirectoryCommand command = RegisterFromSchoolDirectoryRequest.toCommand(request);
+        RegisterFromSchoolDirectoryResponse data = registerFromSchoolDirectoryUseCase.execute(command);
+        ApiResponse<RegisterFromSchoolDirectoryResponse> response = ApiResponse.success("Registration form has been sent successfully", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PostMapping("/register-self-declared")
-    public ResponseEntity<ApiResponse<Void>> registerSelfDeclared(@Valid @RequestBody RegisterBySelfDeclaredRequest request) {
+    @PostMapping("/register/self-declared")
+    public ResponseEntity<ApiResponse<Void>> registerBySelfDeclared(@Valid @RequestBody RegisterBySelfDeclaredRequest request) {
         var command = RegisterBySelfDeclaredCommandMapper.fromRequest(request);
         registerBySelfDeclaredUseCase.execute(command);
-        var response = ApiResponse.success("Đơn đăng ký đã được gửi thành công. Vui lòng đợi quản trị viên phê duyệt");
+        var response = ApiResponse.success("Registration form has been sent successfully. Please wait for approval from admin");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
 
-    @PostMapping("/verify-registration")
+    @PostMapping("/register/verify")
     public ResponseEntity<ApiResponse<Void>> verifyRegistrationOtp(@Valid @RequestBody VerifyRegisterFormOtpRequest request) {
         var command = VerifyRegisterFormOtpCommandMapper.fromRequest(request);
         verifyRegisterFormOtpUseCase.execute(command);
@@ -142,10 +145,10 @@ public class RestApiAuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@Valid @RequestBody DeviceIdRequest request, @CookieValue(name = REFRESH_TOKEN_COOKIE_KEY, required = true) String token, HttpServletResponse servletResponse) {
-        var command = RefreshCommandMapper.fromRequest(request, token);
-        var data = refreshUseCase.execute(command);
+        RefreshCommand command = RefreshCommandMapper.fromRequest(request, token);
+        RefreshResponse data = refreshUseCase.execute(command);
         cookieManagerPort.setCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
-        var response = ApiResponse.success("Yêu cầu thành công", new RefreshResponse(
+        ApiResponse<RefreshResponse> response = ApiResponse.success("Yêu cầu thành công", new RefreshResponse(
             data.accessToken(), null
         ));
         return ResponseEntity.ok(response);
@@ -154,17 +157,17 @@ public class RestApiAuthController {
 
     @PostMapping("/reset-password/otp")
     public ResponseEntity<ApiResponse<Void>> sendResetPasswordOtp(@Valid @RequestBody SendResetPasswordOtpRequest request) {
-        var command = SendResetPasswordOtpCommandMapper.fromRequest(request);
+        SendResetPasswordOtpCommand command = SendResetPasswordOtpCommandMapper.fromRequest(request);
         sendResetPasswordOtpUseCase.execute(command);
-        var response = ApiResponse.success("Mã OTP đặt lại mật khẩu đã được gửi");
+        ApiResponse<Void> response = ApiResponse.success("Mã OTP đặt lại mật khẩu đã được gửi");
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/reset-password")
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        var command = ResetPasswordCommandMapper.fromRequest(request);
+        ResetPasswordCommand command = ResetPasswordCommandMapper.fromRequest(request);
         resetPasswordUseCase.execute(command);
-        var response = ApiResponse.success("Mật khẩu đã thay đổi thành công");
+        ApiResponse<Void> response = ApiResponse.success("Mật khẩu đã thay đổi thành công");
         return ResponseEntity.ok(response);
     }
 
@@ -192,14 +195,14 @@ public class RestApiAuthController {
         HttpServletRequest servletRequest,
         HttpServletResponse servletResponse
     ) {
-        var ipAddress = IpAddressReceiver.getClientIp(servletRequest);
-        var userAgent = servletRequest.getHeader("User-Agent");
+        String ipAddress = IpAddressReceiver.getClientIp(servletRequest);
+        String userAgent = servletRequest.getHeader("User-Agent");
 
-        var command = GoogleTokenLoginCommandMapper.fromRequest(request, ipAddress, userAgent);
-        var data = googleTokenLoginUseCase.execute(command);
+        GoogleTokenLoginCommand command = GoogleTokenLoginRequest.toCommand(request, ipAddress, userAgent);
+        LoginResponse data = googleTokenLoginUseCase.execute(command);
         cookieManagerPort.setCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
 
-        var response = ApiResponse.success("Đăng nhập thành công", data);
+        ApiResponse<LoginResponse> response = ApiResponse.success("Đăng nhập thành công", data);
 
         return ResponseEntity.ok(response);
     }

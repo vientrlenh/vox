@@ -1,8 +1,11 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
-import jakarta.validation.Valid;
+import com.sep.vox.application.port.input.command.GoogleTokenLoginCommand;
+import com.sep.vox.domain.model.platform.Platform;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 /**
  * Đăng nhập Google từ ứng dụng native.
@@ -13,11 +16,29 @@ import jakarta.validation.constraints.NotNull;
  * điều gì -- token có bị cắt hay bơm phồng thì cũng trượt ngay ở phép kiểm chữ ký.
  */
 public record GoogleTokenLoginRequest(
-    @NotBlank(message = "ID token của Google là bắt buộc")
+    @NotBlank(message = "Google token ID is required")
     String idToken,
 
-    @Valid
-    @NotNull(message = "Thông tin của thiết bị là bắt buộc")
-    ClientDeviceRequest device
+    @NotBlank(message = "Device ID is required")
+    @Size(max = 255, message = "Device ID must not exceed 255 characters")
+    String deviceId, 
+
+    @NotBlank(message = "Device name is required")
+    @Size(max = 255, message = "Device name must not exceed 255 characters")
+    String deviceName, 
+
+    @NotNull(message = "Device platform is required")
+    Platform platform
 ) {
+
+    public static GoogleTokenLoginCommand toCommand(GoogleTokenLoginRequest request, String ipAddress, String userAgent) {
+        return new GoogleTokenLoginCommand(
+            request.idToken, 
+            ipAddress, 
+            userAgent, 
+            request.deviceId, 
+            request.deviceName, 
+            request.platform
+        );
+    }
 }

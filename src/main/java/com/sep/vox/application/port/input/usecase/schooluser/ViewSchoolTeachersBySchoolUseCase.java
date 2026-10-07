@@ -7,10 +7,10 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewSchoolTeachersBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.RoleRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 @Service
 public class ViewSchoolTeachersBySchoolUseCase implements IUseCase<ViewSchoolTeachersBySchoolQuery, PageResult<SchoolUserDto>> {

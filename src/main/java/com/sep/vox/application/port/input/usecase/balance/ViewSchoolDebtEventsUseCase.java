@@ -6,9 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.ViewSchoolDebtEventsQuery;
 import com.sep.vox.application.port.input.service.SchoolScopedReadGuard;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolDebtEventDto;
 import com.sep.vox.domain.repository.SchoolDebtEventRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Sổ audit "nguyên nhân nợ hạn mức AI" của một trường.

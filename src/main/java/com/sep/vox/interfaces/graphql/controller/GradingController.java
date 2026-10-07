@@ -37,8 +37,8 @@ import com.sep.vox.application.projection.dto.GradingStatsInfo;
 import com.sep.vox.application.projection.dto.GradingTaskDetailInfo;
 import com.sep.vox.application.projection.dto.GradingTaskInfo;
 import com.sep.vox.application.projection.dto.ResultStatusHistoryInfo;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;

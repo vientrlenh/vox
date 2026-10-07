@@ -5,13 +5,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.shared.PageResult;
+import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.UserMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataUserRepository;
 
@@ -129,18 +132,18 @@ public class UserRepositoryImpl implements UserRepository {
 
 
     @Override
-    public PageResult<User> findAll(int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
-        var page = springDataUserRepository.findAll(pageable);
-        return new PageResult<>(
-            page.getContent()
-                .stream()
-                .map(UserMapper::toDomain)
-                .toList(), 
-            pageNumber, 
+    public PageResult<User> findAll(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<UserJpaEntity> userPage = springDataUserRepository.findAll(pageable);
+        List<User> pageContent = userPage.getContent().stream()
+            .map(UserMapper::toDomain)
+            .toList();
+        return PageResult.fromRepository(
+            pageContent, 
+            page, 
             size, 
-            page.getTotalElements(), 
-            page.getTotalPages()
+            userPage.getTotalElements(), 
+            userPage.getTotalPages()
         );
     }
     

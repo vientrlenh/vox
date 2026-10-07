@@ -24,13 +24,13 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.domain.valueobject.RoleCode;
 
 public class ViewSchoolUsersUseCaseTests {

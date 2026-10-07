@@ -25,8 +25,6 @@ import com.sep.vox.application.exception.WalletDrawConfirmationRequiredException
 import com.sep.vox.application.port.input.command.AllocateUserQuotaAmountCommand;
 import com.sep.vox.application.port.input.service.DistributeQuotaToUsersService;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.common.DistributionMode;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolBalance;
 import com.sep.vox.domain.model.school.SchoolQuotaPolicy;
@@ -43,6 +41,8 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.shared.DistributionMode;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Phép chia hạn mức cá nhân -- nơi quản trị trường biến ví cấp trường thành trần chi cho từng người.

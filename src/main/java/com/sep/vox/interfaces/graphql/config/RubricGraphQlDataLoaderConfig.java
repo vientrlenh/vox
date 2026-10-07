@@ -3,7 +3,6 @@ package com.sep.vox.interfaces.graphql.config;
 import com.sep.vox.application.port.input.query.key.RubricCriteriaKey;
 import com.sep.vox.application.port.input.query.key.RubricResultBandsKey;
 import com.sep.vox.application.port.input.query.key.RubricVersionsKey;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.*;
 import com.sep.vox.domain.mapper.*;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
@@ -12,6 +11,8 @@ import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.language.SupportedLanguage;
 import com.sep.vox.domain.repository.*;
+import com.sep.vox.domain.shared.PageResult;
+
 import org.dataloader.BatchLoaderEnvironment;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;

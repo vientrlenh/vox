@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import com.sep.vox.application.projection.dto.ExamDirectoryGradeInfo;
 import com.sep.vox.application.projection.dto.ExamDirectoryUserInfo;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Read model của danh bạ nguồn thí sinh / giám thị cho một kỳ thi.

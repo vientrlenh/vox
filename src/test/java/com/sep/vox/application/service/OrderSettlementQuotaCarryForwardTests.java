@@ -28,7 +28,6 @@ import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.port.input.service.OrderSettlementService;
 import com.sep.vox.application.port.input.service.SchoolDebtNotificationService;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderItem;
@@ -61,6 +60,7 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Cái gì SỐNG SÓT qua ranh giới hai kỳ đăng ký -- tiền tự nạp chưa tiêu, và trần chi cá nhân.

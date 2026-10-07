@@ -18,7 +18,6 @@ import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.event.ExamHumanGradingRequiredPayloadV1;
 import com.sep.vox.application.port.input.service.ExamHumanGradingNotificationService;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
@@ -32,6 +31,7 @@ import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.shared.EventTypeConstant;
 
 import tools.jackson.databind.json.JsonMapper;
 

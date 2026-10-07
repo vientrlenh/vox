@@ -32,7 +32,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.UserRoleInfo;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.support.SubscriptionPeriodGuards;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.exam.Exam;
@@ -49,6 +48,7 @@ import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.domain.valueobject.ClassCode;
 
 /**

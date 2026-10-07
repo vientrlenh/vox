@@ -3,9 +3,9 @@ package com.sep.vox.domain.mapper;
 import java.time.Instant;
 import java.util.List;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionBankDto;
 import com.sep.vox.domain.model.question.QuestionBank;
+import com.sep.vox.domain.shared.PageResult;
 
 
 public class QuestionBankDtoMapper {

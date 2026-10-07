@@ -2,9 +2,9 @@ package com.sep.vox.domain.mapper;
 
 import java.util.List;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionEvaluationGuideDto;
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
+import com.sep.vox.domain.shared.PageResult;
 
 public class QuestionEvaluationGuideDtoMapper {
 

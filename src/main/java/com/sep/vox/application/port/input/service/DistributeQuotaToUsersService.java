@@ -18,7 +18,6 @@ import com.sep.vox.application.port.input.command.AllocateUserQuotaAmountCommand
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPageResponse;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;
-import com.sep.vox.domain.common.DistributionMode;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -31,6 +30,7 @@ import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolBalanceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.shared.DistributionMode;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SchoolQuotaPolicyRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;

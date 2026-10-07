@@ -29,7 +29,6 @@ import com.sep.vox.application.port.input.usecase.exam.ViewMyExamRoleUseCase;
 import com.sep.vox.application.port.input.usecase.exampaper.ViewExamPaperDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.ExamStatusCountsDto;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.ExamBlueprintDto;
 import com.sep.vox.domain.dto.ExamBlueprintSlotDto;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
@@ -47,6 +46,7 @@ import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.shared.PageResult;
 
 @Controller("graphqlExamController")
 public class ExamController {

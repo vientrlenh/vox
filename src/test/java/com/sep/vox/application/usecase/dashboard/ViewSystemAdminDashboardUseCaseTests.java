@@ -19,8 +19,6 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.usecase.dashboard.ViewSystemAdminDashboardUseCase;
 import com.sep.vox.application.response.input.dashboard.MonthlyRevenueResponse;
-import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.model.order.OrderType;
@@ -31,6 +29,8 @@ import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
+import com.sep.vox.domain.shared.PageResult;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 /**
  * Doanh thu giờ đọc từ ĐƠN HÀNG đã thu tiền (OrderStatus.SUCCESS), không còn từ hóa đơn PAID: hóa đơn

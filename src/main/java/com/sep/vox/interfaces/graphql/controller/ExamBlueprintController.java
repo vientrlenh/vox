@@ -16,7 +16,6 @@ import com.sep.vox.application.port.input.query.ViewExamBlueprintDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewExamBlueprintsQuery;
 import com.sep.vox.application.port.input.usecase.examblueprint.ViewExamBlueprintDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.examblueprint.ViewExamBlueprintsUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.ExamBlueprintDto;
 import com.sep.vox.domain.dto.ExamBlueprintSectionDto;
 import com.sep.vox.domain.dto.ExamBlueprintSlotDto;
@@ -31,6 +30,7 @@ import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 @Controller("graphqlExamBlueprintController")
 public class ExamBlueprintController {

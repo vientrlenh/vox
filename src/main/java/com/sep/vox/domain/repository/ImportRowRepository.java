@@ -3,9 +3,9 @@ package com.sep.vox.domain.repository;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
+import com.sep.vox.domain.shared.PageResult;
 
 public interface ImportRowRepository {
     List<ImportRow> findBySessionIdOrderByRowNumber(UUID sessionId);

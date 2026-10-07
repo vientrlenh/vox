@@ -3,7 +3,7 @@ package com.sep.vox.domain.model.refreshtoken;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.BaseModel;
+import com.sep.vox.domain.shared.BaseModel;
 
 public class RefreshToken extends BaseModel {
     private UUID deviceSessionId;

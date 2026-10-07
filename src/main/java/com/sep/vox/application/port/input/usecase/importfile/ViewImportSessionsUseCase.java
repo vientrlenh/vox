@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.query.ViewImportSessionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.ImportSessionSummaryResponse;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.school.SchoolUser;
@@ -22,6 +21,7 @@ import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 @Service
 public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQuery, PageResult<ImportSessionSummaryResponse>> {

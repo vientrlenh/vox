@@ -5,9 +5,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
+import com.sep.vox.domain.shared.PageResult;
 
 public record SchoolSubscriptionDto(
     UUID id,

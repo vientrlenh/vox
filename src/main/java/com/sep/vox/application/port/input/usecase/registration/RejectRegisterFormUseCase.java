@@ -12,11 +12,11 @@ import com.sep.vox.application.port.input.command.RejectRegisterFormCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.common.AggregateTypeConstant;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.RegisterFormRepository;
+import com.sep.vox.domain.shared.AggregateTypeConstant;
+import com.sep.vox.domain.shared.EventTypeConstant;
 
 @Service
 public class RejectRegisterFormUseCase implements IUseCase<RejectRegisterFormCommand, Void>{

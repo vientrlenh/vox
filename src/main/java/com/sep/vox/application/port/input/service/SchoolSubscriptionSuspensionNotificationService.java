@@ -10,11 +10,11 @@ import com.sep.vox.application.common.RoleConstant;
 import com.sep.vox.application.event.SchoolSubscriptionSuspendedPayloadV1;
 import com.sep.vox.application.event.SchoolSubscriptionUnsuspendedPayloadV1;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.domain.common.AggregateTypeConstant;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.shared.AggregateTypeConstant;
+import com.sep.vox.domain.shared.EventTypeConstant;
 
 /**
  * Phát 2 event thông báo đình chỉ/gỡ đình chỉ gói -- mirror đúng cách {@code SchoolDebtNotificationService}

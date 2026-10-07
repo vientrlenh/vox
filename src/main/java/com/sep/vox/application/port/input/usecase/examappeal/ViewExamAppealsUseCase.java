@@ -9,8 +9,8 @@ import com.sep.vox.application.port.input.service.ExamAppealAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.AppealSummaryInfo;
 import com.sep.vox.application.projection.repository.ExamAppealQueryRepository;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 @Service
 public class ViewExamAppealsUseCase implements IUseCase<SearchExamAppealsQuery, PageResult<AppealSummaryInfo>> {

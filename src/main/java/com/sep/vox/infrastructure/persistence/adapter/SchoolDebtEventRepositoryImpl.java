@@ -5,9 +5,9 @@ import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolDebtEvent;
 import com.sep.vox.domain.repository.SchoolDebtEventRepository;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolDebtEventMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolDebtEventRepository;
 

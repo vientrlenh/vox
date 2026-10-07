@@ -8,10 +8,10 @@ import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.repository.RegisterFormRepository;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.RegisterFormMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRegisterFormRepository;
 

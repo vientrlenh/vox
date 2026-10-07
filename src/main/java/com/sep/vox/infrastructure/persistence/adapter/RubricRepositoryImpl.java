@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.infrastructure.persistence.entity.RubricJpaEntity;
 import org.springframework.data.domain.Page;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.repository.RubricRepository;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.RubricMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricRepository;
 

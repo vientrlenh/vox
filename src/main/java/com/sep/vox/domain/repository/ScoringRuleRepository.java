@@ -3,8 +3,8 @@ package com.sep.vox.domain.repository;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.scoringrule.ScoringRule;
+import com.sep.vox.domain.shared.PageResult;
 
 public interface ScoringRuleRepository {
     Optional<ScoringRule> findById(UUID id);

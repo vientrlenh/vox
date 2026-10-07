@@ -23,7 +23,7 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewClassTestGradingResultsUseCase;
 import com.sep.vox.application.projection.dto.GradingAssignmentFilter;
 import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Danh sách MỌI bài của một bài kiểm tra trên lớp — kể cả bài chưa có phân công.

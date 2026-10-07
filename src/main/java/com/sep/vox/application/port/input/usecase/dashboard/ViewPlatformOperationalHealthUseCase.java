@@ -15,7 +15,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.repository.PlatformOperationalHealthQueryRepository;
 import com.sep.vox.application.response.input.dashboard.GradingOutcomeBucketResponse;
 import com.sep.vox.application.response.input.dashboard.PlatformOperationalHealthResponse;
-import com.sep.vox.domain.common.ZoneConstant;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 /**
  * Sức khỏe đường chấm AI + kỳ thi đang chạy, cho dashboard system admin.

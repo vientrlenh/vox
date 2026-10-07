@@ -1,13 +1,12 @@
 package com.sep.vox.domain.repository;
 
 import com.sep.vox.domain.model.framework.Framework;
+import com.sep.vox.domain.shared.PageResult;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import com.sep.vox.domain.common.PageResult;
 
 public interface FrameworkRepository {
     List<Framework> findByIdIn(Collection<UUID> ids);

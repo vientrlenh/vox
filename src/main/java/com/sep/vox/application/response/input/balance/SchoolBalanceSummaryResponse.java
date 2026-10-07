@@ -2,7 +2,7 @@ package com.sep.vox.application.response.input.balance;
 
 import java.math.BigDecimal;
 
-import com.sep.vox.domain.common.DecimalText;
+import com.sep.vox.domain.shared.DecimalText;
 
 /**
  * Cộng dồn sổ cái ví theo một khoảng thời gian, gom theo bốn nhóm bút toán.

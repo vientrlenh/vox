@@ -7,9 +7,9 @@ import com.sep.vox.application.port.input.command.AllocateExamQuotaCommand;
 import com.sep.vox.application.port.input.service.DistributeQuotaToUsersService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;
-import com.sep.vox.domain.common.DistributionMode;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
+import com.sep.vox.domain.shared.DistributionMode;
 
 /**
  * Chia hạn mức CÁ NHÂN cho từng giáo viên -- trần chi mà nhà trường đặt lên phần ví EXAM mỗi giáo

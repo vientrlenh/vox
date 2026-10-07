@@ -15,8 +15,8 @@ import com.sep.vox.application.port.input.usecase.examdirectory.ViewExamDirector
 import com.sep.vox.application.port.input.usecase.examdirectory.ViewExamDirectoryStudentsUseCase;
 import com.sep.vox.application.projection.dto.ExamDirectoryGradeInfo;
 import com.sep.vox.application.projection.dto.ExamDirectoryUserInfo;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 /**

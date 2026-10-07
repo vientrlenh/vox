@@ -8,8 +8,8 @@ import com.sep.vox.application.port.input.query.ViewMyNotificationsCursorPageQue
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.NotificationDto;
-import com.sep.vox.domain.common.CursorPage;
 import com.sep.vox.domain.repository.NotificationRepository;
+import com.sep.vox.domain.shared.CursorPage;
 
 @Service
 public class ViewMyNotificationsCursorPageUseCase

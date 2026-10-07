@@ -3,9 +3,9 @@ package com.sep.vox.domain.mapper;
 import java.time.Instant;
 import java.util.List;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.FrameworkDto;
 import com.sep.vox.domain.model.framework.Framework;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.domain.valueobject.FrameworkCode;
 
 public final class FrameworkDtoMapper {

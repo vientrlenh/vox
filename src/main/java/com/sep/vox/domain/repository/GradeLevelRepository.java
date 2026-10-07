@@ -1,8 +1,8 @@
 package com.sep.vox.domain.repository;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
+import com.sep.vox.domain.shared.PageResult;
 
 import java.time.Instant;
 import java.util.Collection;

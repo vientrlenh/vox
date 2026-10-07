@@ -25,7 +25,6 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidate;
@@ -45,6 +44,7 @@ import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.ExamResultStatusHistoryRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
+import com.sep.vox.domain.shared.EventTypeConstant;
 import com.sep.vox.support.OutboxTestSupport;
 
 /**

@@ -18,8 +18,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.response.input.registration.RegisterFromSchoolDirectoryResponse;
-import com.sep.vox.domain.common.AggregateTypeConstant;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormDocument;
@@ -32,6 +30,8 @@ import com.sep.vox.domain.repository.RegisterFormRepository;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.shared.AggregateTypeConstant;
+import com.sep.vox.domain.shared.EventTypeConstant;
 
 
 @Service

@@ -8,8 +8,8 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.GradingTaskInfo;
 import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Hàng đợi bài của giáo viên đang đăng nhập. Phạm vi là chính họ — teacherId lấy

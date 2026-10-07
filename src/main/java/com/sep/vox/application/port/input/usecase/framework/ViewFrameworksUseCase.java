@@ -4,10 +4,10 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.query.ViewFrameworksQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.FrameworkDto;
 import com.sep.vox.domain.mapper.FrameworkDtoMapper;
 import com.sep.vox.domain.repository.FrameworkRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 @Service
 public class ViewFrameworksUseCase implements IUseCase<ViewFrameworksQuery, PageResult<FrameworkDto>> {

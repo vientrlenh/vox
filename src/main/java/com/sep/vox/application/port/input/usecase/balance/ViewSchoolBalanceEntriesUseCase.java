@@ -8,10 +8,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.ViewSchoolBalanceEntriesQuery;
 import com.sep.vox.application.port.input.service.SchoolScopedReadGuard;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolBalanceEntryDto;
 import com.sep.vox.domain.model.school.SchoolBalanceEntryType;
 import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 /** Sao kê ví của một trường, mới nhất trước. */
 @Service

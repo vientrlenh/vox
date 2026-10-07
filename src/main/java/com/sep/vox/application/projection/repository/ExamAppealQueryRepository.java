@@ -8,7 +8,7 @@ import com.sep.vox.application.projection.dto.AppealDetailInfo;
 import com.sep.vox.application.projection.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.projection.dto.AppealStatsInfo;
 import com.sep.vox.application.projection.dto.AppealSummaryInfo;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Read side cho phúc khảo. Toàn bộ đều là join xuyên aggregate

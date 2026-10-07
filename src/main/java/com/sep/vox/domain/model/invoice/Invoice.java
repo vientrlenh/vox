@@ -3,7 +3,7 @@ package com.sep.vox.domain.model.invoice;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.ZoneConstant;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 /**
  * Chỉ có các đơn hoàn thành mới xuất hóa đơn (chuẩn hóa nghiệp vụ)

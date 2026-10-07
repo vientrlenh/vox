@@ -36,11 +36,11 @@ import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
 import com.sep.vox.infrastructure.persistence.entity.QuestionAssetJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.QuestionAssetMapper;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
 import com.sep.vox.domain.model.exam.GradingRoundPolicy;
 import com.sep.vox.domain.model.exam.GradingRoundType;
+import com.sep.vox.domain.shared.PageResult;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

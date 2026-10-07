@@ -27,11 +27,11 @@ import com.sep.vox.application.port.input.usecase.examdirectory.ViewExamDirector
 import com.sep.vox.application.port.input.usecase.examdirectory.ViewExamDirectoryStudentsUseCase;
 import com.sep.vox.application.projection.dto.ExamDirectoryUserInfo;
 import com.sep.vox.application.projection.repository.ExamDirectoryQueryRepository;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.SchoolClassRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Phạm vi danh bạ kỳ thi theo `schoolWide`.

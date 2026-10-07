@@ -8,11 +8,11 @@ import com.sep.vox.application.port.input.query.ViewQuestionBanksQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionBankDto;
 import com.sep.vox.domain.mapper.QuestionBankDtoMapper;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 @Service
 public class ViewQuestionBanksUseCase implements IUseCase<ViewQuestionBanksQuery, PageResult<QuestionBankDto>> {

@@ -13,8 +13,6 @@ import com.sep.vox.application.event.ExamResultReleasedPayloadV1;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.domain.common.AggregateTypeConstant;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
@@ -28,6 +26,8 @@ import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
+import com.sep.vox.domain.shared.AggregateTypeConstant;
+import com.sep.vox.domain.shared.EventTypeConstant;
 
 /**
  * Phần dùng chung của bốn hành động chấm bài: mở đầu (phân quyền + kiểm luật vòng ×

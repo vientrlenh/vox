@@ -10,7 +10,7 @@ import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.ExamDirectoryGradeInfo;
 import com.sep.vox.application.projection.repository.ExamDirectoryQueryRepository;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Niên khóa có thể lấy thí sinh cho một kỳ thi.

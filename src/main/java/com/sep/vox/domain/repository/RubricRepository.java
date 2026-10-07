@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
+import com.sep.vox.domain.shared.PageResult;
 
 public interface RubricRepository {
     Optional<Rubric> findById(UUID id);

@@ -7,9 +7,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
-import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 /**
  * Khung mở/đóng bài của kỳ thi và bài kiểm tra trên lớp phải nằm trong phiên thuê bao trường đã mua.

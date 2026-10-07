@@ -4,12 +4,13 @@ import com.sep.vox.application.exception.*;
 import com.sep.vox.application.port.input.query.SearchSchoolRubricResultBandsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RubricResultBandDto;
 import com.sep.vox.domain.mapper.RubricResultBandDtoMapper;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
+import com.sep.vox.domain.shared.PageResult;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

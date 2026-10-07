@@ -18,8 +18,6 @@ import com.sep.vox.application.common.RoleConstant;
 import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.domain.common.AggregateTypeConstant;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.invoice.Invoice;
 import com.sep.vox.domain.model.invoice.InvoiceSourceType;
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -50,6 +48,8 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
+import com.sep.vox.domain.shared.AggregateTypeConstant;
+import com.sep.vox.domain.shared.EventTypeConstant;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

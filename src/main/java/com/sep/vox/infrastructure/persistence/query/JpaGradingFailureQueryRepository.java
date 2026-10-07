@@ -1,8 +1,8 @@
 package com.sep.vox.infrastructure.persistence.query;
 
-import static com.sep.vox.domain.common.NativeQueryValues.toInstant;
-import static com.sep.vox.domain.common.NativeQueryValues.toLong;
-import static com.sep.vox.domain.common.NativeQueryValues.toUuid;
+import static com.sep.vox.domain.shared.NativeQueryValues.toInstant;
+import static com.sep.vox.domain.shared.NativeQueryValues.toLong;
+import static com.sep.vox.domain.shared.NativeQueryValues.toUuid;
 
 import java.time.Instant;
 import java.util.List;
@@ -13,7 +13,7 @@ import com.sep.vox.application.projection.dto.GradingFailureGroupDto;
 import com.sep.vox.application.projection.dto.GradingFailureSessionDto;
 import com.sep.vox.application.projection.dto.GradingFailureTotalsDto;
 import com.sep.vox.application.projection.repository.GradingFailureQueryRepository;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

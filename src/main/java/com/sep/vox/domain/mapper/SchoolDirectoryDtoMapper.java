@@ -2,9 +2,9 @@ package com.sep.vox.domain.mapper;
 
 import java.util.List;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolDirectoryDto;
 import com.sep.vox.domain.model.school.SchoolDirectory;
+import com.sep.vox.domain.shared.PageResult;
 
 public final class SchoolDirectoryDtoMapper {
     

@@ -5,12 +5,12 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.FrameworkVersionDto;
 import com.sep.vox.domain.mapper.FrameworkVersionDtoMapper;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 @Service
 public class ViewPublishedFrameworkVersionsUseCase implements IUseCase<ViewFrameworkVersionsQuery, PageResult<FrameworkVersionDto>> {

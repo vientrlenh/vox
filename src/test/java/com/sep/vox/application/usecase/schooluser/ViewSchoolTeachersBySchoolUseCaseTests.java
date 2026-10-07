@@ -19,11 +19,11 @@ import com.sep.vox.application.port.input.query.ViewSchoolTeachersBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolTeachersBySchoolUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.RoleRepository;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.domain.valueobject.RoleCode;
 
 class ViewSchoolTeachersBySchoolUseCaseTests {

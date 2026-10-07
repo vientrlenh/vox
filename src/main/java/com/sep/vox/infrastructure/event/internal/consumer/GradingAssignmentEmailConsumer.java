@@ -22,11 +22,11 @@ import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
 import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
 import com.sep.vox.application.port.output.MailSendingPort;
 import com.sep.vox.application.port.output.MailTemplatePort;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.model.outbox.ProcessedEvent;
 import com.sep.vox.domain.repository.ProcessedEventRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.shared.EventTypeConstant;
 
 import tools.jackson.databind.json.JsonMapper;
 

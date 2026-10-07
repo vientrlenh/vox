@@ -25,7 +25,6 @@ import com.sep.vox.application.projection.dto.ExamAttemptSummary;
 import com.sep.vox.application.projection.dto.StudentExamRowInfo;
 import com.sep.vox.application.projection.repository.ExamCandidateAttemptsQueryRepository;
 import com.sep.vox.application.projection.repository.StudentExamQueryRepository;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamSchedule;
@@ -33,6 +32,7 @@ import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Phần còn lại trong Java sau khi lọc/sắp/phân trang đã xuống SQL: dựng response và quyết định học

@@ -10,11 +10,11 @@ import org.springframework.stereotype.Repository;
 
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionBankStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.QuestionBankMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionBankRepository;
 

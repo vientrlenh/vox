@@ -19,8 +19,8 @@ import com.sep.vox.application.port.input.usecase.supportedlanguage.UpdateSuppor
 import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupportedLanguageDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupportedLanguagesUseCase;
 import com.sep.vox.application.response.input.supportedlanguage.UpdateSupportedLanguageResponse;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
+import com.sep.vox.domain.shared.PageResult;
 
 class SupportedLanguageControllerTests {
 

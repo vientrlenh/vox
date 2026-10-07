@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.model.order.OrderType;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * "Ý định mua" của trường -- thay cho subscription_request + token_purchase cũ, và mang luôn phần

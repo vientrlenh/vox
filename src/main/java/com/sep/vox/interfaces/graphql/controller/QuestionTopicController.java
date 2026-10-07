@@ -10,9 +10,9 @@ import com.sep.vox.application.port.input.query.ViewQuestionTopicDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionTopicsQuery;
 import com.sep.vox.application.port.input.usecase.questiontopic.ViewQuestionTopicDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.questiontopic.ViewQuestionTopicsUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionTopicDto;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
+import com.sep.vox.domain.shared.PageResult;
 
 @Controller("graphqlQuestionTopicController")
 public class QuestionTopicController {

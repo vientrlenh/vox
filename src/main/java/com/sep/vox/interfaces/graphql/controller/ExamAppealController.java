@@ -25,8 +25,8 @@ import com.sep.vox.application.projection.dto.AppealDetailInfo;
 import com.sep.vox.application.projection.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.projection.dto.AppealStatsInfo;
 import com.sep.vox.application.projection.dto.AppealSummaryInfo;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;

@@ -13,8 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.RoleConstant;
 import com.sep.vox.application.event.ExamHumanGradingRequiredPayloadV1;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.domain.common.AggregateTypeConstant;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -25,6 +23,8 @@ import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.shared.AggregateTypeConstant;
+import com.sep.vox.domain.shared.EventTypeConstant;
 
 /**
  * Báo cho người phụ trách rằng một bài thi vừa đóng còn bài "Chờ soát điểm AI"

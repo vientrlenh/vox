@@ -27,8 +27,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.SchoolUnscoredWorkloadDto;
 import com.sep.vox.application.projection.repository.SchoolWorkloadQueryRepository;
 import com.sep.vox.application.response.input.dashboard.SchoolMonthlySpendingResponse;
-import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.model.order.OrderType;
@@ -45,6 +43,8 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
+import com.sep.vox.domain.shared.PageResult;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 /**
  * Chi tiêu của trường đọc từ ĐƠN HÀNG đã thu tiền (OrderStatus.SUCCESS), không còn từ hóa đơn PAID.

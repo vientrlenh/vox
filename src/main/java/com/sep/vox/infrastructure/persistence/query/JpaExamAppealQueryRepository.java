@@ -25,8 +25,8 @@ import com.sep.vox.application.projection.dto.AppealStatsInfo;
 import com.sep.vox.application.projection.dto.AppealSummaryInfo;
 import com.sep.vox.application.projection.dto.AppealTurnInfo;
 import com.sep.vox.application.projection.repository.ExamAppealQueryRepository;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
+import com.sep.vox.domain.shared.PageResult;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

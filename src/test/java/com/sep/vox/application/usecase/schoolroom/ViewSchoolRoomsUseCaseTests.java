@@ -18,13 +18,13 @@ import com.sep.vox.application.port.input.query.ViewSchoolRoomsQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.MyClassAccessGuard;
 import com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * {@code schoolId} là tham số client gửi lên, không suy ra từ token — từ khi query này mở cho cả

@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.ZoneConstant;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 public class SubscriptionPlan {
     private UUID id;

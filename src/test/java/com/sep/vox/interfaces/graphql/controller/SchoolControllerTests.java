@@ -54,7 +54,6 @@ import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserDetai
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersForRequesterUseCase;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.dto.SchoolDto;
@@ -62,6 +61,7 @@ import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.shared.PageResult;
 
 import graphql.schema.DataFetchingEnvironment;
 

@@ -16,8 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.event.GradingAssignmentOpenedPayloadV1;
 import com.sep.vox.application.mapper.examgrading.GradingResultCode;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.domain.common.AggregateTypeConstant;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
@@ -28,6 +26,8 @@ import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.shared.AggregateTypeConstant;
+import com.sep.vox.domain.shared.EventTypeConstant;
 
 /**
  * Báo cho giáo viên rằng họ vừa được giao một vòng chấm.

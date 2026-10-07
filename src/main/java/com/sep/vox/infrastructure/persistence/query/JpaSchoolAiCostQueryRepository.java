@@ -1,8 +1,8 @@
 package com.sep.vox.infrastructure.persistence.query;
 
-import static com.sep.vox.domain.common.NativeQueryValues.toInstant;
-import static com.sep.vox.domain.common.NativeQueryValues.toLong;
-import static com.sep.vox.domain.common.NativeQueryValues.toUuid;
+import static com.sep.vox.domain.shared.NativeQueryValues.toInstant;
+import static com.sep.vox.domain.shared.NativeQueryValues.toLong;
+import static com.sep.vox.domain.shared.NativeQueryValues.toUuid;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -14,8 +14,8 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.application.projection.dto.AiCostBucketDto;
 import com.sep.vox.application.projection.dto.UserAiSpendDto;
 import com.sep.vox.application.projection.repository.SchoolAiCostQueryRepository;
-import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.common.ZoneConstant;
+import com.sep.vox.domain.shared.PageResult;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

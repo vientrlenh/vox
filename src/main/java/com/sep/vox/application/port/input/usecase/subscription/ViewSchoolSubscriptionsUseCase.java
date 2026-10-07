@@ -6,9 +6,9 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewSchoolSubscriptionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 @Service
 public class ViewSchoolSubscriptionsUseCase implements IUseCase<ViewSchoolSubscriptionsQuery, PageResult<SchoolSubscriptionDto>> {

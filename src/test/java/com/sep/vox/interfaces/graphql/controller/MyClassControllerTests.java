@@ -21,13 +21,13 @@ import com.sep.vox.application.port.input.query.key.UserRolesKey;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassMembersUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassesUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RoleDto;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.shared.PageResult;
 
 import graphql.schema.DataFetchingEnvironment;
 

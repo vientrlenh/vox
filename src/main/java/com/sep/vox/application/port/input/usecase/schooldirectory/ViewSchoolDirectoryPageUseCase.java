@@ -5,10 +5,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewSchoolDirectoryPageQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolDirectoryDto;
 import com.sep.vox.domain.mapper.SchoolDirectoryDtoMapper;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 @Service
 public class ViewSchoolDirectoryPageUseCase implements IUseCase<ViewSchoolDirectoryPageQuery, PageResult<SchoolDirectoryDto>> {

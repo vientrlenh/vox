@@ -17,9 +17,9 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
-import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 /**
  * Khung mở/đóng bài phải nằm trong phiên thuê bao của trường. Điểm dễ sai nhất là biên trên:

@@ -35,12 +35,12 @@ import com.sep.vox.application.port.input.usecase.framework.ViewActiveFrameworks
 import com.sep.vox.application.port.input.usecase.framework.ViewSchoolFrameworkCriteriaUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewSchoolFrameworkVersionDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.framework.ViewSchoolFrameworkVersionsUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.FrameworkCriterionBandDto;
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
 import com.sep.vox.domain.dto.FrameworkDto;
 import com.sep.vox.domain.dto.FrameworkResultBandDto;
 import com.sep.vox.domain.dto.FrameworkVersionDto;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkCriterionBandInput;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkCriterionInput;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkResultBandInput;

@@ -9,8 +9,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 /**
  * Luật của việc NÂNG CẤP giữa chừng: khi nào được nâng, và bù lại bao nhiêu.

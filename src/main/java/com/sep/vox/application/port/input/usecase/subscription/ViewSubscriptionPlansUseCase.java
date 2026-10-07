@@ -9,10 +9,10 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.SubscriptionPlanQueryRepository;
 import com.sep.vox.application.response.input.subscription.ViewSubscriptionPlansResponse;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 @Service
 public class ViewSubscriptionPlansUseCase implements IUseCase<ViewSubscriptionPlansQuery, PageResult<ViewSubscriptionPlansResponse>> {

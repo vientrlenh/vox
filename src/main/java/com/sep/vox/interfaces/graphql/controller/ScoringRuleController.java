@@ -23,9 +23,9 @@ import com.sep.vox.application.port.input.usecase.scoringrule.ViewAllSchoolScori
 import com.sep.vox.application.port.input.usecase.scoringrule.ViewAllSystemScoringRuleUseCase;
 import com.sep.vox.application.port.input.usecase.scoringrule.ViewSchoolScoringRuleDetailUseCase;
 import com.sep.vox.application.port.input.usecase.scoringrule.ViewSystemScoringRuleDetailUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.ScoringRuleDto;
 import com.sep.vox.domain.mapper.ScoringRuleParamsMapper;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateScoringRuleInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateScoringRuleGraphQLMapper;
 

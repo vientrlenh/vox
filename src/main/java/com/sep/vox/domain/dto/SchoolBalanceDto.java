@@ -3,8 +3,8 @@ package com.sep.vox.domain.dto;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.DecimalText;
 import com.sep.vox.domain.model.school.SchoolBalance;
+import com.sep.vox.domain.shared.DecimalText;
 
 /**
  * Ví tiền tự nạp của trường, dạng đọc.

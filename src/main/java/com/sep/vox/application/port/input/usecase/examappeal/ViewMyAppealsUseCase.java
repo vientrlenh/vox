@@ -8,7 +8,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.AppealSummaryInfo;
 import com.sep.vox.application.projection.repository.ExamAppealQueryRepository;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 // Dùng chung type AppealSummaryInfo với school admin theo quyết định của chủ dự án -- field
 // reviewerName vẫn tồn tại trên type này, nhưng FE (web/mobile) không được hỏi/hiện field đó

@@ -2,8 +2,8 @@ package com.sep.vox.domain.dto;
 
 import java.util.UUID;
 
-import com.sep.vox.domain.common.DecimalText;
 import com.sep.vox.domain.model.school.SchoolDebtEvent;
+import com.sep.vox.domain.shared.DecimalText;
 
 /**
  * Một dòng nhật ký nợ hạn mức, dạng đọc. Ánh xạ 1-1 với {@link SchoolDebtEvent}.

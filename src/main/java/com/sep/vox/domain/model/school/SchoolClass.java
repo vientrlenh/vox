@@ -3,8 +3,8 @@ package com.sep.vox.domain.model.school;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.BaseModel;
 import com.sep.vox.domain.model.language.LearningLanguage;
+import com.sep.vox.domain.shared.BaseModel;
 import com.sep.vox.domain.valueobject.Code;
 import com.sep.vox.domain.valueobject.Name;
 

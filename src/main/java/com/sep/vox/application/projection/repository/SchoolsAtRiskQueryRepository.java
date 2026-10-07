@@ -4,7 +4,7 @@ import java.time.Instant;
 
 import com.sep.vox.application.projection.dto.SchoolAtRiskDto;
 import com.sep.vox.application.projection.dto.SchoolRiskBucket;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Danh sách trường trong một nhóm "cần chú ý" — chỗ đáp của bốn dòng trên thẻ cùng tên ở trang tổng

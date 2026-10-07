@@ -22,7 +22,6 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService.Gradi
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.service.GradingActionSupport.PreparedAction;
 import com.sep.vox.application.port.input.usecase.examgrading.ClearInvalidResultUseCase;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
@@ -34,6 +33,7 @@ import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
+import com.sep.vox.domain.shared.EventTypeConstant;
 import com.sep.vox.support.OutboxTestSupport;
 
 /**

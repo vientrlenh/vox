@@ -7,9 +7,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.scoringrule.ScoringRule;
 import com.sep.vox.domain.repository.ScoringRuleRepository;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.ScoringRuleMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataScoringRuleRepository;
 

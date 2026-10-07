@@ -6,10 +6,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
+import com.sep.vox.domain.shared.PageResult;
 
 public interface SchoolClassRepository {
     Optional<SchoolClass> findById(UUID id);

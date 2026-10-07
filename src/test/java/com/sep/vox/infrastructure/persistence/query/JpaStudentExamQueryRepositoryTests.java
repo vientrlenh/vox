@@ -185,7 +185,7 @@ class JpaStudentExamQueryRepositoryTests extends ContainerTestConfig {
         assertThat(page.page()).isEqualTo(1);
     }
 
-    private com.sep.vox.domain.common.PageResult<com.sep.vox.application.projection.dto.StudentExamRowInfo> findAll() {
+    private com.sep.vox.domain.shared.PageResult<com.sep.vox.application.projection.dto.StudentExamRowInfo> findAll() {
         return repository.findMyExams(studentId, null, null, true, 1, 20, now);
     }
 

@@ -16,10 +16,10 @@ import com.sep.vox.application.port.input.usecase.balance.ViewSchoolBalanceSumma
 import com.sep.vox.application.port.input.usecase.balance.ViewSchoolBalanceUseCase;
 import com.sep.vox.application.port.input.usecase.balance.ViewSchoolDebtEventsUseCase;
 import com.sep.vox.application.response.input.balance.SchoolBalanceSummaryResponse;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolBalanceDto;
 import com.sep.vox.domain.dto.SchoolBalanceEntryDto;
 import com.sep.vox.domain.dto.SchoolDebtEventDto;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Ví tiền tự nạp của trường: số dư, sao kê, tổng hợp, và nhật ký nợ.

@@ -23,7 +23,7 @@ import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealDetailU
 import com.sep.vox.application.port.input.usecase.examappeal.ViewMyAppealsUseCase;
 import com.sep.vox.application.projection.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.projection.dto.AppealStatsInfo;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 public class ExamAppealControllerTests {
 

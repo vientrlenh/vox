@@ -16,9 +16,9 @@ import com.sep.vox.application.port.input.query.ViewRolesQuery;
 import com.sep.vox.application.port.input.query.key.RoleUsersKey;
 import com.sep.vox.application.port.input.usecase.role.ViewRoleDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.role.ViewRolesUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RoleDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.shared.PageResult;
 
 import graphql.schema.DataFetchingEnvironment;
 

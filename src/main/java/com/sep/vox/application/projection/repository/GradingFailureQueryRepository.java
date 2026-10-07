@@ -6,7 +6,7 @@ import java.util.List;
 import com.sep.vox.application.projection.dto.GradingFailureGroupDto;
 import com.sep.vox.application.projection.dto.GradingFailureSessionDto;
 import com.sep.vox.application.projection.dto.GradingFailureTotalsDto;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Đọc phiên thi AI chấm lỗi, XUYÊN kỳ thi và XUYÊN trường.

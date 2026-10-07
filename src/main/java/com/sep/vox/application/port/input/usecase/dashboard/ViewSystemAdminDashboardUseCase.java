@@ -13,8 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.dashboard.MonthlyRevenueResponse;
 import com.sep.vox.application.response.input.dashboard.SystemAdminDashboardSummaryResponse;
-import com.sep.vox.domain.common.BusinessDays;
-import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
@@ -26,6 +24,8 @@ import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
+import com.sep.vox.domain.shared.BusinessDays;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 /**
  * Doanh thu đọc từ ĐƠN HÀNG đã thu được tiền (Order.status = SUCCESS) thay vì từ hóa đơn: hóa đơn

@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.application.projection.dto.StudentExamRowInfo;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Read side cho danh sách bài thi của học sinh. Join xuyên aggregate

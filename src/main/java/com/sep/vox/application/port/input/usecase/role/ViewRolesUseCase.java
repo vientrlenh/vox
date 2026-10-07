@@ -5,10 +5,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewRolesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RoleDto;
 import com.sep.vox.domain.mapper.RoleDtoMapper;
 import com.sep.vox.domain.repository.RoleRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 @Service
 public class ViewRolesUseCase implements IUseCase<ViewRolesQuery, PageResult<RoleDto>>{

@@ -6,10 +6,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.query.ViewMyClassMembersQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.mapper.SchoolClassUserDtoMapper;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 @Service
 public class ViewMyClassMembersUseCase implements IUseCase<ViewMyClassMembersQuery, PageResult<SchoolClassUserDto>> {

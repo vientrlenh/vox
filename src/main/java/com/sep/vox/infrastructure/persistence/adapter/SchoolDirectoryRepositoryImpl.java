@@ -8,9 +8,9 @@ import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolDirectory;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolDirectoryMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolDirectoryRepository;
 

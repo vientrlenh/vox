@@ -1,9 +1,9 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.repository.GradeLevelRepository;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.GradeLevelMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataGradeLevelRepository;
 import org.springframework.data.domain.PageRequest;

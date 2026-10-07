@@ -16,12 +16,12 @@ import com.sep.vox.application.port.input.query.ViewQuestionBankDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionBanksQuery;
 import com.sep.vox.application.port.input.usecase.questionbank.ViewQuestionBankDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.ViewQuestionBanksUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionBankDto;
 import com.sep.vox.domain.dto.QuestionBankGradeDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionBankStatus;
+import com.sep.vox.domain.shared.PageResult;
 
 @Controller("graphqlQuestionBankController")
 public class QuestionBankController {

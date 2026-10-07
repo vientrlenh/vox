@@ -14,10 +14,10 @@ import com.sep.vox.application.port.input.query.ViewPlatformBusinessHealthQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.repository.PlatformBusinessHealthQueryRepository;
 import com.sep.vox.application.response.input.dashboard.PlatformBusinessHealthResponse;
-import com.sep.vox.domain.common.BusinessConstant;
-import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.repository.OrderRepository;
+import com.sep.vox.domain.shared.BusinessConstant;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 /**
  * Trường còn gói / sắp rụng / đang nợ, cùng doanh thu đặt cạnh giá vốn AI.

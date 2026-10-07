@@ -22,11 +22,11 @@ import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersForR
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.UserRoleInfo;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 class ViewSchoolUsersForRequesterUseCaseTests {
 

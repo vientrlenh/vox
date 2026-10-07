@@ -6,11 +6,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.query.ViewOrdersQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.OrderDto;
 import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.model.order.OrderType;
 import com.sep.vox.domain.repository.OrderRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Danh sách đơn hàng toàn hệ thống cho System Admin.

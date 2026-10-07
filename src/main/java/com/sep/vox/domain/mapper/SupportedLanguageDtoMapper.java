@@ -2,9 +2,9 @@ package com.sep.vox.domain.mapper;
 
 import java.util.List;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.model.language.SupportedLanguage;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.domain.valueobject.LanguageCode;
 
 public final class SupportedLanguageDtoMapper {

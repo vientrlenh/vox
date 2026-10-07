@@ -5,10 +5,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewSchoolDirectoryCursorPageQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.CursorPage;
 import com.sep.vox.domain.dto.SchoolDirectoryDto;
 import com.sep.vox.domain.mapper.SchoolDirectoryDtoMapper;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
+import com.sep.vox.domain.shared.CursorPage;
 
 @Service
 public class ViewSchoolDirectoryCursorPageUseCase implements IUseCase<ViewSchoolDirectoryCursorPageQuery, CursorPage<SchoolDirectoryDto>> {

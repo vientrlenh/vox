@@ -3,9 +3,9 @@ package com.sep.vox.domain.mapper;
 import java.time.Instant;
 import java.util.List;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.model.school.SchoolClassUser;
+import com.sep.vox.domain.shared.PageResult;
 
 public final class SchoolClassUserDtoMapper {
     

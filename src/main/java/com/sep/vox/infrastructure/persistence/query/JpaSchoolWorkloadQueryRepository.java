@@ -1,9 +1,9 @@
 package com.sep.vox.infrastructure.persistence.query;
 
-import static com.sep.vox.domain.common.NativeQueryValues.toInstant;
-import static com.sep.vox.domain.common.NativeQueryValues.toInt;
-import static com.sep.vox.domain.common.NativeQueryValues.toLong;
-import static com.sep.vox.domain.common.NativeQueryValues.toUuid;
+import static com.sep.vox.domain.shared.NativeQueryValues.toInstant;
+import static com.sep.vox.domain.shared.NativeQueryValues.toInt;
+import static com.sep.vox.domain.shared.NativeQueryValues.toLong;
+import static com.sep.vox.domain.shared.NativeQueryValues.toUuid;
 
 import java.time.Instant;
 import java.util.List;
@@ -15,8 +15,8 @@ import com.sep.vox.application.projection.dto.ExamAwaitingPublishDto;
 import com.sep.vox.application.projection.dto.SchoolGradingFailureDto;
 import com.sep.vox.application.projection.dto.SchoolUnscoredWorkloadDto;
 import com.sep.vox.application.projection.repository.SchoolWorkloadQueryRepository;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.ExamSession;
+import com.sep.vox.domain.shared.PageResult;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

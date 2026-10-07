@@ -10,7 +10,7 @@ import com.sep.vox.application.port.input.query.ViewGradingFailureOverviewQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.repository.GradingFailureQueryRepository;
 import com.sep.vox.application.response.input.dashboard.GradingFailureOverviewResponse;
-import com.sep.vox.domain.common.ZoneConstant;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 /**
  * Trang phân loại phiên chấm lỗi — chỗ đáp của ô "Phiên AI chấm lỗi" trên trang tổng quan.

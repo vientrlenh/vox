@@ -5,10 +5,9 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
-
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
+import com.sep.vox.domain.shared.PageResult;
 
 public interface RegisterFormRepository {
     RegisterForm save(RegisterForm rf);

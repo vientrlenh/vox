@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import com.sep.vox.application.projection.dto.AiCostBucketDto;
 import com.sep.vox.application.projection.dto.UserAiSpendDto;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Đọc sổ {@code school_ai_spend_entries} — chi phí AI mà TRƯỜNG bị trừ.

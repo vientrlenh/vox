@@ -10,12 +10,12 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.common.RoleConstant;
 import com.sep.vox.application.event.SchoolQuotaUsageWarningPayloadV1;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.domain.common.AggregateTypeConstant;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.shared.AggregateTypeConstant;
+import com.sep.vox.domain.shared.EventTypeConstant;
 
 /**
  * Phát event cảnh báo SỚM khi ví hạn mức AI (EXAM/PRACTICE) của 1 trường vừa vượt ngưỡng cảnh báo --

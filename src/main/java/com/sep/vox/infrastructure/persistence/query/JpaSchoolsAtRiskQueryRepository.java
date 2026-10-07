@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.query;
 
-import static com.sep.vox.domain.common.NativeQueryValues.toInstant;
-import static com.sep.vox.domain.common.NativeQueryValues.toLong;
+import static com.sep.vox.domain.shared.NativeQueryValues.toInstant;
+import static com.sep.vox.domain.shared.NativeQueryValues.toLong;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.application.projection.dto.SchoolAtRiskDto;
 import com.sep.vox.application.projection.dto.SchoolRiskBucket;
 import com.sep.vox.application.projection.repository.SchoolsAtRiskQueryRepository;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

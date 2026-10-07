@@ -21,7 +21,6 @@ import com.sep.vox.application.port.input.service.ExamAppealAccessService;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService.AppealContext;
 import com.sep.vox.application.port.input.usecase.examappeal.ApproveExamAppealUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.RejectExamAppealUseCase;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
@@ -30,6 +29,7 @@ import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
+import com.sep.vox.domain.shared.EventTypeConstant;
 import com.sep.vox.support.OutboxTestSupport;
 
 public class ApproveRejectExamAppealUseCaseTests {

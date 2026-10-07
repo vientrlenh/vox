@@ -17,11 +17,11 @@ import com.sep.vox.application.port.input.query.ViewOrdersQuery;
 import com.sep.vox.application.port.input.usecase.order.ViewMySchoolOrdersUseCase;
 import com.sep.vox.application.port.input.usecase.order.ViewOrderDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.order.ViewOrdersUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.InvoiceDto;
 import com.sep.vox.domain.dto.OrderDto;
 import com.sep.vox.domain.dto.OrderItemDto;
 import com.sep.vox.domain.dto.PaymentDto;
+import com.sep.vox.domain.shared.PageResult;
 
 import graphql.schema.DataFetchingEnvironment;
 

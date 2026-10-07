@@ -19,7 +19,6 @@ import com.sep.vox.application.port.input.usecase.dashboard.ViewTeacherDashboard
 import com.sep.vox.application.port.input.usecase.examevaluation.ResolveExamCandidateAttemptsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.ExamCandidateAttempts;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -35,6 +34,7 @@ import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 class ViewTeacherDashboardUseCaseTests {
 

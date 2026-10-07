@@ -3,11 +3,12 @@ package com.sep.vox.application.port.input.usecase.schoolroom;
 import com.sep.vox.application.port.input.query.ViewSchoolRoomsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.MyClassAccessGuard;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.mapper.SchoolRoomDtoMapper;
 import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
+import com.sep.vox.domain.shared.PageResult;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

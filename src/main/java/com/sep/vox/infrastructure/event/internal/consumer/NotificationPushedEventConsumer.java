@@ -52,7 +52,6 @@ import com.sep.vox.application.event.SchoolSubscriptionSuspendedPayloadV1;
 import com.sep.vox.application.event.SchoolSubscriptionUnsuspendedPayloadV1;
 import com.sep.vox.application.port.output.PushNotificationPort;
 import com.sep.vox.application.response.output.PushMessage;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.notification.Notification;
 import com.sep.vox.domain.model.notification.NotificationCategory;
@@ -63,6 +62,7 @@ import com.sep.vox.domain.repository.NotificationDeviceRepository;
 import com.sep.vox.domain.repository.NotificationPreferenceRepository;
 import com.sep.vox.domain.repository.NotificationRepository;
 import com.sep.vox.domain.repository.ProcessedEventRepository;
+import com.sep.vox.domain.shared.EventTypeConstant;
 
 import tools.jackson.databind.json.JsonMapper;
 

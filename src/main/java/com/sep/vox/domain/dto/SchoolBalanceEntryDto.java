@@ -2,8 +2,8 @@ package com.sep.vox.domain.dto;
 
 import java.util.UUID;
 
-import com.sep.vox.domain.common.DecimalText;
 import com.sep.vox.domain.model.school.SchoolBalanceEntry;
+import com.sep.vox.domain.shared.DecimalText;
 
 /**
  * Một bút toán trên sổ cái ví, dạng đọc. Ánh xạ 1-1 với {@link SchoolBalanceEntry} -- không join,

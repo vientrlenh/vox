@@ -3,11 +3,11 @@ package com.sep.vox.domain.mapper;
 
 import java.util.List;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RegisterFormDto;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.model.registerform.RegisterFormVerificationMethod;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;

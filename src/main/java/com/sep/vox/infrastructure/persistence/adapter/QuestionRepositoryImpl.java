@@ -11,12 +11,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.QuestionMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionRepository;
 

@@ -3,7 +3,7 @@ package com.sep.vox.application.response.input.dashboard;
 import java.time.Instant;
 
 import com.sep.vox.application.projection.dto.SchoolUnscoredWorkloadDto;
-import com.sep.vox.domain.common.BusinessDays;
+import com.sep.vox.domain.shared.BusinessDays;
 
 /**
  * Bài đã thi xong mà học sinh chưa có điểm, chia theo thứ đang chặn.

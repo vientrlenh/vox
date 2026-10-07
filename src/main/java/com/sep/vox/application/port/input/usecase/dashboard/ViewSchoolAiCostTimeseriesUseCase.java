@@ -12,7 +12,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.SchoolAiCostQueryRepository;
 import com.sep.vox.application.response.input.dashboard.SchoolAiCostTimeseriesResponse;
-import com.sep.vox.domain.common.DecimalText;
+import com.sep.vox.domain.shared.DecimalText;
 
 /**
  * Chi phí AI của trường theo thời gian, đọc từ sổ {@code school_ai_spend_entries}.

@@ -20,7 +20,7 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewMyGradingExamsUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.ViewMyGradingTasksUseCase;
 import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Hàng đợi giáo viên và dropdown lọc kỳ thi của nó — hai chỗ phải nhìn cùng MỘT tập bài.

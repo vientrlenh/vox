@@ -12,8 +12,6 @@ import com.sep.vox.application.event.SchoolDebtCapExceededPayloadV1;
 import com.sep.vox.application.event.SchoolDebtClearedPayloadV1;
 import com.sep.vox.application.event.SchoolLockedDueToDebtPayloadV1;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.domain.common.AggregateTypeConstant;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.school.SchoolDebtEvent;
@@ -22,6 +20,8 @@ import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolDebtEventRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
+import com.sep.vox.domain.shared.AggregateTypeConstant;
+import com.sep.vox.domain.shared.EventTypeConstant;
 
 /**
  * Phát 3 event thông báo nợ hạn mức AI, mirror đúng cách {@code OrderSettlementService

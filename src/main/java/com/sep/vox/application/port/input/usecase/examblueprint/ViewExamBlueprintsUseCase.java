@@ -8,11 +8,11 @@ import com.sep.vox.application.port.input.query.ViewExamBlueprintsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.ExamBlueprintDto;
 import com.sep.vox.domain.mapper.ExamBlueprintDtoMapper;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 @Service
 public class ViewExamBlueprintsUseCase implements IUseCase<ViewExamBlueprintsQuery, PageResult<ExamBlueprintDto>> {

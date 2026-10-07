@@ -2,8 +2,8 @@ package com.sep.vox.domain.repository;
 
 import java.util.UUID;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolDebtEvent;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Sổ audit "nguyên nhân nợ hạn mức AI" -- append-only, chỉ ghi lúc trạng thái nợ ĐỔI. Mirror của

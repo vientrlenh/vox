@@ -9,8 +9,8 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.application.projection.dto.ExamDirectoryGradeInfo;
 import com.sep.vox.application.projection.dto.ExamDirectoryUserInfo;
 import com.sep.vox.application.projection.repository.ExamDirectoryQueryRepository;
-import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.common.VnSearchKey;
+import com.sep.vox.domain.shared.PageResult;
+import com.sep.vox.domain.shared.VnSearchKey;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

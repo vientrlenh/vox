@@ -9,9 +9,9 @@ import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.response.input.importfile.ImportDataEntryResponse;
 import com.sep.vox.application.response.input.importfile.ImportRowErrorResponse;
 import com.sep.vox.application.response.input.importfile.ImportRowResponse;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
+import com.sep.vox.domain.shared.PageResult;
 
 @Component
 public class ImportRowResponseMapper {

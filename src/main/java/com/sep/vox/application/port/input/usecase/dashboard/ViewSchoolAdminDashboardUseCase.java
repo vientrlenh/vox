@@ -23,8 +23,6 @@ import com.sep.vox.application.response.input.dashboard.SchoolFundingResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolMonthlySpendingResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolSubscriptionRenewalResponse;
 import com.sep.vox.application.response.input.dashboard.UnscoredWorkloadResponse;
-import com.sep.vox.domain.common.BusinessDays;
-import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -41,6 +39,8 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
+import com.sep.vox.domain.shared.BusinessDays;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 /**
  * Phần CHI TIÊU của màn này đọc từ ĐƠN HÀNG đã thu được tiền, không còn từ hóa đơn: hóa đơn giờ chỉ

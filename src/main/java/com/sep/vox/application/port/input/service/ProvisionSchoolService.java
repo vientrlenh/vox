@@ -10,9 +10,6 @@ import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.domain.common.AggregateTypeConstant;
-import com.sep.vox.domain.common.EventTypeConstant;
-import com.sep.vox.domain.common.UserTypeConstant;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolUser;
@@ -24,6 +21,9 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
+import com.sep.vox.domain.shared.AggregateTypeConstant;
+import com.sep.vox.domain.shared.EventTypeConstant;
+import com.sep.vox.domain.shared.UserTypeConstant;
 
 @Service
 public class ProvisionSchoolService {

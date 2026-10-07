@@ -5,9 +5,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
+import com.sep.vox.domain.shared.PageResult;
 
 public interface UserRepository {
     Optional<User> findById(UUID id);

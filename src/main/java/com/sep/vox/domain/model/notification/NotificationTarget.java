@@ -3,7 +3,7 @@ package com.sep.vox.domain.model.notification;
 import java.util.Map;
 import java.util.Set;
 
-import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.shared.EventTypeConstant;
 
 /**
  * Màn hình mà một thông báo dẫn tới khi người dùng bấm vào.

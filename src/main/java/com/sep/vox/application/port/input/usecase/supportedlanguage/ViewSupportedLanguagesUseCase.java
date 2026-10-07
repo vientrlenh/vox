@@ -6,10 +6,10 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.query.ViewSupportedLanguagesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.mapper.SupportedLanguageDtoMapper;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 
 @Service

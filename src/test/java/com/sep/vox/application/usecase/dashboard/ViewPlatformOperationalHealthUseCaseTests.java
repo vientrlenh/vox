@@ -20,7 +20,7 @@ import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformOperatio
 import com.sep.vox.application.projection.dto.GradingOutcomeBucketDto;
 import com.sep.vox.application.projection.dto.LiveSessionCountsDto;
 import com.sep.vox.application.projection.repository.PlatformOperationalHealthQueryRepository;
-import com.sep.vox.domain.common.ZoneConstant;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 /**
  * Trọng tâm: chuỗi ngày phải ĐẦY. Query chỉ trả về ngày có phiên, nên nếu use case không chèn ngày

@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.BaseModel;
+import com.sep.vox.domain.shared.BaseModel;
 import com.sep.vox.domain.valueobject.BirthDate;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.Name;

@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
+import com.sep.vox.domain.shared.PageResult;
 
 public interface RubricResultBandRepository {
     Optional<RubricResultBand> findById(UUID id);

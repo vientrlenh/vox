@@ -2,7 +2,7 @@ package com.sep.vox.application.response.input.dashboard;
 
 import com.sep.vox.application.projection.dto.SchoolAtRiskDto;
 import com.sep.vox.application.projection.dto.SchoolRiskBucket;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Trang "trường cần chú ý": số đếm của cả bốn nhóm, cộng danh sách của nhóm đang mở.

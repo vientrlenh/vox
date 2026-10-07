@@ -1,8 +1,8 @@
 package com.sep.vox.domain.mapper;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RubricCriterionDto;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
 
 import tools.jackson.databind.json.JsonMapper;

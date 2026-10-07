@@ -3,7 +3,7 @@ package com.sep.vox.domain.model.geography;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.BaseModel;
+import com.sep.vox.domain.shared.BaseModel;
 import com.sep.vox.domain.valueobject.Code;
 import com.sep.vox.domain.valueobject.Name;
 

@@ -4,10 +4,10 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.query.ViewSchoolsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.mapper.SchoolDtoMapper;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 @Service
 public class ViewSchoolsUseCase implements IUseCase<ViewSchoolsQuery, PageResult<SchoolDto>> {

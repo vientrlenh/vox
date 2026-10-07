@@ -15,8 +15,8 @@ import com.sep.vox.application.port.input.query.ViewSupportedLanguagesQuery;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupportedLanguageDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupportedLanguagesUseCase;
 import com.sep.vox.application.response.input.supportedlanguage.UpdateSupportedLanguageResponse;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSupportedLanguageCommandMapper;
 
 @Controller("graphqlSupportedLanguageController")

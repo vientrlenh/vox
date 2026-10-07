@@ -13,7 +13,7 @@ import com.sep.vox.application.port.input.usecase.notification.ViewMyNotificatio
 import com.sep.vox.application.port.input.usecase.notification.ViewMyNotificationsCursorPageUseCase;
 import com.sep.vox.application.port.input.usecase.notification.ViewMyUnreadNotificationCountUseCase;
 import com.sep.vox.application.projection.dto.NotificationDto;
-import com.sep.vox.domain.common.CursorPage;
+import com.sep.vox.domain.shared.CursorPage;
 
 @Controller("graphqlNotificationController")
 public class NotificationController {

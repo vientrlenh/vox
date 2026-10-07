@@ -7,7 +7,7 @@ import java.util.UUID;
 import com.sep.vox.application.projection.dto.ExamAwaitingPublishDto;
 import com.sep.vox.application.projection.dto.SchoolGradingFailureDto;
 import com.sep.vox.application.projection.dto.SchoolUnscoredWorkloadDto;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Hai câu hỏi của cùng MỘT tập bài: "toàn trường còn bao nhiêu bài chưa có điểm" và "kỳ nào sắp công

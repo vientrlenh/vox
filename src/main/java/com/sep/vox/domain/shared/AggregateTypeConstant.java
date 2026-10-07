@@ -1,4 +1,4 @@
-package com.sep.vox.domain.common;
+package com.sep.vox.domain.shared;
 
 public final class AggregateTypeConstant {
 

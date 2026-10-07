@@ -17,7 +17,7 @@ import com.sep.vox.application.projection.dto.GradingRiskInfo;
 import com.sep.vox.application.projection.dto.GradingStatsInfo;
 import com.sep.vox.application.projection.dto.GradingTaskDetailInfo;
 import com.sep.vox.application.projection.dto.GradingTaskInfo;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Read side cho chấm tay. Toàn bộ đều là join xuyên aggregate

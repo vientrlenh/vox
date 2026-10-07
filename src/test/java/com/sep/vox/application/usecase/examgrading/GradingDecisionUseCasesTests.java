@@ -32,7 +32,6 @@ import com.sep.vox.application.port.input.usecase.examgrading.ClearInvalidResult
 import com.sep.vox.application.port.input.usecase.examgrading.DeclineGradingAssignmentUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.InvalidateResultUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.UpholdResultUseCase;
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
@@ -48,6 +47,7 @@ import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
+import com.sep.vox.domain.shared.EventTypeConstant;
 import com.sep.vox.support.OutboxTestSupport;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.ExamResultStatusHistoryRepository;

@@ -21,7 +21,6 @@ import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForExamP
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.QuestionStatusCountInfo;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.dto.QuestionBankDto;
 import com.sep.vox.domain.dto.QuestionCollaboratorDto;
@@ -33,6 +32,7 @@ import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
+import com.sep.vox.domain.shared.PageResult;
 
 @Controller("graphqlQuestionController")
 public class QuestionController {

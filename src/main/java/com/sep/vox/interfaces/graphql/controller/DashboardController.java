@@ -35,6 +35,7 @@ import com.sep.vox.application.projection.dto.NearestCentralizedExamDto;
 import com.sep.vox.application.projection.dto.QuestionBankStatsDto;
 import com.sep.vox.application.projection.dto.SchoolRiskBucket;
 import com.sep.vox.domain.model.metering.QuotaType;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.application.response.input.dashboard.GradingFailureOverviewResponse;
 import com.sep.vox.application.response.input.dashboard.PlatformBusinessHealthResponse;
 import com.sep.vox.application.response.input.dashboard.PlatformOperationalHealthResponse;
@@ -45,7 +46,6 @@ import com.sep.vox.application.response.input.dashboard.SchoolGradingFailurePage
 import com.sep.vox.application.response.input.dashboard.SchoolsAtRiskResponse;
 import com.sep.vox.application.response.input.dashboard.SystemAdminDashboardSummaryResponse;
 import com.sep.vox.application.response.input.dashboard.TeacherDashboardSummaryResponse;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller

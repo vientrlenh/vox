@@ -17,12 +17,12 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionsQuery;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkVersionsUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.domain.valueobject.FrameworkCode;
 
 public class ViewFrameworkVersionsUseCaseTests {

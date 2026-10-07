@@ -9,8 +9,8 @@ import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.ExamDirectoryUserInfo;
 import com.sep.vox.application.projection.repository.ExamDirectoryQueryRepository;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Giáo viên có thể phân công làm giám thị cho một ca thi.

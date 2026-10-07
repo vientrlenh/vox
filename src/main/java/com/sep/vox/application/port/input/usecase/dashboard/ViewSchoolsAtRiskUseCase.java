@@ -11,7 +11,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.repository.PlatformBusinessHealthQueryRepository;
 import com.sep.vox.application.projection.repository.SchoolsAtRiskQueryRepository;
 import com.sep.vox.application.response.input.dashboard.SchoolsAtRiskResponse;
-import com.sep.vox.domain.common.BusinessConstant;
+import com.sep.vox.domain.shared.BusinessConstant;
 
 /**
  * Trang "trường cần chú ý" — chỗ đáp của bốn dòng trên thẻ cùng tên ở trang tổng quan hệ thống.

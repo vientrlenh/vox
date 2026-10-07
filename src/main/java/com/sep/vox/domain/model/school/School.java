@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.Name;
-import com.sep.vox.domain.common.BaseModel;
+import com.sep.vox.domain.shared.BaseModel;
 import com.sep.vox.domain.valueobject.Code;
 import com.sep.vox.domain.valueobject.SchoolDomain;
 import com.sep.vox.domain.valueobject.PositiveInteger;

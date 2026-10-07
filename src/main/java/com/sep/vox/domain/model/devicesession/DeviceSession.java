@@ -3,8 +3,8 @@ package com.sep.vox.domain.model.devicesession;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.BaseModel;
 import com.sep.vox.domain.model.platform.Platform;
+import com.sep.vox.domain.shared.BaseModel;
 
 public class DeviceSession extends BaseModel {
     private UUID userId;

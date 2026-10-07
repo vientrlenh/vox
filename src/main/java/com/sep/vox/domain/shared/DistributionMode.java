@@ -1,4 +1,4 @@
-package com.sep.vox.domain.common;
+package com.sep.vox.domain.shared;
 
 /** Cách nhà trường chia hạn mức cá nhân cho giáo viên/học sinh -- xem DistributeQuotaToUsersService. */
 public enum DistributionMode {

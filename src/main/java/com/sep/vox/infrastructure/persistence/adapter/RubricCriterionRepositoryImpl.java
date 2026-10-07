@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.PageResult;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.RubricCriterionMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricCriterionRepository;
 

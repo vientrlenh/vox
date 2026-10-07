@@ -8,9 +8,9 @@ import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.AssessmentPolicyMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentPolicyRepository;
 

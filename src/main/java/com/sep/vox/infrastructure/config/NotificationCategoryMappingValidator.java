@@ -6,9 +6,9 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.notification.NotificationCategory;
 import com.sep.vox.domain.model.notification.NotificationTarget;
+import com.sep.vox.domain.shared.EventTypeConstant;
 import com.sep.vox.infrastructure.exception.InfrastructureException;
 
 /**

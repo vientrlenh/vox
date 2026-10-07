@@ -2,9 +2,9 @@ package com.sep.vox.domain.mapper;
 
 import java.util.List;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RoleDto;
 import com.sep.vox.domain.model.user.Role;
+import com.sep.vox.domain.shared.PageResult;
 
 public final class RoleDtoMapper {
     

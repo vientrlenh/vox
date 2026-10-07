@@ -13,7 +13,6 @@ import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.UpdateS
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.ViewSystemAssessmentPoliciesUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.ViewSystemAssessmentPolicyDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyteacher.ViewTeacherAssessmentPoliciesUseCase;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.AssessmentPolicyDto;
 import com.sep.vox.domain.dto.FrameworkResultBandDto;
 import com.sep.vox.domain.dto.FrameworkVersionDto;
@@ -23,6 +22,7 @@ import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.GradeLevelDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateAssessmentPolicyInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateAssessmentPolicyGraphQLMapper;
 import org.dataloader.DataLoader;

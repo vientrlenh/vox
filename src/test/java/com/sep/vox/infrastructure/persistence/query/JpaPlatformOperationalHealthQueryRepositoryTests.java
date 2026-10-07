@@ -17,7 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.application.projection.repository.PlatformOperationalHealthQueryRepository;
 import com.sep.vox.config.ContainerTestConfig;
-import com.sep.vox.domain.common.ZoneConstant;
+import com.sep.vox.domain.shared.ZoneConstant;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

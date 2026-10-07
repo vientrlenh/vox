@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.shared.EventTypeConstant;
 import com.sep.vox.infrastructure.exception.InfrastructureException;
 import com.sep.vox.infrastructure.properties.OutboxTopicProperties;
 

@@ -16,7 +16,7 @@ import com.sep.vox.application.port.input.usecase.importfile.ViewImportSessionsU
 import com.sep.vox.application.response.input.importfile.ImportRowResponse;
 import com.sep.vox.application.response.input.importfile.ImportSessionDetailsResponse;
 import com.sep.vox.application.response.input.importfile.ImportSessionSummaryResponse;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 @Controller("graphqlImportController")
 public class ImportController {

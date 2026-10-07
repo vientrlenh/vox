@@ -2,8 +2,8 @@ package com.sep.vox.application.response.input.dashboard;
 
 import java.math.BigDecimal;
 
-import com.sep.vox.domain.common.DecimalText;
 import com.sep.vox.domain.model.school.SchoolBalance;
+import com.sep.vox.domain.shared.DecimalText;
 
 /**
  * Trường còn mở được ca thi hay không, và còn chấm được bao nhiêu trước khi hết.

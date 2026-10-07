@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionBankStatus;
+import com.sep.vox.domain.shared.PageResult;
 
 public interface QuestionBankRepository {
     QuestionBank save(QuestionBank questionBank);

@@ -28,7 +28,6 @@ import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService.ExamDirectoryScope;
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromGradeUseCase;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamStatus;
@@ -41,6 +40,7 @@ import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
+import com.sep.vox.domain.shared.PageResult;
 
 class ImportExamCandidatesFromGradeUseCaseTests {
 

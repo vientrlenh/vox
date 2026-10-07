@@ -9,8 +9,8 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.GradingAssignmentFilter;
 import com.sep.vox.application.projection.dto.GradingAssignmentRowInfo;
 import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.service.exam.GradingScopeKind;
+import com.sep.vox.domain.shared.PageResult;
 
 /**
  * Bảng phân công của school admin. Phạm vi luôn bị khoá vào trường của người gọi, và

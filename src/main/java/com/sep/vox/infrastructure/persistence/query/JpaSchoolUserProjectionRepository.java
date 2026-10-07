@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.projection.dto.SchoolUserInfo;
 import com.sep.vox.application.projection.repository.SchoolUserProjectionRepository;
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.shared.PageResult;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

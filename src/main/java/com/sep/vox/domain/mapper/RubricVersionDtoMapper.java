@@ -1,8 +1,8 @@
 package com.sep.vox.domain.mapper;
 
-import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RubricVersionDto;
 import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.shared.PageResult;
 
 import java.util.List;
 

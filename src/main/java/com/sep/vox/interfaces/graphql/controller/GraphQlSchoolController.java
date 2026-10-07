@@ -93,7 +93,7 @@ import lombok.RequiredArgsConstructor;
 @Controller
 @Validated
 @RequiredArgsConstructor 
-public class GraphQlSchoolController {
+public class GraphQLSchoolController {
 
     private final ViewSchoolsUseCase viewSchoolsUseCase;
     private final ViewSchoolClassesUseCase viewSchoolClassesUseCase;

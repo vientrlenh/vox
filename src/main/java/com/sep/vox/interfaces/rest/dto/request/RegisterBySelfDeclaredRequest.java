@@ -1,12 +1,17 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.RegisterBySelfDeclaredCommand;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
 
 public record RegisterBySelfDeclaredRequest(
@@ -17,57 +22,73 @@ public record RegisterBySelfDeclaredRequest(
     @Size(max = 100, message = "School domain must not exceed 100 characters")
     String schoolDomain, 
 
-    @NotBlank(message = "Phường của trường không được để trống")
-    @Size(max = 255, message = "Phường của trường không được vượt quá 255 ký tự")
-    String schoolDistrict, 
+    @NotNull(message = "School ward ID is required")
+    UUID schoolWardId, 
 
-    @NotBlank(message = "Tỉnh/thành phố của trường không được để trống")
-    @Size(max = 255, message = "Tỉnh/thành phố của trường không được vượt quá 255 ký tự")
-    String schoolProvince, 
+    UUID schoolCityId, 
 
-    @NotBlank(message = "Địa chỉ trường không được để trống")
-    @Size(max = 512, message = "Địa chỉ của trường không được vượt quá 512 ký tự")
-    String schoolAddress, 
+    @NotNull(message = "School province ID is required")
+    UUID schoolProvinceId,
 
-    @NotBlank(message = "Tên liên hệ không được để trống")
-    @Size(max = 255, message = "Tên liên hệ không được vượt quá 255 ký tự")
+    @NotBlank(message = "School street address is required")
+    @Size(max = 512, message = "School street address must not exceed 512 characters")
+    String schoolStreetAddress, 
+
+    @NotBlank(message = "Contact full name is required")
+    @Size(max = 255, message = "Contact full name must not exceed 255 characters")
     String contactFullName, 
 
-    @NotBlank(message = "Mã định danh không được để trống")
-    @Size(max = 20, message = "Mã định danh không được vượt quá 20 ký tự")    
+    @NotBlank(message = "Identity number is required")
+    @Size(max = 20, message = "Identity number must not exceed 20 characters")    
     String identityNumber, 
 
-    @NotBlank(message = "Số điện thoại liên hệ không được để trống")
-    @Size(max = 20, message = "Số điện thoại không được vượt quá 20 ký tự")
+    @NotBlank(message = "Contact phone is required")
+    @Size(max = 20, message = "Contact phone must not exceed 20 characters")
     String contactPhone,
     
-    @NotBlank(message = "Email liên hệ không được để trống")
-    @Size(max = 255, message = "Email liên hệ không được vượt quá 255 ký tự")
-    @Email(message = "Email không hợp lệ")
+    @NotBlank(message = "Contact email is required")
+    @Size(max = 255, message = "Contact email must not exceed 255 characters")
+    @Email(message = "Invalid email address")
     String contactEmail, 
 
-    @NotBlank(message = "Ngày sinh không được để trống")
-    String dateOfBirth, 
+    @NotNull(message = "Birth date is required")
+    @Past(message = "Birth date must be in the past")
+    LocalDate birthDate, 
 
-    @NotBlank(message = "Địa chỉ liên hệ không được để trống")
-    @Size(max = 512, message = "Địa chỉ liên hệ không được vượt quá 512 ký tự")
+    @NotBlank(message = "Contact address is required")
+    @Size(max = 512, message = "Contact address must not exceed 512 characters")
     String contactAddress,
     
-    @NotBlank(message = "Mã bưu chính không được để trống")
-    @Size(max = 10, message = "Mã bưu chính không được vượt quá 10 ký tự")
+    @NotBlank(message = "Postal code is required")
+    @Size(max = 10, message = "Postal code must not exceed 10 characters")
     String postalCode, 
 
-    @NotBlank(message = "Chức vụ không được để trống")
-    @Size(max = 50, message = "Chức vụ không được vượt quá 50 ký tự")
-    String position, 
-
-    @NotNull(message = "Số học sinh không được để trống")
-    @Min(value = 1, message = "Số học sinh không được nhỏ hơn 1")   
-    @Max(value = Integer.MAX_VALUE, message = "Số học sinh không được vượt quá " + Integer.MAX_VALUE)
+    @NotNull(message = "Student count is required")
+    @Min(value = 1, message = "Student count must not lower than 1")   
+    @Max(value = Integer.MAX_VALUE, message = "Student count must not greater than " + Integer.MAX_VALUE)
     Integer studentCount, 
 
-    @NotNull(message = "Đường dẫn của tài liệu không được để trống")
+    @NotNull(message = "Document urls are required")
     List<String> documentUrls
 ) {
     
+    public static RegisterBySelfDeclaredCommand toCommand(RegisterBySelfDeclaredRequest request) {
+        return new RegisterBySelfDeclaredCommand(
+            request.schoolName, 
+            request.schoolDomain,  
+            request.schoolWardId, 
+            request.schoolCityId, 
+            request.schoolProvinceId, 
+            request.schoolStreetAddress, 
+            request.contactFullName, 
+            request.identityNumber, 
+            request.contactPhone, 
+            request.contactEmail, 
+            request.birthDate, 
+            request.contactAddress, 
+            request.postalCode, 
+            request.studentCount, 
+            request.documentUrls
+        );
+    }
 }

@@ -10,6 +10,13 @@ enum Gender {
     FEMALE
 }
 
+enum UserStatus {
+    INACTIVE 
+    ACTIVE 
+    LOCKED 
+    DISABLED
+}
+
 type User {
     id: ID!
     email: String!
@@ -20,6 +27,7 @@ type User {
     dateOfBirth: String 
     address: String 
     avatarUrl: String
+    status: UserStatus!
     createdAt: String
     updatedAt: String
     school: School
@@ -33,49 +41,13 @@ type UserPage {
     totalPages: Int!
 }
 
-type Role {
-    id: ID!
-    code: String!
-    name: String
-    createdAt: String
-    updatedAt: String
-    users(page: Int! = 1, size: Int! = 10): [User!]
-}
-
-type RolePage {
-    content: [Role!]!
-    page: Int!
-    size: Int!
-    totalElements: Int!
-}
-
-type UserRole {
-    id: ID!
-    userId: ID!
-    roleId: ID!
-    createdAt: String
-    user: User
-    role: Role
-}
-
 
 extend type Query {
     users(page: Int! = 1, size: Int! = 20): UserPage!
     user(id: ID!): User
-    roles(page: Int! = 1, size: Int! = 20): RolePage!
-    role(id: ID!): Role
-    profile: User
+    me: User
 }
 
-"""
-Mọi trường đều optional và mang ngữ nghĩa PATCH: KHÔNG gửi trường = giữ nguyên, gửi null = xóa.
-Mapper phân biệt hai trường hợp đó bằng Map.containsKey, xem UpdateProfileCommandMapper.
-Vì vậy avatarUrl: null chính là thao tác gỡ ảnh đại diện -- không có mutation removeAvatar riêng.
-
-avatarUrl là URL client nhận được sau khi TỰ tải ảnh lên kho lưu trữ của nó (hiện là Firebase
-Storage). Backend chỉ lưu tham chiếu, không nhận file. URL phải là https và, nếu
-app.avatar.allowed-hosts có cấu hình, phải thuộc host nằm trong danh sách đó.
-"""
 input UpdateProfileInput {
     fullName: String
     phone: String
@@ -85,6 +57,5 @@ input UpdateProfileInput {
 }
 
 extend type Mutation {
-    "Sửa hồ sơ của chính người gọi. Không nhận userId -- sửa người khác đi updateSchoolUser."
     updateProfile(input: UpdateProfileInput!): User!
 }

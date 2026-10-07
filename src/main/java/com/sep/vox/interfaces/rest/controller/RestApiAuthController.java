@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sep.vox.application.port.input.command.GoogleTokenLoginCommand;
 import com.sep.vox.application.port.input.command.LoginCommand;
 import com.sep.vox.application.port.input.command.RefreshCommand;
+import com.sep.vox.application.port.input.command.RegisterBySelfDeclaredCommand;
 import com.sep.vox.application.port.input.command.RegisterFromSchoolDirectoryCommand;
 import com.sep.vox.application.port.input.command.ResetPasswordCommand;
 import com.sep.vox.application.port.input.command.SendResetPasswordOtpCommand;
+import com.sep.vox.application.port.input.command.VerifyRegisterFormOtpCommand;
 import com.sep.vox.application.port.input.usecase.auth.GoogleTokenLoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.LogoutUseCase;
@@ -48,18 +50,14 @@ import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.LogoutCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RefreshCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.RegisterBySelfDeclaredCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.ResetPasswordCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.VerifyRegisterFormOtpCommandMapper;
 
 import com.sep.vox.interfaces.shared.IpAddressReceiver;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-
-
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -119,18 +117,18 @@ public class RestApiAuthController {
 
     @PostMapping("/register/self-declared")
     public ResponseEntity<ApiResponse<Void>> registerBySelfDeclared(@Valid @RequestBody RegisterBySelfDeclaredRequest request) {
-        var command = RegisterBySelfDeclaredCommandMapper.fromRequest(request);
+        RegisterBySelfDeclaredCommand command = RegisterBySelfDeclaredRequest.toCommand(request);
         registerBySelfDeclaredUseCase.execute(command);
-        var response = ApiResponse.success("Registration form has been sent successfully. Please wait for approval from admin");
+        ApiResponse<Void> response = ApiResponse.success("Registration form has been sent successfully. Please wait for approval from admin");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
 
     @PostMapping("/register/verify")
     public ResponseEntity<ApiResponse<Void>> verifyRegistrationOtp(@Valid @RequestBody VerifyRegisterFormOtpRequest request) {
-        var command = VerifyRegisterFormOtpCommandMapper.fromRequest(request);
+        VerifyRegisterFormOtpCommand command = VerifyRegisterFormOtpRequest.toCommand(request);
         verifyRegisterFormOtpUseCase.execute(command);
-        var response = ApiResponse.success("Đơn yêu cầu đã được xác thực");
+        ApiResponse<Void> response = ApiResponse.success("Đơn yêu cầu đã được xác thực");
         return ResponseEntity.ok(response);
     }
 

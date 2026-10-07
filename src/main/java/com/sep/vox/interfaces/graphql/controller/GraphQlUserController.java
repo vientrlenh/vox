@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 @Controller
 @Validated 
 @RequiredArgsConstructor 
-public class GraphQlUserController {
+public class GraphQLUserController {
 
     private final ViewUserDetailsUseCase viewUserDetailsUseCase;
     private final ViewUsersUseCase viewUsersUseCase;
@@ -62,7 +62,7 @@ public class GraphQlUserController {
      */
     @MutationMapping(name = "updateMe")
     @PreAuthorize("isAuthenticated()")
-    public UserDto updateProfile(@Argument(name = "input") Map<String, Object> input) {
+    public UserDto updateMe(@Argument(name = "input") Map<String, Object> input) {
         var command = UpdateProfileCommandMapper.fromInput(input);
         return updateProfileUseCase.execute(command);
     }

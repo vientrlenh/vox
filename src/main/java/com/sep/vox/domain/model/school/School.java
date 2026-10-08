@@ -25,7 +25,7 @@ public class School extends BaseModel {
     private UUID createdBy;
     private UUID updatedBy;
 
-    public School() {}
+    protected School() {}
 
     public School(Code code, Name name, String description, SchoolDomain domain, UUID wardId, UUID cityId, UUID provinceId, String streetAddress, PositiveInteger studentCount, SchoolStatus status, Instant updatedAt, UUID registeredBy, UUID createdBy, UUID updatedBy) {
         this.code = code;

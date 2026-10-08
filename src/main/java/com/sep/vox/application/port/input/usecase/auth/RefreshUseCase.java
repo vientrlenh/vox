@@ -42,7 +42,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
         UserRepository userRepository, 
         SchoolUserProjectionRepository schoolUserProjectionRepository,
         SessionTokenManagerPort sessionTokenManagerPort,  
-        AuthTokenPort authTokenPort,  
+        AuthTokenPort authTokenPort, 
         AuthService authService
     ) {
         this.deviceSessionRepository = deviceSessionRepository;
@@ -50,7 +50,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
         this.userRepository = userRepository;
         this.schoolUserProjectionRepository = schoolUserProjectionRepository;
         this.sessionTokenManagerPort = sessionTokenManagerPort;
-        this.authTokenPort = authTokenPort;
+        this.authTokenPort = authTokenPort; 
         this.authService = authService;
     }
 
@@ -60,8 +60,9 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
     @Transactional
     public RefreshResponse execute(RefreshCommand input) {
         RefreshCommand command = normalize(input);
-        
-        String hashedToken = sessionTokenManagerPort.hash(command.token());
+
+        String rawToken = sessionTokenManagerPort.getRawFromCookie(command.req());
+        String hashedToken = sessionTokenManagerPort.hash(rawToken);
         RefreshToken refreshToken = refreshTokenRepository.findByTokenHashForUpdate(hashedToken)
             .orElseThrow(() -> new UnauthorizedException(INVALID_REFRESH_TOKEN_MSG));
         
@@ -71,7 +72,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
 
         validateValidRequest(refreshToken, deviceSession, now, command);
         
-        SessionToken newSessionToken = sessionTokenManagerPort.generateToken();
+        SessionToken newSessionToken = sessionTokenManagerPort.generateToken(command.res());
         RefreshToken newRefreshToken = authService.createRefreshToken(newSessionToken, deviceSession, refreshToken, now);
         markOldTokenAsUsed(refreshToken.getId(), newRefreshToken.getId(), deviceSession.getId(), now);
 
@@ -93,8 +94,9 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
     
     private RefreshCommand normalize(RefreshCommand input) {
         return new RefreshCommand(
-            StringNormalization.trimAndCollapseSpaces(input.token()), 
-            StringNormalization.trimAndCollapseSpaces(input.deviceId())
+            StringNormalization.trimAndCollapseSpaces(input.deviceId()), 
+            input.req(), 
+            input.res()
         );
     }
 

@@ -13,15 +13,13 @@ import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.service.AuthService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.AuthTokenPort;
-import com.sep.vox.application.port.output.SessionTokenManagerPort;
+import com.sep.vox.application.port.output.ServletRequestManagerPort;
 import com.sep.vox.application.projection.repository.SchoolUserProjectionRepository;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.output.SessionToken;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.DeviceSessionRepository;
-import com.sep.vox.domain.repository.RefreshTokenRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.Email;
 
@@ -31,20 +29,20 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
     private final UserRepository userRepository;
     private final SchoolUserProjectionRepository schoolUserProjectionRepository;
     private final AuthTokenPort authTokenPort;
+    private final ServletRequestManagerPort servletRequestManagerPort;
     private final AuthService authService;
 
     public OAuth2LoginUseCase(
         UserRepository userRepository, 
         SchoolUserProjectionRepository schoolUserProjectionRepository, 
-        DeviceSessionRepository deviceSessionRepository, 
-        RefreshTokenRepository refreshTokenRepository, 
         AuthTokenPort authTokenPort, 
-        SessionTokenManagerPort sessionTokenManagerPort, 
+        ServletRequestManagerPort servletRequestManagerPort, 
         AuthService authService
     ) {
         this.userRepository = userRepository; 
         this.schoolUserProjectionRepository = schoolUserProjectionRepository;
-        this.authTokenPort = authTokenPort;
+        this.authTokenPort = authTokenPort; 
+        this.servletRequestManagerPort = servletRequestManagerPort;
         this.authService = authService;
     }
 
@@ -52,6 +50,9 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
     @Transactional
     public LoginResponse execute(OAuth2LoginCommand input) {
         OAuth2LoginCommand command = normalize(input);
+
+        String ipAddress = servletRequestManagerPort.getContextIpAddress(command.req());
+        String userAgent = servletRequestManagerPort.getUserAgent(command.req());
         User user = userRepository.findByEmailAndStatus(command.email(), UserStatus.ACTIVE)
             .orElseThrow(() -> new UnauthorizedException("User is unavailable. Contact school for support"));
 
@@ -61,8 +62,8 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
             command.deviceId(), 
             command.deviceName(), 
             command.platform(), 
-            command.ipAddress(), 
-            command.userAgent()
+            ipAddress, 
+            userAgent
         );
         UUID schoolId = null;
         if (!user.isSystemAdmin()) {
@@ -71,10 +72,10 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
         }
         String email = Email.valueOf(user.getEmail());
         String accessToken = authTokenPort.generateToken(user.getId(), schoolId, email, user.roleStrs());
-        SessionToken sessionToken = authService.createSessionToken();
+        SessionToken sessionToken = authService.createSessionToken(command.res());
         authService.createRefreshToken(sessionToken, deviceSession, null, now);
 
-        return LoginResponse.toResponse(email, accessToken, sessionToken.rawToken());
+        return LoginResponse.toResponse(email, accessToken);
 
     }
     
@@ -86,11 +87,11 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
             input.emailVerified(), 
             input.fullName(), 
             input.avatarUrl(), 
-            input.ipAddress(), 
-            input.userAgent(), 
             StringNormalization.trimAndCollapseSpaces(input.deviceId()), 
             StringNormalization.trimAndCollapseSpaces(input.deviceName()), 
-            input.platform() 
+            input.platform(), 
+            input.req(), 
+            input.res()
         );
     }
 }

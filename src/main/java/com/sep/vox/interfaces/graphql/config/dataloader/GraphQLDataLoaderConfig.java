@@ -29,5 +29,7 @@ public class GraphQLDataLoaderConfig {
                     .collect(Collectors.toMap(u -> u.id(), Function.identity()))
             )
         );
+
+        
     }
 }

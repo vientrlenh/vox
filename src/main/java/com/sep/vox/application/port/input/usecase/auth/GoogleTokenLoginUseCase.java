@@ -9,6 +9,7 @@ import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.GoogleIdTokenVerifierPort;
 import com.sep.vox.application.response.input.auth.LoginResponse;
+import com.sep.vox.application.response.output.VerifiedGoogleIdentity;
 
 /**
  * Đăng nhập Google cho ứng dụng NATIVE: kiểm chứng ID token rồi giao lại cho
@@ -54,10 +55,10 @@ public class GoogleTokenLoginUseCase implements IUseCase<GoogleTokenLoginCommand
     @Override
     @Transactional
     public LoginResponse execute(GoogleTokenLoginCommand input) {
-        var identity = googleIdTokenVerifierPort.verify(input.idToken());
+        VerifiedGoogleIdentity identity = googleIdTokenVerifierPort.verify(input.idToken());
 
         if (!identity.emailVerified()) {
-            throw new UnauthorizedException("Người dùng chưa được xác thực để đăng nhập");
+            throw new UnauthorizedException("User has not verified");
         }
 
         return oAuth2LoginUseCase.execute(new OAuth2LoginCommand(
@@ -67,9 +68,11 @@ public class GoogleTokenLoginUseCase implements IUseCase<GoogleTokenLoginCommand
             identity.emailVerified(),
             identity.fullName(),
             identity.avatarUrl(),
-            input.ipAddress(),
-            input.userAgent(),
-            input.device()
+            input.deviceId(), 
+            input.deviceName(), 
+            input.platform(), 
+            input.req(), 
+            input.res()
         ));
     }
 }

@@ -3,6 +3,8 @@ package com.sep.vox.interfaces.rest.dto.request;
 import com.sep.vox.application.port.input.command.LoginCommand;
 import com.sep.vox.domain.model.platform.Platform;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -25,16 +27,16 @@ public record LoginRequest(
         @NotNull(message = "Device platform is required")
         Platform platform
 ) {
-        public static LoginCommand toCommand(LoginRequest request, String ipAddress, String userAgent) {
+        public static LoginCommand toCommand(LoginRequest request, HttpServletRequest req, HttpServletResponse res) {
                 return new LoginCommand(
                         request.login(), 
                         request.password(),
-                        ipAddress, 
-                        userAgent,
                         request.deviceId(), 
                         request.deviceName(), 
-                        request.platform()
-                );
+                        request.platform(), 
+                        req, 
+                        res
+                );      
         }
 }
 

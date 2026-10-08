@@ -14,7 +14,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
-import com.sep.vox.application.port.output.CookieManagerPort;
+import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.domain.model.platform.Platform;
 
@@ -29,21 +29,19 @@ import lombok.extern.slf4j.Slf4j;
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final OAuth2LoginUseCase oAuth2LoginUseCase;
-    private final CookieManagerPort cookieManagerPort;
+    private final SessionTokenManagerPort sessionTokenManagerPort;
     private final String returnUrl;
 
     public OAuth2AuthenticationSuccessHandler(
         OAuth2LoginUseCase oAuth2LoginUseCase, 
-        CookieManagerPort cookieManagerPort, 
+        SessionTokenManagerPort sessionTokenManagerPort, 
         @Value("${app.frontend.oauth2-url}") String returnUrl
     ) {
         this.oAuth2LoginUseCase = oAuth2LoginUseCase;
-        this.cookieManagerPort = cookieManagerPort;
+        this.sessionTokenManagerPort = sessionTokenManagerPort;
         this.returnUrl = returnUrl;
     }
 
-    private static final long REFRESH_TOKEN_COOKIE_TTL_SECONDS = 259200L;
-    private static final String REFRESH_TOKEN_KEY_NAME = "refresh_token";
     
 
     @Override
@@ -62,7 +60,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             String deviceName = (String) session.getAttribute("oauth2_device_name");
             Platform platform = (Platform) session.getAttribute("oauth2_platform");
 
-            var command = new OAuth2LoginCommand(
+            OAuth2LoginCommand command = new OAuth2LoginCommand(
                 provider, 
                 user.getAttribute("sub"), 
                 user.getAttribute("email"), 

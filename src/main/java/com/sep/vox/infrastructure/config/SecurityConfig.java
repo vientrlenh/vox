@@ -41,12 +41,10 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.sep.vox.application.port.output.PasswordEncoderPort;
 import com.sep.vox.infrastructure.exception.InfrastructureException;
 import com.sep.vox.infrastructure.filter.JwtAuthenticationFilter;
 import com.sep.vox.infrastructure.properties.AdminConsoleProperties;
 import com.sep.vox.infrastructure.properties.CorsProperties;
-import com.sep.vox.infrastructure.security.Argon2PasswordEncodeProvider;
 import com.sep.vox.infrastructure.security.CustomOidcUserService;
 import com.sep.vox.infrastructure.security.OAuth2AuthenticationFailureHandler;
 import com.sep.vox.infrastructure.security.OAuth2AuthenticationSuccessHandler;

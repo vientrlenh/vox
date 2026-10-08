@@ -1,8 +1,12 @@
 package com.sep.vox.application.port.input.command;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 public record RefreshCommand(
-    String token,
-    String deviceId
+    String deviceId, 
+    HttpServletRequest req, 
+    HttpServletResponse res
 ) {
     
 }

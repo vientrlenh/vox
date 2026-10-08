@@ -3,8 +3,6 @@ package com.sep.vox.infrastructure.persistence.entity;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.hibernate.annotations.Generated;
-import org.hibernate.generator.EventType;
 
 import com.sep.vox.infrastructure.shared.BaseEntity;
 

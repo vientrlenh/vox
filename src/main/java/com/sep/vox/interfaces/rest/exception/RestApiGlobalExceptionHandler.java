@@ -2,7 +2,6 @@ package com.sep.vox.interfaces.rest.exception;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,11 +21,8 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.exception.PlanLimitExceededException;
-import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.exception.ServiceUnavailableException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.exception.WalletDrawConfirmationRequiredException;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.dto.response.ValidationResponse;
 
@@ -141,25 +137,6 @@ public class RestApiGlobalExceptionHandler {
         }
         Map<String, String> errors = Map.of(ex.getName(), message);
         return validationErr(errors);
-    }
-
-    @ExceptionHandler(QuotaExceededException.class)
-    public ResponseEntity<ErrorResponse> handleQuotaExceeded(QuotaExceededException e) {
-        var error = new ErrorResponse(QUOTA_EXCEEDED_ERROR, e.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    @ExceptionHandler(PlanLimitExceededException.class)
-    public ResponseEntity<ErrorResponse> handlePlanLimitExceeded(PlanLimitExceededException e) {
-        var error = new ErrorResponse(PLAN_LIMIT_EXCEEDED_ERROR, e.getMessage());
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(error);
-    }
-
-    @ExceptionHandler(WalletDrawConfirmationRequiredException.class)
-    public ResponseEntity<ErrorResponse> handleWalletDrawConfirmationRequired(
-            WalletDrawConfirmationRequiredException e) {
-        var error = new ErrorResponse(WALLET_DRAW_CONFIRMATION_REQUIRED_ERROR, e.getMessage());
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(error);
     }
 
     // =============================================== SPRING SECURITY EXCEPTION ================================================

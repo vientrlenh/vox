@@ -26,35 +26,17 @@ import com.sep.vox.interfaces.rest.dto.request.RenewSchoolSubscriptionRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
-/**
- * Đơn hàng của trường -- gồm cả mua/gia hạn gói lẫn nạp thêm số dư. Tách khỏi SubscriptionController
- * vì đơn nạp thêm không dính gì tới subscription: nó cộng tiền vào ví cấp TRƯỜNG, sống xuyên qua mọi
- * lần đổi gói.
- *
- * <p>Mọi endpoint ở đây đều chỉ dành cho SCHOOL_ADMIN và KHÔNG nhận schoolId: trường lấy từ token.
- * Nhận từ đường dẫn thì {@code hasRole('SCHOOL_ADMIN')} không đủ để bảo vệ -- nó trả lời "có phải
- * school admin không", không trả lời "có phải school admin CỦA TRƯỜNG NÀY không".
- */
 @RestController
 @RequestMapping("/api/v1/orders")
+@RequiredArgsConstructor 
 public class OrderController {
 
     private final CreateSubscriptionOrderUseCase createSubscriptionOrderUseCase;
     private final CreateTopUpOrderUseCase createTopUpOrderUseCase;
     private final CancelOrderUseCase cancelOrderUseCase;
     private final RenewSchoolSubscriptionUseCase renewSchoolSubscriptionUseCase;
-
-    public OrderController(
-            CreateSubscriptionOrderUseCase createSubscriptionOrderUseCase,
-            CreateTopUpOrderUseCase createTopUpOrderUseCase,
-            CancelOrderUseCase cancelOrderUseCase,
-            RenewSchoolSubscriptionUseCase renewSchoolSubscriptionUseCase) {
-        this.createSubscriptionOrderUseCase = createSubscriptionOrderUseCase;
-        this.createTopUpOrderUseCase = createTopUpOrderUseCase;
-        this.cancelOrderUseCase = cancelOrderUseCase;
-        this.renewSchoolSubscriptionUseCase = renewSchoolSubscriptionUseCase;
-    }
 
     /**
      * Đặt đơn mua một chu kỳ gói. Trả về id đơn ở trạng thái PENDING -- gói CHƯA được cấp, bước tiếp

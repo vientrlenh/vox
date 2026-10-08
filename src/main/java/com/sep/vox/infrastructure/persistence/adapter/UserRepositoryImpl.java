@@ -18,15 +18,13 @@ import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.UserMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataUserRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Repository
+@RequiredArgsConstructor 
 public class UserRepositoryImpl implements UserRepository {
 
     private final SpringDataUserRepository springDataUserRepository;
-
-    public UserRepositoryImpl(SpringDataUserRepository springDataUserRepository) {
-        this.springDataUserRepository = springDataUserRepository;
-    }
-
 
     @Override
     public Optional<User> findById(UUID id) {
@@ -98,26 +96,11 @@ public class UserRepositoryImpl implements UserRepository {
         return springDataUserRepository.changeUserPassword(email, passwordHash);
     }
 
-
-    @Override
-    public boolean existsByEmailAndStatus(String email, UserStatus status) {
-        return springDataUserRepository.existsByEmailAndStatus(email, status.name());
-    }
-
-
     @Override
     public Optional<User> findByEmailAndStatus(String email, UserStatus status) {
         return springDataUserRepository.findByEmailAndStatus(email, status.name())
             .map(UserMapper::toDomain);
     }
-
-
-    @Override
-    public Optional<User> findByIdAndStatus(UUID id, UserStatus status) {
-        return springDataUserRepository.findByIdAndStatus(id, status.name())
-            .map(UserMapper::toDomain);
-    }
-
 
     @Override
     public boolean existsByIdAndStatus(UUID id, UserStatus status) {
@@ -145,6 +128,18 @@ public class UserRepositoryImpl implements UserRepository {
             userPage.getTotalElements(), 
             userPage.getTotalPages()
         );
+    }
+
+
+    @Override
+    public Optional<User> findByIdAndStatusActive(UUID id) {
+        return springDataUserRepository.findByIdAndStatus(id, UserStatus.ACTIVE.name())
+            .map(UserMapper::toDomain);
+    }
+
+    @Override
+    public boolean existsByEmailAndStatusActive(String email) {
+        return springDataUserRepository.existsByEmailAndStatus(email, UserStatus.ACTIVE.name());
     }
     
 }

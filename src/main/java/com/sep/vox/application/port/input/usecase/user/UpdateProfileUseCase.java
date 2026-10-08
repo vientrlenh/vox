@@ -1,26 +1,26 @@
 package com.sep.vox.application.port.input.usecase.user;
 
-import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateProfileCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.AvatarUrlPolicy;
 import com.sep.vox.application.shared.StringNormalization;
-import com.sep.vox.domain.dto.UserDto;
-import com.sep.vox.domain.mapper.UserDtoMapper;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
-import com.sep.vox.domain.valueobject.DateOfBirth;
-import com.sep.vox.domain.valueobject.FullName;
+import com.sep.vox.domain.valueobject.Name;
 import com.sep.vox.domain.valueobject.Phone;
 
 /**
@@ -33,7 +33,7 @@ import com.sep.vox.domain.valueobject.Phone;
  * bảng không lệch luật nhau (họ tên không được rỗng, số điện thoại không được rỗng và không trùng).
  */
 @Service
-public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, UserDto> {
+public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, UUID> {
 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
@@ -50,65 +50,51 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
 
     @Override
     @Transactional
-    public UserDto execute(UpdateProfileCommand input) {
-        if (!input.fullNameProvided()
-                && !input.phoneProvided()
-                && !input.addressProvided()
-                && !input.dateOfBirthProvided()
-                && !input.avatarUrlProvided()) {
-            throw new IllegalArgumentException("Cần cung cấp ít nhất một trường để cập nhật");
+    public UUID execute(UpdateProfileCommand input) {
+        if (!containAtLeastOneField(input)) {
+            throw new IllegalArgumentException("At least provide one field for update");
         }
 
-        var now = Instant.now();
-        var callerId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID callerId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
-        var target = userRepository.findByIdForUpdate(callerId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+        User target = userRepository.findByIdForUpdate(callerId)
+            .orElseThrow(() -> new ResourceNotFoundException("No user found"));
         if (target.getStatus() != UserStatus.ACTIVE) {
-            throw new ForbiddenException("Tài khoản không ở trạng thái hoạt động");
+            throw new ForbiddenException("User is not active");
         }
 
         if (input.fullNameProvided()) {
-            var normalized = StringNormalization.trimAndCollapseSpaces(input.fullName());
-            if (normalized == null || normalized.isBlank()) {
-                throw new IllegalArgumentException("Họ tên không được để trống");
-            }
-            target.setFullName(new FullName(normalized));
+            String normalized = StringNormalization.trimAndCollapseSpaces(input.fullName());
+            target.setFullName(Name.from(normalized));
         }
 
         if (input.phoneProvided()) {
-            var normalized = StringNormalization.normalizePhone(input.phone());
-            if (normalized == null || normalized.isBlank()) {
-                throw new IllegalArgumentException("Số điện thoại không được để trống");
-            }
-            var existing = userRepository.findByPhone(normalized);
+            String normalized = StringNormalization.normalizePhone(input.phone());
+            Optional<User> existing = userRepository.findByPhone(normalized);
             if (existing.isPresent() && !existing.get().getId().equals(target.getId())) {
-                throw new DuplicatedException("Số điện thoại đã tồn tại");
+                throw new ResourceDuplicatedException("Phone number already in use");
             }
-            target.setPhone(new Phone(normalized));
+            target.setPhone(Phone.from(normalized));
         }
 
         if (input.addressProvided()) {
-            target.setAddress(input.address() != null ? StringNormalization.trimAndCollapseSpaces(input.address()) : null);
-        }
-
-        if (input.dateOfBirthProvided()) {
-            target.setDateOfBirth(input.dateOfBirth() != null ? new DateOfBirth(input.dateOfBirth()) : null);
+            String normalized = StringNormalization.trimAndCollapseSpaces(input.address());
+            target.setAddress(normalized);
         }
 
         if (input.avatarUrlProvided()) {
             target.setAvatarUrl(resolveAvatarUrl(input.avatarUrl()));
         }
 
-        target.setUpdatedAt(now);
         target.setUpdatedBy(callerId);
         try {
             userRepository.saveAndFlush(target);
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicatedException("Số điện thoại đã tồn tại");
+            throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
         }
 
-        return UserDtoMapper.toUserDto(target);
+        return target.getId();
     }
 
     /**
@@ -134,5 +120,15 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
 
         // null/rỗng = yêu cầu GỠ ảnh; phân biệt được với "không gửi trường" nhờ cờ avatarUrlProvided.
         return AvatarUrlPolicy.normalizeOrThrow(allowedAvatarHosts, rawUrl);
+    }
+
+    private boolean containAtLeastOneField(UpdateProfileCommand command) {
+        if (!command.fullNameProvided()
+                && !command.phoneProvided()
+                && !command.addressProvided()
+                && !command.avatarUrlProvided()) {
+            return false;
+        }
+        return true;
     }
 }

@@ -3,15 +3,14 @@ package com.sep.vox.application.port.input.usecase.auth;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.CacheKey;
-import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.application.shared.CacheKey;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ResetPasswordCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.OneTimePasswordPort;
 import com.sep.vox.application.port.output.PasswordEncoderPort;
-import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
@@ -29,28 +28,31 @@ public class ResetPasswordUseCase implements IUseCase<ResetPasswordCommand, Void
         this.passwordEncoderPort = passwordEncoderPort;
     }
 
+    private static final String PASSWORD_CHANGE_FAIL_MSG = "Password request change failed";
+
     @Override
     @Transactional
     public Void execute(ResetPasswordCommand input) {
-        var command = normalize(input);
+        ResetPasswordCommand command = normalize(input);
 
-        if (!userRepository.existsByEmailAndStatus(command.email(), UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Yêu cầu thay đổi mật khẩu thất bại");
+        if (!userRepository.existsByEmailAndStatusActive(command.email())) {
+            throw new UnauthorizedException(PASSWORD_CHANGE_FAIL_MSG);
         }
-        var key = resetPasswordKey(command); 
-        var otpHash = cacheManagerPort.get(key);
-        if (otpHash == null) {
-            throw new UnauthorizedException("Yêu cầu thay đổi mật khẩu thất bại");
+
+        String key = CacheKey.resetPasswordKey(command.email()); 
+        String otpHash = cacheManagerPort.get(key);
+        if (otpHash == null || otpHash.isBlank()) {
+            throw new UnauthorizedException(PASSWORD_CHANGE_FAIL_MSG);
         }
-        var hashedFromRequest = oneTimePasswordPort.hash(command.otp());
-        if (!otpHash.equals(hashedFromRequest)) {
-            throw new UnauthorizedException("Yêu cầu thay đổi mật khẩu thất bại");
+        String hashedOtpFromReq = oneTimePasswordPort.hash(command.otp());
+        if (!otpHash.equals(hashedOtpFromReq)) {
+            throw new UnauthorizedException(PASSWORD_CHANGE_FAIL_MSG);
         }
         
-        var passwordHash = passwordEncoderPort.hash(command.password());
-        var updatedRows = userRepository.changeUserPassword(command.email(), passwordHash);
-        if (updatedRows == 0) {
-            throw new UnauthorizedException("Yêu cầu thay đổi mật khẩu thất bại");
+        String passwordHash = passwordEncoderPort.hash(command.password());
+        int affectedRows = userRepository.changeUserPassword(command.email(), passwordHash);
+        if (affectedRows == 0) {
+            throw new UnauthorizedException(PASSWORD_CHANGE_FAIL_MSG);
         }
         cacheManagerPort.delete(key);
         return null;
@@ -62,9 +64,5 @@ public class ResetPasswordUseCase implements IUseCase<ResetPasswordCommand, Void
             input.password(), 
             StringNormalization.trimAndCollapseSpaces(input.otp())
         );
-    }
-
-    private String resetPasswordKey(ResetPasswordCommand command) {
-        return CacheKey.RESET_PASSWORD_PREFIX + CacheKey.OTP_PREFIX + command.email();
     }
 }

@@ -12,7 +12,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreatePaymentCheckoutUrlCommand;
@@ -25,6 +24,7 @@ import com.sep.vox.application.response.output.CheckoutAction;
 import com.sep.vox.application.response.output.CreatePaymentLinkCommand;
 import com.sep.vox.application.response.output.PaymentCheckoutResult;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.model.payment.PaymentProvider;

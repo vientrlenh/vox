@@ -29,7 +29,6 @@ import org.springframework.kafka.retrytopic.DltStrategy;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.event.ExamAppealApprovedPayloadV1;
 import com.sep.vox.application.event.ExamAppealPublishedPayloadV1;
 import com.sep.vox.application.event.ExamAppealRejectedPayloadV1;
@@ -52,6 +51,7 @@ import com.sep.vox.application.event.SchoolSubscriptionSuspendedPayloadV1;
 import com.sep.vox.application.event.SchoolSubscriptionUnsuspendedPayloadV1;
 import com.sep.vox.application.port.output.PushNotificationPort;
 import com.sep.vox.application.response.output.PushMessage;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.notification.Notification;
 import com.sep.vox.domain.model.notification.NotificationCategory;

@@ -6,7 +6,6 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.common.CacheKey;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.GetExamScheduleOtpQuery;
@@ -16,6 +15,7 @@ import com.sep.vox.application.port.output.OneTimePasswordPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.examschedule.GetExamScheduleOtpResponse;
+import com.sep.vox.application.shared.CacheKey;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;

@@ -5,11 +5,11 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.ResetPasswordOtpRequestedPayloadV1;
 import com.sep.vox.application.port.input.command.SendResetPasswordOtpCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.OutboxRepository;

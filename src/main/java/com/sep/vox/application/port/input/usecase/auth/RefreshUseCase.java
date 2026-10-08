@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.sep.vox.application.common.StringNormalization;
+
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.RefreshCommand;
@@ -16,6 +16,7 @@ import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.projection.repository.SchoolUserProjectionRepository;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.application.response.output.SessionToken;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
 import com.sep.vox.domain.model.user.User;

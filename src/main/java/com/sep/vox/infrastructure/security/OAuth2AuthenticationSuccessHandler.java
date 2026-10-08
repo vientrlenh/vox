@@ -14,7 +14,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
-import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.domain.model.platform.Platform;
 
@@ -29,16 +28,13 @@ import lombok.extern.slf4j.Slf4j;
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final OAuth2LoginUseCase oAuth2LoginUseCase;
-    private final SessionTokenManagerPort sessionTokenManagerPort;
     private final String returnUrl;
 
     public OAuth2AuthenticationSuccessHandler(
         OAuth2LoginUseCase oAuth2LoginUseCase, 
-        SessionTokenManagerPort sessionTokenManagerPort, 
         @Value("${app.frontend.oauth2-url}") String returnUrl
     ) {
         this.oAuth2LoginUseCase = oAuth2LoginUseCase;
-        this.sessionTokenManagerPort = sessionTokenManagerPort;
         this.returnUrl = returnUrl;
     }
 
@@ -67,15 +63,14 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 user.getAttribute("email_verified"), 
                 user.getAttribute("name"), 
                 user.getAttribute("picture"), 
-                ipAddress(request), 
-                request.getHeader("User-Agent"), 
                 deviceId, 
                 deviceName, 
-                platform
+                platform, 
+                request, 
+                response
             );
 
             LoginResponse data = oAuth2LoginUseCase.execute(command);
-            cookieManagerPort.setCookie(response, REFRESH_TOKEN_KEY_NAME, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
             clearSession(session);
             redirect(response, returnUrl, "token", data.accessToken());
         } catch (IllegalArgumentException e) {
@@ -83,22 +78,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         } catch (Exception e) {
             log.error("OAuth2 login failed: ", e);
             redirect(response, returnUrl, "error", "login_failed");
-        }
-        
-    }
-
-    private String ipAddress(HttpServletRequest request) {
-        var forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank() && !"unknown".equalsIgnoreCase(forwardedFor)) {
-            return forwardedFor.split(",")[0].trim();
-        }
-
-        var realIp = request.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isBlank() && !"unknown".equalsIgnoreCase(realIp)) {
-            return realIp.trim();
-        }
-
-        return request.getRemoteAddr();
+        } 
     }
 
     private void clearSession(HttpSession session) {
@@ -109,7 +89,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     }
 
     private void redirect(HttpServletResponse response, String baseUrl, String param, String value) throws IOException {
-        var url = UriComponentsBuilder.fromUriString(baseUrl)
+        String url = UriComponentsBuilder.fromUriString(baseUrl)
             .queryParam(param, value)
             .encode(StandardCharsets.UTF_8)
             .build()

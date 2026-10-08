@@ -14,9 +14,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.shared.ZoneConstant;

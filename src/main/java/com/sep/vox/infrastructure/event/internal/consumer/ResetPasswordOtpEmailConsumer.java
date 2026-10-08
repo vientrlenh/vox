@@ -16,12 +16,12 @@ import org.springframework.kafka.retrytopic.DltStrategy;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.application.common.CacheKey;
 import com.sep.vox.application.event.ResetPasswordOtpRequestedPayloadV1;
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.MailSendingPort;
 import com.sep.vox.application.port.output.MailTemplatePort;
 import com.sep.vox.application.port.output.OneTimePasswordPort;
+import com.sep.vox.application.shared.CacheKey;
 import com.sep.vox.domain.model.outbox.ProcessedEvent;
 import com.sep.vox.domain.repository.ProcessedEventRepository;
 

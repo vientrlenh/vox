@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,11 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.GoogleTokenLoginCommand;
 import com.sep.vox.application.port.input.command.LoginCommand;
+import com.sep.vox.application.port.input.command.LogoutCommand;
 import com.sep.vox.application.port.input.command.RefreshCommand;
 import com.sep.vox.application.port.input.command.RegisterBySelfDeclaredCommand;
 import com.sep.vox.application.port.input.command.RegisterFromSchoolDirectoryCommand;
 import com.sep.vox.application.port.input.command.ResetPasswordCommand;
 import com.sep.vox.application.port.input.command.SendResetPasswordOtpCommand;
+import com.sep.vox.application.port.input.command.SetUpPasswordCommand;
 import com.sep.vox.application.port.input.command.VerifyRegisterFormOtpCommand;
 import com.sep.vox.application.port.input.usecase.auth.GoogleTokenLoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
@@ -37,6 +38,7 @@ import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.application.response.input.registration.RegisterFromSchoolDirectoryResponse;
 import com.sep.vox.interfaces.rest.dto.request.GoogleTokenLoginRequest;
 import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
+import com.sep.vox.interfaces.rest.dto.request.LogoutRequest;
 import com.sep.vox.interfaces.rest.dto.request.RefreshRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterBySelfDeclaredRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterFromSchoolDirectoryRequest;
@@ -46,12 +48,8 @@ import com.sep.vox.interfaces.rest.dto.request.SetUpPasswordRequest;
 
 import com.sep.vox.interfaces.rest.dto.request.VerifyRegisterFormOtpRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.LogoutCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.SetUpPasswordCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.ResetPasswordCommandMapper;
-
-import com.sep.vox.interfaces.shared.IpAddressReceiver;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -112,9 +110,9 @@ public class RestApiAuthController {
 
     @PostMapping("/setup-password")
     public ResponseEntity<ApiResponse<Void>> setUpPassword(@Valid @RequestBody SetUpPasswordRequest request) {
-        var command = SetUpPasswordCommandMapper.fromRequest(request);
+        SetUpPasswordCommand command = SetUpPasswordRequest.toCommand(request);
         setUpPasswordUseCase.execute(command);
-        var response = ApiResponse.success("Password set up successfully");
+        ApiResponse<Void> response = ApiResponse.success("Password set up successfully");
         return ResponseEntity.ok(response);
     }
 
@@ -131,7 +129,7 @@ public class RestApiAuthController {
     public ResponseEntity<ApiResponse<Void>> sendResetPasswordOtp(@Valid @RequestBody SendResetPasswordOtpRequest request) {
         SendResetPasswordOtpCommand command = SendResetPasswordOtpCommandMapper.fromRequest(request);
         sendResetPasswordOtpUseCase.execute(command);
-        ApiResponse<Void> response = ApiResponse.success("Mã OTP đặt lại mật khẩu đã được gửi");
+        ApiResponse<Void> response = ApiResponse.success("Password reset OTP has been sent successfully");
         return ResponseEntity.ok(response);
     }
 
@@ -139,7 +137,7 @@ public class RestApiAuthController {
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         ResetPasswordCommand command = ResetPasswordCommandMapper.fromRequest(request);
         resetPasswordUseCase.execute(command);
-        ApiResponse<Void> response = ApiResponse.success("Mật khẩu đã thay đổi thành công");
+        ApiResponse<Void> response = ApiResponse.success("Password has been reseted successfully");
         return ResponseEntity.ok(response);
     }
 
@@ -167,7 +165,7 @@ public class RestApiAuthController {
         HttpServletRequest req,
         HttpServletResponse res
     ) {
-        GoogleTokenLoginCommand command = GoogleTokenLoginRequest.toCommand(request, req);
+        GoogleTokenLoginCommand command = GoogleTokenLoginRequest.toCommand(request, req, res);
         LoginResponse data = googleTokenLoginUseCase.execute(command);
 
         ApiResponse<LoginResponse> response = ApiResponse.success("Login successfully", data);
@@ -190,30 +188,11 @@ public class RestApiAuthController {
         response.sendRedirect("/oauth2/authorization/google");
     }
 
-    /**
-     * Thu hồi phiên thiết bị và xoá cookie refresh_token.
-     *
-     * <p>Cố ý KHÔNG có {@code @PreAuthorize}, dù nghe ngược đời với một endpoint đăng xuất.
-     * {@code JwtAuthenticationFilter} nuốt mọi lỗi token và cho request đi tiếp dưới danh nghĩa
-     * anonymous, nên access token hết hạn (15 phút) sẽ bị chặn TRƯỚC khi vào tới đây -- mà phiên
-     * bị bỏ quên, đúng thứ cần đăng xuất nhất, luôn ở trạng thái đó. Bằng chứng thật sự để thu
-     * hồi là cookie refresh_token chứ không phải access token; giữ được access token còn hạn thì
-     * {@link LogoutUseCase} dọn thêm các phiên khác của cùng thiết bị.
-     *
-     * <p>{@code required = false} và LUÔN trả 200: client xoá token trong máy ngay sau lời gọi
-     * này, nên mọi cách hỏng ở đây đều để lại client không còn token trong khi server vẫn giữ
-     * phiên sống. Không có cookie cũng là một lần đăng xuất hợp lệ.
-     *
-     * <p>Endpoint này đọc cookie nên BẮT BUỘC nằm trong CSRF matcher -- xem
-     * {@code SecurityConfig#CSRF_PROTECTED_API_PATHS}.
-     */
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody DeviceIdRequest request, @CookieValue(name = REFRESH_TOKEN_COOKIE_KEY, required = false) String token, HttpServletResponse servletResponse) {
-        var command = LogoutCommandMapper.fromRequest(request, token);
+    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody LogoutRequest request, HttpServletRequest req, HttpServletResponse res) {
+        LogoutCommand command = LogoutRequest.toCommand(request, req, res);
         logoutUseCase.execute(command);
-        cookieManagerPort.clearCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY);
-
-        ApiResponse<Void> response = ApiResponse.success("Đăng xuất thành công");
+        ApiResponse<Void> response = ApiResponse.success("User logged out successfully");
 
         return ResponseEntity.ok(response);
     }

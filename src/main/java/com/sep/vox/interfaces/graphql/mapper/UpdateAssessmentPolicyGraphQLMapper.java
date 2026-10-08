@@ -1,7 +1,7 @@
 package com.sep.vox.interfaces.graphql.mapper;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.UpdateAssessmentPolicyCommand;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateAssessmentPolicyInput;
 
 import java.util.UUID;

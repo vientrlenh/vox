@@ -7,11 +7,11 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.common.RoleConstant;
 import com.sep.vox.application.event.SchoolDebtCapExceededPayloadV1;
 import com.sep.vox.application.event.SchoolDebtClearedPayloadV1;
 import com.sep.vox.application.event.SchoolLockedDueToDebtPayloadV1;
 import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.shared.RoleConstant;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.school.SchoolDebtEvent;

@@ -1,8 +1,8 @@
 package com.sep.vox.interfaces.rest.mapper;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.AddSchoolRubricVersionsCommand;
 import com.sep.vox.application.port.input.command.AddSystemRubricVersionsCommand;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.interfaces.rest.dto.request.AddRubricVersionsRequest; // Có thể đổi tên DTO này thành AddRubricVersionsRequest
 
 import java.util.UUID;

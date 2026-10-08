@@ -2,8 +2,8 @@ package com.sep.vox.interfaces.graphql.mapper;
 
 import java.util.UUID;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.UpdateExamScheduleCommand;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateExamScheduleInput;
 
 public final class UpdateExamScheduleCommandMapper {

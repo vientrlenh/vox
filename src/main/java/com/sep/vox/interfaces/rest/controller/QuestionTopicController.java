@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.sep.vox.application.common.UploadedFile;
 import com.sep.vox.application.port.input.command.AcceptQuestionTopicImportCommand;
 import com.sep.vox.application.port.input.command.DeleteQuestionTopicCommand;
 import com.sep.vox.application.port.input.command.PreviewQuestionTopicImportFromFileCommand;
@@ -35,6 +34,7 @@ import com.sep.vox.application.port.input.usecase.questiontopic.UpdateQuestionTo
 import com.sep.vox.application.port.input.usecase.questiontopic.UpdateQuestionTopicUseCase;
 import com.sep.vox.application.response.input.importfile.PreviewImportResponse;
 import com.sep.vox.application.response.input.questiontopic.CreateQuestionTopicResponse;
+import com.sep.vox.application.shared.UploadedFile;
 import com.sep.vox.domain.dto.QuestionTopicDto;
 import com.sep.vox.interfaces.rest.dto.request.AcceptImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateQuestionTopicRequest;

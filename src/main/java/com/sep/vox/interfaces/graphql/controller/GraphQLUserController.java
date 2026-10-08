@@ -9,13 +9,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 
-import com.sep.vox.application.common.AppPageRequest;
 import com.sep.vox.application.port.input.query.ViewUserDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewUsersQuery;
 import com.sep.vox.application.port.input.usecase.user.UpdateProfileUseCase;
 import com.sep.vox.application.port.input.usecase.user.ViewProfileUseCase;
 import com.sep.vox.application.port.input.usecase.user.ViewUserDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.user.ViewUsersUseCase;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.interfaces.graphql.mapper.UpdateProfileCommandMapper;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.shared.PageResult;

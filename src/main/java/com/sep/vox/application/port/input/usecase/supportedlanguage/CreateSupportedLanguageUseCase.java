@@ -6,13 +6,13 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.mapper.supportedlanguage.CreateSupportedLanguageResponseMapper;
 import com.sep.vox.application.port.input.command.CreateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.supportedlanguage.CreateSupportedLanguageResponse;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.language.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.valueobject.LanguageCode;

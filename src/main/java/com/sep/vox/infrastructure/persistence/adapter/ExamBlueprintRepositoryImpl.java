@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.exam.ExamBlueprint;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.shared.PageResult;

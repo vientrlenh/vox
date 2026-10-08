@@ -1,8 +1,8 @@
 package com.sep.vox.interfaces.graphql.mapper;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.UpdateSchoolRubricVersionCommand;
 import com.sep.vox.application.port.input.command.UpdateSystemRubricVersionCommand;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateRubricVersionInput;
 
 import java.util.UUID;

@@ -3,11 +3,11 @@ package com.sep.vox.application.port.input.usecase.examsession;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.FlagExamSessionCommand;
 import com.sep.vox.application.port.input.service.ExamSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;

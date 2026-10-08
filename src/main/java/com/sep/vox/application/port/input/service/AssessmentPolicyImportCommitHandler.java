@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStrictness;

@@ -1,7 +1,7 @@
 package com.sep.vox.interfaces.rest.mapper;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.CreateSchoolGradeCommand;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolGradeRequest;
 
 import java.util.UUID;

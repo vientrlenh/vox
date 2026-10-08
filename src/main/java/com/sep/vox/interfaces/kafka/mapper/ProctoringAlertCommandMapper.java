@@ -6,8 +6,8 @@ import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.RecordProctoringAlertCommand;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.interfaces.kafka.dto.AlertRaisedEventDto;
 
 public final class ProctoringAlertCommandMapper {

@@ -14,10 +14,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.RoleConstant;
 import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.shared.RoleConstant;
 import com.sep.vox.domain.model.invoice.Invoice;
 import com.sep.vox.domain.model.invoice.InvoiceSourceType;
 import com.sep.vox.domain.model.metering.QuotaType;

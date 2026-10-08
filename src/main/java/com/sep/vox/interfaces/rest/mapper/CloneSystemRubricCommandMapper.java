@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.CloneSystemRubricToSchoolCommand;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.interfaces.rest.dto.request.CloneSystemRubricRequest;
 

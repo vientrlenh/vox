@@ -1,9 +1,10 @@
-package com.sep.vox.application.common;
+package com.sep.vox.application.shared;
 
 public record AppPageRequest(
     int page, 
     int size
 ) {
+    private static final int MAX_PAGE_SIZE = 50;
 
     // Subtract by 1 for repository page queries
     public static AppPageRequest pageRequest(Integer page, Integer size) {
@@ -18,6 +19,9 @@ public record AppPageRequest(
         }
         if (size <= 0) {
             throw new IllegalArgumentException("Page size must be greater than 0");
+        }
+        if (size > MAX_PAGE_SIZE) {
+            throw new IllegalArgumentException("Page size must not be greater than 50");
         }
         return new AppPageRequest(page - 1, size);
     }

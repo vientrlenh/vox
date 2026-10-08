@@ -2,10 +2,10 @@ package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.query.ViewSupportedLanguagesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.mapper.SupportedLanguageDtoMapper;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;

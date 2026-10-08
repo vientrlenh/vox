@@ -10,9 +10,9 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;

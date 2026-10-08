@@ -2,8 +2,8 @@ package com.sep.vox.interfaces.graphql.mapper;
 
 import java.util.UUID;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.UpdateFrameworkVersionCommand;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkVersionInput;
 
 public final class UpdateFrameworkVersionCommandMapper {

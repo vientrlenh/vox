@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.sep.vox.application.common.UploadedFile;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolClassImportFromFileCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolClassUserImportFromFileCommand;
@@ -72,6 +71,7 @@ import com.sep.vox.application.response.input.schooldirectory.CreateSchoolDirect
 import com.sep.vox.application.response.input.schooldirectory.PreviewSchoolDirectoryImportResponse;
 import com.sep.vox.application.response.input.schoolgrade.PreviewSchoolGradeImportResponse;
 import com.sep.vox.application.response.input.schooluser.CreateSchoolUserResponse;
+import com.sep.vox.application.shared.UploadedFile;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassUserImportRequest;
 import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolDirectoryImportRequest;

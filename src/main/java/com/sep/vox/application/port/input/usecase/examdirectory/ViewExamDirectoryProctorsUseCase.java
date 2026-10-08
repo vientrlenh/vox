@@ -3,12 +3,12 @@ package com.sep.vox.application.port.input.usecase.examdirectory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.query.ViewExamDirectoryQuery;
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.ExamDirectoryUserInfo;
 import com.sep.vox.application.projection.repository.ExamDirectoryQueryRepository;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.shared.PageResult;
 

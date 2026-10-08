@@ -7,7 +7,6 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.query.ViewGradingFailureOverviewQuery;
 import com.sep.vox.application.port.input.query.ViewGradingFailureSessionsQuery;
 import com.sep.vox.application.port.input.query.ViewPlatformBusinessHealthQuery;
@@ -46,6 +45,7 @@ import com.sep.vox.application.response.input.dashboard.SchoolGradingFailurePage
 import com.sep.vox.application.response.input.dashboard.SchoolsAtRiskResponse;
 import com.sep.vox.application.response.input.dashboard.SystemAdminDashboardSummaryResponse;
 import com.sep.vox.application.response.input.dashboard.TeacherDashboardSummaryResponse;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller

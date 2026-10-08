@@ -5,12 +5,12 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.mapper.questionbank.CreateQuestionBankResponseMapper;
 import com.sep.vox.application.port.input.command.CreateSystemQuestionBankCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.questionbank.CreateQuestionBankResponse;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.repository.QuestionBankRepository;

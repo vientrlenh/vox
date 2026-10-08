@@ -8,12 +8,12 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.ApproveExamAppealCommand;
 import com.sep.vox.application.port.input.command.AssignExamAppealReviewerCommand;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.shared.DateMapper;
 
 /**
  * Duyệt đơn phúc khảo và tự nhận chấm trong MỘT thao tác.

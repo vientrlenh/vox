@@ -5,10 +5,10 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.RegisterBySelfDeclaredCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormDocument;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;

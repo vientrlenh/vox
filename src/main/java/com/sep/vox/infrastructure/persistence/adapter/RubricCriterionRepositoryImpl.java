@@ -11,7 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.shared.PageResult;

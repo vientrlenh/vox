@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.sep.vox.application.common.UploadedFile;
 import com.sep.vox.application.port.input.command.AcceptQuestionBankImportCommand;
 import com.sep.vox.application.port.input.command.DeleteQuestionBankCommand;
 import com.sep.vox.application.port.input.command.DeleteQuestionBankGradeCommand;
@@ -36,6 +35,7 @@ import com.sep.vox.application.port.input.usecase.questionbank.UpdateQuestionBan
 import com.sep.vox.application.port.input.usecase.questionbank.UpdateQuestionBankUseCase;
 import com.sep.vox.application.response.input.questionbank.CreateQuestionBankResponse;
 import com.sep.vox.application.response.input.questionbank.DeleteQuestionBankResponse;
+import com.sep.vox.application.shared.UploadedFile;
 import com.sep.vox.domain.dto.QuestionBankDto;
 import com.sep.vox.domain.dto.QuestionBankGradeDto;
 import com.sep.vox.interfaces.rest.dto.request.CreateQuestionBankGradeRequest;

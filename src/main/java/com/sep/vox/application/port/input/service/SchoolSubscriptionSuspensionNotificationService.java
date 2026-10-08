@@ -6,10 +6,10 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.common.RoleConstant;
 import com.sep.vox.application.event.SchoolSubscriptionSuspendedPayloadV1;
 import com.sep.vox.application.event.SchoolSubscriptionUnsuspendedPayloadV1;
 import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.shared.RoleConstant;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;

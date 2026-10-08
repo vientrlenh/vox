@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.sep.vox.application.common.UploadedFile;
 import com.sep.vox.application.port.input.command.CloneQuestionCommand;
 import com.sep.vox.application.port.input.command.DeleteQuestionAssetCommand;
 import com.sep.vox.application.port.input.command.DeleteQuestionCollaboratorCommand;
@@ -50,6 +49,7 @@ import com.sep.vox.application.response.input.question.BulkUpdateQuestionStatusR
 import com.sep.vox.application.response.input.question.CreateQuestionResponse;
 import com.sep.vox.application.response.input.question.DeleteQuestionResponse;
 import com.sep.vox.application.response.input.question.UpdateQuestionResponse;
+import com.sep.vox.application.shared.UploadedFile;
 import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.dto.QuestionCollaboratorDto;
 import com.sep.vox.domain.dto.QuestionDto;

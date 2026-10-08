@@ -14,7 +14,6 @@ import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.query.ViewExamSchedulesQuery;
 import com.sep.vox.application.port.input.query.ViewProctorBusySlotsQuery;
 import com.sep.vox.application.port.input.query.ViewStudentBusySlotsQuery;
@@ -25,6 +24,7 @@ import com.sep.vox.application.port.input.usecase.examschedule.ViewProctorBusySl
 import com.sep.vox.application.port.input.usecase.examschedule.ViewStudentBusySlotsUseCase;
 import com.sep.vox.application.response.input.examschedule.ProctorBusySlotResponse;
 import com.sep.vox.application.response.input.examschedule.StudentBusySlotResponse;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.ExamScheduleProctorDto;

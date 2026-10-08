@@ -3,9 +3,9 @@ package com.sep.vox.application.port.input.usecase.schoolclass;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.query.ViewMyClassMembersQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.mapper.SchoolClassUserDtoMapper;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;

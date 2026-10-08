@@ -8,7 +8,7 @@ import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.common.StringNormalization;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.repository.QuestionTopicRepository;

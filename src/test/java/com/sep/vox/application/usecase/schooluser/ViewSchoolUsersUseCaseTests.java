@@ -18,12 +18,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.common.RoleConstant;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.shared.RoleConstant;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.UserStatus;

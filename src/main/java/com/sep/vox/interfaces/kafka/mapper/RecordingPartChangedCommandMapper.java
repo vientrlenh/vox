@@ -3,8 +3,8 @@ package com.sep.vox.interfaces.kafka.mapper;
 import java.util.Locale;
 import java.util.UUID;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.RecordRecordingPartChangedCommand;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.domain.model.exam.ExamRecordingAssemblyStatus;
 import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 import com.sep.vox.interfaces.kafka.dto.RecordingPartChangedEventDto;

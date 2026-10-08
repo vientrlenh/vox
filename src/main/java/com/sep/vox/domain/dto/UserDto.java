@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.user.Gender;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.domain.valueobject.BirthDate;
@@ -22,6 +23,7 @@ public record UserDto(
     LocalDate birthDate, 
     String address, 
     String avatarUrl, 
+    UserStatus status, 
     Instant createdAt, 
     Instant updatedAt 
 ) {
@@ -36,6 +38,7 @@ public record UserDto(
             BirthDate.valueOf(user.getBirthDate()), 
             user.getAddress(), 
             user.getAvatarUrl(), 
+            user.getStatus(), 
             user.getCreatedAt(), 
             user.getUpdatedAt()
         );

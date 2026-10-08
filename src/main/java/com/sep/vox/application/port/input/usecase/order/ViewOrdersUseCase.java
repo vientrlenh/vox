@@ -3,9 +3,9 @@ package com.sep.vox.application.port.input.usecase.order;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.query.ViewOrdersQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.OrderDto;
 import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.model.order.OrderType;

@@ -17,7 +17,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.common.CacheKey;
 import com.sep.vox.application.exception.ServiceUnavailableException;
 import com.sep.vox.application.port.input.command.VerifyExamScheduleOtpCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
@@ -27,6 +26,7 @@ import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionS
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.HealthCheckPort;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.shared.CacheKey;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;

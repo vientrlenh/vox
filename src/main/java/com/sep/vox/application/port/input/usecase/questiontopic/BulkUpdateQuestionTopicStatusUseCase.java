@@ -11,12 +11,12 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.command.BulkUpdateQuestionScopeStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.question.BulkUpdateQuestionScopeStatusFailure;
 import com.sep.vox.application.response.input.question.BulkUpdateQuestionTopicStatusResponse;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.mapper.QuestionTopicDtoMapper;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;

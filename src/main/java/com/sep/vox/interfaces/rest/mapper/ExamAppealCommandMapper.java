@@ -2,11 +2,11 @@ package com.sep.vox.interfaces.rest.mapper;
 
 import java.util.UUID;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.ApproveExamAppealCommand;
 import com.sep.vox.application.port.input.command.AssignExamAppealReviewerCommand;
 import com.sep.vox.application.port.input.command.CreateExamAppealCommand;
 import com.sep.vox.application.port.input.command.RejectExamAppealCommand;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.interfaces.rest.dto.request.ApproveExamAppealRequest;
 import com.sep.vox.interfaces.rest.dto.request.AssignExamAppealReviewerRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamAppealRequest;

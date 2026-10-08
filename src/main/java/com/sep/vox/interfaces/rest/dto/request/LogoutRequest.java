@@ -1,0 +1,23 @@
+package com.sep.vox.interfaces.rest.dto.request;
+
+import com.sep.vox.application.port.input.command.LogoutCommand;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record LogoutRequest(
+    @NotBlank(message = "Device ID is required")
+    @Size(max = 255, message = "Device ID must not exceed 255 characters")
+    String deviceId
+) {
+    
+    public static LogoutCommand toCommand(LogoutRequest request, HttpServletRequest req, HttpServletResponse res) {
+        return new LogoutCommand(
+            request.deviceId, 
+            req, 
+            res
+        );
+    }
+}

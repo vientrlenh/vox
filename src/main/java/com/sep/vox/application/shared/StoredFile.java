@@ -1,4 +1,4 @@
-package com.sep.vox.application.common;
+package com.sep.vox.application.shared;
 
 public record StoredFile(
     String key,

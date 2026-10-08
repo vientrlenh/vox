@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewQuestionStatusCountsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -15,6 +14,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.QuestionStatusCountInfo;
 import com.sep.vox.application.projection.repository.QuestionQueryRepository;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 

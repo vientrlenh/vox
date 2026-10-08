@@ -11,8 +11,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.output.PasswordEncoderPort;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.domain.model.user.Gender;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserRole;

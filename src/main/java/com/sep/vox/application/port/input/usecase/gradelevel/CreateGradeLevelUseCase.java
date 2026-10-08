@@ -1,12 +1,12 @@
 package com.sep.vox.application.port.input.usecase.gradelevel;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateGradeLevelCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.model.user.UserStatus;

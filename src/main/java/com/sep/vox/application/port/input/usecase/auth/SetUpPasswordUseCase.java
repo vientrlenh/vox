@@ -5,13 +5,13 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.SetUpPasswordCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.PasswordEncoderPort;
 import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
 import com.sep.vox.domain.repository.UserRepository;

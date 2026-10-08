@@ -7,11 +7,11 @@ import java.time.format.DateTimeFormatter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.query.ExportExamScoresQuery;
 import com.sep.vox.application.port.input.service.ExamScoreExportSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.ExamScoreRowInfo;
+import com.sep.vox.application.shared.DateMapper;
 
 /**
  * Xuất bảng điểm kỳ thi ra CSV.

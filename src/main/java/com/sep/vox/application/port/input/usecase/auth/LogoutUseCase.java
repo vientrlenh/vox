@@ -10,13 +10,13 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.command.LogoutCommand;
 import com.sep.vox.application.port.input.service.AuthService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.RefreshTokenProjectionRepository;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
 
 @Service

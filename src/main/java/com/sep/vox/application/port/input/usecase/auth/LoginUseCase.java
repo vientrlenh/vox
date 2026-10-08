@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.sep.vox.application.common.StringNormalization;
+
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.LoginCommand;
 import com.sep.vox.application.port.input.service.AuthService;
@@ -17,6 +17,7 @@ import com.sep.vox.application.projection.repository.SchoolUserProjectionReposit
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.output.AuthenticatedInfo;
 import com.sep.vox.application.response.output.SessionToken;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.repository.UserRepository;

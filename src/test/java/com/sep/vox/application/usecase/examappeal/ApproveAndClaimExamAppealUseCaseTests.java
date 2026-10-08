@@ -16,7 +16,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.ApproveExamAppealCommand;
 import com.sep.vox.application.port.input.command.AssignExamAppealReviewerCommand;
@@ -25,6 +24,7 @@ import com.sep.vox.application.port.input.service.ExamAppealAccessService.Appeal
 import com.sep.vox.application.port.input.usecase.examappeal.ApproveAndClaimExamAppealUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.ApproveExamAppealUseCase;
 import com.sep.vox.application.port.input.usecase.examappeal.AssignExamAppealReviewerUseCase;
+import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;

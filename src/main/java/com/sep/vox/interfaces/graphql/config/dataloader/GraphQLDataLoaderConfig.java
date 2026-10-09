@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.config.dataloader;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -14,6 +15,7 @@ import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.interfaces.graphql.dto.key.SchoolClassPageKey;
 
 import reactor.core.publisher.Mono;
 
@@ -43,5 +45,7 @@ public class GraphQLDataLoaderConfig {
                     .collect(Collectors.toMap(s -> s.id(), Function.identity()))
             )
         );
+
+        registry.<SchoolClassPageKey, List<SchoolClassDto>
     }
 }

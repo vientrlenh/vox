@@ -19,7 +19,6 @@ import com.sep.vox.application.port.input.usecase.scoringrule.DeleteSchoolScorin
 import com.sep.vox.application.port.input.usecase.scoringrule.DeleteSystemScoringRuleUseCase;
 import com.sep.vox.interfaces.rest.dto.request.CreateScoringRuleRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.ScoringRuleCommandMapper;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;

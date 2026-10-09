@@ -4,13 +4,15 @@ import com.sep.vox.application.port.input.command.VerifyRegisterFormOtpCommand;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public record VerifyRegisterFormOtpRequest(
-    @NotBlank(message = "Email không được để trống")
-    @Email(message = "Định dạng email không hợp lệ")
+    @NotBlank(message = "Email is required")
+    @Size(max = 255, message = "Email must not exceed 255 characters")
+    @Email(message = "Invalid email address")
     String email, 
 
-    @NotBlank(message = "Mã xác thực không được để trống")
+    @NotBlank(message = "Otp is required")
     String otp
 ) {
     

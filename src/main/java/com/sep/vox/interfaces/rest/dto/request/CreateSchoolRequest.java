@@ -1,49 +1,60 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
 
 public record CreateSchoolRequest(
     UUID schoolDirectoryId, 
 
-    @Size(max = 100, message = "Mã trường không được vượt quá 100 ký tự")
+    @Size(max = 100, message = "School code must not exceed 100 characters")
     String schoolCode, 
 
-    @Size(max = 255, message = "Tên trường không được vượt quá 255 ký tự")
+    @Size(max = 255, message = "School name must not exceed 255 characters")
     String schoolName, 
 
-    @Size(max = 512, message = "Địa chỉ trường không được vượt quá 512 ký tự")
-    String schoolAddress, 
+    UUID schoolWardId, 
 
-    @Size(max = 100, message = "Tên miền của trường không được vượt quá 100 ký tự")
+    UUID schoolCityId, 
+
+    UUID schoolProvinceId,
+
+    @Size(max = 512, message = "School street address must not exceed 512 characters")
+    String schoolStreetAddress, 
+
+    @Size(max = 100, message = "School domain must not exceed 100 characters")
     String schoolDomain, 
 
-    @NotNull(message = "Số học sinh trong trường không được để trống")
-    @Min(value = 1, message = "Số lượng học sinh không được nhỏ hơn 1")
+    @NotNull(message = "Number of school student is required")
+    @Min(value = 1, message = "Number of student must not lower than 1")
+    @Max(value = Integer.MAX_VALUE, message = "Number of student must not greater than " + Integer.MAX_VALUE)
     Integer studentCount, 
 
-    @NotBlank(message = "Email của quản trị viên nhà trường không được để trống")
-    @Size(max = 255, message = "Email của quản trị viên nhà trường không được vượt quá 255 ký tự")
+    @NotBlank(message = "School admin email is required")
+    @Size(max = 255, message = "School admin email must not exceed 255 characters")
     String adminEmail, 
 
-    @Size(max = 20, message = "Số điện thoại của quản trị viên nhà trường không được vượt quá 20 ký tự")
+    @Size(max = 20, message = "School admin phone number must not exceed 20 characters")
     String adminPhone, 
 
-    @NotBlank(message = "Tên đầy đủ của quản trị viên nhà trường không được để trống")
-    @Size(max = 255, message = "Tên đầy đủ của quản trị viên nhà trường không được vượt quá 255 ký tự")
+    @NotBlank(message = "School admin full name is required")
+    @Size(max = 255, message = "School admin full name must not exceed 255 characters")
     String adminFullName, 
 
-    @NotBlank(message = "Ngày tháng năm sinh của quản trị viên nhà trường không được để trống")
-    String adminDateOfBirth, 
+    @NotNull(message = "School admin birth date is required")
+    @Past(message = "School admin birth date must be in the past")
+    LocalDate adminBirthDate, 
 
-    @Size(max = 255, message = "Địa chỉ của quản trị viên nhà trường không được vượt quá 255 ký tự")
+    @Size(max = 512, message = "School admin address must not exceed 512 characters")
     String adminAddress, 
 
-    @Size(max = 4096, message = "Url ảnh đại diện của quản trị viên nhà trường không được vượt quá 4096 ký tự")
+    @Size(max = 4096, message = "School admin avatar url must not exceed 4096 characters")
     String adminAvatarUrl
 ) {
     

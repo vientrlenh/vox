@@ -45,10 +45,6 @@ import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionBankRequest;
 import com.sep.vox.interfaces.rest.dto.request.BulkUpdateQuestionScopeStatusRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionBankStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.CreateQuestionBankCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateQuestionBankGradeCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateQuestionBankCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateQuestionBankStatusCommandMapper;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -41,9 +41,6 @@ import com.sep.vox.interfaces.rest.dto.request.CreateQuestionTopicRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionTopicRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionTopicStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.CreateQuestionTopicCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateQuestionTopicCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateQuestionTopicStatusCommandMapper;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

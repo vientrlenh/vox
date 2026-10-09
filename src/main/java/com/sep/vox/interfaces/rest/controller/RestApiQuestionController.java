@@ -68,16 +68,6 @@ import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionCollaboratorRequest
 import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateQuestionStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.AcceptQuestionImportCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.BulkUpdateQuestionStatusCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateQuestionAssetCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateQuestionCollaboratorCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateQuestionCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateQuestionAssetCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateQuestionCollaboratorCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateQuestionCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateQuestionStatusCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpsertQuestionEvaluationGuideCommandMapper;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -69,23 +69,6 @@ import com.sep.vox.interfaces.rest.dto.request.CreateSystemRubricCriteriaRequest
 import com.sep.vox.interfaces.rest.dto.request.CreateSystemRubricRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSystemRubricResultBandsRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.AcceptRubricCriterionImportCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.AcceptRubricResultBandImportCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.AcceptRubricVersionImportCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.AddRubricVersionsCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.ChangeRubricVersionStatusCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CloneSystemRubricCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateSchoolRubricCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateSchoolRubricCriteriaCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateSchoolRubricResultBandsCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateSystemRubricCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateSystemRubricCriteriaCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateSystemRubricResultBandsCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.DeleteSchoolRubricCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.DeleteSystemRubricCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.PreviewRubricCriterionImportCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.PreviewRubricResultBandImportCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.PreviewRubricVersionImportFromFileCommandMapper;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;

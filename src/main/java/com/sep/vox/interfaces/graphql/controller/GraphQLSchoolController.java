@@ -64,6 +64,7 @@ import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySc
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersForRequesterUseCase;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
 import com.sep.vox.application.response.input.schooluser.UpdateSchoolUserResponse;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.dto.SchoolDirectoryDto;
@@ -76,6 +77,8 @@ import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.shared.CursorPage;
 import com.sep.vox.domain.shared.PageResult;
+import com.sep.vox.interfaces.graphql.dto.key.SchoolClassPageKey;
+import com.sep.vox.interfaces.graphql.dto.key.SchoolUserPageKey;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateGradeLevelRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolGradeRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolRequest;
@@ -123,10 +126,6 @@ public class GraphQLSchoolController {
     private final ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
     private final ListSchoolsWithOnGoingExamUseCase listSchoolsWithOnGoingExamUseCase;
 
-
-    // schoolDebtEvents đã chuyển sang SchoolBalanceController: nợ là mặt trái của ví trường -- số dư
-    // âm CHÍNH LÀ khoản nợ -- nên nó thuộc cùng nhóm với sao kê ví, không phải với lớp học và phòng thi.
-
     @QueryMapping(name = "schools")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<SchoolDto> schools(
@@ -134,10 +133,8 @@ public class GraphQLSchoolController {
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
             @Argument(name = "isActive") Boolean isActive) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
-        }
-        var query = new ViewSchoolsQuery(page, size, search, isActive);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        ViewSchoolsQuery query = new ViewSchoolsQuery(pageRequest, search, isActive);
         return viewSchoolsUseCase.execute(query);
     }
 
@@ -145,22 +142,24 @@ public class GraphQLSchoolController {
     @SchemaMapping(typeName = "School", field = "classes")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public CompletableFuture<List<SchoolClassDto>> classes(SchoolDto school, @Argument(name = "page") Integer page, @Argument(name = "size") Integer size, DataFetchingEnvironment env) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích cỡ yêu cầu không hợp lệ");
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        DataLoader<SchoolClassPageKey, List<SchoolClassDto>> loader = env.getDataLoader("schoolClassPageBySchoolId");
+        if (loader == null) {
+            throw new IllegalStateException("Dataloader for retrieving school classes from school id is not found");
         }
-        DataLoader<SchoolClassesKey, List<SchoolClassDto>> loader = env.getDataLoader("schoolClassesBySchool");
-        return loader.load(new SchoolClassesKey(school.id(), page, size));
+        return loader.load(new SchoolClassPageKey(school.id(), pageRequest));
     }
 
 
     @SchemaMapping(typeName = "School", field = "users")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public CompletableFuture<List<SchoolUserDto>> schoolUsers(SchoolDto school, @Argument(name = "page") Integer page, @Argument(name = "size") Integer size, DataFetchingEnvironment env) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích cỡ yêu cầu không hợp lệ");
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        DataLoader<SchoolUserPageKey, List<SchoolUserDto>> loader = env.getDataLoader("schoolUserPageBySchoolId");
+        if (loader == null) {
+            throw new IllegalStateException("Dataloader for retrieving school users from school is not found");
         }
-        DataLoader<SchoolUsersKey, List<SchoolUserDto>> loader = env.getDataLoader("schoolUsersBySchool");
-        return loader.load(new SchoolUsersKey(school.id(), page, size));
+        return loader.load(new SchoolUserPageKey(school.id(), pageRequest));
     }
 
 
@@ -175,9 +174,7 @@ public class GraphQLSchoolController {
             @Argument(name = "roleCode") String roleCode,
             @Argument(name = "status") String status,
             @Argument(name = "excludeClassId") UUID excludeClassId) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(
             schoolId, page, size, search, roleId, roleCode, status, excludeClassId));
     }
@@ -266,13 +263,6 @@ public class GraphQLSchoolController {
     public CompletableFuture<SchoolGradeDto> schoolGrade(SchoolClassDto schoolClass, DataFetchingEnvironment env) {
         DataLoader<UUID, SchoolGradeDto> loader = env.getDataLoader("schoolGradeByClass");
         return loader.load(schoolClass.schoolGradeId());
-    }
-
-    @SchemaMapping(typeName = "SchoolClass", field = "language")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public CompletableFuture<SupportedLanguageDto> language(SchoolClassDto schoolClass, DataFetchingEnvironment env) {
-        DataLoader<UUID, SupportedLanguageDto> loader = env.getDataLoader("supportedLanguageByClass");
-        return loader.load(schoolClass.languageId());
     }
 
     @QueryMapping(name = "schoolClassUsers")

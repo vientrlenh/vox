@@ -43,7 +43,7 @@ import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;
 
-@Controller("graphqlGradingController")
+@Controller
 public class GradingController {
 
     private final ViewGradingAssignmentsUseCase viewGradingAssignmentsUseCase;

@@ -29,5 +29,5 @@ public interface UserRepository {
     int changeUserPassword(String email, String passwordHash);
     boolean existsByIdAndStatus(UUID id, UserStatus status);
     boolean existsByPhone(String phone);
-    PageResult<User> findAll(int pageNumber, int size);
+    PageResult<User> findAll(int page, int size);
 }

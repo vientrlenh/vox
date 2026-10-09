@@ -24,21 +24,15 @@ import com.sep.vox.domain.dto.PaymentDto;
 import com.sep.vox.domain.shared.PageResult;
 
 import graphql.schema.DataFetchingEnvironment;
+import lombok.RequiredArgsConstructor;
 
-@Controller("graphqlOrderController")
+@Controller
+@RequiredArgsConstructor 
 public class OrderController {
 
     private final ViewMySchoolOrdersUseCase viewMySchoolOrdersUseCase;
     private final ViewOrdersUseCase viewOrdersUseCase;
     private final ViewOrderDetailsUseCase viewOrderDetailsUseCase;
-
-    public OrderController(
-            ViewMySchoolOrdersUseCase viewMySchoolOrdersUseCase,
-            ViewOrdersUseCase viewOrdersUseCase, ViewOrderDetailsUseCase viewOrderDetailsUseCase) {
-        this.viewMySchoolOrdersUseCase = viewMySchoolOrdersUseCase;
-        this.viewOrdersUseCase = viewOrdersUseCase;
-        this.viewOrderDetailsUseCase = viewOrderDetailsUseCase;
-    }
 
     @QueryMapping(name = "myOrders")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")

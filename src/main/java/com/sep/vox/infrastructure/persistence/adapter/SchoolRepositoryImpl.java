@@ -6,25 +6,26 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.shared.PageResult;
+import com.sep.vox.infrastructure.persistence.entity.SchoolJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Repository
+@RequiredArgsConstructor 
 public class SchoolRepositoryImpl implements SchoolRepository {
 
     private final SpringDataSchoolRepository springDataSchoolRepository;
-
-    public SchoolRepositoryImpl(SpringDataSchoolRepository springDataSchoolRepository) {
-        this.springDataSchoolRepository = springDataSchoolRepository;
-    }
-
     @Override
     public Optional<School> findById(UUID id) {
         return springDataSchoolRepository.findById(id)
@@ -39,33 +40,36 @@ public class SchoolRepositoryImpl implements SchoolRepository {
 
     @Override
     public List<School> findByDomain(String domain) {
-        return springDataSchoolRepository.findByDomain(domain).stream()
-            .map(entity -> SchoolMapper.toDomain(entity))
+        return springDataSchoolRepository.findByDomain(domain)
+            .stream()
+            .map(SchoolMapper::toDomain)
             .toList();
     }
 
     @Override
     public PageResult<School> findAll(int page, int size, String search, Boolean isActive) {
-        var pageRequest = PageRequest.of(page - 1, size);
-        var pattern = StringNormalization.toLikePattern(search);
-        var pageable = isActive != null
+        Pageable pageRequest = PageRequest.of(page, size);
+        String pattern = StringNormalization.toLikePattern(search);
+        Page<SchoolJpaEntity> pageable = isActive != null
             ? springDataSchoolRepository.findAllBySearchAndIsActive(pattern, isActive, pageRequest)
             : springDataSchoolRepository.findAllBySearch(pattern, pageRequest);
-        return new PageResult<>(
-            pageable.getContent().stream()
-                .map(SchoolMapper::toDomain)
-                .toList(),
-            pageable.getNumber() + 1,
-            pageable.getSize(),
-            pageable.getTotalElements(),
+        List<School> schools = pageable.getContent()
+                                        .stream()
+                                        .map(SchoolMapper::toDomain)
+                                        .toList();
+        return PageResult.fromRepository(
+            schools, 
+            page, 
+            size, 
+            pageable.getTotalElements(), 
             pageable.getTotalPages()
         );
     }
 
     @Override
     public School save(School school) {
-        var entity = SchoolMapper.toJpa(school);
-        var saved = springDataSchoolRepository.save(entity);
+        SchoolJpaEntity entity = SchoolMapper.toJpa(school);
+        SchoolJpaEntity saved = springDataSchoolRepository.save(entity);
         return SchoolMapper.toDomain(saved);
     }
 

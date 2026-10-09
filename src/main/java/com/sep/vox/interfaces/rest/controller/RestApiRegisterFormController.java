@@ -19,20 +19,17 @@ import com.sep.vox.interfaces.rest.mapper.ApproveRegisterFormCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.RejectRegisterFormCommandMapper;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
-@RestController("restRegisterFormController")
-@RequestMapping("/api/v1/register-forms")
-public class RegisterFormController {
+@RestController 
+@RequestMapping("/api/v1/register-forms/{id}")
+@RequiredArgsConstructor 
+public class RestApiRegisterFormController {
 
     private final ApproveRegisterFormUseCase approveRegisterFormUseCase;
     private final RejectRegisterFormUseCase rejectRegisterFormUseCase;
 
-    public RegisterFormController(ApproveRegisterFormUseCase approveRegisterFormUseCase, RejectRegisterFormUseCase rejectRegisterFormUseCase) {
-        this.approveRegisterFormUseCase = approveRegisterFormUseCase;
-        this.rejectRegisterFormUseCase = rejectRegisterFormUseCase;
-    }
-    
-    @PostMapping("/{id}/approve")
+    @PostMapping("/approve")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Object>> approve(@PathVariable("id") UUID id, @Valid @RequestBody ApproveRegisterFormRequest request) {
         var command = ApproveRegisterFormCommandMapper.fromRequest(id, request);
@@ -42,7 +39,7 @@ public class RegisterFormController {
     }
 
 
-    @PostMapping("/{id}/reject")
+    @PostMapping("/reject")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Object>> reject(@PathVariable("id") UUID id, @Valid @RequestBody RejectRegisterFormRequest request) {
         var command = RejectRegisterFormCommandMapper.fromRequest(id, request);

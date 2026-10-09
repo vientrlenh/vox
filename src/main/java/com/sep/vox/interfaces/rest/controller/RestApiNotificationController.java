@@ -28,7 +28,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/notifications")
 @RequiredArgsConstructor 
-public class NotificationController {
+public class RestApiNotificationController {
     
     private final CreateNotificationDeviceUseCase createNotificationDeviceUseCase;
     private final DeleteNotificationDeviceUseCase deleteNotificationDeviceUseCase;

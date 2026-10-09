@@ -23,6 +23,7 @@ import com.sep.vox.interfaces.rest.mapper.ScoringRuleCommandMapper;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 // API quản lý Scoring Rule (luật tự động chấm/phạt điểm khi phát hiện vi phạm) gắn với 1 Assessment Policy
 // (hệ thống hoặc trường học). ScoringRule luôn là con của đúng 1 Policy, không tồn tại độc lập.
@@ -33,23 +34,13 @@ import jakarta.validation.Valid;
 //   - mutation updateSystemScoringRule / updateSchoolScoringRule
 @RestController
 @RequestMapping("/api/v1/assessment-policies")
-public class ScoringRuleController {
+@RequiredArgsConstructor 
+public class RestApiScoringRuleController {
 
     private final CreateSystemScoringRuleUseCase createSystemScoringRuleUseCase;
     private final CreateSchoolScoringRuleUseCase createSchoolScoringRuleUseCase;
     private final DeleteSystemScoringRuleUseCase deleteSystemScoringRuleUseCase;
     private final DeleteSchoolScoringRuleUseCase deleteSchoolScoringRuleUseCase;
-
-    public ScoringRuleController(
-            CreateSystemScoringRuleUseCase createSystemScoringRuleUseCase,
-            CreateSchoolScoringRuleUseCase createSchoolScoringRuleUseCase,
-            DeleteSystemScoringRuleUseCase deleteSystemScoringRuleUseCase,
-            DeleteSchoolScoringRuleUseCase deleteSchoolScoringRuleUseCase) {
-        this.createSystemScoringRuleUseCase = createSystemScoringRuleUseCase;
-        this.createSchoolScoringRuleUseCase = createSchoolScoringRuleUseCase;
-        this.deleteSystemScoringRuleUseCase = deleteSystemScoringRuleUseCase;
-        this.deleteSchoolScoringRuleUseCase = deleteSchoolScoringRuleUseCase;
-    }
 
     // Tạo mới 1 Scoring Rule cho Assessment Policy hệ thống.
     // Chỉ tạo được khi Policy đang DRAFT (tránh thay đổi luật chấm điểm ngầm khi Policy đã PUBLISHED đang chấm bài thi thật).

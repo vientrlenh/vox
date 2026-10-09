@@ -15,17 +15,14 @@ import com.sep.vox.interfaces.rest.dto.request.CreatePaymentCheckoutUrlRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/payments")
-public class PaymentController {
+@RequiredArgsConstructor 
+public class RestApiPaymentController {
 
     private final CreatePaymentCheckoutUrlUseCase createPaymentCheckoutUrlUseCase;
-
-    public PaymentController(CreatePaymentCheckoutUrlUseCase createPaymentCheckoutUrlUseCase) {
-        this.createPaymentCheckoutUrlUseCase = createPaymentCheckoutUrlUseCase;
-    }
-
     /**
      * POST chứ không phải GET dù tên nghe như một phép đọc: mỗi lần gọi sẽ GHI một dòng
      * payment_records và gọi sang cổng để mở một phiên thanh toán thật. GET phải là thao tác an toàn

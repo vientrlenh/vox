@@ -48,8 +48,6 @@ import com.sep.vox.interfaces.rest.dto.request.SetUpPasswordRequest;
 
 import com.sep.vox.interfaces.rest.dto.request.VerifyRegisterFormOtpRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.ResetPasswordCommandMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -127,7 +125,7 @@ public class RestApiAuthController {
 
     @PostMapping("/reset-password/otp")
     public ResponseEntity<ApiResponse<Void>> sendResetPasswordOtp(@Valid @RequestBody SendResetPasswordOtpRequest request) {
-        SendResetPasswordOtpCommand command = SendResetPasswordOtpCommandMapper.fromRequest(request);
+        SendResetPasswordOtpCommand command = SendResetPasswordOtpRequest.toCommand(request);
         sendResetPasswordOtpUseCase.execute(command);
         ApiResponse<Void> response = ApiResponse.success("Password reset OTP has been sent successfully");
         return ResponseEntity.ok(response);
@@ -135,7 +133,7 @@ public class RestApiAuthController {
 
     @PatchMapping("/reset-password")
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        ResetPasswordCommand command = ResetPasswordCommandMapper.fromRequest(request);
+        ResetPasswordCommand command = ResetPasswordRequest.toCommand(request);
         resetPasswordUseCase.execute(command);
         ApiResponse<Void> response = ApiResponse.success("Password has been reseted successfully");
         return ResponseEntity.ok(response);

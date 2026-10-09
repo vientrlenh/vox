@@ -80,10 +80,12 @@ import com.sep.vox.interfaces.rest.mapper.UpdateQuestionStatusCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpsertQuestionEvaluationGuideCommandMapper;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/questions")
-public class QuestionController {
+@RequiredArgsConstructor 
+public class RestApiQuestionController {
 
     private final CreateSystemQuestionBankQuestionUseCase createQuestionUseCase;
     private final UpdateQuestionUseCase updateQuestionUseCase;
@@ -103,45 +105,6 @@ public class QuestionController {
     private final PreviewQuestionImportFromFileUseCase previewQuestionImportFromFileUseCase;
     private final AcceptQuestionImportUseCase acceptQuestionImportUseCase;
     private final QuestionSpreadsheetService questionSpreadsheetService;
-
-    public QuestionController(
-            CreateSystemQuestionBankQuestionUseCase createQuestionUseCase,
-            UpdateQuestionUseCase updateQuestionUseCase,
-            CloneQuestionUseCase cloneQuestionUseCase,
-            UpdateQuestionStatusUseCase updateQuestionStatusUseCase,
-            DeleteQuestionUseCase deleteQuestionUseCase,
-            CreateQuestionCollaboratorUseCase createQuestionCollaboratorUseCase,
-            UpdateQuestionCollaboratorUseCase updateQuestionCollaboratorUseCase,
-            DeleteQuestionCollaboratorUseCase deleteQuestionCollaboratorUseCase,
-            CreateQuestionAssetUseCase createQuestionAssetUseCase,
-            UpdateQuestionAssetUseCase updateQuestionAssetUseCase,
-            DeleteQuestionAssetUseCase deleteQuestionAssetUseCase,
-            RegenerateQuestionAssetAnalysisUseCase regenerateQuestionAssetAnalysisUseCase,
-            GetQuestionAssetUploadUrlUseCase getQuestionAssetUploadUrlUseCase,
-            UpsertQuestionEvaluationGuideUseCase upsertQuestionEvaluationGuideUseCase,
-            BulkUpdateQuestionStatusUseCase bulkUpdateQuestionStatusUseCase,
-            PreviewQuestionImportFromFileUseCase previewQuestionImportFromFileUseCase,
-            AcceptQuestionImportUseCase acceptQuestionImportUseCase,
-            QuestionSpreadsheetService questionSpreadsheetService) {
-        this.createQuestionUseCase = createQuestionUseCase;
-        this.updateQuestionUseCase = updateQuestionUseCase;
-        this.cloneQuestionUseCase = cloneQuestionUseCase;
-        this.updateQuestionStatusUseCase = updateQuestionStatusUseCase;
-        this.deleteQuestionUseCase = deleteQuestionUseCase;
-        this.createQuestionCollaboratorUseCase = createQuestionCollaboratorUseCase;
-        this.updateQuestionCollaboratorUseCase = updateQuestionCollaboratorUseCase;
-        this.deleteQuestionCollaboratorUseCase = deleteQuestionCollaboratorUseCase;
-        this.createQuestionAssetUseCase = createQuestionAssetUseCase;
-        this.updateQuestionAssetUseCase = updateQuestionAssetUseCase;
-        this.deleteQuestionAssetUseCase = deleteQuestionAssetUseCase;
-        this.regenerateQuestionAssetAnalysisUseCase = regenerateQuestionAssetAnalysisUseCase;
-        this.getQuestionAssetUploadUrlUseCase = getQuestionAssetUploadUrlUseCase;
-        this.upsertQuestionEvaluationGuideUseCase = upsertQuestionEvaluationGuideUseCase;
-        this.bulkUpdateQuestionStatusUseCase = bulkUpdateQuestionStatusUseCase;
-        this.previewQuestionImportFromFileUseCase = previewQuestionImportFromFileUseCase;
-        this.acceptQuestionImportUseCase = acceptQuestionImportUseCase;
-        this.questionSpreadsheetService = questionSpreadsheetService;
-    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")

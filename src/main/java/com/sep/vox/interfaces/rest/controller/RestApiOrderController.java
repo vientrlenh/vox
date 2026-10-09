@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/orders")
 @RequiredArgsConstructor 
-public class OrderController {
+public class RestApiOrderController {
 
     private final CreateSubscriptionOrderUseCase createSubscriptionOrderUseCase;
     private final CreateTopUpOrderUseCase createTopUpOrderUseCase;

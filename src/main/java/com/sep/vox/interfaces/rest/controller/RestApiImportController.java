@@ -16,15 +16,14 @@ import com.sep.vox.interfaces.rest.dto.request.RejectImportSessionRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.RejectImportSessionCommandMapper;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/v1/imports")
-public class ImportController {
+@RequiredArgsConstructor 
+public class RestApiImportController {
 
     private final RejectImportSessionUseCase rejectImportSessionUseCase;
-
-    public ImportController(RejectImportSessionUseCase rejectImportSessionUseCase) {
-        this.rejectImportSessionUseCase = rejectImportSessionUseCase;
-    }
 
     @PostMapping("/{sessionId}/reject")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")

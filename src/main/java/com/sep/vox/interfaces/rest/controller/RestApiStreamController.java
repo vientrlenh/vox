@@ -17,18 +17,15 @@ import com.sep.vox.interfaces.rest.mapper.IssueMonitorTokenCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.IssueStudentStreamTokenCommandMapper;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/streams")
-public class StreamController {
+@RequiredArgsConstructor 
+public class RestApiStreamController {
     
     private final IssueStudentStreamTokenUseCase issueStudentStreamTokenUseCase;
     private final IssueMonitorTokenUseCase issueMonitorTokenUseCase;
-
-    public StreamController(IssueStudentStreamTokenUseCase issueStudentStreamTokenUseCase, IssueMonitorTokenUseCase issueMonitorTokenUseCase) {
-        this.issueStudentStreamTokenUseCase = issueStudentStreamTokenUseCase; 
-        this.issueMonitorTokenUseCase = issueMonitorTokenUseCase;
-    }
 
     @PostMapping("/student/token")
     @PreAuthorize("hasRole('STUDENT')")

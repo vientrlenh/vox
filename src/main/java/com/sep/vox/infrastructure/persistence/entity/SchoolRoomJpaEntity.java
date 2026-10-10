@@ -32,7 +32,7 @@ public class SchoolRoomJpaEntity {
     @Column(name = "school_id", nullable = false, updatable = false)
     private UUID schoolId;
     
-    @Column(name = "code", nullable = false, updatable = false, length = 50)
+    @Column(name = "code", nullable = false, updatable = false, length = 100)
     private String code;
 
     @Column(name = "name", nullable = false, length = 255)

@@ -18,11 +18,15 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
+import com.sep.vox.application.port.input.command.DeleteSchoolClassUserCommand;
+import com.sep.vox.application.port.input.command.DeleteSchoolCommand;
+import com.sep.vox.application.port.input.command.DeleteSchoolUserCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolClassImportFromFileCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolClassUserImportFromFileCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolDirectoryImportFromFileCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolGradeImportFromFileCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolUserImportFromFileCommand;
+import com.sep.vox.application.port.input.command.UpdateSchoolStatusCommand;
 import com.sep.vox.application.port.input.command.VerifySchoolDirectoryCommand;
 import com.sep.vox.application.port.input.usecase.school.CreateSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.DeleteSchoolUseCase;
@@ -47,6 +51,14 @@ import com.sep.vox.application.port.input.usecase.schoolgrade.DeleteSchoolGradeU
 import com.sep.vox.application.port.input.usecase.schoolgrade.PreviewSchoolGradeImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.gradelevel.CreateGradeLevelUseCase;
 import com.sep.vox.application.port.input.usecase.gradelevel.DeleteGradeLevelUseCase;
+import com.sep.vox.application.port.input.command.AcceptSchoolClassImportCommand;
+import com.sep.vox.application.port.input.command.AcceptSchoolDirectoryImportCommand;
+import com.sep.vox.application.port.input.command.AcceptSchoolGradeImportCommand;
+import com.sep.vox.application.port.input.command.AcceptSchoolUserImportCommand;
+import com.sep.vox.application.port.input.command.BulkCreateSchoolClassUsersCommand;
+import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
+import com.sep.vox.application.port.input.command.CreateSchoolClassUserCommand;
+import com.sep.vox.application.port.input.command.CreateSchoolDirectoryCommand;
 import com.sep.vox.application.port.input.command.DeleteGradeLevelCommand;
 import com.sep.vox.application.port.input.usecase.schoolroom.AddSchoolRoomUseCase;
 import com.sep.vox.application.port.input.usecase.schoolroom.DeleteSchoolRoomUseCase;
@@ -88,27 +100,6 @@ import com.sep.vox.interfaces.rest.dto.request.CreateSchoolRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolUserRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateSchoolClassUserStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.AcceptSchoolClassImportCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.AcceptSchoolClassUserImportCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.AcceptSchoolDirectoryImportCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.AcceptSchoolGradeImportCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.AcceptSchoolUserImportCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.AddSchoolRoomCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.BulkCreateSchoolClassUsersCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateSchoolClassUserCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateSchoolDirectoryCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateSchoolGradeCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateSchoolCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateGradeLevelCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateSchoolUserCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.DeleteSchoolClassUserCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.DeleteSchoolCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.DeleteSchoolGradeCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.DeleteSchoolRoomCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.DeleteSchoolUserCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateSchoolClassUserStatusCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateSchoolStatusCommandMapper;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -168,30 +159,30 @@ public class RestApiSchoolController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewSchoolDirectoryImportResponse>> previewSchoolDirectoryImport(
             @RequestParam("file") MultipartFile file) throws IOException {
-        var uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
-        var data = previewSchoolDirectoryImportFromFileUseCase.execute(
+        UploadedFile uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
+        PreviewSchoolDirectoryImportResponse data = previewSchoolDirectoryImportFromFileUseCase.execute(
                 new PreviewSchoolDirectoryImportFromFileCommand(uploadedFile));
-        var response = ApiResponse.success("Preview import danh mục trường thành công", data);
+        ApiResponse<PreviewSchoolDirectoryImportResponse> response = ApiResponse.success("Successfully loaded school directory import preview", data);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/directories/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> acceptSchoolDirectoryImport(
+    public ResponseEntity<ApiResponse<Void>> acceptSchoolDirectoryImport(
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptSchoolDirectoryImportRequest request) {
-        var command = AcceptSchoolDirectoryImportCommandMapper.fromRequest(sessionId, request);
+        AcceptSchoolDirectoryImportCommand command = AcceptSchoolDirectoryImportRequest.toCommand(sessionId, request);
         acceptSchoolDirectoryImportUseCase.execute(command);
-        var response = ApiResponse.success("Import danh mục trường thành công");
+        ApiResponse<Void> response = ApiResponse.success("School directories have been imported successfully");
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/directories")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<CreateSchoolDirectoryResponse>> createSchoolDirectory(@Valid @RequestBody CreateSchoolDirectoryRequest request) {
-        var command = CreateSchoolDirectoryCommandMapper.fromRequest(request);
-        var data = createSchoolDirectoryUseCase.execute(command);
-        var response = ApiResponse.success("Danh mục trường được tạo thành công", data);
+        CreateSchoolDirectoryCommand command = CreateSchoolDirectoryRequest.toCommand(request);
+        CreateSchoolDirectoryResponse data = createSchoolDirectoryUseCase.execute(command);
+        ApiResponse<CreateSchoolDirectoryResponse> response = ApiResponse.success("School directory has been created successfully", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -200,9 +191,9 @@ public class RestApiSchoolController {
     public ResponseEntity<ApiResponse<CreateSchoolClassResponse>> create(
             @PathVariable("schoolId") UUID schoolId,
             @Valid @RequestBody CreateSchoolClassRequest request) {
-        var command = CreateSchoolClassCommandMapper.fromRequest(schoolId, request);
-        var data = createSchoolClassUseCase.execute(command);
-        var response = ApiResponse.success("Tạo lớp học thành công", data);
+        CreateSchoolClassCommand command = CreateSchoolClassRequest.toCommand(schoolId, request);
+        CreateSchoolClassResponse data = createSchoolClassUseCase.execute(command);
+        ApiResponse<CreateSchoolClassResponse> response = ApiResponse.success("School class created successfully", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -212,9 +203,9 @@ public class RestApiSchoolController {
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("classId") UUID classId,
             @Valid @RequestBody CreateSchoolClassUserRequest request) {
-        var command = CreateSchoolClassUserCommandMapper.fromRequest(schoolId, classId, request);
-        var data = createSchoolClassUserUseCase.execute(command);
-        var response = ApiResponse.success("Thêm người dùng vào lớp học thành công", data);
+        CreateSchoolClassUserCommand command = CreateSchoolClassUserRequest.toCommand(schoolId, classId, request);
+        CreateSchoolClassUserResponse data = createSchoolClassUserUseCase.execute(command);
+        ApiResponse<CreateSchoolClassUserResponse> response = ApiResponse.success("User has been assigned to school class successfully", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -224,35 +215,21 @@ public class RestApiSchoolController {
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("classId") UUID classId,
             @Valid @RequestBody BulkCreateSchoolClassUsersRequest request) {
-        var command = BulkCreateSchoolClassUsersCommandMapper.fromRequest(schoolId, classId, request);
-        var data = bulkCreateSchoolClassUsersUseCase.execute(command);
-        var response = ApiResponse.success("Thêm người dùng vào lớp học thành công", data);
+        BulkCreateSchoolClassUsersCommand command = BulkCreateSchoolClassUsersRequest.toCommand(schoolId, classId, request);
+        BulkCreateSchoolClassUsersResponse data = bulkCreateSchoolClassUsersUseCase.execute(command);
+        ApiResponse<BulkCreateSchoolClassUsersResponse> response = ApiResponse.success("School user list has been assigned succcessfully", data);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{schoolId}/classes/{classId}/users/{userId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> deleteClassUser(
+    public ResponseEntity<Void> deleteClassUser(
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("classId") UUID classId,
             @PathVariable("userId") UUID userId) {
-        var command = DeleteSchoolClassUserCommandMapper.fromPath(schoolId, classId, userId);
+        DeleteSchoolClassUserCommand command = new DeleteSchoolClassUserCommand(schoolId, classId, userId);
         deleteSchoolClassUserUseCase.execute(command);
-        var response = ApiResponse.<Void>success("Xóa người dùng khỏi lớp học thành công");
-        return ResponseEntity.ok(response);
-    }
-
-    @PatchMapping("/{schoolId}/classes/{classId}/users/{userId}/status")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<UpdateSchoolClassUserStatusResponse>> updateClassUserStatus(
-            @PathVariable("schoolId") UUID schoolId,
-            @PathVariable("classId") UUID classId,
-            @PathVariable("userId") UUID userId,
-            @Valid @RequestBody UpdateSchoolClassUserStatusRequest request) {
-        var command = UpdateSchoolClassUserStatusCommandMapper.fromRequest(schoolId, classId, userId, request);
-        var data = updateSchoolClassUserStatusUseCase.execute(command);
-        var response = ApiResponse.success("Cập nhật trạng thái người dùng trong lớp học thành công", data);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping(
@@ -260,24 +237,25 @@ public class RestApiSchoolController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<PreviewSchoolClassImportResponse>> createImportFileSession(
+    public ResponseEntity<ApiResponse<PreviewSchoolClassImportResponse>> createSchoolClassImportFileSession(
             @PathVariable("schoolId") UUID schoolId,
             @RequestParam("file") MultipartFile file) throws IOException {
-        var uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
-        var data = previewSchoolClassImportFromFileUseCase.execute(new PreviewSchoolClassImportFromFileCommand(schoolId, uploadedFile));
-        var response = ApiResponse.success("Preview import lớp học thành công", data);
+        UploadedFile uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
+        PreviewSchoolClassImportResponse data = previewSchoolClassImportFromFileUseCase.execute(new PreviewSchoolClassImportFromFileCommand(schoolId, uploadedFile));
+        ApiResponse<PreviewSchoolClassImportResponse> response = ApiResponse.success("Successfully loaded school class import preview", data);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{schoolId}/classes/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> acceptImportSession(
+    public ResponseEntity<ApiResponse<Void>> acceptImportSession(
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptSchoolClassImportRequest request) {
-        var command = AcceptSchoolClassImportCommandMapper.fromRequest(schoolId, sessionId, request);
+        AcceptSchoolClassImportCommand command = AcceptSchoolClassImportRequest.toCommand(schoolId, sessionId, request);
         acceptSchoolClassImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Yêu cầu import lớp học đã được tiếp nhận, đang xử lý"));
+        ApiResponse<Void> response = ApiResponse.success("School classes have been imported successfully");
+        return ResponseEntity.ok(response);
     }
 
     // Import khối lớp từ Excel đã bị bỏ: catalog dùng chung chỉ có vài dòng, seed bằng migration
@@ -291,21 +269,22 @@ public class RestApiSchoolController {
     public ResponseEntity<ApiResponse<PreviewSchoolGradeImportResponse>> createGradeImportFileSession(
             @PathVariable("schoolId") UUID schoolId,
             @RequestParam("file") MultipartFile file) throws IOException {
-        var uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
-        var data = previewSchoolGradeImportFromFileUseCase.execute(new PreviewSchoolGradeImportFromFileCommand(schoolId, uploadedFile));
-        var response = ApiResponse.success("Preview import năm học thành công", data);
+        UploadedFile uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
+        PreviewSchoolGradeImportResponse data = previewSchoolGradeImportFromFileUseCase.execute(new PreviewSchoolGradeImportFromFileCommand(schoolId, uploadedFile));
+        ApiResponse<PreviewSchoolGradeImportResponse> response = ApiResponse.success("Successfully loaded school grade import preview", data);
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/{schoolId}/grades/import/{sessionId}/accept")
+    @PostMapping("/{schoolId}/grades/import/{importSessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> acceptGradeImportSession(
+    public ResponseEntity<ApiResponse<Void>> acceptGradeImportSession(
             @PathVariable("schoolId") UUID schoolId,
-            @PathVariable("sessionId") UUID sessionId,
+            @PathVariable("importSessionId") UUID importSessionId,
             @Valid @RequestBody AcceptSchoolGradeImportRequest request) {
-        var command = AcceptSchoolGradeImportCommandMapper.fromRequest(schoolId, sessionId, request);
+        AcceptSchoolGradeImportCommand command = AcceptSchoolGradeImportRequest.toCommand(schoolId, importSessionId, request);
         acceptSchoolGradeImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Yêu cầu import năm học đã được tiếp nhận, đang xử lý"));
+        ApiResponse<Void> response = ApiResponse.success("School grades have been imported successfully");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping(
@@ -338,9 +317,9 @@ public class RestApiSchoolController {
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("classId") UUID classId) {
-        deleteSchoolClassUseCase.execute(new DeleteSchoolClassCommand(schoolId, classId));
-        var response = ApiResponse.<Void>success("Xóa lớp học thành công");
-        return ResponseEntity.ok(response);
+        DeleteSchoolClassCommand command = new DeleteSchoolClassCommand(schoolId, classId);
+        deleteSchoolClassUseCase.execute(command);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{schoolId}/users")
@@ -358,7 +337,7 @@ public class RestApiSchoolController {
     public ResponseEntity<Void> deleteUser(
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("userId") UUID userId) {
-        var command = DeleteSchoolUserCommandMapper.fromRequest(schoolId, userId);
+        DeleteSchoolUserCommand command = new DeleteSchoolUserCommand(schoolId, userId);
         deleteSchoolUserUseCase.execute(command);
         return ResponseEntity.noContent().build();
     }
@@ -375,41 +354,34 @@ public class RestApiSchoolController {
 
     @PostMapping("/{schoolId}/users/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> acceptImportSession(
+    public ResponseEntity<ApiResponse<Void>> acceptImportSession(
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptSchoolUserImportRequest request) {
-        var command = AcceptSchoolUserImportCommandMapper.fromRequest(schoolId, sessionId, request);
+        AcceptSchoolUserImportCommand command = AcceptSchoolUserImportRequest.toCommand(schoolId, sessionId, request);
         acceptSchoolUserImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Yêu cầu import người dùng đã được tiếp nhận, đang xử lý"));
+        ApiResponse<Void> response = ApiResponse.success("School users have been imported successfully");
+        return ResponseEntity.ok(response);
     }
 
-    //Delete School
-    @Operation(summary = "Xóa trường học")
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<UUID>> deleteSchool(@PathVariable("id") UUID id) {
-
-        var command = DeleteSchoolCommandMapper.fromRequest(id);
-
-        // Hứng response từ UseCase
-        var response = deleteSchoolUseCase.execute(command);
-
-        return ResponseEntity.ok(ApiResponse.success("Xóa trường học thành công", response));
+    public ResponseEntity<Void> deleteSchool(@PathVariable("id") UUID id) {
+        DeleteSchoolCommand command = new DeleteSchoolCommand(id);
+        deleteSchoolUseCase.execute(command);
+        return ResponseEntity.noContent().build();
     }
 
 
-    @Operation(summary = "Thay đổi trạng thái hoạt động của trường học")
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> updateSchoolStatus(
             @PathVariable("id") UUID id,
             @RequestParam("isActive") boolean isActive
     ) {
-
-        var command = UpdateSchoolStatusCommandMapper.fromRequest(id, isActive);
-
-        var response = updateSchoolStatusUseCase.execute(command);
+        UpdateSchoolStatusCommand command = new UpdateSchoolStatusCommand(id, isActive);
+        UUID data = updateSchoolStatusUseCase.execute(command);
 
         String message = isActive
                 ? "Đã kích hoạt lại trường học thành công"

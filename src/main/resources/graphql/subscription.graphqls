@@ -67,8 +67,8 @@ type SubscriptionPlan {
     maxTimePerAttemptMin: Int!
     status: SubscriptionPlanStatus!
     version: Int!
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime!
+    updatedAt: DateTime!
     createdBy: ID
     updatedBy: ID
     "Gói thay thế khi gói này đã ARCHIVED -- theo dây chuyền này để tìm gói còn bán được"
@@ -105,17 +105,17 @@ type SchoolSubscription {
     id: ID!
     schoolId: ID!
     subscriptionPlanId: ID!
-    startDate: String
-    endDate: String
+    startDate: DateTime
+    endDate: DateTime
     status: SchoolSubscriptionStatus!
     "Giá đã trả tại thời điểm mua -- chốt cứng, không đổi theo giá gói sau này"
     pricePaidSnapshot: Float!
-    cancelledAt: String
-    createdAt: String
+    cancelledAt: DateTime
+    createdAt: DateTime
     # 3 cột suspended_* bị xóa trắng khi gỡ đình chỉ nên chỉ phản ánh lần đình chỉ ĐANG hiệu lực,
     # không phải lịch sử. Lịch sử bền vững nằm ở school_subscription_events (V2 mục 12), do
     # ForceSuspend/UnsuspendSubscriptionUseCase ghi -- không phải FinancialEvent, thứ đã bị bỏ.
-    suspendedAt: String
+    suspendedAt: DateTime
     suspendedReason: String
     suspendedBy: ID
     plan: SubscriptionPlan

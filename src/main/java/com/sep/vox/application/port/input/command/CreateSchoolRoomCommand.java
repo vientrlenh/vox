@@ -2,7 +2,7 @@ package com.sep.vox.application.port.input.command;
 
 import java.util.UUID;
 
-public record AddSchoolRoomCommand(
+public record CreateSchoolRoomCommand(
         UUID schoolId,
         String code,
         String name,

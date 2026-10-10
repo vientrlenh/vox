@@ -1,4 +1,4 @@
-package com.sep.vox.interfaces.graphql.config.dataloader;
+package com.sep.vox.interfaces.graphql.config;
 
 import java.util.HashMap;
 import java.util.List;
@@ -15,7 +15,6 @@ import org.springframework.graphql.execution.BatchLoaderRegistry;
 
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
-import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.repository.SchoolClassRepository;
@@ -120,13 +119,6 @@ public class GraphQLDataLoaderConfig {
                         )));
                     }
                     return result;
-                })
-        );
-
-        registry.<UUID, SchoolGradeDto>forName("schoolGradeBySchoolClassId")
-            .registerMappedBatchLoader((Set<UUID> schoolGradeIds, BatchLoaderEnvironment env) -> 
-                Mono.fromSupplier(() -> {
-                    return 
                 })
         );
     }

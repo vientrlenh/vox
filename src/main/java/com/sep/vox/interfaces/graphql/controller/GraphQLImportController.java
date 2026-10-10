@@ -18,8 +18,8 @@ import com.sep.vox.application.response.input.importfile.ImportSessionDetailsRes
 import com.sep.vox.application.response.input.importfile.ImportSessionSummaryResponse;
 import com.sep.vox.domain.shared.PageResult;
 
-@Controller("graphqlImportController")
-public class ImportController {
+@Controller
+public class GraphQLImportController {
 
     private final ViewImportSessionUseCase viewImportSessionUseCase;
     private final ViewImportSessionsUseCase viewImportSessionsUseCase;

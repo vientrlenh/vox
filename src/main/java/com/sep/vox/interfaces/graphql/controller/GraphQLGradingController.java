@@ -10,6 +10,7 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 
 import com.sep.vox.application.port.input.query.SearchGradingAssignmentsQuery;
 import com.sep.vox.application.port.input.query.ViewAiQualityReportQuery;
@@ -42,9 +43,12 @@ import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;
+import lombok.RequiredArgsConstructor;
 
 @Controller
-public class GradingController {
+@Validated 
+@RequiredArgsConstructor 
+public class GraphQLGradingController {
 
     private final ViewGradingAssignmentsUseCase viewGradingAssignmentsUseCase;
     private final ViewGradingStatsUseCase viewGradingStatsUseCase;
@@ -57,31 +61,6 @@ public class GradingController {
     private final ViewAssignableTeachersUseCase viewAssignableTeachersUseCase;
     private final ViewResultStatusHistoryUseCase viewResultStatusHistoryUseCase;
     private final ViewAiQualityReportUseCase viewAiQualityReportUseCase;
-
-    public GradingController(
-            ViewGradingAssignmentsUseCase viewGradingAssignmentsUseCase,
-            ViewGradingStatsUseCase viewGradingStatsUseCase,
-            ViewClassTestGradingStatsUseCase viewClassTestGradingStatsUseCase,
-            ViewClassTestGradingResultsUseCase viewClassTestGradingResultsUseCase,
-            ViewMyGradingTasksUseCase viewMyGradingTasksUseCase,
-            ViewMyGradingExamsUseCase viewMyGradingExamsUseCase,
-            ViewMyClassTestGradingTasksUseCase viewMyClassTestGradingTasksUseCase,
-            ViewGradingTaskDetailUseCase viewGradingTaskDetailUseCase,
-            ViewAssignableTeachersUseCase viewAssignableTeachersUseCase,
-            ViewResultStatusHistoryUseCase viewResultStatusHistoryUseCase,
-            ViewAiQualityReportUseCase viewAiQualityReportUseCase) {
-        this.viewGradingAssignmentsUseCase = viewGradingAssignmentsUseCase;
-        this.viewGradingStatsUseCase = viewGradingStatsUseCase;
-        this.viewClassTestGradingStatsUseCase = viewClassTestGradingStatsUseCase;
-        this.viewClassTestGradingResultsUseCase = viewClassTestGradingResultsUseCase;
-        this.viewMyGradingTasksUseCase = viewMyGradingTasksUseCase;
-        this.viewMyGradingExamsUseCase = viewMyGradingExamsUseCase;
-        this.viewMyClassTestGradingTasksUseCase = viewMyClassTestGradingTasksUseCase;
-        this.viewGradingTaskDetailUseCase = viewGradingTaskDetailUseCase;
-        this.viewAssignableTeachersUseCase = viewAssignableTeachersUseCase;
-        this.viewResultStatusHistoryUseCase = viewResultStatusHistoryUseCase;
-        this.viewAiQualityReportUseCase = viewAiQualityReportUseCase;
-    }
 
     @QueryMapping(name = "gradingAssignments")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")

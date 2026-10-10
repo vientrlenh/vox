@@ -1,16 +1,25 @@
+enum SchoolStatus {
+    INACTIVE 
+    ACTIVE
+}
+
 type School {
     id: ID!
     code: String!
-    name: String
+    name: String!
     description: String
+    wardId: ID! 
+    cityId: ID 
+    provinceId: ID 
     contactPhone: String
     contactEmail: String
     domain: String
     address: String
     studentCount: Int
-    isActive: Boolean
-    createdAt: String
-    updatedAt: String
+    status: SchoolStatus!
+    createdAt: DateTime
+    updatedAt: DateTime
+    registeredBy: ID
     classes(page: Int = 1, size: Int = 10): [SchoolClass!]
     users(page: Int = 1, size: Int = 10): [SchoolUser!]
 }

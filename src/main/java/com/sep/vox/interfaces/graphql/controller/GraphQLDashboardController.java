@@ -49,7 +49,7 @@ import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller
-public class DashboardController {
+public class GraphQLDashboardController {
 
     private final ViewSystemAdminDashboardUseCase viewSystemAdminDashboardUseCase;
     private final ViewSchoolAdminDashboardUseCase viewSchoolAdminDashboardUseCase;

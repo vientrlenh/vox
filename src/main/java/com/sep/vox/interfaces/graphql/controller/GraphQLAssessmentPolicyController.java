@@ -32,13 +32,18 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
+
 import graphql.schema.DataFetchingEnvironment;
+import lombok.RequiredArgsConstructor;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-@Controller("graphqlAssessmentPolicyController")
-public class AssessmentPolicyController {
+@Controller
+@Validated 
+@RequiredArgsConstructor 
+public class GraphQLAssessmentPolicyController {
 
     private final UpdateSystemAssessmentPolicyUseCase updateSystemAssessmentPolicyUseCase;
     private final UpdateSchoolAssessmentPolicyUseCase updateSchoolAssessmentPolicyUseCase;
@@ -47,23 +52,6 @@ public class AssessmentPolicyController {
     private final ViewTeacherAssessmentPoliciesUseCase viewTeacherAssessmentPoliciesUseCase;
     private final ViewSystemAssessmentPolicyDetailsUseCase viewSystemAssessmentPolicyDetailsUseCase;
     private final ViewSchoolAssessmentPolicyDetailsUseCase viewSchoolAssessmentPolicyDetailsUseCase;
-
-    public AssessmentPolicyController(
-            UpdateSystemAssessmentPolicyUseCase updateSystemAssessmentPolicyUseCase,
-            UpdateSchoolAssessmentPolicyUseCase updateSchoolAssessmentPolicyUseCase,
-            ViewSystemAssessmentPoliciesUseCase viewSystemAssessmentPoliciesUseCase,
-            ViewSchoolAssessmentPoliciesUseCase viewSchoolAssessmentPoliciesUseCase,
-            ViewTeacherAssessmentPoliciesUseCase viewTeacherAssessmentPoliciesUseCase,
-            ViewSystemAssessmentPolicyDetailsUseCase viewSystemAssessmentPolicyDetailsUseCase,
-            ViewSchoolAssessmentPolicyDetailsUseCase viewSchoolAssessmentPolicyDetailsUseCase) {
-        this.updateSystemAssessmentPolicyUseCase = updateSystemAssessmentPolicyUseCase;
-        this.updateSchoolAssessmentPolicyUseCase = updateSchoolAssessmentPolicyUseCase;
-        this.viewSystemAssessmentPoliciesUseCase = viewSystemAssessmentPoliciesUseCase;
-        this.viewSchoolAssessmentPoliciesUseCase = viewSchoolAssessmentPoliciesUseCase;
-        this.viewTeacherAssessmentPoliciesUseCase = viewTeacherAssessmentPoliciesUseCase;
-        this.viewSystemAssessmentPolicyDetailsUseCase = viewSystemAssessmentPolicyDetailsUseCase;
-        this.viewSchoolAssessmentPolicyDetailsUseCase = viewSchoolAssessmentPolicyDetailsUseCase;
-    }
 
     // School Admin cũng đọc được: đây là kho chính sách MẪU để trường chọn rồi sao về, giống
     // cách trường duyệt bộ tiêu chí mẫu của hệ thống. Use case tự ép chỉ trả bản PUBLISHED cho

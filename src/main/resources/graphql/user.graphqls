@@ -28,8 +28,8 @@ type User {
     address: String 
     avatarUrl: String
     status: UserStatus!
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime!
+    updatedAt: DateTime!
     school: School
 }
 
@@ -52,7 +52,6 @@ input UpdateProfileInput {
     fullName: String
     phone: String
     address: String
-    dateOfBirth: String
     avatarUrl: String
 }
 

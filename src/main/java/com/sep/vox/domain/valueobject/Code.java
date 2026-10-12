@@ -10,7 +10,7 @@ public record Code(
 
     public Code {
         if (value != null && !UPPERCASE_CODE_PATTERN.matcher(value).matches()) {
-            throw new IllegalArgumentException("Mã lớp học không hợp lệ");
+            throw new IllegalArgumentException("Invalid code");
         }
     }
 

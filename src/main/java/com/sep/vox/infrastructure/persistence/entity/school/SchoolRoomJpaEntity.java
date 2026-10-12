@@ -26,9 +26,6 @@ public class SchoolRoomJpaEntity extends BaseEntity {
     
     @Column(name = "school_id", nullable = false, updatable = false)
     private UUID schoolId;
-    
-    @Column(name = "code", nullable = false, updatable = false, length = 100)
-    private String code;
 
     @Column(name = "name", nullable = false, length = 255)
     private String name;
@@ -39,7 +36,7 @@ public class SchoolRoomJpaEntity extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_school_rooms_status_valid", 
-            constraint = "status IN ('INACTIVE', 'ACTIVE')"
+            constraint = "status IN ('INACTIVE', 'ACTIVE', 'ARCHIVED')"
         )
     })
     private String status;

@@ -4,13 +4,10 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.shared.BaseModel;
-import com.sep.vox.domain.valueobject.Code;
-import com.sep.vox.domain.valueobject.Name;
 
 public class SchoolRoom extends BaseModel {
     private UUID schoolId;
-    private Code code;
-    private Name name;
+    private String name;
     private String description;
     private SchoolRoomStatus status;
     private Instant updatedAt;
@@ -19,10 +16,9 @@ public class SchoolRoom extends BaseModel {
 
     protected SchoolRoom() {}
 
-    public SchoolRoom(UUID schoolId, Code code, Name name, String description, SchoolRoomStatus status, 
+    public SchoolRoom(UUID schoolId, String name, String description, SchoolRoomStatus status, 
             Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
-        this.code = code;
         this.name = name;
         this.description = description;
         this.status = status;
@@ -34,7 +30,6 @@ public class SchoolRoom extends BaseModel {
     public SchoolRoom(Builder builder) {
         super(builder.id, builder.createdAt);
         this.schoolId = builder.schoolId;
-        this.code = builder.code;
         this.name = builder.name;
         this.description = builder.description;
         this.status = builder.status;
@@ -51,19 +46,11 @@ public class SchoolRoom extends BaseModel {
         this.schoolId = schoolId;
     }
 
-    public Code getCode() {
-        return code;
-    }
-
-    public void setCode(Code code) {
-        this.code = code;
-    }
-
-    public Name getName() {
+    public String getName() {
         return name;
     }
 
-    public void setName(Name name) {
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -115,8 +102,7 @@ public class SchoolRoom extends BaseModel {
     public static class Builder {
         private UUID id;
         private UUID schoolId;
-        private Code code;
-        private Name name;
+        private String name;
         private String description;
         private SchoolRoomStatus status;
         private Instant createdAt;
@@ -136,12 +122,7 @@ public class SchoolRoom extends BaseModel {
             return this;
         }
 
-        public Builder code(Code code) {
-            this.code = code;
-            return this;
-        }
-
-        public Builder name(Name name) {
+        public Builder name(String name) {
             this.name = name;
             return this;
         }

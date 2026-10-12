@@ -4,15 +4,12 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.shared.BaseModel;
-import com.sep.vox.domain.valueobject.Code;
-import com.sep.vox.domain.valueobject.Name;
 
 public class SchoolClass extends BaseModel {
     private UUID schoolId;
     private UUID learningLanguageId;
     private UUID schoolGradeId;
-    private Code code;
-    private Name name;
+    private String name;
     private String description;
     private SchoolClassStatus status;
     private Instant updatedAt;
@@ -21,11 +18,10 @@ public class SchoolClass extends BaseModel {
 
     public SchoolClass() {}
 
-    public SchoolClass(UUID schoolId, UUID learningLanguageId, UUID schoolGradeId, Code code, Name name, String description, SchoolClassStatus status, Instant updatedAt, Instant archivedAt, UUID createdBy) {
+    public SchoolClass(UUID schoolId, UUID learningLanguageId, UUID schoolGradeId, String name, String description, SchoolClassStatus status, Instant updatedAt, Instant archivedAt, UUID createdBy) {
         this.schoolId = schoolId;
         this.learningLanguageId = learningLanguageId;
         this.schoolGradeId = schoolGradeId;
-        this.code = code;
         this.name = name;
         this.description = description;
         this.status = status;
@@ -39,7 +35,6 @@ public class SchoolClass extends BaseModel {
         this.schoolId = builder.schoolId;
         this.learningLanguageId = builder.learningLanguageId;
         this.schoolGradeId = builder.schoolGradeId;
-        this.code = builder.code;
         this.name = builder.name;
         this.description = builder.description;
         this.status = builder.status;
@@ -71,20 +66,11 @@ public class SchoolClass extends BaseModel {
     public void setSchoolGradeId(UUID schoolGradeId) {
         this.schoolGradeId = schoolGradeId;
     }
-
-    public Code getCode() {
-        return code;
-    }
-
-    public void setCode(Code code) {
-        this.code = code;
-    }
-
-    public Name getName() {
+    public String getName() {
         return name;
     }
 
-    public void setName(Name name) {
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -132,14 +118,13 @@ public class SchoolClass extends BaseModel {
         return new SchoolClass.Builder();
     }
 
-    public static SchoolClass create(UUID schoolId, UUID learningLanguageId, UUID schoolGradeId, String code, String name,
+    public static SchoolClass create(UUID schoolId, UUID learningLanguageId, UUID schoolGradeId, String name,
             String description, UUID createdBy) {
         return SchoolClass.builder()
                 .schoolId(schoolId)
                 .learningLanguageId(learningLanguageId)
                 .schoolGradeId(schoolGradeId)
-                .code(Code.from(code))
-                .name(Name.from(name))
+                .name(name)
                 .description(description)
                 .status(SchoolClassStatus.ACTIVE)
                 .createdBy(createdBy)
@@ -151,8 +136,7 @@ public class SchoolClass extends BaseModel {
         private UUID schoolId;
         private UUID learningLanguageId;
         private UUID schoolGradeId;
-        private Code code;
-        private Name name;
+        private String name;
         private String description;
         private SchoolClassStatus status;
         private Instant createdAt;
@@ -182,12 +166,7 @@ public class SchoolClass extends BaseModel {
             return this;
         }
 
-        public Builder code(Code code) {
-            this.code = code;
-            return this;
-        }
-
-        public Builder name(Name name) {
+        public Builder name(String name) {
             this.name = name;
             return this;
         }

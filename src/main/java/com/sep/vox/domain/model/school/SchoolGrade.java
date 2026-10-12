@@ -1,21 +1,16 @@
 package com.sep.vox.domain.model.school;
 
-import java.time.LocalDate;
 import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.shared.BaseModel;
-import com.sep.vox.domain.valueobject.Code;
-import com.sep.vox.domain.valueobject.Name;
 
 public class SchoolGrade extends BaseModel {
     private UUID schoolId;
     private UUID gradeLevelId;
-    private Code code;
-    private Name name;
+    private String name;
     private String description;
-    private LocalDate startDate;
-    private LocalDate endDate;
+    private UUID academicTimelineId;
     private SchoolGradeStatus status;
     private Instant updatedAt;
     private UUID createdBy;
@@ -23,14 +18,12 @@ public class SchoolGrade extends BaseModel {
 
     protected SchoolGrade() {}
 
-    public SchoolGrade(UUID schoolId, UUID gradeLevelId, Code code, Name name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status, Instant updatedAt, UUID createdBy, UUID updatedBy) {
+    public SchoolGrade(UUID schoolId, UUID gradeLevelId, String name, String description, UUID academicTimelineId, SchoolGradeStatus status, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.gradeLevelId = gradeLevelId;
-        this.code = code;
         this.name = name;
         this.description = description;
-        this.startDate = startDate;
-        this.endDate = endDate;
+        this.academicTimelineId = academicTimelineId;
         this.status = status;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -41,11 +34,9 @@ public class SchoolGrade extends BaseModel {
         super(builder.id, builder.createdAt);
         this.schoolId = builder.schoolId;
         this.gradeLevelId = builder.gradeLevelId;
-        this.code = builder.code;
         this.name = builder.name;
         this.description = builder.description;
-        this.startDate = builder.startDate;
-        this.endDate = builder.endDate;
+        this.academicTimelineId = builder.academicTimelineId;
         this.status = builder.status;
         this.updatedAt = builder.updatedAt;
         this.createdBy = builder.createdBy;
@@ -68,19 +59,11 @@ public class SchoolGrade extends BaseModel {
         this.gradeLevelId = gradeLevelId;
     }
 
-    public Code getCode() {
-        return code;
-    }
-
-    public void setCode(Code code) {
-        this.code = code;
-    }
-
-    public Name getName() {
+    public String getName() {
         return name;
     }
 
-    public void setName(Name name) {
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -92,20 +75,12 @@ public class SchoolGrade extends BaseModel {
         this.description = description;
     }
 
-    public LocalDate getStartDate() {
-        return startDate;
+    public UUID getAcademicTimelineId() {
+        return academicTimelineId;
     }
 
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
-    }
-
-    public LocalDate getEndDate() {
-        return endDate;
-    }
-
-    public void setEndDate(LocalDate endDate) {
-        this.endDate = endDate;
+    public void setAcademicTimelineId(UUID academicTimelineId) {
+        this.academicTimelineId = academicTimelineId;
     }
 
     public SchoolGradeStatus getStatus() {
@@ -148,11 +123,9 @@ public class SchoolGrade extends BaseModel {
         private UUID id;
         private UUID schoolId;
         private UUID gradeLevelId;
-        private Code code;
-        private Name name;
+        private String name;
         private String description;
-        private LocalDate startDate;
-        private LocalDate endDate;
+        private UUID academicTimelineId;
         private SchoolGradeStatus status;
         private Instant createdAt;
         private Instant updatedAt;
@@ -176,12 +149,7 @@ public class SchoolGrade extends BaseModel {
             return this;
         }
 
-        public Builder code(Code code) {
-            this.code = code;
-            return this;
-        }
-
-        public Builder name(Name name) {
+        public Builder name(String name) {
             this.name = name;
             return this;
         }
@@ -191,13 +159,8 @@ public class SchoolGrade extends BaseModel {
             return this;
         }
 
-        public Builder startDate(LocalDate startDate) {
-            this.startDate = startDate;
-            return this;
-        }
-
-        public Builder endDate(LocalDate endDate) {
-            this.endDate = endDate;
+        public Builder academicTimelineId(UUID academicTimelineId) {
+            this.academicTimelineId = academicTimelineId;
             return this;
         }
 

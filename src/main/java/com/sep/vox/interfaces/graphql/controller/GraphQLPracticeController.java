@@ -29,8 +29,11 @@ import com.sep.vox.application.response.input.learnerprofile.LearnerProfileRespo
 import com.sep.vox.domain.model.personalization.QuizAnswer;
 import com.sep.vox.interfaces.graphql.dto.request.SubmitInterestQuizInput;
 
+import lombok.RequiredArgsConstructor;
+
 @Controller
-public class PracticeController {
+@RequiredArgsConstructor 
+public class GraphQLPracticeController {
 
     private final ViewLearnerProfileUseCase viewLearnerProfileUseCase;
     private final ViewInterestQuizItemsUseCase viewInterestQuizItemsUseCase;
@@ -41,27 +44,6 @@ public class PracticeController {
     private final TopicOfferBackfillService topicOfferBackfillService;
     private final UserContextPort userContextPort;
     private final AsyncTaskExecutor practiceGenerationExecutor;
-
-    public PracticeController(
-            ViewLearnerProfileUseCase viewLearnerProfileUseCase,
-            ViewInterestQuizItemsUseCase viewInterestQuizItemsUseCase,
-            ViewPracticeBandOptionsUseCase viewPracticeBandOptionsUseCase,
-            ViewPracticeFrameworkOptionsUseCase viewPracticeFrameworkOptionsUseCase,
-            SubmitInterestQuizUseCase submitInterestQuizUseCase,
-            SetPracticeGoalUseCase setPracticeGoalUseCase,
-            TopicOfferBackfillService topicOfferBackfillService,
-            UserContextPort userContextPort,
-            @Qualifier("practiceGenerationExecutor") AsyncTaskExecutor practiceGenerationExecutor) {
-        this.topicOfferBackfillService = topicOfferBackfillService;
-        this.userContextPort = userContextPort;
-        this.practiceGenerationExecutor = practiceGenerationExecutor;
-        this.viewLearnerProfileUseCase = viewLearnerProfileUseCase;
-        this.viewInterestQuizItemsUseCase = viewInterestQuizItemsUseCase;
-        this.viewPracticeBandOptionsUseCase = viewPracticeBandOptionsUseCase;
-        this.viewPracticeFrameworkOptionsUseCase = viewPracticeFrameworkOptionsUseCase;
-        this.submitInterestQuizUseCase = submitInterestQuizUseCase;
-        this.setPracticeGoalUseCase = setPracticeGoalUseCase;
-    }
 
     @QueryMapping
     @PreAuthorize("hasRole('STUDENT')")

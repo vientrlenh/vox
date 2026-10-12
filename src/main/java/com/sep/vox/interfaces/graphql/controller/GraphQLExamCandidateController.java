@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
+import lombok.RequiredArgsConstructor;
 
 import com.sep.vox.application.port.input.command.UpdateExamCandidateStatusCommand;
 import com.sep.vox.application.port.input.command.UpdateExamCandidatesAttendanceCommand;
@@ -29,21 +30,13 @@ import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 
-@Controller("graphqlExamCandidateController")
-public class ExamCandidateController {
+@Controller
+@RequiredArgsConstructor 
+public class GraphQLExamCandidateController {
 
     private final ViewExamCandidatesUseCase viewExamCandidatesUseCase;
     private final UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase;
     private final UpdateExamCandidatesAttendanceUseCase updateExamCandidatesAttendanceUseCase;
-
-    public ExamCandidateController(
-            ViewExamCandidatesUseCase viewExamCandidatesUseCase,
-            UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase,
-            UpdateExamCandidatesAttendanceUseCase updateExamCandidatesAttendanceUseCase) {
-        this.viewExamCandidatesUseCase = viewExamCandidatesUseCase;
-        this.updateExamCandidateStatusUseCase = updateExamCandidateStatusUseCase;
-        this.updateExamCandidatesAttendanceUseCase = updateExamCandidatesAttendanceUseCase;
-    }
 
     @QueryMapping(name = "examCandidates")
     public List<ExamCandidateDto> examCandidates(

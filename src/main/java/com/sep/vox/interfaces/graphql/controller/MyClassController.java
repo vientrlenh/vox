@@ -14,7 +14,6 @@ import org.springframework.stereotype.Controller;
 import com.sep.vox.application.port.input.query.ViewMyClassDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewMyClassMembersQuery;
 import com.sep.vox.application.port.input.query.ViewMyClassesQuery;
-import com.sep.vox.application.port.input.query.key.UserRolesKey;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassMembersUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassesUseCase;
@@ -28,13 +27,6 @@ import com.sep.vox.domain.shared.PageResult;
 
 import graphql.schema.DataFetchingEnvironment;
 
-/**
- * Bề mặt GraphQL "lớp của tôi" cho giáo viên — chỉ đọc.
- *
- * Tách khỏi {@link SchoolController} (toàn quyền SCHOOL_ADMIN) để không phải nới
- * quyền trên các type dùng chung. Các DataLoader thì dùng lại nguyên: chúng chỉ
- * gom batch theo id, phân quyền nằm ở @PreAuthorize của từng resolver dưới đây.
- */
 @Controller
 public class MyClassController {
 

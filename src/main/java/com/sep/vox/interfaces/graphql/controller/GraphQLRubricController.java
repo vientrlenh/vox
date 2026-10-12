@@ -2,9 +2,6 @@ package com.sep.vox.interfaces.graphql.controller;
 
 
 import com.sep.vox.application.port.input.query.*;
-import com.sep.vox.application.port.input.query.key.RubricCriteriaKey;
-import com.sep.vox.application.port.input.query.key.RubricResultBandsKey;
-import com.sep.vox.application.port.input.query.key.RubricVersionsKey;
 import com.sep.vox.application.port.input.usecase.rubricschool.*;
 import com.sep.vox.application.port.input.usecase.rubricsystem.*;
 import com.sep.vox.application.port.input.usecase.rubricteacher.*;
@@ -14,6 +11,8 @@ import com.sep.vox.interfaces.graphql.dto.request.*;
 import com.sep.vox.interfaces.graphql.mapper.*;
 import graphql.schema.DataFetchingEnvironment;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -25,8 +24,9 @@ import org.springframework.stereotype.Controller;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-@Controller("graphqlRubricController")
-public class RubricController {
+@Controller
+@RequiredArgsConstructor 
+public class GraphQLRubricController {
 
     private final UpdateSystemRubricUseCase updateSystemRubricUseCase;
     private final UpdateSchoolRubricUseCase updateSchoolRubricUseCase;
@@ -62,43 +62,6 @@ public class RubricController {
     private final SearchSystemRubricCriteriaUseCase searchSystemRubricCriteriaUseCase;
     private final SearchSystemRubricResultBandsUseCase searchSystemRubricResultBandsUseCase;
     private final SearchSchoolRubricResultBandsUseCase searchSchoolRubricResultBandsUseCase;
-
-    public RubricController(UpdateSystemRubricUseCase updateSystemRubricUseCase, UpdateSchoolRubricUseCase updateSchoolRubricUseCase, ViewSystemRubricDetailsUseCase viewSystemRubricDetailsUseCase, ViewSchoolRubricDetailsUseCase viewSchoolRubricDetailsUseCase, ViewSystemRubricsUseCase viewSystemRubricsUseCase, ViewSchoolRubricsUseCase viewSchoolRubricsUseCase, UpdateSystemRubricVersionUseCase updateSystemRubricVersionUseCase, UpdateSchoolRubricVersionUseCase updateSchoolRubricVersionUseCase, ViewSchoolRubricVersionDetailsUseCase viewSchoolRubricVersionDetailsUseCase, ViewSystemRubricVersionDetailsUseCase viewSystemRubricVersionDetailsUseCase, ViewSchoolRubricVersionsUseCase viewSchoolRubricVersionsUseCase, ViewSystemRubricVersionsUseCase viewSystemRubricVersionsUseCase, ViewTeacherRubricVersionsUseCase viewTeacherRubricVersionsUseCase, UpdateSystemRubricCriterionUseCase updateSystemRubricCriterionUseCase, UpdateSchoolRubricCriterionUseCase updateSchoolRubricCriterionUseCase, ViewSystemRubricCriterionDetailsUseCase viewSystemRubricCriterionDetailsUseCase, ViewSchoolRubricCriterionDetailsUseCase viewSchoolRubricCriterionDetailsUseCase, ViewSystemRubricCriteriaUseCase viewSystemRubricCriteriaUseCase, ViewSchoolRubricCriteriaUseCase viewSchoolRubricCriteriaUseCase, UpdateSystemRubricResultBandUseCase updateSystemRubricResultBandUseCase, UpdateSchoolRubricResultBandUseCase updateSchoolRubricResultBandUseCase, ViewSystemRubricResultBandDetailsUseCase viewSystemRubricResultBandDetailsUseCase, ViewSchoolRubricResultBandDetailsUseCase viewSchoolRubricResultBandDetailsUseCase, ViewSystemRubricResultBandsUseCase viewSystemRubricResultBandsUseCase, ViewSchoolRubricResultBandsUseCase viewSchoolRubricResultBandsUseCase, SearchSystemRubricsUseCase searchSystemRubricsUseCase, SearchSchoolRubricsUseCase searchSchoolRubricsUseCase, SearchTeacherRubricsUseCase searchTeacherRubricsUseCase, SearchSystemRubricVersionsUseCase searchSystemRubricVersionsUseCase, SearchSchoolRubricVersionsUseCase searchSchoolRubricVersionsUseCase, SearchSchoolRubricCriteriaUseCase searchSchoolRubricCriteriaUseCase, SearchSystemRubricCriteriaUseCase searchSystemRubricCriteriaUseCase, SearchSystemRubricResultBandsUseCase searchSystemRubricResultBandsUseCase, SearchSchoolRubricResultBandsUseCase searchSchoolRubricResultBandsUseCase) {
-        this.updateSystemRubricUseCase = updateSystemRubricUseCase;
-        this.updateSchoolRubricUseCase = updateSchoolRubricUseCase;
-        this.viewSystemRubricDetailsUseCase = viewSystemRubricDetailsUseCase;
-        this.viewSchoolRubricDetailsUseCase = viewSchoolRubricDetailsUseCase;
-        this.viewSystemRubricsUseCase = viewSystemRubricsUseCase;
-        this.viewSchoolRubricsUseCase = viewSchoolRubricsUseCase;
-        this.updateSystemRubricVersionUseCase = updateSystemRubricVersionUseCase;
-        this.updateSchoolRubricVersionUseCase = updateSchoolRubricVersionUseCase;
-        this.viewSchoolRubricVersionDetailsUseCase = viewSchoolRubricVersionDetailsUseCase;
-        this.viewSystemRubricVersionDetailsUseCase = viewSystemRubricVersionDetailsUseCase;
-        this.viewSchoolRubricVersionsUseCase = viewSchoolRubricVersionsUseCase;
-        this.viewSystemRubricVersionsUseCase = viewSystemRubricVersionsUseCase;
-        this.viewTeacherRubricVersionsUseCase = viewTeacherRubricVersionsUseCase;
-        this.updateSystemRubricCriterionUseCase = updateSystemRubricCriterionUseCase;
-        this.updateSchoolRubricCriterionUseCase = updateSchoolRubricCriterionUseCase;
-        this.viewSystemRubricCriterionDetailsUseCase = viewSystemRubricCriterionDetailsUseCase;
-        this.viewSchoolRubricCriterionDetailsUseCase = viewSchoolRubricCriterionDetailsUseCase;
-        this.viewSystemRubricCriteriaUseCase = viewSystemRubricCriteriaUseCase;
-        this.viewSchoolRubricCriteriaUseCase = viewSchoolRubricCriteriaUseCase;
-        this.updateSystemRubricResultBandUseCase = updateSystemRubricResultBandUseCase;
-        this.updateSchoolRubricResultBandUseCase = updateSchoolRubricResultBandUseCase;
-        this.viewSystemRubricResultBandDetailsUseCase = viewSystemRubricResultBandDetailsUseCase;
-        this.viewSchoolRubricResultBandDetailsUseCase = viewSchoolRubricResultBandDetailsUseCase;
-        this.viewSystemRubricResultBandsUseCase = viewSystemRubricResultBandsUseCase;
-        this.viewSchoolRubricResultBandsUseCase = viewSchoolRubricResultBandsUseCase;
-        this.searchSystemRubricsUseCase = searchSystemRubricsUseCase;
-        this.searchSchoolRubricsUseCase = searchSchoolRubricsUseCase;
-        this.searchTeacherRubricsUseCase = searchTeacherRubricsUseCase;
-        this.searchSystemRubricVersionsUseCase = searchSystemRubricVersionsUseCase;
-        this.searchSchoolRubricVersionsUseCase = searchSchoolRubricVersionsUseCase;
-        this.searchSchoolRubricCriteriaUseCase = searchSchoolRubricCriteriaUseCase;
-        this.searchSystemRubricCriteriaUseCase = searchSystemRubricCriteriaUseCase;
-        this.searchSystemRubricResultBandsUseCase = searchSystemRubricResultBandsUseCase;
-        this.searchSchoolRubricResultBandsUseCase = searchSchoolRubricResultBandsUseCase;
-    }
 
 
     //============================== RUBRIC ========================================

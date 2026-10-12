@@ -11,6 +11,7 @@ import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
+import lombok.RequiredArgsConstructor;
 
 import com.sep.vox.application.port.input.query.ViewQuestionDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionStatusCountsQuery;
@@ -34,27 +35,15 @@ import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.shared.PageResult;
 
-@Controller("graphqlQuestionController")
-public class QuestionController {
+@Controller
+@RequiredArgsConstructor 
+public class GraphQLQuestionController {
 
     private final ViewQuestionsUseCase viewQuestionsUseCase;
     private final ViewQuestionsForExamPaperUseCase viewQuestionsForExamPaperUseCase;
     private final ViewQuestionDetailsUseCase viewQuestionDetailsUseCase;
     private final ViewQuestionStatusCountsUseCase viewQuestionStatusCountsUseCase;
     private final UserContextPort userContextPort;
-
-    public QuestionController(
-            ViewQuestionsUseCase viewQuestionsUseCase,
-            ViewQuestionsForExamPaperUseCase viewQuestionsForExamPaperUseCase,
-            ViewQuestionDetailsUseCase viewQuestionDetailsUseCase,
-            ViewQuestionStatusCountsUseCase viewQuestionStatusCountsUseCase,
-            UserContextPort userContextPort) {
-        this.viewQuestionsUseCase = viewQuestionsUseCase;
-        this.viewQuestionsForExamPaperUseCase = viewQuestionsForExamPaperUseCase;
-        this.viewQuestionDetailsUseCase = viewQuestionDetailsUseCase;
-        this.viewQuestionStatusCountsUseCase = viewQuestionStatusCountsUseCase;
-        this.userContextPort = userContextPort;
-    }
 
     @QueryMapping(name = "questionStatusCounts")
     public List<QuestionStatusCountInfo> questionStatusCounts(

@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
+import lombok.RequiredArgsConstructor;
 
 import com.sep.vox.application.port.input.query.ViewExamSchedulesQuery;
 import com.sep.vox.application.port.input.query.ViewProctorBusySlotsQuery;
@@ -24,21 +25,19 @@ import com.sep.vox.application.port.input.usecase.examschedule.ViewProctorBusySl
 import com.sep.vox.application.port.input.usecase.examschedule.ViewStudentBusySlotsUseCase;
 import com.sep.vox.application.response.input.examschedule.ProctorBusySlotResponse;
 import com.sep.vox.application.response.input.examschedule.StudentBusySlotResponse;
-import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.ExamScheduleProctorDto;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.dto.UserDto;
-import com.sep.vox.domain.mapper.ExamScheduleProctorDtoMapper;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateExamScheduleInput;
-import com.sep.vox.interfaces.graphql.mapper.UpdateExamScheduleCommandMapper;
 
-@Controller("graphqlExamScheduleController")
-public class ExamScheduleController {
+@Controller
+@RequiredArgsConstructor 
+public class GraphQLExamScheduleController {
 
     private final ViewExamSchedulesUseCase viewExamSchedulesUseCase;
     private final ViewMyExamSchedulesUseCase viewMyExamSchedulesUseCase;
@@ -47,23 +46,6 @@ public class ExamScheduleController {
     private final ViewStudentBusySlotsUseCase viewStudentBusySlotsUseCase;
     private final ExamScheduleProctorRepository examScheduleProctorRepository;
     private final ExamCandidateRepository examCandidateRepository;
-
-    public ExamScheduleController(
-            ViewExamSchedulesUseCase viewExamSchedulesUseCase,
-            ViewMyExamSchedulesUseCase viewMyExamSchedulesUseCase,
-            UpdateExamScheduleUseCase updateExamScheduleUseCase,
-            ViewProctorBusySlotsUseCase viewProctorBusySlotsUseCase,
-            ViewStudentBusySlotsUseCase viewStudentBusySlotsUseCase,
-            ExamScheduleProctorRepository examScheduleProctorRepository,
-            ExamCandidateRepository examCandidateRepository) {
-        this.viewExamSchedulesUseCase = viewExamSchedulesUseCase;
-        this.viewMyExamSchedulesUseCase = viewMyExamSchedulesUseCase;
-        this.updateExamScheduleUseCase = updateExamScheduleUseCase;
-        this.viewProctorBusySlotsUseCase = viewProctorBusySlotsUseCase;
-        this.viewStudentBusySlotsUseCase = viewStudentBusySlotsUseCase;
-        this.examScheduleProctorRepository = examScheduleProctorRepository;
-        this.examCandidateRepository = examCandidateRepository;
-    }
 
     @QueryMapping(name = "myExamSchedules")
     @PreAuthorize("hasRole('STUDENT')")

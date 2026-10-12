@@ -28,7 +28,7 @@ import lombok.RequiredArgsConstructor;
 
 @Controller
 @RequiredArgsConstructor 
-public class OrderController {
+public class GraphQLOrderController {
 
     private final ViewMySchoolOrdersUseCase viewMySchoolOrdersUseCase;
     private final ViewOrdersUseCase viewOrdersUseCase;

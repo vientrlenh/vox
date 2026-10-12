@@ -15,21 +15,15 @@ import com.sep.vox.application.port.input.usecase.notification.ViewMyUnreadNotif
 import com.sep.vox.application.projection.dto.NotificationDto;
 import com.sep.vox.domain.shared.CursorPage;
 
-@Controller("graphqlNotificationController")
-public class NotificationController {
+import lombok.RequiredArgsConstructor;
+
+@Controller
+@RequiredArgsConstructor 
+public class GraphQLNotificationController {
 
     private final ViewMyNotificationsCursorPageUseCase viewMyNotificationsCursorPageUseCase;
     private final ViewMyUnreadNotificationCountUseCase viewMyUnreadNotificationCountUseCase;
     private final ViewMyNotificationUseCase viewMyNotificationUseCase;
-
-    public NotificationController(
-            ViewMyNotificationsCursorPageUseCase viewMyNotificationsCursorPageUseCase,
-            ViewMyUnreadNotificationCountUseCase viewMyUnreadNotificationCountUseCase,
-            ViewMyNotificationUseCase viewMyNotificationUseCase) {
-        this.viewMyNotificationsCursorPageUseCase = viewMyNotificationsCursorPageUseCase;
-        this.viewMyUnreadNotificationCountUseCase = viewMyUnreadNotificationCountUseCase;
-        this.viewMyNotificationUseCase = viewMyNotificationUseCase;
-    }
 
     @QueryMapping(name = "myNotifications")
     @PreAuthorize("isAuthenticated()")

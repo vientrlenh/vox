@@ -27,9 +27,9 @@ import com.sep.vox.application.projection.dto.AppealStatsInfo;
 import com.sep.vox.application.projection.dto.AppealSummaryInfo;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.shared.PageResult;
-import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Chỉ còn góc nhìn của school admin.
@@ -38,8 +38,9 @@ import graphql.schema.DataFetchingEnvironment;
  * một dòng phân công như ba vòng kia, nên giáo viên xem ở {@code myGradingTasks} và
  * chấm ở {@code gradingTaskDetail} — đúng mục tiêu "một hàng đợi duy nhất".
  */
-@Controller("graphqlExamAppealController")
-public class ExamAppealController {
+@Controller
+@RequiredArgsConstructor 
+public class GraphQLExamAppealController {
 
     private final ViewExamAppealsUseCase viewExamAppealsUseCase;
     private final ViewExamAppealStatsUseCase viewExamAppealStatsUseCase;
@@ -49,22 +50,6 @@ public class ExamAppealController {
     private final ViewMyAppealDetailUseCase viewMyAppealDetailUseCase;
     private final ViewExamAppealsByExamUseCase viewExamAppealsByExamUseCase;
 
-    public ExamAppealController(
-            ViewExamAppealsUseCase viewExamAppealsUseCase,
-            ViewExamAppealStatsUseCase viewExamAppealStatsUseCase,
-            ViewExamAppealDetailUseCase viewExamAppealDetailUseCase,
-            ViewAssignableReviewersUseCase viewAssignableReviewersUseCase,
-            ViewMyAppealsUseCase viewMyAppealsUseCase,
-            ViewMyAppealDetailUseCase viewMyAppealDetailUseCase,
-            ViewExamAppealsByExamUseCase viewExamAppealsByExamUseCase) {
-        this.viewExamAppealsUseCase = viewExamAppealsUseCase;
-        this.viewExamAppealStatsUseCase = viewExamAppealStatsUseCase;
-        this.viewExamAppealDetailUseCase = viewExamAppealDetailUseCase;
-        this.viewAssignableReviewersUseCase = viewAssignableReviewersUseCase;
-        this.viewMyAppealsUseCase = viewMyAppealsUseCase;
-        this.viewMyAppealDetailUseCase = viewMyAppealDetailUseCase;
-        this.viewExamAppealsByExamUseCase = viewExamAppealsByExamUseCase;
-    }
 
     @QueryMapping(name = "appeals")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
@@ -128,23 +113,6 @@ public class ExamAppealController {
         return viewAssignableReviewersUseCase.execute(new ViewAssignableReviewersQuery(appealId, keyword));
     }
 
-    /**
-     * Biên là chỗ duy nhất kiểm phân trang: repository bên dưới tin vào đây và chỉ còn trừ 1 để đổi
-     * sang offset, không tự kẹp lại giá trị sai nữa.
-     */
-    private void validatePageSize(Integer page, Integer size) {
-        PageArguments.validate(page, size);
-    }
-
-    /**
-     * Hồ sơ giám khảo cho picker phân công phúc khảo, nạp qua DataLoader {@code userById}.
-     *
-     * <p>Chỉ gắn vào {@code AppealReviewerLite} -- type này chỉ xuất hiện trong
-     * {@code appealReviewers}, truy vấn của school admin lúc chọn người chấm. KHÔNG gắn vào
-     * {@code AppealSummary}/{@code AppealDetail}: hai type đó dùng chung cho {@code myAppeals} của
-     * học sinh, mà giám khảo phải ẩn danh với học sinh (xem chú thích trong exam-appeal.graphqls).
-     * Một tấm ảnh lộ danh tính chắc chắn hơn cái tên.
-     */
     @SchemaMapping(typeName = "AppealReviewerLite", field = "user")
     public CompletableFuture<UserDto> appealReviewerUser(
             AppealReviewerLiteInfo source, DataFetchingEnvironment env) {

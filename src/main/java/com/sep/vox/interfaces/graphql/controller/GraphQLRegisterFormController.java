@@ -21,17 +21,14 @@ import com.sep.vox.domain.dto.RegisterFormDto;
 import com.sep.vox.domain.shared.PageResult;
 
 import graphql.schema.DataFetchingEnvironment;
+import lombok.RequiredArgsConstructor;
 
-@Controller("graphqlRegisterFormController")
-public class RegisterFormController {
+@Controller
+@RequiredArgsConstructor 
+public class GraphQLRegisterFormController {
 
     private final ViewRegisterFormsUseCase viewRegisterFormsUseCase;
     private final ViewRegisterFormDetailsUseCase viewRegisterFormDetailsUseCase;
-
-    public RegisterFormController(ViewRegisterFormsUseCase viewRegisterFormsUseCase, ViewRegisterFormDetailsUseCase viewRegisterFormDetailsUseCase) {
-        this.viewRegisterFormsUseCase = viewRegisterFormsUseCase;
-        this.viewRegisterFormDetailsUseCase = viewRegisterFormDetailsUseCase;
-    }
     
     @QueryMapping(name = "registerForms")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

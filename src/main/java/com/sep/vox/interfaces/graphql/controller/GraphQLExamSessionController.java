@@ -12,7 +12,6 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
-import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DecideExamCandidateResultOutcomeCommand;
 import com.sep.vox.application.port.input.command.FlagExamSessionCommand;
 import com.sep.vox.application.port.input.command.ForceEndExamSessionCommand;
@@ -51,9 +50,12 @@ import com.sep.vox.domain.dto.ExamProctoringAlertDto;
 import com.sep.vox.domain.dto.ExamRecordingDto;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 
+import lombok.RequiredArgsConstructor;
 
-@Controller("graphqlExamSessionController")
-public class ExamSessionController {
+
+@Controller
+@RequiredArgsConstructor 
+public class GraphQLExamSessionController {
 
     private final ViewExamSessionUseCase viewExamSessionUseCase;
     private final ViewExamSessionResultUseCase viewExamSessionResultUseCase;
@@ -71,43 +73,6 @@ public class ExamSessionController {
     private final GetExamRecordsUseCase getExamRecordsUseCase;
     private final GetExamRecordingPlaybackUseCase getExamRecordingPlaybackUseCase;
     private final ViewExamSessionProctoringAlertsUseCase viewExamSessionProctoringAlertsUseCase;
-
-
-    public ExamSessionController(
-            ViewExamSessionUseCase viewExamSessionUseCase,
-            ViewExamSessionResultUseCase viewExamSessionResultUseCase,
-            ViewExamSessionFollowupsUseCase viewExamSessionFollowupsUseCase,
-            ViewMyExamResultsUseCase viewMyExamResultsUseCase,
-            ViewExamItemResponseUseCase viewExamItemResponseUseCase,
-            ViewExamItemResponseTurnsUseCase viewExamItemResponseTurnsUseCase,
-            ViewExamItemResponseEvaluationUseCase viewExamItemResponseEvaluationUseCase,
-            FlagExamSessionUseCase flagExamSessionUseCase,
-            ForceEndExamSessionUseCase forceEndExamSessionUseCase,
-            UnblockExamCandidateUseCase unblockExamCandidateUseCase,
-            DecideExamCandidateResultOutcomeUseCase decideExamCandidateResultOutcomeUseCase,
-            RetryGradingExamSessionUseCase retryGradingExamSessionUseCase,
-            SubmitExamSessionUseCase submitExamSessionUseCase,
-            GetExamRecordsUseCase getExamRecordsUseCase,
-            GetExamRecordingPlaybackUseCase getExamRecordingPlaybackUseCase,
-            ViewExamSessionProctoringAlertsUseCase viewExamSessionProctoringAlertsUseCase) {
-        this.getExamRecordingPlaybackUseCase = getExamRecordingPlaybackUseCase;
-        this.viewExamSessionProctoringAlertsUseCase = viewExamSessionProctoringAlertsUseCase;
-        this.viewExamSessionUseCase = viewExamSessionUseCase;
-        this.viewExamSessionResultUseCase = viewExamSessionResultUseCase;
-        this.viewExamSessionFollowupsUseCase = viewExamSessionFollowupsUseCase;
-        this.viewMyExamResultsUseCase = viewMyExamResultsUseCase;
-        this.viewExamItemResponseUseCase = viewExamItemResponseUseCase;
-        this.viewExamItemResponseTurnsUseCase = viewExamItemResponseTurnsUseCase;
-        this.viewExamItemResponseEvaluationUseCase = viewExamItemResponseEvaluationUseCase;
-        this.flagExamSessionUseCase = flagExamSessionUseCase;
-        this.forceEndExamSessionUseCase = forceEndExamSessionUseCase;
-        this.unblockExamCandidateUseCase = unblockExamCandidateUseCase;
-        this.decideExamCandidateResultOutcomeUseCase = decideExamCandidateResultOutcomeUseCase;
-        this.retryGradingExamSessionUseCase = retryGradingExamSessionUseCase;
-        this.submitExamSessionUseCase = submitExamSessionUseCase;
-        this.getExamRecordsUseCase = getExamRecordsUseCase;
-
-    }
 
     @QueryMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")

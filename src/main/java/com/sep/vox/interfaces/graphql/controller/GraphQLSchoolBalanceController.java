@@ -21,37 +21,16 @@ import com.sep.vox.domain.dto.SchoolBalanceEntryDto;
 import com.sep.vox.domain.dto.SchoolDebtEventDto;
 import com.sep.vox.domain.shared.PageResult;
 
-/**
- * Ví tiền tự nạp của trường: số dư, sao kê, tổng hợp, và nhật ký nợ.
- *
- * <p>Nhật ký nợ ở đây chứ không ở SchoolController vì nợ là mặt trái của chính cái ví -- số dư âm
- * CHÍNH LÀ khoản nợ, và {@code SchoolSubscriptionDebtGuardService} suy trạng thái khoá thẳng từ dấu
- * của số dư. Hai sổ trả lời hai câu hỏi về cùng một ví: sao kê nói "tiền đi đâu", nhật ký nợ nói
- * "vì sao trường bị khoá".
- *
- * <p>KHÔNG có {@code @PreAuthorize} trên các method: quyền ở đây không phải một vai trò mà là quan hệ
- * giữa người gọi và {@code schoolId} họ hỏi. {@code hasRole('SYSTEM_ADMIN')} sẽ chặn mất chính quản
- * trị trường, còn bỏ trống thì trường này đọc được ví của trường kia. Phép kiểm nằm trong use case,
- * qua {@code SchoolScopedReadGuard} -- nơi biết cả hai vế.
- */
-@Controller("graphqlSchoolBalanceController")
-public class SchoolBalanceController {
+import lombok.RequiredArgsConstructor;
+
+@Controller
+@RequiredArgsConstructor 
+public class GraphQLSchoolBalanceController {
 
     private final ViewSchoolBalanceUseCase viewSchoolBalanceUseCase;
     private final ViewSchoolBalanceEntriesUseCase viewSchoolBalanceEntriesUseCase;
     private final ViewSchoolBalanceSummaryUseCase viewSchoolBalanceSummaryUseCase;
     private final ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase;
-
-    public SchoolBalanceController(
-            ViewSchoolBalanceUseCase viewSchoolBalanceUseCase,
-            ViewSchoolBalanceEntriesUseCase viewSchoolBalanceEntriesUseCase,
-            ViewSchoolBalanceSummaryUseCase viewSchoolBalanceSummaryUseCase,
-            ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase) {
-        this.viewSchoolBalanceUseCase = viewSchoolBalanceUseCase;
-        this.viewSchoolBalanceEntriesUseCase = viewSchoolBalanceEntriesUseCase;
-        this.viewSchoolBalanceSummaryUseCase = viewSchoolBalanceSummaryUseCase;
-        this.viewSchoolDebtEventsUseCase = viewSchoolDebtEventsUseCase;
-    }
 
     @QueryMapping(name = "schoolBalance")
     public SchoolBalanceDto schoolBalance(@Argument(name = "schoolId") UUID schoolId) {

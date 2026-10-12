@@ -11,6 +11,7 @@ import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
+import lombok.RequiredArgsConstructor;
 
 import com.sep.vox.application.port.input.query.ViewQuestionBankDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionBanksQuery;
@@ -23,18 +24,12 @@ import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionBankStatus;
 import com.sep.vox.domain.shared.PageResult;
 
-@Controller("graphqlQuestionBankController")
-public class QuestionBankController {
+@Controller
+@RequiredArgsConstructor 
+public class GraphQLQuestionBankController {
 
     private final ViewQuestionBanksUseCase viewQuestionBanksUseCase;
     private final ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase;
-
-    public QuestionBankController(
-            ViewQuestionBanksUseCase viewQuestionBanksUseCase,
-            ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase) {
-        this.viewQuestionBanksUseCase = viewQuestionBanksUseCase;
-        this.viewQuestionBankDetailsUseCase = viewQuestionBankDetailsUseCase;
-    }
 
     @QueryMapping(name = "questionBanks")
     public PageResult<QuestionBankDto> questionBanks(

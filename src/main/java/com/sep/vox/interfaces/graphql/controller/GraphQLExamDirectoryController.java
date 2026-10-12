@@ -17,36 +17,17 @@ import com.sep.vox.application.projection.dto.ExamDirectoryGradeInfo;
 import com.sep.vox.application.projection.dto.ExamDirectoryUserInfo;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.shared.PageResult;
-import com.sep.vox.interfaces.shared.PageArguments;
 
-/**
- * Bề mặt GraphQL "danh bạ kỳ thi" — chỉ đọc.
- *
- * <p>Tách khỏi {@link SchoolController} (toàn quyền SCHOOL_ADMIN) để không phải nới
- * quyền trên các type dùng chung. {@code @PreAuthorize} ở đây chỉ là chốt thô cho
- * đúng hai vai trò có thể tổ chức kỳ thi; luật thật (school admin cùng trường HOẶC
- * chủ tịch kỳ thi, và phạm vi theo {@code ExamKind}) nằm ở
- * {@code ExamDirectoryAccessService} — vì "chủ tịch" là một dòng trong
- * {@code exam_members}, không phải một vai trò toàn cục.
- */
+import lombok.RequiredArgsConstructor;
+
 @Controller
-public class ExamDirectoryController {
+@RequiredArgsConstructor 
+public class GraphQLExamDirectoryController {
 
     private final ViewExamDirectoryClassesUseCase viewExamDirectoryClassesUseCase;
     private final ViewExamDirectoryGradesUseCase viewExamDirectoryGradesUseCase;
     private final ViewExamDirectoryStudentsUseCase viewExamDirectoryStudentsUseCase;
     private final ViewExamDirectoryProctorsUseCase viewExamDirectoryProctorsUseCase;
-
-    public ExamDirectoryController(
-            ViewExamDirectoryClassesUseCase viewExamDirectoryClassesUseCase,
-            ViewExamDirectoryGradesUseCase viewExamDirectoryGradesUseCase,
-            ViewExamDirectoryStudentsUseCase viewExamDirectoryStudentsUseCase,
-            ViewExamDirectoryProctorsUseCase viewExamDirectoryProctorsUseCase) {
-        this.viewExamDirectoryClassesUseCase = viewExamDirectoryClassesUseCase;
-        this.viewExamDirectoryGradesUseCase = viewExamDirectoryGradesUseCase;
-        this.viewExamDirectoryStudentsUseCase = viewExamDirectoryStudentsUseCase;
-        this.viewExamDirectoryProctorsUseCase = viewExamDirectoryProctorsUseCase;
-    }
 
     @QueryMapping(name = "examDirectoryClasses")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")

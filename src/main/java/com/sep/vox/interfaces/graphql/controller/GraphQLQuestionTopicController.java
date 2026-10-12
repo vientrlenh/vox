@@ -14,18 +14,12 @@ import com.sep.vox.domain.dto.QuestionTopicDto;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.shared.PageResult;
 
-@Controller("graphqlQuestionTopicController")
-public class QuestionTopicController {
+@Controller
+@RequiredArgsConstructor
+public class GraphQLQuestionTopicController {
 
     private final ViewQuestionTopicsUseCase viewQuestionTopicsUseCase;
     private final ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase;
-
-    public QuestionTopicController(
-            ViewQuestionTopicsUseCase viewQuestionTopicsUseCase,
-            ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase) {
-        this.viewQuestionTopicsUseCase = viewQuestionTopicsUseCase;
-        this.viewQuestionTopicDetailsUseCase = viewQuestionTopicDetailsUseCase;
-    }
 
     @QueryMapping(name = "questionTopics")
     public PageResult<QuestionTopicDto> questionTopics(

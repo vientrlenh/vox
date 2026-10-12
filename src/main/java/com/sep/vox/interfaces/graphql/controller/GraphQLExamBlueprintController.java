@@ -21,10 +21,6 @@ import com.sep.vox.domain.dto.ExamBlueprintSectionDto;
 import com.sep.vox.domain.dto.ExamBlueprintSlotDto;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.dto.QuestionDto;
-import com.sep.vox.domain.mapper.ExamBlueprintSectionDtoMapper;
-import com.sep.vox.domain.mapper.ExamBlueprintSlotDtoMapper;
-import com.sep.vox.domain.mapper.ExamBlueprintVersionDtoMapper;
-import com.sep.vox.domain.mapper.QuestionDtoMapper;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
@@ -32,10 +28,11 @@ import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.shared.PageResult;
 
-@Controller("graphqlExamBlueprintController")
-public class ExamBlueprintController {
+import lombok.RequiredArgsConstructor;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExamBlueprintController.class);
+@Controller
+@RequiredArgsConstructor 
+public class GraphQLExamBlueprintController {
 
     private final ViewExamBlueprintsUseCase viewExamBlueprintsUseCase;
     private final ViewExamBlueprintDetailsUseCase viewExamBlueprintDetailsUseCase;
@@ -43,21 +40,6 @@ public class ExamBlueprintController {
     private final ExamBlueprintSectionRepository examBlueprintSectionRepository;
     private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
     private final QuestionRepository questionRepository;
-
-    public ExamBlueprintController(
-            ViewExamBlueprintsUseCase viewExamBlueprintsUseCase,
-            ViewExamBlueprintDetailsUseCase viewExamBlueprintDetailsUseCase,
-            ExamBlueprintVersionRepository examBlueprintVersionRepository,
-            ExamBlueprintSectionRepository examBlueprintSectionRepository,
-            ExamBlueprintSlotRepository examBlueprintSlotRepository,
-            QuestionRepository questionRepository) {
-        this.viewExamBlueprintsUseCase = viewExamBlueprintsUseCase;
-        this.viewExamBlueprintDetailsUseCase = viewExamBlueprintDetailsUseCase;
-        this.examBlueprintVersionRepository = examBlueprintVersionRepository;
-        this.examBlueprintSectionRepository = examBlueprintSectionRepository;
-        this.examBlueprintSlotRepository = examBlueprintSlotRepository;
-        this.questionRepository = questionRepository;
-    }
 
     @QueryMapping(name = "examBlueprints")
     public PageResult<ExamBlueprintDto> examBlueprints(

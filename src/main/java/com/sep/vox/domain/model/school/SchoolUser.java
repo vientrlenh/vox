@@ -4,18 +4,23 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.shared.BaseModel;
+import com.sep.vox.domain.valueobject.Code;
 
 public class SchoolUser extends BaseModel {
     private UUID schoolId;
     private UUID userId; 
+    private Code memberCode;
+    private SchoolUserRole role;
     private Instant startDate;
     private Instant endDate;
 
     protected SchoolUser() {}
 
-    public SchoolUser(UUID schoolId, UUID userId, Instant startDate, Instant endDate) {
+    public SchoolUser(UUID schoolId, UUID userId, Code memberCode, SchoolUserRole role, Instant startDate, Instant endDate) {
         this.schoolId = schoolId;
         this.userId = userId;
+        this.memberCode = memberCode;
+        this.role = role;
         this.startDate = startDate;
         this.endDate = endDate;
     }
@@ -24,6 +29,8 @@ public class SchoolUser extends BaseModel {
         super(builder.id, builder.createdAt);
         this.schoolId = builder.schoolId;
         this.userId = builder.userId;
+        this.memberCode = builder.memberCode;
+        this.role = builder.role;
         this.startDate = builder.startDate;
         this.endDate = builder.endDate;
     }
@@ -43,6 +50,22 @@ public class SchoolUser extends BaseModel {
 
     public void setUserId(UUID userId) {
         this.userId = userId;
+    }
+
+    public Code getMemberCode() {
+        return memberCode;
+    }
+
+    public void setMemberCode(Code memberCode) {
+        this.memberCode = memberCode;
+    }
+
+    public SchoolUserRole getRole() {
+        return role;
+    }
+
+    public void setRole(SchoolUserRole role) {
+        this.role = role;
     }
 
     public Instant getStartDate() {
@@ -65,19 +88,23 @@ public class SchoolUser extends BaseModel {
         return new SchoolUser.Builder();
     }
 
-    public static SchoolUser create(UUID userId, UUID schoolId, Instant now, Instant endDate) {
-        return new SchoolUser(
-            schoolId, 
-            userId, 
-            now, 
-            endDate
-        );
+    public static SchoolUser createTeacher(UUID userId, UUID schoolId, String memberCode, Instant startDate, Instant endDate) {
+        return SchoolUser.builder()
+            .userId(userId)
+            .schoolId(schoolId)
+            .memberCode(Code.from(memberCode))
+            .role(SchoolUserRole.TEACHER)
+            .startDate(startDate)
+            .endDate(endDate)
+            .build();
     }
 
     public static class Builder {
         private UUID id;
         private UUID schoolId;
         private UUID userId; 
+        private Code memberCode;
+        private SchoolUserRole role;
         private Instant startDate;
         private Instant endDate;
         private Instant createdAt;
@@ -96,6 +123,16 @@ public class SchoolUser extends BaseModel {
 
         public Builder userId(UUID userId) {
             this.userId = userId;
+            return this;
+        }
+
+        public Builder memberCode(Code memberCode) {
+            this.memberCode = memberCode;
+            return this;
+        }
+
+        public Builder role(SchoolUserRole role) {
+            this.role = role;
             return this;
         }
 

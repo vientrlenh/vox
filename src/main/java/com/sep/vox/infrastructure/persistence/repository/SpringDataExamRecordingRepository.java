@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamRecordingJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamRecordingJpaEntity;
 
 public interface SpringDataExamRecordingRepository extends JpaRepository<ExamRecordingJpaEntity, UUID> {
     List<ExamRecordingJpaEntity> findByExamSessionId(UUID examSessionId);

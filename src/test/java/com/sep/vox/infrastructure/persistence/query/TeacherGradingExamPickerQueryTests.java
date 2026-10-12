@@ -20,12 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.projection.dto.GradingExamOptionInfo;
 import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.config.ContainerTestConfig;
-import com.sep.vox.infrastructure.persistence.entity.ExamCandidateJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamGradingAssignmentJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamSessionJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamCandidateJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamCandidateResultJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamGradingAssignmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamSessionJpaEntity;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

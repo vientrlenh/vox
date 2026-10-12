@@ -6,8 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.projection.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.TeacherPracticeSessionDetail;
 import com.sep.vox.domain.dto.personalization.TeacherPracticeSessionDetailDto;
@@ -59,7 +58,7 @@ public class PracticeSessionDetailAssemblyService {
     @Transactional(readOnly = true)
     public TeacherPracticeSessionDetail assemble(UUID sessionId) {
         var summary = practiceSessionQueryRepository.findSessionRowById(sessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
         var turns = practiceResponseTurnRepository.findBySessionIdOrderByTurnOrder(sessionId).stream()
             .map(turn -> new TeacherPracticeTurnViewDto(
                 turn.turnOrder(),

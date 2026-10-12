@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamResultAppealJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamResultAppealJpaEntity;
 
 public interface SpringDataExamResultAppealRepository extends JpaRepository<ExamResultAppealJpaEntity, UUID> {
 

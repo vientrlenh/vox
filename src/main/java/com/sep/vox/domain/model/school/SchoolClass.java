@@ -3,14 +3,13 @@ package com.sep.vox.domain.model.school;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.language.LearningLanguage;
 import com.sep.vox.domain.shared.BaseModel;
 import com.sep.vox.domain.valueobject.Code;
 import com.sep.vox.domain.valueobject.Name;
 
 public class SchoolClass extends BaseModel {
     private UUID schoolId;
-    private LearningLanguage language;
+    private UUID learningLanguageId;
     private UUID schoolGradeId;
     private Code code;
     private Name name;
@@ -22,9 +21,9 @@ public class SchoolClass extends BaseModel {
 
     public SchoolClass() {}
 
-    public SchoolClass(UUID schoolId, LearningLanguage language, UUID schoolGradeId, Code code, Name name, String description, SchoolClassStatus status, Instant updatedAt, Instant archivedAt, UUID createdBy) {
+    public SchoolClass(UUID schoolId, UUID learningLanguageId, UUID schoolGradeId, Code code, Name name, String description, SchoolClassStatus status, Instant updatedAt, Instant archivedAt, UUID createdBy) {
         this.schoolId = schoolId;
-        this.language = language;
+        this.learningLanguageId = learningLanguageId;
         this.schoolGradeId = schoolGradeId;
         this.code = code;
         this.name = name;
@@ -38,7 +37,7 @@ public class SchoolClass extends BaseModel {
     public SchoolClass(Builder builder) {
         super(builder.id, builder.createdAt);
         this.schoolId = builder.schoolId;
-        this.language = builder.language;
+        this.learningLanguageId = builder.learningLanguageId;
         this.schoolGradeId = builder.schoolGradeId;
         this.code = builder.code;
         this.name = builder.name;
@@ -57,12 +56,12 @@ public class SchoolClass extends BaseModel {
         this.schoolId = schoolId;
     }
 
-    public LearningLanguage getLanguage() {
-        return language;
+    public UUID getLearningLanguageId() {
+        return learningLanguageId;
     }
 
-    public void setLanguage(LearningLanguage language) {
-        this.language = language;
+    public void setLearningLanguageId(UUID learningLanguageId) {
+        this.learningLanguageId = learningLanguageId;
     }
 
     public UUID getSchoolGradeId() {
@@ -133,11 +132,11 @@ public class SchoolClass extends BaseModel {
         return new SchoolClass.Builder();
     }
 
-    public static SchoolClass create(UUID schoolId, LearningLanguage language, UUID schoolGradeId, String code, String name,
+    public static SchoolClass create(UUID schoolId, UUID learningLanguageId, UUID schoolGradeId, String code, String name,
             String description, UUID createdBy) {
         return SchoolClass.builder()
                 .schoolId(schoolId)
-                .language(language)
+                .learningLanguageId(learningLanguageId)
                 .schoolGradeId(schoolGradeId)
                 .code(Code.from(code))
                 .name(Name.from(name))
@@ -150,7 +149,7 @@ public class SchoolClass extends BaseModel {
     public static class Builder {
         private UUID id;
         private UUID schoolId;
-        private LearningLanguage language;
+        private UUID learningLanguageId;
         private UUID schoolGradeId;
         private Code code;
         private Name name;
@@ -173,8 +172,8 @@ public class SchoolClass extends BaseModel {
             return this;
         }
 
-        public Builder language(LearningLanguage language) {
-            this.language = language;
+        public Builder learningLanguageId(UUID learningLanguageId) {
+            this.learningLanguageId = learningLanguageId;
             return this;
         }
 

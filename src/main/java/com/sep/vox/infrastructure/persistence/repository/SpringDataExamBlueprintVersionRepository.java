@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamBlueprintVersionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamBlueprintVersionJpaEntity;
 
 public interface SpringDataExamBlueprintVersionRepository extends JpaRepository<ExamBlueprintVersionJpaEntity, UUID> {
     List<ExamBlueprintVersionJpaEntity> findByBlueprintIdOrderByVersionDesc(UUID blueprintId);

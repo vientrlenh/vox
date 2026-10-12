@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamGradingAssignmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamGradingAssignmentJpaEntity;
 
 import jakarta.persistence.LockModeType;
 

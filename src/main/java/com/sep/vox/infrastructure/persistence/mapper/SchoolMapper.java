@@ -6,7 +6,7 @@ import com.sep.vox.domain.valueobject.Code;
 import com.sep.vox.domain.valueobject.Name;
 import com.sep.vox.domain.valueobject.PositiveInteger;
 import com.sep.vox.domain.valueobject.SchoolDomain;
-import com.sep.vox.infrastructure.persistence.entity.SchoolJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolJpaEntity;
 
 import lombok.extern.slf4j.Slf4j;
 

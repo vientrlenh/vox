@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamResultStatusHistory;
 import com.sep.vox.domain.model.exam.ResultStatusChangeSource;
-import com.sep.vox.infrastructure.persistence.entity.ExamResultStatusHistoryJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamResultStatusHistoryJpaEntity;
 
 public final class ExamResultStatusHistoryMapper {
 

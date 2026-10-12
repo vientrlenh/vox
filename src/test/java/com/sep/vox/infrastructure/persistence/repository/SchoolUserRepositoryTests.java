@@ -19,9 +19,9 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolUserRepositoryImpl;
 import com.sep.vox.infrastructure.persistence.entity.RoleJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.SchoolClassUserJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.UserRoleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassUserJpaEntity;
 
 @DataJpaTest
 @ActiveProfiles("test")

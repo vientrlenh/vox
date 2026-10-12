@@ -1,10 +1,9 @@
 package com.sep.vox.domain.model.user;
 
 public enum UserRole {
-    SYSTEM_ADMIN, 
-    SCHOOL_ADMIN, 
-    TEACHER, 
-    STUDENT;
+    SYSTEM_ADMIN,
+    SCHOOL_MEMBER, 
+    LEARNER;
 
     public static UserRole from(String role) {
         return role == null ? null : UserRole.valueOf(role);

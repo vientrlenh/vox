@@ -5,7 +5,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.exam.ExamSchedule;
@@ -54,14 +55,15 @@ public class ProctorScheduleAccessService {
      * thi.
      */
     public ExamSchedule requireCanMonitorSchedule(UUID scheduleId) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (!hasAccess(scheduleId, currentUserId)) {
             throw new ForbiddenException("Bạn không phải giám thị của ca thi này");
         }
         var schedule = examScheduleRepository.findById(scheduleId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
         if (schedule.getStatus() != null && schedule.getStatus().isRemoved()) {
-            throw new NotFoundException("Không tìm thấy ca thi");
+            throw new ResourceNotFoundException("Không tìm thấy ca thi");
         }
         return schedule;
     }

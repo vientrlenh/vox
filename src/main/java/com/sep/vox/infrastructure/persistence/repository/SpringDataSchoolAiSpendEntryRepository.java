@@ -4,7 +4,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolAiSpendEntryJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolAiSpendEntryJpaEntity;
 
 public interface SpringDataSchoolAiSpendEntryRepository
     extends JpaRepository<SchoolAiSpendEntryJpaEntity, UUID> {

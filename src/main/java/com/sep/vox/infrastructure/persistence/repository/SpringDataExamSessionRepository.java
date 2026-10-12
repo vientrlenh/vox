@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamSessionJpaEntity;
 
 
 public interface SpringDataExamSessionRepository extends JpaRepository<ExamSessionJpaEntity, UUID> {

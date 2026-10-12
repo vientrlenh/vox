@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamResultAppealItemJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamResultAppealItemJpaEntity;
 
 public interface SpringDataExamResultAppealItemRepository
         extends JpaRepository<ExamResultAppealItemJpaEntity, UUID> {

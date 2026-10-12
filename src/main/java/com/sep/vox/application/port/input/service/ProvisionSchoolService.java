@@ -6,8 +6,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.event.UserCreatedPayloadV1;
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.outbox.Outbox;
@@ -20,7 +20,6 @@ import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import com.sep.vox.domain.repository.UserRoleRepository;
 import com.sep.vox.domain.shared.AggregateTypeConstant;
 import com.sep.vox.domain.shared.EventTypeConstant;
 import com.sep.vox.domain.shared.UserTypeConstant;
@@ -29,46 +28,38 @@ import com.sep.vox.domain.shared.UserTypeConstant;
 public class ProvisionSchoolService {
     
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleRepository userRoleRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
 
     public ProvisionSchoolService(
         UserRepository userRepository,
-        RoleRepository roleRepository,
         SchoolRepository schoolRepository,
         SchoolUserRepository schoolUserRepository,
-        UserRoleRepository userRoleRepository,
         OutboxRepository outboxRepository,
         JsonSerializationPort jsonSerializationPort
     ) {
         this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
         this.schoolRepository = schoolRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleRepository = userRoleRepository;
         this.outboxRepository = outboxRepository;
         this.jsonSerializationPort = jsonSerializationPort;
     }
 
     /** @return id của trường vừa tạo. */
     public UUID provision(ProvisionSchoolCommand command) {
-        var schoolAdminRole = roleRepository.findByCode("SCHOOL_ADMIN")
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò quản trị nhà trường"));
 
         if (userRepository.existsByEmail(command.contactEmail())) {
-            throw new DuplicatedException("Người dùng với email này đã tồn tại");
+            throw new ResourceDuplicatedException("Người dùng với email này đã tồn tại");
         }
 
         if (userRepository.existsByPhone(command.contactPhone())) {
-            throw new DuplicatedException("Người dùng với số điện thoại này đã tồn tại");
+            throw new ResourceDuplicatedException("Người dùng với số điện thoại này đã tồn tại");
         }
 
         if (schoolRepository.existsByCode(command.schoolCode())) {
-            throw new DuplicatedException("Mã trường đã tồn tại");
+            throw new ResourceDuplicatedException("Mã trường đã tồn tại");
         }
 
         var savedSchool = saveSchool(command);

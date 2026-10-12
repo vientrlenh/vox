@@ -15,9 +15,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.config.ContainerTestConfig;
-import com.sep.vox.infrastructure.persistence.entity.ExamCandidateJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamScheduleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamCandidateJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamScheduleJpaEntity;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

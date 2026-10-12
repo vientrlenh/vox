@@ -13,7 +13,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolGradeJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolGradeJpaEntity;
+
 import org.springframework.data.jpa.repository.Modifying;
 
 // school_grades giờ mang school_id trực tiếp, nên các truy vấn theo trường không còn phải JOIN

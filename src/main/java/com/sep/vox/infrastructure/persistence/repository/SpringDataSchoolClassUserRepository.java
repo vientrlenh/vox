@@ -13,7 +13,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolClassUserJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassUserJpaEntity;
 
 public interface SpringDataSchoolClassUserRepository extends JpaRepository<SchoolClassUserJpaEntity, UUID>{
     Optional<SchoolClassUserJpaEntity> findByUserIdAndSchoolClassId(UUID userId, UUID schoolClassId);

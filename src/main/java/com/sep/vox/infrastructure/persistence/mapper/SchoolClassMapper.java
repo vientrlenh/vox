@@ -1,11 +1,10 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.language.LearningLanguage;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.valueobject.Code;
 import com.sep.vox.domain.valueobject.Name;
-import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassJpaEntity;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,7 +16,7 @@ public final class SchoolClassMapper {
             return SchoolClass.builder()
                 .id(jpa.getId())
                 .schoolId(jpa.getSchoolId())
-                .language(LearningLanguage.from(jpa.getLanguage()))
+                .learningLanguageId(jpa.getLearningLanguageId())
                 .schoolGradeId(jpa.getSchoolGradeId())
                 .code(Code.from(jpa.getCode()))
                 .name(Name.from(jpa.getName()))
@@ -40,7 +39,7 @@ public final class SchoolClassMapper {
             return SchoolClassJpaEntity.builder()
                 .id(sClass.getId())
                 .schoolId(sClass.getSchoolId())
-                .language(LearningLanguage.value(sClass.getLanguage()))
+                .learningLanguageId(sClass.getLearningLanguageId())
                 .schoolGradeId(sClass.getSchoolGradeId())
                 .code(Code.valueOf(sClass.getCode()))
                 .name(Name.valueOf(sClass.getName()))

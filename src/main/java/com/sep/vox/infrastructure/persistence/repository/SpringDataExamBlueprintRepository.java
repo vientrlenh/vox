@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamBlueprintJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamBlueprintJpaEntity;
 
 public interface SpringDataExamBlueprintRepository extends JpaRepository<ExamBlueprintJpaEntity, UUID> {
 

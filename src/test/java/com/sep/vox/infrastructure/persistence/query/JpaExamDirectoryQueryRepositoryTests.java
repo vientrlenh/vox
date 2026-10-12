@@ -18,13 +18,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.infrastructure.persistence.entity.RoleJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.SchoolClassUserJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.SchoolGradeJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.GradeLevelJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.SchoolUserJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.UserRoleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassUserJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolGradeJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolUserJpaEntity;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

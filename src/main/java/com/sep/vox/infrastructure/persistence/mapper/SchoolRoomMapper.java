@@ -1,10 +1,11 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.school.SchoolRoom;
-import com.sep.vox.infrastructure.persistence.entity.SchoolRoomJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolRoomJpaEntity;
 
 public final class SchoolRoomMapper {
 
+    private SchoolRoomMapper() {}
 
     public static SchoolRoom toDomain(SchoolRoomJpaEntity jpa) {
         return new SchoolRoom(

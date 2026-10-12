@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamPaperJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamPaperJpaEntity;
 
 public interface SpringDataExamPaperRepository extends JpaRepository<ExamPaperJpaEntity, UUID> {
     List<ExamPaperJpaEntity> findByExamIdOrderByVariantAsc(UUID examId);

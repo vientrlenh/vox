@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
 import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
-import com.sep.vox.infrastructure.persistence.entity.ExamBlueprintSlotJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamBlueprintSlotJpaEntity;
 
 public final class ExamBlueprintSlotMapper {
 

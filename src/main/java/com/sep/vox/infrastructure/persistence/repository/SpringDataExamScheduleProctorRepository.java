@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamScheduleProctorJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamScheduleProctorJpaEntity;
 
 public interface SpringDataExamScheduleProctorRepository extends JpaRepository<ExamScheduleProctorJpaEntity, UUID> {
     List<ExamScheduleProctorJpaEntity> findByScheduleId(UUID scheduleId);

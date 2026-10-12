@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamMemberJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamMemberJpaEntity;
 
 public interface SpringDataExamMemberRepository extends JpaRepository<ExamMemberJpaEntity, UUID> {
     List<ExamMemberJpaEntity> findByExamId(UUID examId);

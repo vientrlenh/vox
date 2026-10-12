@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExamCandidateMapper;
@@ -34,7 +34,7 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
             var saved = springDataExamCandidateRepository.save(ExamCandidateMapper.toJpa(candidate));
             return ExamCandidateMapper.toDomain(saved);
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
+            throw new ResourceDuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
         }
     }
 
@@ -46,7 +46,7 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
                 .map(ExamCandidateMapper::toDomain)
                 .toList();
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
+            throw new ResourceDuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
         }
     }
 

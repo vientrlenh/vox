@@ -9,7 +9,7 @@ import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.domain.model.exam.ExamScheduleProctor;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExamScheduleProctorMapper;
@@ -30,7 +30,7 @@ public class ExamScheduleProctorRepositoryImpl implements ExamScheduleProctorRep
             var saved = springDataExamScheduleProctorRepository.save(ExamScheduleProctorMapper.toJpa(proctor));
             return ExamScheduleProctorMapper.toDomain(saved);
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicatedException("Giám thị đã được phân công cho ca này");
+            throw new ResourceDuplicatedException("Giám thị đã được phân công cho ca này");
         }
     }
 

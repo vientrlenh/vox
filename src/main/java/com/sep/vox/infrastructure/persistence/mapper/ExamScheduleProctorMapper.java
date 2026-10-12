@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.exam.ExamScheduleProctor;
-import com.sep.vox.infrastructure.persistence.entity.ExamScheduleProctorJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamScheduleProctorJpaEntity;
 
 public final class ExamScheduleProctorMapper {
 

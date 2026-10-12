@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamSecurePoolJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamSecurePoolJpaEntity;
 
 public interface SpringDataExamSecurePoolRepository extends JpaRepository<ExamSecurePoolJpaEntity, UUID> {
     Optional<ExamSecurePoolJpaEntity> findByExamId(UUID examId);

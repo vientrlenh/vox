@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionEventJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolSubscriptionEventJpaEntity;
 
 public interface SpringDataSchoolSubscriptionEventRepository
         extends JpaRepository<SchoolSubscriptionEventJpaEntity, UUID> {

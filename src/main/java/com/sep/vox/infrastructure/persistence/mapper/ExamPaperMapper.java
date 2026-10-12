@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.exam.ExamPaper;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
-import com.sep.vox.infrastructure.persistence.entity.ExamPaperJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamPaperJpaEntity;
 
 public final class ExamPaperMapper {
 

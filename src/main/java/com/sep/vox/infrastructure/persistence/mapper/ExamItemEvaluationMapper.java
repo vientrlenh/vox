@@ -4,7 +4,7 @@ import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
 import com.sep.vox.domain.model.exam.ExamItemEvaluation;
 import com.sep.vox.domain.model.exam.ExamItemEvaluationStatus;
 import com.sep.vox.domain.valueobject.EvaluationSignals;
-import com.sep.vox.infrastructure.persistence.entity.ExamItemEvaluationJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamItemEvaluationJpaEntity;
 
 public final class ExamItemEvaluationMapper {
 

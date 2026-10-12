@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamItemEvaluationTurnJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamItemEvaluationTurnJpaEntity;
 
 public interface SpringDataExamItemEvaluationTurnRepository extends JpaRepository<ExamItemEvaluationTurnJpaEntity, UUID> {
     List<ExamItemEvaluationTurnJpaEntity> findByEvaluationIdOrderByTurnOrderAsc(UUID evaluationId);

@@ -9,11 +9,11 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.sep.vox.infrastructure.persistence.entity.SchoolRoomJpaEntity;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolRoomJpaEntity;
 
 public interface SpringDataSchoolRoomRepository extends JpaRepository<SchoolRoomJpaEntity, UUID> {
     // Thêm dòng này để Spring Data tự động query kiểm tra mã code

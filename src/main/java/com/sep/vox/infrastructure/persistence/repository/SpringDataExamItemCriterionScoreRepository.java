@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamItemCriterionScoreJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamItemCriterionScoreJpaEntity;
 
 public interface SpringDataExamItemCriterionScoreRepository extends JpaRepository<ExamItemCriterionScoreJpaEntity, UUID> {
     List<ExamItemCriterionScoreJpaEntity> findByEvaluationId(UUID evaluationId);

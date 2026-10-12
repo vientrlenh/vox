@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
-import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolSubscriptionJpaEntity;
 
 public final class SchoolSubscriptionMapper {
 

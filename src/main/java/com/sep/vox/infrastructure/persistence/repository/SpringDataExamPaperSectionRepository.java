@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamPaperSectionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamPaperSectionJpaEntity;
 
 public interface SpringDataExamPaperSectionRepository extends JpaRepository<ExamPaperSectionJpaEntity, UUID> {
     List<ExamPaperSectionJpaEntity> findByPaperIdOrderByOrderAsc(UUID paperId);

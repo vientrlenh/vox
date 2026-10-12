@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.school.SchoolBalance;
-import com.sep.vox.infrastructure.persistence.entity.SchoolBalanceJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolBalanceJpaEntity;
 
 public final class SchoolBalanceMapper {
 

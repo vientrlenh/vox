@@ -31,4 +31,6 @@ public record CreateSystemAssessmentPolicyRequest(
 
         String effectiveTo
 ) {
+
+        public static CreateSystemAssessmentPolicyCommand
 }

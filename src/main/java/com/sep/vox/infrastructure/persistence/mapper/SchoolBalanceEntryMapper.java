@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolBalanceEntry;
 import com.sep.vox.domain.model.school.SchoolBalanceEntryType;
-import com.sep.vox.infrastructure.persistence.entity.SchoolBalanceEntryJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolBalanceEntryJpaEntity;
 
 public final class SchoolBalanceEntryMapper {
 

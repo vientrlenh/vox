@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
-import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamCandidateResultJpaEntity;
 
 public final class ExamCandidateResultMapper {
 

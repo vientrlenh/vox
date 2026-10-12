@@ -10,9 +10,9 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.Instant;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamCandidateResultJpaEntity;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntity;
+import java.time.Instant;
 
 public interface SpringDataExamCandidateResultRepository extends JpaRepository<ExamCandidateResultJpaEntity, UUID> {
     Optional<ExamCandidateResultJpaEntity> findBySessionId(UUID sessionId);

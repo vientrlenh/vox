@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
-import com.sep.vox.infrastructure.persistence.entity.ExamBlueprintVersionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamBlueprintVersionJpaEntity;
 
 public final class ExamBlueprintVersionMapper {
 

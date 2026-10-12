@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.ExamPaperItemJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.exam.ExamPaperItemJpaEntity;
 
 public interface SpringDataExamPaperItemRepository extends JpaRepository<ExamPaperItemJpaEntity, UUID> {
     List<ExamPaperItemJpaEntity> findBySectionIdOrderByOrderAsc(UUID sectionId);

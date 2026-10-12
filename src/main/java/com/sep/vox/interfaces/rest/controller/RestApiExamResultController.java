@@ -26,6 +26,7 @@ import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Thao tác cấp kỳ thi của school admin: chốt sổ và xuất bảng điểm.
@@ -36,7 +37,8 @@ import jakarta.validation.Valid;
  */
 @RestController
 @RequestMapping("/api/v1/exam-results")
-public class ExamResultController {
+@RequiredArgsConstructor 
+public class RestApiExamResultController {
 
     /**
      * MIME type của .xlsx. Viết ra hằng vì chuỗi này dài và sai một ký tự thì trình duyệt
@@ -49,17 +51,6 @@ public class ExamResultController {
     private final BulkFinalizeExamResultsUseCase bulkFinalizeExamResultsUseCase;
     private final ExportExamScoresUseCase exportExamScoresUseCase;
     private final ExportExamScoresExcelUseCase exportExamScoresExcelUseCase;
-
-    public ExamResultController(
-            PreviewBulkFinalizeUseCase previewBulkFinalizeUseCase,
-            BulkFinalizeExamResultsUseCase bulkFinalizeExamResultsUseCase,
-            ExportExamScoresUseCase exportExamScoresUseCase,
-            ExportExamScoresExcelUseCase exportExamScoresExcelUseCase) {
-        this.previewBulkFinalizeUseCase = previewBulkFinalizeUseCase;
-        this.bulkFinalizeExamResultsUseCase = bulkFinalizeExamResultsUseCase;
-        this.exportExamScoresUseCase = exportExamScoresUseCase;
-        this.exportExamScoresExcelUseCase = exportExamScoresExcelUseCase;
-    }
 
     @Operation(summary = "Xem trước việc chốt sổ kỳ thi: còn bao nhiêu bài chưa chấm, "
         + "đang chấm dở, và đơn phúc khảo chưa xong. KHÔNG ghi gì.")

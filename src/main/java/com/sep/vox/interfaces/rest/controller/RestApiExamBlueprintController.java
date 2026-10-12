@@ -50,21 +50,14 @@ import com.sep.vox.interfaces.rest.dto.request.UpdateExamBlueprintSlotRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamBlueprintVersionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamBlueprintVersionStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.CreateExamBlueprintCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateExamBlueprintSectionCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateExamBlueprintSlotCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateExamBlueprintVersionCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateExamBlueprintCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateExamBlueprintSectionCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateExamBlueprintSlotCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateExamBlueprintVersionCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateExamBlueprintVersionStatusCommandMapper;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1")
-public class ExamBlueprintController {
+@RequiredArgsConstructor 
+public class RestApiExamBlueprintController {
 
     private final CreateExamBlueprintUseCase createExamBlueprintUseCase;
     private final UpdateExamBlueprintUseCase updateExamBlueprintUseCase;
@@ -81,39 +74,6 @@ public class ExamBlueprintController {
     private final CreateExamBlueprintSlotUseCase createExamBlueprintSlotUseCase;
     private final UpdateExamBlueprintSlotUseCase updateExamBlueprintSlotUseCase;
     private final DeleteExamBlueprintSlotUseCase deleteExamBlueprintSlotUseCase;
-
-    public ExamBlueprintController(
-            CreateExamBlueprintUseCase createExamBlueprintUseCase,
-            UpdateExamBlueprintUseCase updateExamBlueprintUseCase,
-            UpdateExamBlueprintActiveStatusUseCase updateExamBlueprintActiveStatusUseCase,
-            DeleteExamBlueprintUseCase deleteExamBlueprintUseCase,
-            CreateExamBlueprintVersionUseCase createExamBlueprintVersionUseCase,
-            DuplicateExamBlueprintVersionUseCase duplicateExamBlueprintVersionUseCase,
-            UpdateExamBlueprintVersionUseCase updateExamBlueprintVersionUseCase,
-            UpdateExamBlueprintVersionStatusUseCase updateExamBlueprintVersionStatusUseCase,
-            DeleteExamBlueprintVersionUseCase deleteExamBlueprintVersionUseCase,
-            CreateExamBlueprintSectionUseCase createExamBlueprintSectionUseCase,
-            UpdateExamBlueprintSectionUseCase updateExamBlueprintSectionUseCase,
-            DeleteExamBlueprintSectionUseCase deleteExamBlueprintSectionUseCase,
-            CreateExamBlueprintSlotUseCase createExamBlueprintSlotUseCase,
-            UpdateExamBlueprintSlotUseCase updateExamBlueprintSlotUseCase,
-            DeleteExamBlueprintSlotUseCase deleteExamBlueprintSlotUseCase) {
-        this.createExamBlueprintUseCase = createExamBlueprintUseCase;
-        this.updateExamBlueprintUseCase = updateExamBlueprintUseCase;
-        this.updateExamBlueprintActiveStatusUseCase = updateExamBlueprintActiveStatusUseCase;
-        this.deleteExamBlueprintUseCase = deleteExamBlueprintUseCase;
-        this.createExamBlueprintVersionUseCase = createExamBlueprintVersionUseCase;
-        this.duplicateExamBlueprintVersionUseCase = duplicateExamBlueprintVersionUseCase;
-        this.updateExamBlueprintVersionUseCase = updateExamBlueprintVersionUseCase;
-        this.updateExamBlueprintVersionStatusUseCase = updateExamBlueprintVersionStatusUseCase;
-        this.deleteExamBlueprintVersionUseCase = deleteExamBlueprintVersionUseCase;
-        this.createExamBlueprintSectionUseCase = createExamBlueprintSectionUseCase;
-        this.updateExamBlueprintSectionUseCase = updateExamBlueprintSectionUseCase;
-        this.deleteExamBlueprintSectionUseCase = deleteExamBlueprintSectionUseCase;
-        this.createExamBlueprintSlotUseCase = createExamBlueprintSlotUseCase;
-        this.updateExamBlueprintSlotUseCase = updateExamBlueprintSlotUseCase;
-        this.deleteExamBlueprintSlotUseCase = deleteExamBlueprintSlotUseCase;
-    }
 
     @PostMapping("/exam-blueprints")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")

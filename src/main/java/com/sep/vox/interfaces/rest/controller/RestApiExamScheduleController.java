@@ -26,34 +26,20 @@ import com.sep.vox.interfaces.rest.dto.request.AddExamScheduleProctorRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamScheduleRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamScheduleStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.AddExamScheduleProctorCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateExamScheduleCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateExamScheduleStatusCommandMapper;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/exams/{examId}/schedules")
-public class ExamScheduleController {
+@RequiredArgsConstructor 
+public class RestApiExamScheduleController {
 
     private final CreateExamScheduleUseCase createExamScheduleUseCase;
     private final UpdateExamScheduleStatusUseCase updateExamScheduleStatusUseCase;
     private final DeleteExamScheduleUseCase deleteExamScheduleUseCase;
     private final AddExamScheduleProctorUseCase addExamScheduleProctorUseCase;
     private final RemoveExamScheduleProctorUseCase removeExamScheduleProctorUseCase;
-
-    public ExamScheduleController(
-            CreateExamScheduleUseCase createExamScheduleUseCase,
-            UpdateExamScheduleStatusUseCase updateExamScheduleStatusUseCase,
-            DeleteExamScheduleUseCase deleteExamScheduleUseCase,
-            AddExamScheduleProctorUseCase addExamScheduleProctorUseCase,
-            RemoveExamScheduleProctorUseCase removeExamScheduleProctorUseCase) {
-        this.createExamScheduleUseCase = createExamScheduleUseCase;
-        this.updateExamScheduleStatusUseCase = updateExamScheduleStatusUseCase;
-        this.deleteExamScheduleUseCase = deleteExamScheduleUseCase;
-        this.addExamScheduleProctorUseCase = addExamScheduleProctorUseCase;
-        this.removeExamScheduleProctorUseCase = removeExamScheduleProctorUseCase;
-    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")

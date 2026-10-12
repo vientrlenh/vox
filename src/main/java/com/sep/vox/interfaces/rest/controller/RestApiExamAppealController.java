@@ -22,22 +22,16 @@ import com.sep.vox.interfaces.rest.dto.request.AssignExamAppealReviewerRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamAppealRequest;
 import com.sep.vox.interfaces.rest.dto.request.RejectExamAppealRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.ExamAppealCommandMapper;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
-/**
- * Admin chỉ còn ĐIỀU PHỐI đơn: duyệt / từ chối / giao người chấm.
- *
- * <p>Hai endpoint cũ đã bị gỡ: {@code /reviewers/me/report} và {@code /publish}.
- * Người chấm phúc khảo nay dùng chung màn chấm với ba vòng còn lại
- * ({@code /api/v1/grading-assignments/{id}/uphold|regrade}), và nộp là công bố luôn —
- * không còn bước admin đối chiếu rồi bấm publish.
- */
+
 @RestController
 @RequestMapping("/api/v1/exam-appeals")
-public class ExamAppealController {
+@RequiredArgsConstructor 
+public class RestApiExamAppealController {
 
     private final CreateExamAppealUseCase createExamAppealUseCase;
     private final ApproveExamAppealUseCase approveExamAppealUseCase;
@@ -46,20 +40,6 @@ public class ExamAppealController {
     private final AssignExamAppealReviewerUseCase assignExamAppealReviewerUseCase;
     private final WithdrawExamAppealUseCase withdrawExamAppealUseCase;
 
-    public ExamAppealController(
-            CreateExamAppealUseCase createExamAppealUseCase,
-            ApproveExamAppealUseCase approveExamAppealUseCase,
-            ApproveAndClaimExamAppealUseCase approveAndClaimExamAppealUseCase,
-            RejectExamAppealUseCase rejectExamAppealUseCase,
-            AssignExamAppealReviewerUseCase assignExamAppealReviewerUseCase,
-            WithdrawExamAppealUseCase withdrawExamAppealUseCase) {
-        this.createExamAppealUseCase = createExamAppealUseCase;
-        this.approveExamAppealUseCase = approveExamAppealUseCase;
-        this.approveAndClaimExamAppealUseCase = approveAndClaimExamAppealUseCase;
-        this.rejectExamAppealUseCase = rejectExamAppealUseCase;
-        this.assignExamAppealReviewerUseCase = assignExamAppealReviewerUseCase;
-        this.withdrawExamAppealUseCase = withdrawExamAppealUseCase;
-    }
 
     @Operation(summary = "Học sinh nộp đơn phúc khảo cho một hoặc nhiều phần thi")
     @PostMapping

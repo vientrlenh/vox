@@ -43,19 +43,14 @@ import com.sep.vox.interfaces.rest.dto.request.ImportExamCandidatesFromGradeRequ
 import com.sep.vox.interfaces.rest.dto.request.SessionReasonRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamCandidateStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.AddExamCandidateCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.AssignExamCandidateScheduleCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.AssignExamPapersCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.AutoFillExamCandidatesCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.BulkAssignExamCandidateScheduleCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.ImportExamCandidatesFromClassCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.ImportExamCandidatesFromGradeCommandMapper;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/exams/{examId}/candidates")
-public class ExamCandidateController {
+@RequiredArgsConstructor 
+public class RestApiExamCandidateController {
 
     private final AddExamCandidateUseCase addExamCandidateUseCase;
     private final ImportExamCandidatesFromClassUseCase importExamCandidatesFromClassUseCase;
@@ -68,31 +63,6 @@ public class ExamCandidateController {
     private final UnblockExamCandidateUseCase unblockExamCandidateUseCase;
     private final DeleteExamCandidateUseCase deleteExamCandidateUseCase;
     private final BulkDeleteExamCandidatesUseCase bulkDeleteExamCandidatesUseCase;
-
-    public ExamCandidateController(
-            AddExamCandidateUseCase addExamCandidateUseCase,
-            ImportExamCandidatesFromClassUseCase importExamCandidatesFromClassUseCase,
-            ImportExamCandidatesFromGradeUseCase importExamCandidatesFromGradeUseCase,
-            AssignExamCandidateScheduleUseCase assignExamCandidateScheduleUseCase,
-            BulkAssignExamCandidateScheduleUseCase bulkAssignExamCandidateScheduleUseCase,
-            AutoFillExamCandidatesUseCase autoFillExamCandidatesUseCase,
-            AssignExamPapersUseCase assignExamPapersUseCase,
-            UpdateExamCandidateStatusUseCase updateExamCandidateStatusUseCase,
-            UnblockExamCandidateUseCase unblockExamCandidateUseCase,
-            DeleteExamCandidateUseCase deleteExamCandidateUseCase,
-            BulkDeleteExamCandidatesUseCase bulkDeleteExamCandidatesUseCase) {
-        this.addExamCandidateUseCase = addExamCandidateUseCase;
-        this.importExamCandidatesFromClassUseCase = importExamCandidatesFromClassUseCase;
-        this.importExamCandidatesFromGradeUseCase = importExamCandidatesFromGradeUseCase;
-        this.assignExamCandidateScheduleUseCase = assignExamCandidateScheduleUseCase;
-        this.bulkAssignExamCandidateScheduleUseCase = bulkAssignExamCandidateScheduleUseCase;
-        this.autoFillExamCandidatesUseCase = autoFillExamCandidatesUseCase;
-        this.assignExamPapersUseCase = assignExamPapersUseCase;
-        this.updateExamCandidateStatusUseCase = updateExamCandidateStatusUseCase;
-        this.unblockExamCandidateUseCase = unblockExamCandidateUseCase;
-        this.deleteExamCandidateUseCase = deleteExamCandidateUseCase;
-        this.bulkDeleteExamCandidatesUseCase = bulkDeleteExamCandidatesUseCase;
-    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")

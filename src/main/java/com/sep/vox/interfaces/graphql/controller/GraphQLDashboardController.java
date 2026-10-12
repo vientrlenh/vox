@@ -45,10 +45,11 @@ import com.sep.vox.application.response.input.dashboard.SchoolGradingFailurePage
 import com.sep.vox.application.response.input.dashboard.SchoolsAtRiskResponse;
 import com.sep.vox.application.response.input.dashboard.SystemAdminDashboardSummaryResponse;
 import com.sep.vox.application.response.input.dashboard.TeacherDashboardSummaryResponse;
-import com.sep.vox.application.shared.DateMapper;
-import com.sep.vox.interfaces.shared.PageArguments;
+
+import lombok.RequiredArgsConstructor;
 
 @Controller
+@RequiredArgsConstructor 
 public class GraphQLDashboardController {
 
     private final ViewSystemAdminDashboardUseCase viewSystemAdminDashboardUseCase;
@@ -64,34 +65,6 @@ public class GraphQLDashboardController {
     private final ViewSchoolGradingFailuresUseCase viewSchoolGradingFailuresUseCase;
     private final ViewSchoolAiCostTimeseriesUseCase viewSchoolAiCostTimeseriesUseCase;
     private final ViewSchoolAiSpendByUserUseCase viewSchoolAiSpendByUserUseCase;
-
-    public DashboardController(ViewSystemAdminDashboardUseCase viewSystemAdminDashboardUseCase,
-            ViewSchoolAdminDashboardUseCase viewSchoolAdminDashboardUseCase,
-            ViewTeacherDashboardUseCase viewTeacherDashboardUseCase,
-            ViewNearestCentralizedExamUseCase viewNearestCentralizedExamUseCase,
-            ViewQuestionBankStatsUseCase viewQuestionBankStatsUseCase,
-            ViewPlatformOperationalHealthUseCase viewPlatformOperationalHealthUseCase,
-            ViewPlatformBusinessHealthUseCase viewPlatformBusinessHealthUseCase,
-            ViewGradingFailureOverviewUseCase viewGradingFailureOverviewUseCase,
-            ViewGradingFailureSessionsUseCase viewGradingFailureSessionsUseCase,
-            ViewSchoolsAtRiskUseCase viewSchoolsAtRiskUseCase,
-            ViewSchoolGradingFailuresUseCase viewSchoolGradingFailuresUseCase,
-            ViewSchoolAiCostTimeseriesUseCase viewSchoolAiCostTimeseriesUseCase,
-            ViewSchoolAiSpendByUserUseCase viewSchoolAiSpendByUserUseCase) {
-        this.viewSystemAdminDashboardUseCase = viewSystemAdminDashboardUseCase;
-        this.viewSchoolAdminDashboardUseCase = viewSchoolAdminDashboardUseCase;
-        this.viewTeacherDashboardUseCase = viewTeacherDashboardUseCase;
-        this.viewNearestCentralizedExamUseCase = viewNearestCentralizedExamUseCase;
-        this.viewQuestionBankStatsUseCase = viewQuestionBankStatsUseCase;
-        this.viewPlatformOperationalHealthUseCase = viewPlatformOperationalHealthUseCase;
-        this.viewPlatformBusinessHealthUseCase = viewPlatformBusinessHealthUseCase;
-        this.viewGradingFailureOverviewUseCase = viewGradingFailureOverviewUseCase;
-        this.viewGradingFailureSessionsUseCase = viewGradingFailureSessionsUseCase;
-        this.viewSchoolsAtRiskUseCase = viewSchoolsAtRiskUseCase;
-        this.viewSchoolGradingFailuresUseCase = viewSchoolGradingFailuresUseCase;
-        this.viewSchoolAiCostTimeseriesUseCase = viewSchoolAiCostTimeseriesUseCase;
-        this.viewSchoolAiSpendByUserUseCase = viewSchoolAiSpendByUserUseCase;
-    }
 
     @QueryMapping(name = "systemAdminDashboard")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

@@ -51,22 +51,13 @@ import com.sep.vox.interfaces.rest.dto.request.UpdateExamSecurePoolStatusRequest
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamStatusRequest;
 import com.sep.vox.interfaces.rest.dto.request.VerifyExamOtpRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.AttachExamBlueprintCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateExamCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateExamMemberCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateExamCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateExamDeliveryModeCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateExamMemberCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateExamSecurePoolStatusCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateExamStatusCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.ViewMyExamsQueryMapper;
-import com.sep.vox.interfaces.shared.PageArguments;
-
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/exams")
-public class ExamController {
+@RequiredArgsConstructor 
+public class RestApiExamController {
 
     private final CreateExamUseCase createExamUseCase;
     private final UpdateExamUseCase updateExamUseCase;
@@ -82,37 +73,6 @@ public class ExamController {
     private final ViewMyExamsUseCase viewMyExamsUseCase;
     private final VerifyExamScheduleOtpUseCase verifyExamScheduleOtpUseCase;
     private final StartClassTestSessionUseCase startClassTestSessionUseCase;
-
-    public ExamController(
-            CreateExamUseCase createExamUseCase,
-            UpdateExamUseCase updateExamUseCase,
-            UpdateExamStatusUseCase updateExamStatusUseCase,
-            DeleteExamUseCase deleteExamUseCase,
-            CreateExamMemberUseCase createExamMemberUseCase,
-            UpdateExamMemberUseCase updateExamMemberUseCase,
-            DeleteExamMemberUseCase deleteExamMemberUseCase,
-            UpdateExamSecurePoolStatusUseCase updateExamSecurePoolStatusUseCase,
-            AttachExamBlueprintUseCase attachExamBlueprintUseCase,
-            UpdateExamDeliveryModeUseCase updateExamDeliveryModeUseCase,
-            GetExamScheduleOtpUseCase getExamScheduleOtpUseCase,
-            ViewMyExamsUseCase viewMyExamsUseCase,
-            VerifyExamScheduleOtpUseCase verifyExamScheduleOtpUseCase,
-            StartClassTestSessionUseCase startClassTestSessionUseCase) {
-        this.createExamUseCase = createExamUseCase;
-        this.updateExamUseCase = updateExamUseCase;
-        this.updateExamStatusUseCase = updateExamStatusUseCase;
-        this.deleteExamUseCase = deleteExamUseCase;
-        this.createExamMemberUseCase = createExamMemberUseCase;
-        this.updateExamMemberUseCase = updateExamMemberUseCase;
-        this.deleteExamMemberUseCase = deleteExamMemberUseCase;
-        this.updateExamSecurePoolStatusUseCase = updateExamSecurePoolStatusUseCase;
-        this.attachExamBlueprintUseCase = attachExamBlueprintUseCase;
-        this.updateExamDeliveryModeUseCase = updateExamDeliveryModeUseCase;
-        this.getExamScheduleOtpUseCase = getExamScheduleOtpUseCase;
-        this.viewMyExamsUseCase = viewMyExamsUseCase;
-        this.verifyExamScheduleOtpUseCase = verifyExamScheduleOtpUseCase;
-        this.startClassTestSessionUseCase = startClassTestSessionUseCase;
-    }
 
     @GetMapping
     @PreAuthorize("hasRole('STUDENT')")

@@ -35,13 +35,14 @@ import com.sep.vox.interfaces.rest.dto.request.SessionReasonRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamSessionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateRemainingTimeRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.ReportAiUsageCommandMapper;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/exam-sessions")
-public class ExamSessionController {
+@RequiredArgsConstructor 
+public class RestApiExamSessionController {
 
     private final CompleteExamSessionGradingUseCase completeExamSessionGradingUseCase;
 
@@ -55,31 +56,6 @@ public class ExamSessionController {
     private final HandOffGradingToHumanUseCase handOffGradingToHumanUseCase;
     private final UpdateExamSessionRemainingTimeUseCase updateExamSessionRemainingTimeUseCase;
     private final ReportAiUsageUseCase reportAiUsageUseCase;
-
-    public ExamSessionController(
-            CreateExamSessionUseCase createExamSessionUseCase,
-            CompleteExamSessionGradingUseCase completeExamSessionGradingUseCase,
-            UpdateExamSessionStatusUseCase updateExamSessionStatusUseCase,
-            GetExamSessionPaperUseCase getExamSessionPaperUseCase,
-            DeleteExamSessionUseCase deleteExamSessionUseCase,
-            FlagExamSessionUseCase flagExamSessionUseCase,
-            ForceEndExamSessionUseCase forceEndExamSessionUseCase,
-            RetryGradingExamSessionUseCase retryGradingExamSessionUseCase,
-            HandOffGradingToHumanUseCase handOffGradingToHumanUseCase,
-            UpdateExamSessionRemainingTimeUseCase updateExamSessionRemainingTimeUseCase,
-            ReportAiUsageUseCase reportAiUsageUseCase) {
-        this.createExamSessionUseCase = createExamSessionUseCase;
-        this.completeExamSessionGradingUseCase = completeExamSessionGradingUseCase;
-        this.updateExamSessionStatusUseCase = updateExamSessionStatusUseCase;
-        this.getExamSessionPaperUseCase = getExamSessionPaperUseCase;
-        this.deleteExamSessionUseCase = deleteExamSessionUseCase;
-        this.flagExamSessionUseCase = flagExamSessionUseCase;
-        this.forceEndExamSessionUseCase = forceEndExamSessionUseCase;
-        this.retryGradingExamSessionUseCase = retryGradingExamSessionUseCase;
-        this.handOffGradingToHumanUseCase = handOffGradingToHumanUseCase;
-        this.updateExamSessionRemainingTimeUseCase = updateExamSessionRemainingTimeUseCase;
-        this.reportAiUsageUseCase = reportAiUsageUseCase;
-    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")

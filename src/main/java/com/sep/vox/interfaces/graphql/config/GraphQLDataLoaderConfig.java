@@ -21,6 +21,7 @@ import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.interfaces.graphql.config.dataloader.DataLoaderPageKey;
 import com.sep.vox.interfaces.graphql.dto.key.SchoolClassPageKey;
 import com.sep.vox.interfaces.graphql.dto.key.SchoolUserPageKey;
 

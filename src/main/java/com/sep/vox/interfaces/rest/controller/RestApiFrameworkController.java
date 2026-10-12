@@ -42,19 +42,14 @@ import com.sep.vox.interfaces.rest.dto.request.CreateFrameworkVersionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateFrameworkRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateFrameworkVersionStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.CreateFrameworkCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateFrameworkCriteriaCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateFrameworkCriterionBandsCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateFrameworkResultBandsCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateFrameworkVersionCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateFrameworkCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateFrameworkVersionStatusCommandMapper;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/frameworks")
-public class FrameworkController {
+@RequiredArgsConstructor 
+public class RestApiFrameworkController {
 
     private final CreateFrameworkUseCase createFrameworkUseCase;
     private final UpdateFrameworkUseCase updateFrameworkUseCase;
@@ -69,35 +64,6 @@ public class FrameworkController {
     private final DeleteFrameworkCriterionBandUseCase deleteFrameworkCriterionBandUseCase;
     private final CreateFrameworkCriteriaUseCase createFrameworkCriteriaUseCase;
     private final DeleteFrameworkCriterionUseCase deleteFrameworkCriterionUseCase;
-
-    public FrameworkController(
-            CreateFrameworkUseCase createFrameworkUseCase,
-            UpdateFrameworkUseCase updateFrameworkUseCase,
-            UpdateFrameworkStatusUseCase updateFrameworkStatusUseCase,
-            DeleteFrameworkUseCase deleteFrameworkUseCase,
-            CreateFrameworkVersionUseCase createFrameworkVersionUseCase,
-            UpdateFrameworkVersionStatusUseCase updateFrameworkVersionStatusUseCase,
-            DeleteFrameworkVersionUseCase deleteFrameworkVersionUseCase,
-            CreateFrameworkCriterionBandsUseCase createFrameworkCriterionBandsUseCase,
-            CreateFrameworkResultBandsUseCase createFrameworkResultBandsUseCase,
-            DeleteFrameworkResultBandUseCase deleteFrameworkResultBandUseCase,
-            DeleteFrameworkCriterionBandUseCase deleteFrameworkCriterionBandUseCase,
-            CreateFrameworkCriteriaUseCase createFrameworkCriteriaUseCase,
-            DeleteFrameworkCriterionUseCase deleteFrameworkCriterionUseCase) {
-        this.createFrameworkUseCase = createFrameworkUseCase;
-        this.updateFrameworkUseCase = updateFrameworkUseCase;
-        this.updateFrameworkStatusUseCase = updateFrameworkStatusUseCase;
-        this.deleteFrameworkUseCase = deleteFrameworkUseCase;
-        this.createFrameworkVersionUseCase = createFrameworkVersionUseCase;
-        this.updateFrameworkVersionStatusUseCase = updateFrameworkVersionStatusUseCase;
-        this.deleteFrameworkVersionUseCase = deleteFrameworkVersionUseCase;
-        this.createFrameworkCriterionBandsUseCase = createFrameworkCriterionBandsUseCase;
-        this.createFrameworkResultBandsUseCase = createFrameworkResultBandsUseCase;
-        this.deleteFrameworkResultBandUseCase = deleteFrameworkResultBandUseCase;
-        this.deleteFrameworkCriterionBandUseCase = deleteFrameworkCriterionBandUseCase;
-        this.createFrameworkCriteriaUseCase = createFrameworkCriteriaUseCase;
-        this.deleteFrameworkCriterionUseCase = deleteFrameworkCriterionUseCase;
-    }
 
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

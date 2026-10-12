@@ -17,22 +17,15 @@ import com.sep.vox.application.response.input.payment.PaymentCallbackResponse.Ca
 import com.sep.vox.domain.model.payment.PaymentProvider;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 
-// Chuyển thẳng raw bytes xuống use case, không parse ở đây: mỗi cổng có định dạng payload và cách
-// xác thực riêng (PayOS ký HMAC trên phần data trong body, SePay so secret key ở header), nên việc
-// đọc payload thuộc về adapter của cổng đó. Parse ở tầng này còn làm hỏng chữ ký tính trên raw body.
-//
-// KHÔNG có @PreAuthorize: người gọi là cổng thanh toán, không phải người dùng đã đăng nhập. Việc
-// xác thực nằm ở verifyCallback của adapter (chữ ký/secret của cổng) -- xem SecurityConfig cho
-// phần mở đường /api/v1/callback/**.
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/v1/callback")
-public class CallbackController {
+@RequiredArgsConstructor 
+public class RestApiCallbackController {
 
     private final ProcessPaymentCallbackUseCase processPaymentCallbackUseCase;
 
-    public CallbackController(ProcessPaymentCallbackUseCase processPaymentCallbackUseCase) {
-        this.processPaymentCallbackUseCase = processPaymentCallbackUseCase;
-    }
 
     @PostMapping("/payos/webhook")
     public ResponseEntity<ApiResponse<Void>> handlePayOsCallback(

@@ -15,16 +15,14 @@ import com.sep.vox.application.port.input.usecase.examitemresponse.UpdateExamIte
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamItemResponseTurnRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/v1/exam-item-responses")
-public class ExamItemResponseController {
+@RequiredArgsConstructor 
+public class RestApiExamItemResponseController {
 
     private final UpdateExamItemResponseTurnUseCase updateExamItemResponseTurnUseCase;
-
-    public ExamItemResponseController(
-            UpdateExamItemResponseTurnUseCase updateExamItemResponseTurnUseCase) {
-        this.updateExamItemResponseTurnUseCase = updateExamItemResponseTurnUseCase;
-    }
 
     @PatchMapping("/{answerId}/turns/{turnOrder}")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")

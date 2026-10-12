@@ -28,35 +28,20 @@ import com.sep.vox.interfaces.rest.dto.request.UpdateExamPaperItemRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamPaperSectionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamPaperStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.CreateExamPaperCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateExamPaperItemCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateExamPaperSectionCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateExamPaperStatusCommandMapper;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1")
-public class ExamPaperController {
+@RequiredArgsConstructor 
+public class RestApiExamPaperController {
 
     private final CreateExamPaperUseCase createExamPaperUseCase;
     private final UpdateExamPaperItemUseCase updateExamPaperItemUseCase;
     private final UpdateExamPaperSectionUseCase updateExamPaperSectionUseCase;
     private final UpdateExamPaperStatusUseCase updateExamPaperStatusUseCase;
     private final DeleteExamPaperUseCase deleteExamPaperUseCase;
-
-    public ExamPaperController(
-            CreateExamPaperUseCase createExamPaperUseCase,
-            UpdateExamPaperItemUseCase updateExamPaperItemUseCase,
-            UpdateExamPaperSectionUseCase updateExamPaperSectionUseCase,
-            UpdateExamPaperStatusUseCase updateExamPaperStatusUseCase,
-            DeleteExamPaperUseCase deleteExamPaperUseCase) {
-        this.createExamPaperUseCase = createExamPaperUseCase;
-        this.updateExamPaperItemUseCase = updateExamPaperItemUseCase;
-        this.updateExamPaperSectionUseCase = updateExamPaperSectionUseCase;
-        this.updateExamPaperStatusUseCase = updateExamPaperStatusUseCase;
-        this.deleteExamPaperUseCase = deleteExamPaperUseCase;
-    }
 
     @PostMapping("/exams/{examId}/papers")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")

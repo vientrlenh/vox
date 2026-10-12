@@ -3,61 +3,39 @@ package com.sep.vox.domain.model.gradelevel;
 import java.time.Instant;
 import java.util.UUID;
 
-public class GradeLevel {
-    private UUID id;
-    private String code;
+import com.sep.vox.domain.shared.BaseModel;
+import com.sep.vox.domain.valueobject.PositiveInteger;
+
+public class GradeLevel extends BaseModel {
     private String name;
     private String description;
-    private int order;
+    private PositiveInteger order;
     private GradeLevelStatus status;
-    private Instant createdAt;
     private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
-    public GradeLevel() {}
+    protected GradeLevel() {}
 
-    public GradeLevel(UUID id, String code, String name, String description, int order, GradeLevelStatus status,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.code = code;
+    public GradeLevel(String name, String description, PositiveInteger order, GradeLevelStatus status, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.name = name;
         this.description = description;
         this.order = order;
         this.status = status;
-        this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public GradeLevel(String code, String name, String description, int order, GradeLevelStatus status,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.order = order;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
+    public GradeLevel(Builder builder) {
+        super(builder.id, builder.createdAt);
+        this.name = builder.name;
+        this.description = builder.description;
+        this.order = builder.order;
+        this.status = builder.status;
+        this.updatedAt = builder.updatedAt;
+        this.createdBy = builder.createdBy;
+        this.updatedBy = builder.updatedBy;
     }
 
     public String getName() {
@@ -76,11 +54,11 @@ public class GradeLevel {
         this.description = description;
     }
 
-    public int getOrder() {
+    public PositiveInteger getOrder() {
         return order;
     }
 
-    public void setOrder(int order) {
+    public void setOrder(PositiveInteger order) {
         this.order = order;
     }
 
@@ -90,14 +68,6 @@ public class GradeLevel {
 
     public void setStatus(GradeLevelStatus status) {
         this.status = status;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
     }
 
     public Instant getUpdatedAt() {
@@ -124,5 +94,70 @@ public class GradeLevel {
         this.updatedBy = updatedBy;
     }
 
-    
+    public static Builder builder() {
+        return new GradeLevel.Builder();
+    }
+
+    public static class Builder {
+        private UUID id;
+        private String name;
+        private String description;
+        private PositiveInteger order;
+        private GradeLevelStatus status;
+        private Instant createdAt;
+        private Instant updatedAt;
+        private UUID createdBy;
+        private UUID updatedBy;
+
+        protected Builder() {}
+
+        public Builder id(UUID id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder order(PositiveInteger order) {
+            this.order = order;
+            return this;
+        }
+
+        public Builder status(GradeLevelStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder updatedAt(Instant updatedAt) {
+            this.updatedAt = updatedAt;
+            return this;
+        }
+
+        public Builder createdBy(UUID createdBy) {
+            this.createdBy = createdBy;
+            return this;
+        }
+
+        public Builder updatedBy(UUID updatedBy) {
+            this.updatedBy = updatedBy;
+            return this;
+        }
+
+        public GradeLevel build() {
+            return new GradeLevel(this);
+        }
+    }
 }

@@ -2,47 +2,53 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
+import com.sep.vox.domain.valueobject.PositiveInteger;
 import com.sep.vox.infrastructure.persistence.entity.GradeLevelJpaEntity;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j 
 public final class GradeLevelMapper {
 
     private GradeLevelMapper() {}
 
     public static GradeLevel toDomain(GradeLevelJpaEntity jpa) {
-        return new GradeLevel(
-            jpa.getId(),
-            jpa.getCode(),
-            jpa.getName(),
-            jpa.getDescription(),
-            jpa.getOrder(),
-            statusFromString(jpa.getStatus()),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        try {
+            return GradeLevel.builder()
+                .id(jpa.getId())
+                .name(jpa.getName())
+                .description(jpa.getDescription())
+                .order(PositiveInteger.from(jpa.getOrder()))
+                .status(GradeLevelStatus.from(jpa.getStatus()))
+                .createdAt(jpa.getCreatedAt())
+                .updatedAt(jpa.getUpdatedAt())
+                .createdBy(jpa.getCreatedBy())
+                .updatedBy(jpa.getUpdatedBy())
+                .build();
+        } catch (Exception ex) {
+            log.error("An error occurred when mapping grade level entity to model: {}", ex.getMessage(), ex);
+            throw new IllegalStateException("A problem occurred when converting entity to model");
+        }
+
     }
 
     public static GradeLevelJpaEntity toJpa(GradeLevel level) {
-        return new GradeLevelJpaEntity(
-            level.getId(),
-            level.getCode(),
-            level.getName(),
-            level.getDescription(),
-            level.getOrder(),
-            valueOf(level.getStatus()),
-            level.getCreatedAt(),
-            level.getUpdatedAt(),
-            level.getCreatedBy(),
-            level.getUpdatedBy()
-        );
-    }
+        try {
+            return GradeLevelJpaEntity.builder()
+                .id(level.getId())
+                .name(level.getName())
+                .description(level.getDescription())
+                .order(PositiveInteger.valueOf(level.getOrder()))
+                .status(GradeLevelStatus.value(level.getStatus()))
+                .createdAt(level.getCreatedAt())
+                .updatedAt(level.getUpdatedAt())
+                .createdBy(level.getCreatedBy())
+                .updatedBy(level.getUpdatedBy())
+                .build();
+        } catch (Exception ex) {
+            log.error("An error occurred when mapping grade level model to entity: {}", ex.getMessage(), ex);
+            throw new IllegalStateException("A problem occurred when converting model to entity");
+        }
 
-    private static GradeLevelStatus statusFromString(String status) {
-        return status == null ? null : GradeLevelStatus.valueOf(status);
-    }
-
-    private static String valueOf(GradeLevelStatus status) {
-        return status == null ? null : status.name();
     }
 }

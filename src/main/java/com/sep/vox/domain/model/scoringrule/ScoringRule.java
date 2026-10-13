@@ -1,41 +1,34 @@
 package com.sep.vox.domain.model.scoringrule;
 
-import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.domain.valueobject.Code;
+import com.sep.vox.domain.valueobject.PositiveInteger;
 import com.sep.vox.domain.valueobject.scoringruleaction.ScoringRuleActionParams;
 import com.sep.vox.domain.valueobject.scoringrulecondition.ScoringRuleConditionParams;
 
-
-
 public class ScoringRule {
     private UUID id;
-    private UUID policyId;
-    private String code;
+    private UUID assessmentPolicyId;
+    private Code code;
     private String name;
     private String description;
     private ScoringRuleConditionType conditionType;
     private ScoringRuleConditionParams conditionParams;
     private ScoringRuleActionType actionType;
     private ScoringRuleActionParams actionParams;
-    private int priority;
+    private PositiveInteger priority;
     private ScoringRuleSeverity severity;
-    private boolean stopProcessing;
-    private boolean isActive;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
+    private Boolean stopProcessing;
     
-    public ScoringRule() {
+    protected ScoringRule() {
     }
 
-    public ScoringRule(UUID id, UUID policyId, String code, String name, String description,
+    public ScoringRule(UUID id, UUID assessmentPolicyId, Code code, String name, String description,
             ScoringRuleConditionType conditionType, ScoringRuleConditionParams conditionParams,
-            ScoringRuleActionType actionType, ScoringRuleActionParams actionParams, int priority, ScoringRuleSeverity severity, boolean stopProcessing, boolean isActive,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
+            ScoringRuleActionType actionType, ScoringRuleActionParams actionParams, PositiveInteger priority, ScoringRuleSeverity severity, Boolean stopProcessing) {
         this.id = id;
-        this.policyId = policyId;
+        this.assessmentPolicyId = assessmentPolicyId;
         this.code = code;
         this.name = name;
         this.description = description;
@@ -46,33 +39,21 @@ public class ScoringRule {
         this.priority = priority;
         this.severity = severity;
         this.stopProcessing = stopProcessing;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
     }
 
-    public ScoringRule(UUID policyId, String code, String name, String description,
-            ScoringRuleConditionType conditionType, ScoringRuleConditionParams conditionParams,
-            ScoringRuleActionType actionType, ScoringRuleActionParams actionParams, int priority, ScoringRuleSeverity severity, boolean stopProcessing, boolean isActive,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.policyId = policyId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.conditionType = conditionType;
-        this.conditionParams = conditionParams;
-        this.actionType = actionType;
-        this.actionParams = actionParams;
-        this.priority = priority;
-        this.severity = severity;
-        this.stopProcessing = stopProcessing;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
+    public ScoringRule(Builder builder) {
+        this.id = builder.id;
+        this.assessmentPolicyId = builder.assessmentPolicyId;
+        this.code = builder.code;
+        this.name = builder.name;
+        this.description = builder.description;
+        this.conditionType = builder.conditionType;
+        this.conditionParams = builder.conditionParams;
+        this.actionType = builder.actionType;
+        this.actionParams = builder.actionParams;
+        this.priority = builder.priority;
+        this.severity = builder.severity;
+        this.stopProcessing = builder.stopProcessing;
     }
 
     public UUID getId() {
@@ -83,19 +64,19 @@ public class ScoringRule {
         this.id = id;
     }
 
-    public UUID getPolicyId() {
-        return policyId;
+    public UUID getAssessmentPolicyId() {
+        return assessmentPolicyId;
     }
 
-    public void setPolicyId(UUID policyId) {
-        this.policyId = policyId;
+    public void setAssessmentPolicyId(UUID assessmentPolicyId) {
+        this.assessmentPolicyId = assessmentPolicyId;
     }
 
-    public String getCode() {
+    public Code getCode() {
         return code;
     }
 
-    public void setCode(String code) {
+    public void setCode(Code code) {
         this.code = code;
     }
 
@@ -147,11 +128,11 @@ public class ScoringRule {
         this.actionParams = actionParams;
     }
 
-    public int getPriority() {
+    public PositiveInteger getPriority() {
         return priority;
     }
 
-    public void setPriority(int priority) {
+    public void setPriority(PositiveInteger priority) {
         this.priority = priority;
     }
 
@@ -164,53 +145,96 @@ public class ScoringRule {
         this.severity = severity;
     }
 
-    public boolean isStopProcessing() {
+    public Boolean getStopProcessing() {
         return stopProcessing;
     }
 
-    public void setStopProcessing(boolean stopProcessing) {
+    public void setStopProcessing(Boolean stopProcessing) {
         this.stopProcessing = stopProcessing;
     }
 
-    public boolean isActive() {
-        return isActive;
+    public static Builder builder() {
+        return new ScoringRule.Builder();
     }
 
-    public void setActive(boolean isActive) {
-        this.isActive = isActive;
-    }
+    public static class Builder {
+        private UUID id;
+        private UUID assessmentPolicyId;
+        private Code code;
+        private String name;
+        private String description;
+        private ScoringRuleConditionType conditionType;
+        private ScoringRuleConditionParams conditionParams;
+        private ScoringRuleActionType actionType;
+        private ScoringRuleActionParams actionParams;
+        private PositiveInteger priority;
+        private ScoringRuleSeverity severity;
+        private Boolean stopProcessing;
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
+        protected Builder() {}
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+        public Builder id(UUID id) {
+            this.id = id;
+            return this;
+        }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        public Builder assessmentPolicyId(UUID assessmentPolicyId) {
+            this.assessmentPolicyId = assessmentPolicyId;
+            return this;
+        }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        public Builder code(Code code) {
+            this.code = code;
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder conditionType(ScoringRuleConditionType conditionType) {
+            this.conditionType = conditionType;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+        public Builder conditionParams(ScoringRuleConditionParams conditionParams) {
+            this.conditionParams = conditionParams;
+            return this;
+        }
 
-    
+        public Builder actionType(ScoringRuleActionType actionType) {
+            this.actionType = actionType;
+            return this;
+        }
+
+        public Builder actionParams(ScoringRuleActionParams actionParams) {
+            this.actionParams = actionParams;
+            return this;
+        }
+
+        public Builder priority(PositiveInteger priority) {
+            this.priority = priority;
+            return this;
+        }
+
+        public Builder severity(ScoringRuleSeverity severity) {
+            this.severity = severity;
+            return this;
+        }
+
+        public Builder stopProcessing(Boolean stopProcessing) {
+            this.stopProcessing = stopProcessing;
+            return this;
+        }
+
+        public ScoringRule build() {
+            return new ScoringRule(this);
+        }
+    }
 }

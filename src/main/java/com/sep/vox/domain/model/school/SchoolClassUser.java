@@ -9,17 +9,19 @@ public class SchoolClassUser {
     private UUID schoolClassId;
     private Instant joinAt;
     private Instant leftAt;
+    private SchoolClassUserLeaveReason leaveReason;
     private UUID assignedBy;
 
     protected SchoolClassUser() {}
 
     public SchoolClassUser(UUID id, UUID userId, UUID schoolClassId, Instant joinAt,
-            Instant leftAt, UUID assignedBy) {
+            Instant leftAt, SchoolClassUserLeaveReason leaveReason, UUID assignedBy) {
         this.id = id;
         this.userId = userId;
         this.schoolClassId = schoolClassId;
         this.joinAt = joinAt;
         this.leftAt = leftAt;
+        this.leaveReason = leaveReason;
         this.assignedBy = assignedBy;
     }
 
@@ -29,6 +31,7 @@ public class SchoolClassUser {
         this.schoolClassId = builder.schoolClassId;
         this.joinAt = builder.joinAt;
         this.leftAt = builder.leftAt;
+        this.leaveReason = builder.leaveReason;
         this.assignedBy = builder.assignedBy;
     }
 
@@ -72,6 +75,14 @@ public class SchoolClassUser {
         this.leftAt = leftAt;
     }
 
+    public SchoolClassUserLeaveReason getLeaveReason() {
+        return leaveReason;
+    }
+
+    public void setLeaveReason(SchoolClassUserLeaveReason leaveReason) {
+        this.leaveReason = leaveReason;
+    }
+
     public UUID getAssignedBy() {
         return assignedBy;
     }
@@ -90,6 +101,7 @@ public class SchoolClassUser {
         private UUID schoolClassId;
         private Instant joinAt;
         private Instant leftAt;
+        private SchoolClassUserLeaveReason leaveReason;
         private UUID assignedBy;
 
         protected Builder() {}
@@ -99,8 +111,8 @@ public class SchoolClassUser {
             return this;
         }
 
-        public Builder userId(UUID id) {
-            this.id = id;
+        public Builder userId(UUID userId) {
+            this.userId = userId;
             return this;
         }
 
@@ -116,6 +128,11 @@ public class SchoolClassUser {
 
         public Builder leftAt(Instant leftAt) {
             this.leftAt = leftAt;
+            return this;
+        }
+
+        public Builder leaveReason(SchoolClassUserLeaveReason leaveReason) {
+            this.leaveReason = leaveReason;
             return this;
         }
 

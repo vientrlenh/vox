@@ -7,6 +7,7 @@ import com.sep.vox.domain.shared.BaseModel;
 
 public class SchoolClass extends BaseModel {
     private UUID schoolId;
+    private UUID academicYearId;
     private UUID learningLanguageId;
     private UUID schoolGradeId;
     private String name;
@@ -18,8 +19,9 @@ public class SchoolClass extends BaseModel {
 
     public SchoolClass() {}
 
-    public SchoolClass(UUID schoolId, UUID learningLanguageId, UUID schoolGradeId, String name, String description, SchoolClassStatus status, Instant updatedAt, Instant archivedAt, UUID createdBy) {
+    public SchoolClass(UUID schoolId, UUID academicYearId, UUID learningLanguageId, UUID schoolGradeId, String name, String description, SchoolClassStatus status, Instant updatedAt, Instant archivedAt, UUID createdBy) {
         this.schoolId = schoolId;
+        this.academicYearId = academicYearId;
         this.learningLanguageId = learningLanguageId;
         this.schoolGradeId = schoolGradeId;
         this.name = name;
@@ -33,6 +35,7 @@ public class SchoolClass extends BaseModel {
     public SchoolClass(Builder builder) {
         super(builder.id, builder.createdAt);
         this.schoolId = builder.schoolId;
+        this.academicYearId = builder.academicYearId;
         this.learningLanguageId = builder.learningLanguageId;
         this.schoolGradeId = builder.schoolGradeId;
         this.name = builder.name;
@@ -49,6 +52,14 @@ public class SchoolClass extends BaseModel {
 
     public void setSchoolId(UUID schoolId) {
         this.schoolId = schoolId;
+    }
+
+    public UUID getAcademicYearId() {
+        return academicYearId;
+    }
+
+    public void setAcademicYearId(UUID academicYearId) {
+        this.academicYearId = academicYearId;
     }
 
     public UUID getLearningLanguageId() {
@@ -134,6 +145,7 @@ public class SchoolClass extends BaseModel {
     public static class Builder {
         private UUID id;
         private UUID schoolId;
+        private UUID academicYearId;
         private UUID learningLanguageId;
         private UUID schoolGradeId;
         private String name;
@@ -153,6 +165,11 @@ public class SchoolClass extends BaseModel {
 
         public Builder schoolId(UUID schoolId) {
             this.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder academicYearId(UUID academicYearId) {
+            this.academicYearId = academicYearId;
             return this;
         }
 

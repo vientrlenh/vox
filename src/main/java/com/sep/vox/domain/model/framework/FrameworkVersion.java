@@ -3,43 +3,27 @@ package com.sep.vox.domain.model.framework;
 import java.time.Instant;
 import java.util.UUID;
 
-public class FrameworkVersion {
-    private UUID id;
+import com.sep.vox.domain.shared.BaseModel;
+import com.sep.vox.domain.valueobject.Code;
+import com.sep.vox.domain.valueobject.PositiveInteger;
+
+public class FrameworkVersion extends BaseModel {
     private UUID frameworkId;
-    private String code;
+    private Code code;
     private String name;
     private String description;
-    private int version;
+    private PositiveInteger version;
     private Instant effectiveFrom;
     private Instant effectiveTo;
     private FrameworkVersionStatus status;
-    private Instant createdAt;
     private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
-    public FrameworkVersion() {}
+    protected FrameworkVersion() {}
 
-    public FrameworkVersion(UUID id, UUID frameworkId, String code, String name, String description, int version,
-            Instant effectiveFrom, Instant effectiveTo, FrameworkVersionStatus status, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.frameworkId = frameworkId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.version = version;
-        this.effectiveFrom = effectiveFrom;
-        this.effectiveTo = effectiveTo;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public FrameworkVersion(UUID frameworkId, String code, String name, String description, int version,
-            Instant effectiveFrom, Instant effectiveTo, FrameworkVersionStatus status, Instant createdAt,
+    public FrameworkVersion(UUID frameworkId, Code code, String name, String description, PositiveInteger version,
+            Instant effectiveFrom, Instant effectiveTo, FrameworkVersionStatus status,
             Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.frameworkId = frameworkId;
         this.code = code;
@@ -49,18 +33,24 @@ public class FrameworkVersion {
         this.effectiveFrom = effectiveFrom;
         this.effectiveTo = effectiveTo;
         this.status = status;
-        this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
+    public FrameworkVersion(Builder builder) {
+        super(builder.id, builder.createdAt);
+        this.frameworkId = builder.frameworkId;
+        this.code = builder.code;
+        this.name = builder.name;
+        this.description = builder.description;
+        this.version = builder.version;
+        this.effectiveFrom = builder.effectiveFrom;
+        this.effectiveTo = builder.effectiveTo;
+        this.status = builder.status;
+        this.updatedAt = builder.updatedAt;
+        this.createdBy = builder.createdBy;
+        this.updatedBy = builder.updatedBy;
     }
 
     public UUID getFrameworkId() {
@@ -71,11 +61,11 @@ public class FrameworkVersion {
         this.frameworkId = frameworkId;
     }
 
-    public String getCode() {
+    public Code getCode() {
         return code;
     }
 
-    public void setCode(String code) {
+    public void setCode(Code code) {
         this.code = code;
     }
 
@@ -95,11 +85,11 @@ public class FrameworkVersion {
         this.description = description;
     }
 
-    public int getVersion() {
+    public PositiveInteger getVersion() {
         return version;
     }
 
-    public void setVersion(int version) {
+    public void setVersion(PositiveInteger version) {
         this.version = version;
     }
 
@@ -117,14 +107,6 @@ public class FrameworkVersion {
 
     public void setEffectiveTo(Instant effectiveTo) {
         this.effectiveTo = effectiveTo;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
     }
 
     public Instant getUpdatedAt() {
@@ -159,4 +141,94 @@ public class FrameworkVersion {
         this.status = status;
     }
 
+    public static Builder builder() {
+        return new FrameworkVersion.Builder();
+    }
+
+    public static class Builder {
+        private UUID id;
+        private UUID frameworkId;
+        private Code code;
+        private String name;
+        private String description;
+        private PositiveInteger version;
+        private Instant effectiveFrom;
+        private Instant effectiveTo;
+        private FrameworkVersionStatus status;
+        private Instant createdAt;
+        private Instant updatedAt;
+        private UUID createdBy;
+        private UUID updatedBy;
+
+        protected Builder() {}
+
+        public Builder id(UUID id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder frameworkId(UUID frameworkId) {
+            this.frameworkId = frameworkId;
+            return this;
+        }
+
+        public Builder code(Code code) {
+            this.code = code;
+            return this;
+        }
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder version(PositiveInteger version) {
+            this.version = version;
+            return this;
+        }
+
+        public Builder effectiveFrom(Instant effectiveFrom) {
+            this.effectiveFrom = effectiveFrom;
+            return this;
+        }
+
+        public Builder effectiveTo(Instant effectiveTo) {
+            this.effectiveTo = effectiveTo;
+            return this;
+        }
+
+        public Builder status(FrameworkVersionStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder updatedAt(Instant updatedAt) {
+            this.updatedAt = updatedAt;
+            return this;
+        }
+
+        public Builder createdBy(UUID createdBy) {
+            this.createdBy = createdBy;
+            return this;
+        }
+
+        public Builder updatedBy(UUID updatedBy) {
+            this.updatedBy = updatedBy;
+            return this;
+        }
+
+        public FrameworkVersion build() {
+            return new FrameworkVersion(this);
+        }
+    }
 }

@@ -10,7 +10,7 @@ public class SchoolGrade extends BaseModel {
     private UUID gradeLevelId;
     private String name;
     private String description;
-    private UUID academicTimelineId;
+    private UUID academicYearId;
     private SchoolGradeStatus status;
     private Instant updatedAt;
     private UUID createdBy;
@@ -18,12 +18,12 @@ public class SchoolGrade extends BaseModel {
 
     protected SchoolGrade() {}
 
-    public SchoolGrade(UUID schoolId, UUID gradeLevelId, String name, String description, UUID academicTimelineId, SchoolGradeStatus status, Instant updatedAt, UUID createdBy, UUID updatedBy) {
+    public SchoolGrade(UUID schoolId, UUID gradeLevelId, String name, String description, UUID academicYearId, SchoolGradeStatus status, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.gradeLevelId = gradeLevelId;
         this.name = name;
         this.description = description;
-        this.academicTimelineId = academicTimelineId;
+        this.academicYearId = academicYearId;
         this.status = status;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
@@ -36,7 +36,7 @@ public class SchoolGrade extends BaseModel {
         this.gradeLevelId = builder.gradeLevelId;
         this.name = builder.name;
         this.description = builder.description;
-        this.academicTimelineId = builder.academicTimelineId;
+        this.academicYearId = builder.academicYearId;
         this.status = builder.status;
         this.updatedAt = builder.updatedAt;
         this.createdBy = builder.createdBy;
@@ -75,12 +75,12 @@ public class SchoolGrade extends BaseModel {
         this.description = description;
     }
 
-    public UUID getAcademicTimelineId() {
-        return academicTimelineId;
+    public UUID getAcademicYearId() {
+        return academicYearId;
     }
 
-    public void setAcademicTimelineId(UUID academicTimelineId) {
-        this.academicTimelineId = academicTimelineId;
+    public void setAcademicYearId(UUID academicYearId) {
+        this.academicYearId = academicYearId;
     }
 
     public SchoolGradeStatus getStatus() {
@@ -125,7 +125,7 @@ public class SchoolGrade extends BaseModel {
         private UUID gradeLevelId;
         private String name;
         private String description;
-        private UUID academicTimelineId;
+        private UUID academicYearId;
         private SchoolGradeStatus status;
         private Instant createdAt;
         private Instant updatedAt;
@@ -159,8 +159,8 @@ public class SchoolGrade extends BaseModel {
             return this;
         }
 
-        public Builder academicTimelineId(UUID academicTimelineId) {
-            this.academicTimelineId = academicTimelineId;
+        public Builder academicYearId(UUID academicYearId) {
+            this.academicYearId = academicYearId;
             return this;
         }
 

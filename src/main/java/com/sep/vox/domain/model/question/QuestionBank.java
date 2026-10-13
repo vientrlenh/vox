@@ -4,10 +4,12 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.shared.BaseModel;
+import com.sep.vox.domain.valueobject.Code;
 
 public class QuestionBank extends BaseModel {
     private UUID learningLanguageId; 
     private UUID schoolId;
+    private Code code;
     private String name;
     private String description;
     private QuestionBankOwnerType ownerType;
@@ -18,10 +20,11 @@ public class QuestionBank extends BaseModel {
 
     protected QuestionBank() {}
 
-    public QuestionBank(UUID learningLanguageId, UUID schoolId, String name, String description, QuestionBankOwnerType ownerType, QuestionBankStatus status,
+    public QuestionBank(UUID learningLanguageId, UUID schoolId, Code code, String name, String description, QuestionBankOwnerType ownerType, QuestionBankStatus status,
             Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.learningLanguageId = learningLanguageId;
         this.schoolId = schoolId;
+        this.code = code;
         this.name = name;
         this.description = description;
         this.ownerType = ownerType;
@@ -35,6 +38,7 @@ public class QuestionBank extends BaseModel {
         super(builder.id, builder.createdAt);
         this.learningLanguageId = builder.learningLanguageId;
         this.schoolId = builder.schoolId;
+        this.code = builder.code;
         this.name = builder.name;
         this.description = builder.description;
         this.ownerType = builder.ownerType;
@@ -50,6 +54,14 @@ public class QuestionBank extends BaseModel {
     
     public void setLearningLanguageId(UUID learningLanguageId) {
         this.learningLanguageId = learningLanguageId;
+    }
+
+    public Code getCode() {
+        return code;
+    }
+
+    public void setCode(Code code) {
+        this.code = code;
     }
 
     public String getName() {
@@ -120,16 +132,25 @@ public class QuestionBank extends BaseModel {
         return new QuestionBank.Builder();
     }
 
-    public static QuestionBank create(UUID languageId, UUID schoolId, String code, String name, String description, QuestionBankOwnerType ownerType, 
+    public static QuestionBank create(UUID learningLanguageId, UUID schoolId, String code, String name, String description, QuestionBankOwnerType ownerType, 
     Instant now, UUID createdBy) {
         return QuestionBank.builder()
-        
+            .learningLanguageId(learningLanguageId)
+            .schoolId(schoolId)
+            .code(Code.from(code))
+            .name(name)
+            .description(description)
+            .ownerType(ownerType)
+            .createdBy(createdBy)
+            .updatedBy(createdBy)
+            .build();
     }
 
     public static class Builder {
         private UUID id;
         private UUID learningLanguageId; 
         private UUID schoolId;
+        private Code code;
         private String name;
         private String description;
         private QuestionBankOwnerType ownerType;
@@ -153,6 +174,11 @@ public class QuestionBank extends BaseModel {
 
         public Builder schoolId(UUID schoolId) {
             this.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder code(Code code) {
+            this.code = code;
             return this;
         }
 

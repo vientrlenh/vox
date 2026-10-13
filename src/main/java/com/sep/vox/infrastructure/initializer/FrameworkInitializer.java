@@ -25,62 +25,28 @@ import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
-import com.sep.vox.domain.valueobject.FrameworkCode;
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignal;
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignalImportance;
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
 
-/**
- * Dựng sẵn Khung năng lực ngoại ngữ 6 bậc dùng cho Việt Nam (KNLNNVN) để hệ thống chấm được
- * ngay từ lần khởi động đầu.
- *
- * <p>Không có bản này thì {@code FrameworkVersionRepository.findActiveVersionId} trả rỗng và
- * mọi phiên luyện tập đều không vào được -- nên đây là dữ liệu bắt buộc, không phải demo.
- *
- * <p>Bản dựng ra đã ở trạng thái PUBLISHED và thoả đúng những điều kiện mà
- * {@code UpdateFrameworkVersionStatusUseCase} bắt buộc khi xuất bản: đủ và chỉ 5 tiêu chí
- * theo {@code FrameworkCriterionCode.ALLOWED_CODES}, mỗi tiêu chí có đủ 6 bậc, mỗi bậc
- * có ít nhất một dấu hiệu tích cực và một dấu hiệu tiêu cực. Ghi thẳng qua repository là
- * đường tắt vòng qua use case đó, nên các bất biến phải được giữ bằng tay ở đây.
- *
- * <p>Số bậc KHÔNG bị đóng cứng ở đâu khác trong hệ: thang bậc được suy từ
- * {@code result_band_order} (xem {@code LearnerProfileRepository.findFrameworkBandCount}),
- * nên mã bậc ở đây chỉ mang vai trò định danh, không mang ngữ nghĩa thứ tự.
- */
+import lombok.extern.slf4j.Slf4j;
+
+
 @Component
 @Order(4)
+@Slf4j 
 public class FrameworkInitializer implements ApplicationRunner {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FrameworkInitializer.class);
-
-    /**
-     * Khung đánh giá mặc định là Khung năng lực ngoại ngữ 6 bậc dùng cho Việt Nam (KNLNNVN),
-     * với 5 tiêu chí: Pronunciation, Fluency, Grammar, Vocabulary, Coherence.
-     */
     private static final String FRAMEWORK_CODE = "KNLNNVN";
 
-    // Mặc định khởi tạo là version 1
     private static final String FRAMEWORK_VERSION_CODE = "KNLNNVN_V1";
 
-    // Các tiêu chí của chuẩn, bắt buộc phải đúng 5 code ở từng tiêu chí
-    // Hiện tại, do những hạn chế về cấu hình của Service AI chấm điểm, nếu các code này định nghĩa sai, model sẽ không thể đọc và đưa ra kết quả đánh giá đúng
-    //
-    // Năm hằng số này PHẢI trùng khít FrameworkCriterionCode.ALLOWED_CODES: lúc xuất bản,
-    // UpdateFrameworkVersionStatusUseCase so sánh hai tập bằng equals(), nên lệch một ký tự
-    // là không version nào xuất bản được nữa. PracticeQuestionSelectionService và
-    // SubAttributePolicy cũng tra theo đúng các chuỗi đó.
     private static final String FRAMEWORK_VERSION_CRITERION_CODE_PRONUNCIATION = "PRONUNCIATION";
     private static final String FRAMEWORK_VERSION_CRITERION_CODE_FLUENCY = "FLUENCY";
     private static final String FRAMEWORK_VERSION_CRITERION_CODE_GRAMMAR = "GRAMMAR";
     private static final String FRAMEWORK_VERSION_CRITERION_CODE_VOCABULARY = "VOCABULARY";
     private static final String FRAMEWORK_VERSION_CRITERION_CODE_COHERENCE = "COHERENCE";
 
-    // Sáu bậc của KNLNNVN. Bậc 1..6 tương ứng CEFR A1..C2 theo Thông tư 01/2014/TT-BGDĐT.
-    //
-    // Mã viết hoa liền, KHÔNG dấu cách: mã band là thứ đi ra ngoài hệ thống -- nó hiện trong
-    // file Excel xuất điểm và màn hình kết quả, đồng thời là khoá đối chiếu khi import chính
-    // sách chấm (AssessmentPolicyImportCommitHandler chuẩn hoá bằng toUpperCase). Dấu cách
-    // trong mã sẽ theo vào cả ba đường đó. Phần chữ cho người đọc nằm ở label.
     private static final String FRAMEWORK_VERSION_BAND_CODE_1 = "BAC_1";
     private static final String FRAMEWORK_VERSION_BAND_CODE_2 = "BAC_2";
     private static final String FRAMEWORK_VERSION_BAND_CODE_3 = "BAC_3";
@@ -88,16 +54,6 @@ public class FrameworkInitializer implements ApplicationRunner {
     private static final String FRAMEWORK_VERSION_BAND_CODE_5 = "BAC_5";
     private static final String FRAMEWORK_VERSION_BAND_CODE_6 = "BAC_6";
 
-    /**
-     * Số dấu hiệu đầu danh sách được đánh HIGH. Danh sách trong {@link BandContent} viết theo
-     * thứ tự giảm dần độ quyết định, nên hai cái đầu là thứ một mình nó đã đủ xếp bậc, phần
-     * còn lại là dấu hiệu hỗ trợ.
-     *
-     * <p>Lưu ý: {@code importance} KHÔNG đi ra tới model chấm -- cả hai đường gửi yêu cầu chấm
-     * (SubmitExamSessionUseCase và PracticeEvaluationRequestFactory) chỉ lấy
-     * {@code signal.description()}. Trường này phục vụ màn hình quản trị khung và chỗ dựa nếu
-     * sau này prompt có xếp hạng dấu hiệu.
-     */
     private static final int HIGH_IMPORTANCE_SIGNAL_COUNT = 2;
 
     private static final List<CriterionSeed> CRITERIA = List.of(
@@ -157,13 +113,13 @@ public class FrameworkInitializer implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
         if (frameworkRepository.findByCode(FRAMEWORK_CODE).isPresent()) {
-            LOGGER.info("Framework {} đã tồn tại. Bỏ qua khởi tạo khung đánh giá", FRAMEWORK_CODE);
+            log.info("Framework {} đã tồn tại. Bỏ qua khởi tạo khung đánh giá", FRAMEWORK_CODE);
             return;
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
 
-        var framework = frameworkRepository.save(new Framework(
+        Framework framework = frameworkRepository.save(new Framework(
             new FrameworkCode(FRAMEWORK_CODE),
             "Khung năng lực ngoại ngữ 6 bậc dùng cho Việt Nam",
             "Khung đánh giá năng lực nói mặc định của hệ thống, gồm 5 tiêu chí và 6 bậc từ Bậc 1 đến Bậc 6 "
@@ -174,7 +130,7 @@ public class FrameworkInitializer implements ApplicationRunner {
 
         // effectiveFrom = now và effectiveTo = null là điều kiện để findActiveVersionId nhìn
         // thấy bản này; thiếu effectiveFrom thì luyện tập vẫn không chạy dù đã PUBLISHED.
-        var version = frameworkVersionRepository.save(new FrameworkVersion(
+        FrameworkVersion version = frameworkVersionRepository.save(new FrameworkVersion(
             framework.getId(),
             FRAMEWORK_VERSION_CODE,
             "KNLNNVN phiên bản 1",
@@ -186,13 +142,13 @@ public class FrameworkInitializer implements ApplicationRunner {
             now, now, null, null
         ));
 
-        var criteria = frameworkCriterionRepository.saveAll(CRITERIA.stream()
+        FrameworkCriterion criteria = frameworkCriterionRepository.saveAll(CRITERIA.stream()
             .map(seed -> new FrameworkCriterion(
                 version.getId(), seed.code(), seed.name(), seed.description(), seed.order(),
                 now, now, null, null))
             .toList());
 
-        var resultBands = frameworkResultBandRepository.saveAll(RESULT_BANDS.stream()
+        FrameworkResultBand resultBands = frameworkResultBandRepository.saveAll(RESULT_BANDS.stream()
             .map(seed -> new FrameworkResultBand(
                 version.getId(), seed.code(), seed.label(), seed.description(), seed.order(),
                 now, now, null, null))
@@ -200,7 +156,7 @@ public class FrameworkInitializer implements ApplicationRunner {
 
         frameworkCriterionBandRepository.saveAll(buildCriterionBands(criteria, resultBands, now));
 
-        LOGGER.info("Đã khởi tạo framework {} ({}) với {} tiêu chí và {} thang kết quả",
+        log.info("Đã khởi tạo framework {} ({}) với {} tiêu chí và {} thang kết quả",
             FRAMEWORK_CODE, FRAMEWORK_VERSION_CODE, criteria.size(), resultBands.size());
     }
 

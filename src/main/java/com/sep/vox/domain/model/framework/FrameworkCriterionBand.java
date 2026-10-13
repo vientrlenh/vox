@@ -1,6 +1,5 @@
 package com.sep.vox.domain.model.framework;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
@@ -12,40 +11,27 @@ public class FrameworkCriterionBand {
     private String descriptor;
     private FrameworkCriterionSignals positiveSignals;
     private FrameworkCriterionSignals negativeSignals;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
-    public FrameworkCriterionBand() {}
+    protected FrameworkCriterionBand() {}
 
     public FrameworkCriterionBand(UUID id, UUID frameworkCriterionId, UUID frameworkResultBandId, String descriptor,
-            FrameworkCriterionSignals positiveSignals, FrameworkCriterionSignals negativeSignals, Instant createdAt, Instant updatedAt,
-            UUID createdBy, UUID updatedBy) {
+            FrameworkCriterionSignals positiveSignals, FrameworkCriterionSignals negativeSignals) {
         this.id = id;
         this.frameworkCriterionId = frameworkCriterionId;
         this.frameworkResultBandId = frameworkResultBandId;
         this.descriptor = descriptor;
         this.positiveSignals = positiveSignals;
         this.negativeSignals = negativeSignals;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
     }
 
-    public FrameworkCriterionBand(UUID frameworkCriterionId, UUID frameworkResultBandId, String descriptor,
-            FrameworkCriterionSignals positiveSignals, FrameworkCriterionSignals negativeSignals, Instant createdAt, Instant updatedAt,
-            UUID createdBy, UUID updatedBy) {
-        this.frameworkCriterionId = frameworkCriterionId;
-        this.frameworkResultBandId = frameworkResultBandId;
-        this.descriptor = descriptor;
-        this.positiveSignals = positiveSignals;
-        this.negativeSignals = negativeSignals;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
+
+    public FrameworkCriterionBand(Builder builder) {
+        this.id = builder.id;
+        this.frameworkCriterionId = builder.frameworkCriterionId;
+        this.frameworkResultBandId = builder.frameworkResultBandId;
+        this.descriptor = builder.descriptor;
+        this.positiveSignals = builder.positiveSignals;
+        this.negativeSignals = builder.negativeSignals;
     }
 
     public UUID getId() {
@@ -96,37 +82,52 @@ public class FrameworkCriterionBand {
         this.negativeSignals = negativeSignals;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new FrameworkCriterionBand.Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public static class Builder {
+        private UUID id;
+        private UUID frameworkCriterionId;
+        private UUID frameworkResultBandId;
+        private String descriptor;
+        private FrameworkCriterionSignals positiveSignals;
+        private FrameworkCriterionSignals negativeSignals;
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        protected Builder() {}
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        public Builder id(UUID id) {
+            this.id = id;
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder frameworkCriterionId(UUID frameworkCriterionId) {
+            this.frameworkCriterionId = frameworkCriterionId;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder frameworkResultBandId(UUID frameworkResultBandId) {
+            this.frameworkResultBandId = frameworkResultBandId;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder descriptor(String descriptor) {
+            this.descriptor = descriptor;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+        public Builder positiveSignals(FrameworkCriterionSignals positiveSignals) {
+            this.positiveSignals = positiveSignals;
+            return this;
+        }
 
-    
+        public Builder negativeSignals(FrameworkCriterionSignals negativeSignals) {
+            this.negativeSignals = negativeSignals;
+            return this;
+        }
+
+        public FrameworkCriterionBand build() {
+            return new FrameworkCriterionBand(this);
+        }
+    }
 }

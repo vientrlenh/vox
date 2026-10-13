@@ -1,8 +1,10 @@
 package com.sep.vox.domain.model.assessmentpolicy;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+
+import com.sep.vox.domain.valueobject.PositiveDecimal;
+import com.sep.vox.domain.valueobject.PositiveInteger;
 
 
 public class AssessmentPolicy {
@@ -11,34 +13,29 @@ public class AssessmentPolicy {
     private UUID gradeLevelId;
     private UUID schoolGradeId;
     private UUID schoolClassId;
-    private UUID languageId;
+    private UUID learningLanguageId;
     private UUID frameworkVersionId;
     private UUID rubricVersionId;
-    private UUID targetFrameworkBandId; // band nào ở khung được map với khối hoặc lớp nào
-    private BigDecimal passingScore; // điểm tối thiểu để qua, nếu null thì không check điểm
+    private UUID targetFrameworkBandId;
+    private PositiveDecimal passingScore;
     private AssessmentPolicyStrictness strictness;
-    private int version;
+    private PositiveInteger version;
     private AssessmentPolicyStatus status;
     private Instant effectiveFrom;
     private Instant effectiveTo;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
-    public AssessmentPolicy() {}
+    protected AssessmentPolicy() {}
 
     public AssessmentPolicy(UUID id, UUID schoolId, UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId,
-            UUID languageId, UUID frameworkVersionId, UUID rubricVersionId, UUID targetFrameworkBandId,
-            BigDecimal passingScore, AssessmentPolicyStrictness strictness, int version,
-            AssessmentPolicyStatus status, Instant effectiveFrom, Instant effectiveTo,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
+            UUID learningLanguageId, UUID frameworkVersionId, UUID rubricVersionId, UUID targetFrameworkBandId,
+            PositiveDecimal passingScore, AssessmentPolicyStrictness strictness, PositiveInteger version,
+            AssessmentPolicyStatus status, Instant effectiveFrom, Instant effectiveTo) {
         this.id = id;
         this.schoolId = schoolId;
         this.gradeLevelId = gradeLevelId;
         this.schoolGradeId = schoolGradeId;
         this.schoolClassId = schoolClassId;
-        this.languageId = languageId;
+        this.learningLanguageId = learningLanguageId;
         this.frameworkVersionId = frameworkVersionId;
         this.rubricVersionId = rubricVersionId;
         this.targetFrameworkBandId = targetFrameworkBandId;
@@ -48,35 +45,24 @@ public class AssessmentPolicy {
         this.status = status;
         this.effectiveFrom = effectiveFrom;
         this.effectiveTo = effectiveTo;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
     }
 
-    public AssessmentPolicy(UUID schoolId, UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId,
-            UUID languageId, UUID frameworkVersionId, UUID rubricVersionId, UUID targetFrameworkBandId,
-            BigDecimal passingScore, AssessmentPolicyStrictness strictness, int version,
-            AssessmentPolicyStatus status, Instant effectiveFrom, Instant effectiveTo,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.schoolId = schoolId;
-        this.gradeLevelId = gradeLevelId;
-        this.schoolGradeId = schoolGradeId;
-        this.schoolClassId = schoolClassId;
-        this.languageId = languageId;
-        this.frameworkVersionId = frameworkVersionId;
-        this.rubricVersionId = rubricVersionId;
-        this.targetFrameworkBandId = targetFrameworkBandId;
-        this.passingScore = passingScore;
-        this.strictness = strictness;
-        this.version = version;
-        this.status = status;
-        this.effectiveFrom = effectiveFrom;
-        this.effectiveTo = effectiveTo;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
+    public AssessmentPolicy(Builder builder) {
+        this.id = builder.id;
+        this.schoolId = builder.schoolId;
+        this.gradeLevelId = builder.gradeLevelId;
+        this.schoolGradeId = builder.schoolGradeId;
+        this.schoolClassId = builder.schoolClassId;
+        this.learningLanguageId = builder.learningLanguageId;
+        this.frameworkVersionId = builder.frameworkVersionId;
+        this.rubricVersionId = builder.rubricVersionId;
+        this.targetFrameworkBandId = builder.targetFrameworkBandId;
+        this.passingScore = builder.passingScore;
+        this.strictness = builder.strictness;
+        this.version = builder.version;
+        this.status = builder.status;
+        this.effectiveFrom = builder.effectiveFrom;
+        this.effectiveTo = builder.effectiveTo;
     }
 
     public UUID getId() {
@@ -119,12 +105,12 @@ public class AssessmentPolicy {
         this.schoolClassId = schoolClassId;
     }
 
-    public UUID getLanguageId() {
-        return languageId;
+    public UUID getLearningLanguageId() {
+        return learningLanguageId;
     }
 
-    public void setLanguageId(UUID languageId) {
-        this.languageId = languageId;
+    public void setLearningLanguageId(UUID learningLanguageId) {
+        this.learningLanguageId = learningLanguageId;
     }
 
     public UUID getFrameworkVersionId() {
@@ -151,11 +137,11 @@ public class AssessmentPolicy {
         this.targetFrameworkBandId = targetFrameworkBandId;
     }
 
-    public BigDecimal getPassingScore() {
+    public PositiveDecimal getPassingScore() {
         return passingScore;
     }
 
-    public void setPassingScore(BigDecimal passingScore) {
+    public void setPassingScore(PositiveDecimal passingScore) {
         this.passingScore = passingScore;
     }
 
@@ -167,11 +153,11 @@ public class AssessmentPolicy {
         this.strictness = strictness;
     }
 
-    public int getVersion() {
+    public PositiveInteger getVersion() {
         return version;
     }
 
-    public void setVersion(int version) {
+    public void setVersion(PositiveInteger version) {
         this.version = version;
     }
 
@@ -199,36 +185,8 @@ public class AssessmentPolicy {
         this.effectiveTo = effectiveTo;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
+    public static Builder builder() {
+        return new AssessmentPolicy.Builder();
     }
 
     public boolean isPublished() {
@@ -250,8 +208,106 @@ public class AssessmentPolicy {
     // không sửa khi đã published
     public void assertMutable() {
         if (isPublished()) {
-            throw new IllegalStateException("Policy đã được xuất bản, hãy tạo version mới nếu cần sửa");
+            throw new IllegalArgumentException("Policy đã được xuất bản, hãy tạo version mới nếu cần sửa");
         }
     }
-    
+
+    public static class Builder {
+        private UUID id;
+        private UUID schoolId;
+        private UUID gradeLevelId;
+        private UUID schoolGradeId;
+        private UUID schoolClassId;
+        private UUID learningLanguageId;
+        private UUID frameworkVersionId;
+        private UUID rubricVersionId;
+        private UUID targetFrameworkBandId;
+        private PositiveDecimal passingScore;
+        private AssessmentPolicyStrictness strictness;
+        private PositiveInteger version;
+        private AssessmentPolicyStatus status;
+        private Instant effectiveFrom;
+        private Instant effectiveTo;
+
+        protected Builder() {}
+
+        public Builder id(UUID id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            this.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder gradeLevelId(UUID gradeLevelId) {
+            this.gradeLevelId = gradeLevelId;
+            return this;
+        }
+
+        public Builder schoolGradeId(UUID schoolGradeId) {
+            this.schoolGradeId = schoolGradeId;
+            return this;
+        }
+
+        public Builder schoolClassId(UUID schoolClassId) {
+            this.schoolClassId = schoolClassId;
+            return this;
+        }
+
+        public Builder learningLanguageId(UUID learningLanguageId) {
+            this.learningLanguageId = learningLanguageId;
+            return this;
+        }
+
+        public Builder frameworkVersionId(UUID frameworkVersionId) {
+            this.frameworkVersionId = frameworkVersionId;
+            return this;
+        }
+
+        public Builder rubricVersionId(UUID rubricVersionId) {
+            this.rubricVersionId = rubricVersionId;
+            return this;
+        }
+
+        public Builder targetFrameworkBandId(UUID targetFrameworkBandId) {
+            this.targetFrameworkBandId = targetFrameworkBandId;
+            return this;
+        }
+
+        public Builder passingScore(PositiveDecimal passingScore) {
+            this.passingScore = passingScore;
+            return this;
+        }
+
+        public Builder strictness(AssessmentPolicyStrictness strictness) {
+            this.strictness = strictness;
+            return this;
+        }
+
+        public Builder version(PositiveInteger version) {
+            this.version = version;
+            return this;
+        }
+
+        public Builder status(AssessmentPolicyStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        public Builder effectiveFrom(Instant effectiveFrom) {
+            this.effectiveFrom = effectiveFrom;
+            return this;
+        }
+
+        public Builder effectiveTo(Instant effectiveTo) {
+            this.effectiveTo = effectiveTo;
+            return this;
+        }
+
+        public AssessmentPolicy build() {
+            return new AssessmentPolicy(this);
+        }
+    }
 }

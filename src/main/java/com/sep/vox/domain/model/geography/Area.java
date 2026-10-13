@@ -15,7 +15,7 @@ public class Area extends BaseModel {
     private Instant effectiveFrom;
     private Instant effectiveTo;
 
-    public Area() {}
+    protected Area() {}
 
     public Area(Code code, Name name, AreaLevel level, UUID parentId, Instant effectiveFrom, Instant effectiveTo) {
         this.code = code;

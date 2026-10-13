@@ -1,47 +1,36 @@
 package com.sep.vox.domain.model.framework;
 
-import java.time.Instant;
 import java.util.UUID;
+
+import com.sep.vox.domain.valueobject.Code;
+import com.sep.vox.domain.valueobject.PositiveInteger;
 
 public class FrameworkCriterion {
     private UUID id;
     private UUID frameworkVersionId;
-    private String code;
+    private Code code;
     private String name;
     private String description;
-    private int order;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
+    private PositiveInteger order;
 
-    public FrameworkCriterion() {}
+    protected FrameworkCriterion() {}
 
-    public FrameworkCriterion(UUID id, UUID frameworkVersionId, String code, String name, String description, int order, 
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
+    public FrameworkCriterion(UUID id, UUID frameworkVersionId, Code code, String name, String description, PositiveInteger order) {
         this.id = id;
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;
         this.name = name;
         this.description = description; 
         this.order = order;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
     }
 
-    public FrameworkCriterion(UUID frameworkVersionId, String code, String name, String description, int order, 
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.frameworkVersionId = frameworkVersionId;
-        this.code = code;
-        this.name = name;
-        this.description = description; 
-        this.order = order;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
+    public FrameworkCriterion(Builder builder) {
+        this.id = builder.id;
+        this.frameworkVersionId = builder.frameworkVersionId;
+        this.code = builder.code;
+        this.name = builder.name;
+        this.description = builder.description;
+        this.order = builder.order;
     }
 
     public UUID getId() {
@@ -60,11 +49,11 @@ public class FrameworkCriterion {
         this.frameworkVersionId = frameworkVersionId;
     }
 
-    public String getCode() {
+    public Code getCode() {
         return code;
     }
 
-    public void setCode(String code) {
+    public void setCode(Code code) {
         this.code = code;
     }
 
@@ -84,45 +73,60 @@ public class FrameworkCriterion {
         this.description = description;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
-    public int getOrder() {
+    public PositiveInteger getOrder() {
         return order;
     }
 
-    public void setOrder(int order) {
+    public void setOrder(PositiveInteger order) {
         this.order = order;
     }
 
-    
+    public static Builder builder() {
+        return new FrameworkCriterion.Builder();
+    }
+
+    public static class Builder {
+        private UUID id;
+        private UUID frameworkVersionId;
+        private Code code;
+        private String name;
+        private String description;
+        private PositiveInteger order;
+
+        protected Builder() {}
+
+        public Builder id(UUID id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder frameworkVersionId(UUID frameworkVersionId) {
+            this.frameworkVersionId = frameworkVersionId;
+            return this;
+        }
+
+        public Builder code(Code code) {
+            this.code = code;
+            return this;
+        }
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder order(PositiveInteger order) {
+            this.order = order;
+            return this;
+        }
+
+        public FrameworkCriterion build() {
+            return new FrameworkCriterion(this);
+        }
+    }
 }

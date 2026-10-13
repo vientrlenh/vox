@@ -29,6 +29,7 @@ import com.sep.vox.application.port.input.usecase.questionbank.CreateSystemQuest
 import com.sep.vox.application.port.input.usecase.questionbank.DeleteQuestionBankGradeUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.DeleteQuestionBankUseCase;
 import com.sep.vox.application.port.input.command.BulkUpdateQuestionScopeStatusCommand;
+import com.sep.vox.application.port.input.command.CreateSystemQuestionBankCommand;
 import com.sep.vox.application.response.input.question.BulkUpdateQuestionBankStatusResponse;
 import com.sep.vox.application.port.input.usecase.questionbank.BulkUpdateQuestionBankStatusUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.UpdateQuestionBankStatusUseCase;
@@ -68,41 +69,40 @@ public class RestApiQuestionBankController {
     private final PreviewQuestionBankImportFromFileUseCase previewQuestionBankImportFromFileUseCase;
     private final AcceptQuestionBankImportUseCase acceptQuestionBankImportUseCase;
 
-    /**
-     * Phạm vi (hệ thống hay trường nào) KHÔNG nhận từ client mà suy từ vai trò người đăng nhập —
-     * xem {@link PreviewQuestionBankImportFromFileUseCase}.
-     */
+
     @PostMapping(value = "/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewImportResponse>> previewImport(
             @RequestParam("file") MultipartFile file) throws IOException {
-        var uploadedFile = UploadedFile.upload(
+        UploadedFile uploadedFile = UploadedFile.upload(
             file.getOriginalFilename(),
             file.getContentType(),
             file.getSize(),
             file.getBytes()
         );
-        var data = previewQuestionBankImportFromFileUseCase.execute(
+        PreviewImportResponse data = previewQuestionBankImportFromFileUseCase.execute(
             new PreviewQuestionBankImportFromFileCommand(uploadedFile)
         );
-        return ResponseEntity.ok(ApiResponse.success("Xem trước import ngân hàng câu hỏi thành công", data));
+        ApiResponse<PreviewImportResponse> response = ApiResponse.success("Successfully loaded question bank preview", data);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/import/{sessionId}/accept")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> acceptImport(
+    public ResponseEntity<ApiResponse<Void>> acceptImport(
             @PathVariable(name = "sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
         acceptQuestionBankImportUseCase.execute(
             new AcceptQuestionBankImportCommand(sessionId, request.confirmedMapping())
         );
-        return ResponseEntity.ok(ApiResponse.success("Đã tiếp nhận yêu cầu import ngân hàng câu hỏi, đang xử lý"));
+        ApiResponse<Void> response = ApiResponse.success("Question bank import accepted successfully");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/system")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<CreateQuestionBankResponse>> createSystem(@Valid @RequestBody CreateSystemQuestionBankRequest request) {
-        var command = CreateQuestionBankCommandMapper.fromSystemRequest(request);
+        CreateSystemQuestionBankCommand command = CreateSystemQuestionBankRequest.toCommand(request);
         var data = createSystemQuestionBankUseCase.execute(command);
         var response = ApiResponse.success("Ngân hàng câu hỏi hệ thống được tạo thành công", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

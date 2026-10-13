@@ -122,19 +122,8 @@ public class QuestionBank extends BaseModel {
 
     public static QuestionBank create(UUID languageId, UUID schoolId, String code, String name, String description, QuestionBankOwnerType ownerType, 
     Instant now, UUID createdBy) {
-        return new QuestionBank(
-            languageId, 
-            schoolId, 
-            code, 
-            name, 
-            description, 
-            ownerType, 
-            QuestionBankStatus.DRAFT, 
-            now, 
-            now, 
-            createdBy, 
-            createdBy
-        );
+        return QuestionBank.builder()
+        
     }
 
     public static class Builder {

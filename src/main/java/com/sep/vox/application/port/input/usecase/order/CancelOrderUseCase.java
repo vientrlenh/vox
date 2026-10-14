@@ -21,20 +21,6 @@ import com.sep.vox.domain.model.payment.PaymentStatus;
 import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.PaymentRecordRepository;
 
-/**
- * Trường tự bỏ một đơn chưa trả tiền.
- *
- * <p>Có mặt vì {@code uq_orders_one_open_subscription_order} chỉ cho phép MỘT đơn đăng ký còn mở
- * mỗi trường: không có đường hủy thì một trường đặt nhầm gói bị chặn đặt đơn mới cho tới khi đơn cũ
- * tự hết hạn (tối đa 24 tiếng theo Order.PENDING_TTL). Đây là bản THỦ CÔNG của việc mà
- * PendingOrderReconciler làm tự động khi đơn quá hạn.
- *
- * <p>Phần khó KHÔNG nằm ở việc đổi trạng thái đơn mà ở phiên thanh toán còn sống bên cổng: đóng đơn
- * mà để link sống tiếp nghĩa là trường vẫn trả vào đó được, và lúc tiền về thì
- * OrderSettlementService thấy đơn không còn PENDING nên không giao hàng -- thu tiền xong không cấp
- * gì, mà hệ thống hiện chưa có luồng hoàn tiền nào. Nên quy tắc ở đây là: chỉ đóng đơn khi CHẮC
- * CHẮN không còn đường nào ra tiền nữa.
- */
 @Service
 public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
 

@@ -1,10 +1,10 @@
 # School Management Flows: Review and Proposals
 
 - **Status:** discussion notes, not yet implemented
-- **Date:** 2026-10-13
-- **Branch:** `refactor/structure`. Line numbers refer to commit `f671f7e2`. The branch does not build yet, so treat references as pointers, not guarantees.
+- **Date:** 2026-10-13, updated 2026-10-14 (section 7)
+- **Branch:** `refactor/structure`. Line numbers refer to commit `f671f7e2` (section 7: `424c1b83`). The branch does not build yet, so treat references as pointers, not guarantees.
 - **Perspective:** a school administrator onboarding a high school onto the system to run AI-assisted oral assessments.
-- **Builds on:** the practice-first drafts `practice-first-migration.md` and `bulk-import-target.md` (both 2026-10-10, in git at `f671f7e2`). Section 7 lists where this document settles or changes something in them.
+- **Builds on:** the practice-first drafts `practice-first-migration.md` and `bulk-import-target.md` (both 2026-10-10, in git at `f671f7e2`). Section 8 lists where this document settles or changes something in them.
 
 ## Contents
 
@@ -14,9 +14,10 @@
 4. [Import use cases](#4-import-use-cases)
 5. [Student roster import design](#5-student-roster-import-design)
 6. [Academic year design sketch](#6-academic-year-design-sketch)
-7. [Reconciliation with the earlier drafts](#7-reconciliation-with-the-earlier-drafts)
-8. [Open questions](#8-open-questions)
-9. [Suggested implementation order](#9-suggested-implementation-order)
+7. [Evaluation configuration](#7-evaluation-configuration)
+8. [Reconciliation with the earlier drafts](#8-reconciliation-with-the-earlier-drafts)
+9. [Open questions](#9-open-questions)
+10. [Suggested implementation order](#10-suggested-implementation-order)
 
 ---
 
@@ -118,7 +119,7 @@ A school can only change its own record of a person.
 - A membership role (student or teacher, optionally main or assistant teacher).
 - A grade-match check.
 - A single atomic "move student" action.
-- The one-class rule from [open question 1](#8-open-questions).
+- One homeroom class per student per year, plus any number of groups (remedial, gifted training, exam review). See 7.5.
 - An invitation can carry a class; the class membership is created when the invitation is accepted.
 
 ### 2.7 Show quotas in units admins think in
@@ -133,7 +134,7 @@ Practice billing moves behind `PracticeEntitlementPort` (migration draft, 5.4). 
 ### 2.8 Make the admin dashboard about learning, not only operations
 
 `ViewSchoolAdminDashboardUseCase.java:117` shows exam counts, appeals, spending, quota and grading backlog. A principal is paying for evidence of outcomes:
-- **Targets:** proficiency band distribution per grade against `GradeLevelBandScope` targets (`defaultTargetBandId`, `hardMaxBandId`).
+- **Targets:** the share of students meeting their target, and the distribution of estimated levels, per grade and program (7.8).
 - **Comparisons:** class-by-class and term-over-term progress. Class score stats currently exist only on the teacher dashboard.
 - **Who needs help:** students below target, and students who are not practicing.
 - **Grading quality:** AI vs. human grading agreement at school level (`ViewAiQualityReportUseCase` exists in grading).
@@ -167,7 +168,7 @@ A code earns its place only if something reads it. Every code falls into one of 
 
 | Model | Verdict | Why |
 |---|---|---|
-| `RubricCriterion` | **Keep, stop manual input.** Copy from the linked `FrameworkCriterion`. | AI contract key: sent as the criterion key (`SubmitExamSessionUseCase.java:356`), special handling only for `grammar`/`vocabulary`/`coherence` (`:340`), AI scores matched back by code (`RecordExamAttemptEvaluationUseCase.java:153`), referenced by scoring rules (`CriterionScoreThresholdParams.criterionCode`). Schools currently type it freely (`CreateSchoolRubricCriterionUseCase.java:112`), so a typo silently changes how a criterion is evaluated. Seeds already use identical codes on both sides (`FrameworkInitializer.java:74`, `SystemRubricTemplateInitializer.java:103`). |
+| `RubricCriterion` | **Stop storing and typing it.** Take it from the linked `FrameworkCriterion` (7.4). | AI contract key: sent as the criterion key (`SubmitExamSessionUseCase.java:356`), special handling only for `grammar`/`vocabulary`/`coherence` (`:340`), AI scores matched back by code (`RecordExamAttemptEvaluationUseCase.java:153`), referenced by scoring rules (`CriterionScoreThresholdParams.criterionCode`). Schools currently type it freely (`CreateSchoolRubricCriterionUseCase.java:112`), so a typo silently changes how a criterion is evaluated. Seeds already use identical codes on both sides (`FrameworkInitializer.java:74`, `SystemRubricTemplateInitializer.java:103`). |
 | `FrameworkVersion` / `FrameworkCriterion` / `FrameworkResultBand` | **Keep.** System admin only, locked once published. | Codes like B1 and GRAMMAR are sent to the AI. |
 | `InterestDimension` | **Keep.** System-defined. | Used as keys by the quiz scorer and topic suggestions. |
 | `LearningLanguage`, `Area` | **Keep.** Seeded. | ISO language codes, official administrative-area codes. |
@@ -175,7 +176,8 @@ A code earns its place only if something reads it. Every code falls into one of 
 | `SchoolUser.memberCode` | **Keep.** Import it; it is the roster matching key. | The school's own student or staff ID. Unique per school across live members and pending invitations. The `Code` value object throws on anything outside `^[A-Z0-9_-]+$`, so IDs need normalizing before validation. |
 | `Exam` | **Generate a short code.** | Optional today, but the fallback is `EX-` + 32 hex characters (`CreateExamUseCase.java:174`), so paper codes come out as `EX-<32 chars>-P1`. Use a short per-school sequence such as `EX-0042`. |
 | `ExamPaper`, `ExamBlueprintVersion` | **Keep as derived.** | Already derived from the parent code (`-P{n}`, `-V{n}`). |
-| `ExamBlueprint`, `Question`, `QuestionBank`, `ScoringRule` | **Generate when left blank.** | Imports can still supply a code to update existing rows. `ScoringRule` codes are copied into `ExamItemRuleHit.ruleCode`. |
+| `ExamBlueprint`, `Question`, `QuestionBank` | **Generate when left blank.** | Imports can still supply a code to update existing rows. |
+| `ScoringRule` | **See 7.3.** | Rules are never executed, and school-level rules are removed. If platform rules come later, generate their codes; they are copied into `ExamItemRuleHit.ruleCode`. |
 | `RubricVersion` | **Remove.** Use (rubric, version number). | A unique index on `(rubric_id, version)` already exists. |
 | `Rubric`, `QuestionTopic` | **Remove.** Use the name within its owner. | Only used for uniqueness and import lookups. |
 | `SchoolClass`, `SchoolGrade`, `SchoolRoom`, `GradeLevel` | **Already removed from the models.** Finish the cleanup. | See 3.3. |
@@ -243,8 +245,8 @@ Names used as keys need normalizing (trim, collapse spaces, upper-case). Otherwi
 | Teachers (part of USER today) | **Separate `STAFF` import**, also invitation-based, with an optional "classes taught" column. |
 | SCHOOL_GRADE | **Drop.** Grades come from academic year × grade level. |
 | SCHOOL_ROOM | **Keep.** Low priority. |
-| ASSESSMENT_POLICY | **Hide from school admins.** "Copy last year's" or defaults from `GradeLevelBandScope` fit better. |
-| RUBRIC_VERSION / RUBRIC_CRITERION / RUBRIC_RESULT_BAND | **One workbook, or rely on cloning.** One rubric takes three files today. `CloneSystemRubricToSchoolUseCase` plus editing is the more natural path. |
+| ASSESSMENT_POLICY | **Replace with the targets screen** (7.6): prefilled from grade expectations and copied forward by the rollover. |
+| RUBRIC_VERSION / RUBRIC_CRITERION / RUBRIC_RESULT_BAND | **One workbook, or rely on cloning** (7.4). One rubric takes three files today. `CloneSystemRubricToSchoolUseCase` plus editing is the more natural path. |
 | QUESTION / QUESTION_BANK / QUESTION_TOPIC | **Keep.** Teacher-facing and already the most complete pipeline. |
 | Exam candidates | **Already right.** `ImportExamCandidatesFromClass`/`FromGrade` take candidates from the roster, not from a file. |
 
@@ -281,7 +283,7 @@ This is what allows people who already practice on Vox to join their school with
 | Name split into "Họ đệm" + "Tên" (lists are sorted by given name) | A column maps to only one field. Columns cannot be combined. |
 | Dates as text `15/01/2009`, or as real Excel dates | Cells become their displayed text, so the same date can arrive in different shapes. |
 | Footer lines ("Tổng số: 45", "Hiệu trưởng") | Imported as data rows, which fail with noisy errors. |
-| Neither a student code nor an email | Every row would fail the "member code or email" rule. See [open question 6](#8-open-questions). |
+| Neither a student code nor an email | Every row would fail the "member code or email" rule. See [open question 6](#9-open-questions). |
 | Students with the same name | Matching never uses names, only member code or email. |
 
 Error row numbers count only non-blank rows and skip the header offset (`PreviewSchoolUserImportFromFileUseCase.saveRows`). An error on "row 14" does not point to row 14 in Excel.
@@ -420,7 +422,7 @@ erDiagram
 | `SchoolAcademicTerm` | **New**, part of the year aggregate | Semesters (Học kỳ I, Học kỳ II). |
 | `SchoolGrade` | `academicTimelineId` → `academicYearId`. Name optional; the display name comes from `GradeLevel`. | A grade level offered in one year ("Khối 10, 2026–2027"). |
 | `SchoolStudentEnrollment` | **New** | A student's place in a year: which grade, and the year's outcome (promoted, retained, graduated, left). |
-| `SchoolClass` | Add `academicYearId` (copied from the grade so the name can be unique per year) | A group of students within a grade. |
+| `SchoolClass` | Add `academicYearId` (copied from the grade so the name can be unique per year), plus `type`, program and group purpose (7.5) | A homeroom class (belongs to a program) or a group (remedial, gifted training, exam review) within a grade. |
 | `SchoolClassUser` | Add `role` and `leaveReason`. Re-joining creates a new row. | Class membership history. |
 | `SchoolUser` | Target from the migration draft (role, member code, official name), with status `ACTIVE`/`SUSPENDED`/`ENDED`. `endDate` set when the membership ends; ended rows kept as history. | The school's record of a person across years. |
 | `SchoolInvitation` | **New** (5.8) | A pending membership, possibly for someone without an account. |
@@ -428,9 +430,7 @@ erDiagram
 **Why a separate enrollment record instead of deriving everything from class membership:**
 - The rollover needs somewhere to record each student's outcome. Retained students (lưu ban) cannot be expressed through class membership alone.
 - Grade-level rules (`GradeLevelBandScope` targets, assessment policies, quota by grade) need the student's grade for the year, whether or not the student belongs to one class, several, or none yet.
-- It settles [open question 1](#8-open-questions) cleanly. The grade comes from the enrollment, and classes are groupings that must match it.
-
-If every student will always be in exactly one class per year, enrollment could be derived from class membership instead. The rollover would then lose a clean place to record outcomes.
+- It fits the decision in 7.5: one homeroom per student per year, plus any number of groups. The grade comes from the enrollment, and homeroom classes and groups must match it. Because students can belong to groups as well, deriving the grade from class membership would be ambiguous.
 
 ### 6.3 Domain sketches
 
@@ -687,6 +687,9 @@ public class SchoolClass extends BaseModel {
     private UUID academicYearId;      // new, copied from the grade; makes name unique per year
     private UUID schoolGradeId;
     private UUID learningLanguageId;
+    private SchoolClassType type;            // new: HOMEROOM, GROUP (7.5)
+    private UUID programId;                  // new: homeroom classes only
+    private SchoolGroupPurpose groupPurpose; // new: groups only: REMEDIAL, ADVANCED, EXAM_REVIEW
     private String name;              // normalized: "10A1"
     private String description;
     private SchoolClassStatus status;
@@ -735,7 +738,8 @@ stateDiagram-v2
 |---|---|
 | Only `ACTIVE` members can be enrolled, placed in classes or added to exams; pending invitations show as pending | Use cases |
 | One enrollment per student per year | DB unique constraint |
-| A student's class must belong to the grade of their enrollment that year | `CreateSchoolClassUserUseCase`, invitation acceptance |
+| One open homeroom membership per student per year; any number of groups | `CreateSchoolClassUserUseCase`, invitation acceptance |
+| A student's homeroom class and groups must belong to the grade of their enrollment that year | `CreateSchoolClassUserUseCase`, invitation acceptance |
 | At most one open membership per (class, user); re-joining creates a new row | DB partial unique index |
 | Class name unique per year | DB unique constraint |
 
@@ -861,13 +865,268 @@ Changes to existing use cases:
 
 ### 6.7 Follow-ups in other modules
 
-- **Exams:** add `academicYearId` (and optionally `termId`), set at creation. Reject new exams in `CLOSED` years. Candidates must be `ACTIVE` members. Dashboards and exports filter by year and term.
-- **Assessment policies:** policies scoped to a `SchoolGrade` become year-specific. Either the rollover copies them, or policies are scoped to `GradeLevel` (stable across years) with an optional class override.
+- **Exams:** add `academicYearId` (and optionally `termId`), set at creation. Reject new exams in `CLOSED` years. Candidates must be `ACTIVE` members. Dashboards and exports filter by year and term. Scope and assessment type are covered in 7.7.
+- **Assessment policies:** keyed by the year's school grades, programs and groups (7.6); the rollover copies them to the next year.
 - **Quotas:** school-paid practice allocation by grade or class uses enrollments (2.7).
 
 ---
 
-## 7. Reconciliation with the earlier drafts
+## 7. Evaluation configuration
+
+How a school decides what the AI evaluates against: framework, grade expectations, scoring scheme (today's "rubric"), assessment policy and scoring rules. Exam models are out of scope except where they consume these settings.
+
+### 7.1 What decides a student's score today
+
+| Setting | Where | Effect today |
+|---|---|---|
+| Criterion descriptors and positive/negative signals per level | Framework version | Sent to the AI; the core of scoring. |
+| Target level | Policy | Chooses which descriptors the AI scores against: the whole ladder of levels for grammar, vocabulary and coherence (`SubmitExamSessionUseCase.java:340`), only the target level for pronunciation and fluency. |
+| Which criteria are included, and their weights | Rubric version | Item score = Σ(score × weight) / Σ weight. |
+| Score scale | Rubric version | The range of every criterion score. |
+| Result bands | Rubric version | The label on the result. A score in a gap between bands gets no label. |
+| Passing score | Policy | PASSED/FAILED when results are published (`UpdateExamStatusUseCase.java:461`). |
+| `required` | Rubric criterion | Human graders must score it (`GradingItemScoreResolver.java:152`); skipped optional criteria drop out of the weighting. |
+
+**No effect on grading:**
+- `strictness`: only copied when cloning (`CloneSystemRubricToSchoolUseCase.java:236`), and not part of the AI request.
+- Scoring rules (17 conditions × 11 actions).
+- Policy scope (class / school grade / grade level), and the effective dates of policies and rubric versions.
+- Criterion `examples`.
+- Criterion min/max: they must equal the scale (`RubricScoringConsistencyValidator.assertEveryCriterionCoversScale`).
+- `totalScoreMethod`: it only constrains the weights (sum to 1, or all 1); both use the same formula.
+- Rubric criterion `code`: it must equal the framework code (3.2).
+- Criterion name and description: shown to graders only.
+
+### 7.2 Problems found
+
+1. **Scoring rules never run.** The `scoringrule` package has 12 CRUD use cases and no evaluator, and `ExamItemRuleHit` is never saved. The behavior rules would provide is hard-coded instead: human-review confidence thresholds in `ConfidenceReviewCalculator` (`C_REF_SOFT = 0.90`, …) and invalid results when there's no transcript (`SubmitExamSessionUseCase.persistInvalidBlockedResult`).
+2. **Policy scope is a label, and it opens a hole in the level ceilings.**
+   - Grading reads `exams.assessment_policy_id`. `findActivePolicy` and `findCurrentPolicyForStudent` have no callers (see the comment at `SystemAssessmentPolicyInitializer.java:264`), and `coversScope`/`isSelectableAt` are never called. `ExamAssessmentPolicyValidator.java:57` checks only status and school.
+   - The "one active policy per scope" rule (`CreateSchoolAssessmentPolicyUseCase.java:180`) still restricts authoring for a lookup that no longer happens.
+   - `GradeLevelBandScopeGuardService` gives class-scoped policies the higher class-test ceiling, and nothing stops a whole-grade exam from using such a policy.
+3. **`strictness` is never used.**
+4. **The framework version is stored twice and can disagree.** The policy has `frameworkVersionId`, while the rubric's criteria point at framework criteria of a specific version. Policy creation only checks they belong to the same framework (`CreateSchoolAssessmentPolicyUseCase.java:226`). A mismatch makes `SubmitExamSessionUseCase` throw "Tiêu chí framework chưa có mô tả cho bậc mục tiêu" when it builds the AI request. Latent while only one framework version exists.
+5. **Effective dates are never enforced** for policies or rubric versions.
+6. **Publishing order is backwards.** A school rubric version can only be published once a policy linked to it is published (`ChangeSchoolRubricVersionStatusUseCase`), while `PublishSchoolAssessmentPoliciesByRubricVersionUseCase.java:86` requires the rubric to still be a draft. The exam check doesn't look at the rubric's status, so an exam can be graded against an editable draft rubric.
+7. **Result bands and `passingScore` can contradict each other.** Nothing checks one against the other.
+8. **Results don't say what level the student reached.** `ExamCandidateResult` stores the policy's target level. The level the AI matched per criterion (`ExamItemCriterionScore.matchedBandCode`) is stored but never aggregated.
+9. **Ceiling columns are misnamed.** `GradeLevelBandScope.defaultTargetBandId` is the ceiling for whole-grade exams and `hardMaxBandId` the ceiling for class tests (see the header of `GradeLevelBandScopeGuardService`). Both are seeded for every grade, as Bậc 4 and Bậc 5 (`GradeLevelBandScopeInitializer`).
+
+### 7.3 Target model
+
+**Definition:** an assessment policy is the framework level that a grade, a program or a group is evaluated at, together with the scoring scheme that turns the AI's judgments into scores.
+
+| Layer | Owner | Holds |
+|---|---|---|
+| Framework | System | The fixed 5 criteria, the levels (KNLNNVN Bậc 1–6), descriptors and signals. Practice uses it directly with the level the student picks. |
+| Grade expectations | System | Per (grade level, program kind): a recommended level and a ceiling. Replaces today's two ceiling columns. |
+| Scoring scheme (today's "rubric") | System templates; schools copy and adjust | Scale (default 0–10), a weight per framework criterion, result labels each marked passing or not. Edited as one document (7.4). |
+| Assessment policy | School | Target level and scoring scheme version for a grade, a program or a group, with an effective-from date (7.6). |
+| Evaluation guards | Platform | Human-review and invalid-response thresholds (today's hard-coded ones). |
+
+Keeping the scoring scheme separate from the policy makes sense: one scheme ("our 10-point scale") is reused across grades, while the target level differs per grade.
+
+**Decisions**
+- **School-level scoring rules are removed.** Evaluation guards stay platform-level; named school settings can be added later if schools ask for them.
+- **`strictness` is removed** unless the AI service gets a concrete meaning for it.
+- **The framework version comes from the target level** and is never stored separately.
+- **The pass mark comes from the scheme's labels**, so the two can't contradict each other.
+- **Scope is enforced when an exam is scheduled** (7.7), which closes the ceiling hole.
+
+### 7.4 Editing frameworks and rubrics as whole versions
+
+A version, with its criteria and bands, is the unit that is created, edited and published, instead of one use case per criterion or band.
+
+**Why**
+- **A rubric is one table:** criteria with weights, plus result labels across the scale. Saving it piece by piece leaves half-saved drafts when a call fails.
+- **Schools rarely build from scratch.** They clone a system template (`CloneSystemRubricToSchoolUseCase`) and adjust it.
+- **Versions are small.** A framework has 5 criteria (`FrameworkCriterionCode.ALLOWED_CODES`) and a handful of levels; the criterion × level grid is about 30 cells.
+- **Published versions are already frozen.** Every child edit requires `DRAFT`, and a new version copies from an existing one (`sourceRubricVersionId`).
+
+**The rules span the whole version**
+
+| Rule | Today |
+|---|---|
+| Weights add up (`SUM` → 1, `WEIGHTED_AVERAGE` → 1 each) | Only checked at publish (`RubricScoringConsistencyValidator`). The comment at `CreateSchoolRubricCriterionUseCase.java:126` records weights stored 100× too large that were only caught at publish. |
+| Bands don't overlap | Checked per band create or update. Older overlapping data still reaches grading, which logs an error and takes the first match (`ExamSessionResultCalculator.java:304`). |
+| Bands cover the scale without gaps | **Never checked**, and publishing doesn't even require bands. A score in a gap is saved without a label, with only an INFO log (`ExamSessionResultCalculator.java:297`). |
+| Changing the scale keeps children inside it | `UpdateSchoolRubricVersionUseCase` reloads every band and criterion to check this. |
+| Every framework criterion has a descriptor and signals at every level | Only checked at publish, in the removed `UpdateFrameworkVersionStatusUseCase`. |
+
+**Two levels of validation**
+- **Save draft:** structural checks only: values inside the scale, no duplicate framework criteria, weights between 0 and 1. Incomplete drafts are allowed, so work in progress can be saved.
+- **Publish:** completeness: weights add up, bands cover the scale with no gaps or overlaps, framework descriptors and signals are filled in.
+- **Errors:** every violation is returned as a list with field paths such as `criteria[2].weight`, not one exception at a time.
+
+**Simpler scoring scheme**
+- Drop criterion min/max (always the scale).
+- Drop criterion `code`; read it from the linked framework criterion.
+- Drop `totalScoreMethod`; weights are entered as percentages, equal by default.
+- Drop `examples` (never read).
+- Mark each result label as passing or not.
+
+**Use cases**
+
+One rubric set serves system and school rubrics, with an owner check (system admin for `SYSTEM`, the school's admin for `SCHOOL`). It replaces the 33 files in `rubricschool` and the 32 in `rubricsystem`:
+- `CreateRubricUseCase`: the rubric plus its first draft version, from scratch or cloned from a system template.
+- `CreateRubricVersionUseCase`: a new draft copied from an existing version.
+- `SaveRubricVersionDraftUseCase`: version fields, criteria and bands, all at once.
+- `PublishRubricVersionUseCase`, `ArchiveRubricVersionUseCase`, `DeleteRubricVersionUseCase` (drafts only).
+- View and search use cases that return the whole version.
+
+The framework set is for the system admin only, and replaces the 29 use cases removed in `424c1b83`:
+- Create and update the framework itself.
+- `CreateFrameworkVersionUseCase`, optionally copied from an earlier version.
+- `SaveFrameworkVersionDraftUseCase`: the levels plus the 5 × N grid of descriptors and signals.
+- Publish, archive, delete draft, view.
+
+**Domain model**
+- **Aggregates:** `RubricVersion` and `FrameworkVersion` become aggregate roots holding their criteria and bands. Each gets `replaceContent(...)` for the structural checks and `publish()` for the completeness checks; `RubricScoringConsistencyValidator` moves under `publish()`.
+- **Concurrent edits:** an optimistic version number on the version row, so a second concurrent save gets a conflict instead of silently overwriting the first.
+- **Child IDs:** published criterion IDs never change, because results store them (`ExamItemCriterionScore.rubricCriterionId`). Draft children can be replaced freely once grading can only use published versions (next point).
+
+**Publishing order.** Reverse the dependency. Publishing a rubric checks only the rubric. Publishing a policy, or attaching it to an exam, requires a published rubric version. "Publish the scheme and its targets" can still be one button.
+
+**Import.** The three rubric imports become one workbook (sheets "Version", "Criteria", "Bands") feeding the same save-draft command, so file and screen go through the same validation.
+
+### 7.5 Programs and groups
+
+**What schools do.** From research during this discussion; to confirm with pilot schools:
+- **Specialized classes:** only specialized schools (trường chuyên) may open them. They have their own curriculum and their own tests.
+- **Higher-demand classes at regular schools** (lớp chọn, lớp trọng điểm tiếng Anh, lớp nâng cao): they follow the same curriculum. Commonly they sit the same mid-term and end-of-term tests as the rest of the grade, and some schools also give them separate tests.
+- **Extra groups:** as we understand Circular 29/2024 on extra teaching, schools may run free sessions at school for three kinds of students. These are usually groups drawn from several classes, per subject:
+  - students who did not meet requirements at the end of the previous semester (phụ đạo);
+  - students selected for gifted training (bồi dưỡng học sinh giỏi);
+  - final-year students reviewing for the graduation exam (ôn thi).
+
+These rules vary by school type, school level and province, so they are modeled as data each school defines, not as system rules.
+
+**Homeroom classes and programs**
+- **Program:** every homeroom class belongs to one, with a name the school chooses (Chuẩn, Lớp chọn, Trọng điểm tiếng Anh, Chuyên Anh…).
+- **Kind:** each program has a kind the system understands, `STANDARD` or `ADVANCED`. Ceilings attach to the kind.
+- **Periodic assessment:** each program is either `SHARED_WITH_GRADE` (the default) or `SEPARATE` (7.7).
+- **Defaults:** a regular school starts with just "Chuẩn". The system never ships "Chuyên" as a default.
+- **Moving between programs:** some schools re-sort lớp chọn after semester 1. Since the program belongs to the homeroom class, a move is just moving the student to another homeroom class.
+
+**Groups**
+- **Type and purpose:** class type `GROUP`, with a purpose of `REMEDIAL`, `ADVANCED` (gifted training) or `EXAM_REVIEW`.
+- **Own target:** a group may have its own target, lower (a stepping stone for remedial groups) or higher (gifted training, up to the advanced ceiling).
+- **Not periodic:** group tests are `REGULAR` or `PRACTICE` (7.7). Students' official mid-term and end-of-term results always come from their program's exams.
+
+**Membership rule:** one homeroom class per student per year, plus any number of groups.
+
+### 7.6 Configuring targets
+
+The school admin, or the English department head, sets targets once per school year:
+
+```
+Evaluation targets · English · 2026–2027                                  [Publish]
+Framework: Khung năng lực ngoại ngữ 6 bậc (KNLNNVN v1)
+
+Regular school
+Grade 10  Whole-grade exams       Bậc 3 ▾  (up to Bậc 4)   10-point scale (system)
+          Program                 Target          Mid/end-of-term   Classes
+          Chuẩn                   uses grade's    shared            10A4–10A12
+          Trọng điểm tiếng Anh    Bậc 4 ▾         shared            10A1–10A3
+
+Specialized school
+Grade 10  Whole-grade exams       Bậc 3 ▾
+          Chuyên Anh              Bậc 4 ▾         separate          10 Anh 1, 10 Anh 2
+          Chuyên Toán             uses grade's    shared            10 Toán
+
+Groups
+          Phụ đạo tiếng Anh 10    Bậc 2 ▾         (regular / practice tests only)
+```
+
+- **Prefilled:** targets start at the recommended level from grade expectations (e.g. Bậc 3, the national upper-secondary target), so the admin only changes what differs.
+- **Readable levels:** each level shows its descriptor per criterion in plain language. Admins aren't assessment experts, so they need to see what they're choosing.
+- **One publish for the whole year.** The rollover copies targets to the next year, and promoted students move to the next grade's targets through their enrollment.
+
+**Checks at publish**
+- Each target is within the ceiling of its program kind.
+- The level belongs to a published framework version.
+- Every criterion of the scoring scheme has a descriptor and signals at that level. Today a missing one only shows up when a student submits (`SubmitExamSessionUseCase`).
+- The scoring scheme is published.
+- Warn about grades or programs without a target.
+- Warn when a `SEPARATE` program's target is above the grade's (7.7).
+
+### 7.7 Exam scope and assessment types
+
+**Assessment types.** As we understand Circular 22/2021, a secondary student's subject result combines three kinds of score:
+- **Regular assessment** (đánh giá thường xuyên, ĐĐGtx): several per term.
+- **Mid-term** (giữa kỳ, ĐĐGgk): one per term.
+- **End-of-term** (cuối kỳ, ĐĐGck): one per term.
+
+The term average is (ΣĐĐGtx + 2 × ĐĐGgk + 3 × ĐĐGck) / (number of ĐĐGtx + 5). Each exam therefore carries an `assessmentType` of `REGULAR`, `MID_TERM`, `END_OF_TERM` or `PRACTICE` (not recorded).
+
+**Scope and target**
+
+| Exam scope | Allowed assessment types | Target used |
+|---|---|---|
+| Whole grade (programs set to `SHARED_WITH_GRADE`) | All | Grade target |
+| One program set to `SEPARATE` | All | Program target |
+| One program set to `SHARED_WITH_GRADE` | `REGULAR`, `PRACTICE` | Program target |
+| One homeroom class | `REGULAR`, `PRACTICE` | Its program's target (the grade's for a standard program) |
+| A group | `REGULAR`, `PRACTICE` | Group target |
+
+**Rules**
+- **Resolved at scheduling:** the policy comes from the exam's scope and date, and is saved in `exam.assessmentPolicyId`, so the grading path doesn't change. Teachers never pick a policy; today `CreateClassTestUseCase.java:130` asks for one.
+- **Special cases:** for something like a Bậc 4 mock exam for grade 12, the admin picks another level within the ceiling and gives a reason, which is recorded on the exam.
+- **One periodic exam per type:** each student has at most one `MID_TERM` and one `END_OF_TERM` exam per term. The term comes from the exam date and the academic year's terms. Warn when a `SEPARATE` program has no mid-term or end-of-term exam scheduled.
+- **Candidate import:** follows the scope and adds students only. Today `ImportExamCandidatesFromGradeUseCase` adds every class of the grade and every active class member, including teachers.
+
+**Warning on `SEPARATE` with a higher target.** Those students' periodic scores are measured against a harder standard than their peers' on the same 10-point scale. Their averages, and the awards that depend on them, may drop. This is likely why shared tests are the common practice.
+
+### 7.8 What the AI receives and how results are reported
+
+- **The AI request:** for each criterion of the scoring scheme, the target level's descriptors and signals. For grammar, vocabulary and coherence it also gets the whole ladder of levels, so the AI reports the level it matched.
+- **Scores are relative to their target.** 8/10 at Bậc 3 and 7/10 at Bậc 4 aren't comparable. So:
+  - every score is shown with its target, e.g. "7.2/10 · Bậc 3 · Đạt";
+  - statistics are split by target automatically, and programs with different targets are never averaged or ranked together;
+  - exports have columns by assessment type, matching the grade book.
+- **Two outcomes are reported:**
+  - **Met target:** pass/fail, from the scheme's passing labels.
+  - **Estimated level:** derived from the levels the AI matched on the ladder criteria. It answers "how many grade-12 students reached Bậc 3?" and needs a new `ExamCandidateResult.estimatedBandId`.
+
+### 7.9 Changing targets
+
+**No raising in reaction to results.** The target describes what students are expected to achieve. As we understand Circular 22/2021, students are assessed against the program's required outcomes. Raising the target because a cohort did well is grading on a curve: "Đạt Bậc 3" would mean different things across classes and years, and a class would be penalized for doing well.
+
+**High results usually mean one of three things:**
+1. **The papers are too easy.** Fix question difficulty and blueprints.
+2. **The AI is too lenient.** Compare a teacher-graded sample with the AI's scores (`ViewAiQualityReportUseCase`).
+3. **The cohort really is above target.** Move strong students into an advanced group or program, or plan a higher target for the next term or year.
+
+**System support**
+- **Dashboard signal:** flag a grade or program when, for example, more than 60% score 9–10 at their target, or most estimated levels are above it, and suggest the three checks above. The thresholds are adjustable.
+- **Planned changes only:** a change takes effect from a chosen date (default: the next term's start), applies only to exams scheduled after it, requires a reason and is logged. Results already given are never re-scored.
+- **Estimated level makes high achievers visible.** When everyone scores 9–10 at Bậc 3, the score can't tell students apart, but the estimated level shows who is at Bậc 4.
+
+### 7.10 Practice
+
+For school students, their program's (or grade's) target is the *suggested* practice level, and they can still choose another. Practice stays the student's own; `StartPracticeSessionPersistenceService` already uses the level the student picks.
+
+### 7.11 Model and use case changes
+
+| Area | Change |
+|---|---|
+| `AssessmentPolicy` | Keyed by (school grade) for the whole-grade target, (school grade, program), or (group). Holds target level, scoring scheme version, effective-from date and reason. Drop the grade-level and per-class scopes, `frameworkVersionId` (derived from the level), `strictness`, `effectiveTo` (a newer version replaces it) and `passingScore` (comes from the labels). |
+| `GradeLevelBandScope` | (grade level, program kind) → recommended level and ceiling. |
+| `SchoolProgram` (new) | School, name, kind (`STANDARD`/`ADVANCED`), `periodicAssessment` (`SHARED_WITH_GRADE`/`SEPARATE`). Persists across years. |
+| `SchoolClass` | `type` (`HOMEROOM`/`GROUP`). Homeroom classes reference a program; groups have a purpose. |
+| `Exam` | Scope (grade / program / class / group), `assessmentType`, override reason. `assessmentPolicyId` stays as the resolved policy, saved at scheduling. |
+| `ExamCandidateResult` | `estimatedBandId`. |
+| `RubricVersion`, `FrameworkVersion` | Aggregates with whole-version save and publish (7.4). |
+| `RubricCriterion`, `RubricResultBand`, `RubricVersion` | Drop criterion min/max, `code` and `examples`, and `totalScoreMethod`. Add `passing` to result bands. |
+| Scoring rules | Remove the school and system rule CRUD (12 use cases). Keep or drop the tables depending on whether platform rules come later. |
+| New services | `AssessmentPolicyResolver` (scope + date → policy). A periodic-assessment check (one mid-term and one end-of-term per student per term). |
+| `ExamAssessmentPolicyValidator` | Also require a published rubric version and a matching scope. |
+
+New use cases for targets: view the year's targets, save draft targets, publish targets, manage programs, and plan a target change.
+
+---
+
+## 8. Reconciliation with the earlier drafts
 
 | Topic | Earlier drafts | This document |
 |---|---|---|
@@ -880,9 +1139,9 @@ Changes to existing use cases:
 
 ---
 
-## 8. Open questions
+## 9. Open questions
 
-1. **One class per student per year?** Can a student belong to more than one class per year (e.g. a homeroom plus a separate English group)? This decides whether to enforce "one open class membership per student per (year, learning language)".
+1. ~~One class per student per year?~~ **Resolved:** one homeroom class per student per year, plus any number of groups (7.5).
 2. **Who defines the calendar?** `SchoolAcademicTimeline` has no `schoolId` today. Was it meant as a system-wide calendar? The proposal makes years per school, optionally pre-filled from a system calendar template.
 3. **Active memberships per user.** Can a user have more than one active membership? Earlier recommendation: students one, teachers several.
 4. **Practice from before joining.** Can a school see it? Earlier recommendation: no, unless the student agrees. When and how is guardian consent collected for under-16s?
@@ -893,10 +1152,22 @@ Changes to existing use cases:
 9. **Leaving and returning in the same year:** reopen the enrollment, or create a second record?
 10. **vnEdu export layout:** an anonymized sample file is needed to build the preset.
 11. **Production data:** is there any to keep? If yes, every schema change here is a new Flyway migration instead of part of the baseline.
+12. **Where oral English scores are recorded.** Do pilot schools record them as regular assessments (a speaking check during the term), or as part of the mid-term and end-of-term tests? This sets the default assessment type for whole-grade oral exams (7.7).
+13. **`strictness`:** is it planned on the AI service side? If not, remove it (7.3).
+14. **School-level scoring rules:** recommendation: none; keep evaluation guards platform-level (7.3).
+15. **"Results too high" thresholds:** defaults for the dashboard signal (7.9).
+16. **Programs at pilot schools:** which programs exist (lớp chọn, trọng điểm, chuyên…), and does any of them set separate mid-term or end-of-term tests (7.5)?
+
+**Decided during the evaluation discussion (section 7)**
+- An assessment policy is the framework level a grade, a program or a group is evaluated at.
+- Specialized (chuyên) programs take separate assessments. Advanced programs at regular schools share mid-term and end-of-term tests with the grade by default, with separate tests as an opt-in.
+- Groups may have lower or higher targets, for regular and practice tests only.
+- Targets are never raised in reaction to results. Planned changes apply only to exams scheduled after their effective date.
+- Frameworks and rubrics are edited and published as whole versions.
 
 ---
 
-## 9. Suggested implementation order
+## 10. Suggested implementation order
 
 Steps 1–4 come from the migration draft's order of work and are outside the scope of this document:
 1. The build compiles.
@@ -907,8 +1178,10 @@ Steps 1–4 come from the migration draft's order of work and are outside the sc
 Then:
 
 5. **`school_users` target:** role, member code, official name, status including `SUSPENDED`, history with partial unique indexes, authorization on `ACTIVE` memberships only. Several admins, and the registrant claims a school with their own account (2.3, 2.4).
-6. **Academic year** (section 6): models, schema, the create/activate/close use cases, and class setup.
-7. **Invitations and the student roster import** (section 5). The parser and value normalizers can start at any time.
-8. **Rollover wizard** (2.2, 6.4). Needed before the first school's first summer.
-9. **Code cleanup** (section 3) alongside steps 6–7, since imports need the new natural keys. The rubric-criterion fix is independent and can go first.
-10. **Quota rules, outcome dashboard, consent and retention** (2.7–2.9).
+6. **Academic year** (section 6), with programs and class types (7.5): models, schema, the create/activate/close use cases, and class setup.
+7. **Framework and rubric whole-version editing** (7.4), including the publishing-order fix and requiring a published rubric for exams (7.2, item 6). This doesn't depend on steps 5–6, and the framework use cases need rewriting anyway, so it can start now.
+8. **Evaluation targets** (7.6, 7.7): reshape the policy, resolve it at scheduling, exam scope and assessment types, publish checks. Remove school scoring rules and `strictness`.
+9. **Invitations and the student roster import** (section 5). The parser and value normalizers can start at any time.
+10. **Rollover wizard** (2.2, 6.4); it also copies targets forward. Needed before the first school's first summer.
+11. **Code cleanup** (section 3) alongside steps 6–9, since imports need the new natural keys.
+12. **Reporting and the rest:** estimated level, statistics split by target, exports by assessment type (7.8), the "results too high" signal (7.9), then quota rules, outcome dashboard, consent and retention (2.7–2.9).

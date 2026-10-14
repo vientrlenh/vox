@@ -43,7 +43,4 @@ public class FrameworkCriterionJpaEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "criteria_order", nullable = false)
-    private Integer order;
-
 }

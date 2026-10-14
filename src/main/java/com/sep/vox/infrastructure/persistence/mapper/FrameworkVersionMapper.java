@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.valueobject.Code;
-import com.sep.vox.domain.valueobject.PositiveInteger;
+import com.sep.vox.domain.valueobject.PositiveLong;
 import com.sep.vox.infrastructure.persistence.entity.FrameworkVersionJpaEntity;
 
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ public final class FrameworkVersionMapper {
                 .code(Code.from(jpa.getCode()))
                 .name(jpa.getName())
                 .description(jpa.getDescription())
-                .version(PositiveInteger.from(jpa.getVersion()))
+                .version(PositiveLong.from(jpa.getVersion()))
                 .effectiveFrom(jpa.getEffectiveFrom())
                 .effectiveTo(jpa.getEffectiveTo())
                 .status(FrameworkVersionStatus.from(jpa.getStatus()))
@@ -44,7 +44,7 @@ public final class FrameworkVersionMapper {
                 .code(Code.valueOf(version.getCode()))
                 .name(version.getName())
                 .description(version.getDescription())
-                .version(PositiveInteger.valueOf(version.getVersion()))
+                .version(PositiveLong.valueOf(version.getVersion()))
                 .effectiveFrom(version.getEffectiveFrom())
                 .effectiveTo(version.getEffectiveTo())
                 .status(FrameworkVersionStatus.value(version.getStatus()))

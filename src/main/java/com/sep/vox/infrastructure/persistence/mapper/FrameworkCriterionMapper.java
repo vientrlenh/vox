@@ -2,7 +2,6 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.valueobject.Code;
-import com.sep.vox.domain.valueobject.PositiveInteger;
 import com.sep.vox.infrastructure.persistence.entity.FrameworkCriterionJpaEntity;
 
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,6 @@ public final class FrameworkCriterionMapper {
                 .code(Code.from(jpa.getCode()))
                 .name(jpa.getName())
                 .description(jpa.getDescription())
-                .order(PositiveInteger.from(jpa.getOrder()))
                 .build();
         } catch (Exception ex) {
             log.error("An error occurred when mapping framework criterion entity to model: {}", ex.getMessage(), ex);
@@ -36,7 +34,6 @@ public final class FrameworkCriterionMapper {
                 .code(Code.valueOf(criterion.getCode()))
                 .name(criterion.getName())
                 .description(criterion.getDescription())
-                .order(PositiveInteger.valueOf(criterion.getOrder()))
                 .build();
         } catch (Exception ex) {
             log.error("An error occurred when mapping framework criterion model to entity: {}", ex.getMessage(), ex);

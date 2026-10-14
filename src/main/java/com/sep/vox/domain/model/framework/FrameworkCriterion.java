@@ -3,7 +3,6 @@ package com.sep.vox.domain.model.framework;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.Code;
-import com.sep.vox.domain.valueobject.PositiveInteger;
 
 public class FrameworkCriterion {
     private UUID id;
@@ -11,17 +10,15 @@ public class FrameworkCriterion {
     private Code code;
     private String name;
     private String description;
-    private PositiveInteger order;
 
     protected FrameworkCriterion() {}
 
-    public FrameworkCriterion(UUID id, UUID frameworkVersionId, Code code, String name, String description, PositiveInteger order) {
+    public FrameworkCriterion(UUID id, UUID frameworkVersionId, Code code, String name, String description) {
         this.id = id;
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;
         this.name = name;
         this.description = description; 
-        this.order = order;
     }
 
     public FrameworkCriterion(Builder builder) {
@@ -30,7 +27,6 @@ public class FrameworkCriterion {
         this.code = builder.code;
         this.name = builder.name;
         this.description = builder.description;
-        this.order = builder.order;
     }
 
     public UUID getId() {
@@ -73,16 +69,17 @@ public class FrameworkCriterion {
         this.description = description;
     }
 
-    public PositiveInteger getOrder() {
-        return order;
-    }
-
-    public void setOrder(PositiveInteger order) {
-        this.order = order;
-    }
-
     public static Builder builder() {
         return new FrameworkCriterion.Builder();
+    }
+
+    public static FrameworkCriterion create(UUID frameworkVersionId, String code, String name, String description) {
+        return FrameworkCriterion.builder()
+            .frameworkVersionId(frameworkVersionId)
+            .code(Code.from(code))
+            .name(name)
+            .description(description)
+            .build();
     }
 
     public static class Builder {
@@ -91,7 +88,6 @@ public class FrameworkCriterion {
         private Code code;
         private String name;
         private String description;
-        private PositiveInteger order;
 
         protected Builder() {}
 
@@ -117,11 +113,6 @@ public class FrameworkCriterion {
 
         public Builder description(String description) {
             this.description = description;
-            return this;
-        }
-
-        public Builder order(PositiveInteger order) {
-            this.order = order;
             return this;
         }
 

@@ -51,7 +51,7 @@ public class FrameworkVersionJpaEntity extends BaseEntity {
             constraint = "version > 0"
         )
     })
-    private Integer version;
+    private Long version;
 
     @Column(name = "effective_from", nullable = false)
     private Instant effectiveFrom;

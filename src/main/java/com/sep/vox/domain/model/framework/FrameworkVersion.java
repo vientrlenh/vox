@@ -5,14 +5,14 @@ import java.util.UUID;
 
 import com.sep.vox.domain.shared.BaseModel;
 import com.sep.vox.domain.valueobject.Code;
-import com.sep.vox.domain.valueobject.PositiveInteger;
+import com.sep.vox.domain.valueobject.PositiveLong;
 
 public class FrameworkVersion extends BaseModel {
     private UUID frameworkId;
     private Code code;
     private String name;
     private String description;
-    private PositiveInteger version;
+    private PositiveLong version;
     private Instant effectiveFrom;
     private Instant effectiveTo;
     private FrameworkVersionStatus status;
@@ -22,7 +22,7 @@ public class FrameworkVersion extends BaseModel {
 
     protected FrameworkVersion() {}
 
-    public FrameworkVersion(UUID frameworkId, Code code, String name, String description, PositiveInteger version,
+    public FrameworkVersion(UUID frameworkId, Code code, String name, String description, PositiveLong version,
             Instant effectiveFrom, Instant effectiveTo, FrameworkVersionStatus status,
             Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.frameworkId = frameworkId;
@@ -85,11 +85,11 @@ public class FrameworkVersion extends BaseModel {
         this.description = description;
     }
 
-    public PositiveInteger getVersion() {
+    public PositiveLong getVersion() {
         return version;
     }
 
-    public void setVersion(PositiveInteger version) {
+    public void setVersion(PositiveLong version) {
         this.version = version;
     }
 
@@ -145,13 +145,28 @@ public class FrameworkVersion extends BaseModel {
         return new FrameworkVersion.Builder();
     }
 
+    public static FrameworkVersion createDraft(UUID frameworkId, String code, String name, String description, Long version, Instant effectiveFrom, Instant effectiveTo, UUID createdBy) {
+        return FrameworkVersion.builder()
+            .frameworkId(frameworkId)
+            .code(Code.from(code))
+            .name(name)
+            .description(description)
+            .version(PositiveLong.from(version))
+            .effectiveFrom(effectiveFrom)
+            .effectiveTo(effectiveTo)
+            .status(FrameworkVersionStatus.DRAFT)
+            .createdBy(createdBy)
+            .updatedBy(createdBy)
+            .build();
+    }
+
     public static class Builder {
         private UUID id;
         private UUID frameworkId;
         private Code code;
         private String name;
         private String description;
-        private PositiveInteger version;
+        private PositiveLong version;
         private Instant effectiveFrom;
         private Instant effectiveTo;
         private FrameworkVersionStatus status;
@@ -187,7 +202,7 @@ public class FrameworkVersion extends BaseModel {
             return this;
         }
 
-        public Builder version(PositiveInteger version) {
+        public Builder version(PositiveLong version) {
             this.version = version;
             return this;
         }

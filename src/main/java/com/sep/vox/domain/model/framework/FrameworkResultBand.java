@@ -87,6 +87,16 @@ public class FrameworkResultBand {
         return new FrameworkResultBand.Builder();
     }
 
+    public static FrameworkResultBand create(UUID frameworkVersionId, String code, String label, String description, Integer order) {
+        return FrameworkResultBand.builder()
+            .frameworkVersionId(frameworkVersionId)
+            .code(Code.from(code))
+            .label(label)
+            .description(description)
+            .order(PositiveInteger.from(order))
+            .build();
+    }
+
     public static class Builder {
         private UUID id;
         private UUID frameworkVersionId;

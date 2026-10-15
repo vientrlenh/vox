@@ -20,17 +20,17 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
-import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamBlueprintSection;
-import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
-import com.sep.vox.domain.model.exam.ExamBlueprintSlotType;
-import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
-import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
-import com.sep.vox.domain.model.exam.ExamPaper;
-import com.sep.vox.domain.model.exam.ExamPaperSection;
-import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
-import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.assessment.Exam;
+import com.sep.vox.domain.model.assessment.ExamBlueprintSection;
+import com.sep.vox.domain.model.assessment.ExamBlueprintSlot;
+import com.sep.vox.domain.model.assessment.ExamBlueprintSlotType;
+import com.sep.vox.domain.model.assessment.ExamBlueprintVersionStatus;
+import com.sep.vox.domain.model.assessment.ExamKind;
+import com.sep.vox.domain.model.assessment.ExamMemberRole;
+import com.sep.vox.domain.model.assessment.ExamPaper;
+import com.sep.vox.domain.model.assessment.ExamPaperSection;
+import com.sep.vox.domain.model.assessment.ExamSecurePoolReleaseMode;
+import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
@@ -240,7 +240,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
                         .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
                     if (fixedQuestion.getStatus() != QuestionStatus.PUBLISHED) {
                         // Câu hỏi fixed đã bị archived sau khi blueprint publish — để trống ô này, CHAIR tự chọn câu khác qua picker.
-                        examPaperItemRepository.save(new com.sep.vox.domain.model.exam.ExamPaperItem(
+                        examPaperItemRepository.save(new com.sep.vox.domain.model.assessment.ExamPaperItem(
                             null,
                             paperSection.getId(),
                             paper.getId(),
@@ -251,7 +251,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
                         continue;
                     }
                 }
-                var item = new com.sep.vox.domain.model.exam.ExamPaperItem(
+                var item = new com.sep.vox.domain.model.assessment.ExamPaperItem(
                     slot.getId(),
                     paperSection.getId(),
                     paper.getId(),

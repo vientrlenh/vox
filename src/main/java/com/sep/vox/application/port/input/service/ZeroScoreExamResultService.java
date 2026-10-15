@@ -10,12 +10,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.domain.model.assessment.ExamCandidateResult;
+import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.ExamCandidateStatus;
+import com.sep.vox.domain.model.assessment.ExamSession;
+import com.sep.vox.domain.model.assessment.ExamSessionStatus;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
-import com.sep.vox.domain.model.exam.ExamCandidateResult;
-import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
-import com.sep.vox.domain.model.exam.ExamCandidateStatus;
-import com.sep.vox.domain.model.exam.ExamSession;
-import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -170,7 +170,7 @@ public class ZeroScoreExamResultService {
         return examCandidateResultRepository.save(result);
     }
 
-    private AssessmentPolicy resolvePolicy(com.sep.vox.domain.model.exam.Exam exam) {
+    private AssessmentPolicy resolvePolicy(com.sep.vox.domain.model.assessment.Exam exam) {
         if (exam.getAssessmentPolicyId() == null) {
             throw new NotFoundException("Bài kiểm tra chưa gắn assessment policy");
         }

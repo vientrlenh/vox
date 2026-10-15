@@ -3,7 +3,10 @@ package com.sep.vox.application.port.input.usecase.stream;
 import java.time.Instant;
 import java.util.List;
 
-import com.sep.vox.domain.model.exam.ExamStreamTypePermission;
+import com.sep.vox.domain.model.assessment.Exam;
+import com.sep.vox.domain.model.assessment.ExamRequiredStreamType;
+import com.sep.vox.domain.model.assessment.ExamSession;
+import com.sep.vox.domain.model.assessment.ExamStreamTypePermission;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
@@ -19,9 +22,6 @@ import com.sep.vox.application.port.output.StreamTokenProvider;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.stream.IssueStudentStreamTokenResponse;
 import com.sep.vox.application.shared.StringNormalization;
-import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
-import com.sep.vox.domain.model.exam.ExamSession;
 
 @Service
 public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStreamTokenCommand, IssueStudentStreamTokenResponse> {

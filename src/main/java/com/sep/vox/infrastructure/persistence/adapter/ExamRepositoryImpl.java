@@ -10,9 +10,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.shared.StringNormalization;
-import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.assessment.Exam;
+import com.sep.vox.domain.model.assessment.ExamKind;
+import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.ExamMapper;

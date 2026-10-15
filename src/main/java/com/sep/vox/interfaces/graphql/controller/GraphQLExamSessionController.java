@@ -48,7 +48,7 @@ import com.sep.vox.application.response.input.examsession.ExamSessionResponse;
 import com.sep.vox.application.response.input.examsession.StudentExamResultSummaryResponse;
 import com.sep.vox.domain.dto.ExamProctoringAlertDto;
 import com.sep.vox.domain.dto.ExamRecordingDto;
-import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
 
 import lombok.RequiredArgsConstructor;
 

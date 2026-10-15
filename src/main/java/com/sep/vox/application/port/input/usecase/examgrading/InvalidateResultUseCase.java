@@ -11,7 +11,7 @@ import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.response.input.examgrading.GradingActionResponse;
-import com.sep.vox.domain.model.exam.GradingOutcome;
+import com.sep.vox.domain.model.assessment.GradingOutcome;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.shared.AggregateTypeConstant;

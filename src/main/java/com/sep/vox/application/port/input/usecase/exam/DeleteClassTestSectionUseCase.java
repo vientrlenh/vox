@@ -18,10 +18,10 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
-import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
-import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.assessment.Exam;
+import com.sep.vox.domain.model.assessment.ExamKind;
+import com.sep.vox.domain.model.assessment.ExamMemberRole;
+import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;
@@ -145,7 +145,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         }
     }
 
-    private void normalizeSectionWeights(List<com.sep.vox.domain.model.exam.ExamPaperSection> sections, Instant now, UUID currentUserId) {
+    private void normalizeSectionWeights(List<com.sep.vox.domain.model.assessment.ExamPaperSection> sections, Instant now, UUID currentUserId) {
         var weights = ClassTestSectionWeightPolicy.normalizeStoredWeights(sections);
         for (int i = 0; i < sections.size(); i++) {
             var section = sections.get(i);

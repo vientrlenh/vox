@@ -13,9 +13,9 @@ import com.sep.vox.application.port.input.service.ExamSessionModerationAccessSer
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
-import com.sep.vox.domain.model.exam.ExamStatus;
-import com.sep.vox.domain.model.exam.ResultStatusChangeSource;
+import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.ExamStatus;
+import com.sep.vox.domain.model.assessment.ResultStatusChangeSource;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;

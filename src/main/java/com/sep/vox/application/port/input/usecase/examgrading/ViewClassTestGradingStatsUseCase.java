@@ -9,7 +9,7 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.GradingStatsInfo;
 import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.assessment.ExamKind;
 
 /**
  * Thẻ số đầu màn chấm bài trên lớp của giáo viên tạo bài.

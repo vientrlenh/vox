@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.exam.ExamResultAppealItem;
+import com.sep.vox.domain.model.assessment.ExamResultAppealItem;
 import com.sep.vox.infrastructure.persistence.entity.exam.ExamResultAppealItemJpaEntity;
 
 public final class ExamResultAppealItemMapper {

@@ -11,7 +11,7 @@ import com.sep.vox.application.port.input.usecase.examevaluation.ExamSessionResu
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultItemResponse;
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultResponse;
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultSectionResponse;
-import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;

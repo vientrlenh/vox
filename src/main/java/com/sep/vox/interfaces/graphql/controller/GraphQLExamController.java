@@ -42,9 +42,9 @@ import com.sep.vox.application.response.input.exam.ExamTokenEstimateResponse;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.QuestionSelectionSpecDto;
 import com.sep.vox.domain.dto.UserDto;
-import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.exam.ExamPaperStatus;
-import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.assessment.ExamKind;
+import com.sep.vox.domain.model.assessment.ExamPaperStatus;
+import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.shared.PageResult;
 
 @Controller

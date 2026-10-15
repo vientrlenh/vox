@@ -1,8 +1,8 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.exam.ExamSecurePool;
-import com.sep.vox.domain.model.exam.ExamSecurePoolReleaseMode;
-import com.sep.vox.domain.model.exam.ExamSecurePoolStatus;
+import com.sep.vox.domain.model.assessment.ExamSecurePool;
+import com.sep.vox.domain.model.assessment.ExamSecurePoolReleaseMode;
+import com.sep.vox.domain.model.assessment.ExamSecurePoolStatus;
 import com.sep.vox.infrastructure.persistence.entity.exam.ExamSecurePoolJpaEntity;
 
 public final class ExamSecurePoolMapper {

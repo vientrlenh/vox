@@ -34,12 +34,12 @@ import com.sep.vox.application.projection.dto.GradingTurnInfo;
 import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
+import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
+import com.sep.vox.domain.model.assessment.GradingRoundPolicy;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.infrastructure.persistence.entity.QuestionAssetJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.QuestionAssetMapper;
-import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
-import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
-import com.sep.vox.domain.model.exam.GradingRoundPolicy;
-import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.shared.PageResult;
 
 import jakarta.persistence.EntityManager;

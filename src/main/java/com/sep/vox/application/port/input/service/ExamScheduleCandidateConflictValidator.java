@@ -11,8 +11,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.domain.model.exam.ExamCandidate;
-import com.sep.vox.domain.model.exam.ExamCandidateStatus;
+import com.sep.vox.domain.model.assessment.ExamCandidate;
+import com.sep.vox.domain.model.assessment.ExamCandidateStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.UserRepository;
 

@@ -14,8 +14,8 @@ import com.sep.vox.application.port.input.command.CompleteExamSessionGradingComm
 import com.sep.vox.application.port.input.service.ConsumeQuotaService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.QuotaPricingPort;
-import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.exam.ExamSessionStatus;
+import com.sep.vox.domain.model.assessment.ExamKind;
+import com.sep.vox.domain.model.assessment.ExamSessionStatus;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.repository.AiUsageRecordRepository;
 import com.sep.vox.domain.repository.ExamRepository;

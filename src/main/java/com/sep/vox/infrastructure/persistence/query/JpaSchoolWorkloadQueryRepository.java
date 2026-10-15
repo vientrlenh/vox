@@ -15,7 +15,7 @@ import com.sep.vox.application.projection.dto.ExamAwaitingPublishDto;
 import com.sep.vox.application.projection.dto.SchoolGradingFailureDto;
 import com.sep.vox.application.projection.dto.SchoolUnscoredWorkloadDto;
 import com.sep.vox.application.projection.repository.SchoolWorkloadQueryRepository;
-import com.sep.vox.domain.model.exam.ExamSession;
+import com.sep.vox.domain.model.assessment.ExamSession;
 import com.sep.vox.domain.shared.PageResult;
 
 import jakarta.persistence.EntityManager;

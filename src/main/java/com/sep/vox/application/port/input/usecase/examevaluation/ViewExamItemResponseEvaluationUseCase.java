@@ -12,8 +12,8 @@ import com.sep.vox.application.response.input.examitemresponse.ExamItemAiEvaluat
 import com.sep.vox.application.response.input.examitemresponse.ExamItemCriterionScoreResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationDetailsResponse;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationTurnResponse;
-import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
-import com.sep.vox.domain.model.exam.ExamItemEvaluation;
+import com.sep.vox.domain.model.assessment.ExamEvaluationEngineType;
+import com.sep.vox.domain.model.assessment.ExamItemEvaluation;
 import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.ExamItemEvaluationTurnRepository;
@@ -173,7 +173,7 @@ public class ViewExamItemResponseEvaluationUseCase
      * bịa giá trị còn tệ hơn để trống.
      */
     private ExamItemEvaluationDetailsResponse ungradedDetails(
-            com.sep.vox.domain.model.exam.ExamItemResponse response) {
+            com.sep.vox.domain.model.assessment.ExamItemResponse response) {
         var turns = examItemResponseTurnRepository.findByExamItemResponseId(response.getId()).stream()
             .map(item -> new ExamItemEvaluationTurnResponse(
                 item.getId(),

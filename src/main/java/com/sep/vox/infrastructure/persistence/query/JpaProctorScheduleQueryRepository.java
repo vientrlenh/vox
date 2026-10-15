@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.projection.dto.ProctorScheduleSummary;
 import com.sep.vox.application.projection.repository.ProctorScheduleQueryRepository;
-import com.sep.vox.domain.model.exam.ExamScheduleStatus;
+import com.sep.vox.domain.model.assessment.ExamScheduleStatus;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.RecordRecordingPartChangedCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.model.exam.ExamRecording;
+import com.sep.vox.domain.model.assessment.ExamRecording;
 import com.sep.vox.domain.repository.ExamRecordingRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.service.recording.RecordingPrecedence;

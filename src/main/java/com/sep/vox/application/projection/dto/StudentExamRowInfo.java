@@ -3,8 +3,8 @@ package com.sep.vox.application.projection.dto;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.exam.ExamCandidateStatus;
-import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.assessment.ExamCandidateStatus;
+import com.sep.vox.domain.model.assessment.ExamStatus;
 
 /**
  * Một dòng của danh sách bài thi phía học sinh, đã lọc/sắp/phân trang xong ở SQL.

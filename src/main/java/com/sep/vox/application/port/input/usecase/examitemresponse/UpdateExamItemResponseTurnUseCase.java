@@ -12,7 +12,7 @@ import com.sep.vox.application.mapper.examitemresponse.ExamItemResponseResponseM
 import com.sep.vox.application.port.input.command.UpdateExamItemResponseTurnCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemResponseTurnResponse;
-import com.sep.vox.domain.model.exam.TurnType;
+import com.sep.vox.domain.model.assessment.TurnType;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
 

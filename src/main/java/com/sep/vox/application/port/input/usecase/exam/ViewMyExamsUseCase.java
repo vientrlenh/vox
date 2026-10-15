@@ -21,14 +21,14 @@ import com.sep.vox.application.projection.repository.ExamCandidateAttemptsQueryR
 import com.sep.vox.application.projection.repository.StudentExamQueryRepository;
 import com.sep.vox.application.response.input.exam.StudentExamSessionSummaryResponse;
 import com.sep.vox.application.response.input.exam.StudentExamSummaryResponse;
-import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
-import com.sep.vox.domain.model.exam.ExamCandidateStatus;
-import com.sep.vox.domain.model.exam.ExamPaper;
-import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.ExamCandidateStatus;
+import com.sep.vox.domain.model.assessment.ExamPaper;
+import com.sep.vox.domain.model.assessment.ExamSessionStatus;
+import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.shared.PageResult;
-import com.sep.vox.domain.model.exam.ExamSessionStatus;
 
 /**
  * Danh sách bài thi của học sinh.

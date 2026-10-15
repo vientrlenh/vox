@@ -28,7 +28,7 @@ import com.sep.vox.application.port.input.usecase.examsession.HandOffGradingToHu
 import com.sep.vox.application.port.input.usecase.examsession.RetryGradingExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionRemainingTimeUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
-import com.sep.vox.domain.model.exam.ExamSessionStatus;
+import com.sep.vox.domain.model.assessment.ExamSessionStatus;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamSessionRequest;
 import com.sep.vox.interfaces.rest.dto.request.ReportAiUsageRequest;
 import com.sep.vox.interfaces.rest.dto.request.SessionReasonRequest;

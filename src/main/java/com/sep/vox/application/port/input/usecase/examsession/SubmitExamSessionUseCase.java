@@ -19,10 +19,10 @@ import com.sep.vox.application.port.input.service.MissingResponseBackfillService
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
-import com.sep.vox.domain.model.exam.ExamCandidateResult;
-import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
-import com.sep.vox.domain.model.exam.ExamCandidateStatus;
-import com.sep.vox.domain.model.exam.ExamSessionStatus;
+import com.sep.vox.domain.model.assessment.ExamCandidateResult;
+import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.ExamCandidateStatus;
+import com.sep.vox.domain.model.assessment.ExamSessionStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
@@ -265,7 +265,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
      * <p>KHÔNG xét thời lượng: mic mở nhưng thí sinh im lặng vẫn cho ra vài chục giây audio mà
      * không có chữ nào. Chỉ có chữ mới chấm được.
      */
-    private void persistInvalidBlockedResult(com.sep.vox.domain.model.exam.ExamSession session) {
+    private void persistInvalidBlockedResult(com.sep.vox.domain.model.assessment.ExamSession session) {
         var exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy bài kiểm tra"));
         var policy = exam.getAssessmentPolicyId() == null

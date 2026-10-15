@@ -1,12 +1,12 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamDeliveryMode;
-import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
-import com.sep.vox.domain.model.exam.ExamStatus;
-import com.sep.vox.domain.model.exam.ExamStreamTypePermission;
-import com.sep.vox.domain.model.exam.ResultDecisionMethod;
+import com.sep.vox.domain.model.assessment.Exam;
+import com.sep.vox.domain.model.assessment.ExamDeliveryMode;
+import com.sep.vox.domain.model.assessment.ExamKind;
+import com.sep.vox.domain.model.assessment.ExamRequiredStreamType;
+import com.sep.vox.domain.model.assessment.ExamStatus;
+import com.sep.vox.domain.model.assessment.ExamStreamTypePermission;
+import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
 import com.sep.vox.infrastructure.persistence.entity.exam.ExamJpaEntity;
 
 public final class ExamMapper {

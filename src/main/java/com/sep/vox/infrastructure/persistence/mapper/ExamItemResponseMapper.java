@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.exam.ExamItemResponse;
+import com.sep.vox.domain.model.assessment.ExamItemResponse;
 import com.sep.vox.infrastructure.persistence.entity.exam.ExamItemResponseJpaEntity;
 
 public final class ExamItemResponseMapper {

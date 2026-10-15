@@ -13,7 +13,7 @@ import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessServic
 import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.exam.ExamPaperStatus;
+import com.sep.vox.domain.model.assessment.ExamPaperStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.ExamPaperRepository;

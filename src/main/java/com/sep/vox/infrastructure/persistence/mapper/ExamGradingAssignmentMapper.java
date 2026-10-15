@@ -1,9 +1,9 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.exam.ExamGradingAssignment;
-import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
-import com.sep.vox.domain.model.exam.GradingOutcome;
-import com.sep.vox.domain.model.exam.GradingRoundType;
+import com.sep.vox.domain.model.assessment.ExamGradingAssignment;
+import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
+import com.sep.vox.domain.model.assessment.GradingOutcome;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.infrastructure.persistence.entity.exam.ExamGradingAssignmentJpaEntity;
 
 public final class ExamGradingAssignmentMapper {

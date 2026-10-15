@@ -16,10 +16,10 @@ import com.sep.vox.application.port.input.service.RoundRobinLoadBalancer;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.application.response.input.examgrading.ReclaimOverdueResponse;
-import com.sep.vox.domain.model.exam.ExamAppealStatus;
-import com.sep.vox.domain.model.exam.ExamGradingAssignment;
-import com.sep.vox.domain.model.exam.GradingOutcome;
-import com.sep.vox.domain.model.exam.GradingRoundType;
+import com.sep.vox.domain.model.assessment.ExamAppealStatus;
+import com.sep.vox.domain.model.assessment.ExamGradingAssignment;
+import com.sep.vox.domain.model.assessment.GradingOutcome;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.ExamResultAppealRepository;
 

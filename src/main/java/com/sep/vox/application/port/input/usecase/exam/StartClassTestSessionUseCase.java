@@ -19,12 +19,12 @@ import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardSer
 import com.sep.vox.application.port.output.HealthCheckPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.exam.ExamEntryTicketResponse;
-import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamCandidateStatus;
-import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
-import com.sep.vox.domain.model.exam.ExamSession;
-import com.sep.vox.domain.model.exam.ExamSessionStatus;
-import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.assessment.Exam;
+import com.sep.vox.domain.model.assessment.ExamCandidateStatus;
+import com.sep.vox.domain.model.assessment.ExamRequiredStreamType;
+import com.sep.vox.domain.model.assessment.ExamSession;
+import com.sep.vox.domain.model.assessment.ExamSessionStatus;
+import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamRepository;
@@ -169,7 +169,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
             .filter(session -> session.getStatus() != ExamSessionStatus.IN_PROGRESS)
             .filter(session -> session.getStatus() != ExamSessionStatus.INTERRUPTED)
             .filter(session -> examCandidateResultRepository.findBySessionId(session.getId())
-                .map(result -> result.getStatus() != com.sep.vox.domain.model.exam.ExamCandidateResultStatus.RETAKE_REQUIRED)
+                .map(result -> result.getStatus() != com.sep.vox.domain.model.assessment.ExamCandidateResultStatus.RETAKE_REQUIRED)
                 .orElse(true))
             .count();
     }

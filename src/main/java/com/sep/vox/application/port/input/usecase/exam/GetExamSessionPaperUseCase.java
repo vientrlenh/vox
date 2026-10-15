@@ -160,7 +160,7 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
         );
     }
 
-    private static int orderOf(java.util.Map<java.util.UUID, com.sep.vox.domain.model.exam.ExamPaperSection> sectionsById,
+    private static int orderOf(java.util.Map<java.util.UUID, com.sep.vox.domain.model.assessment.ExamPaperSection> sectionsById,
             java.util.UUID sectionId,
             int itemOrder) {
         var section = sectionsById.get(sectionId);

@@ -31,7 +31,7 @@ import com.sep.vox.application.port.input.usecase.examcandidate.UnblockExamCandi
 import com.sep.vox.application.port.input.usecase.examcandidate.UpdateExamCandidateStatusUseCase;
 import com.sep.vox.application.response.input.examcandidate.AssignExamPapersResponse;
 import com.sep.vox.domain.dto.ExamCandidateDto;
-import com.sep.vox.domain.model.exam.ExamCandidateStatus;
+import com.sep.vox.domain.model.assessment.ExamCandidateStatus;
 import com.sep.vox.interfaces.rest.dto.request.AddExamCandidateRequest;
 import com.sep.vox.interfaces.rest.dto.request.AssignExamCandidateScheduleRequest;
 import com.sep.vox.interfaces.rest.dto.request.AssignExamPapersRequest;

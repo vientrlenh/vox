@@ -5,8 +5,8 @@ import java.util.UUID;
 
 import com.sep.vox.application.port.input.command.RecordRecordingPartChangedCommand;
 import com.sep.vox.application.shared.DateMapper;
-import com.sep.vox.domain.model.exam.ExamRecordingAssemblyStatus;
-import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
+import com.sep.vox.domain.model.assessment.ExamRecordingAssemblyStatus;
+import com.sep.vox.domain.model.assessment.ExamRequiredStreamType;
 import com.sep.vox.interfaces.kafka.dto.RecordingPartChangedEventDto;
 
 public final class RecordingPartChangedCommandMapper {

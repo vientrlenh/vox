@@ -21,7 +21,7 @@ import com.sep.vox.domain.dto.ExamBlueprintSectionDto;
 import com.sep.vox.domain.dto.ExamBlueprintSlotDto;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.dto.QuestionDto;
-import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
+import com.sep.vox.domain.model.assessment.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;

@@ -12,7 +12,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.ExamScheduleProctorDto;
 import com.sep.vox.domain.mapper.ExamScheduleProctorDtoMapper;
-import com.sep.vox.domain.model.exam.ExamScheduleProctor;
+import com.sep.vox.domain.model.assessment.ExamScheduleProctor;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleProctorRepository;

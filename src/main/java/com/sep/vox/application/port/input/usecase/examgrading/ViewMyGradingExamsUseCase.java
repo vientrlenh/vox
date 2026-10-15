@@ -9,7 +9,7 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.GradingExamOptionInfo;
 import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.assessment.ExamKind;
 
 /**
  * Danh sách kỳ thi cho bộ lọc của hàng đợi giáo viên — CHỈ những kỳ thi người gọi đang

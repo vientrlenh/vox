@@ -13,9 +13,9 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.application.projection.dto.AiQualityReportInfo;
 import com.sep.vox.application.projection.dto.ResultStatusHistoryInfo;
 import com.sep.vox.application.projection.repository.ExamResultAuditQueryRepository;
-import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
-import com.sep.vox.domain.model.exam.GradingOutcome;
-import com.sep.vox.domain.model.exam.GradingRoundType;
+import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
+import com.sep.vox.domain.model.assessment.GradingOutcome;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

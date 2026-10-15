@@ -5,7 +5,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.domain.model.exam.ExamPaper;
+import com.sep.vox.domain.model.assessment.ExamPaper;
 import com.sep.vox.domain.repository.ExamPaperRepository;
 
 /**

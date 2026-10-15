@@ -11,7 +11,7 @@ import com.sep.vox.application.port.input.command.CreateQuestionSelectionSpecCom
 import com.sep.vox.application.port.input.command.DuplicateExamBlueprintVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
-import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
+import com.sep.vox.domain.model.assessment.ExamBlueprintSlot;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;

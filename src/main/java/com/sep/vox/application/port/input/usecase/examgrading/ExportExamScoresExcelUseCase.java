@@ -24,7 +24,7 @@ import com.sep.vox.application.port.input.service.ExamScoreExportSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.ExamScoreRowInfo;
 import com.sep.vox.application.shared.DateMapper;
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.assessment.ExamKind;
 
 /**
  * Xuất bảng điểm ra Excel (.xlsx).

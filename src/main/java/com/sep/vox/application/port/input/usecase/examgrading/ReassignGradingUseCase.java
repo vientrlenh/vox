@@ -12,7 +12,7 @@ import com.sep.vox.application.port.input.command.ReassignGradingCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.model.exam.GradingRoundType;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 
 /**

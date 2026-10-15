@@ -16,9 +16,9 @@ import com.sep.vox.application.port.input.service.ExamScheduleManageAccessServic
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
-import com.sep.vox.domain.model.exam.ExamCandidate;
-import com.sep.vox.domain.model.exam.ExamSchedule;
-import com.sep.vox.domain.model.exam.ExamScheduleStatus;
+import com.sep.vox.domain.model.assessment.ExamCandidate;
+import com.sep.vox.domain.model.assessment.ExamSchedule;
+import com.sep.vox.domain.model.assessment.ExamScheduleStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;

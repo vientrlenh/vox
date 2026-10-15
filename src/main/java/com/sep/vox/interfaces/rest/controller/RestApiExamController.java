@@ -40,7 +40,7 @@ import com.sep.vox.application.response.input.examschedule.GetExamScheduleOtpRes
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamMemberDto;
 import com.sep.vox.domain.dto.ExamSecurePoolDto;
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.assessment.ExamKind;
 import com.sep.vox.interfaces.rest.dto.request.AttachExamBlueprintRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamMemberRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamRequest;

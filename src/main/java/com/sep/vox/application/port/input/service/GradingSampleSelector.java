@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.projection.dto.GradingRiskInfo;
-import com.sep.vox.domain.model.exam.GradingSampleSelectionMode;
+import com.sep.vox.domain.model.assessment.GradingSampleSelectionMode;
 
 /**
  * Chọn tập bài để giao tự động cho một vòng chấm.

@@ -20,10 +20,10 @@ import com.sep.vox.application.port.input.service.GradingSampleSelector;
 import com.sep.vox.application.port.input.service.RoundRobinLoadBalancer;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.model.exam.ExamGradingAssignment;
-import com.sep.vox.domain.model.exam.GradingRoundPolicy;
-import com.sep.vox.domain.model.exam.GradingRoundType;
-import com.sep.vox.domain.model.exam.GradingSampleSelectionMode;
+import com.sep.vox.domain.model.assessment.ExamGradingAssignment;
+import com.sep.vox.domain.model.assessment.GradingRoundPolicy;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
+import com.sep.vox.domain.model.assessment.GradingSampleSelectionMode;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 

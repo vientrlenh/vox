@@ -9,7 +9,7 @@ import com.sep.vox.application.port.input.command.DeleteExamBlueprintSectionComm
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.service.RecalculateBlueprintVersionTimeLimitService;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
+import com.sep.vox.domain.model.assessment.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;

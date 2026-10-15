@@ -1,8 +1,8 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
-import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
-import com.sep.vox.domain.model.exam.ExamSession;
-import com.sep.vox.domain.model.exam.ExamSessionStatus;
+import com.sep.vox.domain.model.assessment.ExamRequiredStreamType;
+import com.sep.vox.domain.model.assessment.ExamSession;
+import com.sep.vox.domain.model.assessment.ExamSessionStatus;
 import com.sep.vox.infrastructure.persistence.entity.exam.ExamSessionJpaEntity;
 
 public final class ExamSessionMapper {

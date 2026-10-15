@@ -9,8 +9,8 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.projection.dto.StudentExamRowInfo;
 import com.sep.vox.application.projection.repository.StudentExamQueryRepository;
-import com.sep.vox.domain.model.exam.ExamCandidateStatus;
-import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.assessment.ExamCandidateStatus;
+import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.shared.PageResult;
 
 import jakarta.persistence.EntityManager;

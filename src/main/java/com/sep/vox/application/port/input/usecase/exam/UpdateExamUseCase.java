@@ -22,10 +22,10 @@ import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
-import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
-import com.sep.vox.domain.model.exam.ExamScheduleStatus;
-import com.sep.vox.domain.model.exam.ExamStatus;
+import com.sep.vox.domain.model.assessment.ExamKind;
+import com.sep.vox.domain.model.assessment.ExamMemberRole;
+import com.sep.vox.domain.model.assessment.ExamScheduleStatus;
+import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
@@ -188,7 +188,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
      * không, sửa giờ ở màn kỳ thi trở thành đường vòng qua mặt cả ba luật chống trùng (phòng bị đặt
      * hai ca, giáo viên bị gác hai ca, học sinh bị xếp hai ca).
      */
-    private void syncClassTestDraftSchedules(com.sep.vox.domain.model.exam.Exam exam, java.util.UUID currentUserId, Instant now) {
+    private void syncClassTestDraftSchedules(com.sep.vox.domain.model.assessment.Exam exam, java.util.UUID currentUserId, Instant now) {
         for (var schedule : examScheduleRepository.findByExamId(exam.getId())) {
             if (schedule.getStatus() == ExamScheduleStatus.DRAFT || schedule.getStatus() == ExamScheduleStatus.PUBLISHED) {
                 examScheduleRoomValidator.requireNoOverlap(
@@ -270,7 +270,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
             || command.examTimeDurationSecond() != null;
     }
 
-    private void requireExistingSchedulesStillFit(com.sep.vox.domain.model.exam.Exam exam, UpdateExamCommand command) {
+    private void requireExistingSchedulesStillFit(com.sep.vox.domain.model.assessment.Exam exam, UpdateExamCommand command) {
         if (!touchesScheduleTiming(command)) {
             return;
         }

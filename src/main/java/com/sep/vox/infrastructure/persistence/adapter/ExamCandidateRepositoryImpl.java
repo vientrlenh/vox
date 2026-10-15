@@ -14,7 +14,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
-import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.assessment.ExamCandidate;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExamCandidateMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataExamCandidateRepository;

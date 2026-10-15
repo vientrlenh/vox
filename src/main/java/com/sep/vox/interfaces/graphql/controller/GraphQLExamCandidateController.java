@@ -28,7 +28,7 @@ import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.UserDto;
-import com.sep.vox.domain.model.exam.ExamCandidateStatus;
+import com.sep.vox.domain.model.assessment.ExamCandidateStatus;
 
 @Controller
 @RequiredArgsConstructor 

@@ -8,8 +8,8 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
-import com.sep.vox.application.port.input.usecase.examcandidate.ViewMyProctorScheduleCandidatesUseCase;
-import com.sep.vox.application.port.input.usecase.examcandidate.ViewMyProctorSchedulesUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentcandidate.ViewMyProctorScheduleCandidatesUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentcandidate.ViewMyProctorSchedulesUseCase;
 import com.sep.vox.application.port.input.usecase.proctoring.ViewMonitorableExamUseCase;
 import com.sep.vox.application.port.input.usecase.proctoring.ViewMonitorableExamsUseCase;
 import com.sep.vox.application.port.input.usecase.proctoring.ViewScheduleProctoringAlertsUseCase;

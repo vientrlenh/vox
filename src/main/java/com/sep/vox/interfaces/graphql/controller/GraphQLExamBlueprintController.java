@@ -14,8 +14,8 @@ import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.ViewExamBlueprintDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewExamBlueprintsQuery;
-import com.sep.vox.application.port.input.usecase.examblueprint.ViewExamBlueprintDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.examblueprint.ViewExamBlueprintsUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentblueprint.ViewExamBlueprintDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentblueprint.ViewExamBlueprintsUseCase;
 import com.sep.vox.domain.dto.ExamBlueprintDto;
 import com.sep.vox.domain.dto.ExamBlueprintSectionDto;
 import com.sep.vox.domain.dto.ExamBlueprintSlotDto;

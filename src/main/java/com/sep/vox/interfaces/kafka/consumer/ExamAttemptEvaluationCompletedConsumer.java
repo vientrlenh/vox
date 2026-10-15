@@ -14,9 +14,9 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand;
+import com.sep.vox.application.port.input.usecase.assessmentsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.application.port.input.usecase.examevaluation.RecordExamAttemptEvaluationUseCase;
 import com.sep.vox.application.port.input.usecase.examitemresponse.ResolveExamSessionIdByResponseIdUseCase;
-import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationCompletedEventDto;
 import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationFailedEventDto;
 import com.sep.vox.interfaces.kafka.mapper.RecordExamAttemptEvaluationCommandMapper;

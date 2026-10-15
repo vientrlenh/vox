@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sep.vox.application.port.input.usecase.examappeal.ApproveAndClaimExamAppealUseCase;
-import com.sep.vox.application.port.input.usecase.examappeal.ApproveExamAppealUseCase;
-import com.sep.vox.application.port.input.usecase.examappeal.AssignExamAppealReviewerUseCase;
-import com.sep.vox.application.port.input.usecase.examappeal.CreateExamAppealUseCase;
-import com.sep.vox.application.port.input.usecase.examappeal.RejectExamAppealUseCase;
-import com.sep.vox.application.port.input.usecase.examappeal.WithdrawExamAppealUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentapeal.ApproveAndClaimExamAppealUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentapeal.ApproveExamAppealUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentapeal.AssignExamAppealReviewerUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentapeal.CreateExamAppealUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentapeal.RejectExamAppealUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentapeal.WithdrawExamAppealUseCase;
 import com.sep.vox.interfaces.rest.dto.request.ApproveExamAppealRequest;
 import com.sep.vox.interfaces.rest.dto.request.AssignExamAppealReviewerRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateExamAppealRequest;

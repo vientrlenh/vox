@@ -16,10 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.BulkFinalizeExamResultsCommand;
 import com.sep.vox.application.port.input.query.ExportExamScoresQuery;
-import com.sep.vox.application.port.input.usecase.examgrading.BulkFinalizeExamResultsUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.ExportExamScoresExcelUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.ExportExamScoresUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.PreviewBulkFinalizeUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.BulkFinalizeExamResultsUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ExportExamScoresExcelUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ExportExamScoresUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.PreviewBulkFinalizeUseCase;
 import com.sep.vox.application.projection.dto.BulkFinalizePreviewInfo;
 import com.sep.vox.interfaces.rest.dto.request.BulkFinalizeExamResultsRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;

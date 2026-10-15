@@ -10,8 +10,8 @@ import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
 import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand;
-import com.sep.vox.application.port.input.usecase.examsession.SubmitExamSessionUseCase;
-import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentsession.SubmitExamSessionUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
 import com.sep.vox.domain.repository.assessment.ExamSessionRepository;

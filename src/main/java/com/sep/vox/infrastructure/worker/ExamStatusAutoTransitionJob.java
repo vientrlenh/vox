@@ -11,7 +11,7 @@ import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentServ
 import com.sep.vox.application.port.input.service.ExamHumanGradingNotificationService;
 import com.sep.vox.application.port.input.service.ExamScheduleClosureService;
 import com.sep.vox.application.port.input.service.ZeroScoreExamResultService;
-import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
+import com.sep.vox.application.port.input.usecase.assessment.ExamQuestionSecureLockService;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;

@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.DeleteExamPaperCommand;
-import com.sep.vox.application.port.input.usecase.exampaper.CreateExamPaperUseCase;
-import com.sep.vox.application.port.input.usecase.exampaper.DeleteExamPaperUseCase;
-import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperItemUseCase;
-import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperSectionUseCase;
-import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperStatusUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentpaper.CreateExamPaperUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentpaper.DeleteExamPaperUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentpaper.UpdateExamPaperItemUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentpaper.UpdateExamPaperSectionUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentpaper.UpdateExamPaperStatusUseCase;
 import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.dto.ExamPaperItemDto;
 import com.sep.vox.domain.dto.ExamPaperSectionDto;

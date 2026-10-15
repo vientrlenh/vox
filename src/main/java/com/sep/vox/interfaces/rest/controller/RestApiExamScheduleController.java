@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.DeleteExamScheduleCommand;
 import com.sep.vox.application.port.input.command.DeleteExamScheduleProctorCommand;
-import com.sep.vox.application.port.input.usecase.examschedule.AddExamScheduleProctorUseCase;
-import com.sep.vox.application.port.input.usecase.examschedule.CreateExamScheduleUseCase;
-import com.sep.vox.application.port.input.usecase.examschedule.DeleteExamScheduleUseCase;
-import com.sep.vox.application.port.input.usecase.examschedule.RemoveExamScheduleProctorUseCase;
-import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleStatusUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentschedule.AddExamScheduleProctorUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentschedule.CreateExamScheduleUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentschedule.DeleteExamScheduleUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentschedule.RemoveExamScheduleProctorUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentschedule.UpdateExamScheduleStatusUseCase;
 import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.ExamScheduleProctorDto;
 import com.sep.vox.interfaces.rest.dto.request.AddExamScheduleProctorRequest;

@@ -9,10 +9,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.ViewExamDirectoryQuery;
-import com.sep.vox.application.port.input.usecase.examdirectory.ViewExamDirectoryClassesUseCase;
-import com.sep.vox.application.port.input.usecase.examdirectory.ViewExamDirectoryGradesUseCase;
-import com.sep.vox.application.port.input.usecase.examdirectory.ViewExamDirectoryProctorsUseCase;
-import com.sep.vox.application.port.input.usecase.examdirectory.ViewExamDirectoryStudentsUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentdirectory.ViewExamDirectoryClassesUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentdirectory.ViewExamDirectoryGradesUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentdirectory.ViewExamDirectoryProctorsUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentdirectory.ViewExamDirectoryStudentsUseCase;
 import com.sep.vox.application.projection.dto.ExamDirectoryGradeInfo;
 import com.sep.vox.application.projection.dto.ExamDirectoryUserInfo;
 import com.sep.vox.domain.dto.SchoolClassDto;

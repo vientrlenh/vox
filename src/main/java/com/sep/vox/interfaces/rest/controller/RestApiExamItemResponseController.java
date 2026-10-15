@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.UpdateExamItemResponseTurnCommand;
-import com.sep.vox.application.port.input.usecase.examitemresponse.UpdateExamItemResponseTurnUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentitemanswer.UpdateExamItemResponseTurnUseCase;
 import com.sep.vox.interfaces.rest.dto.request.UpdateExamItemResponseTurnRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 

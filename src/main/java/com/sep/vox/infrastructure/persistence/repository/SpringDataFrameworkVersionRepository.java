@@ -12,7 +12,7 @@ public interface SpringDataFrameworkVersionRepository extends JpaRepository<Fram
     boolean existsByFrameworkIdAndStatus(UUID frameworkId, String status);
 
     @Query("""
-        SELECT COUNT(fv) FROM FrameworkVersion fv 
+        SELECT COALESCE(MAX(fv.version), 0) FROM FrameworkVersionJpaEntity fv 
         WHERE fv.frameworkId = :frameworkId 
             AND fv.status <> 'DRAFT'
     """)

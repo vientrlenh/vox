@@ -44,4 +44,10 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
         return springDataFrameworkRepository.existsByIdAndStatus(id, FrameworkStatus.ACTIVE.name());
     }
 
+    @Override
+    public Optional<Framework> findByIdAndIsActiveForUpdate(UUID id) {
+        return springDataFrameworkRepository.findByIdAndStatusForUpdate(id, FrameworkStatus.ACTIVE.name())
+            .map(FrameworkMapper::toDomain);
+    }
+
 }

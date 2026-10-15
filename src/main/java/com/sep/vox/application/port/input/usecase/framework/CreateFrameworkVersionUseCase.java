@@ -147,6 +147,7 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
 
     private void validateAndBuildResultBands(List<CreateFrameworkResultBandCommand> commands, UUID frameworkVersionId) {
         Set<String> existCodes = new HashSet<>();
+        Set<String> existLabels = new HashSet<>();
         Set<Integer> validOrders = new HashSet<>();
         Set<Integer> requestedOrders = new HashSet<>();
         int increment = 1;
@@ -154,7 +155,11 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
             if (existCodes.contains(command.code())) {
                 throw new ResourceDuplicatedException("The code " + command.code() + " is duplicated in result bands request");
             }
+            if (existLabels.contains(command.label())) {
+                throw new ResourceDuplicatedException("The label " + command.label() + " is duplicated in result bands request");
+            }
             existCodes.add(command.code());
+            existLabels.add(command.label());
             validOrders.add(increment);
             increment++;
             requestedOrders.add(command.order());

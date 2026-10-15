@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,7 +27,8 @@ public class RestApiFrameworkController {
 
     private final CreateFrameworkVersionUseCase createFrameworkVersionUseCase;
 
-    @PostMapping("/version")
+    @PostMapping("/versions")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<CreateFrameworkVersionResponse>> createFrameworkVersion(@PathVariable(name = "frameworkId") UUID frameworkId, @Valid @RequestBody CreateFrameworkVersionRequest request) {
         CreateFrameworkVersionCommand command = CreateFrameworkVersionRequest.toCommand(frameworkId, request);
         CreateFrameworkVersionResponse data = createFrameworkVersionUseCase.execute(command);

@@ -29,13 +29,13 @@ import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
-import com.sep.vox.domain.repository.ExamPaperItemRepository;
-import com.sep.vox.domain.repository.ExamPaperRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperItemRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 import com.sep.vox.domain.service.exam.PaperTimeCalculator;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 

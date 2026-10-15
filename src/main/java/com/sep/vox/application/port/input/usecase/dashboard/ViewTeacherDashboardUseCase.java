@@ -30,12 +30,12 @@ import com.sep.vox.domain.model.assessment.ExamCandidate;
 import com.sep.vox.domain.model.assessment.ExamKind;
 import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 
 @Service
 @Transactional(readOnly = true)

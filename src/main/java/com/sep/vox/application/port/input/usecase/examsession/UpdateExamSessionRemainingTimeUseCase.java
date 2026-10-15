@@ -9,9 +9,9 @@ import com.sep.vox.application.port.input.command.UpdateExamSessionRemainingTime
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessment.ExamSession;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamPaperRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 
 /**
  * Ghi lại đồng hồ đếm ngược mà client báo về, để lần vào lại phiên thi không đếm ngược từ đầu.

@@ -16,9 +16,9 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
 import com.sep.vox.domain.model.assessment.ExamScheduleStatus;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
 import com.sep.vox.domain.service.exam.ExamEditingGuard;
 
 @Service

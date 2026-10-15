@@ -14,11 +14,11 @@ import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluatio
 import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationTurnResponse;
 import com.sep.vox.domain.model.assessment.ExamEvaluationEngineType;
 import com.sep.vox.domain.model.assessment.ExamItemEvaluation;
-import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
-import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
-import com.sep.vox.domain.repository.ExamItemEvaluationTurnRepository;
-import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemCriterionScoreRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemEvaluationRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemEvaluationTurnRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemResponseTurnRepository;
 
 @Service
 public class ViewExamItemResponseEvaluationUseCase

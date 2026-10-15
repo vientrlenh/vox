@@ -16,8 +16,8 @@ import com.sep.vox.domain.mapper.ExamBlueprintDtoMapper;
 import com.sep.vox.domain.model.assessment.ExamKind;
 import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 
 @Service
 public class UpdateExamBlueprintUseCase implements IUseCase<UpdateExamBlueprintCommand, ExamBlueprintDto> {

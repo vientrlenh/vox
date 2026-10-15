@@ -14,9 +14,9 @@ import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.assessment.ExamAppealStatus;
 import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.outbox.Outbox;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.ExamResultAppealRepository;
 import com.sep.vox.domain.shared.AggregateTypeConstant;
 import com.sep.vox.domain.shared.EventTypeConstant;
 

@@ -14,9 +14,9 @@ import com.sep.vox.domain.dto.ExamMemberDto;
 import com.sep.vox.domain.mapper.ExamMemberDtoMapper;
 import com.sep.vox.domain.model.assessment.ExamMember;
 import com.sep.vox.domain.model.assessment.ExamMemberRole;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 
 @Service
 public class CreateExamMemberUseCase implements IUseCase<CreateExamMemberCommand, ExamMemberDto> {

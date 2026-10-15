@@ -8,9 +8,9 @@ import com.sep.vox.application.port.input.command.FlagExamSessionCommand;
 import com.sep.vox.application.port.input.service.ExamSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.shared.StringNormalization;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 
 @Service
 public class FlagExamSessionUseCase implements IUseCase<FlagExamSessionCommand, java.util.UUID> {

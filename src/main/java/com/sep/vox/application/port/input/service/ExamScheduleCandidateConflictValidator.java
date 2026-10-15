@@ -13,8 +13,8 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.domain.model.assessment.ExamCandidate;
 import com.sep.vox.domain.model.assessment.ExamCandidateStatus;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
 
 /**
  * Một học sinh không được xếp vào hai ca thi chồng lấn thời gian — người thật không thể ngồi ở hai

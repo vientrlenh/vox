@@ -16,10 +16,10 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.examschedule.GetExamScheduleOtpResponse;
 import com.sep.vox.application.shared.CacheKey;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
 
 @Service
 public class GetExamScheduleOtpUseCase implements IUseCase<GetExamScheduleOtpQuery, GetExamScheduleOtpResponse> {

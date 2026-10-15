@@ -31,8 +31,8 @@ import com.sep.vox.domain.dto.ExamScheduleProctorDto;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.model.assessment.ExamScheduleStatus;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateExamScheduleInput;
 
 @Controller

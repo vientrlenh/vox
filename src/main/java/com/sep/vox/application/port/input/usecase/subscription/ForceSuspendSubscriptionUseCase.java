@@ -14,9 +14,9 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionEvent;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionEventRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
 
 /**
  * System Admin cưỡng chế cắt quyền dùng NGAY LẬP TỨC -- dùng khi phát hiện trường vi phạm (gian

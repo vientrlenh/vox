@@ -18,11 +18,11 @@ import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.ExamKind;
 import com.sep.vox.domain.model.assessment.ExamMemberRole;
 import com.sep.vox.domain.model.outbox.Outbox;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 import com.sep.vox.domain.shared.AggregateTypeConstant;
 import com.sep.vox.domain.shared.EventTypeConstant;
 

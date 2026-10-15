@@ -19,7 +19,7 @@ import com.sep.vox.application.projection.dto.ExamCandidateAttempts;
 import com.sep.vox.application.projection.repository.ExamCandidateAttemptsQueryRepository;
 import com.sep.vox.domain.model.assessment.ExamCandidateStatus;
 import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 
 @Service
 public class ResolveExamCandidateAttemptsUseCase {

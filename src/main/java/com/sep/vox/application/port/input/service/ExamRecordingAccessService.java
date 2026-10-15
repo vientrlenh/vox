@@ -9,13 +9,13 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessment.ExamMemberRole;
 import com.sep.vox.domain.model.assessment.ExamSession;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 
 /**
  * "Ai được xem bản ghi của phiên thi này" -- một nguồn sự thật cho mọi đường đọc bản ghi.

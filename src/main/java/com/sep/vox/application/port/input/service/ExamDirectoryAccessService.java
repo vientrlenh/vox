@@ -13,10 +13,10 @@ import com.sep.vox.domain.model.assessment.Exam;
 import com.sep.vox.domain.model.assessment.ExamKind;
 import com.sep.vox.domain.model.assessment.ExamMemberRole;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 
 /**
  * Ai được xem danh bạ nguồn thí sinh / giám thị của một kỳ thi, và xem tới đâu.

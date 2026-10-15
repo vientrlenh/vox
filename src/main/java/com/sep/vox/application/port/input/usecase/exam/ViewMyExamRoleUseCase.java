@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.ViewMyExamRoleQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
 
 @Service
 public class ViewMyExamRoleUseCase implements IUseCase<ViewMyExamRoleQuery, String> {

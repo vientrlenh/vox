@@ -9,9 +9,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.domain.model.assessment.ExamCandidateResult;
 import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 
 @Service
 public class UpsertExamCandidateResultUseCase {

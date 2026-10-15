@@ -9,8 +9,8 @@ import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.domain.model.assessment.Exam;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
 
 /**
  * Kiểm tra phòng cho một ca thi: phòng có thật, thuộc đúng trường của bài kiểm tra, và không đụng

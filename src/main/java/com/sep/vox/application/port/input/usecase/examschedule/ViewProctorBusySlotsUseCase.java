@@ -10,8 +10,8 @@ import com.sep.vox.application.port.input.query.ViewProctorBusySlotsQuery;
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.examschedule.ProctorBusySlotResponse;
-import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
 
 /**
  * Ai trong danh sách giáo viên đang bận vào đúng khung giờ của một ca thi.

@@ -22,11 +22,11 @@ import com.sep.vox.domain.model.assessment.ExamResultAppeal;
 import com.sep.vox.domain.model.assessment.ExamResultAppealItem;
 import com.sep.vox.domain.model.assessment.GradingOutcome;
 import com.sep.vox.domain.model.assessment.ResultStatusChangeSource;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.ExamItemResponseRepository;
-import com.sep.vox.domain.repository.ExamResultAppealItemRepository;
-import com.sep.vox.domain.repository.ExamResultAppealRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.assessment.ExamResultAppealItemRepository;
+import com.sep.vox.domain.repository.assessment.ExamResultAppealRepository;
 
 @Service
 public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand, UUID> {

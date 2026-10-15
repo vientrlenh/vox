@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import com.sep.vox.domain.model.exam.ExamBlueprintVersionStatus;
-import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
+import com.sep.vox.domain.repository.assessment.ExamBlueprintVersionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExamBlueprintVersionMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataExamBlueprintVersionRepository;
 

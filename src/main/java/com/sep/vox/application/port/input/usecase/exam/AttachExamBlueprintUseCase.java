@@ -19,11 +19,11 @@ import com.sep.vox.domain.model.assessment.ExamBlueprint;
 import com.sep.vox.domain.model.assessment.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.model.assessment.ExamKind;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
-import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamPaperRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.GradeLevelRepository;
+import com.sep.vox.domain.repository.assessment.ExamBlueprintVersionRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 
 @Service
 public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintCommand, ExamDto> {

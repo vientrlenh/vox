@@ -14,13 +14,13 @@ import com.sep.vox.domain.model.assessment.ExamCandidateResult;
 import com.sep.vox.domain.model.assessment.ExamResultAppeal;
 import com.sep.vox.domain.model.assessment.ExamSession;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamResultAppealRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamResultAppealRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 
 /**
  * Resolves the appeal -> candidate result -> session -> exam -> school chain and

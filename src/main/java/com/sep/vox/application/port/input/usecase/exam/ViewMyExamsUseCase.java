@@ -26,8 +26,8 @@ import com.sep.vox.domain.model.assessment.ExamCandidateStatus;
 import com.sep.vox.domain.model.assessment.ExamPaper;
 import com.sep.vox.domain.model.assessment.ExamSessionStatus;
 import com.sep.vox.domain.model.assessment.ExamStatus;
-import com.sep.vox.domain.repository.ExamPaperRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
 import com.sep.vox.domain.shared.PageResult;
 
 /**

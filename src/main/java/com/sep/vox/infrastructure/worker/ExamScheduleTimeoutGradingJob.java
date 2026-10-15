@@ -13,8 +13,8 @@ import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand
 import com.sep.vox.application.port.input.usecase.examsession.SubmitExamSessionUseCase;
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 
 @Component
 public class ExamScheduleTimeoutGradingJob {

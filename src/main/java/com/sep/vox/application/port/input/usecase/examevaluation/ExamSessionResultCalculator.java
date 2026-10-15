@@ -23,15 +23,15 @@ import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
-import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
-import com.sep.vox.domain.repository.ExamItemResponseRepository;
-import com.sep.vox.domain.repository.ExamPaperItemRepository;
-import com.sep.vox.domain.repository.ExamPaperSectionRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemEvaluationRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperItemRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperSectionRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 
 @Service
 public class ExamSessionResultCalculator {

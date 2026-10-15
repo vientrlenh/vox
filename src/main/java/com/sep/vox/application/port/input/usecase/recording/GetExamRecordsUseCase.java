@@ -11,7 +11,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.ExamRecordingDto;
 import com.sep.vox.domain.mapper.ExamRecordingDtoMapper;
 import com.sep.vox.domain.model.assessment.ExamRequiredStreamType;
-import com.sep.vox.domain.repository.ExamRecordingRepository;
+import com.sep.vox.domain.repository.assessment.ExamRecordingRepository;
 import com.sep.vox.domain.service.recording.RecordingPrecedence;
 
 /**

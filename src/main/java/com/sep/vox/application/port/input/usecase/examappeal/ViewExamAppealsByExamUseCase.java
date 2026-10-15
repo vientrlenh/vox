@@ -10,8 +10,8 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.AppealSummaryInfo;
 import com.sep.vox.application.projection.repository.ExamAppealQueryRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 import com.sep.vox.domain.shared.PageResult;
 
 /**

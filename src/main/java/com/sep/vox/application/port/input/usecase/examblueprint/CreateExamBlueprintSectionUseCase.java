@@ -18,8 +18,8 @@ import com.sep.vox.domain.model.assessment.ExamBlueprintSection;
 import com.sep.vox.domain.model.assessment.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
-import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamBlueprintVersionRepository;
 
 @Service
 public class CreateExamBlueprintSectionUseCase implements IUseCase<CreateExamBlueprintSectionItemCommand, ExamBlueprintSectionDto> {

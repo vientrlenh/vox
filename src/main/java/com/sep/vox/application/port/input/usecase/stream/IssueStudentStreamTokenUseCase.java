@@ -7,10 +7,11 @@ import com.sep.vox.domain.model.assessment.Exam;
 import com.sep.vox.domain.model.assessment.ExamRequiredStreamType;
 import com.sep.vox.domain.model.assessment.ExamSession;
 import com.sep.vox.domain.model.assessment.ExamStreamTypePermission;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

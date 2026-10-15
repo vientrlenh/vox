@@ -26,8 +26,8 @@ import com.sep.vox.domain.model.assessment.ExamKind;
 import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 import com.sep.vox.domain.service.exam.ExamDeliveryModeSupport;
 
 @Service

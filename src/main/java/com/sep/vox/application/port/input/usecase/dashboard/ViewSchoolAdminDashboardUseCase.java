@@ -31,14 +31,14 @@ import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.model.order.OrderType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.SchoolBalanceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamResultAppealRepository;
 import com.sep.vox.domain.shared.BusinessDays;
 import com.sep.vox.domain.shared.ZoneConstant;
 

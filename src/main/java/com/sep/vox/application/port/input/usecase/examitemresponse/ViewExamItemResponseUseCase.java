@@ -8,7 +8,7 @@ import com.sep.vox.application.port.input.query.ViewExamItemResponseQuery;
 import com.sep.vox.application.port.input.service.ExamResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemResponseDetailsResponse;
-import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemResponseTurnRepository;
 
 @Service
 public class ViewExamItemResponseUseCase implements IUseCase<ViewExamItemResponseQuery, ExamItemResponseDetailsResponse> {

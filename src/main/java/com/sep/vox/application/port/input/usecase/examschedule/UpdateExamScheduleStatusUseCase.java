@@ -22,12 +22,12 @@ import com.sep.vox.domain.model.assessment.ExamMemberRole;
 import com.sep.vox.domain.model.assessment.ExamSchedule;
 import com.sep.vox.domain.model.assessment.ExamScheduleProctor;
 import com.sep.vox.domain.model.assessment.ExamScheduleStatus;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
 
 @Service
 public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamScheduleStatusCommand, ExamScheduleDto> {

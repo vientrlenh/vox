@@ -11,9 +11,9 @@ import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
-import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.repository.assessment.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.service.exam.PaperTimeCalculator;
 
 @Service

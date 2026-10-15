@@ -18,9 +18,9 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService.Gradi
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.service.exam.RubricItemScoreFormula;
-import com.sep.vox.domain.repository.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
 
 /**
  * Validate + quy đổi điểm tiêu chí thành điểm phần thi.

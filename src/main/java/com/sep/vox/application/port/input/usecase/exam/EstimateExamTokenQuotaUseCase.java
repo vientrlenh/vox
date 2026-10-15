@@ -10,7 +10,7 @@ import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardServic
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.exam.ExamTokenEstimateResponse;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 
 /**
  * Cảnh báo ước lượng chi phí AI NGAY LÚC TẠO bài thi (trước publish) -- không throw, chỉ để FE

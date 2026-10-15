@@ -14,7 +14,7 @@ import com.sep.vox.domain.dto.ExamBlueprintVersionDto;
 import com.sep.vox.domain.model.assessment.ExamBlueprintSlot;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
-import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
+import com.sep.vox.domain.repository.assessment.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 
 @Service

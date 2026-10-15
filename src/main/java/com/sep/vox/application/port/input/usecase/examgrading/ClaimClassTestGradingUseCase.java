@@ -18,8 +18,8 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.assessment.ExamGradingAssignment;
 import com.sep.vox.domain.model.assessment.GradingRoundPolicy;
 import com.sep.vox.domain.model.assessment.GradingRoundType;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
 
 /**
  * Giáo viên tạo bài kiểm tra trên lớp tự nhận chấm — không qua nhà trường.

@@ -11,8 +11,8 @@ import com.sep.vox.application.port.input.query.ViewStudentBusySlotsQuery;
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.examschedule.StudentBusySlotResponse;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
 
 /**
  * Trong nhóm học sinh đang xét, ai đã bận vào đúng khung giờ của từng ca thi đang cân nhắc.

@@ -13,8 +13,8 @@ import com.sep.vox.application.port.input.command.UpdateExamItemResponseTurnComm
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.examitemresponse.ExamItemResponseTurnResponse;
 import com.sep.vox.domain.model.assessment.TurnType;
-import com.sep.vox.domain.repository.ExamItemResponseRepository;
-import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemResponseTurnRepository;
 
 @Service
 public class UpdateExamItemResponseTurnUseCase

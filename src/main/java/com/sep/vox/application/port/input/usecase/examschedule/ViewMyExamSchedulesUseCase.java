@@ -15,9 +15,9 @@ import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.mapper.ExamScheduleDtoMapper;
 import com.sep.vox.domain.model.assessment.ExamSchedule;
 import com.sep.vox.domain.model.assessment.ExamStatus;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
 
 @Service
 public class ViewMyExamSchedulesUseCase

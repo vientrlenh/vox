@@ -8,7 +8,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.exam.ExamPaperItem;
-import com.sep.vox.domain.repository.ExamPaperItemRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperItemRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ExamPaperItemMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataExamPaperItemRepository;
 

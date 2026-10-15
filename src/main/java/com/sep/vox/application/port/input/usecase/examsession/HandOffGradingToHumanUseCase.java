@@ -17,11 +17,11 @@ import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.ExamSessionStatus;
 import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamItemResponseRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 
 /**
  * Bài AI chấm lỗi -> giao cho người chấm.

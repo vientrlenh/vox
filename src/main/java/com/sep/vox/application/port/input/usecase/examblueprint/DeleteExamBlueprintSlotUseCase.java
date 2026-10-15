@@ -12,8 +12,8 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessment.ExamBlueprintVersionStatus;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
-import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamBlueprintVersionRepository;
 
 @Service
 public class DeleteExamBlueprintSlotUseCase implements IUseCase<DeleteExamBlueprintSlotCommand, Void> {

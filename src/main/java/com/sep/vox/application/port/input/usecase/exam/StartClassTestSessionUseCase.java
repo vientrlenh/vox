@@ -25,12 +25,12 @@ import com.sep.vox.domain.model.assessment.ExamRequiredStreamType;
 import com.sep.vox.domain.model.assessment.ExamSession;
 import com.sep.vox.domain.model.assessment.ExamSessionStatus;
 import com.sep.vox.domain.model.assessment.ExamStatus;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 
 @Service
 public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSessionCommand, ExamEntryTicketResponse> {

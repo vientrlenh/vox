@@ -10,7 +10,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ViewExamDetailsUseCase;
 import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.mapper.ExamPaperDtoMapper;
-import com.sep.vox.domain.repository.ExamPaperRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperRepository;
 
 @Service
 public class ViewExamPaperDetailsUseCase implements IUseCase<ViewExamPaperDetailsQuery, ExamPaperDto> {

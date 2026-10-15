@@ -39,15 +39,15 @@ import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentServ
 import com.sep.vox.application.port.input.service.ConfidenceReviewCalculator;
 import com.sep.vox.domain.valueobject.ConfidenceCaseSignals;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
-import com.sep.vox.domain.repository.ExamItemCriterionScoreRepository;
-import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
-import com.sep.vox.domain.repository.ExamItemEvaluationTurnRepository;
-import com.sep.vox.domain.repository.ExamItemResponseRepository;
-import com.sep.vox.domain.repository.ExamProctoringAlertRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemCriterionScoreRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemEvaluationRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemEvaluationTurnRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.assessment.ExamProctoringAlertRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 
 @Service
 public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAttemptEvaluationCommand, Void> {

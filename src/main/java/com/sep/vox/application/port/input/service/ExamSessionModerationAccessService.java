@@ -10,9 +10,9 @@ import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.Exam;
 import com.sep.vox.domain.model.assessment.ExamCandidate;
 import com.sep.vox.domain.model.assessment.ExamMemberRole;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
 
 @Service
 public class ExamSessionModerationAccessService {

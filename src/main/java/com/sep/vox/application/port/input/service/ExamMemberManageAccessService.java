@@ -10,8 +10,8 @@ import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.Exam;
 import com.sep.vox.domain.model.assessment.ExamKind;
 import com.sep.vox.domain.model.assessment.ExamMemberRole;
-import com.sep.vox.domain.repository.ExamMemberRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
 
 /**
  * Ai được lập hội đồng đề của một kỳ thi tập trung, và lập tới đâu.

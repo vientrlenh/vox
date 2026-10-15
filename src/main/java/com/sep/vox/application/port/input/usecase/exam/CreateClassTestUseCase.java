@@ -24,11 +24,6 @@ import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.mapper.ExamDtoMapper;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.model.assessment.Exam;
 import com.sep.vox.domain.model.assessment.ExamCandidate;
 import com.sep.vox.domain.model.assessment.ExamDeliveryMode;
@@ -42,6 +37,11 @@ import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
 import com.sep.vox.domain.service.exam.ExamDeliveryModeSupport;
 
 /**

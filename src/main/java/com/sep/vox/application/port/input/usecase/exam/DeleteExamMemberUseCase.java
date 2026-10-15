@@ -8,8 +8,8 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteExamMemberCommand;
 import com.sep.vox.application.port.input.service.ExamMemberManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 
 @Service
 public class DeleteExamMemberUseCase implements IUseCase<DeleteExamMemberCommand, Void> {

@@ -10,7 +10,7 @@ import com.sep.vox.application.port.input.service.ExamRecordingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.ExamProctoringAlertDto;
 import com.sep.vox.domain.mapper.ExamProctoringAlertDtoMapper;
-import com.sep.vox.domain.repository.ExamProctoringAlertRepository;
+import com.sep.vox.domain.repository.assessment.ExamProctoringAlertRepository;
 
 /**
  * Cảnh báo giám sát của một phiên thi, theo thứ tự thời gian.

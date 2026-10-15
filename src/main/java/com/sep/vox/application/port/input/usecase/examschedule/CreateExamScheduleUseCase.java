@@ -18,10 +18,10 @@ import com.sep.vox.domain.mapper.ExamScheduleDtoMapper;
 import com.sep.vox.domain.model.assessment.Exam;
 import com.sep.vox.domain.model.assessment.ExamMemberRole;
 import com.sep.vox.domain.model.assessment.ExamSchedule;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
 import com.sep.vox.domain.service.exam.ExamEditingGuard;
 import com.sep.vox.domain.service.exam.ExamScheduleWindowMessages;
 

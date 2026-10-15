@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
 
 /**
  * Một giám thị không được gác hai ca thi chồng lấn thời gian — người thật không thể có mặt ở hai

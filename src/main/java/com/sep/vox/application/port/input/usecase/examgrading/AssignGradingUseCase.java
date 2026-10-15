@@ -23,9 +23,9 @@ import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.model.assessment.ExamGradingAssignment;
 import com.sep.vox.domain.model.assessment.GradingRoundPolicy;
 import com.sep.vox.domain.model.assessment.GradingRoundType;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 
 /**
  * School admin gán tay giáo viên cho từng bài, ở một trong bốn vòng chấm. Nhận batch

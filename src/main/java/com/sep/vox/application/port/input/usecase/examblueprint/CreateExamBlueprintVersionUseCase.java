@@ -31,9 +31,9 @@ import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
 import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
-import com.sep.vox.domain.repository.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamBlueprintVersionRepository;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 
 @Service

@@ -17,9 +17,9 @@ import com.sep.vox.domain.model.assessment.ExamMemberRole;
 import com.sep.vox.domain.model.assessment.ExamSecurePoolReleaseMode;
 import com.sep.vox.domain.model.assessment.ExamSecurePoolStatus;
 import com.sep.vox.domain.model.question.QuestionConfidentiality;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamSecurePoolRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
+import com.sep.vox.domain.repository.assessment.ExamSecurePoolRepository;
 
 @Service
 public class UpdateExamSecurePoolStatusUseCase implements IUseCase<UpdateExamSecurePoolStatusCommand, ExamSecurePoolDto> {

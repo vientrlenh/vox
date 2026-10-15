@@ -8,8 +8,8 @@ import com.sep.vox.application.port.input.command.ReportAiUsageCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.metering.RecordAiUsageUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 
 /**
  * Nhận báo cáo chi phí AI từ nguồn không có kết nối Kafka trực tiếp -- ví dụ desktop app tự tổng

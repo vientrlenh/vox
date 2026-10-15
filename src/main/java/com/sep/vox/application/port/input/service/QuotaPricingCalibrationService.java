@@ -13,6 +13,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.sep.vox.domain.repository.*;
+import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

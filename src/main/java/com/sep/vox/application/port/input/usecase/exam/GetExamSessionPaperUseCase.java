@@ -17,16 +17,16 @@ import com.sep.vox.application.response.input.exam.StudentExamPaperQuestionRespo
 import com.sep.vox.application.response.input.exam.StudentExamPaperResponse;
 import com.sep.vox.application.response.input.exam.StudentQuestionResponse;
 import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamPaperItemRepository;
-import com.sep.vox.domain.repository.ExamPaperRepository;
-import com.sep.vox.domain.repository.ExamPaperSectionRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperItemRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperSectionRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 import com.sep.vox.domain.service.exam.PaperTimeCalculator;
 
 @Service

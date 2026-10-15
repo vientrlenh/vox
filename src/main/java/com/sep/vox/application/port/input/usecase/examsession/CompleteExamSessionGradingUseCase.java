@@ -18,9 +18,9 @@ import com.sep.vox.domain.model.assessment.ExamKind;
 import com.sep.vox.domain.model.assessment.ExamSessionStatus;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.repository.AiUsageRecordRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 
 // Internal service-to-service use case (called sau khi pipeline chấm bài AI hoàn tất), không end-user-facing
 @Service

@@ -14,10 +14,10 @@ import com.sep.vox.domain.dto.ExamScheduleProctorDto;
 import com.sep.vox.domain.mapper.ExamScheduleProctorDtoMapper;
 import com.sep.vox.domain.model.assessment.ExamScheduleProctor;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
+import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
 import com.sep.vox.domain.service.exam.ExamEditingGuard;
 
 @Service

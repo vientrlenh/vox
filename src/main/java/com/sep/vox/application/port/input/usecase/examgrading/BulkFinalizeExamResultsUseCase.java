@@ -22,9 +22,9 @@ import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.ExamResultStatusHistory;
 import com.sep.vox.domain.model.assessment.GradingOutcome;
 import com.sep.vox.domain.model.assessment.ResultStatusChangeSource;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 
 /**
  * Chốt sổ: đưa bài còn chờ người chấm ({@code PENDING_REVIEW}) của một kỳ thi về

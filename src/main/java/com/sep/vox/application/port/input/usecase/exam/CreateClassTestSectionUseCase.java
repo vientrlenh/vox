@@ -29,12 +29,12 @@ import com.sep.vox.domain.model.assessment.ExamSecurePoolReleaseMode;
 import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamPaperItemRepository;
-import com.sep.vox.domain.repository.ExamPaperSectionRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperItemRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperSectionRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 
 @Service
 public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSectionCommand, ExamDto> {

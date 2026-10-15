@@ -12,9 +12,9 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.assessment.ExamItemResponse;
 import com.sep.vox.domain.model.assessment.ExamItemResponseTurn;
 import com.sep.vox.domain.model.assessment.TurnType;
-import com.sep.vox.domain.repository.ExamItemResponseRepository;
-import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemResponseTurnRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 
 @Service
 public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand, Void> {

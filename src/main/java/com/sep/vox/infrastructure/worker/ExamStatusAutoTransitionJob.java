@@ -15,8 +15,8 @@ import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockSer
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamPaperStatus;
 import com.sep.vox.domain.model.exam.ExamStatus;
-import com.sep.vox.domain.repository.ExamPaperRepository;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 
 @Component
 public class ExamStatusAutoTransitionJob {

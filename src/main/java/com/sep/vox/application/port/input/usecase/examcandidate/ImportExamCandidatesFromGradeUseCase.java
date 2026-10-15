@@ -21,11 +21,11 @@ import com.sep.vox.domain.mapper.ExamCandidateDtoMapper;
 import com.sep.vox.domain.model.assessment.ExamCandidate;
 import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 import com.sep.vox.domain.service.exam.ExamEditingGuard;
 
 @Service

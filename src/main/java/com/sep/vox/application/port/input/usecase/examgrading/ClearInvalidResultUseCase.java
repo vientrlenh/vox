@@ -16,9 +16,9 @@ import com.sep.vox.domain.model.assessment.ExamGradingAssignment;
 import com.sep.vox.domain.model.assessment.GradingOutcome;
 import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.domain.model.outbox.Outbox;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.shared.AggregateTypeConstant;
 import com.sep.vox.domain.shared.EventTypeConstant;
 

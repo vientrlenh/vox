@@ -12,14 +12,14 @@ import com.sep.vox.application.response.input.examsession.ExamCandidateResultIte
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultResponse;
 import com.sep.vox.application.response.input.examsession.ExamCandidateResultSectionResponse;
 import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
-import com.sep.vox.domain.repository.ExamItemResponseRepository;
-import com.sep.vox.domain.repository.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemEvaluationRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperItemRepository;
 
 @Service
 public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionResultQuery, ExamCandidateResultResponse> {

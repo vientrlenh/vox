@@ -13,7 +13,7 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
 import com.sep.vox.domain.model.assessment.GradingRoundType;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
 
 /**
  * Đổi giáo viên chấm một bài. Là UPDATE dòng sẵn có, không phải thêm dòng thứ

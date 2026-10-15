@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.domain.model.assessment.ExamPaper;
-import com.sep.vox.domain.repository.ExamPaperRepository;
+import com.sep.vox.domain.repository.assessment.ExamPaperRepository;
 
 /**
  * Chọn mã đề để thao tác trên bài kiểm tra trên lớp.

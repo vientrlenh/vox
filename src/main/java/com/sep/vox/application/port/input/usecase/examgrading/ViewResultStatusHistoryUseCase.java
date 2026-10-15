@@ -13,10 +13,10 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.ResultStatusHistoryInfo;
 import com.sep.vox.application.projection.repository.ExamResultAuditQueryRepository;
 import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 
 /**
  * Dòng thời gian điểm của một bài: ai, lúc nào, từ trạng thái nào sang trạng thái nào,

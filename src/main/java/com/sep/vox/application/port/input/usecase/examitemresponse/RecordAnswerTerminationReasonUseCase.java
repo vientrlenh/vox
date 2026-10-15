@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.repository.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
 
 @Service
 public class RecordAnswerTerminationReasonUseCase implements IUseCase<RecordAnswerTerminationReasonUseCase.Command, Void> {

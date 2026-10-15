@@ -13,7 +13,7 @@ import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.assessment.Exam;
 import com.sep.vox.domain.model.assessment.ExamKind;
 import com.sep.vox.domain.model.assessment.ExamStatus;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.assessment.ExamRepository;
 import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.ExamMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataExamRepository;

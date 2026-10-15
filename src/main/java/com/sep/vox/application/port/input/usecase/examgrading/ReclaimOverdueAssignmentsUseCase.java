@@ -20,8 +20,8 @@ import com.sep.vox.domain.model.assessment.ExamAppealStatus;
 import com.sep.vox.domain.model.assessment.ExamGradingAssignment;
 import com.sep.vox.domain.model.assessment.GradingOutcome;
 import com.sep.vox.domain.model.assessment.GradingRoundType;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.ExamResultAppealRepository;
+import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.ExamResultAppealRepository;
 
 /**
  * Thu hồi phân công quá hạn, và giao lại ngay nếu admin đã chọn người thay.

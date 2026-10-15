@@ -16,8 +16,8 @@ import com.sep.vox.application.response.input.examsession.ExamSessionResponse;
 import com.sep.vox.domain.model.assessment.ExamSession;
 import com.sep.vox.domain.model.assessment.ExamSessionStatus;
 import com.sep.vox.domain.repository.AiUsageRecordRepository;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
+import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
 
 @Service
 public class UpdateExamSessionStatusUseCase implements IUseCase<UpdateExamSessionStatusCommand, ExamSessionResponse> {

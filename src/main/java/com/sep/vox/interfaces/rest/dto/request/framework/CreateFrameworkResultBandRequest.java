@@ -1,16 +1,19 @@
 package com.sep.vox.interfaces.rest.dto.request.framework;
 
 import com.sep.vox.application.port.input.command.framework.CreateFrameworkResultBandCommand;
+import com.sep.vox.interfaces.shared.RequestPatternRegex;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 
 public record CreateFrameworkResultBandRequest(
     @NotBlank(message = "Result band code is required")
     @Size(max = 50, message = "Result band code must not exceed 50 characters")
+    @Pattern(regexp = RequestPatternRegex.CODE_REGEX, message = "Invalid result band code")
     String code,
 
     @NotBlank(message = "Result band label is required")

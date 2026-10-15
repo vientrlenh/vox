@@ -7,7 +7,7 @@ import java.util.UUID;
 import com.sep.vox.domain.shared.BaseModel;
 import com.sep.vox.domain.valueobject.BirthDate;
 import com.sep.vox.domain.valueobject.Email;
-import com.sep.vox.domain.valueobject.Name;
+import com.sep.vox.domain.valueobject.PersonName;
 import com.sep.vox.domain.valueobject.Phone;
 
 public class User extends BaseModel {
@@ -15,7 +15,7 @@ public class User extends BaseModel {
     private String passwordHash;
     private UserRole role;
     private Phone phone;
-    private Name fullName;
+    private PersonName fullName;
     private Gender gender;
     private BirthDate birthDate;
     private String address;
@@ -28,7 +28,7 @@ public class User extends BaseModel {
     protected User() {}
 
     public User(Email email, String passwordHash, UserRole role, Phone phone,
-            Name fullName, Gender gender, BirthDate birthDate, String address, String avatarUrl, UserStatus status, Instant updatedAt, UUID createdBy, UUID updatedBy) {
+            PersonName fullName, Gender gender, BirthDate birthDate, String address, String avatarUrl, UserStatus status, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.role = role;
@@ -93,11 +93,11 @@ public class User extends BaseModel {
         this.phone = phone;
     }
 
-    public Name getFullName() {
+    public PersonName getFullName() {
         return fullName;
     }
 
-    public void setFullName(Name fullName) {
+    public void setFullName(PersonName fullName) {
         this.fullName = fullName;
     }
 
@@ -194,7 +194,7 @@ public class User extends BaseModel {
         private String passwordHash;
         private UserRole role;
         private Phone phone;
-        private Name fullName;
+        private PersonName fullName;
         private Gender gender;
         private BirthDate birthDate;
         private String address;
@@ -232,7 +232,7 @@ public class User extends BaseModel {
             return this;
         } 
 
-        public Builder fullName(Name fullName) {
+        public Builder fullName(PersonName fullName) {
             this.fullName = fullName;
             return this;
         }

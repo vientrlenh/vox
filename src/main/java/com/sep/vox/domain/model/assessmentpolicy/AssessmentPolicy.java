@@ -1,28 +1,31 @@
 package com.sep.vox.domain.model.assessmentpolicy;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
+import com.sep.vox.domain.shared.BaseModel;
 import com.sep.vox.domain.valueobject.PositiveDecimal;
 import com.sep.vox.domain.valueobject.PositiveInteger;
+import com.sep.vox.domain.valueobject.PositiveLong;
 
 
-public class AssessmentPolicy {
-    private UUID id;
+public class AssessmentPolicy extends BaseModel {
     private UUID schoolId;
-    private UUID gradeLevelId;
     private UUID schoolGradeId;
     private UUID schoolClassId;
     private UUID learningLanguageId;
     private UUID frameworkVersionId;
     private UUID rubricVersionId;
     private UUID targetFrameworkBandId;
-    private PositiveDecimal passingScore;
-    private AssessmentPolicyStrictness strictness;
-    private PositiveInteger version;
+    private PositiveLong version;
     private AssessmentPolicyStatus status;
-    private Instant effectiveFrom;
-    private Instant effectiveTo;
+    private LocalDate effectiveFrom;
+    private Instant publishedAt;
+    private Instant archivedAt;
+    private UUID createdBy;
+    private UUID publishedBy;
+    private UUID archivedBy;
 
     protected AssessmentPolicy() {}
 

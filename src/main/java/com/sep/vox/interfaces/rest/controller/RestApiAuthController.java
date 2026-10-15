@@ -37,16 +37,16 @@ import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.application.response.input.registration.RegisterFromSchoolDirectoryResponse;
 import com.sep.vox.interfaces.rest.dto.request.GoogleTokenLoginRequest;
-import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
-import com.sep.vox.interfaces.rest.dto.request.LogoutRequest;
-import com.sep.vox.interfaces.rest.dto.request.RefreshRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterBySelfDeclaredRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterFromSchoolDirectoryRequest;
-import com.sep.vox.interfaces.rest.dto.request.ResetPasswordRequest;
-import com.sep.vox.interfaces.rest.dto.request.SendResetPasswordOtpRequest;
 import com.sep.vox.interfaces.rest.dto.request.SetUpPasswordRequest;
 
 import com.sep.vox.interfaces.rest.dto.request.VerifyRegisterFormOtpRequest;
+import com.sep.vox.interfaces.rest.dto.request.auth.LoginRequest;
+import com.sep.vox.interfaces.rest.dto.request.auth.LogoutRequest;
+import com.sep.vox.interfaces.rest.dto.request.auth.RefreshRequest;
+import com.sep.vox.interfaces.rest.dto.request.auth.ResetPasswordRequest;
+import com.sep.vox.interfaces.rest.dto.request.auth.SendResetPasswordOtpRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 
 import jakarta.servlet.http.HttpServletRequest;

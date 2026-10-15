@@ -50,4 +50,10 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
             .map(FrameworkMapper::toDomain);
     }
 
+    @Override
+    public Optional<Framework> findByIdForUpdate(UUID id) {
+        return springDataFrameworkRepository.findByIdForUpdate(id)
+            .map(FrameworkMapper::toDomain);
+    }
+
 }

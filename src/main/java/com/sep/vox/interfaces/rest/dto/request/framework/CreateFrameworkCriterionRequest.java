@@ -1,13 +1,16 @@
 package com.sep.vox.interfaces.rest.dto.request.framework;
 
 import com.sep.vox.application.port.input.command.framework.CreateFrameworkCriterionCommand;
+import com.sep.vox.interfaces.shared.RequestPatternRegex;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 
 public record CreateFrameworkCriterionRequest(
     @NotBlank(message = "Criterion code is required")
     @Size(max = 50, message = "Criterion code must not exceed 50 characters")
+    @Pattern(regexp = RequestPatternRegex.CODE_REGEX, message = "Invalid criterion code")
     String code,
 
     @NotBlank(message = "Criterion name is required")

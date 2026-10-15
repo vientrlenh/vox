@@ -1,4 +1,4 @@
-package com.sep.vox.interfaces.rest.dto.request;
+package com.sep.vox.interfaces.rest.dto.request.auth;
 
 import com.sep.vox.application.port.input.command.ResetPasswordCommand;
 

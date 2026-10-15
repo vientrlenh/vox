@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.school.SchoolDirectory;
 import com.sep.vox.domain.model.school.SchoolDirectoryOrigin;
 import com.sep.vox.domain.valueobject.Code;
+import com.sep.vox.domain.valueobject.SchoolDomain;
 import com.sep.vox.infrastructure.persistence.entity.school.SchoolDirectoryJpaEntity;
 
 import lombok.extern.slf4j.Slf4j;
@@ -18,11 +19,11 @@ public final class SchoolDirectoryMapper {
                 .id(jpa.getId())
                 .code(Code.from(jpa.getCode()))
                 .name(jpa.getName())
-                .provinceCode(jpa.getProvinceCode())
-                .provinceName(jpa.getProvinceName())
-                .districtName(jpa.getDistrictName())
-                .domain(jpa.getDomain())
-                .address(jpa.getAddress())
+                .wardId(jpa.getWardId())
+                .cityId(jpa.getCityId())
+                .provinceId(jpa.getProvinceId())
+                .domain(SchoolDomain.from(jpa.getDomain()))
+                .streetAddress(jpa.getStreetAddress())
                 .origin(SchoolDirectoryOrigin.from(jpa.getOrigin()))
                 .verified(jpa.isVerified())
                 .createdAt(jpa.getCreatedAt())
@@ -42,11 +43,11 @@ public final class SchoolDirectoryMapper {
                 .id(directory.getId())
                 .code(Code.valueOf(directory.getCode()))
                 .name(directory.getName())
-                .provinceCode(directory.getProvinceCode())
-                .provinceName(directory.getProvinceName())
-                .districtName(directory.getDistrictName())
-                .domain(directory.getDomain())
-                .address(directory.getAddress())
+                .wardId(directory.getWardId())
+                .cityId(directory.getCityId())
+                .provinceId(directory.getProvinceId())
+                .domain(SchoolDomain.valueOf(directory.getDomain()))
+                .streetAddress(directory.getStreetAddress())
                 .origin(SchoolDirectoryOrigin.value(directory.getOrigin()))
                 .verified(directory.isVerified())
                 .createdAt(directory.getCreatedAt())

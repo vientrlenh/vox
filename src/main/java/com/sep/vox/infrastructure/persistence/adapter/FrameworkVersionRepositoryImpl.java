@@ -30,8 +30,8 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     }
 
     @Override
-    public long countPublishedAndArchivedOnFrameworkId(UUID frameworkId) {
-        return springDataFrameworkVersionRepository.countPublishedAndArchivedOnFrameworkId(frameworkId);
+    public long findLatestNonDraftVersionNumberOnFrameworkId(UUID frameworkId) {
+        return springDataFrameworkVersionRepository.findLatestNonDraftVersionNumberOnFrameworkId(frameworkId);
     }
 
     @Override

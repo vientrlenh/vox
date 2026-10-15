@@ -33,8 +33,8 @@ public class SchoolGradeJpaEntity extends BaseEntity {
     @Column(name = "description", length = 2048)
     private String description;
 
-    @Column(name = "academic_timeline_id", nullable = false, updatable = false)
-    private UUID academicTimelineId;
+    @Column(name = "academic_year_id", nullable = false, updatable = false)
+    private UUID academicYearId;
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(

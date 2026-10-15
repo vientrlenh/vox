@@ -1,20 +1,20 @@
-package com.sep.vox.interfaces.rest.dto.request;
+package com.sep.vox.interfaces.rest.dto.request.auth;
 
-import com.sep.vox.application.port.input.command.LogoutCommand;
+import com.sep.vox.application.port.input.command.RefreshCommand;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public record LogoutRequest(
+public record RefreshRequest(
     @NotBlank(message = "Device ID is required")
     @Size(max = 255, message = "Device ID must not exceed 255 characters")
     String deviceId
 ) {
     
-    public static LogoutCommand toCommand(LogoutRequest request, HttpServletRequest req, HttpServletResponse res) {
-        return new LogoutCommand(
+    public static RefreshCommand toCommand(RefreshRequest request, HttpServletRequest req, HttpServletResponse res) {
+        return new RefreshCommand(
             request.deviceId, 
             req, 
             res

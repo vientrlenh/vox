@@ -10,6 +10,7 @@ public interface FrameworkRepository {
     Optional<Framework> findByIdAndIsActiveForUpdate(UUID id);
     boolean existsByIdAndIsActive(UUID id);
     Optional<Framework> findById(UUID id);
+    Optional<Framework> findByIdForUpdate(UUID id);
     Framework save(Framework framework);
 }
 

@@ -62,6 +62,7 @@ public class ResetPasswordUseCase implements IUseCase<ResetPasswordCommand, Void
         return new ResetPasswordCommand(
             StringNormalization.normalizeEmail(input.email()), 
             input.password(), 
+            input.confirmPassword(),
             StringNormalization.trimAndCollapseSpaces(input.otp())
         );
     }

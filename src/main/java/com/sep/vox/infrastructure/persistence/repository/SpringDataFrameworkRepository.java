@@ -20,4 +20,8 @@ public interface SpringDataFrameworkRepository extends JpaRepository<FrameworkJp
     @Lock(value = LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT f FROM FrameworkJpaEntity f WHERE f.id = :id AND f.status = :status")
     Optional<FrameworkJpaEntity> findByIdAndStatusForUpdate(@Param("id") UUID id, @Param("status") String status);
+
+    @Lock(value = LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT f FROM FrameworkJpaEntity f WHERE f.id = :id")
+    Optional<FrameworkJpaEntity> findByIdForUpdate(@Param("id") UUID id);
 }

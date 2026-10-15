@@ -62,18 +62,19 @@ public class RegisterFormDocument {
         return new RegisterFormDocument.Builder();
     }
 
-    public static RegisterFormDocument create(UUID registerFormId, String url, Instant now) {
-        return new RegisterFormDocument(registerFormId, url, now);
+    public static RegisterFormDocument create(UUID registerFormId, String url) {
+        return RegisterFormDocument.builder()
+            .registerFormId(registerFormId)
+            .url(url)
+            .build();
     }
 
-    public static List<RegisterFormDocument> createMany(UUID registerFormId, List<String> urls, Instant now) {
+    public static List<RegisterFormDocument> createMany(UUID registerFormId, List<String> urls) {
         if (urls.size() > 10) {
             throw new IllegalArgumentException("Chỉ có thể gửi tối đa 10 tài liệu cho một đơn đăng ký");
         }
         return urls.stream()
-            .map(url -> new RegisterFormDocument(
-                registerFormId, url, now
-            )).toList();
+            .map(url -> RegisterFormDocument.create(registerFormId, url)).toList();
     }
 
     public static class Builder {

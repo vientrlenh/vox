@@ -8,7 +8,7 @@ import com.sep.vox.domain.shared.BaseModel;
 import com.sep.vox.domain.valueobject.BirthDate;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.IdentityNumber;
-import com.sep.vox.domain.valueobject.Name;
+import com.sep.vox.domain.valueobject.PersonName;
 import com.sep.vox.domain.valueobject.Phone;
 import com.sep.vox.domain.valueobject.PositiveInteger;
 import com.sep.vox.domain.valueobject.PostalCode;
@@ -16,13 +16,13 @@ import com.sep.vox.domain.valueobject.SchoolDomain;
 
 public class RegisterForm extends BaseModel {
     private UUID schoolDirectoryId;
-    private Name schoolName;
+    private String schoolName;
     private SchoolDomain schoolDomain;
     private UUID schoolWardId;
     private UUID schoolCityId;
     private UUID schoolProvinceId;
     private String schoolStreetAddress;
-    private Name contactFullName;
+    private PersonName contactFullName;
     private IdentityNumber identityNumber;
     private Phone contactPhone;
     private Email contactEmail;
@@ -40,8 +40,8 @@ public class RegisterForm extends BaseModel {
     public RegisterForm() {
     }
 
-    public RegisterForm(UUID schoolDirectoryId, Name schoolName, SchoolDomain schoolDomain,
-            UUID schoolWardId, UUID schoolCityId, UUID schoolProvinceId, String schoolStreetAddress, Name contactFullName,
+    public RegisterForm(UUID schoolDirectoryId, String schoolName, SchoolDomain schoolDomain,
+            UUID schoolWardId, UUID schoolCityId, UUID schoolProvinceId, String schoolStreetAddress, PersonName contactFullName,
             IdentityNumber identityNumber, Phone contactPhone, Email contactEmail, BirthDate birthDate,
             String contactAddress, PostalCode postalCode, PositiveInteger studentCount,
             RegisterFormVerificationMethod verificationMethod, Instant verifiedAt, String rejectReason, Instant rejectedAt, 
@@ -102,11 +102,11 @@ public class RegisterForm extends BaseModel {
         this.schoolDirectoryId = schoolDirectoryId;
     }
 
-    public Name getSchoolName() {
+    public String getSchoolName() {
         return schoolName;
     }
 
-    public void setSchoolName(Name schoolName) {
+    public void setSchoolName(String schoolName) {
         this.schoolName = schoolName;
     }
 
@@ -150,11 +150,11 @@ public class RegisterForm extends BaseModel {
         this.schoolStreetAddress = schoolStreetAddress;
     }
 
-    public Name getContactFullName() {
+    public PersonName getContactFullName() {
         return contactFullName;
     }
 
-    public void setContactFullName(Name contactFullName) {
+    public void setContactFullName(PersonName contactFullName) {
         this.contactFullName = contactFullName;
     }
 
@@ -281,7 +281,7 @@ public class RegisterForm extends BaseModel {
         RegisterForm form = RegisterForm.builder()
             .schoolDirectoryId(schoolDirectoryId)
             .verificationMethod(verificationMethod)
-            .contactFullName(Name.from(contactFullName))
+            .contactFullName(PersonName.from(contactFullName))
             .identityNumber(IdentityNumber.from(identityNumber))
             .contactEmail(Email.from(contactEmail))
             .contactPhone(Phone.from(contactPhone))
@@ -309,7 +309,7 @@ public class RegisterForm extends BaseModel {
         RegisterForm form = RegisterForm.builder()
             .schoolDirectoryId(schoolDirectoryId)
             .verificationMethod(verificationMethod)
-            .contactFullName(Name.from(contactFullName))
+            .contactFullName(PersonName.from(contactFullName))
             .identityNumber(IdentityNumber.from(identityNumber))
             .contactEmail(Email.from(contactEmail))
             .contactPhone(Phone.from(contactPhone))
@@ -341,13 +341,13 @@ public class RegisterForm extends BaseModel {
     ) {
         RegisterForm form = RegisterForm.builder()
             .verificationMethod(RegisterFormVerificationMethod.DOCUMENT)
-            .schoolName(Name.from(schoolName))
+            .schoolName(schoolName)
             .schoolDomain(SchoolDomain.from(schoolDomain))
             .schoolStreetAddress(schoolStreetAddress)
             .schoolWardId(schoolWardId)
             .schoolCityId(schoolCityId)
             .schoolProvinceId(schoolProvinceId)
-            .contactFullName(Name.from(contactFullName))
+            .contactFullName(PersonName.from(contactFullName))
             .identityNumber(IdentityNumber.from(identityNumber))
             .contactEmail(Email.from(contactEmail))
             .contactPhone(Phone.from(contactPhone))
@@ -363,13 +363,13 @@ public class RegisterForm extends BaseModel {
     public static class Builder {
         private UUID id;
         private UUID schoolDirectoryId;
-        private Name schoolName;
+        private String schoolName;
         private SchoolDomain schoolDomain;
         private UUID schoolWardId;
         private UUID schoolCityId;
         private UUID schoolProvinceId;
         private String schoolStreetAddress;
-        private Name contactFullName;
+        private PersonName contactFullName;
         private IdentityNumber identityNumber;
         private Phone contactPhone;
         private Email contactEmail;
@@ -397,7 +397,7 @@ public class RegisterForm extends BaseModel {
             return this;
         }
 
-        public Builder schoolName(Name schoolName) {
+        public Builder schoolName(String schoolName) {
             this.schoolName = schoolName;
             return this;
         }
@@ -427,7 +427,7 @@ public class RegisterForm extends BaseModel {
             return this;
         }
 
-        public Builder contactFullName(Name contactFullName) {
+        public Builder contactFullName(PersonName contactFullName) {
             this.contactFullName = contactFullName;
             return this;
         }

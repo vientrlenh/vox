@@ -5,7 +5,7 @@ import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.model.registerform.RegisterFormVerificationMethod;
 import com.sep.vox.domain.valueobject.BirthDate;
 import com.sep.vox.domain.valueobject.Email;
-import com.sep.vox.domain.valueobject.Name;
+import com.sep.vox.domain.valueobject.PersonName;
 import com.sep.vox.domain.valueobject.IdentityNumber;
 import com.sep.vox.domain.valueobject.Phone;
 import com.sep.vox.domain.valueobject.PostalCode;
@@ -25,13 +25,13 @@ public final class RegisterFormMapper {
             return RegisterForm.builder()
                 .id(jpa.getId())
                 .schoolDirectoryId(jpa.getSchoolDirectoryId())
-                .schoolName(Name.from(jpa.getSchoolName()))
+                .schoolName(jpa.getSchoolName())
                 .schoolDomain(SchoolDomain.from(jpa.getSchoolDomain()))
                 .schoolWardId(jpa.getSchoolWardId())
                 .schoolCityId(jpa.getSchoolCityId())
                 .schoolProvinceId(jpa.getSchoolProvinceId())
                 .schoolStreetAddress(jpa.getSchoolStreetAddress())
-                .contactFullName(Name.from(jpa.getContactFullName()))
+                .contactFullName(PersonName.from(jpa.getContactFullName()))
                 .identityNumber(IdentityNumber.from(jpa.getIdentityNumber()))
                 .contactPhone(Phone.from(jpa.getContactPhone()))
                 .contactEmail(Email.from(jpa.getContactEmail()))
@@ -59,13 +59,13 @@ public final class RegisterFormMapper {
             return RegisterFormJpaEntity.builder()
                 .id(form.getId())
                 .schoolDirectoryId(form.getSchoolDirectoryId())
-                .schoolName(Name.valueOf(form.getSchoolName()))
+                .schoolName(form.getSchoolName())
                 .schoolDomain(SchoolDomain.valueOf(form.getSchoolDomain()))
                 .schoolWardId(form.getSchoolWardId())
                 .schoolCityId(form.getSchoolCityId())
                 .schoolProvinceId(form.getSchoolProvinceId())
                 .schoolStreetAddress(form.getSchoolStreetAddress())
-                .contactFullName(Name.valueOf(form.getContactFullName()))
+                .contactFullName(PersonName.valueOf(form.getContactFullName()))
                 .identityNumber(IdentityNumber.valueOf(form.getIdentityNumber()))
                 .contactPhone(Phone.valueOf(form.getContactPhone()))
                 .contactEmail(Email.valueOf(form.getContactEmail()))

@@ -6,7 +6,7 @@ import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.valueobject.BirthDate;
 import com.sep.vox.domain.valueobject.Email;
-import com.sep.vox.domain.valueobject.Name;
+import com.sep.vox.domain.valueobject.PersonName;
 import com.sep.vox.domain.valueobject.Phone;
 import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
 
@@ -23,7 +23,7 @@ public final class UserMapper {
                 .passwordHash(jpa.getPasswordHash())
                 .role(UserRole.from(jpa.getRole()))
                 .phone(Phone.from(jpa.getPhone()))
-                .fullName(Name.from(jpa.getFullName()))
+                .fullName(PersonName.from(jpa.getFullName()))
                 .gender(Gender.from(jpa.getGender()))
                 .birthDate(BirthDate.from(jpa.getBirthDate()))
                 .address(jpa.getAddress())
@@ -49,7 +49,7 @@ public final class UserMapper {
                 .passwordHash(user.getPasswordHash())
                 .role(UserRole.value(user.getRole()))
                 .phone(Phone.valueOf(user.getPhone()))
-                .fullName(Name.valueOf(user.getFullName()))
+                .fullName(PersonName.valueOf(user.getFullName()))
                 .gender(Gender.value(user.getGender()))
                 .birthDate(BirthDate.valueOf(user.getBirthDate()))
                 .address(user.getAddress())

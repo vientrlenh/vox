@@ -16,5 +16,5 @@ public interface SpringDataFrameworkVersionRepository extends JpaRepository<Fram
         WHERE fv.frameworkId = :frameworkId 
             AND fv.status <> 'DRAFT'
     """)
-    long countPublishedAndArchivedOnFrameworkId(@Param("frameworkId") UUID frameworkId);
+    long findLatestNonDraftVersionNumberOnFrameworkId(@Param("frameworkId") UUID frameworkId);
 }

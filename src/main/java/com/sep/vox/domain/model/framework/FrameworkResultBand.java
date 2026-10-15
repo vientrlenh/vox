@@ -1,6 +1,5 @@
 package com.sep.vox.domain.model.framework;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.Code;
@@ -16,8 +15,7 @@ public class FrameworkResultBand {
 
     protected FrameworkResultBand() {}
 
-    public FrameworkResultBand(UUID id, UUID frameworkVersionId, Code code, String label, String description, PositiveInteger order, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
+    public FrameworkResultBand(UUID id, UUID frameworkVersionId, Code code, String label, String description, PositiveInteger order) {
         this.id = id;
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;

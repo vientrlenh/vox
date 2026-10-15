@@ -5,12 +5,10 @@ import java.util.UUID;
 
 import com.sep.vox.domain.shared.BaseModel;
 import com.sep.vox.domain.valueobject.Code;
-import com.sep.vox.domain.valueobject.Name;
 
 public class LearningLanguage extends BaseModel {
-
     private Code code;
-    private Name name;
+    private String name;
     private String description;
     private LearningLanguageStatus status;
     private Instant availableAt;
@@ -19,7 +17,7 @@ public class LearningLanguage extends BaseModel {
 
     protected LearningLanguage() {}
 
-    public LearningLanguage(Code code, Name name, String description, LearningLanguageStatus status,
+    public LearningLanguage(Code code, String name, String description, LearningLanguageStatus status,
             Instant availableAt, Instant unavailableAt, UUID updatedBy) {
         this.code = code;
         this.name = name;
@@ -49,11 +47,11 @@ public class LearningLanguage extends BaseModel {
         this.code = code;
     }
 
-    public Name getName() {
+    public String getName() {
         return name;
     }
 
-    public void setName(Name name) {
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -105,7 +103,7 @@ public class LearningLanguage extends BaseModel {
     public static class Builder {
         private UUID id;
         private Code code;
-        private Name name;
+        private String name;
         private String description;
         private LearningLanguageStatus status;
         private Instant createdAt;
@@ -125,7 +123,7 @@ public class LearningLanguage extends BaseModel {
             return this;
         }
 
-        public Builder name(Name name) {
+        public Builder name(String name) {
             this.name = name;
             return this;
         }

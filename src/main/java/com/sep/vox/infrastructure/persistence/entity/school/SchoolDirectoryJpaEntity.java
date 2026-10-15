@@ -32,20 +32,20 @@ public class SchoolDirectoryJpaEntity extends BaseEntity {
     @Column(name = "name", nullable = false, length = 255)
     private String name;
 
-    @Column(name = "province_code", nullable = false, length = 100)
-    private String provinceCode;
+    @Column(name = "ward_id", nullable = false)
+    private UUID wardId;
 
-    @Column(name = "province_name", nullable = false, length = 255)
-    private String provinceName;
+    @Column(name = "city_id")
+    private UUID cityId;
 
-    @Column(name = "district_name", nullable = false, length = 255)
-    private String districtName;
+    @Column(name = "province_id", nullable = false)
+    private UUID provinceId;
 
     @Column(name = "domain", length = 100)
     private String domain;
 
-    @Column(name = "address", nullable = false, length = 512)
-    private String address;
+    @Column(name = "street_address", nullable = false, length = 512)
+    private String streetAddress;
 
     @Column(name = "source", nullable = false, length = 30, check = {
         @CheckConstraint(

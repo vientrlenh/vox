@@ -20,7 +20,6 @@ public class SchoolUserMapper {
                 .schoolId(jpa.getSchoolId())
                 .memberCode(Code.from(jpa.getMemberCode()))
                 .role(SchoolUserRole.from(jpa.getRole()))
-                .createdAt(jpa.getCreatedAt())
                 .startDate(jpa.getStartDate())
                 .endDate(jpa.getEndDate())
                 .build();
@@ -39,7 +38,6 @@ public class SchoolUserMapper {
                 .schoolId(schoolUser.getSchoolId())
                 .memberCode(Code.valueOf(schoolUser.getMemberCode()))
                 .role(SchoolUserRole.value(schoolUser.getRole()))
-                .createdAt(schoolUser.getCreatedAt())
                 .startDate(schoolUser.getStartDate())
                 .endDate(schoolUser.getEndDate())
                 .build();

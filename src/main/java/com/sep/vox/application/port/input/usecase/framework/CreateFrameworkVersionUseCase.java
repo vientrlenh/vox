@@ -59,7 +59,7 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
         UUID authenticatedUserId = userContextPort.getCurrentAuthenticatedUserId()
             .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         
-        Framework framework = frameworkRepository.findByIdAndIsActive(command.frameworkId())
+        Framework framework = frameworkRepository.findByIdForUpdate(command.frameworkId())
             .orElseThrow(() -> new ResourceNotFoundException("Framework " + command.frameworkId() + " is not found"));
         if (frameworkVersionRepository.containsDraftInFrameworkId(command.frameworkId())) {
             throw new ResourceDuplicatedException("The framework is containing a draft version. Cannot create a new one");
@@ -122,7 +122,7 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
     }
 
     private long buildVersion(UUID frameworkId) {
-        long version = frameworkVersionRepository.countPublishedAndArchivedOnFrameworkId(frameworkId);
+        long version = frameworkVersionRepository.findLatestNonDraftVersionNumberOnFrameworkId(frameworkId);
         return version + 1;
     }
 
@@ -135,7 +135,7 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
         commands.stream()
             .forEach(c -> {
                 if (existCodes.contains(c.code())) {
-                    throw new ResourceDuplicatedException("The code " + c.code() + " is duplicated in criteria request");
+                    throw new IllegalArgumentException("The code " + c.code() + " is duplicated in criteria request");
                 }
                 existCodes.add(c.code());
             });
@@ -153,10 +153,10 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
         int increment = 1;
         for (CreateFrameworkResultBandCommand command : commands) {
             if (existCodes.contains(command.code())) {
-                throw new ResourceDuplicatedException("The code " + command.code() + " is duplicated in result bands request");
+                throw new IllegalArgumentException("The code " + command.code() + " is duplicated in result bands request");
             }
             if (existLabels.contains(command.label())) {
-                throw new ResourceDuplicatedException("The label " + command.label() + " is duplicated in result bands request");
+                throw new IllegalArgumentException("The label " + command.label() + " is duplicated in result bands request");
             }
             existCodes.add(command.code());
             existLabels.add(command.label());

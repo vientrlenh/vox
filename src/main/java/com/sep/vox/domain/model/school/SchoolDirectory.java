@@ -5,15 +5,16 @@ import java.util.UUID;
 
 import com.sep.vox.domain.shared.BaseModel;
 import com.sep.vox.domain.valueobject.Code;
+import com.sep.vox.domain.valueobject.SchoolDomain;
 
 public class SchoolDirectory extends BaseModel {
     private Code code;
     private String name;
-    private String provinceCode;
-    private String provinceName;
-    private String districtName;
-    private String domain;
-    private String address; 
+    private UUID wardId;
+    private UUID cityId;
+    private UUID provinceId;
+    private SchoolDomain domain;
+    private String streetAddress; 
     private SchoolDirectoryOrigin origin;
     private boolean verified;
     private Instant updatedAt;
@@ -22,16 +23,15 @@ public class SchoolDirectory extends BaseModel {
 
     public SchoolDirectory() {}
 
-    public SchoolDirectory(Code code, String name, String provinceCode, String provinceName,
-            String districtName, String domain, String address, SchoolDirectoryOrigin origin, boolean verified,
+    public SchoolDirectory(Code code, String name, UUID wardId, UUID cityId, UUID provinceId, SchoolDomain domain, String streetAddress, SchoolDirectoryOrigin origin, boolean verified,
             Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.code = code;
         this.name = name;
-        this.provinceCode = provinceCode;
-        this.provinceName = provinceName;
-        this.districtName = districtName;
+        this.wardId = wardId;
+        this.cityId = cityId;
+        this.provinceId = provinceId;
         this.domain = domain;
-        this.address = address;
+        this.streetAddress = streetAddress;
         this.origin = origin;
         this.verified = verified;
         this.updatedAt = updatedAt;
@@ -43,11 +43,11 @@ public class SchoolDirectory extends BaseModel {
         super(builder.id, builder.createdAt);
         this.code = builder.code;
         this.name = builder.name;
-        this.provinceCode = builder.provinceCode;
-        this.provinceName = builder.provinceName;
-        this.districtName = builder.districtName;
+        this.wardId = builder.wardId;
+        this.cityId = builder.cityId;
+        this.provinceId = builder.provinceId;
         this.domain = builder.domain;
-        this.address = builder.address;
+        this.streetAddress = builder.streetAddress;
         this.origin = builder.origin;
         this.verified = builder.verified;
         this.updatedAt = builder.updatedAt;
@@ -71,44 +71,44 @@ public class SchoolDirectory extends BaseModel {
         this.name = name;
     }
 
-    public String getProvinceCode() {
-        return provinceCode;
+    public UUID getWardId() {
+        return wardId;
     }
 
-    public void setProvinceCode(String provinceCode) {
-        this.provinceCode = provinceCode;
+    public void setWardId(UUID wardId) {
+        this.wardId = wardId;
     }
 
-    public String getProvinceName() {
-        return provinceName;
+    public UUID getCityId() {
+        return cityId;
     }
 
-    public void setProvinceName(String provinceName) {
-        this.provinceName = provinceName;
+    public void setCityId(UUID cityId) {
+        this.cityId = cityId;
     }
 
-    public String getDistrictName() {
-        return districtName;
+    public UUID getProvinceId() {
+        return provinceId;
     }
 
-    public void setDistrictName(String districtName) {
-        this.districtName = districtName;
+    public void setProvinceId(UUID provinceId) {
+        this.provinceId = provinceId;
     }
 
-    public String getDomain() {
+    public SchoolDomain getDomain() {
         return domain;
     }
 
-    public void setDomain(String domain) {
+    public void setDomain(SchoolDomain domain) {
         this.domain = domain;
     }
 
-    public String getAddress() {
-        return address;
+    public String getStreetAddress() {
+        return streetAddress;
     }
 
-    public void setAddress(String address) {
-        this.address = address;
+    public void setStreetAddress(String streetAddress) {
+        this.streetAddress = streetAddress;
     }
 
     public SchoolDirectoryOrigin getOrigin() {
@@ -236,11 +236,11 @@ public class SchoolDirectory extends BaseModel {
         private UUID id;
         private Code code;
         private String name;
-        private String provinceCode;
-        private String provinceName;
-        private String districtName;
-        private String domain;
-        private String address;
+        private UUID wardId;
+        private UUID cityId;
+        private UUID provinceId;
+        private SchoolDomain domain;
+        private String streetAddress;
         private SchoolDirectoryOrigin origin;
         private boolean verified;
         private Instant createdAt;
@@ -265,28 +265,28 @@ public class SchoolDirectory extends BaseModel {
             return this;
         }
 
-        public Builder provinceCode(String provinceCode) {
-            this.provinceCode = provinceCode;
+        public Builder wardId(UUID wardId) {
+            this.wardId = wardId;
             return this;
         }
 
-        public Builder provinceName(String provinceName) {
-            this.provinceName = provinceName;
+        public Builder cityId(UUID cityId) {
+            this.cityId = cityId;
             return this;
         }
 
-        public Builder districtName(String districtName) {
-            this.districtName = districtName;
+        public Builder provinceId(UUID provinceId) {
+            this.provinceId = provinceId;
             return this;
         }
 
-        public Builder domain(String domain) {
+        public Builder domain(SchoolDomain domain) {
             this.domain = domain;
             return this;
         }
 
-        public Builder address(String address) {
-            this.address = address;
+        public Builder streetAddress(String streetAddress) {
+            this.streetAddress = streetAddress;
             return this;
         }
 

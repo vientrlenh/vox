@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.assessment.ExamBlueprintSection;
-import com.sep.vox.infrastructure.persistence.entity.exam.ExamBlueprintSectionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.ExamBlueprintSectionJpaEntity;
 
 public final class ExamBlueprintSectionMapper {
 

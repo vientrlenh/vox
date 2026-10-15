@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.assessment.ExamItemCriterionScore;
-import com.sep.vox.infrastructure.persistence.entity.exam.ExamItemCriterionScoreJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.ExamItemCriterionScoreJpaEntity;
 
 public final class ExamItemCriterionScoreMapper {
 

@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.assessment.ExamProctoringAlert;
-import com.sep.vox.infrastructure.persistence.entity.exam.ExamProctoringAlertJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.ExamProctoringAlertJpaEntity;
 
 public final class ExamProctoringAlertMapper {
 

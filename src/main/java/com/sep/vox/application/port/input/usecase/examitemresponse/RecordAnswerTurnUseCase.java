@@ -89,7 +89,7 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
         }
         examItemResponseRepository.save(response);
 
-        // upsert() thay TOÀN BỘ dòng (xem ExamItemResponseTurnRepositoryImpl: chỉ giữ lại id và
+        // upsert() thay TOÀN BỘ dòng (xem AssessmentItemResponseTurnRepositoryImpl: chỉ giữ lại id và
         // createdAt của bản cũ), nên phải trộn Ở ĐÂY trước khi gọi. Không sửa ngữ nghĩa của
         // upsert vì UpdateExamItemResponseTurnUseCase là đường giáo viên sửa tay, nơi xoá trắng
         // một trường là chủ ý.

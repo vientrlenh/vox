@@ -91,7 +91,7 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
     }
 
     /**
-     * findAccessible là 1-based: ExamRepositoryImpl trừ 1 trước khi dựng PageRequest, nên truyền 0
+     * findAccessible là 1-based: AssessmentRepositoryImpl trừ 1 trước khi dựng PageRequest, nên truyền 0
      * vào là ra -1 và Spring Data ném "Page index must not be less than zero" -- hỏng nguyên
      * request dashboard, không có đường vòng.
      *

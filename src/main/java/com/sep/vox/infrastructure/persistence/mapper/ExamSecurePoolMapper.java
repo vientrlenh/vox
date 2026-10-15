@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.assessment.ExamSecurePool;
 import com.sep.vox.domain.model.assessment.ExamSecurePoolReleaseMode;
 import com.sep.vox.domain.model.assessment.ExamSecurePoolStatus;
-import com.sep.vox.infrastructure.persistence.entity.exam.ExamSecurePoolJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.ExamSecurePoolJpaEntity;
 
 public final class ExamSecurePoolMapper {
 

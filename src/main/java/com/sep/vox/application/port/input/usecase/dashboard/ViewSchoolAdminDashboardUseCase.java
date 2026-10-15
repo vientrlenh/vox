@@ -147,7 +147,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
 
     /**
      * Trang 1 chứ không phải 0: mọi adapter phân trang đều nhận số trang ĐẾM TỪ 1 và tự trừ đi 1
-     * trước khi dựng PageRequest (ExamRepositoryImpl.findAccessible). Truyền 0 vào là ra -1 và
+     * trước khi dựng PageRequest (AssessmentRepositoryImpl.findAccessible). Truyền 0 vào là ra -1 và
      * Spring Data ném "Page index must not be less than zero" ngay trong request dashboard.
      *
      * <p>Chỗ này chỉ cần {@code totalElements()} nên nội dung trang không quan trọng -- lấy trang

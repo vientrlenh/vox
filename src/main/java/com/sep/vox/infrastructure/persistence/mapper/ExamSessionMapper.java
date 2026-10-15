@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.assessment.ExamRequiredStreamType;
 import com.sep.vox.domain.model.assessment.ExamSession;
 import com.sep.vox.domain.model.assessment.ExamSessionStatus;
-import com.sep.vox.infrastructure.persistence.entity.exam.ExamSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.ExamSessionJpaEntity;
 
 public final class ExamSessionMapper {
 

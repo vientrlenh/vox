@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.assessment.ExamItemEvaluationTurn;
 import com.sep.vox.domain.model.assessment.TurnType;
-import com.sep.vox.infrastructure.persistence.entity.exam.ExamItemEvaluationTurnJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.ExamItemEvaluationTurnJpaEntity;
 
 public final class ExamItemEvaluationTurnMapper {
 

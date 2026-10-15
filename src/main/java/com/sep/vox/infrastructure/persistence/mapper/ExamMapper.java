@@ -7,7 +7,7 @@ import com.sep.vox.domain.model.assessment.ExamRequiredStreamType;
 import com.sep.vox.domain.model.assessment.ExamStatus;
 import com.sep.vox.domain.model.assessment.ExamStreamTypePermission;
 import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
-import com.sep.vox.infrastructure.persistence.entity.exam.ExamJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.ExamJpaEntity;
 
 public final class ExamMapper {
 

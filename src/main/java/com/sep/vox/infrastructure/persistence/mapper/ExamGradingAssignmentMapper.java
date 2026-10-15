@@ -4,7 +4,7 @@ import com.sep.vox.domain.model.assessment.ExamGradingAssignment;
 import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
 import com.sep.vox.domain.model.assessment.GradingOutcome;
 import com.sep.vox.domain.model.assessment.GradingRoundType;
-import com.sep.vox.infrastructure.persistence.entity.exam.ExamGradingAssignmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.ExamGradingAssignmentJpaEntity;
 
 public final class ExamGradingAssignmentMapper {
 

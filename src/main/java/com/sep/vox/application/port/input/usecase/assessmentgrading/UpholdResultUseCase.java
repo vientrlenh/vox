@@ -10,7 +10,7 @@ import com.sep.vox.application.port.input.command.GradingDecisionCommand;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentevaluation.UpsertExamCandidateResultUseCase;
-import com.sep.vox.application.response.input.examgrading.GradingActionResponse;
+import com.sep.vox.application.response.input.assessmentgrading.GradingActionResponse;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;

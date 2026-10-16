@@ -17,7 +17,7 @@ import com.sep.vox.application.port.input.command.AssignExamPapersCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
-import com.sep.vox.application.response.input.examcandidate.AssignExamPapersResponse;
+import com.sep.vox.application.response.input.assessmentcandidate.AssignExamPapersResponse;
 import com.sep.vox.domain.model.assessment.Exam;
 import com.sep.vox.domain.model.assessment.ExamCandidate;
 import com.sep.vox.domain.model.assessment.ExamMemberRole;

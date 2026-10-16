@@ -11,6 +11,7 @@ import com.sep.vox.domain.valueobject.PositiveLong;
 
 
 public class AssessmentPolicy extends BaseModel {
+    private UUID gradeLevelId;
     private UUID schoolId;
     private UUID schoolGradeId;
     private UUID schoolClassId;

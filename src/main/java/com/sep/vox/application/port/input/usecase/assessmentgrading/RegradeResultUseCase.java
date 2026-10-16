@@ -11,7 +11,7 @@ import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.service.GradingItemScoreResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentevaluation.UpsertExamCandidateResultUseCase;
-import com.sep.vox.application.response.input.examgrading.GradingActionResponse;
+import com.sep.vox.application.response.input.assessmentgrading.GradingActionResponse;
 import com.sep.vox.domain.model.assessment.ExamEvaluationEngineType;
 import com.sep.vox.domain.model.assessment.ExamItemCriterionScore;
 import com.sep.vox.domain.model.assessment.ExamItemEvaluation;

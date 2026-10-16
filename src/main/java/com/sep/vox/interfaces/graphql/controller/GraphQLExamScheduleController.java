@@ -23,8 +23,8 @@ import com.sep.vox.application.port.input.usecase.assessmentschedule.ViewExamSch
 import com.sep.vox.application.port.input.usecase.assessmentschedule.ViewMyExamSchedulesUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentschedule.ViewProctorBusySlotsUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentschedule.ViewStudentBusySlotsUseCase;
-import com.sep.vox.application.response.input.examschedule.ProctorBusySlotResponse;
-import com.sep.vox.application.response.input.examschedule.StudentBusySlotResponse;
+import com.sep.vox.application.response.input.assessmentschedule.ProctorBusySlotResponse;
+import com.sep.vox.application.response.input.assessmentschedule.StudentBusySlotResponse;
 import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.dto.ExamScheduleProctorDto;

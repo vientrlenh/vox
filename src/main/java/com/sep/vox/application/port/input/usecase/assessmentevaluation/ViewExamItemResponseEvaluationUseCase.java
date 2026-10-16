@@ -8,10 +8,10 @@ import com.sep.vox.application.port.input.query.ViewExamItemResponseEvaluationQu
 import com.sep.vox.application.port.input.service.ExamResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.application.response.input.examitemresponse.ExamItemAiEvaluationContextResponse;
-import com.sep.vox.application.response.input.examitemresponse.ExamItemCriterionScoreResponse;
-import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationDetailsResponse;
-import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationTurnResponse;
+import com.sep.vox.application.response.input.assessmentitemresponse.ExamItemAiEvaluationContextResponse;
+import com.sep.vox.application.response.input.assessmentitemresponse.ExamItemCriterionScoreResponse;
+import com.sep.vox.application.response.input.assessmentitemresponse.ExamItemEvaluationDetailsResponse;
+import com.sep.vox.application.response.input.assessmentitemresponse.ExamItemEvaluationTurnResponse;
 import com.sep.vox.domain.model.assessment.ExamEvaluationEngineType;
 import com.sep.vox.domain.model.assessment.ExamItemEvaluation;
 import com.sep.vox.domain.repository.RubricCriterionRepository;

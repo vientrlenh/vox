@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.output.QuotaPricingPort;
-import com.sep.vox.application.response.input.exam.ExamTokenEstimateResponse;
+import com.sep.vox.application.response.input.assessment.ExamTokenEstimateResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.metering.QuotaType;

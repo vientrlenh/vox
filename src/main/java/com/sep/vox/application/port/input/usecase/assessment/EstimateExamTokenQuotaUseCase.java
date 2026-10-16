@@ -9,7 +9,7 @@ import com.sep.vox.application.port.input.query.EstimateExamTokenQuotaQuery;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.exam.ExamTokenEstimateResponse;
+import com.sep.vox.application.response.input.assessment.ExamTokenEstimateResponse;
 import com.sep.vox.domain.repository.assessment.ExamRepository;
 
 /**

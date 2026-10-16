@@ -19,7 +19,7 @@ import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardSer
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.HealthCheckPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.exam.ExamEntryTicketResponse;
+import com.sep.vox.application.response.input.assessment.ExamEntryTicketResponse;
 import com.sep.vox.application.shared.CacheKey;
 import com.sep.vox.domain.model.assessment.Exam;
 import com.sep.vox.domain.model.assessment.ExamCandidateStatus;

@@ -11,7 +11,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.examitemresponse.ExamItemResponseResponseMapper;
 import com.sep.vox.application.port.input.command.UpdateExamItemResponseTurnCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.response.input.examitemresponse.ExamItemResponseTurnResponse;
+import com.sep.vox.application.response.input.assessmentitemresponse.ExamItemResponseTurnResponse;
 import com.sep.vox.domain.model.assessment.TurnType;
 import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.assessment.ExamItemResponseTurnRepository;

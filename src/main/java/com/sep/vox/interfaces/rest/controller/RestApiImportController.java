@@ -10,11 +10,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sep.vox.application.port.input.command.RejectImportSessionCommand;
 import com.sep.vox.application.port.input.usecase.importfile.RejectImportSessionUseCase;
 import com.sep.vox.application.response.input.importfile.RejectImportSessionResponse;
 import com.sep.vox.interfaces.rest.dto.request.RejectImportSessionRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.RejectImportSessionCommandMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,9 +30,9 @@ public class RestApiImportController {
     public ResponseEntity<ApiResponse<RejectImportSessionResponse>> rejectImportSession(
             @PathVariable("sessionId") UUID sessionId,
             @RequestBody(required = false) RejectImportSessionRequest request) {
-        var command = RejectImportSessionCommandMapper.fromRequest(sessionId, request);
-        var data = rejectImportSessionUseCase.execute(command);
-        var response = ApiResponse.success("Hủy import thành công", data);
+        RejectImportSessionCommand command = RejectImportSessionRequest.toCommand(sessionId, request);
+        RejectImportSessionResponse data = rejectImportSessionUseCase.execute(command);
+        ApiResponse<RejectImportSessionResponse> response = ApiResponse.success("Import rejected successfully", data);
         return ResponseEntity.ok(response);
     }
 }

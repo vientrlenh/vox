@@ -14,7 +14,7 @@ import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.OneTimePasswordPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
-import com.sep.vox.application.response.input.examschedule.GetExamScheduleOtpResponse;
+import com.sep.vox.application.response.input.assessmentschedule.GetExamScheduleOtpResponse;
 import com.sep.vox.application.shared.CacheKey;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.ExamRepository;

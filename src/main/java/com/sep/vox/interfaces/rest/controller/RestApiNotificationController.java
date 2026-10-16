@@ -20,7 +20,6 @@ import com.sep.vox.application.port.input.usecase.notification.MarkAllNotificati
 import com.sep.vox.application.port.input.usecase.notification.MarkNotificationAsReadUseCase;
 import com.sep.vox.interfaces.rest.dto.request.CreateNotificationDeviceRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.CreateNotificationDeviceCommandMapper;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +38,7 @@ public class RestApiNotificationController {
     @PostMapping("/devices")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> createDevice(@RequestBody @Valid CreateNotificationDeviceRequest request) {
-        CreateNotificationDeviceCommand command = CreateNotificationDeviceCommandMapper.fromRequest(request);
+        CreateNotificationDeviceCommand command = CreateNotificationDeviceRequest.toCommand(request);
         createNotificationDeviceUseCase.execute(command);
         ApiResponse<Void> response = ApiResponse.success("Device notification initialized");
         return ResponseEntity.ok(response);

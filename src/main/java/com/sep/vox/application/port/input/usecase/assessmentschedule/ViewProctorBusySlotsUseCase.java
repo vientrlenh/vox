@@ -9,7 +9,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewProctorBusySlotsQuery;
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.response.input.examschedule.ProctorBusySlotResponse;
+import com.sep.vox.application.response.input.assessmentschedule.ProctorBusySlotResponse;
 import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
 

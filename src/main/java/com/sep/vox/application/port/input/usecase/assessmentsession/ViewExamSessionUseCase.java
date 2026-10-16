@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.port.input.query.ViewExamSessionQuery;
 import com.sep.vox.application.port.input.service.ExamResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.response.input.examsession.ExamSessionResponse;
+import com.sep.vox.application.response.input.assessmentsession.ExamSessionResponse;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 
 @Service

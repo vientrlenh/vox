@@ -19,7 +19,7 @@ import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
-import com.sep.vox.application.response.input.exam.CreateClassTestResponse;
+import com.sep.vox.application.response.input.assessment.CreateClassTestResponse;
 import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.mapper.ExamDtoMapper;

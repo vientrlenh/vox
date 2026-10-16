@@ -12,7 +12,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
 import com.sep.vox.application.port.input.command.UpdateExamSessionStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.response.input.examsession.ExamSessionResponse;
+import com.sep.vox.application.response.input.assessmentsession.ExamSessionResponse;
 import com.sep.vox.domain.model.assessment.ExamSession;
 import com.sep.vox.domain.model.assessment.ExamSessionStatus;
 import com.sep.vox.domain.repository.AiUsageRecordRepository;

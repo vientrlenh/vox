@@ -12,7 +12,7 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.GradingItemScoreResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentevaluation.ExamSessionResultCalculator;
-import com.sep.vox.application.response.input.examgrading.GradingPreviewResponse;
+import com.sep.vox.application.response.input.assessmentgrading.GradingPreviewResponse;
 
 /**
  * Tính thử tổng điểm cho bộ điểm giáo viên đang nhập, KHÔNG ghi gì.

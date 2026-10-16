@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.ViewExamSessionFollowupsQuery;
 import com.sep.vox.application.port.input.service.ExamResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.response.input.examitemresponse.ExamSessionFollowupResponse;
+import com.sep.vox.application.response.input.assessmentitemresponse.ExamSessionFollowupResponse;
 import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
 
 @Service

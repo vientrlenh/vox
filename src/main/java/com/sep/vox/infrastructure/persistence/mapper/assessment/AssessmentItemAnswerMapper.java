@@ -1,14 +1,14 @@
 package com.sep.vox.infrastructure.persistence.mapper.assessment;
 
-import com.sep.vox.domain.model.assessment.AssessmentItemResponse;
-import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentItemResponseJpaEntity;
+import com.sep.vox.domain.model.assessment.AssessmentItemAnswer;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentItemAnswerJpaEntity;
 
-public final class AssessmentItemResponseMapper {
+public final class AssessmentItemAnswerMapper {
 
-    private AssessmentItemResponseMapper() {}
+    private AssessmentItemAnswerMapper() {}
 
-    public static AssessmentItemResponse toDomain(AssessmentItemResponseJpaEntity jpa) {
-        return new AssessmentItemResponse(
+    public static AssessmentItemAnswer toDomain(AssessmentItemAnswerJpaEntity jpa) {
+        return new AssessmentItemAnswer(
             jpa.getId(),
             jpa.getSessionId(),
             jpa.getPaperItemId(),
@@ -20,8 +20,8 @@ public final class AssessmentItemResponseMapper {
         );
     }
 
-    public static AssessmentItemResponseJpaEntity toJpa(AssessmentItemResponse domain) {
-        return new AssessmentItemResponseJpaEntity(
+    public static AssessmentItemAnswerJpaEntity toJpa(AssessmentItemAnswer domain) {
+        return new AssessmentItemAnswerJpaEntity(
             domain.getId(),
             domain.getSessionId(),
             domain.getPaperItemId(),

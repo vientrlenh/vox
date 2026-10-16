@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper.assessment;
 
 import com.sep.vox.domain.model.assessment.AssessmentItemEvaluationTurn;
-import com.sep.vox.domain.model.assessment.TurnType;
+import com.sep.vox.domain.model.assessment.AssessmentTurnType;
 import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentItemEvaluationTurnJpaEntity;
 
 public final class AssessmentItemEvaluationTurnMapper {
@@ -14,7 +14,7 @@ public final class AssessmentItemEvaluationTurnMapper {
             jpa.getId(),
             jpa.getEvaluationId(),
             jpa.getTurnOrder(),
-            TurnType.valueOf(jpa.getTurnType()),
+            AssessmentTurnType.valueOf(jpa.getTurnType()),
             jpa.getPromptText(),
             jpa.getAudioUrl(),
             jpa.getTranscript(),

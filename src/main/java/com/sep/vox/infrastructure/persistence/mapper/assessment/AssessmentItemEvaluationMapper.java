@@ -5,7 +5,6 @@ import com.sep.vox.domain.model.assessment.AssessmentItemEvaluation;
 import com.sep.vox.domain.model.assessment.AssessmentItemEvaluationStatus;
 import com.sep.vox.domain.valueobject.EvaluationSignals;
 import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentItemEvaluationJpaEntity;
-import com.sep.vox.infrastructure.persistence.mapper.JsonValueObjectMapper;
 
 public final class AssessmentItemEvaluationMapper {
 

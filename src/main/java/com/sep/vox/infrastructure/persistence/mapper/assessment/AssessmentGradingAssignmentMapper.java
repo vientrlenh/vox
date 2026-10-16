@@ -1,9 +1,9 @@
 package com.sep.vox.infrastructure.persistence.mapper.assessment;
 
 import com.sep.vox.domain.model.assessment.AssessmentGradingAssignment;
-import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
-import com.sep.vox.domain.model.assessment.GradingOutcome;
-import com.sep.vox.domain.model.assessment.GradingRoundType;
+import com.sep.vox.domain.model.assessment.AssessmentGradingAssignmentStatus;
+import com.sep.vox.domain.model.assessment.AssessmentGradingOutcome;
+import com.sep.vox.domain.model.assessment.AssessmentGradingRoundType;
 import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentGradingAssignmentJpaEntity;
 
 public final class AssessmentGradingAssignmentMapper {
@@ -56,15 +56,15 @@ public final class AssessmentGradingAssignmentMapper {
         );
     }
 
-    private static GradingAssignmentStatus toStatus(String value) {
-        return value == null ? null : GradingAssignmentStatus.valueOf(value);
+    private static AssessmentGradingAssignmentStatus toStatus(String value) {
+        return value == null ? null : AssessmentGradingAssignmentStatus.valueOf(value);
     }
 
-    private static GradingRoundType toRoundType(String value) {
-        return value == null ? null : GradingRoundType.valueOf(value);
+    private static AssessmentGradingRoundType toRoundType(String value) {
+        return value == null ? null : AssessmentGradingRoundType.valueOf(value);
     }
 
-    private static GradingOutcome toOutcome(String value) {
-        return value == null ? null : GradingOutcome.valueOf(value);
+    private static AssessmentGradingOutcome toOutcome(String value) {
+        return value == null ? null : AssessmentGradingOutcome.valueOf(value);
     }
 }

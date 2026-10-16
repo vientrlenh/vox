@@ -4,7 +4,6 @@ import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentBlueprintSlotJpaEntity;
-import com.sep.vox.infrastructure.persistence.mapper.JsonValueObjectMapper;
 
 public final class AssessmentBlueprintSlotMapper {
 

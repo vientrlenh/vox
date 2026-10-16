@@ -42,8 +42,8 @@ public class AssessmentProctoringAlertJpaEntity {
     @Column(name = "event_id", nullable = false, updatable = false, length = 64)
     private String eventId;
 
-    @Column(name = "exam_session_id", nullable = false, updatable = false)
-    private UUID examSessionId;
+    @Column(name = "assessment_session_id", nullable = false, updatable = false)
+    private UUID assessmentSessionId;
 
     @Column(name = "candidate_id", updatable = false)
     private UUID candidateId;
@@ -97,12 +97,12 @@ public class AssessmentProctoringAlertJpaEntity {
         this.eventId = eventId;
     }
 
-    public UUID getExamSessionId() {
-        return examSessionId;
+    public UUID getAssessmentSessionId() {
+        return assessmentSessionId;
     }
 
-    public void setExamSessionId(UUID examSessionId) {
-        this.examSessionId = examSessionId;
+    public void setAssessmentSessionId(UUID assessmentSessionId) {
+        this.assessmentSessionId = assessmentSessionId;
     }
 
     public UUID getCandidateId() {

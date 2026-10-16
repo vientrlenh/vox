@@ -7,7 +7,6 @@ import com.sep.vox.application.port.input.query.ViewSchoolRubricVersionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricVersionDto;
-import com.sep.vox.domain.mapper.RubricVersionDtoMapper;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -96,6 +95,6 @@ public class ViewSchoolRubricVersionsUseCase implements IUseCase<ViewSchoolRubri
         );
 
         // 5. Sử dụng hàm toRubricVersionPage tui đã viết sẵn ở bước trước để trả về
-        return RubricVersionDtoMapper.toRubricVersionPage(versionPage);
+        return RubricVersionDto.toDtoPage(versionPage);
     }
 }

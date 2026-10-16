@@ -7,7 +7,6 @@ import com.sep.vox.application.port.input.query.ViewMyClassMembersQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.SchoolClassUserDto;
-import com.sep.vox.domain.mapper.SchoolClassUserDtoMapper;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.shared.PageResult;
 
@@ -37,7 +36,7 @@ public class ViewMyClassMembersUseCase implements IUseCase<ViewMyClassMembersQue
             input.size()
         );
 
-        return SchoolClassUserDtoMapper.toSchoolClassUserDtoPage(membersPage);
+        return SchoolClassUserDto.toDtoPage(membersPage);
     }
 
     private String normalizeRoleCode(String roleCode) {

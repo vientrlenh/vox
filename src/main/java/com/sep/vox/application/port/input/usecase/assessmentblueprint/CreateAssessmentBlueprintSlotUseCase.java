@@ -15,7 +15,6 @@ import com.sep.vox.application.port.input.service.RecalculateBlueprintVersionTim
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.AssessmentBlueprintSlotDto;
-import com.sep.vox.domain.mapper.AssessmentBlueprintSlotDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersionStatus;
@@ -108,7 +107,7 @@ public class CreateAssessmentBlueprintSlotUseCase implements IUseCase<CreateAsse
         );
         var savedSlot = assessmentBlueprintSlotRepository.save(slot);
         recalculateBlueprintVersionTimeLimitService.recalculate(version.getId());
-        return AssessmentBlueprintSlotDtoMapper.toDto(savedSlot);
+        return AssessmentBlueprintSlotDto.toDto(savedSlot);
     }
 
     private void validateSlot(CreateAssessmentBlueprintSlotItemCommand command) {

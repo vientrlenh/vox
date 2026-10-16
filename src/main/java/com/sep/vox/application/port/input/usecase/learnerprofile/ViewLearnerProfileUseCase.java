@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.learnerprofile;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.mapper.learnerprofile.LearnerProfileResponseMapper;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.LearnerProfileQueryRepository;
@@ -24,7 +23,7 @@ public class ViewLearnerProfileUseCase implements IUseCase<Void, LearnerProfile>
     @Override
     public LearnerProfile execute(Void input) {
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
-        return LearnerProfileResponseMapper.toResponse(
+        return LearnerProfile.toResponse(
             learnerProfileQueryRepository.findCurrent(studentId)
         );
     }

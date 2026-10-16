@@ -9,7 +9,6 @@ import com.sep.vox.application.port.input.query.ViewAssessmentPaperDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.assessment.ViewAssessmentDetailsUseCase;
 import com.sep.vox.domain.dto.AssessmentPaperDto;
-import com.sep.vox.domain.mapper.AssessmentPaperDtoMapper;
 import com.sep.vox.domain.repository.assessment.AssessmentPaperRepository;
 
 @Service
@@ -35,6 +34,6 @@ public class ViewAssessmentPaperDetailsUseCase implements IUseCase<ViewAssessmen
         // nếu người dùng không có quyền xem assessment cha, không viết lại logic phân quyền riêng.
         viewAssessmentDetailsUseCase.execute(new ViewAssessmentDetailsQuery(paper.getAssessmentId()));
 
-        return AssessmentPaperDtoMapper.toDto(paper);
+        return AssessmentPaperDto.toDto(paper);
     }
 }

@@ -7,7 +7,6 @@ import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewQuestionBankDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.QuestionBankDto;
-import com.sep.vox.domain.mapper.QuestionBankDtoMapper;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 
 @Service
@@ -24,6 +23,6 @@ public class ViewQuestionBankDetailsUseCase implements IUseCase<ViewQuestionBank
     public QuestionBankDto execute(ViewQuestionBankDetailsQuery input) {
         var questionBank = questionBankRepository.findById(input.id())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
-        return QuestionBankDtoMapper.toDto(questionBank);
+        return QuestionBankDto.toDto(questionBank);
     }
 }

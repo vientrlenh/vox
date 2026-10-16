@@ -1,5 +1,9 @@
 package com.sep.vox.interfaces.rest.dto.request.assessment;
 
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.UpdateAssessmentPaperStatusCommand;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
@@ -12,4 +16,8 @@ public record UpdateAssessmentPaperStatusRequest(
     String action,
     String note
 ) {
+
+    public static UpdateAssessmentPaperStatusCommand toCommand(UUID paperId, UpdateAssessmentPaperStatusRequest request) {
+        return new UpdateAssessmentPaperStatusCommand(paperId, request.action(), request.note());
+    }
 }

@@ -14,7 +14,6 @@ import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateCon
 import com.sep.vox.application.port.input.service.AssessmentScheduleManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.AssessmentCandidateDto;
-import com.sep.vox.domain.mapper.AssessmentCandidateDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
 import com.sep.vox.domain.repository.assessment.AssessmentCandidateRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentRepository;
@@ -69,12 +68,12 @@ public class AssignAssessmentCandidateScheduleUseCase
         // Bỏ gán khỏi ca luôn được phép, kể cả khi thí sinh đã không có ca (no-op).
         if (input.scheduleId() == null) {
             candidate.unassignFromSchedule(now, currentUserId);
-            return AssessmentCandidateDtoMapper.toDto(assessmentCandidateRepository.save(candidate));
+            return AssessmentCandidateDto.toDto(assessmentCandidateRepository.save(candidate));
         }
 
         // Gán lại đúng ca hiện tại: short-circuit, không kiểm tra lại sức chứa (tránh tự-đếm-chính-mình).
         if (input.scheduleId().equals(candidate.getScheduleId())) {
-            return AssessmentCandidateDtoMapper.toDto(candidate);
+            return AssessmentCandidateDto.toDto(candidate);
         }
 
         var schedule = assessmentScheduleRepository.findByIdForUpdate(input.scheduleId())
@@ -95,6 +94,6 @@ public class AssignAssessmentCandidateScheduleUseCase
         // Gán đề mặc định luôn nếu mọi mã đề đã khoá, để không phải bấm thêm bước phân đề. Đề chưa
         // khoá thì bỏ trống, AssessmentPaperAutoAssigner.backfillAssessment sẽ gán khi mã đề cuối cùng được khoá.
         assessmentPaperAutoAssigner.assignPapersIfNeeded(assessment, List.of(candidate), now, currentUserId);
-        return AssessmentCandidateDtoMapper.toDto(assessmentCandidateRepository.save(candidate));
+        return AssessmentCandidateDto.toDto(assessmentCandidateRepository.save(candidate));
     }
 }

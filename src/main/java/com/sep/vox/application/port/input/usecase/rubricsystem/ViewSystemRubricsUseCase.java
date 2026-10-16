@@ -5,7 +5,6 @@ import com.sep.vox.application.port.input.query.ViewSystemRubricsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricDto;
-import com.sep.vox.domain.mapper.RubricDtoMapper;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
@@ -51,6 +50,6 @@ public class ViewSystemRubricsUseCase implements IUseCase<ViewSystemRubricsQuery
         );
 
         // 3. Sử dụng Mapper đã viết sẵn để chuyển PageResult<Rubric> thành PageResult<RubricDto>
-        return RubricDtoMapper.toRubricPage(rubricPage);
+        return RubricDto.toDtoPage(rubricPage);
     }
 }

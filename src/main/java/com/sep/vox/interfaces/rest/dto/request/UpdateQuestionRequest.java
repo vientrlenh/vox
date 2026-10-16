@@ -1,5 +1,9 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.UpdateQuestionCommand;
+
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
@@ -18,4 +22,19 @@ public record UpdateQuestionRequest(
     @Size(max = 20, message = "Chế độ chia sẻ không hợp lệ")
     String sharing
 ) {
+
+    public static UpdateQuestionCommand toCommand(UUID id, UpdateQuestionRequest request) {
+        return new UpdateQuestionCommand(
+            id,
+            request.instructionText(),
+            request.questionText(),
+            request.promptText(),
+            request.preparationText(),
+            request.type(),
+            request.preparationTimeSeconds(),
+            request.minResponseSeconds(),
+            request.maxResponseSeconds(),
+            request.sharing()
+        );
+    }
 }

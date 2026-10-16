@@ -21,7 +21,6 @@ import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.AssessmentDto;
-import com.sep.vox.domain.mapper.AssessmentDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
@@ -179,7 +178,7 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
         }
         assessment.setUpdatedAt(now);
         assessment.setUpdatedBy(currentUserId);
-        return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
+        return AssessmentDto.toDto(assessmentRepository.save(assessment));
     }
 
     /**

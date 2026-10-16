@@ -7,7 +7,6 @@ import com.sep.vox.application.port.input.query.SearchSchoolRubricVersionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricVersionDto;
-import com.sep.vox.domain.mapper.RubricVersionDtoMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricVersion;
@@ -96,7 +95,7 @@ public class SearchSchoolRubricVersionsUseCase implements IUseCase<SearchSchoolR
         // 6. Map sang DTO
         return new PageResult<>(
                 pageResult.content().stream()
-                        .map(RubricVersionDtoMapper::toRubricVersionDto)
+                        .map(RubricVersionDto::toDto)
                         .toList(),
                 pageResult.page(),
                 pageResult.size(),

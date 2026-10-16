@@ -17,7 +17,6 @@ import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurat
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentDto;
-import com.sep.vox.domain.mapper.AssessmentDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
@@ -122,7 +121,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         assessment.setUpdatedBy(currentUserId);
         var saved = assessmentRepository.save(assessment);
         recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
-        return AssessmentDtoMapper.toDto(saved);
+        return AssessmentDto.toDto(saved);
     }
 
     private void requireNoAttachedBlueprint(Assessment assessment) {

@@ -69,7 +69,7 @@ public class RestApiAssessmentCandidateController {
     public ResponseEntity<ApiResponse<AssessmentCandidateDto>> add(
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody AddAssessmentCandidateRequest request) {
-        var data = addAssessmentCandidateUseCase.execute(AddAssessmentCandidateCommandMapper.fromRequest(assessmentId, request));
+        var data = addAssessmentCandidateUseCase.execute(AddAssessmentCandidateRequest.toCommand(assessmentId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Thêm thí sinh thành công", data));
     }
@@ -80,7 +80,7 @@ public class RestApiAssessmentCandidateController {
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody ImportAssessmentCandidatesFromClassRequest request) {
         var data = importAssessmentCandidatesFromClassUseCase.execute(
-            ImportAssessmentCandidatesFromClassCommandMapper.fromRequest(assessmentId, request));
+            ImportAssessmentCandidatesFromClassRequest.toCommand(assessmentId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Nhập thí sinh theo lớp thành công", data));
     }
@@ -91,7 +91,7 @@ public class RestApiAssessmentCandidateController {
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody ImportAssessmentCandidatesFromGradeRequest request) {
         var data = importAssessmentCandidatesFromGradeUseCase.execute(
-            ImportAssessmentCandidatesFromGradeCommandMapper.fromRequest(assessmentId, request));
+            ImportAssessmentCandidatesFromGradeRequest.toCommand(assessmentId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Nhập thí sinh theo khối thành công", data));
     }
@@ -103,7 +103,7 @@ public class RestApiAssessmentCandidateController {
             @PathVariable("candidateId") UUID candidateId,
             @RequestBody AssignAssessmentCandidateScheduleRequest request) {
         var data = assignAssessmentCandidateScheduleUseCase.execute(
-            AssignAssessmentCandidateScheduleCommandMapper.fromRequest(assessmentId, candidateId, request));
+            AssignAssessmentCandidateScheduleRequest.toCommand(assessmentId, candidateId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật ca thi của thí sinh thành công", data));
     }
 
@@ -114,7 +114,7 @@ public class RestApiAssessmentCandidateController {
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody BulkAssignAssessmentCandidateScheduleRequest request) {
         var data = bulkAssignAssessmentCandidateScheduleUseCase.execute(
-            BulkAssignAssessmentCandidateScheduleCommandMapper.fromRequest(assessmentId, request));
+            BulkAssignAssessmentCandidateScheduleRequest.toCommand(assessmentId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật ca thi của thí sinh thành công", data));
     }
 
@@ -124,7 +124,7 @@ public class RestApiAssessmentCandidateController {
             @PathVariable("assessmentId") UUID assessmentId,
             @RequestBody(required = false) AutoFillAssessmentCandidatesRequest request) {
         var data = autoFillAssessmentCandidatesUseCase.execute(
-            AutoFillAssessmentCandidatesCommandMapper.fromRequest(assessmentId, request));
+            AutoFillAssessmentCandidatesRequest.toCommand(assessmentId, request));
         return ResponseEntity.ok(ApiResponse.success("Tự động xếp thí sinh thành công", data));
     }
 
@@ -133,7 +133,7 @@ public class RestApiAssessmentCandidateController {
     public ResponseEntity<ApiResponse<AssignAssessmentPapersResponse>> assignPapers(
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody AssignAssessmentPapersRequest request) {
-        var data = assignAssessmentPapersUseCase.execute(AssignAssessmentPapersCommandMapper.fromRequest(assessmentId, request));
+        var data = assignAssessmentPapersUseCase.execute(AssignAssessmentPapersRequest.toCommand(assessmentId, request));
         return ResponseEntity.ok(ApiResponse.success("Phân đề thành công", data));
     }
 

@@ -13,7 +13,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.AssessmentDto;
-import com.sep.vox.domain.mapper.AssessmentDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.model.assessment.AssessmentPaperStatus;
@@ -84,7 +83,7 @@ public class UpdateAssessmentDeliveryModeUseCase implements IUseCase<UpdateAsses
         assessment.setUpdatedBy(currentUserId);
 
         var saved = assessmentRepository.save(assessment);
-        return AssessmentDtoMapper.toDto(saved, papersLocked(saved.getId()));
+        return AssessmentDto.toDto(saved, papersLocked(saved.getId()));
     }
 
     private void authorize(Assessment assessment, UUID currentUserId, UUID currentSchoolId, boolean schoolAdmin) {

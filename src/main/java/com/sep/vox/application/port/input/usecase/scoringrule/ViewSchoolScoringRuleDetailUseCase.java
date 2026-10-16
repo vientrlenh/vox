@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.query.ViewSchoolScoringRuleDetailQuery
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ScoringRuleDto;
-import com.sep.vox.domain.mapper.ScoringRuleDtoMapper;
 import com.sep.vox.domain.model.scoringrule.ScoringRule;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -76,6 +75,6 @@ public class ViewSchoolScoringRuleDetailUseCase implements IUseCase<ViewSchoolSc
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Scoring Rule của trường khác.");
         }
 
-        return ScoringRuleDtoMapper.toDto(rule);
+        return ScoringRuleDto.toDto(rule);
     }
 }

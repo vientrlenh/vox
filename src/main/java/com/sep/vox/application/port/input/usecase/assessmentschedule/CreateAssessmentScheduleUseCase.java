@@ -14,7 +14,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.AssessmentScheduleDto;
-import com.sep.vox.domain.mapper.AssessmentScheduleDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
@@ -80,7 +79,7 @@ public class CreateAssessmentScheduleUseCase implements IUseCase<CreateAssessmen
         var schedule = AssessmentSchedule.createFresh(
             assessment.getId(), input.schoolRoomId(), input.startDate(), input.endDate(),
             currentUserId, Instant.now());
-        return AssessmentScheduleDtoMapper.toDto(assessmentScheduleRepository.save(schedule));
+        return AssessmentScheduleDto.toDto(assessmentScheduleRepository.save(schedule));
     }
 
     private UUID authorize(Assessment assessment) {

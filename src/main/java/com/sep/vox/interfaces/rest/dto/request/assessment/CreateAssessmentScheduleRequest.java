@@ -1,6 +1,9 @@
 package com.sep.vox.interfaces.rest.dto.request.assessment;
 
+import java.time.Instant;
 import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.CreateAssessmentScheduleCommand;
 
 import jakarta.validation.constraints.NotNull;
 
@@ -9,9 +12,18 @@ public record CreateAssessmentScheduleRequest(
     UUID schoolRoomId,
 
     @NotNull(message = "Thời gian bắt đầu là bắt buộc")
-    String startDate,
+    Instant startDate,
 
     @NotNull(message = "Thời gian kết thúc là bắt buộc")
-    String endDate
+    Instant endDate
 ) {
+
+    public static CreateAssessmentScheduleCommand toCommand(UUID assessmentId, CreateAssessmentScheduleRequest request) {
+        return new CreateAssessmentScheduleCommand(
+            assessmentId,
+            request.schoolRoomId(),
+            request.startDate(),
+            request.endDate()
+        );
+    }
 }

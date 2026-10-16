@@ -8,7 +8,6 @@ import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessServi
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.SchoolClassDto;
-import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.shared.PageResult;
@@ -45,6 +44,6 @@ public class ViewAssessmentDirectoryClassesUseCase
             : schoolClassRepository.findByUserId(
                 scope.schoolId(), scope.callerId(), search, SchoolClassStatus.ACTIVE, input.page(), input.size());
 
-        return SchoolClassDtoMapper.toDtoPage(page);
+        return SchoolClassDto.toDtoPage(page);
     }
 }

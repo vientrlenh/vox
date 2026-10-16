@@ -7,7 +7,6 @@ import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewSchoolDirectoryDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.SchoolDirectoryDto;
-import com.sep.vox.domain.mapper.SchoolDirectoryDtoMapper;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
 @Service
@@ -23,7 +22,7 @@ public class ViewSchoolDirectoryDetailsUseCase implements IUseCase<ViewSchoolDir
     @Transactional(readOnly = true)
     public SchoolDirectoryDto execute(ViewSchoolDirectoryDetailsQuery input) {
         var directory = schoolDirectoryRepository.findById(input.id()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
-        return SchoolDirectoryDtoMapper.toSchoolDirectoryDto(directory);
+        return SchoolDirectoryDto.toDto(directory);
     }
     
 }

@@ -11,7 +11,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.SchoolUserDto;
-import com.sep.vox.domain.mapper.SchoolUserDtoMapper;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -91,7 +90,7 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
             input.size()
         );
 
-        return SchoolUserDtoMapper.toSchoolUserPageDto(schoolUsersPage);
+        return SchoolUserDto.toDtoPage(schoolUsersPage);
     }
 
     private String validateStatus(String status) {

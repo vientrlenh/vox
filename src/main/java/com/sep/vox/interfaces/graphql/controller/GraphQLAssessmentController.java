@@ -40,12 +40,13 @@ import com.sep.vox.domain.dto.AssessmentPaperSectionDto;
 import com.sep.vox.domain.dto.AssessmentScheduleDto;
 import com.sep.vox.domain.dto.AssessmentSecurePoolDto;
 import com.sep.vox.domain.dto.QuestionDto;
-import com.sep.vox.domain.dto.QuestionSelectionSpecDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentPaperStatus;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.shared.PageResult;
+import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 
 @Controller
 @RequiredArgsConstructor
@@ -216,13 +217,13 @@ public class GraphQLAssessmentController {
     }
 
     @SchemaMapping(typeName = "AssessmentPaperItem", field = "slotType")
-    public CompletableFuture<String> assessmentPaperItemSlotType(AssessmentPaperItemDto source, DataFetchingEnvironment env) {
+    public CompletableFuture<AssessmentBlueprintSlotType> assessmentPaperItemSlotType(AssessmentPaperItemDto source, DataFetchingEnvironment env) {
         return loadBlueprintSlot(source, env)
             .thenApply(slot -> slot == null ? null : slot.slotType());
     }
 
     @SchemaMapping(typeName = "AssessmentPaperItem", field = "selectionSpec")
-    public CompletableFuture<QuestionSelectionSpecDto> assessmentPaperItemSelectionSpec(
+    public CompletableFuture<QuestionSelectionSpec> assessmentPaperItemSelectionSpec(
             AssessmentPaperItemDto source, DataFetchingEnvironment env) {
         return loadBlueprintSlot(source, env)
             .thenApply(slot -> slot == null ? null : slot.selectionSpec());
@@ -245,7 +246,7 @@ public class GraphQLAssessmentController {
 
     private CompletableFuture<Boolean> canViewAssessmentBlueprintData(AssessmentDto source, DataFetchingEnvironment env) {
         if (canViewAssessmentBlueprintDataUseCase.execute(
-                new CanViewAssessmentBlueprintDataQuery(source.schoolId(), source.status()))) {
+                new CanViewAssessmentBlueprintDataQuery(source.schoolId(), source.status().name()))) {
             return CompletableFuture.completedFuture(true);
         }
 

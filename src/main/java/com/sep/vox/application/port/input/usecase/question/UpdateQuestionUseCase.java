@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.mapper.question.UpdateQuestionResponseMapper;
 import com.sep.vox.application.port.input.command.UpdateQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -98,7 +97,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
         question.setUpdatedBy(currentUserId);
         questionRepository.save(question);
 
-        return UpdateQuestionResponseMapper.toResponse(question);
+        return UpdateQuestionResponse.toResponse(question);
     }
 
     private void applyContentUpdates(Question question, UpdateQuestionCommand command, UUID currentUserId) {

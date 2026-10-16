@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.query.ViewAssessmentSchedulesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentScheduleDto;
-import com.sep.vox.domain.mapper.AssessmentScheduleDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
@@ -65,7 +64,7 @@ public class ViewAssessmentSchedulesUseCase implements IUseCase<ViewAssessmentSc
             .filter(schedule -> input.endDate() == null
                 || (schedule.getStartDate() != null && !schedule.getStartDate().isAfter(input.endDate())))
             .toList();
-        return AssessmentScheduleDtoMapper.toDtoList(filtered);
+        return AssessmentScheduleDto.toDtoList(filtered);
     }
 
     /**

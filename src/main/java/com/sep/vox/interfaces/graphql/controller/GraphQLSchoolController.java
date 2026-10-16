@@ -81,10 +81,6 @@ import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolGradeRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolRoomRequest;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolClassCommandMapper;
-import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolCommandMapper;
-import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolGradeCommandMapper;
-import com.sep.vox.interfaces.graphql.mapper.UpdateGradeLevelCommandMapper;
-import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolRoomCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolUserCommandMapper;
 
 import graphql.schema.DataFetchingEnvironment;
@@ -340,7 +336,7 @@ public class GraphQLSchoolController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchool(@Argument(name = "id") UUID id, @Argument(name = "input") UpdateSchoolRequest request) {
 
-        var command = UpdateSchoolCommandMapper.fromRequest(id, request);
+        var command = UpdateSchoolRequest.toCommand(id, request);
 
         return updateSchoolUseCase.execute(command);
 
@@ -381,7 +377,7 @@ public class GraphQLSchoolController {
             @Argument(name = "input") UpdateSchoolRoomRequest request
     ) {
         // Mapper truyền cả id và request
-        var command = UpdateSchoolRoomCommandMapper.fromRequest(id, request);
+        var command = UpdateSchoolRoomRequest.toCommand(id, request);
         return updateSchoolRoomUseCase.execute(command);
     }
 
@@ -394,7 +390,7 @@ public class GraphQLSchoolController {
             @Argument(name = "id") UUID id,
             @Argument(name = "input") UpdateSchoolGradeRequest request
     ) {
-        var command = UpdateSchoolGradeCommandMapper.fromRequest(id, request);
+        var command = UpdateSchoolGradeRequest.toCommand(id, request);
         return updateSchoolGradeUseCase.execute(command);
     }
 
@@ -448,7 +444,7 @@ public class GraphQLSchoolController {
     public UUID updateGradeLevel(
             @Argument(name = "gradeLevelId") UUID gradeLevelId,
             @Argument(name = "input") UpdateGradeLevelRequest request) {
-        var command = UpdateGradeLevelCommandMapper.fromRequest(gradeLevelId, request);
+        var command = UpdateGradeLevelRequest.toCommand(gradeLevelId, request);
         return updateGradeLevelUseCase.execute(command);
     }
 

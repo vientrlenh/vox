@@ -16,7 +16,6 @@ import com.sep.vox.application.port.input.service.AssessmentSessionModerationAcc
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentevaluation.UpsertAssessmentCandidateResultUseCase;
 import com.sep.vox.domain.dto.AssessmentCandidateDto;
-import com.sep.vox.domain.mapper.AssessmentCandidateDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
@@ -85,7 +84,7 @@ public class UnblockAssessmentCandidateUseCase implements IUseCase<UnblockAssess
         var saved = assessmentCandidateRepository.save(candidate);
 
         recomputeInvalidatedSessions(candidate.getId());
-        return AssessmentCandidateDtoMapper.toDto(saved);
+        return AssessmentCandidateDto.toDto(saved);
     }
 
     /**

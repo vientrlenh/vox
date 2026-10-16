@@ -59,7 +59,7 @@ public class RestApiAssessmentPaperController {
             @PathVariable("id") UUID id,
             @PathVariable("itemId") UUID itemId,
             @Valid @RequestBody UpdateAssessmentPaperItemRequest request) {
-        var data = updateAssessmentPaperItemUseCase.execute(UpdateAssessmentPaperItemCommandMapper.fromRequest(id, itemId, request));
+        var data = updateAssessmentPaperItemUseCase.execute(UpdateAssessmentPaperItemRequest.toCommand(id, itemId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật câu hỏi trong đề thi thành công", data));
     }
 
@@ -69,7 +69,7 @@ public class RestApiAssessmentPaperController {
             @PathVariable("id") UUID id,
             @PathVariable("sectionId") UUID sectionId,
             @RequestBody UpdateAssessmentPaperSectionRequest request) {
-        var data = updateAssessmentPaperSectionUseCase.execute(UpdateAssessmentPaperSectionCommandMapper.fromRequest(id, sectionId, request));
+        var data = updateAssessmentPaperSectionUseCase.execute(UpdateAssessmentPaperSectionRequest.toCommand(id, sectionId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật phần đề thi thành công", data));
     }
 
@@ -78,7 +78,7 @@ public class RestApiAssessmentPaperController {
     public ResponseEntity<ApiResponse<AssessmentPaperDto>> updateStatus(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateAssessmentPaperStatusRequest request) {
-        var data = updateAssessmentPaperStatusUseCase.execute(UpdateAssessmentPaperStatusCommandMapper.fromRequest(id, request));
+        var data = updateAssessmentPaperStatusUseCase.execute(UpdateAssessmentPaperStatusRequest.toCommand(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái đề thi thành công", data));
     }
 

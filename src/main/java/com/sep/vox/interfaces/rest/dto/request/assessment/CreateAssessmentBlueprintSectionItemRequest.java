@@ -1,6 +1,9 @@
 package com.sep.vox.interfaces.rest.dto.request.assessment;
 
 import java.math.BigDecimal;
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintSectionItemCommand;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -16,4 +19,15 @@ public record CreateAssessmentBlueprintSectionItemRequest(
     Integer sectionTimeLimitSeconds,
     BigDecimal sectionWeight
 ) {
+
+    public static CreateAssessmentBlueprintSectionItemCommand toCommand(UUID versionId, CreateAssessmentBlueprintSectionItemRequest request) {
+        return new CreateAssessmentBlueprintSectionItemCommand(
+            versionId,
+            request.order(),
+            request.title(),
+            request.instruction(),
+            request.sectionTimeLimitSeconds(),
+            request.sectionWeight()
+        );
+    }
 }

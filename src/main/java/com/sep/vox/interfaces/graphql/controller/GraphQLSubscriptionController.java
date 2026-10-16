@@ -145,7 +145,7 @@ public class GraphQLSubscriptionController {
     public UUID updateSubscriptionPlan(
             @Argument(name = "id") UUID id,
             @Argument(name = "input") UpdateSubscriptionPlanInput input) {
-        return updateSubscriptionPlanUseCase.execute(UpdateSubscriptionPlanCommandMapper.fromInput(id, input));
+        return updateSubscriptionPlanUseCase.execute(UpdateSubscriptionPlanInput.toCommand(id, input));
     }
 
     @SchemaMapping(typeName = "SchoolSubscription", field = "plan")

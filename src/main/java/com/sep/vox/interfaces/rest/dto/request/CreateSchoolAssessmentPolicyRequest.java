@@ -1,11 +1,13 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStrictness;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
 public record CreateSchoolAssessmentPolicyRequest(
@@ -30,9 +32,26 @@ public record CreateSchoolAssessmentPolicyRequest(
 
         AssessmentPolicyStrictness strictness,
 
-        @NotBlank(message = "Ngày bắt đầu hiệu lực không được để trống")
-        String effectiveFrom,
+        @NotNull(message = "Ngày bắt đầu hiệu lực không được để trống")
+        Instant effectiveFrom,
 
-        String effectiveTo
+        Instant effectiveTo
 ) {
+
+    public static CreateAssessmentPolicyCommand toCommand(UUID schoolId, CreateSchoolAssessmentPolicyRequest request) {
+        return new CreateAssessmentPolicyCommand(
+                schoolId,
+                request.frameworkVersionId(),
+                request.rubricVersionId(),
+                request.languageId(),
+                request.gradeLevelId(),
+                request.schoolGradeId(),
+                request.schoolClassId(),
+                request.targetFrameworkBandId(),
+                request.passingScore(),
+                request.strictness(),
+                request.effectiveFrom(),
+                request.effectiveTo()
+        );
+    }
 }

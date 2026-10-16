@@ -18,7 +18,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.AssessmentCandidateDto;
-import com.sep.vox.domain.mapper.AssessmentCandidateDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateStatus;
@@ -119,7 +118,7 @@ public class UpdateAssessmentCandidatesAttendanceUseCase
         if (changed.isEmpty()) {
             return List.of();
         }
-        return AssessmentCandidateDtoMapper.toDtoList(assessmentCandidateRepository.saveAll(changed));
+        return AssessmentCandidateDto.toDtoList(assessmentCandidateRepository.saveAll(changed));
     }
 
     private boolean hasAttendanceAccess(Assessment assessment, UUID scheduleId, UUID currentUserId) {

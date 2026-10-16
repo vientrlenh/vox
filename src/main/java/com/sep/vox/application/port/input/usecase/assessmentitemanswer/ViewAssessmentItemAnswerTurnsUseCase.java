@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.mapper.assessmentitemanswer.AssessmentItemAnswerResponseMapper;
 import com.sep.vox.application.port.input.query.ViewAssessmentItemAnswerTurnsQuery;
 import com.sep.vox.application.port.input.service.AssessmentResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -30,7 +29,7 @@ public class ViewAssessmentItemAnswerTurnsUseCase implements IUseCase<ViewAssess
     public List<AssessmentItemAnswerTurnResponse> execute(ViewAssessmentItemAnswerTurnsQuery input) {
         assessmentResultAccessService.requireCandidateVisibleResponse(input.answerId());
         return assessmentItemResponseTurnRepository.findByAssessmentItemAnswerId(input.answerId()).stream()
-            .map(AssessmentItemAnswerResponseMapper::toTurnResponse)
+            .map(AssessmentItemAnswerTurnResponse::toResponse)
             .toList();
     }
 }

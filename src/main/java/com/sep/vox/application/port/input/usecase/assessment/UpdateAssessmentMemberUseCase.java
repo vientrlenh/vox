@@ -10,7 +10,6 @@ import com.sep.vox.application.port.input.service.AssessmentMemberManageAccessSe
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.AssessmentMemberDto;
-import com.sep.vox.domain.mapper.AssessmentMemberDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.repository.assessment.AssessmentMemberRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentRepository;
@@ -56,6 +55,6 @@ public class UpdateAssessmentMemberUseCase implements IUseCase<UpdateAssessmentM
         assessmentMemberManageAccessService.requireCanTouchRole(actor, newRole);
 
         member.setRole(newRole);
-        return AssessmentMemberDtoMapper.toDto(assessmentMemberRepository.save(member));
+        return AssessmentMemberDto.toDto(assessmentMemberRepository.save(member));
     }
 }

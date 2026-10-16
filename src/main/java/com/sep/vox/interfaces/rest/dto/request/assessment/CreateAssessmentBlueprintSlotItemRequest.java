@@ -3,6 +3,8 @@ package com.sep.vox.interfaces.rest.dto.request.assessment;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintSlotItemCommand;
+import com.sep.vox.application.port.input.command.CreateQuestionSelectionSpecCommand;
 import com.sep.vox.interfaces.rest.dto.request.QuestionSelectionSpecRequest;
 
 import jakarta.validation.Valid;
@@ -37,5 +39,31 @@ public record CreateAssessmentBlueprintSlotItemRequest(
             return fixedQuestionId != null && selectionSpec == null;
         }
         return fixedQuestionId == null && selectionSpec != null;
+    }
+
+    public static CreateAssessmentBlueprintSlotItemCommand toCommand(UUID sectionId, CreateAssessmentBlueprintSlotItemRequest request) {
+        return new CreateAssessmentBlueprintSlotItemCommand(
+            sectionId,
+            request.order(),
+            request.weight(),
+            request.prepTimeSecondsOverride(),
+            request.responseTimeSecondsOverride(),
+            request.slotType(),
+            request.fixedQuestionId(),
+            toSelectionSpec(request.selectionSpec())
+        );
+    }
+
+    private static CreateQuestionSelectionSpecCommand toSelectionSpec(QuestionSelectionSpecRequest request) {
+        if (request == null) {
+            return null;
+        }
+        return new CreateQuestionSelectionSpecCommand(
+            request.questionType(),
+            request.difficulty(),
+            request.targetBandLevel(),
+            request.skillCode(),
+            request.topicId()
+        );
     }
 }

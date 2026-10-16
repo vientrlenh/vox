@@ -7,7 +7,6 @@ import com.sep.vox.application.port.input.query.ViewSystemRubricVersionDetailsQu
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricVersionDto;
-import com.sep.vox.domain.mapper.RubricVersionDtoMapper;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
@@ -59,6 +58,6 @@ public class ViewSystemRubricVersionDetailsUseCase implements IUseCase<ViewSyste
         }
 
         // 4. Map sang DTO và trả về
-        return RubricVersionDtoMapper.toRubricVersionDto(version);
+        return RubricVersionDto.toDto(version);
     }
 }

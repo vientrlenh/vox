@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.AssessmentCandidateDto;
-import com.sep.vox.domain.mapper.AssessmentCandidateDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -62,7 +61,7 @@ public class ViewAssessmentCandidatesUseCase implements IUseCase<ViewAssessmentC
             .filter(candidate -> input.status() == null
                 || input.status().equals(candidate.getStatus()))
             .toList();
-        return AssessmentCandidateDtoMapper.toDtoList(candidates);
+        return AssessmentCandidateDto.toDtoList(candidates);
     }
 
     // Nhà trường (SCHOOL_ADMIN) và CHAIR của kỳ thi xem được toàn bộ candidate. Giáo viên

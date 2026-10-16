@@ -3,6 +3,8 @@ package com.sep.vox.interfaces.rest.dto.request.assessment;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.CreateAssessmentAppealCommand;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -25,4 +27,13 @@ public record CreateAssessmentAppealRequest(
     @Size(max = 512, message = "Ghi chú tối đa 512 ký tự")
     String notes
 ) {
+
+    public static CreateAssessmentAppealCommand toCommand(CreateAssessmentAppealRequest request) {
+        return new CreateAssessmentAppealCommand(
+            request.candidateResultId(),
+            request.paperItemIds(),
+            request.reason(),
+            request.notes()
+        );
+    }
 }

@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.query.ViewAllScoringRuleQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ScoringRuleDto;
-import com.sep.vox.domain.mapper.ScoringRuleDtoMapper;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ScoringRuleRepository;
@@ -61,7 +60,7 @@ public class ViewAllSystemScoringRuleUseCase implements IUseCase<ViewAllScoringR
         var pageResult = scoringRuleRepository.searchByPolicyId(query.policyId(), null, null, query.page(), query.size());
 
         return new PageResult<>(
-                pageResult.content().stream().map(ScoringRuleDtoMapper::toDto).toList(),
+                pageResult.content().stream().map(ScoringRuleDto::toDto).toList(),
                 pageResult.page(),
                 pageResult.size(),
                 pageResult.totalElements(),

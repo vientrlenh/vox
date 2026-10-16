@@ -2,6 +2,8 @@ package com.sep.vox.interfaces.rest.dto.request;
 
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.ApproveRegisterFormCommand;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -21,5 +23,13 @@ public record ApproveRegisterFormRequest(
     @Size(max = 100, message = "Mã tỉnh thành không được vượt quá 100 ký tự")
     String provinceCode
 ) {
-    
+
+    public static ApproveRegisterFormCommand toCommand(UUID registerFormId, ApproveRegisterFormRequest request) {
+        return new ApproveRegisterFormCommand(
+            registerFormId,
+            request.schoolCode(),
+            request.description(),
+            request.provinceCode()
+        );
+    }
 }

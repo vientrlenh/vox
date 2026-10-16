@@ -7,7 +7,6 @@ import com.sep.vox.application.port.input.query.ViewSystemAssessmentPolicyDetail
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentPolicyDto;
-import com.sep.vox.domain.mapper.AssessmentPolicyDtoMapper;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -55,6 +54,6 @@ public class ViewSystemAssessmentPolicyDetailsUseCase implements IUseCase<ViewSy
             throw new ForbiddenException("Chỉ xem được chính sách mẫu đã ban hành (PUBLISHED).");
         }
 
-        return AssessmentPolicyDtoMapper.toDto(policy);
+        return AssessmentPolicyDto.toDto(policy);
     }
 }

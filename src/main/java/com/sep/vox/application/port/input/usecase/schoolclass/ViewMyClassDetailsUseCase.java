@@ -7,7 +7,6 @@ import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewMyClassDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.SchoolClassDto;
-import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 
 @Service
@@ -31,6 +30,6 @@ public class ViewMyClassDetailsUseCase implements IUseCase<ViewMyClassDetailsQue
         var schoolClass = schoolClassRepository.findById(input.schoolClassId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
 
-        return SchoolClassDtoMapper.toDto(schoolClass);
+        return SchoolClassDto.toDto(schoolClass);
     }
 }

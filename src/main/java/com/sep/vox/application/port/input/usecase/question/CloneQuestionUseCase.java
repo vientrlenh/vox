@@ -9,7 +9,6 @@ import com.sep.vox.application.port.input.command.CloneQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.QuestionDto;
-import com.sep.vox.domain.mapper.QuestionDtoMapper;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.repository.QuestionBankRepository;
@@ -61,6 +60,6 @@ public class CloneQuestionUseCase implements IUseCase<CloneQuestionCommand, Ques
         }
 
         var cloned = questionCloneService.cloneAsDraftWithDetails(question, currentUserId);
-        return QuestionDtoMapper.toQuestionDto(cloned);
+        return QuestionDto.toDto(cloned);
     }
 }

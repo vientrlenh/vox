@@ -11,7 +11,6 @@ import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccess
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentPaperSectionDto;
-import com.sep.vox.domain.mapper.AssessmentPaperSectionDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentPaperStatus;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
@@ -73,6 +72,6 @@ public class UpdateAssessmentPaperSectionUseCase implements IUseCase<UpdateAsses
         section.setUpdatedBy(currentUserId);
         var saved = assessmentPaperSectionRepository.save(section);
 
-        return AssessmentPaperSectionDtoMapper.toDto(saved);
+        return AssessmentPaperSectionDto.toDto(saved);
     }
 }

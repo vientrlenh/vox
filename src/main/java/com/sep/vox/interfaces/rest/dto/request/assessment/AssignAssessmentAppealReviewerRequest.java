@@ -3,6 +3,8 @@ package com.sep.vox.interfaces.rest.dto.request.assessment;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.AssignAssessmentAppealReviewerCommand;
+
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -22,4 +24,9 @@ public record AssignAssessmentAppealReviewerRequest(
 
     Instant deadlineAt
 ) {
+
+    public static AssignAssessmentAppealReviewerCommand toCommand(UUID appealId, AssignAssessmentAppealReviewerRequest request) {
+        return new AssignAssessmentAppealReviewerCommand(
+            appealId, request.reviewerId(), request.overrideReason(), request.deadlineAt());
+    }
 }

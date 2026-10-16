@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolClassUserDto;
-import com.sep.vox.domain.mapper.SchoolClassUserDtoMapper;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.SchoolClassRepository;
@@ -60,7 +59,7 @@ public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUser
 
         var result = schoolClassUserRepository.findBySchoolClassId(input.schoolClassId(), input.page(), input.size());
 
-        return SchoolClassUserDtoMapper.toSchoolClassUserDtoPage(result);
+        return SchoolClassUserDto.toDtoPage(result);
     }
 
     private UUID getSchoolId(UUID userId) {

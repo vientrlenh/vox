@@ -10,7 +10,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionCollaboratorDto;
-import com.sep.vox.domain.mapper.QuestionCollaboratorDtoMapper;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.repository.QuestionBankRepository;
@@ -61,7 +60,7 @@ public class UpdateQuestionCollaboratorUseCase implements IUseCase<UpdateQuestio
 
         collaborator.setPermission(QuestionCollaboratorPermission.valueOf(command.permission()));
         var saved = questionCollaboratorRepository.save(collaborator);
-        return QuestionCollaboratorDtoMapper.toDto(saved);
+        return QuestionCollaboratorDto.toDto(saved);
     }
 
     private UpdateQuestionCollaboratorCommand normalize(UpdateQuestionCollaboratorCommand input) {

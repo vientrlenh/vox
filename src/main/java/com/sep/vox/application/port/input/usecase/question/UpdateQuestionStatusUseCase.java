@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionDto;
-import com.sep.vox.domain.mapper.QuestionDtoMapper;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
@@ -75,6 +74,6 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
         question.setUpdatedAt(Instant.now());
         question.setUpdatedBy(actor.userId());
         var saved = questionRepository.save(question);
-        return QuestionDtoMapper.toQuestionDto(saved);
+        return QuestionDto.toDto(saved);
     }
 }

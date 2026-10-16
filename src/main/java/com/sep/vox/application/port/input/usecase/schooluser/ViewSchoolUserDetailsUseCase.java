@@ -10,7 +10,6 @@ import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolUserDto;
-import com.sep.vox.domain.mapper.SchoolUserDtoMapper;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -49,6 +48,6 @@ public class ViewSchoolUserDetailsUseCase implements IUseCase<ViewSchoolUserDeta
         var schoolUser = schoolUserRepository.findBySchoolIdAndUserId(input.schoolId(), input.userId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng nhà trường theo yêu cầu"));
 
-        return SchoolUserDtoMapper.toSchoolUserDto(schoolUser);
+        return SchoolUserDto.toDto(schoolUser);
     }
 }

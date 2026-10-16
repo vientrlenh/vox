@@ -150,7 +150,7 @@ public class RestApiRubricController {
             @Valid @RequestBody AcceptImportRequest request) {
 
         // 1. Map dữ liệu
-        var command = AcceptRubricVersionImportCommandMapper.fromSystemRequest(sessionId, request);
+        var command = AcceptImportRequest.toAcceptSystemRubricVersionImportCommand(sessionId, request);
         var response = acceptSystemRubricVersionImportUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Phiên bản hệ thống vào hàng đợi ngầm xử lý.", response));
     }
@@ -227,7 +227,7 @@ public class RestApiRubricController {
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
-        var command = AcceptRubricVersionImportCommandMapper.fromSchoolRequestId(schoolId, sessionId, request);
+        var command = AcceptImportRequest.toAcceptSchoolRubricVersionImportCommand(schoolId, sessionId, request);
         var response = acceptSchoolRubricVersionImportUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Phiên bản của trường vào hàng đợi ngầm xử lý.", response));
     }
@@ -361,7 +361,7 @@ public class RestApiRubricController {
             @PathVariable("versionId") UUID versionId,
             @Valid @RequestBody CreateSchoolRubricCriteriaRequest request
     ) {
-        var command = CreateSchoolRubricCriteriaCommandMapper.fromRequest(schoolId, versionId, request);
+        var command = CreateSchoolRubricCriteriaRequest.toCommand(schoolId, versionId, request);
         var newCriterionId = createSchoolRubricCriterionUseCase.execute(command);
 
         return ResponseEntity.ok(ApiResponse.success("Thêm tiêu chí thành công", newCriterionId));
@@ -378,7 +378,7 @@ public class RestApiRubricController {
             @Valid @RequestBody CreateSystemRubricCriteriaRequest request
     ) {
         // Truyền versionId vào mapper
-        var command = CreateSystemRubricCriteriaCommandMapper.fromRequest(versionId, request);
+        var command = CreateSystemRubricCriteriaRequest.toCommand(versionId, request);
         var result = createSystemRubricCriteriaUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Thêm tiêu chí hệ thống thành công", result));
     }
@@ -406,7 +406,7 @@ public class RestApiRubricController {
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
 
-        var command = AcceptRubricCriterionImportCommandMapper.fromSystemRequest(sessionId, request);
+        var command = AcceptImportRequest.toAcceptRubricCriterionImportCommand(sessionId, request);
 
         var response = acceptSystemRubricCriterionImportUseCase.execute(command);
 
@@ -437,7 +437,7 @@ public class RestApiRubricController {
             @Valid @RequestBody AcceptImportRequest request) {
 
         // Sử dụng chính xác Mapper từ School Request của bác để tạo Command dùng chung
-        var command = AcceptRubricCriterionImportCommandMapper.fromSchoolRequest(schoolId, sessionId, request);
+        var command = AcceptImportRequest.toAcceptRubricCriterionImportCommand(schoolId, sessionId, request);
 
         var response = acceptSchoolRubricCriterionImportUseCase.execute(command);
         return ResponseEntity.ok(response);
@@ -489,7 +489,7 @@ public class RestApiRubricController {
             @PathVariable("versionId") UUID versionId,
             @Valid @RequestBody CreateSystemRubricResultBandsRequest request // Nhớ tạo thêm Request này nhé
     ) {
-        var command = CreateSystemRubricResultBandsCommandMapper.fromRequest(versionId, request);
+        var command = CreateSystemRubricResultBandsRequest.toCommand(versionId, request);
         var resultId = createSystemRubricResultBandsUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Thêm thang điểm hệ thống thành công", resultId));
     }
@@ -506,7 +506,7 @@ public class RestApiRubricController {
             @PathVariable("versionId") UUID versionId,
             @Valid @RequestBody CreateSchoolRubricResultBandsRequest request
     ) {
-        var command = CreateSchoolRubricResultBandsCommandMapper.fromRequest(schoolId, versionId, request);
+        var command = CreateSchoolRubricResultBandsRequest.toCommand(schoolId, versionId, request);
         var newResultBandId = createSchoolRubricResultBandsUseCase.execute(command);
 
         return ResponseEntity.ok(ApiResponse.success("Thêm thang điểm kết quả thành công", newResultBandId));
@@ -565,7 +565,7 @@ public class RestApiRubricController {
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
 
-        var command = AcceptRubricResultBandImportCommandMapper.fromSystemRequest(sessionId, request);
+        var command = AcceptImportRequest.toAcceptRubricResultBandImportCommand(sessionId, request);
         var response = acceptSystemRubricResultBandImportUseCase.execute(command);
 
         return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu import xếp loại hệ thống vào hàng đợi ngầm xử lý.", response));
@@ -604,7 +604,7 @@ public class RestApiRubricController {
             @Valid @RequestBody AcceptImportRequest request) {
 
         // Gọi Mapper đóng gói lệnh đồng ý import ngầm từ School
-        var command = AcceptRubricResultBandImportCommandMapper.fromSchoolRequest(schoolId, sessionId, request);
+        var command = AcceptImportRequest.toAcceptRubricResultBandImportCommand(schoolId, sessionId, request);
         var response = acceptSchoolRubricResultBandImportUseCase.execute(command);
 
         return ResponseEntity.ok(response);

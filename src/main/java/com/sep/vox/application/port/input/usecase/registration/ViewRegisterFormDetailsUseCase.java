@@ -7,7 +7,6 @@ import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewRegisterFormDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.RegisterFormDto;
-import com.sep.vox.domain.mapper.RegisterFormDtoMapper;
 import com.sep.vox.domain.repository.RegisterFormRepository;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
@@ -37,7 +36,7 @@ public class ViewRegisterFormDetailsUseCase implements IUseCase<ViewRegisterForm
             schoolName = schoolDirectory.getName();
             schoolAddress = schoolDirectory.getAddress();
         }
-        return RegisterFormDtoMapper.toRegisterFormDto(registerForm, schoolDomain, schoolName, schoolAddress);
+        return RegisterFormDto.toDto(registerForm, schoolDomain, schoolName, schoolAddress);
     }
     
 }

@@ -11,7 +11,6 @@ import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConfl
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.AssessmentScheduleProctorDto;
-import com.sep.vox.domain.mapper.AssessmentScheduleProctorDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleProctor;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -81,6 +80,6 @@ public class AddAssessmentScheduleProctorUseCase implements IUseCase<AddAssessme
             input.teacherId(), schedule.getStartDate(), schedule.getEndDate(), schedule.getId());
 
         var proctor = new AssessmentScheduleProctor(schedule.getId(), input.teacherId());
-        return AssessmentScheduleProctorDtoMapper.toDto(assessmentScheduleProctorRepository.save(proctor));
+        return AssessmentScheduleProctorDto.toDto(assessmentScheduleProctorRepository.save(proctor));
     }
 }

@@ -7,7 +7,6 @@ import com.sep.vox.application.port.input.query.ViewSchoolRubricResultBandDetail
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricResultBandDto;
-import com.sep.vox.domain.mapper.RubricResultBandDtoMapper;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
@@ -83,6 +82,6 @@ public class ViewSchoolRubricResultBandDetailsUseCase implements IUseCase<ViewSc
         }
 
         // 6. Map sang DTO và trả về (Đã kèm đầy đủ 4 trường Audit)
-        return RubricResultBandDtoMapper.toDto(resultBand);
+        return RubricResultBandDto.toDto(resultBand);
     }
 }

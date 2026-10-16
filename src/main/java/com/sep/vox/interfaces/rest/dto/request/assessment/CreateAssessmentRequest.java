@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.CreateAssessmentCommand;
 import com.sep.vox.domain.model.assessment.AssessmentResultDecisionMethod;
 
 import jakarta.validation.constraints.Digits;
@@ -66,4 +67,25 @@ public record CreateAssessmentRequest(
     @Digits(integer = 3, fraction = 2, message = "Ngưỡng tin cậy tối đa 2 chữ số thập phân")
     BigDecimal aiConfidenceThresholdPercent
 ) {
+
+    public static CreateAssessmentCommand toCommand(CreateAssessmentRequest request) {
+        return new CreateAssessmentCommand(
+            request.code(),
+            request.name(),
+            request.description(),
+            request.languageId(),
+            request.blueprintId(),
+            request.openAt(),
+            request.closeAt(),
+            request.assessmentPolicyId(),
+            request.maxAttempt(),
+            request.assessmentTimeDurationSecond(),
+            request.resultDecisionMethod(),
+            request.requiresOtp(),
+            request.requiredStreamTypes(),
+            request.streamTypePermission(),
+            request.deliveryMode(),
+            request.aiConfidenceThresholdPercent()
+        );
+    }
 }

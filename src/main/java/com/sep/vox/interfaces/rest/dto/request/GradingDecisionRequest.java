@@ -1,5 +1,9 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.GradingDecisionCommand;
+
 import jakarta.validation.constraints.Size;
 
 /**
@@ -13,4 +17,8 @@ public record GradingDecisionRequest(
     @Size(max = 1024, message = "Lý do tối đa 1024 ký tự")
     String reason
 ) {
+
+    public static GradingDecisionCommand toCommand(UUID assignmentId, GradingDecisionRequest request) {
+        return new GradingDecisionCommand(assignmentId, request == null ? null : request.reason());
+    }
 }

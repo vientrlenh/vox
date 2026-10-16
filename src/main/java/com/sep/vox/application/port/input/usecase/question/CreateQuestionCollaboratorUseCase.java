@@ -13,7 +13,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionCollaboratorDto;
-import com.sep.vox.domain.mapper.QuestionCollaboratorDtoMapper;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionCollaborator;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
@@ -93,7 +92,7 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
         collaborator.setAssignedAt(Instant.now());
 
         var saved = questionCollaboratorRepository.save(collaborator);
-        return QuestionCollaboratorDtoMapper.toDto(saved);
+        return QuestionCollaboratorDto.toDto(saved);
     }
 
     private void validateOwner(java.util.UUID ownerId, java.util.UUID currentUserId) {

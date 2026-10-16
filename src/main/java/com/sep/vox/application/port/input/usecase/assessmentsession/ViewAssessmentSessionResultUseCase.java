@@ -11,6 +11,7 @@ import com.sep.vox.application.port.input.usecase.assessmentevaluation.Assessmen
 import com.sep.vox.application.response.input.assessmentsession.AssessmentCandidateResultItemResponse;
 import com.sep.vox.application.response.input.assessmentsession.AssessmentCandidateResultResponse;
 import com.sep.vox.application.response.input.assessmentsession.AssessmentCandidateResultSectionResponse;
+import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
@@ -77,7 +78,7 @@ public class ViewAssessmentSessionResultUseCase implements IUseCase<ViewAssessme
         for (var questionId : questionIds) {
             questionAssetRepository.findByQuestionId(questionId).stream()
                 .findFirst()
-                .map(com.sep.vox.domain.mapper.QuestionAssetDtoMapper::toDto)
+                .map(com.sep.vox.domain.mapper.QuestionAssetDto::toDto)
                 .ifPresent(asset -> assets.put(questionId, asset));
         }
         return assets;

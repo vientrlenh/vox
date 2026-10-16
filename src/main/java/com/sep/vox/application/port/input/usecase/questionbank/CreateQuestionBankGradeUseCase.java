@@ -13,7 +13,6 @@ import com.sep.vox.application.port.input.command.CreateQuestionBankGradeCommand
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.QuestionBankGradeDto;
-import com.sep.vox.domain.mapper.QuestionBankGradeDtoMapper;
 import com.sep.vox.domain.model.question.QuestionBankGrade;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.repository.QuestionBankGradeRepository;
@@ -70,7 +69,7 @@ public class CreateQuestionBankGradeUseCase implements IUseCase<CreateQuestionBa
             currentUserId
         );
         var saved = questionBankGradeRepository.save(grade);
-        return QuestionBankGradeDtoMapper.toDto(saved);
+        return QuestionBankGradeDto.toDto(saved);
     }
 
     private void validateAccess(QuestionBankOwnerType ownerType, UUID schoolId, UUID currentSchoolId) {

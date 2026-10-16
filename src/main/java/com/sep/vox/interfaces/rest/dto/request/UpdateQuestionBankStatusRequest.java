@@ -1,5 +1,9 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.UpdateQuestionBankStatusCommand;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
@@ -11,4 +15,8 @@ public record UpdateQuestionBankStatusRequest(
     )
     String action
 ) {
+
+    public static UpdateQuestionBankStatusCommand toCommand(UUID id, UpdateQuestionBankStatusRequest request) {
+        return new UpdateQuestionBankStatusCommand(id, request.action());
+    }
 }

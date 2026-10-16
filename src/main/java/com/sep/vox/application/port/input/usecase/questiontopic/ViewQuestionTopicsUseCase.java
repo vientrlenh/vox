@@ -9,7 +9,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.QuestionTopicDto;
-import com.sep.vox.domain.mapper.QuestionTopicDtoMapper;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.shared.PageResult;
@@ -55,6 +54,6 @@ public class ViewQuestionTopicsUseCase implements IUseCase<ViewQuestionTopicsQue
             input.page(),
             input.size()
         );
-        return QuestionTopicDtoMapper.toDtoPage(result);
+        return QuestionTopicDto.toDtoPage(result);
     }
 }

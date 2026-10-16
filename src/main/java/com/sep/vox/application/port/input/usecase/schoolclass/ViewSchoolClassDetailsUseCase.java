@@ -11,7 +11,6 @@ import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolClassDto;
-import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.model.school.SchoolUser;
@@ -55,7 +54,7 @@ public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDe
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
             throw new ResourceNotFoundException("Không tìm thấy lớp học");
         }
-        return SchoolClassDtoMapper.toDto(schoolClass);
+        return SchoolClassDto.toDto(schoolClass);
     }
 
     private User findCurrentUser(UUID currentUserId) {

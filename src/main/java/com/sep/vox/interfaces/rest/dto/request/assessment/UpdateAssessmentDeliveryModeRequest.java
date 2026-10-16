@@ -1,5 +1,9 @@
 package com.sep.vox.interfaces.rest.dto.request.assessment;
 
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.UpdateAssessmentDeliveryModeCommand;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
@@ -11,4 +15,8 @@ public record UpdateAssessmentDeliveryModeRequest(
     )
     String deliveryMode
 ) {
+
+    public static UpdateAssessmentDeliveryModeCommand toCommand(UUID assessmentId, UpdateAssessmentDeliveryModeRequest request) {
+        return new UpdateAssessmentDeliveryModeCommand(assessmentId, request.deliveryMode());
+    }
 }

@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.service.ProctorScheduleAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.AssessmentProctoringAlertDto;
-import com.sep.vox.domain.mapper.AssessmentProctoringAlertDtoMapper;
 import com.sep.vox.domain.repository.assessment.AssessmentProctoringAlertRepository;
 
 /**
@@ -42,7 +41,7 @@ public class ViewScheduleProctoringAlertsUseCase implements IUseCase<UUID, List<
         var schedule = accessService.requireCanMonitorSchedule(scheduleId);
         return assessmentProctoringAlertRepository.findByScheduleIdOrderByCapturedAt(schedule.getId())
             .stream()
-            .map(AssessmentProctoringAlertDtoMapper::toDto)
+            .map(AssessmentProctoringAlertDto::toDto)
             .toList();
     }
 }

@@ -19,7 +19,6 @@ import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurat
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentDto;
-import com.sep.vox.domain.mapper.AssessmentDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSection;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
@@ -147,7 +146,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         assessment.setUpdatedBy(currentUserId);
         var saved = assessmentRepository.save(assessment);
         recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
-        return AssessmentDtoMapper.toDto(saved);
+        return AssessmentDto.toDto(saved);
     }
 
     private void validateExistingBlueprintDuration(ChangeClassTestBlueprintCommand input, Assessment assessment) {

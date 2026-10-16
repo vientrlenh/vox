@@ -89,7 +89,7 @@ public class RestApiQuestionTopicController {
     @PostMapping
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<CreateQuestionTopicResponse>> create(@Valid @RequestBody CreateQuestionTopicRequest request) {
-        var command = CreateQuestionTopicCommandMapper.fromRequest(request);
+        var command = CreateQuestionTopicRequest.toCommand(request);
         var data = createQuestionTopicUseCase.execute(command);
         var response = ApiResponse.success("Tạo chủ đề câu hỏi thành công", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -100,7 +100,7 @@ public class RestApiQuestionTopicController {
     public ResponseEntity<ApiResponse<QuestionTopicDto>> update(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateQuestionTopicRequest request) {
-        var command = UpdateQuestionTopicCommandMapper.fromRequest(id, request);
+        var command = UpdateQuestionTopicRequest.toCommand(id, request);
         var data = updateQuestionTopicUseCase.execute(command);
         var response = ApiResponse.success("Cập nhật chủ đề câu hỏi thành công", data);
         return ResponseEntity.ok(response);
@@ -111,7 +111,7 @@ public class RestApiQuestionTopicController {
     public ResponseEntity<ApiResponse<QuestionTopicDto>> updateStatus(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionTopicStatusRequest request) {
-        var command = UpdateQuestionTopicStatusCommandMapper.fromRequest(id, request);
+        var command = UpdateQuestionTopicStatusRequest.toCommand(id, request);
         var data = updateQuestionTopicStatusUseCase.execute(command);
         var response = ApiResponse.success("Cập nhật trạng thái chủ đề câu hỏi thành công", data);
         return ResponseEntity.ok(response);

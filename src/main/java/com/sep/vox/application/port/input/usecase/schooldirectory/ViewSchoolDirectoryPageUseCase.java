@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.ViewSchoolDirectoryPageQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.SchoolDirectoryDto;
-import com.sep.vox.domain.mapper.SchoolDirectoryDtoMapper;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 import com.sep.vox.domain.shared.PageResult;
 
@@ -23,7 +22,7 @@ public class ViewSchoolDirectoryPageUseCase implements IUseCase<ViewSchoolDirect
     @Transactional(readOnly = true)
     public PageResult<SchoolDirectoryDto> execute(ViewSchoolDirectoryPageQuery input) {
         var result = schoolDirectoryRepository.findAll(input.page(), input.size());
-        return SchoolDirectoryDtoMapper.toSchoolDirectoryDtoPage(result);
+        return SchoolDirectoryDto.toDtoPage(result);
     }
     
 }

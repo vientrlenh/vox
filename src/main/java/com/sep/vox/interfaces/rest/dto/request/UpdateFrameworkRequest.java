@@ -1,5 +1,9 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.UpdateFrameworkCommand;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -11,4 +15,8 @@ public record UpdateFrameworkRequest(
     @Size(max = 2048, message = "Mô tả không được vượt quá 2048 ký tự")
     String description
 ) {
+
+    public static UpdateFrameworkCommand toCommand(UUID frameworkId, UpdateFrameworkRequest request) {
+        return new UpdateFrameworkCommand(frameworkId, request.name(), request.description());
+    }
 }

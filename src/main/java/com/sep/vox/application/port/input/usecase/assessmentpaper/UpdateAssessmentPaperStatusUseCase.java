@@ -17,7 +17,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.AssessmentPaperDto;
-import com.sep.vox.domain.mapper.AssessmentPaperDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentPaper;
@@ -139,7 +138,7 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
         if ("LOCK".equals(command.action())) {
             assessmentPaperAutoAssigner.backfillAssessment(assessment, now, currentUserId);
         }
-        return AssessmentPaperDtoMapper.toDto(saved);
+        return AssessmentPaperDto.toDto(saved);
     }
 
     /**

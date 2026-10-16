@@ -9,7 +9,6 @@ import com.sep.vox.application.port.input.query.GetAssessmentRecordsQuery;
 import com.sep.vox.application.port.input.service.AssessmentRecordingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.AssessmentRecordingDto;
-import com.sep.vox.domain.mapper.AssessmentRecordingDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
 import com.sep.vox.domain.repository.assessment.AssessmentRecordingRepository;
 import com.sep.vox.domain.service.recording.RecordingPrecedence;
@@ -57,7 +56,7 @@ public class GetAssessmentRecordsUseCase implements IUseCase<GetAssessmentRecord
             .collect(Collectors.toSet());
 
         return records.stream()
-            .map(r -> AssessmentRecordingDtoMapper.toDto(r, canonicalIds.contains(r.getId())))
+            .map(r -> AssessmentRecordingDto.toDto(r, canonicalIds.contains(r.getId())))
             .toList();
     }
     

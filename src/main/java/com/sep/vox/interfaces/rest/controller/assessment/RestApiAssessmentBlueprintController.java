@@ -78,7 +78,7 @@ public class RestApiAssessmentBlueprintController {
     @PostMapping("/assessment-blueprints")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<AssessmentBlueprintDto>> create(@Valid @RequestBody CreateAssessmentBlueprintRequest request) {
-        var data = createAssessmentBlueprintUseCase.execute(CreateAssessmentBlueprintCommandMapper.fromRequest(request));
+        var data = createAssessmentBlueprintUseCase.execute(CreateAssessmentBlueprintRequest.toCommand(request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo blueprint đề thi thành công", data));
     }
@@ -88,7 +88,7 @@ public class RestApiAssessmentBlueprintController {
     public ResponseEntity<ApiResponse<AssessmentBlueprintDto>> update(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateAssessmentBlueprintRequest request) {
-        var data = updateAssessmentBlueprintUseCase.execute(UpdateAssessmentBlueprintCommandMapper.fromRequest(id, request));
+        var data = updateAssessmentBlueprintUseCase.execute(UpdateAssessmentBlueprintRequest.toCommand(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật blueprint đề thi thành công", data));
     }
 
@@ -115,7 +115,7 @@ public class RestApiAssessmentBlueprintController {
     public ResponseEntity<ApiResponse<AssessmentBlueprintVersionDto>> createVersion(
             @PathVariable("id") UUID id,
             @Valid @RequestBody CreateAssessmentBlueprintVersionRequest request) {
-        var data = createAssessmentBlueprintVersionUseCase.execute(CreateAssessmentBlueprintVersionCommandMapper.fromRequest(id, request));
+        var data = createAssessmentBlueprintVersionUseCase.execute(CreateAssessmentBlueprintVersionRequest.toCommand(id, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo version blueprint đề thi thành công", data));
     }
@@ -143,7 +143,7 @@ public class RestApiAssessmentBlueprintController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateAssessmentBlueprintVersionStatusRequest request) {
         var data = updateAssessmentBlueprintVersionStatusUseCase.execute(
-            UpdateAssessmentBlueprintVersionStatusCommandMapper.fromRequest(id, request)
+            UpdateAssessmentBlueprintVersionStatusRequest.toCommand(id, request)
         );
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái version blueprint đề thi thành công", data));
     }
@@ -154,7 +154,7 @@ public class RestApiAssessmentBlueprintController {
             @PathVariable("id") UUID versionId,
             @Valid @RequestBody CreateAssessmentBlueprintSectionItemRequest request) {
         var data = createAssessmentBlueprintSectionUseCase.execute(
-            CreateAssessmentBlueprintSectionCommandMapper.fromRequest(versionId, request)
+            CreateAssessmentBlueprintSectionItemRequest.toCommand(versionId, request)
         );
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo section thành công", data));
@@ -166,7 +166,7 @@ public class RestApiAssessmentBlueprintController {
             @PathVariable("sectionId") UUID sectionId,
             @Valid @RequestBody UpdateAssessmentBlueprintSectionRequest request) {
         var data = updateAssessmentBlueprintSectionUseCase.execute(
-            UpdateAssessmentBlueprintSectionCommandMapper.fromRequest(sectionId, request)
+            UpdateAssessmentBlueprintSectionRequest.toCommand(sectionId, request)
         );
         return ResponseEntity.ok(ApiResponse.success("Cập nhật section thành công", data));
     }
@@ -184,7 +184,7 @@ public class RestApiAssessmentBlueprintController {
             @PathVariable("sectionId") UUID sectionId,
             @Valid @RequestBody CreateAssessmentBlueprintSlotItemRequest request) {
         var data = createAssessmentBlueprintSlotUseCase.execute(
-            CreateAssessmentBlueprintSlotCommandMapper.fromRequest(sectionId, request)
+            CreateAssessmentBlueprintSlotItemRequest.toCommand(sectionId, request)
         );
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo slot thành công", data));
@@ -196,7 +196,7 @@ public class RestApiAssessmentBlueprintController {
             @PathVariable("slotId") UUID slotId,
             @Valid @RequestBody UpdateAssessmentBlueprintSlotRequest request) {
         var data = updateAssessmentBlueprintSlotUseCase.execute(
-            UpdateAssessmentBlueprintSlotCommandMapper.fromRequest(slotId, request)
+            UpdateAssessmentBlueprintSlotRequest.toCommand(slotId, request)
         );
         return ResponseEntity.ok(ApiResponse.success("Cập nhật slot thành công", data));
     }

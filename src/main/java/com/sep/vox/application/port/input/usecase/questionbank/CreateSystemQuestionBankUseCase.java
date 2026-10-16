@@ -60,7 +60,7 @@ public class CreateSystemQuestionBankUseCase implements IUseCase<CreateSystemQue
         );
 
         var saved = questionBankRepository.save(questionBank);
-        return CreateQuestionBankResponseMapper.toResponse(saved.getId());
+        return CreateQuestionBankResponse.toResponse(saved.getId());
     }
 
     private CreateSystemQuestionBankCommand normalize(CreateSystemQuestionBankCommand input) {

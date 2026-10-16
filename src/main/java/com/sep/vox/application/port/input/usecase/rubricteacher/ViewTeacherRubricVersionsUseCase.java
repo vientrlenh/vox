@@ -7,7 +7,6 @@ import com.sep.vox.application.port.input.query.ViewTeacherRubricVersionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricVersionDto;
-import com.sep.vox.domain.mapper.RubricVersionDtoMapper;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -81,6 +80,6 @@ public class ViewTeacherRubricVersionsUseCase implements IUseCase<ViewTeacherRub
                 query.size()
         );
 
-        return RubricVersionDtoMapper.toRubricVersionPage(versionPage);
+        return RubricVersionDto.toDtoPage(versionPage);
     }
 }

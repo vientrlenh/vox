@@ -39,14 +39,9 @@ import com.sep.vox.interfaces.rest.dto.request.UpdateClassTestSectionRequest;
 import com.sep.vox.interfaces.rest.dto.request.assessment.UpdateAssessmentRequest;
 import com.sep.vox.interfaces.rest.dto.request.assessment.UpdateAssessmentStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.ChangeClassTestBlueprintCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.ClaimClassTestGradingCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.CreateClassTestCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateClassTestSectionCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateClassTestQuestionsCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateClassTestSectionCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateAssessmentCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateAssessmentStatusCommandMapper;
 
 import jakarta.validation.Valid;
 
@@ -91,7 +86,7 @@ public class ClassTestController {
     @PostMapping
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<CreateClassTestResponse>> create(@Valid @RequestBody CreateClassTestRequest request) {
-        var data = createClassTestUseCase.execute(CreateClassTestCommandMapper.fromRequest(request));
+        var data = createClassTestUseCase.execute(CreateClassTestRequest.toCommand(request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo bài kiểm tra trên lớp thành công", data));
     }
@@ -101,7 +96,7 @@ public class ClassTestController {
     public ResponseEntity<ApiResponse<AssessmentDto>> update(
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody UpdateAssessmentRequest request) {
-        var data = updateAssessmentUseCase.execute(UpdateAssessmentCommandMapper.fromRequest(assessmentId, request));
+        var data = updateAssessmentUseCase.execute(UpdateAssessmentRequest.toCommand(assessmentId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật bài kiểm tra trên lớp thành công", data));
     }
 
@@ -119,7 +114,7 @@ public class ClassTestController {
     public ResponseEntity<ApiResponse<AssessmentDto>> updateStatus(
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody UpdateAssessmentStatusRequest request) {
-        var data = updateAssessmentStatusUseCase.execute(UpdateAssessmentStatusCommandMapper.fromRequest(assessmentId, request));
+        var data = updateAssessmentStatusUseCase.execute(UpdateAssessmentStatusRequest.toCommand(assessmentId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái bài kiểm tra trên lớp thành công", data));
     }
 
@@ -166,7 +161,7 @@ public class ClassTestController {
     public ResponseEntity<ApiResponse<AssessmentDto>> changeBlueprint(
             @PathVariable("assessmentId") UUID assessmentId,
             @RequestBody ChangeClassTestBlueprintRequest request) {
-        var data = changeClassTestBlueprintUseCase.execute(ChangeClassTestBlueprintCommandMapper.fromRequest(assessmentId, request));
+        var data = changeClassTestBlueprintUseCase.execute(ChangeClassTestBlueprintRequest.toCommand(assessmentId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật blueprint cho bài kiểm tra trên lớp thành công", data));
     }
 
@@ -181,7 +176,7 @@ public class ClassTestController {
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody ClaimClassTestGradingRequest request) {
         var data = claimClassTestGradingUseCase.execute(
-            ClaimClassTestGradingCommandMapper.fromRequest(assessmentId, request));
+            ClaimClassTestGradingRequest.toCommand(assessmentId, request));
         return ResponseEntity.ok(ApiResponse.success("Nhận chấm bài thành công", data));
     }
 }

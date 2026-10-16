@@ -46,7 +46,7 @@ public class RestApiAssessmentAppealController {
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ApiResponse<UUID>> createAppeal(
             @Valid @RequestBody CreateAssessmentAppealRequest request) {
-        var command = AssessmentAppealCommandMapper.fromRequest(request);
+        var command = CreateAssessmentAppealRequest.toCommand(request);
         var appealId = createAssessmentAppealUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Gửi đơn phúc khảo thành công!", appealId));
@@ -66,7 +66,7 @@ public class RestApiAssessmentAppealController {
     public ResponseEntity<ApiResponse<UUID>> approveAppeal(
             @PathVariable("appealId") UUID appealId,
             @Valid @RequestBody ApproveAssessmentAppealRequest request) {
-        var command = AssessmentAppealCommandMapper.fromRequest(appealId, request);
+        var command = ApproveAssessmentAppealRequest.toCommand(appealId, request);
         var responseId = approveAssessmentAppealUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Duyệt đơn phúc khảo thành công!", responseId));
     }
@@ -86,7 +86,7 @@ public class RestApiAssessmentAppealController {
     public ResponseEntity<ApiResponse<UUID>> rejectAppeal(
             @PathVariable("appealId") UUID appealId,
             @Valid @RequestBody RejectAssessmentAppealRequest request) {
-        var command = AssessmentAppealCommandMapper.fromRequest(appealId, request);
+        var command = RejectAssessmentAppealRequest.toCommand(appealId, request);
         var responseId = rejectAssessmentAppealUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Từ chối đơn phúc khảo thành công!", responseId));
     }
@@ -98,7 +98,7 @@ public class RestApiAssessmentAppealController {
     public ResponseEntity<ApiResponse<UUID>> assignReviewer(
             @PathVariable("appealId") UUID appealId,
             @Valid @RequestBody AssignAssessmentAppealReviewerRequest request) {
-        var command = AssessmentAppealCommandMapper.fromRequest(appealId, request);
+        var command = AssignAssessmentAppealReviewerRequest.toCommand(appealId, request);
         var assignmentId = assignAssessmentAppealReviewerUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Phân công người chấm phúc khảo thành công!", assignmentId));
     }

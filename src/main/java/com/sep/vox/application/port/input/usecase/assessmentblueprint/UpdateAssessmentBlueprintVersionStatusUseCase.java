@@ -19,7 +19,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.AssessmentBlueprintVersionDto;
-import com.sep.vox.domain.mapper.AssessmentBlueprintVersionDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
@@ -133,7 +132,7 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
             outboxRepository.save(outbox);
         }
 
-        return AssessmentBlueprintVersionDtoMapper.toDto(saved);
+        return AssessmentBlueprintVersionDto.toDto(saved);
     }
 
     private void requireStatusActor(AssessmentBlueprintVersion version, AssessmentBlueprint blueprint, UUID currentUserId, UUID currentSchoolId) {

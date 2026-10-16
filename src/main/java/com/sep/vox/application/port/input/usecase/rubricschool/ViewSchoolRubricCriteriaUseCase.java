@@ -7,7 +7,6 @@ import com.sep.vox.application.port.input.query.ViewSchoolRubricCriteriaQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricCriterionDto;
-import com.sep.vox.domain.mapper.RubricCriterionDtoMapper;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
@@ -86,6 +85,6 @@ public class ViewSchoolRubricCriteriaUseCase implements IUseCase<ViewSchoolRubri
         );
 
         // 6. Map và trả về
-        return RubricCriterionDtoMapper.toPage(criteriaPage);
+        return RubricCriterionDto.toDtoPage(criteriaPage);
     }
 }

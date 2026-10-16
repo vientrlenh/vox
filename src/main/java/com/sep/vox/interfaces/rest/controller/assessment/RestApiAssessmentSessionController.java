@@ -166,7 +166,7 @@ public class RestApiAssessmentSessionController {
     public ResponseEntity<ApiResponse<Void>> reportAiUsage(
             @PathVariable("id") UUID id,
             @Valid @RequestBody ReportAiUsageRequest request) {
-        reportAiUsageUseCase.execute(ReportAiUsageCommandMapper.toCommand(id, request));
+        reportAiUsageUseCase.execute(ReportAiUsageRequest.toCommand(id, request));
         return ResponseEntity.ok(ApiResponse.success("Ghi nhận chi phí AI thành công"));
     }
 }

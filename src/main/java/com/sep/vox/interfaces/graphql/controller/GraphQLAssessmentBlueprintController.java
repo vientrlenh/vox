@@ -72,7 +72,7 @@ public class GraphQLAssessmentBlueprintController {
         var dto = assessmentBlueprintVersionRepository.findById(id)
             .map(version -> {
                 viewAssessmentBlueprintDetailsUseCase.execute(new ViewAssessmentBlueprintDetailsQuery(version.getBlueprintId()));
-                return AssessmentBlueprintVersionDtoMapper.toDto(version);
+                return AssessmentBlueprintVersionDto.toDto(version);
             })
             .orElse(null);
         LOGGER.info("[blueprint-perf] query assessmentBlueprintVersion done id={} tookMs={}", id, (System.nanoTime() - startedAt) / 1_000_000);
@@ -84,7 +84,7 @@ public class GraphQLAssessmentBlueprintController {
             AssessmentBlueprintDto source,
             @Argument(name = "status") AssessmentBlueprintVersionStatus status) {
         var versions = assessmentBlueprintVersionRepository.findByBlueprintId(source.id()).stream()
-            .map(AssessmentBlueprintVersionDtoMapper::toDto)
+            .map(AssessmentBlueprintVersionDto::toDto)
             .toList();
         return status == null
             ? versions
@@ -99,7 +99,7 @@ public class GraphQLAssessmentBlueprintController {
     @SchemaMapping(typeName = "AssessmentBlueprint", field = "currentVersion")
     public AssessmentBlueprintVersionDto currentVersion(AssessmentBlueprintDto source) {
         return latestVersion(assessmentBlueprintVersionRepository.findByBlueprintId(source.id()).stream()
-            .map(AssessmentBlueprintVersionDtoMapper::toDto)
+            .map(AssessmentBlueprintVersionDto::toDto)
             .toList());
     }
 
@@ -114,7 +114,7 @@ public class GraphQLAssessmentBlueprintController {
     @SchemaMapping(typeName = "AssessmentBlueprintVersion", field = "sections")
     public List<AssessmentBlueprintSectionDto> sections(AssessmentBlueprintVersionDto source) {
         return assessmentBlueprintSectionRepository.findByBlueprintVersionId(source.id()).stream()
-            .map(AssessmentBlueprintSectionDtoMapper::toDto)
+            .map(AssessmentBlueprintSectionDto::toDto)
             .toList();
     }
 
@@ -131,7 +131,7 @@ public class GraphQLAssessmentBlueprintController {
     @SchemaMapping(typeName = "AssessmentBlueprintVersion", field = "weightSum")
     public BigDecimal weightSum(AssessmentBlueprintVersionDto source) {
         return assessmentBlueprintSectionRepository.findByBlueprintVersionId(source.id()).stream()
-            .map(AssessmentBlueprintSectionDtoMapper::toDto)
+            .map(AssessmentBlueprintSectionDto::toDto)
             .map(section -> section.sectionWeight() == null ? BigDecimal.ZERO : section.sectionWeight())
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
     }
@@ -139,7 +139,7 @@ public class GraphQLAssessmentBlueprintController {
     @SchemaMapping(typeName = "AssessmentBlueprintSection", field = "slots")
     public List<AssessmentBlueprintSlotDto> slots(AssessmentBlueprintSectionDto source) {
         return assessmentBlueprintSlotRepository.findBySectionId(source.id()).stream()
-            .map(AssessmentBlueprintSlotDtoMapper::toDto)
+            .map(AssessmentBlueprintSlotDto::toDto)
             .toList();
     }
 
@@ -149,7 +149,7 @@ public class GraphQLAssessmentBlueprintController {
             return null;
         }
         return questionRepository.findById(source.fixedQuestionId())
-            .map(QuestionDtoMapper::toQuestionDto)
+            .map(QuestionDto::toDto)
             .orElse(null);
     }
 

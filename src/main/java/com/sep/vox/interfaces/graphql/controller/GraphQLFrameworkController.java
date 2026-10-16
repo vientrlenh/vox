@@ -46,10 +46,6 @@ import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkCriterionBandIn
 import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkCriterionInput;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkResultBandInput;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkVersionInput;
-import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkCriterionBandCommandMapper;
-import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkCriterionCommandMapper;
-import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkResultBandCommandMapper;
-import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkVersionCommandMapper;
 
 @Controller 
 @RequiredArgsConstructor 
@@ -159,7 +155,7 @@ public class GraphQLFrameworkController {
             @Argument(name = "frameworkId") UUID frameworkId,
             @Argument(name = "versionId") UUID versionId,
             @Argument(name = "input") UpdateFrameworkVersionInput input) {
-        var command = UpdateFrameworkVersionCommandMapper.fromInput(frameworkId, versionId, input);
+        var command = UpdateFrameworkVersionInput.toCommand(frameworkId, versionId, input);
         return updateFrameworkVersionUseCase.execute(command);
     }
 
@@ -170,7 +166,7 @@ public class GraphQLFrameworkController {
             @Argument(name = "versionId") UUID versionId,
             @Argument(name = "criterionId") UUID criterionId,
             @Argument(name = "input") UpdateFrameworkCriterionInput input) {
-        var command = UpdateFrameworkCriterionCommandMapper.fromInput(frameworkId, versionId, criterionId, input);
+        var command = UpdateFrameworkCriterionInput.toCommand(frameworkId, versionId, criterionId, input);
         return updateFrameworkCriterionUseCase.execute(command);
     }
 
@@ -182,7 +178,7 @@ public class GraphQLFrameworkController {
             @Argument(name = "criterionId") UUID criterionId,
             @Argument(name = "bandId") UUID bandId,
             @Argument(name = "input") UpdateFrameworkCriterionBandInput input) {
-        var command = UpdateFrameworkCriterionBandCommandMapper.fromInput(
+        var command = UpdateFrameworkCriterionBandInput.toCommand(
                 frameworkId, versionId, criterionId, bandId, input);
         return updateFrameworkCriterionBandUseCase.execute(command);
     }
@@ -194,7 +190,7 @@ public class GraphQLFrameworkController {
             @Argument(name = "versionId") UUID versionId,
             @Argument(name = "bandId") UUID bandId,
             @Argument(name = "input") UpdateFrameworkResultBandInput input) {
-        var command = UpdateFrameworkResultBandCommandMapper.fromInput(frameworkId, versionId, bandId, input);
+        var command = UpdateFrameworkResultBandInput.toCommand(frameworkId, versionId, bandId, input);
         return updateFrameworkResultBandUseCase.execute(command);
     }
 

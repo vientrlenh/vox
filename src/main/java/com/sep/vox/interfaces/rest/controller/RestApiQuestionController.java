@@ -100,7 +100,7 @@ public class RestApiQuestionController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<CreateQuestionResponse>> create(
             @Valid @RequestBody CreateQuestionRequest request) {
-        var command = CreateQuestionCommandMapper.fromRequest(request);
+        var command = CreateQuestionRequest.toCommand(request);
         var data = createQuestionUseCase.execute(command);
         var response = ApiResponse.success("Tao cau hoi thanh cong", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -131,7 +131,7 @@ public class RestApiQuestionController {
     public ResponseEntity<ApiResponse<Object>> acceptImport(
             @PathVariable(name = "sessionId") UUID sessionId,
             @Valid @RequestBody AcceptQuestionImportRequest request) {
-        var command = AcceptQuestionImportCommandMapper.fromRequest(sessionId, request);
+        var command = AcceptQuestionImportRequest.toCommand(sessionId, request);
         acceptQuestionImportUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Yeu cau import cau hoi da duoc tiep nhan, dang xu ly"));
     }
@@ -179,7 +179,7 @@ public class RestApiQuestionController {
     public ResponseEntity<ApiResponse<UpdateQuestionResponse>> update(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionRequest request) {
-        var command = UpdateQuestionCommandMapper.fromRequest(id, request);
+        var command = UpdateQuestionRequest.toCommand(id, request);
         var data = updateQuestionUseCase.execute(command);
         var response = ApiResponse.success("Cap nhat cau hoi thanh cong", data);
         return ResponseEntity.ok(response);
@@ -198,7 +198,7 @@ public class RestApiQuestionController {
     public ResponseEntity<ApiResponse<QuestionDto>> updateStatus(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionStatusRequest request) {
-        var command = UpdateQuestionStatusCommandMapper.fromRequest(id, request);
+        var command = UpdateQuestionStatusRequest.toCommand(id, request);
         var data = updateQuestionStatusUseCase.execute(command);
         var response = ApiResponse.success("Cap nhat trang thai cau hoi thanh cong", data);
         return ResponseEntity.ok(response);
@@ -208,7 +208,7 @@ public class RestApiQuestionController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<BulkUpdateQuestionStatusResponse>> bulkUpdateStatus(
             @Valid @RequestBody BulkUpdateQuestionStatusRequest request) {
-        var command = BulkUpdateQuestionStatusCommandMapper.fromRequest(request);
+        var command = BulkUpdateQuestionStatusRequest.toCommand(request);
         var data = bulkUpdateQuestionStatusUseCase.execute(command);
         var response = ApiResponse.success("Cap nhat trang thai hang loat thanh cong", data);
         return ResponseEntity.ok(response);
@@ -227,7 +227,7 @@ public class RestApiQuestionController {
     public ResponseEntity<ApiResponse<QuestionCollaboratorDto>> createCollaborator(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody CreateQuestionCollaboratorRequest request) {
-        var command = CreateQuestionCollaboratorCommandMapper.fromRequest(id, request);
+        var command = CreateQuestionCollaboratorRequest.toCommand(id, request);
         var data = createQuestionCollaboratorUseCase.execute(command);
         var response = ApiResponse.success("Them collaborator thanh cong", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -239,7 +239,7 @@ public class RestApiQuestionController {
             @PathVariable(name = "id") UUID id,
             @PathVariable(name = "collaboratorId") UUID collaboratorId,
             @Valid @RequestBody UpdateQuestionCollaboratorRequest request) {
-        var command = UpdateQuestionCollaboratorCommandMapper.fromRequest(id, collaboratorId, request);
+        var command = UpdateQuestionCollaboratorRequest.toCommand(id, collaboratorId, request);
         var data = updateQuestionCollaboratorUseCase.execute(command);
         var response = ApiResponse.success("Cap nhat quyen collaborator thanh cong", data);
         return ResponseEntity.ok(response);
@@ -260,7 +260,7 @@ public class RestApiQuestionController {
     public ResponseEntity<ApiResponse<QuestionAssetDto>> createAsset(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody CreateQuestionAssetRequest request) {
-        var command = CreateQuestionAssetCommandMapper.fromRequest(id, request);
+        var command = CreateQuestionAssetRequest.toCommand(id, request);
         var data = createQuestionAssetUseCase.execute(command);
         var response = ApiResponse.success("Them tai nguyen cau hoi thanh cong", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -281,7 +281,7 @@ public class RestApiQuestionController {
             @PathVariable(name = "id") UUID id,
             @PathVariable(name = "assetId") UUID assetId,
             @Valid @RequestBody UpdateQuestionAssetRequest request) {
-        var command = UpdateQuestionAssetCommandMapper.fromRequest(id, assetId, request);
+        var command = UpdateQuestionAssetRequest.toCommand(id, assetId, request);
         var data = updateQuestionAssetUseCase.execute(command);
         var response = ApiResponse.success("Cap nhat tai nguyen cau hoi thanh cong", data);
         return ResponseEntity.ok(response);
@@ -313,7 +313,7 @@ public class RestApiQuestionController {
     public ResponseEntity<ApiResponse<QuestionEvaluationGuideDto>> upsertEvaluationGuide(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody QuestionEvaluationGuideRequest request) {
-        var command = UpsertQuestionEvaluationGuideCommandMapper.fromRequest(id, request);
+        var command = QuestionEvaluationGuideRequest.toCommand(id, request);
         var data = upsertQuestionEvaluationGuideUseCase.execute(command);
         var response = ApiResponse.success("Cap nhat huong dan cham thanh cong", data);
         return ResponseEntity.ok(response);

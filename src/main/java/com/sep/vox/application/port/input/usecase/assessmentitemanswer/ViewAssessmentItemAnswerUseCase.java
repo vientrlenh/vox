@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.assessmentitemanswer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.mapper.assessmentitemanswer.AssessmentItemAnswerResponseMapper;
 import com.sep.vox.application.port.input.query.ViewAssessmentItemAnswerQuery;
 import com.sep.vox.application.port.input.service.AssessmentResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -28,6 +27,6 @@ public class ViewAssessmentItemAnswerUseCase implements IUseCase<ViewAssessmentI
     public AssessmentItemAnswerDetailsResponse execute(ViewAssessmentItemAnswerQuery input) {
         var response = assessmentResultAccessService.requireCandidateVisibleResponse(input.answerId()).response();
         var turns = assessmentItemResponseTurnRepository.findByAssessmentItemAnswerId(input.answerId());
-        return AssessmentItemAnswerResponseMapper.toDetailsResponse(response, turns);
+        return AssessmentItemAnswerDetailsResponse.toResponse(response, turns);
     }
 }

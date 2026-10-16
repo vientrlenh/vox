@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.AutoAssignGradingCommand;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -38,4 +40,17 @@ public record AutoAssignGradingRequest(
     @NotEmpty(message = "Phải chọn ít nhất một giáo viên để phân công")
     List<UUID> teacherIds
 ) {
+
+    public static AutoAssignGradingCommand toCommand(AutoAssignGradingRequest request) {
+        return new AutoAssignGradingCommand(
+            request.assessmentId(),
+            request.scheduleId(),
+            request.roundType(),
+            request.selectionMode(),
+            request.percent(),
+            request.candidateResultIds(),
+            request.deadlineAt(),
+            request.teacherIds()
+        );
+    }
 }

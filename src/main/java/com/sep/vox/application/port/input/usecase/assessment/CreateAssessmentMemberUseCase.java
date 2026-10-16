@@ -11,7 +11,6 @@ import com.sep.vox.application.port.input.service.AssessmentMemberManageAccessSe
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.AssessmentMemberDto;
-import com.sep.vox.domain.mapper.AssessmentMemberDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentMember;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -66,6 +65,6 @@ public class CreateAssessmentMemberUseCase implements IUseCase<CreateAssessmentM
             Instant.now(),
             actor.userId()
         );
-        return AssessmentMemberDtoMapper.toDto(assessmentMemberRepository.save(member));
+        return AssessmentMemberDto.toDto(assessmentMemberRepository.save(member));
     }
 }

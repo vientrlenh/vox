@@ -23,7 +23,6 @@ import com.sep.vox.application.port.input.service.RecalculateBlueprintVersionTim
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.AssessmentBlueprintVersionDto;
-import com.sep.vox.domain.mapper.AssessmentBlueprintVersionDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSection;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
@@ -141,7 +140,7 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
             recalculatedVersion.getTotalTimeLimitSeconds(),
             "Phiên bản blueprint " + recalculatedVersion.getCode()
         );
-        return AssessmentBlueprintVersionDtoMapper.toDto(recalculatedVersion);
+        return AssessmentBlueprintVersionDto.toDto(recalculatedVersion);
     }
 
     private UpdateAssessmentBlueprintVersionCommand normalize(UpdateAssessmentBlueprintVersionCommand input) {

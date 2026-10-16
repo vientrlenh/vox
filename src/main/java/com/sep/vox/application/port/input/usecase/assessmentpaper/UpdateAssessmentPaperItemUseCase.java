@@ -17,7 +17,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.assessment.AssessmentQuestionSecureLockService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentPaperItemDto;
-import com.sep.vox.domain.mapper.AssessmentPaperItemDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
@@ -169,7 +168,7 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
         assessmentPaperRepository.save(paper);
 
         recalculateAssessmentTimeDurationService.recalculate(paper.getAssessmentId());
-        return AssessmentPaperItemDtoMapper.toDto(savedItem);
+        return AssessmentPaperItemDto.toDto(savedItem);
     }
 
     /**

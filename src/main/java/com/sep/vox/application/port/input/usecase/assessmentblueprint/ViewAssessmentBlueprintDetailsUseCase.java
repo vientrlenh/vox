@@ -9,7 +9,6 @@ import com.sep.vox.application.port.input.query.ViewAssessmentBlueprintDetailsQu
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentBlueprintDto;
-import com.sep.vox.domain.mapper.AssessmentBlueprintDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 import com.sep.vox.domain.repository.assessment.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -43,7 +42,7 @@ public class ViewAssessmentBlueprintDetailsUseCase implements IUseCase<ViewAsses
         if (!hasAccess(blueprint, currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối: không có quyền truy cập blueprint đề thi này");
         }
-        return AssessmentBlueprintDtoMapper.toDto(blueprint);
+        return AssessmentBlueprintDto.toDto(blueprint);
     }
 
     private boolean hasAccess(AssessmentBlueprint blueprint, UUID currentSchoolId) {

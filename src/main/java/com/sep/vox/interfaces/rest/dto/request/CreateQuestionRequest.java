@@ -3,6 +3,10 @@ package com.sep.vox.interfaces.rest.dto.request;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.CreateQuestionAssetCommand;
+import com.sep.vox.application.port.input.command.CreateQuestionEvaluationGuideCommand;
+import com.sep.vox.application.port.input.command.CreateSystemQuestionBankQuestionCommand;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
@@ -63,5 +67,62 @@ public record CreateQuestionRequest(
         return minResponseSeconds == null
             || maxResponseSeconds == null
             || minResponseSeconds <= maxResponseSeconds;
+    }
+
+    public static CreateSystemQuestionBankQuestionCommand toCommand(CreateQuestionRequest request) {
+        return new CreateSystemQuestionBankQuestionCommand(
+            request.questionBankId(),
+            request.questionTopicId(),
+            null,
+            request.instructionText(),
+            request.questionText(),
+            request.promptText(),
+            request.preparationText(),
+            request.type(),
+            request.preparationTimeSeconds(),
+            request.minResponseSeconds(),
+            request.maxResponseSeconds(),
+            request.sharing(),
+            toAssetCommands(request.assets()),
+            toEvaluationGuideCommand(request.evaluationGuide())
+        );
+    }
+
+    private static List<CreateQuestionAssetCommand> toAssetCommands(List<CreateQuestionAssetRequest> requests) {
+        if (requests == null) {
+            return List.of();
+        }
+
+        return requests.stream()
+            .map(CreateQuestionRequest::toAssetCommand)
+            .toList();
+    }
+
+    private static CreateQuestionEvaluationGuideCommand toEvaluationGuideCommand(QuestionEvaluationGuideRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        return new CreateQuestionEvaluationGuideCommand(
+            request.expectedContent(),
+            request.keyPoints(),
+            request.acceptableResponses(),
+            request.offTopicExamples(),
+            request.scoringHints(),
+            request.commonMistakes()
+        );
+    }
+
+    private static CreateQuestionAssetCommand toAssetCommand(CreateQuestionAssetRequest request) {
+        return new CreateQuestionAssetCommand(
+            request.title(),
+            request.durationSeconds(),
+            request.altText(),
+            request.type(),
+            request.url(),
+            request.transcript(),
+            request.description(),
+            request.order()
+        );
     }
 }

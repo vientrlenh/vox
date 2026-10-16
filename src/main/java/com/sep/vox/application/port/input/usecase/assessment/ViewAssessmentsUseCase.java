@@ -9,7 +9,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.AssessmentDto;
-import com.sep.vox.domain.mapper.AssessmentDtoMapper;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentRepository;
 import com.sep.vox.domain.shared.PageResult;
@@ -61,6 +60,6 @@ public class ViewAssessmentsUseCase implements IUseCase<ViewAssessmentsQuery, Pa
             input.page(),
             input.size()
         );
-        return AssessmentDtoMapper.toDtoPage(result);
+        return AssessmentDto.toDtoPage(result);
     }
 }

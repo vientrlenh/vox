@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.mapper.assessmentitemanswer.AssessmentItemAnswerResponseMapper;
 import com.sep.vox.application.port.input.command.UpdateAssessmentItemAnswerTurnCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.assessmentitemresponse.AssessmentItemAnswerTurnResponse;
@@ -63,7 +62,7 @@ public class UpdateAssessmentItemAnswerTurnUseCase
         }
 
         var saved = assessmentItemResponseTurnRepository.upsert(turn);
-        return AssessmentItemAnswerResponseMapper.toTurnResponse(saved);
+        return AssessmentItemAnswerTurnResponse.toResponse(saved);
     }
 
     public static Instant parseAnsweredAt(String answeredAt) {

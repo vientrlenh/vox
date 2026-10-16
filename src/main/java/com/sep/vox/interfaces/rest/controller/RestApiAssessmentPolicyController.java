@@ -206,7 +206,7 @@ public class RestApiAssessmentPolicyController {
     public ResponseEntity<ApiResponse<AcceptAssessmentPolicyImportResponse>> acceptSystemAssessmentPolicyImport(
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
-        var command = AcceptAssessmentPolicyImportCommandMapper.fromSystemRequest(sessionId, request);
+        var command = AcceptImportRequest.toAcceptSystemAssessmentPolicyImportCommand(sessionId, request);
         var response = acceptSystemAssessmentPolicyImportUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Assessment Policy hệ thống vào hàng đợi ngầm xử lý.", response));
     }
@@ -231,7 +231,7 @@ public class RestApiAssessmentPolicyController {
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
-        var command = AcceptAssessmentPolicyImportCommandMapper.fromSchoolRequest(schoolId, sessionId, request);
+        var command = AcceptImportRequest.toAcceptSchoolAssessmentPolicyImportCommand(schoolId, sessionId, request);
         var response = acceptSchoolAssessmentPolicyImportUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Assessment Policy của trường vào hàng đợi ngầm xử lý.", response));
     }

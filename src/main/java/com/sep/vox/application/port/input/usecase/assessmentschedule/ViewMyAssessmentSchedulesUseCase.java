@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.query.ViewAssessmentSchedulesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentScheduleDto;
-import com.sep.vox.domain.mapper.AssessmentScheduleDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.repository.assessment.AssessmentCandidateRepository;
@@ -77,7 +76,7 @@ public class ViewMyAssessmentSchedulesUseCase
         var schedules = scheduleIds.isEmpty()
             ? List.<AssessmentSchedule>of()
             : assessmentScheduleRepository.findByIdIn(scheduleIds);
-        return AssessmentScheduleDtoMapper.toDtoList(schedules.stream()
+        return AssessmentScheduleDto.toDtoList(schedules.stream()
             // Lọc hiển thị đặt trước bộ lọc của client: ca DRAFT là ca chưa publish -- chưa xếp lịch
             // xong -- nên dù client có truyền status=DRAFT cũng không được moi ra.
             .filter(schedule -> schedule.getStatus() != null && schedule.getStatus().isVisibleToStudent())

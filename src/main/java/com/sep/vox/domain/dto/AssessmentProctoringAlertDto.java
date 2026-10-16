@@ -1,7 +1,10 @@
 package com.sep.vox.domain.dto;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
+
+import com.sep.vox.domain.model.assessment.AssessmentProctoringAlert;
 
 /**
  * Một cảnh báo giám sát, cho màn chấm bài và cho lịch sử của màn giám sát trực tiếp.
@@ -25,7 +28,25 @@ public record AssessmentProctoringAlertDto(
     String source,
     String detail,
     BigDecimal confidence,
-    String capturedAt,
-    String raisedAt
+    Instant capturedAt,
+    Instant raisedAt
 ) {
+
+    public static AssessmentProctoringAlertDto toDto(AssessmentProctoringAlert assessmentProctoringAlert) {
+        return new AssessmentProctoringAlertDto(
+            assessmentProctoringAlert.getId(),
+            assessmentProctoringAlert.getEventId(),
+            assessmentProctoringAlert.getAssessmentSessionId(),
+            assessmentProctoringAlert.getCandidateId(),
+            assessmentProctoringAlert.getStreamId(),
+            assessmentProctoringAlert.getStreamType(),
+            assessmentProctoringAlert.getAlertType(),
+            assessmentProctoringAlert.getLevel(),
+            assessmentProctoringAlert.getSource(),
+            assessmentProctoringAlert.getDetail(),
+            assessmentProctoringAlert.getConfidence(),
+            assessmentProctoringAlert.getCapturedAt(),
+            assessmentProctoringAlert.getRaisedAt()
+        );
+    }
 }

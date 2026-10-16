@@ -10,7 +10,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.SchoolClassDto;
-import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
@@ -57,7 +56,7 @@ public class ViewMySchoolClassesUseCase implements IUseCase<ViewMySchoolClassesQ
             input.size()
         );
 
-        return SchoolClassDtoMapper.toDtoPage(schoolClassesPage);
+        return SchoolClassDto.toDtoPage(schoolClassesPage);
     }
 
     private SchoolClassStatus parseStatus(String status) {

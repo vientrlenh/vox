@@ -25,7 +25,6 @@ import com.sep.vox.application.port.input.usecase.assessment.AssessmentQuestionS
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentPaperDto;
-import com.sep.vox.domain.mapper.AssessmentPaperDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSection;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
@@ -234,7 +233,7 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
         }
 
         recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
-        return AssessmentPaperDtoMapper.toDto(assessmentPaperRepository.findById(paper.getId()).orElse(paper));
+        return AssessmentPaperDto.toDto(assessmentPaperRepository.findById(paper.getId()).orElse(paper));
     }
 
     /**
@@ -334,7 +333,7 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
         }
 
         recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
-        return AssessmentPaperDtoMapper.toDto(assessmentPaperRepository.findById(paper.getId()).orElse(paper));
+        return AssessmentPaperDto.toDto(assessmentPaperRepository.findById(paper.getId()).orElse(paper));
     }
 
     /** Thời gian thật của mã đề, gồm cả thời lượng phát AUDIO/VIDEO -- xem {@link PaperTimeCalculator}. */
@@ -451,6 +450,6 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
         }
 
         recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
-        return AssessmentPaperDtoMapper.toDto(assessmentPaperRepository.findById(paper.getId()).orElse(paper));
+        return AssessmentPaperDto.toDto(assessmentPaperRepository.findById(paper.getId()).orElse(paper));
     }
 }

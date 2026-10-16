@@ -126,7 +126,7 @@ public class GraphQLAssessmentScheduleController {
 
     @SchemaMapping(typeName = "AssessmentSchedule", field = "proctors")
     public List<AssessmentScheduleProctorDto> proctors(AssessmentScheduleDto source) {
-        return AssessmentScheduleProctorDtoMapper.toDtoList(assessmentScheduleProctorRepository.findByScheduleId(source.id()));
+        return AssessmentScheduleProctorDto.toDtoList(assessmentScheduleProctorRepository.findByScheduleId(source.id()));
     }
 
     @SchemaMapping(typeName = "AssessmentSchedule", field = "candidateCount")
@@ -149,6 +149,6 @@ public class GraphQLAssessmentScheduleController {
     public UUID updateAssessmentSchedule(
             @Argument(name = "id") UUID id,
             @Argument(name = "input") UpdateAssessmentScheduleInput input) {
-        return updateAssessmentScheduleUseCase.execute(UpdateAssessmentScheduleCommandMapper.fromRequest(id, input));
+        return updateAssessmentScheduleUseCase.execute(UpdateAssessmentScheduleInput.toCommand(id, input));
     }
 }

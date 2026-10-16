@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionAssetDto;
-import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
 import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionAssetType;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
@@ -134,7 +133,7 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
         // Tạm thời bỏ auto-publish yêu cầu AI phân tích asset để luồng lưu asset
         // luôn độc lập và ổn định. Sẽ bật lại ở task riêng về AI update asset sau.
         // questionAssetAnalysisRequestPublisher.publishIfNeeded(targetQuestion, saved);
-        return QuestionAssetDtoMapper.toDto(saved);
+        return QuestionAssetDto.toDto(saved);
     }
 
     private QuestionAsset resolveClonedAsset(UUID questionId, int order) {

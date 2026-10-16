@@ -11,7 +11,6 @@ import com.sep.vox.application.port.input.command.UpdateAssessmentBlueprintActiv
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentBlueprintDto;
-import com.sep.vox.domain.mapper.AssessmentBlueprintDtoMapper;
 import com.sep.vox.domain.repository.assessment.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -49,6 +48,6 @@ public class UpdateAssessmentBlueprintActiveStatusUseCase
         blueprint.setActive(input.isActive());
         blueprint.setUpdatedAt(Instant.now());
         blueprint.setUpdatedBy(currentUserId);
-        return AssessmentBlueprintDtoMapper.toDto(assessmentBlueprintRepository.save(blueprint));
+        return AssessmentBlueprintDto.toDto(assessmentBlueprintRepository.save(blueprint));
     }
 }

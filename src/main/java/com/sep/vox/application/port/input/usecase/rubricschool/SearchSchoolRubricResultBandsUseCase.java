@@ -5,7 +5,6 @@ import com.sep.vox.application.port.input.query.SearchSchoolRubricResultBandsQue
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricResultBandDto;
-import com.sep.vox.domain.mapper.RubricResultBandDtoMapper;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
@@ -70,7 +69,7 @@ public class SearchSchoolRubricResultBandsUseCase implements IUseCase<SearchScho
         return new PageResult<>(
                 pageResult.content()
                         .stream()
-                        .map(RubricResultBandDtoMapper::toDto)
+                        .map(RubricResultBandDto::toDto)
                         .toList(),
                 pageResult.page(), pageResult.size(), pageResult.totalElements(), pageResult.totalPages()
         );

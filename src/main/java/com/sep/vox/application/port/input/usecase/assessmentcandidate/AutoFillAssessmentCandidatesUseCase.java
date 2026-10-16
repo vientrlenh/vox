@@ -19,7 +19,6 @@ import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateCon
 import com.sep.vox.application.port.input.service.AssessmentScheduleManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.AssessmentCandidateDto;
-import com.sep.vox.domain.mapper.AssessmentCandidateDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
@@ -125,6 +124,6 @@ public class AutoFillAssessmentCandidatesUseCase
         // Gán đề mặc định cho cả lượt trong một lần: đề của kỳ thi không đổi trong vòng lặp, và rải
         // đều cần nhìn toàn bộ danh sách chứ không gán được từng người một.
         assessmentPaperAutoAssigner.assignPapersIfNeeded(assessment, assigned, now, currentUserId);
-        return AssessmentCandidateDtoMapper.toDtoList(assessmentCandidateRepository.saveAll(assigned));
+        return AssessmentCandidateDto.toDtoList(assessmentCandidateRepository.saveAll(assigned));
     }
 }

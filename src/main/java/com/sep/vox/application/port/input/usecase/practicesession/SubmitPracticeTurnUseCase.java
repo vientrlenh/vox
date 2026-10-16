@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
 import com.sep.vox.application.port.input.command.SubmitPracticeTurnCommand;
 import com.sep.vox.application.port.input.service.ConsumeQuotaService;
 import com.sep.vox.application.port.input.service.PracticeEvaluationRequestFactory;
@@ -227,7 +226,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             // liệu -- phần lớn câu đi qua đây chứ không qua flush.
             practiceItemResponseRepository.markGradingRequested(result.responseId(), Instant.now());
         }
-        return PracticeSessionResponseMapper.toResponse(result);
+        return SubmitTurnResult.toResponse(result);
     }
 
     private void requireOwnedInProgress(UUID sessionId, UUID studentId) {

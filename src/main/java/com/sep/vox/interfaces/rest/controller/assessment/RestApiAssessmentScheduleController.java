@@ -46,7 +46,7 @@ public class RestApiAssessmentScheduleController {
     public ResponseEntity<ApiResponse<AssessmentScheduleDto>> create(
             @PathVariable(name = "assessmentId") UUID assessmentId,
             @Valid @RequestBody CreateAssessmentScheduleRequest request) {
-        var data = createAssessmentScheduleUseCase.execute(CreateAssessmentScheduleCommandMapper.fromRequest(assessmentId, request));
+        var data = createAssessmentScheduleUseCase.execute(CreateAssessmentScheduleRequest.toCommand(assessmentId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo ca thi thành công", data));
     }
@@ -58,7 +58,7 @@ public class RestApiAssessmentScheduleController {
             @PathVariable("scheduleId") UUID scheduleId,
             @Valid @RequestBody UpdateAssessmentScheduleStatusRequest request) {
         var data = updateAssessmentScheduleStatusUseCase.execute(
-            UpdateAssessmentScheduleStatusCommandMapper.fromRequest(assessmentId, scheduleId, request));
+            UpdateAssessmentScheduleStatusRequest.toCommand(assessmentId, scheduleId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái ca thi thành công", data));
     }
 
@@ -78,7 +78,7 @@ public class RestApiAssessmentScheduleController {
             @PathVariable("scheduleId") UUID scheduleId,
             @Valid @RequestBody AddAssessmentScheduleProctorRequest request) {
         var data = addAssessmentScheduleProctorUseCase.execute(
-            AddAssessmentScheduleProctorCommandMapper.fromRequest(assessmentId, scheduleId, request));
+            AddAssessmentScheduleProctorRequest.toCommand(assessmentId, scheduleId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Thêm giám thị thành công", data));
     }

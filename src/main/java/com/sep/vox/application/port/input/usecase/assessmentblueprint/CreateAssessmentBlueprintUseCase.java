@@ -13,7 +13,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.AssessmentBlueprintDto;
-import com.sep.vox.domain.mapper.AssessmentBlueprintDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 import com.sep.vox.domain.repository.assessment.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.GradeLevelRepository;
@@ -73,7 +72,7 @@ public class CreateAssessmentBlueprintUseCase implements IUseCase<CreateAssessme
             currentUserId,
             currentUserId
         );
-        return AssessmentBlueprintDtoMapper.toDto(assessmentBlueprintRepository.save(blueprint));
+        return AssessmentBlueprintDto.toDto(assessmentBlueprintRepository.save(blueprint));
     }
 
     private String blueprintCodeOf(String code) {

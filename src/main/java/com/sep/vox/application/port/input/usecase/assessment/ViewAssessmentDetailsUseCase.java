@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.AssessmentDto;
-import com.sep.vox.domain.mapper.AssessmentDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -59,7 +58,7 @@ public class ViewAssessmentDetailsUseCase implements IUseCase<ViewAssessmentDeta
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        return AssessmentDtoMapper.toDto(assessment);
+        return AssessmentDto.toDto(assessment);
     }
 
     private boolean hasAccess(

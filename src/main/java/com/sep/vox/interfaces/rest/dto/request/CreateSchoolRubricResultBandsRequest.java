@@ -8,6 +8,10 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import com.sep.vox.application.port.input.command.CreateSchoolRubricResultBandsCommand;
 
 public record CreateSchoolRubricResultBandsRequest(
         @NotEmpty(message = "Phải có ít nhất 1 thang điểm được gửi lên")
@@ -33,4 +37,20 @@ public record CreateSchoolRubricResultBandsRequest(
                 @Min(value = 1, message = "Thứ tự (Order) phải lớn hơn 0")
                 Integer order
         ) {}
+
+    public static CreateSchoolRubricResultBandsCommand toCommand(UUID schoolId, UUID versionId, CreateSchoolRubricResultBandsRequest request) {
+        List<CreateSchoolRubricResultBandsCommand.ResultBandItemCommand> bandCommands = request.resultBands()
+                .stream()
+                .map(b -> new CreateSchoolRubricResultBandsCommand.ResultBandItemCommand(
+                        b.code(),
+                        b.name(),
+                        b.description(),
+                        b.mappedScoreMin(),
+                        b.mappedScoreMax(),
+                        b.order()
+                ))
+                .collect(Collectors.toList());
+
+        return new CreateSchoolRubricResultBandsCommand(schoolId, versionId, bandCommands);
+    }
 }

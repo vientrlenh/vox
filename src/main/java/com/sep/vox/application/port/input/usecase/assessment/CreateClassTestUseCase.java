@@ -22,7 +22,7 @@ import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.assessment.CreateClassTestResponse;
 import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.application.shared.StringNormalization;
-import com.sep.vox.domain.mapper.AssessmentDtoMapper;
+import com.sep.vox.domain.dto.AssessmentDto;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
@@ -159,7 +159,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             currentUserId, schedule.getStartDate(), schedule.getEndDate(), schedule.getId());
         assessmentScheduleProctorRepository.save(new AssessmentScheduleProctor(schedule.getId(), currentUserId));
         var candidateCount = assignCandidates(assessment, schoolClass.getId(), currentUserId, now);
-        return new CreateClassTestResponse(AssessmentDtoMapper.toDto(assessment), candidateCount);
+        return new CreateClassTestResponse(AssessmentDto.toDto(assessment), candidateCount);
     }
 
     private CreateClassTestCommand normalize(CreateClassTestCommand input) {

@@ -7,7 +7,6 @@ import com.sep.vox.application.port.input.query.ViewSystemRubricCriterionDetails
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricCriterionDto;
-import com.sep.vox.domain.mapper.RubricCriterionDtoMapper;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
@@ -67,6 +66,6 @@ public class ViewSystemRubricCriterionDetailsUseCase implements IUseCase<ViewSys
         }
 
         // 5. Map sang DTO và trả về
-        return RubricCriterionDtoMapper.toDto(criterion);
+        return RubricCriterionDto.toDto(criterion);
     }
 }

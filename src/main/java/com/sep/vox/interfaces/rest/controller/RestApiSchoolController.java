@@ -307,7 +307,7 @@ public class RestApiSchoolController {
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptSchoolClassUserImportRequest request) {
-        var command = AcceptSchoolClassUserImportCommandMapper.fromRequest(schoolId, sessionId, request);
+        var command = AcceptSchoolClassUserImportRequest.toCommand(schoolId, sessionId, request);
         acceptSchoolClassUserImportUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Yêu cầu import người dùng vào lớp học đã được tiếp nhận, đang xử lý"));
     }
@@ -465,7 +465,7 @@ public class RestApiSchoolController {
             @PathVariable("gradeLevelId") UUID gradeLevelId,
             @Valid @RequestBody CreateSchoolGradeRequest request) {
 
-        var command = CreateSchoolGradeCommandMapper.fromRequest(schoolId, gradeLevelId, request);
+        var command = CreateSchoolGradeRequest.toCommand(schoolId, gradeLevelId, request);
 
         UUID newGradeId = createSchoolGradeUseCase.execute(command);
 

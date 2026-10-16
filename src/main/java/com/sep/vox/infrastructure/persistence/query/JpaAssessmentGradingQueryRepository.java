@@ -33,7 +33,6 @@ import com.sep.vox.application.projection.dto.GradingTaskItemInfo;
 import com.sep.vox.application.projection.dto.GradingTurnInfo;
 import com.sep.vox.application.projection.repository.AssessmentGradingQueryRepository;
 import com.sep.vox.domain.dto.QuestionAssetDto;
-import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.AssessmentGradingAssignmentStatus;
 import com.sep.vox.domain.model.assessment.AssessmentGradingRoundType;
@@ -919,7 +918,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
         for (var asset : assets) {
             byQuestion.putIfAbsent(
                 asset.getQuestionId(),
-                QuestionAssetDtoMapper.toDto(QuestionAssetMapper.toDomain(asset)));
+                QuestionAssetDto.toDto(QuestionAssetMapper.toDomain(asset)));
         }
         return byQuestion;
     }

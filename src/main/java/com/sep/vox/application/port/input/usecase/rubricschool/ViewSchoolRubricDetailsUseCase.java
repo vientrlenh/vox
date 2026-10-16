@@ -7,7 +7,6 @@ import com.sep.vox.application.port.input.query.ViewSchoolRubricDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricDto;
-import com.sep.vox.domain.mapper.RubricDtoMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -76,6 +75,6 @@ public class ViewSchoolRubricDetailsUseCase implements IUseCase<ViewSchoolRubric
         }
 
         // 5. Map sang Domain DTO
-        return RubricDtoMapper.toRubricDto(rubric);
+        return RubricDto.toDto(rubric);
     }
 }

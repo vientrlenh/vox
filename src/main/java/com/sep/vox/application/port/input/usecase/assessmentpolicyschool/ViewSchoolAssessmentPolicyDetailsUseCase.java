@@ -7,7 +7,6 @@ import com.sep.vox.application.port.input.query.ViewSchoolAssessmentPolicyDetail
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentPolicyDto;
-import com.sep.vox.domain.mapper.AssessmentPolicyDtoMapper;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -67,6 +66,6 @@ public class ViewSchoolAssessmentPolicyDetailsUseCase implements IUseCase<ViewSc
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
         }
 
-        return AssessmentPolicyDtoMapper.toDto(policy);
+        return AssessmentPolicyDto.toDto(policy);
     }
 }

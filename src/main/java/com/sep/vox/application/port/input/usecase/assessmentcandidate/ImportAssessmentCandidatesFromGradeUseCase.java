@@ -17,7 +17,6 @@ import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessServi
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.AssessmentCandidateDto;
-import com.sep.vox.domain.mapper.AssessmentCandidateDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
@@ -125,6 +124,6 @@ public class ImportAssessmentCandidatesFromGradeUseCase
         if (assessment.getStatus() == AssessmentStatus.SCHEDULED) {
             classTestTokenQuotaGuardService.requireWithinTokenQuota(assessment);
         }
-        return AssessmentCandidateDtoMapper.toDtoList(saved);
+        return AssessmentCandidateDto.toDtoList(saved);
     }
 }

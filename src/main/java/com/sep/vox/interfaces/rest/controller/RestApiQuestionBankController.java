@@ -111,7 +111,7 @@ public class RestApiQuestionBankController {
     @PostMapping("/school")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<CreateQuestionBankResponse>> createSchool(@Valid @RequestBody CreateSchoolQuestionBankRequest request) {
-        var command = CreateQuestionBankCommandMapper.fromSchoolRequest(request);
+        var command = CreateSchoolQuestionBankRequest.toCommand(request);
         var data = createSchoolQuestionBankUseCase.execute(command);
         var response = ApiResponse.success("Tạo ngân hàng câu hỏi thành công", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -122,7 +122,7 @@ public class RestApiQuestionBankController {
     public ResponseEntity<ApiResponse<QuestionBankDto>> update(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionBankRequest request) {
-        var command = UpdateQuestionBankCommandMapper.fromRequest(id, request);
+        var command = UpdateQuestionBankRequest.toCommand(id, request);
         var data = updateQuestionBankUseCase.execute(command);
         var response = ApiResponse.success("Cập nhật ngân hàng câu hỏi thành công", data);
         return ResponseEntity.ok(response);
@@ -133,7 +133,7 @@ public class RestApiQuestionBankController {
     public ResponseEntity<ApiResponse<QuestionBankDto>> updateStatus(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionBankStatusRequest request) {
-        var command = UpdateQuestionBankStatusCommandMapper.fromRequest(id, request);
+        var command = UpdateQuestionBankStatusRequest.toCommand(id, request);
         var data = updateQuestionBankStatusUseCase.execute(command);
         var response = ApiResponse.success("Cập nhật trạng thái ngân hàng câu hỏi thành công", data);
         return ResponseEntity.ok(response);
@@ -163,7 +163,7 @@ public class RestApiQuestionBankController {
     public ResponseEntity<ApiResponse<QuestionBankGradeDto>> createGrade(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody CreateQuestionBankGradeRequest request) {
-        var command = CreateQuestionBankGradeCommandMapper.fromRequest(id, request);
+        var command = CreateQuestionBankGradeRequest.toCommand(id, request);
         var data = createQuestionBankGradeUseCase.execute(command);
         var response = ApiResponse.success("Gắn khối lớp cho ngân hàng câu hỏi thành công", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

@@ -10,7 +10,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.QuestionDto;
-import com.sep.vox.domain.mapper.QuestionDtoMapper;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -56,6 +55,6 @@ public class ViewQuestionDetailsUseCase implements IUseCase<ViewQuestionDetailsQ
             schoolAdmin
         ).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
 
-        return QuestionDtoMapper.toQuestionDto(question);
+        return QuestionDto.toDto(question);
     }
 }

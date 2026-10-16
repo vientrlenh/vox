@@ -2,6 +2,8 @@ package com.sep.vox.interfaces.rest.dto.request;
 
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.CreateQuestionCollaboratorCommand;
+
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
@@ -16,4 +18,12 @@ public record CreateQuestionCollaboratorRequest(
     )
     String permission
 ) {
+
+    public static CreateQuestionCollaboratorCommand toCommand(UUID questionId, CreateQuestionCollaboratorRequest request) {
+        return new CreateQuestionCollaboratorCommand(
+            questionId,
+            request.userId(),
+            request.permission()
+        );
+    }
 }

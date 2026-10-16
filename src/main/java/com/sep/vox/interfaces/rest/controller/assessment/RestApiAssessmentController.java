@@ -94,7 +94,7 @@ public class RestApiAssessmentController {
     @PostMapping
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<AssessmentDto>> create(@Valid @RequestBody CreateAssessmentRequest request) {
-        var data = createAssessmentUseCase.execute(CreateAssessmentCommandMapper.fromRequest(request));
+        var data = createAssessmentUseCase.execute(CreateAssessmentRequest.toCommand(request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo bài kiểm tra thành công", data));
     }
@@ -104,7 +104,7 @@ public class RestApiAssessmentController {
     public ResponseEntity<ApiResponse<AssessmentDto>> update(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateAssessmentRequest request) {
-        var data = updateAssessmentUseCase.execute(UpdateAssessmentCommandMapper.fromRequest(id, request));
+        var data = updateAssessmentUseCase.execute(UpdateAssessmentRequest.toCommand(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật bài kiểm tra thành công", data));
     }
 
@@ -122,7 +122,7 @@ public class RestApiAssessmentController {
     public ResponseEntity<ApiResponse<AssessmentDto>> updateStatus(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateAssessmentStatusRequest request) {
-        var data = updateAssessmentStatusUseCase.execute(UpdateAssessmentStatusCommandMapper.fromRequest(id, request));
+        var data = updateAssessmentStatusUseCase.execute(UpdateAssessmentStatusRequest.toCommand(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái bài kiểm tra thành công", data));
     }
 
@@ -131,7 +131,7 @@ public class RestApiAssessmentController {
     public ResponseEntity<ApiResponse<AssessmentDto>> updateDeliveryMode(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateAssessmentDeliveryModeRequest request) {
-        var data = updateAssessmentDeliveryModeUseCase.execute(UpdateAssessmentDeliveryModeCommandMapper.fromRequest(id, request));
+        var data = updateAssessmentDeliveryModeUseCase.execute(UpdateAssessmentDeliveryModeRequest.toCommand(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật hình thức làm bài thành công", data));
     }
 
@@ -150,7 +150,7 @@ public class RestApiAssessmentController {
     public ResponseEntity<ApiResponse<AssessmentMemberDto>> createMember(
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody CreateAssessmentMemberRequest request) {
-        var data = createAssessmentMemberUseCase.execute(CreateAssessmentMemberCommandMapper.fromRequest(assessmentId, request));
+        var data = createAssessmentMemberUseCase.execute(CreateAssessmentMemberRequest.toCommand(assessmentId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Gán collaborator cho bài kiểm tra thành công", data));
     }
@@ -161,7 +161,7 @@ public class RestApiAssessmentController {
             @PathVariable("assessmentId") UUID assessmentId,
             @PathVariable("memberId") UUID memberId,
             @Valid @RequestBody UpdateAssessmentMemberRequest request) {
-        var data = updateAssessmentMemberUseCase.execute(UpdateAssessmentMemberCommandMapper.fromRequest(assessmentId, memberId, request));
+        var data = updateAssessmentMemberUseCase.execute(UpdateAssessmentMemberRequest.toCommand(assessmentId, memberId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật collaborator cho bài kiểm tra thành công", data));
     }
 
@@ -180,7 +180,7 @@ public class RestApiAssessmentController {
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody UpdateAssessmentSecurePoolStatusRequest request) {
         var data = updateAssessmentSecurePoolStatusUseCase.execute(
-            UpdateAssessmentSecurePoolStatusCommandMapper.fromRequest(assessmentId, request)
+            UpdateAssessmentSecurePoolStatusRequest.toCommand(assessmentId, request)
         );
         return ResponseEntity.ok(ApiResponse.success("Mở khoá câu hỏi đề thi thành công", data));
     }

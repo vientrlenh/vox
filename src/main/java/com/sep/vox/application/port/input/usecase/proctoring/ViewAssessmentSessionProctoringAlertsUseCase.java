@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.service.AssessmentRecordingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.AssessmentProctoringAlertDto;
-import com.sep.vox.domain.mapper.AssessmentProctoringAlertDtoMapper;
 import com.sep.vox.domain.repository.assessment.AssessmentProctoringAlertRepository;
 
 /**
@@ -47,7 +46,7 @@ public class ViewAssessmentSessionProctoringAlertsUseCase implements IUseCase<UU
         var session = accessService.requireCanViewRecordings(assessmentSessionId);
         return assessmentProctoringAlertRepository.findByAssessmentSessionIdOrderByCapturedAt(session.getId())
             .stream()
-            .map(AssessmentProctoringAlertDtoMapper::toDto)
+            .map(AssessmentProctoringAlertDto::toDto)
             .toList();
     }
 }

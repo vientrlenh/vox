@@ -16,7 +16,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.RoleConstant;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.SchoolUserDto;
-import com.sep.vox.domain.mapper.SchoolUserDtoMapper;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -76,7 +75,7 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
             input.size()
         );
 
-        return SchoolUserDtoMapper.toSchoolUserPageDto(schoolUsersPage);
+        return SchoolUserDto.toDtoPage(schoolUsersPage);
     }
 
     /**

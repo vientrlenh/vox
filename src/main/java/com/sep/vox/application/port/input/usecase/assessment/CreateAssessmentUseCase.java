@@ -19,7 +19,6 @@ import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.AssessmentDto;
-import com.sep.vox.domain.mapper.AssessmentDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentDeliveryMode;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
@@ -124,7 +123,7 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
         );
         // Gán qua setter: constructor Assessment không nhận trường này (xem AssessmentMapper).
         assessment.setAiConfidenceThresholdPercent(command.aiConfidenceThresholdPercent());
-        return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
+        return AssessmentDto.toDto(assessmentRepository.save(assessment));
     }
 
     private CreateAssessmentCommand normalize(CreateAssessmentCommand input) {

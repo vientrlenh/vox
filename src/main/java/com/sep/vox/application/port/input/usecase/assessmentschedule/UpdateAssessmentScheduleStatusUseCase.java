@@ -15,7 +15,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.AssessmentScheduleDto;
-import com.sep.vox.domain.mapper.AssessmentScheduleDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateStatus;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
@@ -95,7 +94,7 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
 
         schedule.setUpdatedAt(now);
         schedule.setUpdatedBy(currentUserId);
-        return AssessmentScheduleDtoMapper.toDto(assessmentScheduleRepository.save(schedule));
+        return AssessmentScheduleDto.toDto(assessmentScheduleRepository.save(schedule));
     }
 
     private void requireAssessmentNotStarted(Assessment assessment) {

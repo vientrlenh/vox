@@ -26,7 +26,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.AssessmentDto;
-import com.sep.vox.domain.mapper.AssessmentDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateStatus;
@@ -204,7 +203,7 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
 
         assessment.setUpdatedAt(now);
         assessment.setUpdatedBy(currentUserId);
-        return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
+        return AssessmentDto.toDto(assessmentRepository.save(assessment));
     }
 
     private void authorizeMutation(

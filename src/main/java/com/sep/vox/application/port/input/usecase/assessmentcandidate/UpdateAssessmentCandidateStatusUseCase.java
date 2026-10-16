@@ -14,7 +14,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.AssessmentCandidateDto;
-import com.sep.vox.domain.mapper.AssessmentCandidateDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -83,7 +82,7 @@ public class UpdateAssessmentCandidateStatusUseCase implements IUseCase<UpdateAs
         candidate.setStatus(input.status());
         candidate.setUpdatedAt(now);
         candidate.setUpdatedBy(currentUserId);
-        return AssessmentCandidateDtoMapper.toDto(assessmentCandidateRepository.save(candidate));
+        return AssessmentCandidateDto.toDto(assessmentCandidateRepository.save(candidate));
     }
 
     private boolean hasAttendanceAccess(Assessment assessment, UUID scheduleId, UUID currentUserId) {

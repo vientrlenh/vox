@@ -10,7 +10,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionEvaluationGuideDto;
-import com.sep.vox.domain.mapper.QuestionEvaluationGuideDtoMapper;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
@@ -112,7 +111,7 @@ public class UpsertQuestionEvaluationGuideUseCase implements IUseCase<UpsertQues
         }
 
         var saved = questionEvaluationGuideRepository.save(guide);
-        return QuestionEvaluationGuideDtoMapper.toDto(saved);
+        return QuestionEvaluationGuideDto.toDto(saved);
     }
 
     private UpsertQuestionEvaluationGuideCommand normalize(UpsertQuestionEvaluationGuideCommand input) {

@@ -1,11 +1,13 @@
 package com.sep.vox.domain.dto;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.language.LearningLanguage;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
+import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.domain.valueobject.Code;
 import com.sep.vox.domain.valueobject.Name;
 
@@ -35,5 +37,21 @@ public record SchoolClassDto(
                         sClass.getCreatedAt(), 
                         sClass.getUpdatedAt()
                 );
-        } 
+        }
+
+        public static List<SchoolClassDto> toDtoList(List<SchoolClass> schoolClasses) {
+                return schoolClasses.stream()
+                        .map(SchoolClassDto::toDto)
+                        .toList();
+        }
+
+        public static PageResult<SchoolClassDto> toDtoPage(PageResult<SchoolClass> schoolClassPage) {
+                return PageResult.pageResult(
+                        toDtoList(schoolClassPage.content()),
+                        schoolClassPage.page(),
+                        schoolClassPage.size(),
+                        schoolClassPage.totalElements(),
+                        schoolClassPage.totalPages()
+                );
+        }
 }

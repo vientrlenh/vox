@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionTopicDto;
-import com.sep.vox.domain.mapper.QuestionTopicDtoMapper;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
@@ -70,7 +69,7 @@ public class UpdateQuestionTopicUseCase implements IUseCase<UpdateQuestionTopicC
         topic.setUpdatedBy(currentUserId);
 
         var saved = questionTopicRepository.save(topic);
-        return QuestionTopicDtoMapper.toDto(saved);
+        return QuestionTopicDto.toDto(saved);
     }
 
     private UpdateQuestionTopicCommand normalize(UpdateQuestionTopicCommand input) {

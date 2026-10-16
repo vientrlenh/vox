@@ -20,7 +20,6 @@ import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurat
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentDto;
-import com.sep.vox.domain.mapper.AssessmentDtoMapper;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.assessment.Assessment;
@@ -182,7 +181,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         assessment.setUpdatedBy(currentUserId);
         var saved = assessmentRepository.save(assessment);
         recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
-        return AssessmentDtoMapper.toDto(saved);
+        return AssessmentDto.toDto(saved);
     }
 
     private void updateSectionQuestions(

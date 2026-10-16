@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.mapper.schoolclass.CreateSchoolClassResponseMapper;
 import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -82,7 +81,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
             now
         );
         var saved = schoolClassRepository.save(schoolClass);
-        return CreateSchoolClassResponseMapper.toResponse(saved.getId());
+        return CreateSchoolClassResponse.toResponse(saved.getId());
     }
 
     private CreateSchoolClassCommand normalize(CreateSchoolClassCommand input) {

@@ -15,7 +15,6 @@ import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateCon
 import com.sep.vox.application.port.input.service.AssessmentScheduleManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.AssessmentCandidateDto;
-import com.sep.vox.domain.mapper.AssessmentCandidateDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
@@ -114,6 +113,6 @@ public class BulkAssignAssessmentCandidateScheduleUseCase
         }
         // Chỉ thí sinh vừa được xếp vào ca mới được gán đề; bỏ gán khỏi ca thì giữ nguyên đề đang có.
         assessmentPaperAutoAssigner.assignPapersIfNeeded(assessment, assignedToSchedule, now, currentUserId);
-        return AssessmentCandidateDtoMapper.toDtoList(assessmentCandidateRepository.saveAll(candidates));
+        return AssessmentCandidateDto.toDtoList(assessmentCandidateRepository.saveAll(candidates));
     }
 }

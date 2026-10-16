@@ -13,7 +13,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionBankDto;
-import com.sep.vox.domain.mapper.QuestionBankDtoMapper;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionBankStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
@@ -62,7 +61,7 @@ public class UpdateQuestionBankStatusUseCase implements IUseCase<UpdateQuestionB
         questionBank.setUpdatedBy(currentUserId);
 
         var saved = questionBankRepository.save(questionBank);
-        return QuestionBankDtoMapper.toDto(saved);
+        return QuestionBankDto.toDto(saved);
     }
 
     private void validateAccess(QuestionBankOwnerType ownerType, UUID schoolId, UUID currentSchoolId) {

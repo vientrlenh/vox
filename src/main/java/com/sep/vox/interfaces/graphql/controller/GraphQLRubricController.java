@@ -8,6 +8,10 @@ import com.sep.vox.application.port.input.usecase.rubricteacher.*;
 import com.sep.vox.domain.dto.*;
 import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.interfaces.graphql.dto.request.*;
+import com.sep.vox.interfaces.graphql.dto.request.UpdateRubricCriterionInput;
+import com.sep.vox.interfaces.graphql.dto.request.UpdateRubricInput;
+import com.sep.vox.interfaces.graphql.dto.request.UpdateRubricResultBandInput;
+import com.sep.vox.interfaces.graphql.dto.request.UpdateRubricVersionInput;
 import com.sep.vox.interfaces.graphql.mapper.*;
 import graphql.schema.DataFetchingEnvironment;
 import jakarta.validation.Valid;
@@ -72,7 +76,7 @@ public class GraphQLRubricController {
             @Argument(name = "id") UUID id,
             @Argument(name = "input") UpdateRubricInput input
     ) {
-        var command = UpdateRubricGraphQLMapper.fromSystemInput(id, input);
+        var command = UpdateRubricInput.toCommand(id, input);
 
         return updateSystemRubricUseCase.execute(command);
     }
@@ -86,7 +90,7 @@ public class GraphQLRubricController {
             @Argument(name = "id") UUID id,
             @Valid @Argument(name = "input") UpdateRubricInput input
     ) {
-        var command = UpdateRubricGraphQLMapper.fromSchoolInput(schoolId, id, input);
+        var command = UpdateRubricInput.toCommand(schoolId, id, input);
         return updateSchoolRubricUseCase.execute(command);
     }
 
@@ -151,7 +155,7 @@ public class GraphQLRubricController {
         if (loader == null) {
             throw new IllegalStateException("Không tìm thấy DataLoader: supportedLanguageDataLoader");
         }
-        return loader.load(rubric.languageId());
+        return loader.load(rubric.learningLanguageId());
     }
 
     @SchemaMapping(typeName = "Rubric", field = "framework")
@@ -308,7 +312,7 @@ public class GraphQLRubricController {
             @Argument(name = "input") UpdateRubricVersionInput input
     ) {
         // Sử dụng Mapper chuẩn men
-        var command = UpdateRubricVersionGraphQLMapper.fromSystemInput(versionId, input);
+        var command = UpdateRubricVersionInput.toCommand(versionId, input);
 
         return updateSystemRubricVersionUseCase.execute(command);
     }
@@ -322,7 +326,7 @@ public class GraphQLRubricController {
             @Argument(name = "versionId") UUID versionId,
             @Argument(name = "input") UpdateRubricVersionInput input
     ) {
-        var command = UpdateRubricVersionGraphQLMapper.fromSchoolInput(schoolId, versionId, input);
+        var command = UpdateRubricVersionInput.toCommand(schoolId, versionId, input);
 
         return updateSchoolRubricVersionUseCase.execute(command);
     }
@@ -497,7 +501,7 @@ public class GraphQLRubricController {
             @Argument(name = "criterionId") UUID criterionId,
             @Argument(name = "input") UpdateRubricCriterionInput input
     ) {
-        var command = RubricCriterionGraphQLMapper.fromSystemInput(criterionId, input);
+        var command = UpdateRubricCriterionInput.toCommand(criterionId, input);
         return updateSystemRubricCriterionUseCase.execute(command);
     }
 
@@ -509,7 +513,7 @@ public class GraphQLRubricController {
             @Argument(name = "criterionId") UUID criterionId,
             @Argument(name = "input") UpdateRubricCriterionInput input
     ) {
-        var command = RubricCriterionGraphQLMapper.fromSchoolInput(schoolId, criterionId, input);
+        var command = UpdateRubricCriterionInput.toCommand(schoolId, criterionId, input);
         return updateSchoolRubricCriterionUseCase.execute(command);
     }
 
@@ -613,7 +617,7 @@ public class GraphQLRubricController {
             @Argument(name = "resultBandId") UUID resultBandId,
             @Argument(name = "input") UpdateRubricResultBandInput input
     ) {
-        var command = RubricResultBandGraphQLMapper.fromSystemInput(resultBandId, input);
+        var command = UpdateRubricResultBandInput.toCommand(resultBandId, input);
         return updateSystemRubricResultBandUseCase.execute(command);
     }
 
@@ -625,7 +629,7 @@ public class GraphQLRubricController {
             @Argument(name = "resultBandId") UUID resultBandId,
             @Argument(name = "input") UpdateRubricResultBandInput input
     ) {
-        var command = RubricResultBandGraphQLMapper.fromSchoolInput(schoolId, resultBandId, input);
+        var command = UpdateRubricResultBandInput.toCommand(schoolId, resultBandId, input);
         return updateSchoolRubricResultBandUseCase.execute(command);
     }
 

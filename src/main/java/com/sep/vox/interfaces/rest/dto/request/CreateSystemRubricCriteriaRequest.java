@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.CreateSystemRubricCriteriaCommand;
+
 public record CreateSystemRubricCriteriaRequest(
         @NotEmpty(message = "Phải có ít nhất 1 tiêu chí được gửi lên")
         @Valid
@@ -55,4 +57,32 @@ public record CreateSystemRubricCriteriaRequest(
                 @NotNull(message = "Điểm kỳ vọng không được để trống")
                 BigDecimal expectedScore
         ) {}
+
+    public static CreateSystemRubricCriteriaCommand toCommand(UUID versionId, CreateSystemRubricCriteriaRequest request) {
+        List<CreateSystemRubricCriteriaCommand.CriterionItemCommand> criteriaCommands = request.criteria().stream()
+                .map(c -> {
+                    List<CreateSystemRubricCriteriaCommand.CriterionExampleCommand> exampleCommands = null;
+                    if (c.examples() != null) {
+                        exampleCommands = c.examples().stream()
+                                .map(ex -> new CreateSystemRubricCriteriaCommand.CriterionExampleCommand(
+                                        ex.transcript(), ex.explanation(), ex.expectedScore()
+                                )).toList();
+                    }
+
+                    return new CreateSystemRubricCriteriaCommand.CriterionItemCommand(
+                            c.frameworkCriterionId(),
+                            c.code(),
+                            c.name(),
+                            c.description(),
+                            exampleCommands,
+                            c.weight(),
+                            c.minScore(),
+                            c.maxScore(),
+                            c.order(),
+                            c.isRequired()
+                    );
+                }).toList();
+
+        return new CreateSystemRubricCriteriaCommand(versionId, criteriaCommands);
+    }
 }

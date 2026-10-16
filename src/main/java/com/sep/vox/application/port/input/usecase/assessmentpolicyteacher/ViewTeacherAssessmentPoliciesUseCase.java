@@ -7,7 +7,6 @@ import com.sep.vox.application.port.input.query.ViewTeacherAssessmentPoliciesQue
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentPolicyDto;
-import com.sep.vox.domain.mapper.AssessmentPolicyDtoMapper;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -68,6 +67,6 @@ public class ViewTeacherAssessmentPoliciesUseCase implements IUseCase<ViewTeache
         // Teacher chỉ được xem các chính sách đã PUBLISHED
         var policyPage = assessmentPolicyRepository.findAllBySchoolId(schoolUser.getSchoolId(), AssessmentPolicyStatus.PUBLISHED.name(),
                 query.languageId(), query.rubricVersionId(), query.effectiveFrom(), query.effectiveTo(), query.page(), query.size());
-        return AssessmentPolicyDtoMapper.toDtoPage(policyPage);
+        return AssessmentPolicyDto.toDtoPage(policyPage);
     }
 }

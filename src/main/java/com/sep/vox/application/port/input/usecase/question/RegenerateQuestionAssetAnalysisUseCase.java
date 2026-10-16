@@ -10,7 +10,6 @@ import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.QuestionAssetDto;
-import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
 import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
@@ -87,7 +86,7 @@ public class RegenerateQuestionAssetAnalysisUseCase implements IUseCase<Regenera
         resetForAnalysis(targetAsset);
         var saved = questionAssetRepository.save(targetAsset);
         questionAssetAnalysisRequestPublisher.publish(targetQuestion, saved);
-        return QuestionAssetDtoMapper.toDto(saved);
+        return QuestionAssetDto.toDto(saved);
     }
 
     private QuestionAsset resolveClonedAsset(UUID questionId, int order) {

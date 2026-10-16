@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.AssessmentSecurePoolDto;
-import com.sep.vox.domain.mapper.AssessmentSecurePoolDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.model.assessment.AssessmentSecurePoolReleaseMode;
 import com.sep.vox.domain.model.assessment.AssessmentSecurePoolStatus;
@@ -73,6 +72,6 @@ public class UpdateAssessmentSecurePoolStatusUseCase implements IUseCase<UpdateA
             questionRepository.save(question);
         }
 
-        return AssessmentSecurePoolDtoMapper.toDto(savedPool);
+        return AssessmentSecurePoolDto.toDto(savedPool);
     }
 }

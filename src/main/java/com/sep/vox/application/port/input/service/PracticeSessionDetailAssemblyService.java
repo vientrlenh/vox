@@ -74,7 +74,7 @@ public class PracticeSessionDetailAssemblyService {
         var duration = summary.getEndedAt() == null
             ? 0
             : (int) Duration.between(summary.getStartedAt(), summary.getEndedAt()).toSeconds();
-        return PracticeSessionResponseMapper.toResponse(new TeacherPracticeSessionDetailDto(
+        return TeacherPracticeSessionDetail.toResponse(new TeacherPracticeSessionDetailDto(
             sessionId,
             summary.getTopicName(),
             summary.getStartedAt().toString(),

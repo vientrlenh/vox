@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.query.SearchSchoolScoringRuleQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ScoringRuleDto;
-import com.sep.vox.domain.mapper.ScoringRuleDtoMapper;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ScoringRuleRepository;
@@ -74,7 +73,7 @@ public class SearchSchoolScoringRuleUseCase implements IUseCase<SearchSchoolScor
                 query.policyId(), query.keyword(), query.isActive(), query.page(), query.size());
 
         return new PageResult<>(
-                pageResult.content().stream().map(ScoringRuleDtoMapper::toDto).toList(),
+                pageResult.content().stream().map(ScoringRuleDto::toDto).toList(),
                 pageResult.page(),
                 pageResult.size(),
                 pageResult.totalElements(),

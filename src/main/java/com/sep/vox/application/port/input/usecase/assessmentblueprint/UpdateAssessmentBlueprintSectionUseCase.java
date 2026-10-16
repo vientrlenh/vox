@@ -13,7 +13,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.AssessmentBlueprintSectionDto;
-import com.sep.vox.domain.mapper.AssessmentBlueprintSectionDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersionStatus;
 import com.sep.vox.domain.repository.assessment.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentBlueprintSectionRepository;
@@ -80,7 +79,7 @@ public class UpdateAssessmentBlueprintSectionUseCase implements IUseCase<UpdateA
         section.setUpdatedAt(Instant.now());
         section.setUpdatedBy(currentUserId);
 
-        return AssessmentBlueprintSectionDtoMapper.toDto(assessmentBlueprintSectionRepository.save(section));
+        return AssessmentBlueprintSectionDto.toDto(assessmentBlueprintSectionRepository.save(section));
     }
 
     private UpdateAssessmentBlueprintSectionCommand normalize(UpdateAssessmentBlueprintSectionCommand input) {

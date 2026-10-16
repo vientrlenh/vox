@@ -23,7 +23,6 @@ import com.sep.vox.domain.dto.GradeLevelDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateAssessmentPolicyInput;
-import com.sep.vox.interfaces.graphql.mapper.UpdateAssessmentPolicyGraphQLMapper;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -166,7 +165,7 @@ public class GraphQLAssessmentPolicyController {
     public CompletableFuture<SupportedLanguageDto> getLanguage(AssessmentPolicyDto policy,
             DataFetchingEnvironment env) {
         DataLoader<UUID, SupportedLanguageDto> loader = env.getDataLoader("supportedLanguageDataLoader");
-        return loader.load(policy.languageId());
+        return loader.load(policy.learningLanguageId());
     }
 
     @SchemaMapping(typeName = "AssessmentPolicy", field = "frameworkVersion")
@@ -195,7 +194,7 @@ public class GraphQLAssessmentPolicyController {
     public UUID updateSystemAssessmentPolicy(
             @Argument(name = "policyId") UUID policyId,
             @Argument(name = "input") UpdateAssessmentPolicyInput input) {
-        var command = UpdateAssessmentPolicyGraphQLMapper.fromSystemInput(policyId, input);
+        var command = UpdateAssessmentPolicyInput.toCommand(policyId, input);
         return updateSystemAssessmentPolicyUseCase.execute(command);
     }
 
@@ -205,7 +204,7 @@ public class GraphQLAssessmentPolicyController {
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "policyId") UUID policyId,
             @Argument(name = "input") UpdateAssessmentPolicyInput input) {
-        var command = UpdateAssessmentPolicyGraphQLMapper.fromSchoolInput(schoolId, policyId, input);
+        var command = UpdateAssessmentPolicyInput.toCommand(schoolId, policyId, input);
         return updateSchoolAssessmentPolicyUseCase.execute(command);
     }
 

@@ -16,7 +16,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.assessment.StudentAssessmentPaperQuestionResponse;
 import com.sep.vox.application.response.input.assessment.StudentAssessmentPaperResponse;
 import com.sep.vox.application.response.input.assessment.StudentQuestionResponse;
-import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
+import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
@@ -97,7 +97,7 @@ public class GetAssessmentSessionPaperUseCase implements IUseCase<ViewAssessment
                 var section = sectionById.get(item.getSectionId());
                 var asset = questionAssetRepository.findByQuestionId(question.getId()).stream()
                     .findFirst()
-                    .map(QuestionAssetDtoMapper::toDto)
+                    .map(QuestionAssetDto::toDto)
                     .orElse(null);
 
                 return new StudentAssessmentPaperQuestionResponse(

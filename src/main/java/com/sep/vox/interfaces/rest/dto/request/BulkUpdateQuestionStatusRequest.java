@@ -3,6 +3,8 @@ package com.sep.vox.interfaces.rest.dto.request;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.BulkUpdateQuestionStatusCommand;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
@@ -21,4 +23,8 @@ public record BulkUpdateQuestionStatusRequest(
     String action,
     String note
 ) {
+
+    public static BulkUpdateQuestionStatusCommand toCommand(BulkUpdateQuestionStatusRequest request) {
+        return new BulkUpdateQuestionStatusCommand(request.questionIds(), request.action(), request.note());
+    }
 }

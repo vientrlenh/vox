@@ -22,7 +22,6 @@ import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionDto;
-import com.sep.vox.domain.mapper.QuestionDtoMapper;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
@@ -124,7 +123,7 @@ public class QuestionSpreadsheetService {
                 EXPORT_PAGE_SIZE
             );
             questions.addAll(result.content().stream()
-                .map(QuestionDtoMapper::toQuestionDto)
+                .map(QuestionDto::toDto)
                 .toList());
             page++;
             // `>` chứ không phải `>=`: đi kèm mốc bắt đầu 1-based ở trên. Giữ `>=` thì trang CUỐI
@@ -149,7 +148,7 @@ public class QuestionSpreadsheetService {
                 var row = sheet.createRow(rowIndex++);
                 writeRow(row, rowValues(
                     question.code(),
-                    question.type(),
+                    question.type().name(),
                     question.questionText(),
                     question.instructionText(),
                     question.promptText(),
@@ -157,7 +156,7 @@ public class QuestionSpreadsheetService {
                     String.valueOf(question.preparationTimeSeconds()),
                     String.valueOf(question.minResponseSeconds()),
                     String.valueOf(question.maxResponseSeconds()),
-                    question.sharing(),
+                    question.sharing() == null ? null : question.sharing().name(),
                     evaluationGuide == null ? null : evaluationGuide.getExpectedContent(),
                     evaluationGuide == null ? null : evaluationGuide.getKeyPoints(),
                     evaluationGuide == null ? null : evaluationGuide.getAcceptableResponses(),
@@ -166,9 +165,9 @@ public class QuestionSpreadsheetService {
                     evaluationGuide == null ? null : evaluationGuide.getCommonMistakes(),
                     bankCodeOf(question.questionBankId(), bankCache),
                     topicNameOf(question.questionTopicId(), topicCache),
-                    question.status(),
+                    question.status().name(),
                     createdByNameOf(question.createdBy(), userCache),
-                    question.createdAt()
+                    question.createdAt() == null ? null : question.createdAt().toString()
                 ));
             }
             autoSize(sheet, fullExportHeaders().size());

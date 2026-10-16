@@ -7,7 +7,6 @@ import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewQuestionTopicDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.QuestionTopicDto;
-import com.sep.vox.domain.mapper.QuestionTopicDtoMapper;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
 
 @Service
@@ -24,6 +23,6 @@ public class ViewQuestionTopicDetailsUseCase implements IUseCase<ViewQuestionTop
     public QuestionTopicDto execute(ViewQuestionTopicDetailsQuery input) {
         var topic = questionTopicRepository.findById(input.id())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
-        return QuestionTopicDtoMapper.toDto(topic);
+        return QuestionTopicDto.toDto(topic);
     }
 }

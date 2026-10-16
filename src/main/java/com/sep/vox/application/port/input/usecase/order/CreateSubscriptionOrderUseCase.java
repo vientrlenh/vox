@@ -65,7 +65,7 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
         }
 
         var plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
         if (plan.getStatus() != SubscriptionPlanStatus.ACTIVE) {
             throw new IllegalStateException("Gói này hiện không được mở bán.");
         }

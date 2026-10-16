@@ -34,8 +34,8 @@ public class AssessmentSessionRepositoryImpl implements AssessmentSessionReposit
     }
 
     @Override
-    public Optional<AssessmentSession> findLatestByExamIdAndCandidateId(UUID examId, UUID candidateId) {
-        return springDataAssessmentSessionRepository.findTopByExamIdAndCandidateIdOrderByStartedAtDesc(examId, candidateId)
+    public Optional<AssessmentSession> findLatestByAssessmentIdAndCandidateId(UUID assessmentId, UUID candidateId) {
+        return springDataAssessmentSessionRepository.findTopByAssessmentIdAndCandidateIdOrderByStartedAtDesc(assessmentId, candidateId)
             .map(AssessmentSessionMapper::toDomain);
     }
 
@@ -70,8 +70,8 @@ public class AssessmentSessionRepositoryImpl implements AssessmentSessionReposit
     }
 
     @Override
-    public long countActiveByExamId(UUID examId) {
-        return springDataAssessmentSessionRepository.countActiveByExamId(examId);
+    public long countActiveByAssessmentId(UUID assessmentId) {
+        return springDataAssessmentSessionRepository.countActiveByAssessmentId(assessmentId);
     }
 
     @Override
@@ -122,8 +122,8 @@ public class AssessmentSessionRepositoryImpl implements AssessmentSessionReposit
     }
 
     @Override
-    public Optional<AssessmentSession> findActiveByExamIdAndCandidateId(UUID examId, UUID candidateId) {
-        return springDataAssessmentSessionRepository.findByExamIdAndCandidateIdAndStatus(examId, candidateId, AssessmentStatus.IN_PROGRESS.name())
+    public Optional<AssessmentSession> findActiveByAssessmentIdAndCandidateId(UUID assessmentId, UUID candidateId) {
+        return springDataAssessmentSessionRepository.findByAssessmentIdAndCandidateIdAndStatus(assessmentId, candidateId, AssessmentStatus.IN_PROGRESS.name())
             .map(AssessmentSessionMapper::toDomain);
     }
 

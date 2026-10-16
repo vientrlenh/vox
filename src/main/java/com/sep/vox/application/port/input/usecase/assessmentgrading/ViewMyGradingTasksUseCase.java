@@ -4,11 +4,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewMyGradingTasksQuery;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.GradingTaskInfo;
-import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.model.assessment.ExamKind;
+import com.sep.vox.application.projection.repository.AssessmentGradingQueryRepository;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.shared.PageResult;
 
 /**
@@ -19,31 +19,31 @@ import com.sep.vox.domain.shared.PageResult;
  * riêng theo từng bài ({@code myClassTestGradingTasks}), nơi giáo viên còn thấy tên học
  * sinh và lớp. Trộn chung hai loại vào đây là lỗi đang sửa.
  *
- * <p>{@code examId} thì ngược lại — nhận từ client, nhưng chỉ để thu hẹp: nó nằm CẠNH
+ * <p>{@code assessmentId} thì ngược lại — nhận từ client, nhưng chỉ để thu hẹp: nó nằm CẠNH
  * điều kiện teacherId chứ không thay nó, nên không mở thêm được gì.
  */
 @Service
 public class ViewMyGradingTasksUseCase
         implements IUseCase<ViewMyGradingTasksQuery, PageResult<GradingTaskInfo>> {
 
-    private final ExamGradingQueryRepository examGradingQueryRepository;
-    private final ExamGradingAccessService examGradingAccessService;
+    private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
+    private final AssessmentGradingAccessService assessmentGradingAccessService;
 
     public ViewMyGradingTasksUseCase(
-            ExamGradingQueryRepository examGradingQueryRepository,
-            ExamGradingAccessService examGradingAccessService) {
-        this.examGradingQueryRepository = examGradingQueryRepository;
-        this.examGradingAccessService = examGradingAccessService;
+            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
+            AssessmentGradingAccessService assessmentGradingAccessService) {
+        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
+        this.assessmentGradingAccessService = assessmentGradingAccessService;
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResult<GradingTaskInfo> execute(ViewMyGradingTasksQuery input) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        return examGradingQueryRepository.findTasksByTeacherIdAndExamId(
+        var currentUserId = assessmentGradingAccessService.requireActiveUserId();
+        return assessmentGradingQueryRepository.findTasksByTeacherIdAndAssessmentId(
             currentUserId,
-            input.examId(),
-            ExamKind.CENTRALIZED.name(),
+            input.assessmentId(),
+            AssessmentKind.CENTRALIZED.name(),
             input.status(),
             input.roundType(),
             input.page(),

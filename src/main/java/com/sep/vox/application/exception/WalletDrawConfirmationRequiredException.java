@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 /**
  * Phân bổ hạn mức cá nhân yêu cầu vượt phần pool còn chia được, ăn vào ví tự nạp của trường -- ném ra
- * khi chưa có xác nhận rõ ràng ({@code confirmWalletDraw=false}), vì ví đó dùng chung cho cả EXAM lẫn
+ * khi chưa có xác nhận rõ ràng ({@code confirmWalletDraw=false}), vì ví đó dùng chung cho cả ASSESSMENT lẫn
  * PRACTICE (xem {@code SchoolBalance} javadoc). KHÁC {@code IllegalArgumentException}: đây không phải
  * yêu cầu sai, chỉ là cần người dùng xác nhận lại rồi gửi lại với cờ bật.
  */

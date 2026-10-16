@@ -12,8 +12,8 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_schedule_proctors", indexes = {
-    @Index(columnList = "schedule_id, teacher_id", name = "exam_schedule_proctors_schedule_teacher", unique = true)
+@Table(name = "assessment_schedule_proctors", indexes = {
+    @Index(columnList = "schedule_id, teacher_id", name = "assessment_schedule_proctors_schedule_teacher", unique = true)
 })
 public class AssessmentScheduleProctorJpaEntity {
     @Id

@@ -8,12 +8,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
-import com.sep.vox.application.port.input.service.ExamAssessmentPolicyValidator;
-import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator;
-import com.sep.vox.application.port.input.service.ExamScheduleRoomValidator;
-import com.sep.vox.application.port.input.service.ExamStreamConfigResolver;
+import com.sep.vox.application.port.input.service.AssessmentPolicyValidator;
+import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
+import com.sep.vox.application.port.input.service.AssessmentScheduleRoomValidator;
+import com.sep.vox.application.port.input.service.AssessmentStreamConfigResolver;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionActiveGuardService;
 import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -22,33 +22,33 @@ import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.assessment.CreateClassTestResponse;
 import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.application.shared.StringNormalization;
-import com.sep.vox.domain.mapper.ExamDtoMapper;
+import com.sep.vox.domain.mapper.AssessmentDtoMapper;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
-import com.sep.vox.domain.model.assessment.Exam;
-import com.sep.vox.domain.model.assessment.ExamCandidate;
-import com.sep.vox.domain.model.assessment.ExamDeliveryMode;
-import com.sep.vox.domain.model.assessment.ExamKind;
-import com.sep.vox.domain.model.assessment.ExamMember;
-import com.sep.vox.domain.model.assessment.ExamMemberRole;
-import com.sep.vox.domain.model.assessment.ExamSchedule;
-import com.sep.vox.domain.model.assessment.ExamScheduleProctor;
-import com.sep.vox.domain.model.assessment.ExamStatus;
-import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
+import com.sep.vox.domain.model.assessment.Assessment;
+import com.sep.vox.domain.model.assessment.AssessmentCandidate;
+import com.sep.vox.domain.model.assessment.AssessmentDeliveryMode;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.assessment.AssessmentMember;
+import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
+import com.sep.vox.domain.model.assessment.AssessmentSchedule;
+import com.sep.vox.domain.model.assessment.AssessmentScheduleProctor;
+import com.sep.vox.domain.model.assessment.AssessmentStatus;
+import com.sep.vox.domain.model.assessment.AssessmentResultDecisionMethod;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
-import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
-import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
-import com.sep.vox.domain.repository.assessment.ExamRepository;
-import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
-import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
-import com.sep.vox.domain.service.assessment.ExamDeliveryModeSupport;
+import com.sep.vox.domain.repository.assessment.AssessmentCandidateRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentMemberRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentScheduleProctorRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentScheduleRepository;
+import com.sep.vox.domain.service.assessment.AssessmentDeliveryModeSupport;
 
 /**
- * Tạo "vỏ" bài kiểm tra trên lớp: exam DRAFT + ca thi nháp + CHAIR + danh sách học sinh của lớp.
+ * Tạo "vỏ" bài kiểm tra trên lớp: assessment DRAFT + ca thi nháp + CHAIR + danh sách học sinh của lớp.
  *
  * <p><b>Không tạo đề nào ở đây.</b> Soạn đề (câu hỏi trực tiếp / blueprint / sao chép) là bước riêng
- * ở trang chi tiết qua {@code CreateExamPaperUseCase}, giống hệt kỳ thi tập trung — nhờ vậy giáo
+ * ở trang chi tiết qua {@code CreateAssessmentPaperUseCase}, giống hệt kỳ thi tập trung — nhờ vậy giáo
  * viên soạn được nhiều mã đề cho cùng một bài trên lớp rồi phân đề cho học sinh.
  */
 @Service
@@ -59,15 +59,15 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private final SchoolClassRepository schoolClassRepository;
     private final SchoolClassUserRepository schoolClassUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
-    private final ExamRepository examRepository;
-    private final ExamScheduleRepository examScheduleRepository;
-    private final ExamScheduleProctorRepository examScheduleProctorRepository;
-    private final ExamMemberRepository examMemberRepository;
-    private final ExamCandidateRepository examCandidateRepository;
-    private final ExamAssessmentPolicyValidator examAssessmentPolicyValidator;
-    private final ExamStreamConfigResolver examStreamConfigResolver;
-    private final ExamScheduleRoomValidator examScheduleRoomValidator;
-    private final ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentScheduleRepository assessmentScheduleRepository;
+    private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
+    private final AssessmentMemberRepository assessmentMemberRepository;
+    private final AssessmentCandidateRepository assessmentCandidateRepository;
+    private final AssessmentPolicyValidator assessmentPolicyValidator;
+    private final AssessmentStreamConfigResolver assessmentStreamConfigResolver;
+    private final AssessmentScheduleRoomValidator assessmentScheduleRoomValidator;
+    private final AssessmentScheduleProctorConflictValidator assessmentScheduleProctorConflictValidator;
     private final SubscriptionPeriodGuardService subscriptionPeriodGuardService;
     private final UserContextPort userContextPort;
     private final SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService;
@@ -76,30 +76,30 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             SchoolClassRepository schoolClassRepository,
             SchoolClassUserRepository schoolClassUserRepository,
             UserRoleQueryRepository userRoleQueryRepository,
-            ExamRepository examRepository,
-            ExamScheduleRepository examScheduleRepository,
-            ExamScheduleProctorRepository examScheduleProctorRepository,
-            ExamMemberRepository examMemberRepository,
-            ExamCandidateRepository examCandidateRepository,
-            ExamAssessmentPolicyValidator examAssessmentPolicyValidator,
-            ExamStreamConfigResolver examStreamConfigResolver,
-            ExamScheduleRoomValidator examScheduleRoomValidator,
-            ExamScheduleProctorConflictValidator examScheduleProctorConflictValidator,
+            AssessmentRepository assessmentRepository,
+            AssessmentScheduleRepository assessmentScheduleRepository,
+            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
+            AssessmentMemberRepository assessmentMemberRepository,
+            AssessmentCandidateRepository assessmentCandidateRepository,
+            AssessmentPolicyValidator assessmentPolicyValidator,
+            AssessmentStreamConfigResolver assessmentStreamConfigResolver,
+            AssessmentScheduleRoomValidator assessmentScheduleRoomValidator,
+            AssessmentScheduleProctorConflictValidator assessmentScheduleProctorConflictValidator,
             SubscriptionPeriodGuardService subscriptionPeriodGuardService,
             UserContextPort userContextPort,
             SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService) {
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
-        this.examRepository = examRepository;
-        this.examScheduleRepository = examScheduleRepository;
-        this.examScheduleProctorRepository = examScheduleProctorRepository;
-        this.examMemberRepository = examMemberRepository;
-        this.examCandidateRepository = examCandidateRepository;
-        this.examAssessmentPolicyValidator = examAssessmentPolicyValidator;
-        this.examStreamConfigResolver = examStreamConfigResolver;
-        this.examScheduleRoomValidator = examScheduleRoomValidator;
-        this.examScheduleProctorConflictValidator = examScheduleProctorConflictValidator;
+        this.assessmentRepository = assessmentRepository;
+        this.assessmentScheduleRepository = assessmentScheduleRepository;
+        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
+        this.assessmentMemberRepository = assessmentMemberRepository;
+        this.assessmentCandidateRepository = assessmentCandidateRepository;
+        this.assessmentPolicyValidator = assessmentPolicyValidator;
+        this.assessmentStreamConfigResolver = assessmentStreamConfigResolver;
+        this.assessmentScheduleRoomValidator = assessmentScheduleRoomValidator;
+        this.assessmentScheduleProctorConflictValidator = assessmentScheduleProctorConflictValidator;
         this.subscriptionPeriodGuardService = subscriptionPeriodGuardService;
         this.userContextPort = userContextPort;
         this.schoolSubscriptionActiveGuardService = schoolSubscriptionActiveGuardService;
@@ -117,7 +117,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         }
 
         var schoolClass = schoolClassRepository.findById(command.schoolClassId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
 
         var membership = schoolClassUserRepository.findByUserIdAndSchoolClassId(currentUserId, schoolClass.getId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
@@ -127,39 +127,39 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
         schoolSubscriptionActiveGuardService.requireActiveForSchool(schoolClass.getSchoolId(), "tạo Class Test");
 
-        examAssessmentPolicyValidator.requirePublishedInSchool(
+        assessmentPolicyValidator.requirePublishedInSchool(
             command.assessmentPolicyId(), schoolClass.getSchoolId());
         validateOpenClose(command.openAt(), command.closeAt(), schoolClass.getSchoolId());
 
         var now = Instant.now();
-        var exam = createExam(schoolClass, command, currentUserId, now);
-        var schedule = createDraftSchedule(exam, command.schoolRoomId(), currentUserId, now);
-        return finishSetup(exam, schedule, schoolClass, currentUserId, now);
+        var assessment = createAssessment(schoolClass, command, currentUserId, now);
+        var schedule = createDraftSchedule(assessment, command.schoolRoomId(), currentUserId, now);
+        return finishSetup(assessment, schedule, schoolClass, currentUserId, now);
     }
 
     /**
-     * Các bước sau khi exam đã dựng xong.
+     * Các bước sau khi assessment đã dựng xong.
      *
      * <p>Bài dừng lại ở DRAFT: giáo viên còn phải soạn đề, chọn phòng và xếp học sinh vào ca (chọn
      * lớp chỉ nạp danh sách học sinh, chưa xếp ca), giống hệt kỳ thi tập trung.
      * {@code validatePlanLimits} vì thế chạy lúc bấm SCHEDULE thay vì lúc tạo.
      */
     private CreateClassTestResponse finishSetup(
-            Exam exam,
-            ExamSchedule schedule,
+            Assessment assessment,
+            AssessmentSchedule schedule,
             SchoolClass schoolClass,
             UUID currentUserId,
             Instant now) {
-        examMemberRepository.save(new ExamMember(exam.getId(), currentUserId, ExamMemberRole.CHAIR, now, currentUserId));
+        assessmentMemberRepository.save(new AssessmentMember(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR, now, currentUserId));
         // Giám khảo mặc định là chính giáo viên tạo bài; giáo viên có thể thêm/bớt sau qua
         // endpoint proctor của ca thi. Quyền thì không phải kiểm thêm (người gọi đã được xác nhận là
         // TEACHER và là thành viên active của lớp ở đầu execute()), nhưng lịch thì có: luật "không
         // gác hai ca trùng giờ" là toàn trường nên bài trên lớp này có thể đâm vào một ca thi khác.
-        examScheduleProctorConflictValidator.requireTeacherFree(
+        assessmentScheduleProctorConflictValidator.requireTeacherFree(
             currentUserId, schedule.getStartDate(), schedule.getEndDate(), schedule.getId());
-        examScheduleProctorRepository.save(new ExamScheduleProctor(schedule.getId(), currentUserId));
-        var candidateCount = assignCandidates(exam, schoolClass.getId(), currentUserId, now);
-        return new CreateClassTestResponse(ExamDtoMapper.toDto(exam), candidateCount);
+        assessmentScheduleProctorRepository.save(new AssessmentScheduleProctor(schedule.getId(), currentUserId));
+        var candidateCount = assignCandidates(assessment, schoolClass.getId(), currentUserId, now);
+        return new CreateClassTestResponse(AssessmentDtoMapper.toDto(assessment), candidateCount);
     }
 
     private CreateClassTestCommand normalize(CreateClassTestCommand input) {
@@ -171,7 +171,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             input.closeAt(),
             input.assessmentPolicyId(),
             input.maxAttempt(),
-            input.examTimeDurationSecond(),
+            input.assessmentTimeDurationSecond(),
             input.resultDecisionMethod(),
             input.requiredStreamTypes() == null ? null : input.requiredStreamTypes().stream()
                 .map(StringNormalization::normalizeCode)
@@ -185,7 +185,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         );
     }
 
-    private Exam createExam(
+    private Assessment createAssessment(
             SchoolClass schoolClass,
             CreateClassTestCommand command,
             UUID currentUserId,
@@ -195,11 +195,11 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         var closeAt = DateMapper.toInstant(command.closeAt());
         Integer requestedMaxAttempt = command.maxAttempt();
         int maxAttempt = requestedMaxAttempt == null ? 1 : requestedMaxAttempt;
-        var streamConfig = examStreamConfigResolver.resolve(
+        var streamConfig = assessmentStreamConfigResolver.resolve(
             command.requiredStreamTypes(), command.streamTypePermission());
         // Bài trên lớp không gắn blueprint lúc tạo: giáo viên chọn cách soạn từng mã đề ở trang chi
         // tiết. Nếu sau đó muốn dùng blueprint dùng chung thì gắn qua ChangeClassTestBlueprintUseCase.
-        var classTest = new Exam(
+        var classTest = new Assessment(
             null,
             null,
             code,
@@ -207,14 +207,14 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             command.description(),
             schoolClass.getSchoolId(),
             schoolClass.getLanguageId(),
-            ExamKind.CLASS_TEST,
+            AssessmentKind.CLASS_TEST,
             // Bài trên lớp thi ngay trong phòng, chỉ khác nhau ở máy dùng để làm bài: máy của nhà
             // trường (LAB) hay máy học sinh mang theo (STUDENT_DEVICE — mặc định).
-            ExamDeliveryModeSupport.parseOrDefault(command.deliveryMode(), ExamDeliveryMode.STUDENT_DEVICE),
-            ExamStatus.DRAFT,
+            AssessmentDeliveryModeSupport.parseOrDefault(command.deliveryMode(), AssessmentDeliveryMode.STUDENT_DEVICE),
+            AssessmentStatus.DRAFT,
             maxAttempt,
-            command.examTimeDurationSecond(),
-            command.resultDecisionMethod() == null ? ResultDecisionMethod.HIGHEST : command.resultDecisionMethod(),
+            command.assessmentTimeDurationSecond(),
+            command.resultDecisionMethod() == null ? AssessmentResultDecisionMethod.HIGHEST : command.resultDecisionMethod(),
             openAt,
             closeAt,
             command.assessmentPolicyId(),
@@ -222,42 +222,42 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             command.requiresOtp() != null && command.requiresOtp(),
             now,
             // Cả hai cùng NULL nghĩa là không giám sát bằng stream — DB cho phép
-            // (chk_exams_required_stream_type_and_stream_type_permission_valid).
+            // (chk_assessments_required_stream_type_and_stream_type_permission_valid).
             streamConfig.requiredStreamType(),
             streamConfig.streamTypePermission(),
             now,
             currentUserId,
             currentUserId
         );
-        // Gán qua setter: constructor Exam đã rất dài và có nhiều biến thể, thêm tham số vào là
+        // Gán qua setter: constructor Assessment đã rất dài và có nhiều biến thể, thêm tham số vào là
         // phải sửa mọi nơi gọi chỉ để mang một trường tuỳ chọn.
         classTest.setAiConfidenceThresholdPercent(command.aiConfidenceThresholdPercent());
-        return examRepository.save(classTest);
+        return assessmentRepository.save(classTest);
     }
 
     /**
      * Ca thi của bài trên lớp bám đúng khung mở/đóng bài. Phòng có thể để trống ở đây và chọn sau
-     * qua updateExamSchedule, nhưng {@code UpdateExamStatusUseCase} sẽ chặn SCHEDULE nếu vẫn thiếu:
+     * qua updateAssessmentSchedule, nhưng {@code UpdateAssessmentStatusUseCase} sẽ chặn SCHEDULE nếu vẫn thiếu:
      * bài kiểm tra trên lớp cũng thi trong phòng, không cho làm ở nhà.
      */
-    private ExamSchedule createDraftSchedule(Exam exam, UUID schoolRoomId, UUID currentUserId, Instant now) {
-        if (exam.getOpenAt() == null || exam.getCloseAt() == null) {
+    private AssessmentSchedule createDraftSchedule(Assessment assessment, UUID schoolRoomId, UUID currentUserId, Instant now) {
+        if (assessment.getOpenAt() == null || assessment.getCloseAt() == null) {
             throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
         }
         if (schoolRoomId != null) {
-            examScheduleRoomValidator.validateForNewSchedule(
-                schoolRoomId, exam, exam.getOpenAt(), exam.getCloseAt());
+            assessmentScheduleRoomValidator.validateForNewSchedule(
+                schoolRoomId, assessment, assessment.getOpenAt(), assessment.getCloseAt());
         }
 
-        var schedule = ExamSchedule.createFresh(
-            exam.getId(),
+        var schedule = AssessmentSchedule.createFresh(
+            assessment.getId(),
             schoolRoomId,
-            exam.getOpenAt(),
-            exam.getCloseAt(),
+            assessment.getOpenAt(),
+            assessment.getCloseAt(),
             currentUserId,
             now
         );
-        return examScheduleRepository.save(schedule);
+        return assessmentScheduleRepository.save(schedule);
     }
 
     /**
@@ -266,7 +266,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
      * bước riêng qua endpoint assign-schedule / auto-fill.
      */
     private int assignCandidates(
-            Exam exam,
+            Assessment assessment,
             UUID schoolClassId,
             UUID currentUserId,
             Instant now) {
@@ -280,17 +280,17 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             .toList();
 
         // MỘT query cho cả lớp thay vì hỏi vai trò từng học sinh — lớp 40 người là 40 query, và trần
-        // roster là 2000. Giống hệt ImportExamCandidatesFromClassUseCase.
+        // roster là 2000. Giống hệt ImportAssessmentCandidatesFromClassUseCase.
         var studentIds = userRoleQueryRepository.findUserIdsByRoleCode(activeUserIds, SchoolRoleCodes.STUDENT);
 
-        var candidates = new ArrayList<ExamCandidate>();
+        var candidates = new ArrayList<AssessmentCandidate>();
         for (var userId : activeUserIds) {
             if (!studentIds.contains(userId)) {
                 continue;
             }
-            candidates.add(ExamCandidate.createFresh(exam.getId(), userId, currentUserId, now));
+            candidates.add(AssessmentCandidate.createFresh(assessment.getId(), userId, currentUserId, now));
         }
-        return examCandidateRepository.saveAll(candidates).size();
+        return assessmentCandidateRepository.saveAll(candidates).size();
     }
 
     private void validateOpenClose(String openAt, String closeAt, UUID schoolId) {

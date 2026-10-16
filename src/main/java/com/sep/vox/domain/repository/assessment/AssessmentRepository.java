@@ -31,7 +31,7 @@ public interface AssessmentRepository {
     List<Assessment> findAllByBlueprintId(UUID blueprintId);
     boolean existsByBlueprintId(UUID blueprintId);
     boolean existsByBlueprintIdAndKindAndStatusNot(UUID blueprintId, AssessmentKind kind, AssessmentStatus status);
-    boolean existsSubmittedSessionByExamId(UUID examId);
+    boolean existsSubmittedSessionByAssessmentId(UUID assessmentId);
     /** Bài thi đang có bài chờ soát điểm AI mà chưa nhắc lần nào. */
     List<Assessment> findDueForHumanGradingNotice();
 

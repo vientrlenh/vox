@@ -9,7 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_item_responses")
+@Table(name = "assessment_item_answers")
 public class AssessmentItemAnswerJpaEntity {
     
     @Id

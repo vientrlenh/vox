@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.usecase.practiceplanning;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DismissTopicOfferCommand;
 import com.sep.vox.application.port.input.service.InterestVectorService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -36,7 +36,7 @@ public class DismissTopicOfferUseCase implements IUseCase<DismissTopicOfferComma
     public Boolean execute(DismissTopicOfferCommand input) {
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
         if (!practiceTopicRepository.existsActiveById(input.topicId())) {
-            throw new NotFoundException("Không tìm thấy chủ đề luyện tập.");
+            throw new ResourceNotFoundException("Không tìm thấy chủ đề luyện tập.");
         }
         interestVectorService.appendInterestEvent(
             studentId, input.topicId(), null, EVENT_TYPE, BORED_SIGNAL

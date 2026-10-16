@@ -18,7 +18,7 @@ public interface SpringDataAssessmentCandidateResultRepository extends JpaReposi
     Optional<AssessmentCandidateResultJpaEntity> findBySessionId(UUID sessionId);
     List<AssessmentCandidateResultJpaEntity> findByIdIn(Collection<UUID> ids);
     List<AssessmentCandidateResultJpaEntity> findBySessionIdIn(Collection<UUID> sessionIds);
-    List<AssessmentCandidateResultJpaEntity> findByExamId(UUID examId);
+    List<AssessmentCandidateResultJpaEntity> findByAssessmentId(UUID assessmentId);
     void deleteBySessionId(UUID sessionId);
 
     /**

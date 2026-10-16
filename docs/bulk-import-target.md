@@ -21,7 +21,7 @@ Today `SchoolUserImportCommitHandler` creates an account for every new email, qu
 - If the email already belongs to an account, the invitation is addressed to it, but the person must still accept. Nothing is linked automatically.
 - The import never writes to `users`.
 
-This removes the need for phone, birth date and address, avoids mass emails to people who never asked for an account, and makes undo simple. The cost: students who have not accepted cannot be added to exams yet. The roster shows them as pending so the school can follow up.
+This removes the need for phone, birth date and address, avoids mass emails to people who never asked for an account, and makes undo simple. The cost: students who have not accepted cannot be added to assessments yet. The roster shows them as pending so the school can follow up.
 
 ## 3. Target flow
 

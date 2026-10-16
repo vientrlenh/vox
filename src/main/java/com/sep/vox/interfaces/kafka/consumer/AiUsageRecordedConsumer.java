@@ -63,13 +63,13 @@ public class AiUsageRecordedConsumer {
                 return;
             }
 
-            var examSessionId = parseUuid(event.examSessionId(), "examSessionId");
+            var assessmentSessionId = parseUuid(event.assessmentSessionId(), "assessmentSessionId");
             var turnId = parseUuid(event.turnId(), "turnId");
 
             for (var item : event.usageEvents()) {
                 var usage = item.usage();
                 recordAiUsageUseCase.execute(new RecordAiUsageCommand(
-                    examSessionId,
+                    assessmentSessionId,
                     turnId,
                     parseUuid(item.usageEventId(), "usageEventId"),
                     parseUsageType(item.type()),

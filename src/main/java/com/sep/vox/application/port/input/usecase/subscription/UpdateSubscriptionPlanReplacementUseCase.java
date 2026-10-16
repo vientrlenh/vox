@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanReplacementCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPlanReplacementValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -54,7 +54,7 @@ public class UpdateSubscriptionPlanReplacementUseCase
     @Transactional
     public UUID execute(UpdateSubscriptionPlanReplacementCommand input) {
         var plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
 
         // CHỈ áp cho gói đã lưu trữ: replacedByPlanId của một gói còn bán không có nghĩa gì --
         // resolveActivePlan chỉ đi theo con trỏ đó khi gói đang ARCHIVED. Cho đặt trên gói ACTIVE là
@@ -64,7 +64,7 @@ public class UpdateSubscriptionPlanReplacementUseCase
         }
 
         var replacement = subscriptionPlanRepository.findById(input.replacedByPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói thay thế"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói thay thế"));
 
         // Cùng bộ luật với lúc lưu trữ. Sửa con trỏ sau này KHÔNG được lỏng hơn: trường vẫn bị ép đi
         // theo nó khi gia hạn, và vẫn không có cơ hội từ chối.

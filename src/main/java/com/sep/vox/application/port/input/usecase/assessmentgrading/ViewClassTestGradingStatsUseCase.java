@@ -5,18 +5,18 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.GradingStatsInfo;
-import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.model.assessment.ExamKind;
+import com.sep.vox.application.projection.repository.AssessmentGradingQueryRepository;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
 
 /**
  * Thẻ số đầu màn chấm bài trên lớp của giáo viên tạo bài.
  *
  * <p>Tách khỏi {@link ViewGradingStatsUseCase} thay vì nới nó: cái kia nhận
- * {@code examId} rỗng nghĩa là "toàn trường", nên nới quyền ở đó là để một giáo viên
- * đọc được tiến độ chấm của cả trường. Ở đây {@code examId} bắt buộc và phải là bài
+ * {@code assessmentId} rỗng nghĩa là "toàn trường", nên nới quyền ở đó là để một giáo viên
+ * đọc được tiến độ chấm của cả trường. Ở đây {@code assessmentId} bắt buộc và phải là bài
  * mà người gọi làm CHAIR.
  *
  * <p>Đếm theo BÀI THI chứ không theo học sinh: một em thi hai lượt là hai bài phải
@@ -25,22 +25,22 @@ import com.sep.vox.domain.model.assessment.ExamKind;
 @Service
 public class ViewClassTestGradingStatsUseCase implements IUseCase<UUID, GradingStatsInfo> {
 
-    private final ExamGradingQueryRepository examGradingQueryRepository;
-    private final ExamGradingAccessService examGradingAccessService;
+    private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
+    private final AssessmentGradingAccessService assessmentGradingAccessService;
 
     public ViewClassTestGradingStatsUseCase(
-            ExamGradingQueryRepository examGradingQueryRepository,
-            ExamGradingAccessService examGradingAccessService) {
-        this.examGradingQueryRepository = examGradingQueryRepository;
-        this.examGradingAccessService = examGradingAccessService;
+            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
+            AssessmentGradingAccessService assessmentGradingAccessService) {
+        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
+        this.assessmentGradingAccessService = assessmentGradingAccessService;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public GradingStatsInfo execute(UUID examId) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        examGradingAccessService.authorizeClassTestChair(examId, currentUserId);
-        var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
-        return examGradingQueryRepository.stats(schoolId, examId, null, ExamKind.CLASS_TEST.name());
+    public GradingStatsInfo execute(UUID assessmentId) {
+        var currentUserId = assessmentGradingAccessService.requireActiveUserId();
+        assessmentGradingAccessService.authorizeClassTestChair(assessmentId, currentUserId);
+        var schoolId = assessmentGradingAccessService.requireCurrentSchoolId(currentUserId);
+        return assessmentGradingQueryRepository.stats(schoolId, assessmentId, null, AssessmentKind.CLASS_TEST.name());
     }
 }

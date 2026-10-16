@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.projection.dto.ProctorScheduleSummary;
 import com.sep.vox.application.projection.repository.ProctorScheduleQueryRepository;
-import com.sep.vox.domain.model.assessment.ExamScheduleStatus;
+import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -16,15 +16,15 @@ import jakarta.persistence.PersistenceContext;
 /**
  * Danh sách ca thi của màn điểm danh, cho giám thị và cho quản trị nhà trường.
  *
- * <p>Hai câu dưới đây lọc theo HAI cột trạng thái, không phải một. {@code exams.status} và
- * {@code exam_schedules.status} là hai máy trạng thái độc lập, và luồng chuẩn bắt người xếp lịch
- * publish từng ca TRƯỚC rồi mới đẩy kỳ thi {@code DRAFT -> SCHEDULED} -- {@code UpdateExamStatusUseCase}
+ * <p>Hai câu dưới đây lọc theo HAI cột trạng thái, không phải một. {@code assessments.status} và
+ * {@code assessment_schedules.status} là hai máy trạng thái độc lập, và luồng chuẩn bắt người xếp lịch
+ * publish từng ca TRƯỚC rồi mới đẩy kỳ thi {@code DRAFT -> SCHEDULED} -- {@code UpdateAssessmentStatusUseCase}
  * từ chối lên lịch khi còn ca DRAFT. Nên "ca PUBLISHED nằm dưới kỳ thi DRAFT" là trạng thái mọi kỳ
- * thi đều đi qua, không phải dữ liệu hỏng: bỏ {@code exam.status <> 'DRAFT'} là màn điểm danh hiện
+ * thi đều đi qua, không phải dữ liệu hỏng: bỏ {@code assessment.status <> 'DRAFT'} là màn điểm danh hiện
  * kỳ thi nhà trường chưa công bố, đúng lỗi đã xảy ra một lần.
  *
- * <p>Chỉ ẩn DRAFT, cùng luật với {@code JpaStudentExamQueryRepository} và
- * {@code ViewMyExamSchedulesUseCase}: kỳ thi CANCELLED vẫn hiện để người dùng biết kỳ thi đã bị huỷ.
+ * <p>Chỉ ẩn DRAFT, cùng luật với {@code JpaStudentAssessmentQueryRepository} và
+ * {@code ViewMyAssessmentSchedulesUseCase}: kỳ thi CANCELLED vẫn hiện để người dùng biết kỳ thi đã bị huỷ.
  */
 @Repository
 public class JpaProctorScheduleQueryRepository implements ProctorScheduleQueryRepository {
@@ -34,16 +34,16 @@ public class JpaProctorScheduleQueryRepository implements ProctorScheduleQueryRe
      *
      * <p>DELETED/MOVED thì đã rõ: xoá mềm hoặc đã dời sang ca khác nên không còn là ca thật. DRAFT là
      * ca CHƯA công bố -- publish mới là lúc hệ thống bắt buộc đủ giám thị và mọi thí sinh đã có đề
-     * (xem {@code UpdateExamScheduleStatusUseCase#publish}), nên trước đó ca vẫn đang xếp dở, chưa có
-     * gì để điểm danh. Cùng luật với {@code JpaMonitoredExamQueryRepository}, hai câu đọc của cùng
+     * (xem {@code UpdateAssessmentScheduleStatusUseCase#publish}), nên trước đó ca vẫn đang xếp dở, chưa có
+     * gì để điểm danh. Cùng luật với {@code JpaMonitoredAssessmentQueryRepository}, hai câu đọc của cùng
      * một màn không được đếm khác nhau.
      *
      * <p>CANCELLED cố ý vẫn hiện, kèm trạng thái, để giám thị biết ca đã huỷ mà không tới phòng.
      */
     private static final Set<String> HIDDEN_SCHEDULE_STATUSES = Set.of(
-        ExamScheduleStatus.DRAFT.name(),
-        ExamScheduleStatus.DELETED.name(),
-        ExamScheduleStatus.MOVED.name());
+        AssessmentScheduleStatus.DRAFT.name(),
+        AssessmentScheduleStatus.DELETED.name(),
+        AssessmentScheduleStatus.MOVED.name());
 
     @PersistenceContext
     private EntityManager em;
@@ -53,21 +53,21 @@ public class JpaProctorScheduleQueryRepository implements ProctorScheduleQueryRe
         return em.createQuery("""
             SELECT NEW com.sep.vox.application.query.dto.ProctorScheduleSummary(
                 sch.id,
-                exam.id,
-                exam.name,
+                assessment.id,
+                assessment.name,
                 room.id,
                 room.name,
                 sch.startDate,
                 sch.endDate,
                 sch.status
             )
-            FROM ExamScheduleJpaEntity sch
-            JOIN ExamScheduleProctorJpaEntity proctor
+            FROM AssessmentScheduleJpaEntity sch
+            JOIN AssessmentScheduleProctorJpaEntity proctor
                 ON proctor.scheduleId = sch.id AND proctor.teacherId = :teacherId
-            JOIN ExamJpaEntity exam ON exam.id = sch.examId
+            JOIN AssessmentJpaEntity assessment ON assessment.id = sch.assessmentId
             LEFT JOIN SchoolRoomJpaEntity room ON room.id = sch.schoolRoomId
             WHERE sch.status NOT IN :hiddenStatuses
-                AND exam.status <> 'DRAFT'
+                AND assessment.status <> 'DRAFT'
             ORDER BY sch.startDate DESC
         """, ProctorScheduleSummary.class)
             .setParameter("teacherId", teacherId)
@@ -80,20 +80,20 @@ public class JpaProctorScheduleQueryRepository implements ProctorScheduleQueryRe
         return em.createQuery("""
             SELECT NEW com.sep.vox.application.query.dto.ProctorScheduleSummary(
                 sch.id,
-                exam.id,
-                exam.name,
+                assessment.id,
+                assessment.name,
                 room.id,
                 room.name,
                 sch.startDate,
                 sch.endDate,
                 sch.status
             )
-            FROM ExamScheduleJpaEntity sch
-            JOIN ExamJpaEntity exam ON exam.id = sch.examId
+            FROM AssessmentScheduleJpaEntity sch
+            JOIN AssessmentJpaEntity assessment ON assessment.id = sch.assessmentId
             LEFT JOIN SchoolRoomJpaEntity room ON room.id = sch.schoolRoomId
-            WHERE exam.schoolId = :schoolId
+            WHERE assessment.schoolId = :schoolId
                 AND sch.status NOT IN :hiddenStatuses
-                AND exam.status <> 'DRAFT'
+                AND assessment.status <> 'DRAFT'
             ORDER BY sch.startDate DESC
         """, ProctorScheduleSummary.class)
             .setParameter("schoolId", schoolId)

@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import com.sep.vox.application.port.output.QuotaUsageWarningConfigPort;
 
 /**
- * Ngưỡng cảnh báo SỚM (KHÔNG chặn) khi hạn mức AI của trường (EXAM/PRACTICE) mới dùng tới một tỉ lệ
+ * Ngưỡng cảnh báo SỚM (KHÔNG chặn) khi hạn mức AI của trường (ASSESSMENT/PRACTICE) mới dùng tới một tỉ lệ
  * nào đó -- xem ConsumeQuotaService.checkUsageWarningTransition. Mục đích là để nhà trường biết trước
  * mà gia hạn/nạp thêm, TRƯỚC KHI hạn mức cạn và bắt đầu tính vào nợ (xem QuotaDebtProperties).
  */

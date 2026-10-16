@@ -14,7 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_blueprint_slots")
+@Table(name = "assessment_blueprint_slots")
 public class AssessmentBlueprintSlotJpaEntity {
 
     @Id
@@ -46,12 +46,12 @@ public class AssessmentBlueprintSlotJpaEntity {
     @Column(name = "response_time_seconds_override")
     private Integer responseTimeSecondsOverride;
 
-    // Ba cột này phải update được: UpdateExamBlueprintSlotUseCase cho phép đổi loại ô và sửa
+    // Ba cột này phải update được: UpdateAssessmentBlueprintSlotUseCase cho phép đổi loại ô và sửa
     // tiêu chí khi version còn DRAFT. Trước đây updatable=false khiến các thay đổi đó âm thầm
     // không lưu, kéo theo picker lọc câu theo tiêu chí cũ.
     @Column(name = "slot_type", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_blueprint_slots_type_valid",
+            name = "chk_assessment_blueprint_slots_type_valid",
             constraint = "slot_type IN ('FIXED', 'SELECTION')"
         )
     })

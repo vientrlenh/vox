@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.SearchSystemRubricCriteriaQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -56,11 +56,11 @@ public class SearchSystemRubricCriteriaUseCase implements IUseCase<SearchSystemR
 
         // Lấy Version kiểm tra tính tồn tại
         var version = rubricVersionRepository.findById(query.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric."));
 
         // Kiểm tra tính sở hữu bảo mật
         var rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("BẢO MẬT: Phiên bản này thuộc về Trường học. Bạn không có quyền xem.");
         }

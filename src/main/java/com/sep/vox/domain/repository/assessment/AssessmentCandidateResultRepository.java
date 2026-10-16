@@ -13,7 +13,7 @@ public interface AssessmentCandidateResultRepository {
     List<AssessmentCandidateResult> findByIdIn(Collection<UUID> ids);
     Optional<AssessmentCandidateResult> findBySessionId(UUID sessionId);
     List<AssessmentCandidateResult> findBySessionIdIn(Collection<UUID> sessionIds);
-    List<AssessmentCandidateResult> findByExamId(UUID examId);
+    List<AssessmentCandidateResult> findByAssessmentId(UUID assessmentId);
     AssessmentCandidateResult save(AssessmentCandidateResult result);
     void deleteBySessionId(UUID sessionId);
 

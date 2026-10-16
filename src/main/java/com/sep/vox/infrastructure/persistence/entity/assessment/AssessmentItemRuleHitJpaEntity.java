@@ -14,7 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_item_rule_hits")
+@Table(name = "assessment_item_rule_hits")
 public class AssessmentItemRuleHitJpaEntity {
 
     @Id
@@ -54,7 +54,7 @@ public class AssessmentItemRuleHitJpaEntity {
 
     @Column(name = "severity", nullable = false, updatable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_item_rule_hits_severity_status", 
+            name = "chk_assessment_item_rule_hits_severity_status", 
             constraint = "severity IN ('INFO', 'WARNING', 'BLOCKING')"
         )
     })

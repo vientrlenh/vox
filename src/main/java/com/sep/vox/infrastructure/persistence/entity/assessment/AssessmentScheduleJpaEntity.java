@@ -13,7 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_schedules")
+@Table(name = "assessment_schedules")
 public class AssessmentScheduleJpaEntity {
     
     @Id
@@ -27,8 +27,8 @@ public class AssessmentScheduleJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "exam_id", nullable = false, updatable = false)
-    private UUID examId;
+    @Column(name = "assessment_id", nullable = false, updatable = false)
+    private UUID assessmentId;
 
     // Nullable: CLASS_TEST không có phòng thi vật lý, dùng 1 AssessmentSchedule "ảo"
     // (schoolRoomId = null) để có mốc thời gian thống nhất với CENTRALIZED.
@@ -43,7 +43,7 @@ public class AssessmentScheduleJpaEntity {
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_schedules_status_valid", 
+            name = "chk_assessment_schedules_status_valid", 
             constraint = "status IN ('DRAFT', 'PUBLISHED', 'COMPLETED', 'MOVED', 'CANCELLED', 'DELETED')"
         )
     })
@@ -66,11 +66,11 @@ public class AssessmentScheduleJpaEntity {
 
     protected AssessmentScheduleJpaEntity() {}
 
-    public AssessmentScheduleJpaEntity(UUID id, UUID examId, UUID schoolRoomId, Instant startDate,
+    public AssessmentScheduleJpaEntity(UUID id, UUID assessmentId, UUID schoolRoomId, Instant startDate,
             Instant endDate, String status, UUID movedToScheduleId, Instant createdAt,
             Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.examId = examId;
+        this.assessmentId = assessmentId;
         this.schoolRoomId = schoolRoomId;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -90,12 +90,12 @@ public class AssessmentScheduleJpaEntity {
         this.id = id;
     }
 
-    public UUID getExamId() {
-        return examId;
+    public UUID getAssessmentId() {
+        return assessmentId;
     }
 
-    public void setExamId(UUID examId) {
-        this.examId = examId;
+    public void setAssessmentId(UUID assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public UUID getSchoolRoomId() {

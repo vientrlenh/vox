@@ -18,7 +18,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.event.UserCreatedPayloadV1;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.application.shared.StringNormalization;
@@ -91,7 +91,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         var currentUserId = session.getCreatedBy();
         var mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         var school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
         return processRows(rows, mapping, schoolId, school.getName(), currentUserId);
     }
 

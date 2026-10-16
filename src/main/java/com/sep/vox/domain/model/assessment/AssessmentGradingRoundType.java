@@ -2,7 +2,7 @@ package com.sep.vox.domain.model.assessment;
 
 /**
  * Vòng chấm của một dòng phân công. Bốn vòng dùng chung một bảng
- * {@code exam_grading_assignments} vì mỗi bài chỉ có một người chấm mỗi vòng, và cả
+ * {@code assessment_grading_assignments} vì mỗi bài chỉ có một người chấm mỗi vòng, và cả
  * bốn vòng dùng chung đúng bốn hành động ({@link GradingOutcome}).
  *
  * <p>Vòng quyết định bài <em>đang</em> phải ở trạng thái nào và hành động nào hợp lệ —

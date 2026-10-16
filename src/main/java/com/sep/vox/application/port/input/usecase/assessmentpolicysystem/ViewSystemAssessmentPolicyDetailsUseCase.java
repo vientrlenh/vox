@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicysystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSystemAssessmentPolicyDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -43,7 +43,7 @@ public class ViewSystemAssessmentPolicyDetailsUseCase implements IUseCase<ViewSy
         }
 
         AssessmentPolicy policy = assessmentPolicyRepository.findById(query.policyId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy này."));
 
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Assessment Policy này không thuộc về Hệ thống.");

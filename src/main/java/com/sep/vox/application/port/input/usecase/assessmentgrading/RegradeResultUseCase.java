@@ -10,17 +10,17 @@ import com.sep.vox.application.port.input.command.SubmitGradingCommand;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.service.GradingItemScoreResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.input.usecase.assessmentevaluation.UpsertExamCandidateResultUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentevaluation.UpsertAssessmentCandidateResultUseCase;
 import com.sep.vox.application.response.input.assessmentgrading.GradingActionResponse;
-import com.sep.vox.domain.model.assessment.ExamEvaluationEngineType;
-import com.sep.vox.domain.model.assessment.ExamItemCriterionScore;
-import com.sep.vox.domain.model.assessment.ExamItemEvaluation;
-import com.sep.vox.domain.model.assessment.ExamItemEvaluationStatus;
-import com.sep.vox.domain.model.assessment.GradingOutcome;
-import com.sep.vox.domain.model.assessment.GradingRoundType;
-import com.sep.vox.domain.repository.assessment.ExamItemCriterionScoreRepository;
-import com.sep.vox.domain.repository.assessment.ExamItemEvaluationRepository;
-import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
+import com.sep.vox.domain.model.assessment.AssessmentEvaluationEngineType;
+import com.sep.vox.domain.model.assessment.AssessmentItemCriterionScore;
+import com.sep.vox.domain.model.assessment.AssessmentItemEvaluation;
+import com.sep.vox.domain.model.assessment.AssessmentItemEvaluationStatus;
+import com.sep.vox.domain.model.assessment.AssessmentGradingOutcome;
+import com.sep.vox.domain.model.assessment.AssessmentGradingRoundType;
+import com.sep.vox.domain.repository.assessment.AssessmentItemCriterionScoreRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentItemEvaluationRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentSessionRepository;
 import com.sep.vox.domain.service.assessment.GradingRoundPolicy;
 
 /**
@@ -28,7 +28,7 @@ import com.sep.vox.domain.service.assessment.GradingRoundPolicy;
  *
  * <p>Chấm theo <em>từng tiêu chí của từng phần</em>, không nhập điểm tổng: mỗi phần
  * nhận một bản HUMAN/FINALIZED, mọi bản cũ của các phần đó chuyển SUPERSEDED, rồi
- * {@link UpsertExamCandidateResultUseCase} tính lại tổng và xếp loại từ toàn bộ item.
+ * {@link UpsertAssessmentCandidateResultUseCase} tính lại tổng và xếp loại từ toàn bộ item.
  * Tổng vì thế luôn là hàm của các item, ở cả bốn vòng.
  *
  * <p>Trạng thái đích lấy từ {@code GradingRoundPolicy}, KHÔNG để
@@ -40,7 +40,7 @@ import com.sep.vox.domain.service.assessment.GradingRoundPolicy;
 public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, GradingActionResponse> {
 
     /**
-     * exam_item_evaluations.graded_by_model là NOT NULL và dành cho tên model AI;
+     * assessment_item_evaluations.graded_by_model là NOT NULL và dành cho tên model AI;
      * người chấm không có model nên tên engine đứng thay. Người chấm thật nằm ở
      * {@code reviewerId}.
      */
@@ -48,31 +48,31 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
 
     private final GradingActionSupport gradingActionSupport;
     private final GradingItemScoreResolver gradingItemScoreResolver;
-    private final ExamItemEvaluationRepository examItemEvaluationRepository;
-    private final ExamItemCriterionScoreRepository examItemCriterionScoreRepository;
-    private final ExamSessionRepository examSessionRepository;
-    private final UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
+    private final AssessmentItemEvaluationRepository assessmentItemEvaluationRepository;
+    private final AssessmentItemCriterionScoreRepository assessmentItemCriterionScoreRepository;
+    private final AssessmentSessionRepository assessmentSessionRepository;
+    private final UpsertAssessmentCandidateResultUseCase upsertAssessmentCandidateResultUseCase;
 
     public RegradeResultUseCase(
             GradingActionSupport gradingActionSupport,
             GradingItemScoreResolver gradingItemScoreResolver,
-            ExamItemEvaluationRepository examItemEvaluationRepository,
-            ExamItemCriterionScoreRepository examItemCriterionScoreRepository,
-            ExamSessionRepository examSessionRepository,
-            UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase) {
+            AssessmentItemEvaluationRepository assessmentItemEvaluationRepository,
+            AssessmentItemCriterionScoreRepository assessmentItemCriterionScoreRepository,
+            AssessmentSessionRepository assessmentSessionRepository,
+            UpsertAssessmentCandidateResultUseCase upsertAssessmentCandidateResultUseCase) {
         this.gradingActionSupport = gradingActionSupport;
         this.gradingItemScoreResolver = gradingItemScoreResolver;
-        this.examItemEvaluationRepository = examItemEvaluationRepository;
-        this.examItemCriterionScoreRepository = examItemCriterionScoreRepository;
-        this.examSessionRepository = examSessionRepository;
-        this.upsertExamCandidateResultUseCase = upsertExamCandidateResultUseCase;
+        this.assessmentItemEvaluationRepository = assessmentItemEvaluationRepository;
+        this.assessmentItemCriterionScoreRepository = assessmentItemCriterionScoreRepository;
+        this.assessmentSessionRepository = assessmentSessionRepository;
+        this.upsertAssessmentCandidateResultUseCase = upsertAssessmentCandidateResultUseCase;
     }
 
     @Override
     @Transactional
     public GradingActionResponse execute(SubmitGradingCommand command) {
         var prepared = gradingActionSupport.prepare(
-            command.assignmentId(), GradingOutcome.REGRADED, null);
+            command.assignmentId(), AssessmentGradingOutcome.REGRADED, null);
         var context = prepared.context();
 
         // Nộp là chốt COMPLETED, nên bắt buộc phủ đủ mọi phần — nộp thiếu rồi chốt
@@ -84,7 +84,7 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
         var session = context.session();
         if (session.isFlagged()) {
             session.setFlagged(false);
-            examSessionRepository.save(session);
+            assessmentSessionRepository.save(session);
         }
 
         // Bản AI và mọi bản chấm cũ của các phần được chấm đều lùi về SUPERSEDED,
@@ -92,19 +92,19 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
         // vào việc bản cũ bị flip trạng thái, KHÔNG ưu tiên HUMAN theo engineType.
         var responseIds = resolvedItems.stream()
             .map(item -> item.responseId()).toList();
-        for (var evaluation : examItemEvaluationRepository.findByResponseIdIn(responseIds)) {
-            if (evaluation.getStatus() != ExamItemEvaluationStatus.SUPERSEDED) {
-                evaluation.setStatus(ExamItemEvaluationStatus.SUPERSEDED);
-                examItemEvaluationRepository.save(evaluation);
+        for (var evaluation : assessmentItemEvaluationRepository.findByResponseIdIn(responseIds)) {
+            if (evaluation.getStatus() != AssessmentItemEvaluationStatus.SUPERSEDED) {
+                evaluation.setStatus(AssessmentItemEvaluationStatus.SUPERSEDED);
+                assessmentItemEvaluationRepository.save(evaluation);
             }
         }
 
-        var criterionScores = new ArrayList<ExamItemCriterionScore>();
+        var criterionScores = new ArrayList<AssessmentItemCriterionScore>();
         for (var item : resolvedItems) {
-            var savedEvaluation = examItemEvaluationRepository.save(new ExamItemEvaluation(
+            var savedEvaluation = assessmentItemEvaluationRepository.save(new AssessmentItemEvaluation(
                 item.responseId(),
                 item.paperItemId(),
-                ExamEvaluationEngineType.HUMAN,
+                AssessmentEvaluationEngineType.HUMAN,
                 HUMAN_GRADER,
                 null,
                 prepared.currentUserId(),
@@ -122,10 +122,10 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
                 item.feedbackSummary(),
                 null,
                 null,
-                ExamItemEvaluationStatus.FINALIZED,
+                AssessmentItemEvaluationStatus.FINALIZED,
                 now
             ));
-            item.criterionScores().forEach(score -> criterionScores.add(new ExamItemCriterionScore(
+            item.criterionScores().forEach(score -> criterionScores.add(new AssessmentItemCriterionScore(
                 savedEvaluation.getId(),
                 score.rubricCriterionId(),
                 score.score(),
@@ -133,13 +133,13 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
                 score.rationale()
             )));
         }
-        examItemCriterionScoreRepository.saveAll(criterionScores);
+        assessmentItemCriterionScoreRepository.saveAll(criterionScores);
 
         // Một lần gọi là đủ: calculator quét toàn bộ item nên thấy hết bản mới.
         // Trạng thái truyền tường minh — xem javadoc lớp.
         var targetStatus = GradingRoundPolicy.resultStatusAfter(
-            prepared.roundType(), GradingOutcome.REGRADED);
-        var recalculated = upsertExamCandidateResultUseCase.execute(
+            prepared.roundType(), AssessmentGradingOutcome.REGRADED);
+        var recalculated = upsertAssessmentCandidateResultUseCase.execute(
             context.candidateResult().getSessionId(),
             targetStatus == null ? context.candidateResult().getStatus() : targetStatus);
 
@@ -153,7 +153,7 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
         return new GradingActionResponse(
             command.assignmentId(),
             recalculated.getId(),
-            GradingOutcome.REGRADED.name(),
+            AssessmentGradingOutcome.REGRADED.name(),
             recalculated.getStatus() == null ? null : recalculated.getStatus().name(),
             recalculated.getTotalScore(),
             null
@@ -161,7 +161,7 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
     }
 
     /** Vòng nào cho phép chấm lại — dùng ở tài liệu và test, giữ cạnh luật cho dễ tra. */
-    static boolean supports(GradingRoundType roundType) {
-        return GradingRoundPolicy.isAllowed(roundType, GradingOutcome.REGRADED);
+    static boolean supports(AssessmentGradingRoundType roundType) {
+        return GradingRoundPolicy.isAllowed(roundType, AssessmentGradingOutcome.REGRADED);
     }
 }

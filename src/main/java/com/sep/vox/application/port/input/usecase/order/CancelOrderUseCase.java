@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CancelOrderCommand;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -51,7 +51,7 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
         // cùng thấy đơn PENDING, một bên đóng CANCELLED, một bên đóng SUCCESS -- thứ tự ghi quyết
         // định kết quả, và một trong hai kết quả là sai.
         var order = orderRepository.findByIdForUpdate(input.orderId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
 
         if (!order.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
@@ -140,7 +140,7 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
      */
     private void markAttemptFailed(Order order, UUID attemptId) {
         var current = paymentRecordRepository.findById(attemptId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lần thanh toán của đơn"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lần thanh toán của đơn"));
 
         if (current.getStatus() == PaymentStatus.PAID) {
             throw new IllegalStateException(

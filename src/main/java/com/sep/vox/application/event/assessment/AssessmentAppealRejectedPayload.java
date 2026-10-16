@@ -6,7 +6,7 @@ import java.util.UUID;
 public record AssessmentAppealRejectedPayload(
     UUID appealId,
     UUID studentId,
-    String examName,
+    String assessmentName,
     String reason
 ) {
 

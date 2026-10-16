@@ -47,8 +47,8 @@ public class AssessmentProctoringAlertRepositoryImpl implements AssessmentProcto
     }
 
     @Override
-    public List<AssessmentProctoringAlert> findByExamSessionIdOrderByCapturedAt(UUID examSessionId) {
-        return springDataAssessmentProctoringAlertRepository.findByExamSessionIdOrderByCapturedAtAsc(examSessionId)
+    public List<AssessmentProctoringAlert> findByAssessmentSessionIdOrderByCapturedAt(UUID assessmentSessionId) {
+        return springDataAssessmentProctoringAlertRepository.findByAssessmentSessionIdOrderByCapturedAtAsc(assessmentSessionId)
             .stream()
             .map(AssessmentProctoringAlertMapper::toDomain)
             .toList();
@@ -64,9 +64,9 @@ public class AssessmentProctoringAlertRepositoryImpl implements AssessmentProcto
      * đang phải vá.
      */
     @Override
-    public boolean hasIntegrityAlert(UUID examSessionId) {
+    public boolean hasIntegrityAlert(UUID assessmentSessionId) {
         return springDataAssessmentProctoringAlertRepository
-            .existsIntegrityAlert(examSessionId, AssessmentProctoringAlert.INTEGRITY_ALERT_TYPES);
+            .existsIntegrityAlert(assessmentSessionId, AssessmentProctoringAlert.INTEGRITY_ALERT_TYPES);
     }
 
     @Override

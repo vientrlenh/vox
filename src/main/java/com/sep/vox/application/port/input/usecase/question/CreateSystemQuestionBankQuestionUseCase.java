@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.question.CreateQuestionResponseMapper;
 import com.sep.vox.application.port.input.command.CreateQuestionAssetCommand;
 import com.sep.vox.application.port.input.command.CreateQuestionEvaluationGuideCommand;
@@ -82,9 +82,9 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             .anyMatch(role -> "TEACHER".equals(role.roleCode()));
 
         var questionBank = questionBankRepository.findById(command.questionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
         var questionTopic = questionTopicRepository.findById(command.questionTopicId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
 
         if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
             throw new IllegalStateException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");

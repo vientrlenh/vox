@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public class AssessmentSecurePool {
     private UUID id;
-    private UUID examId;
+    private UUID assessmentId;
     private AssessmentSecurePoolStatus status;
     private AssessmentSecurePoolReleaseMode releaseMode;
     private Instant embargoUntil;
@@ -18,11 +18,11 @@ public class AssessmentSecurePool {
 
     protected AssessmentSecurePool() {}
 
-    public AssessmentSecurePool(UUID id, UUID examId, AssessmentSecurePoolStatus status, AssessmentSecurePoolReleaseMode releaseMode,
+    public AssessmentSecurePool(UUID id, UUID assessmentId, AssessmentSecurePoolStatus status, AssessmentSecurePoolReleaseMode releaseMode,
             Instant embargoUntil, Instant releasedAt, UUID releasedBy, Instant createdAt,
             Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.examId = examId;
+        this.assessmentId = assessmentId;
         this.status = status;
         this.releaseMode = releaseMode;
         this.embargoUntil = embargoUntil;
@@ -42,12 +42,12 @@ public class AssessmentSecurePool {
         this.id = id;
     }
 
-    public UUID getExamId() {
-        return examId;
+    public UUID getAssessmentId() {
+        return assessmentId;
     }
 
-    public void setExamId(UUID examId) {
-        this.examId = examId;
+    public void setAssessmentId(UUID assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public AssessmentSecurePoolStatus getStatus() {

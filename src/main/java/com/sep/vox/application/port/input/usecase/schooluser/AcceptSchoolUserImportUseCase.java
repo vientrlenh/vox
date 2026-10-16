@@ -10,7 +10,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.AcceptSchoolUserImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -68,7 +68,7 @@ public class AcceptSchoolUserImportUseCase
         var schoolId = getSchoolId(currentUser);
         validateRequestedSchool(input.schoolId(), schoolId);
         var school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
         }
@@ -97,7 +97,7 @@ public class AcceptSchoolUserImportUseCase
 
     private User findCurrentUser(UUID currentUserId) {
         return userRepository.findById(currentUserId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
     }
 
     private UUID getSchoolId(User currentUser) {
@@ -117,7 +117,7 @@ public class AcceptSchoolUserImportUseCase
 
     private ImportSession findSession(UUID importSessionId) {
         return importSessionRepository.findById(importSessionId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên import"));
     }
 
     private void validateSession(ImportSession session, UUID schoolId, Instant now) {

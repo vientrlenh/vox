@@ -46,13 +46,13 @@ public interface SpringDataCriterionScoreAverageRepository
             SELECT fc.code AS criterion_code,
                    (cs.final_score - rc.min_score)
                        / NULLIF(rc.max_score - rc.min_score, 0) AS normalized
-            FROM exam_item_criterion_scores cs
+            FROM assessment_item_criterion_scores cs
             JOIN rubric_criterions rc ON rc.id = cs.rubric_criterion_id
             JOIN framework_criteria fc ON fc.id = rc.framework_criterion_id
-            JOIN exam_item_evaluations e ON e.id = cs.evaluation_id
-            JOIN exam_item_responses r ON r.id = e.response_id
-            JOIN exam_sessions s ON s.id = r.session_id
-            JOIN exam_candidates ec ON ec.id = s.candidate_id
+            JOIN assessment_item_evaluations e ON e.id = cs.evaluation_id
+            JOIN assessment_item_answers r ON r.id = e.response_id
+            JOIN assessment_sessions s ON s.id = r.session_id
+            JOIN assessment_candidates ec ON ec.id = s.candidate_id
             WHERE ec.student_id = :studentId
               AND e.marked_invalid = false
               AND ec.blocked_at IS NULL
@@ -62,7 +62,7 @@ public interface SpringDataCriterionScoreAverageRepository
               AND cs.final_score IS NOT NULL
               AND EXISTS (
                   SELECT 1
-                  FROM exam_item_evaluation_turns t
+                  FROM assessment_item_evaluation_turns t
                   WHERE t.evaluation_id = e.id
               )
             UNION ALL

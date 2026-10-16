@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.domain.model.personalization.LearnerProfile;
 import com.sep.vox.domain.model.personalization.QuizAnswer;
 import com.sep.vox.domain.repository.DimensionInterestScoreRepository;
@@ -48,7 +48,7 @@ public class LearnerProfileCommandService {
                 );
             }
             var item = quizItemRepository.findActiveQuizItem(answer.getItemId())
-                .orElseThrow(() -> new NotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                     "Không tìm thấy item quiz sở thích"
                 ));
             var dimensions = item.getDimensionPerStatement();
@@ -82,7 +82,7 @@ public class LearnerProfileCommandService {
     // ánh xạ (cột trong DB giữ nguyên, xem chú thích ở LearnerProfileJpaEntity).
 
     public void setGoal(UUID studentId, String goalType) {
-        if (!"EXAM_PREP".equals(goalType)
+        if (!"ASSESSMENT_PREP".equals(goalType)
                 && !"ABILITY_IMPROVEMENT".equals(goalType)) {
             throw new IllegalArgumentException(
                 "Mục tiêu luyện tập không hợp lệ"

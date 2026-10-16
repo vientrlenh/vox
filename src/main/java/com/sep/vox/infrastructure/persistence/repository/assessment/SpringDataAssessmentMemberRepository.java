@@ -12,17 +12,17 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentMemberJpaEntity;
 
 public interface SpringDataAssessmentMemberRepository extends JpaRepository<AssessmentMemberJpaEntity, UUID> {
-    List<AssessmentMemberJpaEntity> findByExamId(UUID examId);
-    List<AssessmentMemberJpaEntity> findByExamIdIn(Collection<UUID> examIds);
-    void deleteByExamId(UUID examId);
-    Optional<AssessmentMemberJpaEntity> findByExamIdAndUserId(UUID examId, UUID userId);
+    List<AssessmentMemberJpaEntity> findByAssessmentId(UUID assessmentId);
+    List<AssessmentMemberJpaEntity> findByAssessmentIdIn(Collection<UUID> assessmentIds);
+    void deleteByAssessmentId(UUID assessmentId);
+    Optional<AssessmentMemberJpaEntity> findByAssessmentIdAndUserId(UUID assessmentId, UUID userId);
 
-    boolean existsByExamIdAndUserIdAndRole(UUID examId, UUID userId, String role);
+    boolean existsByAssessmentIdAndUserIdAndRole(UUID assessmentId, UUID userId, String role);
 
     @Query("""
         SELECT CASE WHEN COUNT(em) > 0 THEN true ELSE false END
         FROM AssessmentMemberJpaEntity em
-        JOIN AssessmentJpaEntity e ON e.id = em.examId
+        JOIN AssessmentJpaEntity e ON e.id = em.assessmentId
         WHERE em.userId = :userId
           AND em.role = :role
           AND e.schoolId = :schoolId
@@ -36,12 +36,12 @@ public interface SpringDataAssessmentMemberRepository extends JpaRepository<Asse
     @Query("""
         SELECT CASE WHEN COUNT(em) > 0 THEN true ELSE false END
         FROM AssessmentMemberJpaEntity em
-        WHERE em.examId = :examId
+        WHERE em.assessmentId = :assessmentId
           AND em.role = :role
           AND em.userId <> :excludeUserId
     """)
-    boolean existsByExamIdAndRoleExcludingUserId(
-        @Param("examId") UUID examId,
+    boolean existsByAssessmentIdAndRoleExcludingUserId(
+        @Param("assessmentId") UUID assessmentId,
         @Param("role") String role,
         @Param("excludeUserId") UUID excludeUserId
     );
@@ -49,7 +49,7 @@ public interface SpringDataAssessmentMemberRepository extends JpaRepository<Asse
     @Query("""
         SELECT CASE WHEN COUNT(em) > 0 THEN true ELSE false END
         FROM AssessmentMemberJpaEntity em
-        JOIN AssessmentJpaEntity e ON e.id = em.examId
+        JOIN AssessmentJpaEntity e ON e.id = em.assessmentId
         WHERE em.role = :role
           AND e.schoolId = :schoolId
           AND em.userId <> :excludeUserId
@@ -69,13 +69,13 @@ public interface SpringDataAssessmentMemberRepository extends JpaRepository<Asse
             )
             OR EXISTS (
                 SELECT 1 FROM AssessmentMemberJpaEntity em
-                WHERE em.examId = :examId AND em.userId = :userId AND em.role IN ('AUTHOR', 'CHAIR')
+                WHERE em.assessmentId = :assessmentId AND em.userId = :userId AND em.role IN ('AUTHOR', 'CHAIR')
             )
         ) THEN true ELSE false END
         FROM AssessmentJpaEntity e
-        WHERE e.id = :examId
+        WHERE e.id = :assessmentId
     """)
-    boolean canAttachBlueprint(@Param("examId") UUID examId, @Param("userId") UUID userId);
+    boolean canAttachBlueprint(@Param("assessmentId") UUID assessmentId, @Param("userId") UUID userId);
 
     @Query("""
         SELECT CASE WHEN (
@@ -86,11 +86,11 @@ public interface SpringDataAssessmentMemberRepository extends JpaRepository<Asse
             )
             OR EXISTS (
                 SELECT 1 FROM AssessmentMemberJpaEntity em
-                WHERE em.examId = :examId AND em.userId = :userId AND em.role = 'CHAIR'
+                WHERE em.assessmentId = :assessmentId AND em.userId = :userId AND em.role = 'CHAIR'
             )
         ) THEN true ELSE false END
         FROM AssessmentJpaEntity e
-        WHERE e.id = :examId
+        WHERE e.id = :assessmentId
     """)
-    boolean canApproveBlueprintVersion(@Param("examId") UUID examId, @Param("userId") UUID userId);
+    boolean canApproveBlueprintVersion(@Param("assessmentId") UUID assessmentId, @Param("userId") UUID userId);
 }

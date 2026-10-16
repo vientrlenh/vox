@@ -13,11 +13,11 @@ public interface AssessmentPaperRepository {
     List<AssessmentPaper> saveAll(Collection<AssessmentPaper> papers);
     Optional<AssessmentPaper> findById(UUID id);
     List<AssessmentPaper> findByIdIn(Collection<UUID> ids);
-    List<AssessmentPaper> findByExamId(UUID examId);
-    List<AssessmentPaper> findByExamIdIn(Collection<UUID> examIds);
-    List<AssessmentPaper> findByExamIdAndStatus(UUID examId, AssessmentPaperStatus status);
-    boolean existsByExamId(UUID examId);
-    int nextVariant(UUID examId);
+    List<AssessmentPaper> findByAssessmentId(UUID assessmentId);
+    List<AssessmentPaper> findByAssessmentIdIn(Collection<UUID> assessmentIds);
+    List<AssessmentPaper> findByAssessmentIdAndStatus(UUID assessmentId, AssessmentPaperStatus status);
+    boolean existsByAssessmentId(UUID assessmentId);
+    int nextVariant(UUID assessmentId);
     void deleteById(UUID id);
-    void deleteByExamId(UUID examId);
+    void deleteByAssessmentId(UUID assessmentId);
 }

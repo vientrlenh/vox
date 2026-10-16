@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.FundQuotaFromBalanceCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -90,10 +90,10 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
         var actorId = userContextPort.getCurrentAuthenticatedUserId();
 
         var subscription = schoolSubscriptionRepository.findActiveBySchoolId(input.schoolId())
-            .orElseThrow(() -> new NotFoundException("Trường chưa có gói subscription đang hoạt động"));
+            .orElseThrow(() -> new ResourceNotFoundException("Trường chưa có gói subscription đang hoạt động"));
         var pool = quotaRecordRepository
             .findBySchoolSubscriptionIdAndQuotaType(subscription.getId(), quotaType)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
 
         // Trường đang nợ thì chặn ở đây, TRƯỚC khi soi số dư -- nợ nghĩa là số dư âm, nên phép so
         // "đủ tiền không" bên dưới cũng sẽ từ chối, nhưng với câu "không đủ số dư" thay vì câu nói
@@ -128,7 +128,7 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
             input.schoolId(), amountVnd, quotaType, subscription.getId(), balanceAfterVnd, actorId);
 
         var funded = quotaRecordRepository.findById(pool.getId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
         return new QuotaFundingResponse(
             SchoolSubscriptionQuotaRecordDto.toDto(funded), amountVnd, balanceAfterVnd);
     }

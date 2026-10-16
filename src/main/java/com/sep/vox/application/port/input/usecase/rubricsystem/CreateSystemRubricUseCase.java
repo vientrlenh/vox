@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSystemRubricCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -56,12 +56,12 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
 
         // 2. Validate hệ thống
         if (!languageRepository.existsById(command.languageId())) {
-            throw new NotFoundException("Ngôn ngữ không tồn tại.");
+            throw new ResourceNotFoundException("Ngôn ngữ không tồn tại.");
         }
 
         // Kiểm tra Framework gốc
         Framework framework = frameworkRepository.findById(command.frameworkId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework)."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework)."));
         if (!framework.isActive() ) {
             throw new IllegalStateException("Không thể sử dụng Khung tiêu chuẩn (Framework) này vì nó đang bị vô hiệu hóa.");
         }

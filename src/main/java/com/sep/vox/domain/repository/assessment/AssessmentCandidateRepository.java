@@ -13,32 +13,32 @@ import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 public interface AssessmentCandidateRepository {
     AssessmentCandidate save(AssessmentCandidate candidate);
     List<AssessmentCandidate> saveAll(Collection<AssessmentCandidate> candidates);
-    List<AssessmentCandidate> findByExamId(UUID examId);
-    List<AssessmentCandidate> findByExamIdIn(Collection<UUID> examIds);
-    long countByExamId(UUID examId);
-    Map<UUID, Long> countByExamIdIn(Collection<UUID> examIds);
+    List<AssessmentCandidate> findByAssessmentId(UUID assessmentId);
+    List<AssessmentCandidate> findByAssessmentIdIn(Collection<UUID> assessmentIds);
+    long countByAssessmentId(UUID assessmentId);
+    Map<UUID, Long> countByAssessmentIdIn(Collection<UUID> assessmentIds);
 
     void deleteById(UUID id);
 
     /** Xoá cả nhóm trong một câu lệnh — dùng cho thao tác xoá hàng loạt trên màn danh sách thí sinh. */
     void deleteByIdIn(Collection<UUID> ids);
-    void deleteByExamId(UUID examId);
+    void deleteByAssessmentId(UUID assessmentId);
 
     Optional<AssessmentCandidate> findById(UUID id);
-    Optional<AssessmentCandidate> findByExamIdAndStudentId(UUID examId, UUID studentId);
-    boolean existsByExamIdAndStudentId(UUID examId, UUID studentId);
+    Optional<AssessmentCandidate> findByAssessmentIdAndStudentId(UUID assessmentId, UUID studentId);
+    boolean existsByAssessmentIdAndStudentId(UUID assessmentId, UUID studentId);
     List<AssessmentCandidate> findByStudentId(UUID studentId);
     List<AssessmentCandidate> findByScheduleId(UUID scheduleId);
     /** Thí sinh đang được phân đúng mã đề này — dùng để gỡ phân đề trước khi xoá mã đề. */
     List<AssessmentCandidate> findByAssignedPaperId(UUID paperId);
-    Set<UUID> findStudentIdsByExamId(UUID examId);
-    List<UUID> findUnblockedStudentIdsByExamId(UUID examId);
-    List<AssessmentCandidate> findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(UUID examId);
+    Set<UUID> findStudentIdsByAssessmentId(UUID assessmentId);
+    List<UUID> findUnblockedStudentIdsByAssessmentId(UUID assessmentId);
+    List<AssessmentCandidate> findByAssessmentIdAndScheduleIdIsNullOrderByAssignedAtAsc(UUID assessmentId);
     List<AssessmentCandidate> findByIdIn(Collection<UUID> ids);
-    List<AssessmentCandidate> findByIdInAndExamId(Collection<UUID> ids, UUID examId);
+    List<AssessmentCandidate> findByIdInAndAssessmentId(Collection<UUID> ids, UUID assessmentId);
     long countByScheduleId(UUID scheduleId);
     boolean existsByScheduleIdAndStudentId(UUID scheduleId, UUID studentId);
-    boolean existsByExamIdAndScheduleIdIsNotNull(UUID examId);
+    boolean existsByAssessmentIdAndScheduleIdIsNotNull(UUID assessmentId);
     Optional<AssessmentCandidate> findByScheduleIdAndStudentId(UUID scheduleId, UUID studentId);
     List<AssessmentCandidate> findActiveCandidates(UUID studentId, Instant now);
 

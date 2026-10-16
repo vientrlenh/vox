@@ -6,13 +6,13 @@ import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.model.assessment.AssessmentStreamTypePermission;
-import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
+import com.sep.vox.domain.model.assessment.AssessmentResultDecisionMethod;
 import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentJpaEntity;
 
 public final class AssessmentMapper {
 
     public static Assessment toDomain(AssessmentJpaEntity jpa) {
-        var exam = new Assessment(
+        var assessment = new Assessment(
             jpa.getId(),
             jpa.getBlueprintId(),
             jpa.getBlueprintVersionId(),
@@ -38,44 +38,44 @@ public final class AssessmentMapper {
             jpa.getCreatedBy(),
             jpa.getUpdatedBy()
         );
-        exam.setAssessmentTimeDurationSecond(jpa.getAssessmentTimeDurationSecond());
+        assessment.setAssessmentTimeDurationSecond(jpa.getAssessmentTimeDurationSecond());
         // Đặt qua setter chứ không nhét vào constructor: constructor của Assessment đã dài và có nhiều
         // biến thể, thêm tham số vào là sửa mọi nơi gọi chỉ để mang một trường tuỳ chọn.
-        exam.setAiConfidenceThresholdPercent(jpa.getAiConfidenceThresholdPercent());
-        exam.setHumanGradingNotifiedAt(jpa.getHumanGradingNotifiedAt());
-        return exam;
+        assessment.setAiConfidenceThresholdPercent(jpa.getAiConfidenceThresholdPercent());
+        assessment.setHumanGradingNotifiedAt(jpa.getHumanGradingNotifiedAt());
+        return assessment;
     }
 
-    public static AssessmentJpaEntity toJpa(Assessment exam) {
+    public static AssessmentJpaEntity toJpa(Assessment assessment) {
         var jpa = new AssessmentJpaEntity(
-            exam.getId(),
-            exam.getBlueprintId(),
-            exam.getBlueprintVersionId(),
-            exam.getCode(),
-            exam.getName(),
-            exam.getDescription(),
-            exam.getSchoolId(),
-            exam.getLanguageId(),
-            exam.getKind().name(),
-            exam.getDeliveryMode() == null ? null : exam.getDeliveryMode().name(),
-            exam.getStatus().name(),
-            exam.getMaxAttempt(),
-            exam.getAssessmentTimeDurationSecond(),
-            exam.getResultDecisionMethod() == null ? null : exam.getResultDecisionMethod().name(),
-            valueOf(exam.getRequiredStreamType()), 
-            valueOf(exam.getStreamTypePermission()), 
-            exam.getOpenAt(),
-            exam.getCloseAt(),
-            exam.getAssessmentPolicyId(),
-            exam.isRequiresOtp(),
-            exam.getCreatedAt(),
-            exam.getUpdatedAt(),
-            exam.getCreatedBy(),
-            exam.getUpdatedBy()
+            assessment.getId(),
+            assessment.getBlueprintId(),
+            assessment.getBlueprintVersionId(),
+            assessment.getCode(),
+            assessment.getName(),
+            assessment.getDescription(),
+            assessment.getSchoolId(),
+            assessment.getLanguageId(),
+            assessment.getKind().name(),
+            assessment.getDeliveryMode() == null ? null : assessment.getDeliveryMode().name(),
+            assessment.getStatus().name(),
+            assessment.getMaxAttempt(),
+            assessment.getTimeDurationSecond(),
+            assessment.getResultDecisionMethod() == null ? null : assessment.getResultDecisionMethod().name(),
+            valueOf(assessment.getRequiredStreamType()), 
+            valueOf(assessment.getStreamTypePermission()), 
+            assessment.getOpenAt(),
+            assessment.getCloseAt(),
+            assessment.getAssessmentPolicyId(),
+            assessment.isRequiresOtp(),
+            assessment.getCreatedAt(),
+            assessment.getUpdatedAt(),
+            assessment.getCreatedBy(),
+            assessment.getUpdatedBy()
         );
-        jpa.setAssessmentTimeDurationSecond(exam.getAssessmentTimeDurationSecond());
-        jpa.setHumanGradingNotifiedAt(exam.getHumanGradingNotifiedAt());
-        jpa.setAiConfidenceThresholdPercent(exam.getAiConfidenceThresholdPercent());
+        jpa.setAssessmentTimeDurationSecond(assessment.getTimeDurationSecond());
+        jpa.setHumanGradingNotifiedAt(assessment.getHumanGradingNotifiedAt());
+        jpa.setAiConfidenceThresholdPercent(assessment.getAiConfidenceThresholdPercent());
         return jpa;
     }
 
@@ -91,8 +91,8 @@ public final class AssessmentMapper {
         return deliveryMode == null ? null : AssessmentDeliveryMode.valueOf(deliveryMode);
     }
 
-    private static ResultDecisionMethod resultDecisionMethodFromString(String resultDecisionMethod) {
-        return resultDecisionMethod == null ? null : ResultDecisionMethod.valueOf(resultDecisionMethod);
+    private static AssessmentResultDecisionMethod resultDecisionMethodFromString(String resultDecisionMethod) {
+        return resultDecisionMethod == null ? null : AssessmentResultDecisionMethod.valueOf(resultDecisionMethod);
     }
 
     private static AssessmentRequiredStreamType requiredStreamTypeFromString(String type) {

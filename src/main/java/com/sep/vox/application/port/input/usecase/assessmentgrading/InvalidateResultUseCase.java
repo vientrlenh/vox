@@ -5,13 +5,13 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.assessment.ExamResultInvalidatedPayloadV1;
+import com.sep.vox.application.event.assessment.AssessmentResultInvalidatedPayload;
 import com.sep.vox.application.port.input.command.GradingDecisionCommand;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.response.input.assessmentgrading.GradingActionResponse;
-import com.sep.vox.domain.model.assessment.GradingOutcome;
+import com.sep.vox.domain.model.assessment.AssessmentGradingOutcome;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.shared.AggregateTypeConstant;
@@ -52,20 +52,20 @@ public class InvalidateResultUseCase implements IUseCase<GradingDecisionCommand,
     @Transactional
     public GradingActionResponse execute(GradingDecisionCommand command) {
         var prepared = gradingActionSupport.prepare(
-            command.assignmentId(), GradingOutcome.INVALIDATED, command.reason());
+            command.assignmentId(), AssessmentGradingOutcome.INVALIDATED, command.reason());
 
         var result = prepared.context().candidateResult();
         gradingActionSupport.finish(prepared, result);
 
         var studentId = gradingActionSupport.resolveStudentId(result);
         if (studentId != null) {
-            var payload = new ExamResultInvalidatedPayloadV1(
-                result.getId(), studentId, prepared.context().examName(), prepared.reason(),
-                result.getSessionId(), prepared.context().examKind());
+            var payload = new AssessmentResultInvalidatedPayload(
+                result.getId(), studentId, prepared.context().assessmentName(), prepared.reason(),
+                result.getSessionId(), prepared.context().assessmentKind());
             outboxRepository.save(Outbox.create(
-                AggregateTypeConstant.EXAM_CANDIDATE_RESULT,
+                AggregateTypeConstant.ASSESSMENT_CANDIDATE_RESULT,
                 result.getId(),
-                EventTypeConstant.EXAM_RESULT_INVALIDATED,
+                EventTypeConstant.ASSESSMENT_RESULT_INVALIDATED,
                 jsonSerializationPort.toJson(payload),
                 Instant.now()
             ));
@@ -74,7 +74,7 @@ public class InvalidateResultUseCase implements IUseCase<GradingDecisionCommand,
         return new GradingActionResponse(
             command.assignmentId(),
             result.getId(),
-            GradingOutcome.INVALIDATED.name(),
+            AssessmentGradingOutcome.INVALIDATED.name(),
             result.getStatus() == null ? null : result.getStatus().name(),
             result.getTotalScore(),
             null

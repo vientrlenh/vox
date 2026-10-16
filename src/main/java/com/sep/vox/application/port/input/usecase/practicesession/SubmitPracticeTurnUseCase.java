@@ -15,7 +15,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
 import com.sep.vox.application.port.input.command.SubmitPracticeTurnCommand;
 import com.sep.vox.application.port.input.service.ConsumeQuotaService;
@@ -133,7 +133,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         // Nạp phiên KỂ CẢ khi lượt này im lặng: client vẫn phải thấy đúng tổng "đã nói" trên
         // thanh tiến độ, chứ không phải một ô trống mỗi lần học sinh bấm mic rồi không nói gì.
         var session = practiceSessionRepository.findById(turn.getSessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
         var spokenSeconds = session.getGradedSeconds();
         var quotaExhausted = false;
         // turnWrite.created() gác CẢ khối: bảng lượt nói tự chống trùng được (uq_practice_response_turn_order),
@@ -148,7 +148,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         // vốn đóng SAU lượt làm cạn quỹ, không phải trước.
         if (turnWrite.created() && turn.getDurationSeconds() > 0) {
             // Chi phí AI thật (USD) của turn này, Python tính đồng bộ từ realtimeCorrectionGraph
-            // ngay trong request submit_turn (không đợi được ai_usage_record qua Kafka như exam,
+            // ngay trong request submit_turn (không đợi được ai_usage_record qua Kafka như assessment,
             // vì PRACTICE trừ quota NGAY trong request này) -- xem
             // PracticeAttemptConnection._flush_turn_usage bên Agentic AI,
             // AI_USAGE_QUOTA_USD_MIGRATION.md mục 5/7. Fallback ZERO cho client Python cũ chưa gửi.
@@ -232,13 +232,13 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
 
     private void requireOwnedInProgress(UUID sessionId, UUID studentId) {
         if (!practiceSessionRepository.existsByIdAndStudentIdAndStatus(sessionId, studentId, "IN_PROGRESS")) {
-            throw new NotFoundException("Phiên luyện không còn hoạt động.");
+            throw new ResourceNotFoundException("Phiên luyện không còn hoạt động.");
         }
     }
 
     private UUID activeSubscriptionId(UUID studentId) {
         return schoolSubscriptionRepository.findActiveSubscriptionIdForUser(studentId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đang hoạt động."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đang hoạt động."));
     }
 
     /**

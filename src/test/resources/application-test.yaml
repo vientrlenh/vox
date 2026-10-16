@@ -105,8 +105,8 @@ app:
           group-id: vox-test-user
         answer-turns:
           group-id: vox-test-answer-turns
-        exam-evaluation:
-          group-id: vox-test-exam-evaluation
+        assessment-evaluation:
+          group-id: vox-test-assessment-evaluation
         practice-evaluation:
           group-id: vox-test-practice-evaluation
         question-asset-analysis:

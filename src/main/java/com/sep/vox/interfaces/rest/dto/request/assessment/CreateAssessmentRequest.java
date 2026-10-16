@@ -41,7 +41,7 @@ public record CreateAssessmentRequest(
     Integer maxAttempt,
 
     @Min(value = 1, message = "Thời lượng bài thi phải lớn hơn 0 giây")
-    Integer examTimeDurationSecond,
+    Integer assessmentTimeDurationSecond,
 
     AssessmentResultDecisionMethod resultDecisionMethod,
 
@@ -59,7 +59,7 @@ public record CreateAssessmentRequest(
      * ngưỡng cứng như trước.
      *
      * <p>Đặt rồi thì bản chấm nào có overall_confidence thấp hơn ngưỡng sẽ sang PENDING_REVIEW,
-     * và các luật cứng nội bộ bị bỏ qua -- xem RecordExamAttemptEvaluationUseCase.
+     * và các luật cứng nội bộ bị bỏ qua -- xem RecordAssessmentAttemptEvaluationUseCase.
      */
     @DecimalMin(value = "0.0", message = "Ngưỡng tin cậy phải từ 0 đến 100")
     @DecimalMax(value = "100.0", message = "Ngưỡng tin cậy phải từ 0 đến 100")

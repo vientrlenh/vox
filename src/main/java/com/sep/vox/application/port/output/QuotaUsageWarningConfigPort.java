@@ -11,7 +11,7 @@ public interface QuotaUsageWarningConfigPort {
 
     /**
      * Bắn cảnh báo khi {@code usedAmountVnd} vừa vượt {@code totalAllocatedAmountVnd * warningRatio}
-     * của đúng ví hạn mức (EXAM hoặc PRACTICE) vừa bị trừ. Lấy theo TỶ LỆ trên hạn mức, cùng lý do với
+     * của đúng ví hạn mức (ASSESSMENT hoặc PRACTICE) vừa bị trừ. Lấy theo TỶ LỆ trên hạn mức, cùng lý do với
      * {@link QuotaDebtConfigPort#capRatio()}: trường mua gói lớn/nhỏ cần cùng một mốc cảnh báo tương đối.
      */
     BigDecimal warningRatio();

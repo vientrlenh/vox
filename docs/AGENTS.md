@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## 1. Project Overview 
-- Before this file was created, this project is a server-side of a system that support evaluating AI-based oral exams for high school students. Where the normal users have to belong to a specific school in order to use, participate an exam, or practice english oral learning sessions. 
+- Before this file was created, this project is a server-side of a system that support evaluating AI-based oral assessments for high school students. Where the normal users have to belong to a specific school in order to use, participate an assessment, or practice english oral learning sessions. 
 
 
 ## 2. Project Structure

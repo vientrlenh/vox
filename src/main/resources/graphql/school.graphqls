@@ -277,7 +277,7 @@ extend type Query {
     schoolDirectoryPage(page: Int! = 1, size: Int! = 20): SchoolDirectoryPage
     schoolDirectory(id: ID!): SchoolDirectory 
     "Id các trường đang có ca thi diễn ra — dùng để chặn trước nút đình chỉ gói."
-    schoolsWithOngoingExam: [ID!]
+    schoolsWithOngoingAssessment: [ID!]
 }
 
 extend type Mutation {

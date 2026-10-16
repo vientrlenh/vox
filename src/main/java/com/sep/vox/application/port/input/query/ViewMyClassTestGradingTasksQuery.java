@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.query;
 import java.util.UUID;
 
 public record ViewMyClassTestGradingTasksQuery(
-    UUID examId,
+    UUID assessmentId,
     String status,
     String roundType,
     int page,

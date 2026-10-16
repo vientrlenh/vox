@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -33,7 +33,7 @@ public class PickRandomTopicUseCase implements IUseCase<Void, PracticeTopicOffer
     public PracticeTopicOffer execute(Void input) {
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
         var row = practiceTopicQueryRepository.findRandomActiveTopic(studentId)
-            .orElseThrow(() -> new NotFoundException("Kho chủ đề đang trống."));
+            .orElseThrow(() -> new ResourceNotFoundException("Kho chủ đề đang trống."));
         return new PracticeTopicOffer(
             row.getId(),
             row.getName(),

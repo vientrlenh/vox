@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schoolgrade;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSchoolGradeCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -43,7 +43,7 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
     public UUID execute(UpdateSchoolGradeCommand command) {
         // 1. Kiểm tra tồn tại của School Grade
         SchoolGrade grade = schoolGradeRepository.findById(command.schoolGradeId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy năm học/khóa học (School Grade)."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy năm học/khóa học (School Grade)."));
 
         // 2. school_grades mang schoolId trực tiếp -- không còn phải mượn Khối Lớp làm "cầu nối".
 
@@ -83,7 +83,7 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
         );
 
         if (updatedRows == 0) {
-            throw new NotFoundException("Cập nhật thất bại hoặc không có thông tin nào thay đổi.");
+            throw new ResourceNotFoundException("Cập nhật thất bại hoặc không có thông tin nào thay đổi.");
         }
 
         return command.schoolGradeId();

@@ -12,7 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_item_criterion_scores")
+@Table(name = "assessment_item_criterion_scores")
 public class AssessmentItemCriterionScoreJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)

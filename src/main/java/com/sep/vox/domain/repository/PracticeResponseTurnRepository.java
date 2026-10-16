@@ -60,7 +60,7 @@ public interface PracticeResponseTurnRepository {
     /**
      * Tổng duration_seconds (giây trả lời thật) theo TỪNG practice_session_id trong sessionIds --
      * dùng cho QuotaPricingCalibrationService (nguồn PRACTICE), mirror
-     * ExamItemResponseRepository.sumDurationSecondsGroupedBySessionIds.
+     * AssessmentItemAnswerRepository.sumDurationSecondsGroupedBySessionIds.
      */
     List<SessionDurationAggregate> sumDurationSecondsGroupedBySessionIds(Collection<UUID> sessionIds);
 }

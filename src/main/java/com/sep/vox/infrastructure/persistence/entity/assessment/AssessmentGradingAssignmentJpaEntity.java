@@ -25,10 +25,10 @@ import jakarta.persistence.Table;
  *
  * <p>Index đó chỉ canh chiều MỞ phân công. Chiều đóng/sửa được canh bằng khoá bi quan
  * ở {@code findByIdForUpdate} — xem
- * {@code ExamGradingAccessService#loadForUpdate}.
+ * {@code AssessmentGradingAccessService#loadForUpdate}.
  */
 @Entity
-@Table(name = "exam_grading_assignments", indexes = {
+@Table(name = "assessment_grading_assignments", indexes = {
     @Index(columnList = "active_result_id", name = "uq_grading_assignment_active_result", unique = true),
     @Index(columnList = "candidate_result_id", name = "idx_grading_assignments_result"),
     @Index(columnList = "teacher_id, status", name = "idx_grading_assignments_teacher_status"),
@@ -56,7 +56,7 @@ public class AssessmentGradingAssignmentJpaEntity {
 
     @Column(name = "round_type", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_grading_assignments_round_type_valid",
+            name = "chk_assessment_grading_assignments_round_type_valid",
             constraint = "round_type IN ('INITIAL', 'SPOT_CHECK', 'REMEDIATION', 'APPEAL')"
         )
     })
@@ -67,7 +67,7 @@ public class AssessmentGradingAssignmentJpaEntity {
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_grading_assignments_status_valid",
+            name = "chk_assessment_grading_assignments_status_valid",
             constraint = "status IN ('ASSIGNED', 'COMPLETED')"
         )
     })
@@ -75,7 +75,7 @@ public class AssessmentGradingAssignmentJpaEntity {
 
     @Column(name = "outcome", length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_grading_assignments_outcome_valid",
+            name = "chk_assessment_grading_assignments_outcome_valid",
             constraint = "outcome IS NULL OR outcome IN "
                 + "('UPHELD', 'REGRADED', 'INVALIDATED', 'CLEARED_INVALID', 'DECLINED')"
         )

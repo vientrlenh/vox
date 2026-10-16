@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolroom;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewSchoolRoomDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
@@ -23,6 +23,6 @@ public class ViewSchoolRoomDetailsUseCase implements IUseCase<ViewSchoolRoomDeta
     public SchoolRoomFromDto execute(ViewSchoolRoomDetailsQuery query) {
         return schoolRoomRepository.findById(query.id())
                 .map(SchoolRoomDtoMapper::toDto)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng học với ID đã cho."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng học với ID đã cho."));
     }
 }

@@ -23,7 +23,7 @@ import jakarta.persistence.Table;
  * không alter được CHECK constraint — ràng buộc cứng ở đây sẽ thành nợ kỹ thuật.
  */
 @Entity
-@Table(name = "exam_result_status_histories", indexes = {
+@Table(name = "assessment_result_status_histories", indexes = {
     @Index(columnList = "candidate_result_id, created_at", name = "idx_result_status_histories_result_time")
 })
 public class AssessmentResultStatusHistoryJpaEntity {
@@ -56,9 +56,9 @@ public class AssessmentResultStatusHistoryJpaEntity {
 
     @Column(name = "source", nullable = false, length = 30, check = {
         @CheckConstraint(
-            name = "chk_exam_result_status_histories_source_valid",
+            name = "chk_assessment_result_status_histories_source_valid",
             constraint = "source IN ('AI_EVALUATION', 'TEACHER_INITIAL', 'TEACHER_SPOT_CHECK', "
-                + "'TEACHER_REMEDIATION', 'TEACHER_APPEAL', 'ADMIN_BULK_FINALIZE', 'EXAM_PUBLISH', 'SYSTEM')"
+                + "'TEACHER_REMEDIATION', 'TEACHER_APPEAL', 'ADMIN_BULK_FINALIZE', 'ASSESSMENT_PUBLISH', 'SYSTEM')"
         )
     })
     private String source;

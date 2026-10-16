@@ -1,7 +1,7 @@
 package com.sep.vox.interfaces.kafka.dto;
 
 /**
- * Payload topic {@code exam.alert.raised} do vox-streaming phát (xem domain.AlertRaisedEvent bên đó).
+ * Payload topic {@code assessment.alert.raised} do vox-streaming phát (xem domain.AlertRaisedEvent bên đó).
  *
  * <p>{@code participantId} là candidateId, {@code sessionId} là id phiên thi. Hai trường này từng bị
  * gán cùng một giá trị ở phía phát; vox-streaming nay tra bù lại trước khi phát, nhưng dữ liệu cũ

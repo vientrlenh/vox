@@ -328,10 +328,10 @@ app:
           topic:
             answer-turns-recorded: ${KAFKA_ANSWER_TURNS_TOPIC:answer-turns-recorded}
           group-id: ${KAFKA_ANSWER_TURNS_GROUP_ID:vox-answer-turns}
-        exam-evaluation:
+        assessment-evaluation:
           topic:
-            exam-attempt-evaluation-completed: ${KAFKA_EXAM_EVALUATION_COMPLETED_TOPIC:exam-attempt-evaluation-completed}
-          group-id: ${KAFKA_EXAM_EVALUATION_GROUP_ID:vox-exam-evaluation}
+            assessment-attempt-evaluation-completed: ${KAFKA_ASSESSMENT_EVALUATION_COMPLETED_TOPIC:assessment-attempt-evaluation-completed}
+          group-id: ${KAFKA_ASSESSMENT_EVALUATION_GROUP_ID:vox-assessment-evaluation}
         practice-evaluation:
           topic:
             practice-attempt-evaluation-completed: ${KAFKA_PRACTICE_EVALUATION_COMPLETED_TOPIC:practice-attempt-evaluation-completed}
@@ -342,16 +342,16 @@ app:
           group-id: ${KAFKA_QUESTION_ASSET_ANALYSIS_GROUP_ID:vox-question-asset-analysis}
         recording:
           topic:
-            recording-part-changed: ${KAFKA_RECORDING_PART_CHANGED_TOPIC:exam.recording.part.changed}
+            recording-part-changed: ${KAFKA_RECORDING_PART_CHANGED_TOPIC:assessment.recording.part.changed}
           group-id: ${KAFKA_RECORDING_GROUP_ID:vox-recording}
         ai-usage:
           topic:
-            ai-usage-recorded: ${KAFKA_AI_USAGE_TOPIC:exam-ai-usage-recorded}
+            ai-usage-recorded: ${KAFKA_AI_USAGE_TOPIC:assessment-ai-usage-recorded}
           group-id: ${KAFKA_AI_USAGE_GROUP_ID:vox-ai-usage}
         # Cảnh báo giám sát thi do vox-streaming phát (domain.TopicAlertRaised bên đó).
         proctoring-alert:
           topic:
-            alert-raised: ${KAFKA_PROCTORING_ALERT_TOPIC:exam.alert.raised}
+            alert-raised: ${KAFKA_PROCTORING_ALERT_TOPIC:assessment.alert.raised}
           group-id: ${KAFKA_PROCTORING_ALERT_GROUP_ID:vox-proctoring-alert}
   internal-event:
     kafka: 
@@ -360,8 +360,8 @@ app:
           topic: 
             register-form-rejected: ${KAFKA_REGISTER_FORM_REJECTED_TOPIC:vox.register-form-rejected.v1}
             user-created: ${KAFKA_USER_CREATED_TOPIC:vox.user-created.v1}
-            exam-appeal: ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
-            exam-result-lifecycle: ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
+            assessment-appeal: ${KAFKA_ASSESSMENT_APPEAL_TOPIC:vox.assessment-appeal.v1}
+            assessment-result-lifecycle: ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
             invoice: ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
             school-debt: ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
@@ -376,15 +376,15 @@ app:
         # khoản / chưa từng đăng nhập nên không có thiết bị nào để đẩy.
         notification:
           topic:
-            exam-appeal: ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
-            exam-result-lifecycle: ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
+            assessment-appeal: ${KAFKA_ASSESSMENT_APPEAL_TOPIC:vox.assessment-appeal.v1}
+            assessment-result-lifecycle: ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
-            exam-blueprint-version: ${KAFKA_EXAM_BLUEPRINT_VERSION_TOPIC:vox.exam-blueprint-version.v1}
+            assessment-blueprint-version: ${KAFKA_ASSESSMENT_BLUEPRINT_VERSION_TOPIC:vox.assessment-blueprint-version.v1}
             # CỐ TÌNH không có bản sao dưới nhóm email: nhắc chấm tay chỉ hiện trong app, không
             # gửi mail. Đây cũng là lý do nó không đi chung topic grading-assignment --
             # GradingAssignmentEmailConsumer ném với eventType lạ, nên dùng chung là đẩy mọi
             # message loại này vào DLT.
-            exam-grading-review: ${KAFKA_EXAM_GRADING_REVIEW_TOPIC:vox.exam-grading-review.v1}
+            assessment-grading-review: ${KAFKA_ASSESSMENT_GRADING_REVIEW_TOPIC:vox.assessment-grading-review.v1}
             invoice: ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
             school-debt: ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
           # Ngược lại, group-id BẮT BUỘC phải là biến riêng. Dùng chung KAFKA_EMAIL_GROUP_ID
@@ -406,23 +406,23 @@ app:
       "[RegisterFormRejected]": ${KAFKA_REGISTER_FORM_REJECTED_TOPIC:vox.register-form-rejected.v1}
       "[UserCreated]": ${KAFKA_USER_CREATED_TOPIC:vox.user-created.v1}
 
-      "[ExamAppealPublished]": ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
-      "[ExamAppealRejected]": ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
-      "[ExamAppealApproved]": ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
+      "[AssessmentAppealPublished]": ${KAFKA_ASSESSMENT_APPEAL_TOPIC:vox.assessment-appeal.v1}
+      "[AssessmentAppealRejected]": ${KAFKA_ASSESSMENT_APPEAL_TOPIC:vox.assessment-appeal.v1}
+      "[AssessmentAppealApproved]": ${KAFKA_ASSESSMENT_APPEAL_TOPIC:vox.assessment-appeal.v1}
 
-      "[ExamResultReleased]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
-      "[ExamResultRegraded]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
-      "[ExamResultInvalidated]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
-      "[ExamResultInvalidCleared]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
-      "[ExamResultOutcomeDecided]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
+      "[AssessmentResultReleased]": ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
+      "[AssessmentResultRegraded]": ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
+      "[AssessmentResultInvalidated]": ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
+      "[AssessmentResultInvalidCleared]": ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
+      "[AssessmentResultOutcomeDecided]": ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
 
       "[GradingDeadlineReminder]": ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
       "[GradingAssignmentDeclined]": ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
 
-      "[ExamBlueprintVersionPublished]": ${KAFKA_EXAM_BLUEPRINT_VERSION_TOPIC:vox.exam-blueprint-version.v1}
+      "[AssessmentBlueprintVersionPublished]": ${KAFKA_ASSESSMENT_BLUEPRINT_VERSION_TOPIC:vox.assessment-blueprint-version.v1}
 
-      "[ExamHumanGradingRequired]": ${KAFKA_EXAM_GRADING_REVIEW_TOPIC:vox.exam-grading-review.v1}
-      "[GradingAssignmentOpened]": ${KAFKA_EXAM_GRADING_REVIEW_TOPIC:vox.exam-grading-review.v1}
+      "[AssessmentHumanGradingRequired]": ${KAFKA_ASSESSMENT_GRADING_REVIEW_TOPIC:vox.assessment-grading-review.v1}
+      "[GradingAssignmentOpened]": ${KAFKA_ASSESSMENT_GRADING_REVIEW_TOPIC:vox.assessment-grading-review.v1}
 
       "[InvoicePaid]": ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
 
@@ -454,13 +454,13 @@ vox:
     # xong), chỉ là hệ số quy đổi tạm để chặn sớm khi trường rõ ràng không đủ hạn
     # mức. Cần thay bằng số đo thực tế (trung bình cost_usd / audio_duration_seconds
     # trên một khoảng thời gian đủ dài) trước khi dùng ở production..
-    estimated-cost-per-exam-second-usd: ${VOX_QUOTA_ESTIMATED_COST_PER_EXAM_SECOND_USD:}
+    estimated-cost-per-assessment-second-usd: ${VOX_QUOTA_ESTIMATED_COST_PER_ASSESSMENT_SECOND_USD:}
     # Cùng vai trò như dòng trên nhưng riêng cho PRACTICE -- tự tính lại độc lập qua
     # QuotaPricingCalibrationJob.runPractice(), xem QuotaPricingCalibrationService/QuotaPricingSource.
     estimated-cost-per-practice-second-usd: ${VOX_QUOTA_ESTIMATED_COST_PER_PRACTICE_SECOND_USD:}
     calibration:
-      # QuotaPricingCalibrationJob dùng các số này để tự tính lại estimated-cost-per-exam-second-usd
-      # ở trên từ dữ liệu ai_usage_record/exam_item_responses thật, thay vì phải tự sửa .env tay --
+      # QuotaPricingCalibrationJob dùng các số này để tự tính lại estimated-cost-per-assessment-second-usd
+      # ở trên từ dữ liệu ai_usage_record/assessment_item_answers thật, thay vì phải tự sửa .env tay --
       # xem QuotaPricingCalibrationService.
       window-days: ${VOX_QUOTA_CALIBRATION_WINDOW_DAYS:}
       min-sample-sessions: ${VOX_QUOTA_CALIBRATION_MIN_SAMPLE_SESSIONS:}

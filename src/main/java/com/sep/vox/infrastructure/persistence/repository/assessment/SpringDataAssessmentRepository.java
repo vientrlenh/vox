@@ -24,7 +24,7 @@ public interface SpringDataAssessmentRepository extends JpaRepository<Assessment
                     SELECT 1
                     FROM AssessmentCandidateJpaEntity ec
                     JOIN SchoolClassUserJpaEntity scu ON scu.userId = ec.studentId
-                    WHERE ec.examId = e.id
+                    WHERE ec.assessmentId = e.id
                       AND scu.schoolClassId = :schoolClassId
                       AND scu.isActive = true
                 )
@@ -42,7 +42,7 @@ public interface SpringDataAssessmentRepository extends JpaRepository<Assessment
                 OR EXISTS (
                     SELECT 1
                     FROM AssessmentMemberJpaEntity em
-                    WHERE em.examId = e.id
+                    WHERE em.assessmentId = e.id
                       AND em.userId = :currentUserId
                 )
                 OR (e.status IN ('CLOSED', 'RESULTS_PUBLISHED') AND e.schoolId = :currentSchoolId)
@@ -81,10 +81,10 @@ public interface SpringDataAssessmentRepository extends JpaRepository<Assessment
     @Query("""
         SELECT CASE WHEN COUNT(s) > 0 THEN true ELSE false END
         FROM AssessmentSessionJpaEntity s
-        WHERE s.examId = :examId
+        WHERE s.assessmentId = :assessmentId
           AND s.submittedAt IS NOT NULL
     """)
-    boolean existsSubmittedSessionByExamId(@Param("examId") UUID examId);
+    boolean existsSubmittedSessionByAssessmentId(@Param("assessmentId") UUID assessmentId);
 
     /**
      * Bài thi còn chấm được, đang có bài chờ soát điểm AI, và CHƯA nhắc lần nào.
@@ -99,12 +99,12 @@ public interface SpringDataAssessmentRepository extends JpaRepository<Assessment
      * commit thì cả hai đều thấy NULL và cùng phát event.
      */
     @Query(value = """
-        SELECT * FROM exams e
+        SELECT * FROM assessments e
         WHERE e.status IN ('IN_PROGRESS', 'CLOSED')
         AND e.human_grading_notified_at IS NULL
         AND EXISTS (
-            SELECT 1 FROM exam_candidate_results r
-            WHERE r.exam_id = e.id AND r.status = 'PENDING_REVIEW'
+            SELECT 1 FROM assessment_candidate_results r
+            WHERE r.assessment_id = e.id AND r.status = 'PENDING_REVIEW'
         )
         ORDER BY e.created_at ASC
         LIMIT 200

@@ -14,7 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_item_evaluations")
+@Table(name = "assessment_item_evaluations")
 public class AssessmentItemEvaluationJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)
@@ -35,7 +35,7 @@ public class AssessmentItemEvaluationJpaEntity {
 
     // NOTE: engineType/gradedByModel/sampleCount/reviewerId/overallConfidence/
     // requiresHumanReview/reviewReasonCode/markedInvalid/requiresRetake used to be
-    // updatable=false. RecordExamAttemptEvaluationUseCase's "existingEvaluation != null"
+    // updatable=false. RecordAssessmentAttemptEvaluationUseCase's "existingEvaluation != null"
     // branch mutates-in-place for regrade (calls setters on all of these), so updatable=false
     // silently made Hibernate DROP them from every UPDATE statement after the first INSERT --
     // a regrade would recompute correctly in memory but these columns stayed frozen at
@@ -44,7 +44,7 @@ public class AssessmentItemEvaluationJpaEntity {
     // whose signals/item_score genuinely did update on regrade).
     @Column(name = "engine_type", nullable = false, check = {
         @CheckConstraint(
-            name = "chk_exam_item_evaluations_engine_type_valid",
+            name = "chk_assessment_item_evaluations_engine_type_valid",
             constraint = "engine_type IN ('AI_SINGLE', 'AI_ENSEMBLE', 'HUMAN')"
         )
     })
@@ -97,7 +97,7 @@ public class AssessmentItemEvaluationJpaEntity {
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_item_evaluations_status_valid", 
+            name = "chk_assessment_item_evaluations_status_valid", 
             constraint = "status IN ('AUTO_GRADED', 'UNDER_REVIEW', 'FINALIZED', 'SUPERSEDED')"
         )
     })

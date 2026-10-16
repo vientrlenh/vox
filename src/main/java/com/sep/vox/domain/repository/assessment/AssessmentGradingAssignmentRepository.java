@@ -39,7 +39,7 @@ public interface AssessmentGradingAssignmentRepository {
      * <p>Cố ý đếm cả dòng đã {@code COMPLETED}: bài bị phúc khảo thì chính người chấm vòng trước
      * là người bị hỏi lại, mà lúc đó dòng phân công của họ đã đóng. Dùng cho các kiểm tra CHỈ
      * ĐỌC (xem bản ghi buổi thi); mọi hành động GHI điểm vẫn phải đi qua
-     * {@code ExamGradingAccessService.authorizeAssignedTeacher} trên đúng dòng đang mở.
+     * {@code AssessmentGradingAccessService.authorizeAssignedTeacher} trên đúng dòng đang mở.
      */
     boolean existsByCandidateResultIdAndTeacherId(UUID candidateResultId, UUID teacherId);
 
@@ -50,12 +50,12 @@ public interface AssessmentGradingAssignmentRepository {
     List<AssessmentGradingAssignment> findOverdue(Instant now);
 
     /**
-     * Quá hạn trong phạm vi một trường (và một kỳ thi nếu {@code examId != null}), cũ
+     * Quá hạn trong phạm vi một trường (và một kỳ thi nếu {@code assessmentId != null}), cũ
      * nhất trước, tối đa {@code limit} dòng. Thu hồi hàng loạt dùng cái này để không
      * chạm dữ liệu trường khác và để một lượt không ôm cả trường vào một transaction ghi.
      */
     List<AssessmentGradingAssignment> findOverdueInSchool(
-        Instant now, UUID schoolId, UUID examId, int limit);
+        Instant now, UUID schoolId, UUID assessmentId, int limit);
 
     /** Quá hạn và chưa từng gửi mail nhắc. Chống nhắc trùng bằng {@code reminded_at}. */
     List<AssessmentGradingAssignment> findDueForReminder(Instant threshold);

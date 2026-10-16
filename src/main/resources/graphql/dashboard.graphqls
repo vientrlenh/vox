@@ -54,26 +54,26 @@ numeric(18,6) và double làm tròn sai đúng chỗ con số phải khớp tuy�
 school-balance.graphqls. Cả bốn field theo cùng một kiểu: trộn Float với String trong cùng một khối
 tiền còn khó đọc hơn là lệch với tokenAllocated/tokenUsed ngay bên cạnh.
 
-HAI TÚI KHÁC NHAU, đừng gộp: hạn mức kèm gói tách theo QuotaType (chỉ ví EXAM trả tiền cho việc chấm
+HAI TÚI KHÁC NHAU, đừng gộp: hạn mức kèm gói tách theo QuotaType (chỉ ví ASSESSMENT trả tiền cho việc chấm
 thi), còn ví tự nạp là MỘT con số dùng chung và chỉ bị trừ khi hạn mức của loại tương ứng đã cạn.
 Túi luyện nói còn rộng không giúp gì cho kỳ thi tuần sau.
 """
 type SchoolFunding {
     "Hạn mức CHẤM THI còn lại. Không bao giờ âm — phần vượt đã thành nợ trên ví."
-    examQuotaRemainingVnd: String!
-    examQuotaTotalVnd: String!
+    assessmentQuotaRemainingVnd: String!
+    assessmentQuotaTotalVnd: String!
     "Số dư ví tự nạp. Âm CHÍNH LÀ khoản nợ."
     balanceVnd: String!
     """
     balanceVnd < 0 — trường không mở được ca thi mới.
 
-    Cùng luật SchoolSubscriptionDebtGuardService dùng để chặn VerifyExamScheduleOtpUseCase và
+    Cùng luật SchoolSubscriptionDebtGuardService dùng để chặn VerifyAssessmentScheduleOtpUseCase và
     StartClassTestSessionUseCase, trả sẵn thay vì để client so với 0: một luật chỉ nên có một nơi
     định nghĩa. Trùng nghĩa với SchoolBalance.locked, cố ý — đây là bản đọc kèm của trang tổng quan.
     """
     locked: Boolean!
     """
-    examQuotaRemainingVnd + max(balanceVnd, 0). Ví ÂM không bị trừ vào đây: nợ là khoản phải trả.
+    assessmentQuotaRemainingVnd + max(balanceVnd, 0). Ví ÂM không bị trừ vào đây: nợ là khoản phải trả.
 
     KHÔNG trừ committedToUsersVnd. Đây là vị từ KHOÁ — khớp từng đồng với
     ClassTestTokenQuotaGuardService.spendableSchoolFundsVnd, cửa thật sự từ chối lên lịch kỳ thi.
@@ -84,11 +84,11 @@ type SchoolFunding {
     Phần đã hứa cho giáo viên qua trần chi cá nhân mà họ CHƯA tiêu. Không bao giờ âm.
 
     Cộng phần CHƯA TIÊU, không phải tổng allocated: khoản giáo viên đã tiêu đã nằm trong
-    examQuotaRemainingVnd rồi (ConsumeQuotaService trừ cùng một đồng vào cả ví trường lẫn bộ đếm cá
+    assessmentQuotaRemainingVnd rồi (ConsumeQuotaService trừ cùng một đồng vào cả ví trường lẫn bộ đếm cá
     nhân), nên lấy tổng allocated là trừ hai lần. Dòng đã tiêu quá trần đóng góp 0, không đóng góp số
     âm — vượt trần là tiền đã tiêu thật, không phải tín dụng trả ngược cho trường.
 
-    Chỉ ví EXAM. Trần chi của học sinh nằm ở ví PRACTICE và không trả tiền cho việc chấm thi.
+    Chỉ ví ASSESSMENT. Trần chi của học sinh nằm ở ví PRACTICE và không trả tiền cho việc chấm thi.
     """
     committedToUsersVnd: String!
     """
@@ -130,21 +130,21 @@ type UnscoredWorkload {
     assignedInProgress: Int!
     "Bài chờ lâu nhất đã chờ bao nhiêu ngày lịch (giờ VN); null khi không còn bài nào — null KHÁC 0"
     oldestWaitingDays: Int
-    examCount: Int!
+    assessmentCount: Int!
 }
 
 """
 Kỳ thi ĐÃ ĐÓNG mà còn bài chưa có điểm.
 
-Công bố điểm là cánh cửa MỘT CHIỀU: RetryGradingExamSessionUseCase và HandOffGradingToHumanUseCase
+Công bố điểm là cánh cửa MỘT CHIỀU: RetryGradingAssessmentSessionUseCase và HandOffGradingToHumanUseCase
 đều từ chối khi kỳ thi ở RESULTS_PUBLISHED. Bấm công bố lúc còn bài trống là chốt sổ vĩnh viễn cho
 đúng những bài đó, và hiện không màn nào cảnh báo trước.
 
 Chỉ kỳ CLOSED — đúng tập kỳ mà nút Công bố điểm đang bấm được. Kỳ IN_PROGRESS vẫn đang có người thi
 nên bài trống là chuyện bình thường.
 """
-type ExamAwaitingPublish {
-    examId: ID!
+type AssessmentAwaitingPublish {
+    assessmentId: ID!
     code: String!
     name: String!
     "ISO-8601; null với kỳ không đặt mốc đóng"
@@ -161,14 +161,14 @@ type ExamAwaitingPublish {
 """
 Một bài AI chấm lỗi mà chưa ai xử lý, nhìn từ phía nhà trường.
 
-KHÔNG có điểm: phiên GRADING_FAILED chưa từng sinh dòng exam_candidate_results nào. Thứ thay thế là
+KHÔNG có điểm: phiên GRADING_FAILED chưa từng sinh dòng assessment_candidate_results nào. Thứ thay thế là
 những trường giúp chọn giữa hai lối ra — nhờ AI chấm lại hay xếp giáo viên chấm tay.
 """
 type SchoolGradingFailure {
     sessionId: ID!
-    examId: ID!
-    examCode: String!
-    examName: String!
+    assessmentId: ID!
+    assessmentCode: String!
+    assessmentName: String!
     candidateName: String
     "null khi học sinh chưa được xếp vào lớp đang hoạt động nào"
     className: String
@@ -204,15 +204,15 @@ type SchoolGradingFailurePage {
 }
 
 type SchoolAdminDashboardSummary {
-    examStatusCounts: ExamStatusCounts!
+    assessmentStatusCounts: AssessmentStatusCounts!
     appealStats: AppealStats!
     revenue: Float!
     "Chi tiêu 12 tháng gần nhất, xếp từ cũ đến mới"
     monthlySpending: [SchoolMonthlySpending!]!
     """
-    Hạn mức CHẤM THI của kỳ đăng ký đang chạy — chỉ ví EXAM, không gồm ví luyện nói.
+    Hạn mức CHẤM THI của kỳ đăng ký đang chạy — chỉ ví ASSESSMENT, không gồm ví luyện nói.
 
-    Tên field nói "token" và không nói "exam" là di sản; xem SchoolFunding cho bản đọc rõ ràng, có
+    Tên field nói "token" và không nói "assessment" là di sản; xem SchoolFunding cho bản đọc rõ ràng, có
     kèm cả số dư ví. Hai chỗ đọc cùng một bản ghi hạn mức nên không bao giờ lệch nhau.
     """
     tokenAllocated: Float!
@@ -222,7 +222,7 @@ type SchoolAdminDashboardSummary {
     funding: SchoolFunding!
     unscored: UnscoredWorkload!
     "Nhiều bài trống nhất trước. Cắt ở 5 kỳ — đây là thẻ cảnh báo, không phải danh sách kỳ thi."
-    examsAwaitingPublish: [ExamAwaitingPublish!]!
+    assessmentsAwaitingPublish: [AssessmentAwaitingPublish!]!
     """
     Đơn khiếu nại CHỜ XỬ LÝ lâu nhất đã chờ bao nhiêu ngày lịch (giờ VN).
 
@@ -244,7 +244,7 @@ type TeacherScoreStats {
 }
 
 type ClassScoreStats {
-    examName: String!
+    assessmentName: String!
     className: String!
     averageScore: Float
     highestScore: Float
@@ -254,17 +254,17 @@ type ClassScoreStats {
 }
 
 type TeacherDashboardSummary {
-    examStatusCounts: ExamStatusCounts!
+    assessmentStatusCounts: AssessmentStatusCounts!
     gradingStats: TeacherGradingStats!
     scoreStats: TeacherScoreStats!
     classScoreStats: [ClassScoreStats!]!
 }
 
-type NearestCentralizedExam {
-    examId: ID!
+type NearestCentralizedAssessment {
+    assessmentId: ID!
     code: String!
     name: String!
-    status: ExamStatus!
+    status: AssessmentStatus!
     "Mốc mở kỳ thi, định dạng ISO-8601"
     openAt: String
     "Mốc đóng kỳ thi, định dạng ISO-8601"
@@ -301,7 +301,7 @@ type GradingOutcomeBucket {
 """
 Sức khỏe vận hành nền tảng. Trộn hai loại thời gian CÓ CHỦ Ý:
 
-sessionsInProgress / examsInProgress / gradingQueueDepth là ảnh chụp NGAY LÚC GỌI và không đổi theo
+sessionsInProgress / assessmentsInProgress / gradingQueueDepth là ảnh chụp NGAY LÚC GỌI và không đổi theo
 dateFrom/dateTo — "đang có 6 kỳ thi chạy" mà đổi khi bấm sang tháng trước thì vô nghĩa. Các trường
 còn lại thuộc cửa sổ đang xem.
 """
@@ -309,12 +309,12 @@ type PlatformOperationalHealth {
     "Phiên thi đang diễn ra ngay lúc này"
     sessionsInProgress: Int!
     "Số kỳ thi KHÁC NHAU đang có phiên chạy"
-    examsInProgress: Int!
+    assessmentsInProgress: Int!
     "Phiên đã nộp, đang xếp hàng hoặc đang chấm"
     gradingQueueDepth: Int!
     "Phiên chấm xong trong cửa sổ"
     graded: Int!
-    "Phiên AI chấm lỗi trong cửa sổ (exam_sessions.status = GRADING_FAILED)"
+    "Phiên AI chấm lỗi trong cửa sổ (assessment_sessions.status = GRADING_FAILED)"
     gradingFailed: Int!
     "null khi cửa sổ chưa có phiên nào chấm xong lẫn chấm lỗi — khác hẳn với 0%"
     successRatePercent: Float
@@ -386,7 +386,7 @@ type GradingFailureGroup {
     sessionCount: Int!
     "Kỳ thi cấp hệ thống không thuộc trường nào nên không được đếm"
     schoolCount: Int!
-    examCount: Int!
+    assessmentCount: Int!
     "ISO-8601. Cùng với lastFailedAt cho thấy sự cố gói trong hai tiếng hay lỗi rỉ rả suốt hai tuần"
     firstFailedAt: String
     lastFailedAt: String
@@ -418,7 +418,7 @@ type GradingFailureOverview {
 }
 
 """
-Một phiên chấm lỗi. KHÔNG có điểm: phiên GRADING_FAILED không có dòng exam_candidate_results nào để
+Một phiên chấm lỗi. KHÔNG có điểm: phiên GRADING_FAILED không có dòng assessment_candidate_results nào để
 lấy điểm ra. Thứ thay thế là những trường giúp phân loại.
 """
 type GradingFailureSession {
@@ -427,8 +427,8 @@ type GradingFailureSession {
     "null với kỳ thi cấp hệ thống"
     schoolName: String
     schoolCode: String
-    examId: ID!
-    examName: String!
+    assessmentId: ID!
+    assessmentName: String!
     candidateName: String
     "ISO-8601, mốc nộp bài"
     failedAt: String
@@ -582,7 +582,7 @@ type SchoolAiSpendByUserPage {
     Phần chi KHÔNG thuộc trần chi của ai — khoản của kỳ thi tập trung.
 
     Kỳ thi tập trung do nhà trường tổ chức nên cố ý không tính vào túi riêng của người nào
-    (CompleteExamSessionGradingUseCase chỉ truyền người ra đề với bài kiểm tra trên lớp). Trả riêng
+    (CompleteAssessmentSessionGradingUseCase chỉ truyền người ra đề với bài kiểm tra trên lớp). Trả riêng
     thay vì thành một hàng "không rõ": ở gần như mọi trường đây là khoản LỚN NHẤT và sẽ chiếm đỉnh
     bảng, che mất đúng thứ bảng này sinh ra để cho thấy.
 
@@ -685,7 +685,7 @@ extend type Query {
     chuyện gì", ở đây hỏi "em nào đã chờ lâu nhất mà vẫn chưa có điểm".
     """
     schoolGradingFailures(
-        examId: ID
+        assessmentId: ID
         retryLeft: Boolean
         page: Int = 1
         size: Int = 20
@@ -694,6 +694,6 @@ extend type Query {
     schoolAdminDashboard: SchoolAdminDashboardSummary!
     teacherDashboard: TeacherDashboardSummary!
     "Kỳ thi tập trung gần thời điểm hiện tại nhất của trường — null nếu chưa có kỳ thi tập trung nào"
-    nearestCentralizedExam: NearestCentralizedExam
+    nearestCentralizedAssessment: NearestCentralizedAssessment
     questionBankStats: QuestionBankStats!
 }

@@ -31,7 +31,7 @@ public interface PracticeTopicQueryRepository {
     List<TopicNameCardInfo> findActiveNameCards();
 
     /** Topic đã PUBLISHED trong ngân hàng câu hỏi (question_bank/question_topic) của đúng
-     * trường + khối hiện tại của học sinh -- nguồn topic cho luyện tập EXAM_PREP. Bank chưa
+     * trường + khối hiện tại của học sinh -- nguồn topic cho luyện tập ASSESSMENT_PREP. Bank chưa
      * gắn khối nào áp dụng cho mọi khối trong trường đó. */
-    List<QuestionTopicInfo> findPublishedExamTopics(UUID schoolId, UUID gradeId);
+    List<QuestionTopicInfo> findPublishedAssessmentTopics(UUID schoolId, UUID gradeId);
 }

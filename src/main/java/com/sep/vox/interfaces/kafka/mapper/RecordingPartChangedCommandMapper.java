@@ -5,8 +5,8 @@ import java.util.UUID;
 
 import com.sep.vox.application.port.input.command.RecordRecordingPartChangedCommand;
 import com.sep.vox.application.shared.DateMapper;
-import com.sep.vox.domain.model.assessment.ExamRecordingAssemblyStatus;
-import com.sep.vox.domain.model.assessment.ExamRequiredStreamType;
+import com.sep.vox.domain.model.assessment.AssessmentRecordingAssemblyStatus;
+import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
 import com.sep.vox.interfaces.kafka.dto.RecordingPartChangedEventDto;
 
 public final class RecordingPartChangedCommandMapper {
@@ -40,19 +40,19 @@ public final class RecordingPartChangedCommandMapper {
         return (raw == null || raw.isBlank()) ? "UNKNOWN" : raw.trim().toUpperCase(Locale.ROOT);
     }
 
-    private static ExamRequiredStreamType toStreamType(String raw) {
-        var type = ExamRequiredStreamType.valueOf(raw.trim().toUpperCase());
-        if (type == ExamRequiredStreamType.CAMERA_AND_SCREEN) {
+    private static AssessmentRequiredStreamType toStreamType(String raw) {
+        var type = AssessmentRequiredStreamType.valueOf(raw.trim().toUpperCase());
+        if (type == AssessmentRequiredStreamType.CAMERA_AND_SCREEN) {
             throw new IllegalArgumentException("Một bản ghi không thể có streamType CAMERA_AND_SCREEN: " + raw);
         }
         return type;
     }
 
 
-    private static ExamRecordingAssemblyStatus toStatus(String raw) {
+    private static AssessmentRecordingAssemblyStatus toStatus(String raw) {
         if ("UPLOADING".equalsIgnoreCase(raw)) {
-            return ExamRecordingAssemblyStatus.PROCESSING;
+            return AssessmentRecordingAssemblyStatus.PROCESSING;
         }
-        return ExamRecordingAssemblyStatus.valueOf(raw.trim().toUpperCase());
+        return AssessmentRecordingAssemblyStatus.valueOf(raw.trim().toUpperCase());
     }
 }

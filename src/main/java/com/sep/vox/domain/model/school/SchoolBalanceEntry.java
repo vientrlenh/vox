@@ -10,7 +10,7 @@ import com.sep.vox.domain.model.metering.QuotaType;
  * Sổ cái append-only của SchoolBalance. SchoolBalance chỉ là bản TỔNG HỢP để trừ nguyên tử; nguồn
  * sự thật là bảng này -- SUM(amountVnd) phải luôn khớp số dư tổng hợp.
  *
- * <p>Tham chiếu nguồn dùng cột CÓ KIỂU (orderId / examSessionId / actorId) thay cho cặp
+ * <p>Tham chiếu nguồn dùng cột CÓ KIỂU (orderId / assessmentSessionId / actorId) thay cho cặp
  * (source_type, source_id) đa hình như invoice cũ: mỗi cột FK được thật, và CHECK ràng buộc đúng
  * cột nào được set theo entryType.
  */
@@ -28,7 +28,7 @@ public class SchoolBalanceEntry {
     /** Đơn hàng nguồn: bắt buộc với TOP_UP/REFUND. */
     private UUID orderId;
     /** Phiên THI đã gây ra khoản trừ -- OVERAGE_CHARGE phải có ĐÚNG MỘT trong hai cột session. */
-    private UUID examSessionId;
+    private UUID assessmentSessionId;
     /** Phiên LUYỆN NÓI đã gây ra khoản trừ -- cột riêng vì mỗi cột session là một FK được thật. */
     private UUID practiceSessionId;
     /** Chiều BÁO CÁO cho ViewTokenUsageTimeseries, không phải ví riêng. */
@@ -45,7 +45,7 @@ public class SchoolBalanceEntry {
     public SchoolBalanceEntry() {}
 
     public SchoolBalanceEntry(UUID id, UUID schoolId, UUID subscriptionId, SchoolBalanceEntryType entryType,
-            BigDecimal amountVnd, BigDecimal balanceAfterVnd, UUID orderId, UUID examSessionId,
+            BigDecimal amountVnd, BigDecimal balanceAfterVnd, UUID orderId, UUID assessmentSessionId,
             UUID practiceSessionId, QuotaType quotaType,
             BigDecimal costUsd, BigDecimal fxRateUsed, UUID actorId, String reason, Instant occurredAt) {
         this.id = id;
@@ -55,7 +55,7 @@ public class SchoolBalanceEntry {
         this.amountVnd = amountVnd;
         this.balanceAfterVnd = balanceAfterVnd;
         this.orderId = orderId;
-        this.examSessionId = examSessionId;
+        this.assessmentSessionId = assessmentSessionId;
         this.practiceSessionId = practiceSessionId;
         this.quotaType = quotaType;
         this.costUsd = costUsd;
@@ -66,7 +66,7 @@ public class SchoolBalanceEntry {
     }
 
     public SchoolBalanceEntry(UUID schoolId, UUID subscriptionId, SchoolBalanceEntryType entryType,
-            BigDecimal amountVnd, BigDecimal balanceAfterVnd, UUID orderId, UUID examSessionId,
+            BigDecimal amountVnd, BigDecimal balanceAfterVnd, UUID orderId, UUID assessmentSessionId,
             UUID practiceSessionId, QuotaType quotaType,
             BigDecimal costUsd, BigDecimal fxRateUsed, UUID actorId, String reason, Instant occurredAt) {
         this.schoolId = schoolId;
@@ -75,7 +75,7 @@ public class SchoolBalanceEntry {
         this.amountVnd = amountVnd;
         this.balanceAfterVnd = balanceAfterVnd;
         this.orderId = orderId;
-        this.examSessionId = examSessionId;
+        this.assessmentSessionId = assessmentSessionId;
         this.practiceSessionId = practiceSessionId;
         this.quotaType = quotaType;
         this.costUsd = costUsd;
@@ -141,12 +141,12 @@ public class SchoolBalanceEntry {
         this.orderId = orderId;
     }
 
-    public UUID getExamSessionId() {
-        return examSessionId;
+    public UUID getAssessmentSessionId() {
+        return assessmentSessionId;
     }
 
-    public void setExamSessionId(UUID examSessionId) {
-        this.examSessionId = examSessionId;
+    public void setAssessmentSessionId(UUID assessmentSessionId) {
+        this.assessmentSessionId = assessmentSessionId;
     }
 
     public UUID getPracticeSessionId() {
@@ -241,14 +241,14 @@ public class SchoolBalanceEntry {
      * ghi ở school_subscription_quota_records.used_amount_vnd rồi, ghi lại ở đây là đếm hai lần cùng
      * một đồng tiền -- xem ConsumeQuotaService.chargeOverage.
      */
-    public static SchoolBalanceEntry forExamOverageCharge(UUID schoolId, UUID subscriptionId,
-            UUID examSessionId, QuotaType quotaType, BigDecimal overageVnd, BigDecimal balanceAfterVnd,
+    public static SchoolBalanceEntry forAssessmentOverageCharge(UUID schoolId, UUID subscriptionId,
+            UUID assessmentSessionId, QuotaType quotaType, BigDecimal overageVnd, BigDecimal balanceAfterVnd,
             BigDecimal costUsd, BigDecimal fxRateUsed, Instant now) {
-        return overageCharge(schoolId, subscriptionId, examSessionId, null, quotaType,
+        return overageCharge(schoolId, subscriptionId, assessmentSessionId, null, quotaType,
             overageVnd, balanceAfterVnd, costUsd, fxRateUsed, now);
     }
 
-    /** Như {@link #forExamOverageCharge} nhưng khoản trừ đến từ một phiên LUYỆN NÓI. */
+    /** Như {@link #forAssessmentOverageCharge} nhưng khoản trừ đến từ một phiên LUYỆN NÓI. */
     public static SchoolBalanceEntry forPracticeOverageCharge(UUID schoolId, UUID subscriptionId,
             UUID practiceSessionId, QuotaType quotaType, BigDecimal overageVnd, BigDecimal balanceAfterVnd,
             BigDecimal costUsd, BigDecimal fxRateUsed, Instant now) {
@@ -304,7 +304,7 @@ public class SchoolBalanceEntry {
      * sẵn một dòng chắc chắn bị DB từ chối.
      */
     private static SchoolBalanceEntry overageCharge(UUID schoolId, UUID subscriptionId,
-            UUID examSessionId, UUID practiceSessionId, QuotaType quotaType, BigDecimal overageVnd,
+            UUID assessmentSessionId, UUID practiceSessionId, QuotaType quotaType, BigDecimal overageVnd,
             BigDecimal balanceAfterVnd, BigDecimal costUsd, BigDecimal fxRateUsed, Instant now) {
         return new SchoolBalanceEntry(
             schoolId,
@@ -313,7 +313,7 @@ public class SchoolBalanceEntry {
             overageVnd.negate(),
             balanceAfterVnd,
             null,
-            examSessionId,
+            assessmentSessionId,
             practiceSessionId,
             quotaType,
             costUsd,

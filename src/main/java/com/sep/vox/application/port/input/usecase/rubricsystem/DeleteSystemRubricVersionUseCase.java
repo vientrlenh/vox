@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSystemRubricVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -46,10 +46,10 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản."));
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric."));
 
         // CHECK QUYỀN SYSTEM
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {

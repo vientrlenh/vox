@@ -9,17 +9,17 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.command.GradingDecisionCommand;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.input.usecase.assessmentevaluation.UpsertExamCandidateResultUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentevaluation.UpsertAssessmentCandidateResultUseCase;
 import com.sep.vox.application.response.input.assessmentgrading.GradingActionResponse;
-import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
-import com.sep.vox.domain.model.exam.ExamSession;
-import com.sep.vox.domain.model.exam.ExamSessionStatus;
-import com.sep.vox.domain.model.exam.GradingOutcome;
-import com.sep.vox.domain.model.exam.GradingRoundPolicy;
-import com.sep.vox.domain.model.exam.GradingRoundType;
-import com.sep.vox.domain.repository.assessment.ExamItemEvaluationRepository;
-import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
-import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.AssessmentSession;
+import com.sep.vox.domain.model.assessment.AssessmentSessionStatus;
+import com.sep.vox.domain.model.assessment.AssessmentGradingOutcome;
+import com.sep.vox.domain.service.assessment.GradingRoundPolicy;
+import com.sep.vox.domain.model.assessment.AssessmentGradingRoundType;
+import com.sep.vox.domain.repository.assessment.AssessmentItemEvaluationRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentItemAnswerRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentSessionRepository;
 import com.sep.vox.application.port.input.service.MissingResponseBackfillService;
 
 /**
@@ -37,32 +37,32 @@ import com.sep.vox.application.port.input.service.MissingResponseBackfillService
 public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, GradingActionResponse> {
 
     private final GradingActionSupport gradingActionSupport;
-    private final ExamSessionRepository examSessionRepository;
-    private final ExamItemResponseRepository examItemResponseRepository;
-    private final ExamItemEvaluationRepository examItemEvaluationRepository;
+    private final AssessmentSessionRepository assessmentSessionRepository;
+    private final AssessmentItemAnswerRepository assessmentItemAnswerRepository;
+    private final AssessmentItemEvaluationRepository assessmentItemEvaluationRepository;
     private final MissingResponseBackfillService missingResponseBackfillService;
-    private final UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase;
+    private final UpsertAssessmentCandidateResultUseCase upsertAssessmentCandidateResultUseCase;
 
     public UpholdResultUseCase(
             GradingActionSupport gradingActionSupport,
-            ExamSessionRepository examSessionRepository,
-            ExamItemResponseRepository examItemResponseRepository,
-            ExamItemEvaluationRepository examItemEvaluationRepository,
+            AssessmentSessionRepository assessmentSessionRepository,
+            AssessmentItemAnswerRepository assessmentItemAnswerRepository,
+            AssessmentItemEvaluationRepository assessmentItemEvaluationRepository,
             MissingResponseBackfillService missingResponseBackfillService,
-            UpsertExamCandidateResultUseCase upsertExamCandidateResultUseCase) {
+            UpsertAssessmentCandidateResultUseCase upsertAssessmentCandidateResultUseCase) {
         this.gradingActionSupport = gradingActionSupport;
-        this.examSessionRepository = examSessionRepository;
-        this.examItemResponseRepository = examItemResponseRepository;
-        this.examItemEvaluationRepository = examItemEvaluationRepository;
+        this.assessmentSessionRepository = assessmentSessionRepository;
+        this.assessmentItemAnswerRepository = assessmentItemAnswerRepository;
+        this.assessmentItemEvaluationRepository = assessmentItemEvaluationRepository;
         this.missingResponseBackfillService = missingResponseBackfillService;
-        this.upsertExamCandidateResultUseCase = upsertExamCandidateResultUseCase;
+        this.upsertAssessmentCandidateResultUseCase = upsertAssessmentCandidateResultUseCase;
     }
 
     @Override
     @Transactional
     public GradingActionResponse execute(GradingDecisionCommand command) {
         var prepared = gradingActionSupport.prepare(
-            command.assignmentId(), GradingOutcome.UPHELD, command.reason());
+            command.assignmentId(), AssessmentGradingOutcome.UPHELD, command.reason());
 
         // Gỡ cờ nghi vấn: giáo viên đã xem và kết luận không vi phạm. Giữ nguyên
         // flagReason để còn tra lại vì sao bài từng bị đánh dấu.
@@ -70,14 +70,14 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
         // Ở REMEDIATION thì KHÔNG gỡ: giữ nguyên ở vòng đó nghĩa là xác nhận vi phạm,
         // gỡ cờ lúc này sẽ nói ngược lại chính quyết định vừa ghi.
         var session = prepared.context().session();
-        if (prepared.roundType() != GradingRoundType.REMEDIATION && session.isFlagged()) {
+        if (prepared.roundType() != AssessmentGradingRoundType.REMEDIATION && session.isFlagged()) {
             session.setFlagged(false);
-            examSessionRepository.save(session);
+            assessmentSessionRepository.save(session);
         }
 
         var result = prepared.context().candidateResult();
         var targetStatus = GradingRoundPolicy.resultStatusAfter(
-            prepared.roundType(), GradingOutcome.UPHELD);
+            prepared.roundType(), AssessmentGradingOutcome.UPHELD);
 
         // Rào "phải chấm đủ" bên dưới CHỈ áp cho vòng nào mà giữ nguyên đồng nghĩa với CÔNG BỐ
         // (INITIAL, APPEAL -- xem ma trận ở GradingRoundPolicy). Đó là chỗ điểm thiếu lọt ra
@@ -86,12 +86,12 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
         // Vòng REMEDIATION đứng ngoài: bài ở đó đang INVALID và giữ nguyên INVALID (targetStatus
         // null), giữ nguyên nghĩa là XÁC NHẬN VI PHẠM chứ không phải giữ một con điểm. Bài bị
         // buộc kết thúc ngay trong lúc thi thì theo thiết kế không có evaluation nào
-        // (SubmitExamSessionUseCase thoát sớm ở nhánh blockedAt), nên rào này bắt trúng CHÍNH
+        // (SubmitAssessmentSessionUseCase thoát sớm ở nhánh blockedAt), nên rào này bắt trúng CHÍNH
         // những bài mà vòng REMEDIATION sinh ra để xử lý: giáo viên không chấm được (không có
         // gì để chấm), không giữ nguyên được, phân công thành ngõ cụt không có lối đóng.
         // Hậu kiểm (SPOT_CHECK) cũng đứng ngoài vì bài vốn đã RELEASED -- chặn ở đó không thu
         // hồi lại được gì, chỉ khoá nốt người đang soi bài.
-        var publishesResult = targetStatus == ExamCandidateResultStatus.RELEASED;
+        var publishesResult = targetStatus == AssessmentCandidateResultStatus.RELEASED;
 
         var filledAny = publishesResult && fillSilentAnswersOrRefuse(result.getSessionId(), session);
 
@@ -99,7 +99,7 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
         // tới điểm đang có.
         var finalResult = result;
         if (filledAny) {
-            finalResult = upsertExamCandidateResultUseCase.execute(
+            finalResult = upsertAssessmentCandidateResultUseCase.execute(
                 result.getSessionId(),
                 targetStatus == null ? result.getStatus() : targetStatus);
         }
@@ -109,7 +109,7 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
         return new GradingActionResponse(
             command.assignmentId(),
             finalResult.getId(),
-            GradingOutcome.UPHELD.name(),
+            AssessmentGradingOutcome.UPHELD.name(),
             finalResult.getStatus() == null ? null : finalResult.getStatus().name(),
             finalResult.getTotalScore(),
             null
@@ -133,7 +133,7 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
      * @return true nếu vừa ghi thêm bản chấm 0 -- tức tổng điểm cần được tính lại
      * @throws IllegalStateException khi còn câu thí sinh CÓ trả lời mà chưa ai chấm
      */
-    private boolean fillSilentAnswersOrRefuse(UUID sessionId, ExamSession session) {
+    private boolean fillSilentAnswersOrRefuse(UUID sessionId, AssessmentSession session) {
         // Câu thí sinh CHƯA TỪNG làm không có dòng response nào, nên vòng lặp bên dưới không thấy
         // nó. Không lấp thì điểm tổng lấy trung bình trên chỉ những câu ĐÃ làm -- bài 2 câu bỏ 1
         // câu ra 8 thay vì 4. Phải lấp TRƯỚC cả nhánh thoát sớm dưới đây, vì bài không có response
@@ -146,16 +146,16 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
         //
         // RESUMABLE = {IN_PROGRESS, INTERRUPTED} nghĩa đúng là "thí sinh còn quay lại trả lời
         // được", nên đó là vị từ cần hỏi. Lấp sớm là tái diễn lỗi hai-response-một-câu mà
-        // ForceEndExamSessionUseCase vừa phải gỡ bỏ.
-        if (!ExamSessionStatus.RESUMABLE.contains(session.getStatus())) {
+        // ForceEndAssessmentSessionUseCase vừa phải gỡ bỏ.
+        if (!AssessmentSessionStatus.RESUMABLE.contains(session.getStatus())) {
             missingResponseBackfillService.backfill(sessionId, session.getPaperId());
         }
 
-        var responses = examItemResponseRepository.findBySessionId(sessionId);
+        var responses = assessmentItemAnswerRepository.findBySessionId(sessionId);
         if (responses.isEmpty()) {
             return false;
         }
-        var evaluatedResponseIds = examItemEvaluationRepository
+        var evaluatedResponseIds = assessmentItemEvaluationRepository
             .findByResponseIdIn(responses.stream().map(response -> response.getId()).toList()).stream()
             .map(evaluation -> evaluation.getResponseId())
             .collect(Collectors.toSet());

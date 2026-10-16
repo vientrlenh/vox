@@ -93,9 +93,9 @@ public class AssessmentGradingAssignmentRepositoryImpl implements AssessmentGrad
 
     @Override
     public List<AssessmentGradingAssignment> findOverdueInSchool(
-            Instant now, UUID schoolId, UUID examId, int limit) {
+            Instant now, UUID schoolId, UUID assessmentId, int limit) {
         return springDataAssessmentGradingAssignmentRepository
-            .findOverdueInSchool(now, schoolId, examId, PageRequest.of(0, limit)).stream()
+            .findOverdueInSchool(now, schoolId, assessmentId, PageRequest.of(0, limit)).stream()
             .map(AssessmentGradingAssignmentMapper::toDomain)
             .toList();
     }

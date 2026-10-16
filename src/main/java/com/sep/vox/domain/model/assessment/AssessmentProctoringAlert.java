@@ -7,7 +7,7 @@ import java.util.UUID;
 
 /**
  * Một đợt vi phạm được phát hiện trong lúc giám sát thi, do vox-streaming phát trên topic
- * {@code exam.alert.raised}.
+ * {@code assessment.alert.raised}.
  *
  * <p>Đây là sổ append-only: không sửa, không xoá theo nghiệp vụ. Lý do là mục đích dùng của nó --
  * bằng chứng cho quyết định về tính hợp lệ của bài thi. Một bản ghi bằng chứng có thể sửa được thì
@@ -23,7 +23,7 @@ public class AssessmentProctoringAlert {
 
     /**
      * Những loại cảnh báo đặt câu hỏi "bài này có phải do CHÍNH thí sinh làm không" -- và vì thế
-     * buộc bài phải qua tay người soát. Xem {@code RecordExamAttemptEvaluationUseCase}.
+     * buộc bài phải qua tay người soát. Xem {@code RecordAssessmentAttemptEvaluationUseCase}.
      *
      * <p><b>Theo LOẠI, không theo {@code level}.</b> Trước đây cửa này hỏi {@code level = 'CRITICAL'},
      * và đó là dùng một cái thang để trả lời hai câu hỏi khác nhau. Thang mức của vox-streaming
@@ -52,7 +52,7 @@ public class AssessmentProctoringAlert {
 
     private UUID id;
     private String eventId;
-    private UUID examSessionId;
+    private UUID assessmentSessionId;
     private UUID candidateId;
     private String streamId;
     private String streamType;
@@ -69,12 +69,12 @@ public class AssessmentProctoringAlert {
     public AssessmentProctoringAlert() {
     }
 
-    public AssessmentProctoringAlert(UUID id, String eventId, UUID examSessionId, UUID candidateId, String streamId,
+    public AssessmentProctoringAlert(UUID id, String eventId, UUID assessmentSessionId, UUID candidateId, String streamId,
             String streamType, String alertType, String level, String source, String detail, BigDecimal confidence,
             Long sequenceNo, Instant capturedAt, Instant raisedAt, Instant createdAt) {
         this.id = id;
         this.eventId = eventId;
-        this.examSessionId = examSessionId;
+        this.assessmentSessionId = assessmentSessionId;
         this.candidateId = candidateId;
         this.streamId = streamId;
         this.streamType = streamType;
@@ -105,12 +105,12 @@ public class AssessmentProctoringAlert {
         this.eventId = eventId;
     }
 
-    public UUID getExamSessionId() {
-        return examSessionId;
+    public UUID getAssessmentSessionId() {
+        return assessmentSessionId;
     }
 
-    public void setExamSessionId(UUID examSessionId) {
-        this.examSessionId = examSessionId;
+    public void setAssessmentSessionId(UUID assessmentSessionId) {
+        this.assessmentSessionId = assessmentSessionId;
     }
 
     public UUID getCandidateId() {

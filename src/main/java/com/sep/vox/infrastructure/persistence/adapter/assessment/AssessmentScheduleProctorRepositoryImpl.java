@@ -85,7 +85,7 @@ public class AssessmentScheduleProctorRepositoryImpl implements AssessmentSchedu
     @Override
     public boolean existsOverlappingAssignment(UUID teacherId, Instant start, Instant end, UUID excludeScheduleId) {
         // Ca thi chưa đặt giờ thì không có gì để so — coi như không vướng, đúng như cách
-        // ExamScheduleRoomValidator bỏ qua khi thiếu dữ liệu.
+        // AssessmentScheduleRoomValidator bỏ qua khi thiếu dữ liệu.
         if (teacherId == null || start == null || end == null) {
             return false;
         }

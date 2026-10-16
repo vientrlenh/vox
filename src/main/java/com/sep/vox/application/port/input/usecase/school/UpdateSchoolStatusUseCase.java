@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.school;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSchoolStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -43,7 +43,7 @@ public class UpdateSchoolStatusUseCase implements IUseCase<UpdateSchoolStatusCom
     public UUID execute(UpdateSchoolStatusCommand command) {
         // 1. Kiểm tra trường học có tồn tại không
         School school = schoolRepository.findById(command.id())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học với ID đã cho."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học với ID đã cho."));
 
         // 2. Validate User & Bảo mật
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();

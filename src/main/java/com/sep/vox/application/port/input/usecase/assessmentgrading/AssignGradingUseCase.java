@@ -13,18 +13,18 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.AssignGradingCommand;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.model.assessment.ExamGradingAssignment;
-import com.sep.vox.domain.model.assessment.GradingRoundType;
-import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.application.projection.repository.AssessmentGradingQueryRepository;
+import com.sep.vox.domain.model.assessment.AssessmentGradingAssignment;
+import com.sep.vox.domain.model.assessment.AssessmentGradingRoundType;
+import com.sep.vox.domain.repository.assessment.AssessmentCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentRepository;
 import com.sep.vox.domain.service.assessment.GradingRoundPolicy;
 
 /**
@@ -40,38 +40,38 @@ import com.sep.vox.domain.service.assessment.GradingRoundPolicy;
  * một lần cho mỗi trường phân biệt — thường là một.
  *
  * <p>Vòng {@code APPEAL} KHÔNG giao qua đây: nó gắn với một đơn phúc khảo cụ thể nên
- * đi qua {@code AssignExamAppealReviewerUseCase}, chỗ duy nhất biết luật xung đột
+ * đi qua {@code AssignAssessmentAppealReviewerUseCase}, chỗ duy nhất biết luật xung đột
  * lợi ích.
  */
 @Service
 public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List<UUID>> {
 
-    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
-    private final ExamCandidateResultRepository examCandidateResultRepository;
-    private final ExamRepository examRepository;
-    private final ExamGradingQueryRepository examGradingQueryRepository;
-    private final ExamGradingAccessService examGradingAccessService;
+    private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
+    private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
+    private final AssessmentGradingAccessService assessmentGradingAccessService;
     private final GradingAssignmentNotificationService gradingAssignmentNotificationService;
 
     public AssignGradingUseCase(
-            ExamGradingAssignmentRepository examGradingAssignmentRepository,
-            ExamCandidateResultRepository examCandidateResultRepository,
-            ExamRepository examRepository,
-            ExamGradingQueryRepository examGradingQueryRepository,
-            ExamGradingAccessService examGradingAccessService,
+            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
+            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
+            AssessmentRepository assessmentRepository,
+            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
+            AssessmentGradingAccessService assessmentGradingAccessService,
             GradingAssignmentNotificationService gradingAssignmentNotificationService) {
-        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
-        this.examCandidateResultRepository = examCandidateResultRepository;
-        this.examRepository = examRepository;
-        this.examGradingQueryRepository = examGradingQueryRepository;
-        this.examGradingAccessService = examGradingAccessService;
+        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
+        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
+        this.assessmentRepository = assessmentRepository;
+        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
+        this.assessmentGradingAccessService = assessmentGradingAccessService;
         this.gradingAssignmentNotificationService = gradingAssignmentNotificationService;
     }
 
     @Override
     @Transactional
     public List<UUID> execute(AssignGradingCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
+        var currentUserId = assessmentGradingAccessService.requireActiveUserId();
         var roundType = parseRoundType(command.roundType());
         var deadlineAt = validateDeadline(command.deadlineAt());
 
@@ -88,27 +88,27 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
         var candidateResultIds = items.stream()
             .map(item -> item.candidateResultId()).toList();
         if (new HashSet<>(candidateResultIds).size() != candidateResultIds.size()) {
-            throw new DuplicatedException("Không được phân công trùng bài thi.");
+            throw new ResourceDuplicatedException("Không được phân công trùng bài thi.");
         }
 
         // ---- nạp theo lô: kết quả -> kỳ thi -> trường ----
-        var resultsById = examCandidateResultRepository.findByIdIn(candidateResultIds).stream()
+        var resultsById = assessmentCandidateResultRepository.findByIdIn(candidateResultIds).stream()
             .collect(Collectors.toMap(result -> result.getId(), Function.identity(), (left, right) -> left));
         for (var candidateResultId : candidateResultIds) {
             if (!resultsById.containsKey(candidateResultId)) {
-                throw new NotFoundException("Không tìm thấy kết quả bài thi.");
+                throw new ResourceNotFoundException("Không tìm thấy kết quả bài thi.");
             }
         }
-        var schoolIdByExamId = examRepository.findByIdIn(
-                resultsById.values().stream().map(result -> result.getExamId()).distinct().toList()).stream()
-            .collect(Collectors.toMap(exam -> exam.getId(), exam -> exam.getSchoolId(), (left, right) -> left));
+        var schoolIdByAssessmentId = assessmentRepository.findByIdIn(
+                resultsById.values().stream().map(result -> result.getAssessmentId()).distinct().toList()).stream()
+            .collect(Collectors.toMap(assessment -> assessment.getId(), assessment -> assessment.getSchoolId(), (left, right) -> left));
 
         // Trường của mỗi bài; đồng thời là tập trường phân biệt để phân quyền + lọc giáo viên.
         var schoolIdByResultId = new HashMap<UUID, UUID>();
         for (var result : resultsById.values()) {
-            var schoolId = schoolIdByExamId.get(result.getExamId());
+            var schoolId = schoolIdByAssessmentId.get(result.getAssessmentId());
             if (schoolId == null) {
-                throw new NotFoundException("Không tìm thấy bài kiểm tra của kết quả này.");
+                throw new ResourceNotFoundException("Không tìm thấy bài kiểm tra của kết quả này.");
             }
             schoolIdByResultId.put(result.getId(), schoolId);
         }
@@ -116,13 +116,13 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
 
         // ---- phân quyền: một lần / trường phân biệt (thường là một) ----
         for (var schoolId : distinctSchoolIds) {
-            examGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId);
+            assessmentGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId);
         }
         // Bài trên lớp đi đường riêng: chủ bài tự nhận qua /class-tests/{id}/grading/claim.
-        examGradingAccessService.rejectClassTestCoordination(candidateResultIds);
+        assessmentGradingAccessService.rejectClassTestCoordination(candidateResultIds);
 
         // ---- đã có phân công ĐANG MỞ? một query cho cả lô ----
-        var alreadyAssigned = examGradingAssignmentRepository
+        var alreadyAssigned = assessmentGradingAssignmentRepository
             .findOpenByCandidateResultIdIn(candidateResultIds).stream()
             .map(assignment -> assignment.getCandidateResultId())
             .collect(Collectors.toSet());
@@ -133,11 +133,11 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
         var validTeachersBySchool = new HashMap<UUID, Set<UUID>>();
         for (var schoolId : distinctSchoolIds) {
             validTeachersBySchool.put(schoolId,
-                examGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds));
+                assessmentGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds));
         }
 
         var now = Instant.now();
-        var assignments = new ArrayList<ExamGradingAssignment>();
+        var assignments = new ArrayList<AssessmentGradingAssignment>();
         for (var item : items) {
             var result = resultsById.get(item.candidateResultId());
             if (!GradingRoundPolicy.isAssignable(roundType, result.getStatus())) {
@@ -147,7 +147,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
             // Pre-check để báo lỗi tiếng Việt thay vì để unique index ném
             // DataIntegrityViolation; index vẫn là chốt cuối khi có race.
             if (alreadyAssigned.contains(item.candidateResultId())) {
-                throw new DuplicatedException("Bài thi này đang được một giáo viên chấm.");
+                throw new ResourceDuplicatedException("Bài thi này đang được một giáo viên chấm.");
             }
             var schoolId = schoolIdByResultId.get(item.candidateResultId());
             if (!validTeachersBySchool.getOrDefault(schoolId, Set.of()).contains(item.teacherId())) {
@@ -156,7 +156,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
 
             // scoreBefore chụp NGAY LÚC GIAO: đây là mốc để đo "AI/vòng trước lệch bao
             // nhiêu" sau khi giáo viên chấm xong. Lấy sau thì đã bị chính họ sửa mất.
-            assignments.add(ExamGradingAssignment.open(
+            assignments.add(AssessmentGradingAssignment.open(
                 item.candidateResultId(),
                 item.teacherId(),
                 roundType,
@@ -168,7 +168,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
             ));
         }
 
-        var saved = examGradingAssignmentRepository.saveAll(assignments);
+        var saved = assessmentGradingAssignmentRepository.saveAll(assignments);
 
         // Sau saveAll: thông báo cần id của dòng phân công để dẫn giáo viên vào đúng bài.
         gradingAssignmentNotificationService.publishAssigned(saved, now);
@@ -178,17 +178,17 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
             .toList();
     }
 
-    private GradingRoundType parseRoundType(String value) {
+    private AssessmentGradingRoundType parseRoundType(String value) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("Phải chọn vòng chấm.");
         }
-        GradingRoundType roundType;
+        AssessmentGradingRoundType roundType;
         try {
-            roundType = GradingRoundType.valueOf(value);
+            roundType = AssessmentGradingRoundType.valueOf(value);
         } catch (IllegalArgumentException ignored) {
             throw new IllegalArgumentException("Vòng chấm không hợp lệ.");
         }
-        if (roundType == GradingRoundType.APPEAL) {
+        if (roundType == AssessmentGradingRoundType.APPEAL) {
             throw new IllegalArgumentException(
                 "Vòng phúc khảo được phân công từ màn đơn phúc khảo, không phân công ở đây.");
         }

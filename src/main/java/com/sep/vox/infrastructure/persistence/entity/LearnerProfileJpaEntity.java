@@ -47,7 +47,7 @@ public class LearnerProfileJpaEntity {
 
     // GỠ 2026-08-07: flsaScore / flsaRawAnswersJson -- thang tự đánh giá lo lắng ngoại ngữ.
     // Hai cột `flsa_score` / `flsa_raw_answers_json` nay cũng không còn trong DB -- V14 drop
-    // chúng (cùng target_exam / target_date) khỏi bảng do V13 tạo.
+    // chúng (cùng target_assessment / target_date) khỏi bảng do V13 tạo.
     // Chúng ĐƯỢC ghi (qua mutation submitFlsaSelfReport) nhưng chưa từng được ĐỌC để đổi hành
     // vi: không luồng sinh câu hỏi, chọn độ khó hay xếp hạng chủ đề nào tra tới. Client cũng đã
     // bỏ màn hỏi từ trước -- Flutter chỉ còn chú thích nhắc rằng mutation vẫn còn nếu cần quay lại.

@@ -6,17 +6,17 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.ResultStatusHistoryInfo;
-import com.sep.vox.application.projection.repository.ExamResultAuditQueryRepository;
-import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
-import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
-import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.application.projection.repository.AssessmentResultAuditQueryRepository;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
+import com.sep.vox.domain.repository.assessment.AssessmentCandidateRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentRepository;
 
 /**
  * Dòng thời gian điểm của một bài: ai, lúc nào, từ trạng thái nào sang trạng thái nào,
@@ -31,70 +31,70 @@ import com.sep.vox.domain.repository.assessment.ExamRepository;
 @Service
 public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<ResultStatusHistoryInfo>> {
 
-    private final ExamResultAuditQueryRepository examResultAuditQueryRepository;
-    private final ExamCandidateResultRepository examCandidateResultRepository;
-    private final ExamCandidateRepository examCandidateRepository;
-    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
-    private final ExamRepository examRepository;
-    private final ExamGradingAccessService examGradingAccessService;
+    private final AssessmentResultAuditQueryRepository assessmentResultAuditQueryRepository;
+    private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
+    private final AssessmentCandidateRepository assessmentCandidateRepository;
+    private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentGradingAccessService assessmentGradingAccessService;
     private final UserContextPort userContextPort;
 
     public ViewResultStatusHistoryUseCase(
-            ExamResultAuditQueryRepository examResultAuditQueryRepository,
-            ExamCandidateResultRepository examCandidateResultRepository,
-            ExamCandidateRepository examCandidateRepository,
-            ExamGradingAssignmentRepository examGradingAssignmentRepository,
-            ExamRepository examRepository,
-            ExamGradingAccessService examGradingAccessService,
+            AssessmentResultAuditQueryRepository assessmentResultAuditQueryRepository,
+            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
+            AssessmentCandidateRepository assessmentCandidateRepository,
+            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
+            AssessmentRepository assessmentRepository,
+            AssessmentGradingAccessService assessmentGradingAccessService,
             UserContextPort userContextPort) {
-        this.examResultAuditQueryRepository = examResultAuditQueryRepository;
-        this.examCandidateResultRepository = examCandidateResultRepository;
-        this.examCandidateRepository = examCandidateRepository;
-        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
-        this.examRepository = examRepository;
-        this.examGradingAccessService = examGradingAccessService;
+        this.assessmentResultAuditQueryRepository = assessmentResultAuditQueryRepository;
+        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
+        this.assessmentCandidateRepository = assessmentCandidateRepository;
+        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
+        this.assessmentRepository = assessmentRepository;
+        this.assessmentGradingAccessService = assessmentGradingAccessService;
         this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ResultStatusHistoryInfo> execute(UUID candidateResultId) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var result = examCandidateResultRepository.findById(candidateResultId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kết quả bài thi."));
+        var currentUserId = assessmentGradingAccessService.requireActiveUserId();
+        var result = assessmentCandidateResultRepository.findById(candidateResultId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kết quả bài thi."));
 
         // Chính chủ bài thi luôn xem được lịch sử của mình — kiểm trước để học sinh
         // không phải đi qua nhánh phân quyền admin và nhận ForbiddenException.
-        var isOwner = examCandidateRepository.findById(result.getCandidateId())
+        var isOwner = assessmentCandidateRepository.findById(result.getCandidateId())
             .map(candidate -> currentUserId.equals(candidate.getStudentId()))
             .orElse(false);
         // Dòng thời gian mang scoreBefore/scoreAfter — với chính chủ nó chính là điểm, nên
         // nó chịu đúng luật công bố như màn kết quả. Trả rỗng chứ không ném lỗi: đây là
         // khối phụ trợ, ném lỗi sẽ làm hỏng cả trang chỉ vì một mục bên lề.
-        if (isOwner && !ExamCandidateResultStatus.isVisibleToCandidate(result.getStatus())) {
+        if (isOwner && !AssessmentCandidateResultStatus.isVisibleToCandidate(result.getStatus())) {
             return List.of();
         }
         if (!isOwner) {
             if (userContextPort.isSystemAdmin()) {
-                return examResultAuditQueryRepository.findHistory(candidateResultId);
+                return assessmentResultAuditQueryRepository.findHistory(candidateResultId);
             }
             // Giáo viên TỪNG được giao bài này: quyền đọc dòng thời gian đi theo việc đã
             // chấm, không theo dòng phân công còn mở. Ở vòng phúc khảo, chính người chấm
             // vòng trước là người bị hỏi lại "vì sao chấm thế" — mà lúc đó phân công của
             // họ đã COMPLETED, nên đòi phân công còn mở là khoá đúng người cần đọc nó
-            // nhất. Cùng luật với nghe lại bản ghi ở ExamRecordingAccessService.
+            // nhất. Cùng luật với nghe lại bản ghi ở AssessmentRecordingAccessService.
             //
             // Đây là quyền ĐỌC. Mọi thao tác GHI điểm vẫn đi qua
-            // ExamGradingAccessService.authorizeAssignedTeacher trên đúng dòng đang mở.
-            var wasAssignedTeacher = examGradingAssignmentRepository
+            // AssessmentGradingAccessService.authorizeAssignedTeacher trên đúng dòng đang mở.
+            var wasAssignedTeacher = assessmentGradingAssignmentRepository
                 .existsByCandidateResultIdAndTeacherId(candidateResultId, currentUserId);
             if (wasAssignedTeacher) {
-                return examResultAuditQueryRepository.findHistory(candidateResultId);
+                return assessmentResultAuditQueryRepository.findHistory(candidateResultId);
             }
-            var exam = examRepository.findById(result.getExamId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
-            examGradingAccessService.authorizeSchoolAdmin(exam.getSchoolId(), currentUserId);
+            var assessment = assessmentRepository.findById(result.getAssessmentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
+            assessmentGradingAccessService.authorizeSchoolAdmin(assessment.getSchoolId(), currentUserId);
         }
-        return examResultAuditQueryRepository.findHistory(candidateResultId);
+        return assessmentResultAuditQueryRepository.findHistory(candidateResultId);
     }
 }

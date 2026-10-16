@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.service.PracticeSessionDetailAssemblyService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.TeacherPracticeSessionDetail;
@@ -41,7 +41,7 @@ public class ViewMyPracticeSessionDetailUseCase {
     public TeacherPracticeSessionDetail execute(UUID sessionId) {
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
         var session = practiceSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
         // hasRole('STUDENT') mới chỉ nói người gọi LÀ học sinh, chưa nói phiên này của ai --
         // thiếu bước dưới thì bất kỳ học sinh nào cũng đọc được bài của bạn cùng lớp qua id.
         if (!session.getStudentId().equals(studentId)) {

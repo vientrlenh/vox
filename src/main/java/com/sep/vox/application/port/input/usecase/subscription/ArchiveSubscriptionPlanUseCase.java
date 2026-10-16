@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ArchiveSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPlanReplacementValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -38,7 +38,7 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
     @Transactional
     public UUID execute(ArchiveSubscriptionPlanCommand input) {
         var plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
 
         if (plan.getStatus() == SubscriptionPlanStatus.DRAFT) {
             throw new IllegalStateException("Gói đang ở trạng thái nháp thì phải xóa cứng, không lưu trữ.");
@@ -69,7 +69,7 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
 
         if (input.replacedByPlanId() != null) {
             var replacement = subscriptionPlanRepository.findById(input.replacedByPlanId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy gói thay thế"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói thay thế"));
             // Trường bị ép đổi gói khi gia hạn (SubscriptionPlanResolver.resolveActivePlan) không có
             // cơ hội từ chối -- xem SubscriptionPlanReplacementValidator cho bộ luật đầy đủ.
             replacementValidator.requireValidReplacement(replacement, plan);

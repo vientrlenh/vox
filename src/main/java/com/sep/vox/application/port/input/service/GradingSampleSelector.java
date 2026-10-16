@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.projection.dto.GradingRiskInfo;
-import com.sep.vox.domain.model.assessment.GradingSampleSelectionMode;
+import com.sep.vox.domain.model.assessment.AssessmentGradingSampleSelectionMode;
 
 /**
  * Chọn tập bài để giao tự động cho một vòng chấm.
@@ -47,7 +47,7 @@ public class GradingSampleSelector {
      *                     {@code candidates} — id lạ bị từ chối chứ không bỏ qua lặng lẽ
      * @param riskInfos    chỉ dùng cho {@code RISK_BASED}
      */
-    public List<UUID> select(GradingSampleSelectionMode mode, List<UUID> candidates, Integer percent,
+    public List<UUID> select(AssessmentGradingSampleSelectionMode mode, List<UUID> candidates, Integer percent,
             List<UUID> manualIds, List<GradingRiskInfo> riskInfos) {
         if (candidates == null || candidates.isEmpty()) {
             return List.of();

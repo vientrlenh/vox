@@ -11,26 +11,26 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentItemResponseTurnJpaEntity;
 
 public interface SpringDataAssessmentItemResponseTurnRepository extends JpaRepository<AssessmentItemResponseTurnJpaEntity, UUID> {
-    List<AssessmentItemResponseTurnJpaEntity> findByExamItemResponseIdOrderByTurnOrderAsc(UUID examItemResponseId);
-    Optional<AssessmentItemResponseTurnJpaEntity> findByExamItemResponseIdAndTurnOrder(UUID examItemResponseId, int turnOrder);
-    Optional<AssessmentItemResponseTurnJpaEntity> findTopByExamItemResponseIdOrderByTurnOrderDesc(UUID examItemResponseId);
-    void deleteByExamItemResponseIdIn(java.util.Collection<UUID> examItemResponseIds);
+    List<AssessmentItemResponseTurnJpaEntity> findByAssessmentItemAnswerIdOrderByTurnOrderAsc(UUID assessmentItemAnswerId);
+    Optional<AssessmentItemResponseTurnJpaEntity> findByAssessmentItemAnswerIdAndTurnOrder(UUID assessmentItemAnswerId, int turnOrder);
+    Optional<AssessmentItemResponseTurnJpaEntity> findTopByAssessmentItemAnswerIdOrderByTurnOrderDesc(UUID assessmentItemAnswerId);
+    void deleteByAssessmentItemAnswerIdIn(java.util.Collection<UUID> assessmentItemAnswerIds);
 
     interface SessionFollowupCountProjection {
-        UUID getExamItemResponseId();
+        UUID getAssessmentItemAnswerId();
         long getFollowupCount();
         long getTotalTurns();
     }
 
     @Query(value = """
         SELECT
-            t.exam_item_response_id AS examItemResponseId,
+            t.assessment_item_answer_id AS assessmentItemAnswerId,
             SUM(CASE WHEN t.turn_type = 'FOLLOWUP' THEN 1 ELSE 0 END) AS followupCount,
             COUNT(*) AS totalTurns
-        FROM exam_item_response_turns t
-        JOIN exam_item_responses r ON r.id = t.exam_item_response_id
+        FROM assessment_item_answer_turns t
+        JOIN assessment_item_answers r ON r.id = t.assessment_item_answer_id
         WHERE r.session_id = :sessionId
-        GROUP BY t.exam_item_response_id
+        GROUP BY t.assessment_item_answer_id
         """, nativeQuery = true)
     List<SessionFollowupCountProjection> countFollowupsBySessionId(@Param("sessionId") UUID sessionId);
 }

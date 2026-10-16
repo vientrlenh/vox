@@ -23,7 +23,7 @@ public interface AssessmentItemEvaluationRepository {
      * (audio/transcript/word feedback) và của mọi bằng chứng AI — bản chấm tay không sinh
      * turn và không có signals/validity/confidence.
      *
-     * <p>Cùng khuôn với {@code JpaExamGradingQueryRepository#aiEvaluationsByResponseIds}
+     * <p>Cùng khuôn với {@code JpaAssessmentGradingQueryRepository#aiEvaluationsByResponseIds}
      * vốn phục vụ màn chấm của giáo viên. UNDER_REVIEW bị loại tường minh — đó là báo cáo
      * phúc khảo CHƯA công bố, không được lọt tới học sinh.
      */

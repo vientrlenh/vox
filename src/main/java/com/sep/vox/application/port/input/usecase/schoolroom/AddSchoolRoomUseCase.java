@@ -1,8 +1,8 @@
 package com.sep.vox.application.port.input.usecase.schoolroom;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.AddSchoolRoomCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -48,13 +48,13 @@ public class AddSchoolRoomUseCase implements IUseCase<AddSchoolRoomCommand, UUID
 
         // 2. Kiểm tra sự tồn tại của trường
         if (!schoolRepository.existsById(command.schoolId())) {
-            throw new NotFoundException("Không tìm thấy trường học.");
+            throw new ResourceNotFoundException("Không tìm thấy trường học.");
         }
 
         // 3. Chuẩn hóa & Kiểm tra trùng lặp
         String safeCode = StringNormalization.normalizeCode(command.code());
         if (schoolRoomRepository.existsBySchoolIdAndCode(command.schoolId(), safeCode)) {
-            throw new DuplicatedException("Mã phòng học đã tồn tại trong trường.");
+            throw new ResourceDuplicatedException("Mã phòng học đã tồn tại trong trường.");
         }
 
         // 4. Lưu dữ liệu

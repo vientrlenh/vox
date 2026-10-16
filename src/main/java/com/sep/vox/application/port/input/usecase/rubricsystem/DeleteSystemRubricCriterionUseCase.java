@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSystemRubricCriterionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -46,21 +46,21 @@ public class DeleteSystemRubricCriterionUseCase implements IUseCase<DeleteSystem
 
         // 2. Check Version (DRAFT)
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản."));
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalStateException("Chỉ xóa được khi là DRAFT.");
         }
 
         // 3. Check Quyền System
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Không thể xóa dữ liệu của trường.");
         }
 
         // 4. Lấy và kiểm tra Tiêu chí
         RubricCriterion criterion = rubricCriterionRepository.findById(command.criterionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí."));
         if (!criterion.getRubricVersionId().equals(version.getId())) {
             throw new IllegalArgumentException("Tiêu chí sai phiên bản.");
         }

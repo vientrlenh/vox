@@ -44,8 +44,8 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
     }
 
     @Override
-    public Assessment save(Assessment exam) {
-        var entity = AssessmentMapper.toJpa(exam);
+    public Assessment save(Assessment assessment) {
+        var entity = AssessmentMapper.toJpa(assessment);
         var saved = springDataAssessmentRepository.save(entity);
         return AssessmentMapper.toDomain(saved);
     }
@@ -94,8 +94,8 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
     }
 
     @Override
-    public boolean existsSubmittedSessionByExamId(UUID examId) {
-        return springDataAssessmentRepository.existsSubmittedSessionByExamId(examId);
+    public boolean existsSubmittedSessionByAssessmentId(UUID assessmentId) {
+        return springDataAssessmentRepository.existsSubmittedSessionByAssessmentId(assessmentId);
     }
 
     @Override

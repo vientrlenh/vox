@@ -8,10 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.command.SubmitGradingCommand;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.service.GradingItemScoreResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.input.usecase.assessmentevaluation.ExamSessionResultCalculator;
+import com.sep.vox.application.port.input.usecase.assessmentevaluation.AssessmentSessionResultCalculator;
 import com.sep.vox.application.response.input.assessmentgrading.GradingPreviewResponse;
 
 /**
@@ -30,32 +30,32 @@ import com.sep.vox.application.response.input.assessmentgrading.GradingPreviewRe
 @Service
 public class PreviewGradingUseCase implements IUseCase<SubmitGradingCommand, GradingPreviewResponse> {
 
-    private final ExamSessionResultCalculator examSessionResultCalculator;
-    private final ExamGradingAccessService examGradingAccessService;
+    private final AssessmentSessionResultCalculator assessmentSessionResultCalculator;
+    private final AssessmentGradingAccessService assessmentGradingAccessService;
     private final GradingItemScoreResolver gradingItemScoreResolver;
 
     public PreviewGradingUseCase(
-            ExamSessionResultCalculator examSessionResultCalculator,
-            ExamGradingAccessService examGradingAccessService,
+            AssessmentSessionResultCalculator assessmentSessionResultCalculator,
+            AssessmentGradingAccessService assessmentGradingAccessService,
             GradingItemScoreResolver gradingItemScoreResolver) {
-        this.examSessionResultCalculator = examSessionResultCalculator;
-        this.examGradingAccessService = examGradingAccessService;
+        this.assessmentSessionResultCalculator = assessmentSessionResultCalculator;
+        this.assessmentGradingAccessService = assessmentGradingAccessService;
         this.gradingItemScoreResolver = gradingItemScoreResolver;
     }
 
     @Override
     @Transactional(readOnly = true)
     public GradingPreviewResponse execute(SubmitGradingCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var context = examGradingAccessService.load(command.assignmentId());
-        examGradingAccessService.authorizeAssignedTeacher(context, currentUserId);
+        var currentUserId = assessmentGradingAccessService.requireActiveUserId();
+        var context = assessmentGradingAccessService.load(command.assignmentId());
+        assessmentGradingAccessService.authorizeAssignedTeacher(context, currentUserId);
 
         // Preview cho phép chấm dở để xem tổng chạy dần — KHÔNG bắt phủ đủ như /grade.
         var resolvedItems = gradingItemScoreResolver.resolve(context, command, false);
         var overrides = new LinkedHashMap<UUID, BigDecimal>();
         resolvedItems.forEach(item -> overrides.put(item.responseId(), item.itemScore()));
 
-        var previewed = examSessionResultCalculator.preview(
+        var previewed = assessmentSessionResultCalculator.preview(
             context.candidateResult().getSessionId(), overrides);
 
         return new GradingPreviewResponse(

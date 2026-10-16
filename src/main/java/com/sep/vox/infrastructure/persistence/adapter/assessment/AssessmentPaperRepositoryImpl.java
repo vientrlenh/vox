@@ -56,8 +56,8 @@ public class AssessmentPaperRepositoryImpl implements AssessmentPaperRepository 
     }
 
     @Override
-    public int nextVariant(UUID examId) {
-        return springDataAssessmentPaperRepository.nextVariant(examId);
+    public int nextVariant(UUID assessmentId) {
+        return springDataAssessmentPaperRepository.nextVariant(assessmentId);
     }
 
     @Override
@@ -66,36 +66,36 @@ public class AssessmentPaperRepositoryImpl implements AssessmentPaperRepository 
     }
 
     @Override
-    public void deleteByExamId(UUID examId) {
-        springDataAssessmentPaperRepository.deleteByExamId(examId);
+    public void deleteByAssessmentId(UUID assessmentId) {
+        springDataAssessmentPaperRepository.deleteByAssessmentId(assessmentId);
     }
 
     @Override
-    public List<AssessmentPaper> findByExamId(UUID examId) {
-        return springDataAssessmentPaperRepository.findByExamIdOrderByVariantAsc(examId).stream()
+    public List<AssessmentPaper> findByAssessmentId(UUID assessmentId) {
+        return springDataAssessmentPaperRepository.findByAssessmentIdOrderByVariantAsc(assessmentId).stream()
             .map(AssessmentPaperMapper::toDomain)
             .toList();
     }
 
     @Override
-    public List<AssessmentPaper> findByExamIdIn(Collection<UUID> examIds) {
-        if (examIds.isEmpty()) {
+    public List<AssessmentPaper> findByAssessmentIdIn(Collection<UUID> assessmentIds) {
+        if (assessmentIds.isEmpty()) {
             return List.of();
         }
-        return springDataAssessmentPaperRepository.findByExamIdInOrderByVariantAsc(examIds).stream()
+        return springDataAssessmentPaperRepository.findByAssessmentIdInOrderByVariantAsc(assessmentIds).stream()
             .map(AssessmentPaperMapper::toDomain)
             .toList();
     }
 
     @Override
-    public List<AssessmentPaper> findByExamIdAndStatus(UUID examId, AssessmentPaperStatus status) {
-        return springDataAssessmentPaperRepository.findByExamIdAndStatusOrderByVariantAsc(examId, status.name()).stream()
+    public List<AssessmentPaper> findByAssessmentIdAndStatus(UUID assessmentId, AssessmentPaperStatus status) {
+        return springDataAssessmentPaperRepository.findByAssessmentIdAndStatusOrderByVariantAsc(assessmentId, status.name()).stream()
             .map(AssessmentPaperMapper::toDomain)
             .toList();
     }
 
     @Override
-    public boolean existsByExamId(UUID examId) {
-        return springDataAssessmentPaperRepository.existsByExamId(examId);
+    public boolean existsByAssessmentId(UUID assessmentId) {
+        return springDataAssessmentPaperRepository.existsByAssessmentId(assessmentId);
     }
 }

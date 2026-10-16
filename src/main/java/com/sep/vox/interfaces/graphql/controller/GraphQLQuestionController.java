@@ -18,7 +18,7 @@ import com.sep.vox.application.port.input.query.ViewQuestionStatusCountsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionsQuery;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionStatusCountsUseCase;
-import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForExamPaperUseCase;
+import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForAssessmentPaperUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.QuestionStatusCountInfo;
@@ -40,7 +40,7 @@ import com.sep.vox.domain.shared.PageResult;
 public class GraphQLQuestionController {
 
     private final ViewQuestionsUseCase viewQuestionsUseCase;
-    private final ViewQuestionsForExamPaperUseCase viewQuestionsForExamPaperUseCase;
+    private final ViewQuestionsForAssessmentPaperUseCase viewQuestionsForAssessmentPaperUseCase;
     private final ViewQuestionDetailsUseCase viewQuestionDetailsUseCase;
     private final ViewQuestionStatusCountsUseCase viewQuestionStatusCountsUseCase;
     private final UserContextPort userContextPort;
@@ -95,8 +95,8 @@ public class GraphQLQuestionController {
         return viewQuestionsUseCase.execute(query);
     }
 
-    @QueryMapping(name = "questionsForExamPaper")
-    public PageResult<QuestionDto> questionsForExamPaper(
+    @QueryMapping(name = "questionsForAssessmentPaper")
+    public PageResult<QuestionDto> questionsForAssessmentPaper(
             @Argument(name = "questionBankId") UUID questionBankId,
             @Argument(name = "questionTopicId") UUID questionTopicId,
             @Argument(name = "topicName") String topicName,
@@ -122,7 +122,7 @@ public class GraphQLQuestionController {
             page,
             size
         );
-        return viewQuestionsForExamPaperUseCase.execute(query);
+        return viewQuestionsForAssessmentPaperUseCase.execute(query);
     }
 
     @QueryMapping(name = "question")
@@ -169,8 +169,8 @@ public class GraphQLQuestionController {
         return loader.load(source.id());
     }
 
-    @SchemaMapping(typeName = "Question", field = "usableInExam")
-    public CompletableFuture<Boolean> usableInExam(QuestionDto source, DataFetchingEnvironment env) {
+    @SchemaMapping(typeName = "Question", field = "usableInAssessment")
+    public CompletableFuture<Boolean> usableInAssessment(QuestionDto source, DataFetchingEnvironment env) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (currentUserId.equals(source.createdBy()) || QuestionSharing.SCHOOL_SHARED.name().equals(source.sharing())) {
             return CompletableFuture.completedFuture(true);

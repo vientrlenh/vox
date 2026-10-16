@@ -25,8 +25,8 @@ public record GradingTaskItemInfo(
     int orderInSection,
     /**
      * Đề bài của câu, lấy thẳng từ {@code questions.question_text} qua
-     * {@code exam_paper_items.question_id} -- cùng nguồn với màn Xem kết quả
-     * ({@code ViewExamSessionResultUseCase#itemResponses}).
+     * {@code assessment_paper_items.question_id} -- cùng nguồn với màn Xem kết quả
+     * ({@code ViewAssessmentSessionResultUseCase#itemResponses}).
      *
      * <p>Trước đây màn chấm KHÔNG có trường này: giáo viên chỉ thấy "Phần 1, câu 2" và phải
      * đoán đề bài qua {@code promptText} của lượt nói. Mà lời dẫn đó là câu AI đọc lúc vào lượt

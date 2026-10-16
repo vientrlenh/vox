@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.PreviewRubricCriterionImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -94,9 +94,9 @@ public class PreviewSchoolRubricCriterionImportFromFileUseCase implements IUseCa
 
         // Bước 3: Kiểm tra tính tồn tại và quyền sở hữu bộ Rubric
         var version = rubricVersionRepository.findById(command.rubricVersionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản (Version) yêu cầu."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản (Version) yêu cầu."));
         var rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         // Chống hack: Cố tình truyền Id của một Rubric thuộc về System hoặc của một trường khác vào URL trường mình
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId())) {

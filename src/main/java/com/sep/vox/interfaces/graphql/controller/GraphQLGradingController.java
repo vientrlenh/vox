@@ -26,14 +26,14 @@ import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewGradingA
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewGradingStatsUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewGradingTaskDetailUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewMyClassTestGradingTasksUseCase;
-import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewMyGradingExamsUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewMyGradingAssessmentsUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewMyGradingTasksUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewResultStatusHistoryUseCase;
 import com.sep.vox.application.port.input.query.ViewMyClassTestGradingTasksQuery;
 import com.sep.vox.application.projection.dto.AiQualityReportInfo;
 import com.sep.vox.application.projection.dto.AssignableTeacherInfo;
 import com.sep.vox.application.projection.dto.GradingAssignmentRowInfo;
-import com.sep.vox.application.projection.dto.GradingExamOptionInfo;
+import com.sep.vox.application.projection.dto.GradingAssessmentOptionInfo;
 import com.sep.vox.application.projection.dto.GradingStatsInfo;
 import com.sep.vox.application.projection.dto.GradingTaskDetailInfo;
 import com.sep.vox.application.projection.dto.GradingTaskInfo;
@@ -55,7 +55,7 @@ public class GraphQLGradingController {
     private final ViewClassTestGradingStatsUseCase viewClassTestGradingStatsUseCase;
     private final ViewClassTestGradingResultsUseCase viewClassTestGradingResultsUseCase;
     private final ViewMyGradingTasksUseCase viewMyGradingTasksUseCase;
-    private final ViewMyGradingExamsUseCase viewMyGradingExamsUseCase;
+    private final ViewMyGradingAssessmentsUseCase viewMyGradingAssessmentsUseCase;
     private final ViewMyClassTestGradingTasksUseCase viewMyClassTestGradingTasksUseCase;
     private final ViewGradingTaskDetailUseCase viewGradingTaskDetailUseCase;
     private final ViewAssignableTeachersUseCase viewAssignableTeachersUseCase;
@@ -65,7 +65,7 @@ public class GraphQLGradingController {
     @QueryMapping(name = "gradingAssignments")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<GradingAssignmentRowInfo> gradingAssignments(
-            @Argument(name = "examId") UUID examId,
+            @Argument(name = "assessmentId") UUID assessmentId,
             @Argument(name = "scheduleId") UUID scheduleId,
             @Argument(name = "teacherId") UUID teacherId,
             @Argument(name = "resultStatus") String resultStatus,
@@ -80,7 +80,7 @@ public class GraphQLGradingController {
             @Argument(name = "size") Integer size) {
         validatePageSize(page, size);
         return viewGradingAssignmentsUseCase.execute(new SearchGradingAssignmentsQuery(
-            examId, scheduleId, teacherId, resultStatus, roundType, status,
+            assessmentId, scheduleId, teacherId, resultStatus, roundType, status,
             Boolean.TRUE.equals(unassignedOnly), Boolean.TRUE.equals(overdueOnly), hasOpenAppeal, search, kind,
             page, size));
     }
@@ -88,22 +88,22 @@ public class GraphQLGradingController {
     @QueryMapping(name = "gradingStats")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public GradingStatsInfo gradingStats(
-            @Argument(name = "examId") UUID examId,
+            @Argument(name = "assessmentId") UUID assessmentId,
             @Argument(name = "scheduleId") UUID scheduleId,
             @Argument(name = "kind") String kind) {
-        return viewGradingStatsUseCase.execute(new ViewGradingStatsQuery(examId, scheduleId, kind));
+        return viewGradingStatsUseCase.execute(new ViewGradingStatsQuery(assessmentId, scheduleId, kind));
     }
 
     @QueryMapping(name = "classTestGradingStats")
     @PreAuthorize("hasRole('TEACHER')")
-    public GradingStatsInfo classTestGradingStats(@Argument(name = "examId") UUID examId) {
-        return viewClassTestGradingStatsUseCase.execute(examId);
+    public GradingStatsInfo classTestGradingStats(@Argument(name = "assessmentId") UUID assessmentId) {
+        return viewClassTestGradingStatsUseCase.execute(assessmentId);
     }
 
     @QueryMapping(name = "classTestGradingResults")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<GradingAssignmentRowInfo> classTestGradingResults(
-            @Argument(name = "examId") UUID examId,
+            @Argument(name = "assessmentId") UUID assessmentId,
             @Argument(name = "resultStatus") String resultStatus,
             @Argument(name = "unassignedOnly") Boolean unassignedOnly,
             @Argument(name = "search") String search,
@@ -111,21 +111,21 @@ public class GraphQLGradingController {
             @Argument(name = "size") Integer size) {
         validatePageSize(page, size);
         return viewClassTestGradingResultsUseCase.execute(new ViewClassTestGradingResultsQuery(
-            examId, resultStatus, Boolean.TRUE.equals(unassignedOnly), search,
+            assessmentId, resultStatus, Boolean.TRUE.equals(unassignedOnly), search,
             page, size));
     }
 
     @QueryMapping(name = "myGradingTasks")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<GradingTaskInfo> myGradingTasks(
-            @Argument(name = "examId") UUID examId,
+            @Argument(name = "assessmentId") UUID assessmentId,
             @Argument(name = "status") String status,
             @Argument(name = "roundType") String roundType,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         validatePageSize(page, size);
         return viewMyGradingTasksUseCase.execute(new ViewMyGradingTasksQuery(
-            examId, status, roundType,
+            assessmentId, status, roundType,
             page, size));
     }
 
@@ -134,23 +134,23 @@ public class GraphQLGradingController {
      * từ token trong use case. Chỉ TEACHER — nhà trường đã có {@code gradingAssignments}
      * và hỏi ở đây cũng chỉ nhận về danh sách rỗng.
      */
-    @QueryMapping(name = "myGradingExams")
+    @QueryMapping(name = "myGradingAssessments")
     @PreAuthorize("hasRole('TEACHER')")
-    public List<GradingExamOptionInfo> myGradingExams() {
-        return viewMyGradingExamsUseCase.execute(null);
+    public List<GradingAssessmentOptionInfo> myGradingAssessments() {
+        return viewMyGradingAssessmentsUseCase.execute(null);
     }
 
     @QueryMapping(name = "myClassTestGradingTasks")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<GradingTaskInfo> myClassTestGradingTasks(
-            @Argument(name = "examId") UUID examId,
+            @Argument(name = "assessmentId") UUID assessmentId,
             @Argument(name = "status") String status,
             @Argument(name = "roundType") String roundType,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         validatePageSize(page, size);
         return viewMyClassTestGradingTasksUseCase.execute(new ViewMyClassTestGradingTasksQuery(
-            examId, status, roundType,
+            assessmentId, status, roundType,
             page, size
         ));
     }
@@ -180,8 +180,8 @@ public class GraphQLGradingController {
 
     @QueryMapping(name = "aiQualityReport")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public AiQualityReportInfo aiQualityReport(@Argument(name = "examId") UUID examId) {
-        return viewAiQualityReportUseCase.execute(new ViewAiQualityReportQuery(examId));
+    public AiQualityReportInfo aiQualityReport(@Argument(name = "assessmentId") UUID assessmentId) {
+        return viewAiQualityReportUseCase.execute(new ViewAiQualityReportQuery(assessmentId));
     }
 
     /**
@@ -198,7 +198,7 @@ public class GraphQLGradingController {
      * model bên dưới không phải thêm join nào.
      *
      * CỐ Ý không có resolver tương ứng cho học sinh: read model chấm bài không mang studentId ở bất
-     * kỳ đâu (grep "studentId" trong exam-grading.graphqls ra 0), và đó chính là thứ giữ cho hàng
+     * kỳ đâu (grep "studentId" trong assessment-grading.graphqls ra 0), và đó chính là thứ giữ cho hàng
      * đợi kỳ thi tập trung ẩn danh. Muốn hiện mặt học sinh thì phải thêm studentId vào read model --
      * đúng thay đổi mà luật ẩn danh dựng ra để ngăn.
      */
@@ -221,7 +221,7 @@ public class GraphQLGradingController {
     public CompletableFuture<UserDto> aiQualityTeacherUser(
             AiQualityReportInfo.ByTeacher source, DataFetchingEnvironment env) {
         // teacherId nullable ở type này. DataLoader ném NPE khi nhận khoá null và làm hỏng CẢ query
-        // aiQualityReport chứ không riêng field này -- xem ExamScheduleController#room.
+        // aiQualityReport chứ không riêng field này -- xem AssessmentScheduleController#room.
         if (source.teacherId() == null) {
             return CompletableFuture.completedFuture(null);
         }

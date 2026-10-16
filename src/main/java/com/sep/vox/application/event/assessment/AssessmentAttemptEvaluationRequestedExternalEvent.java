@@ -5,21 +5,21 @@ import java.util.List;
 import com.sep.vox.application.event.ExternalEventTopic;
 import com.sep.vox.application.event.HasPartitionKey;
 
-@ExternalEventTopic("exam-attempt-evaluation-requested")
+@ExternalEventTopic("assessment-attempt-evaluation-requested")
 public record AssessmentAttemptEvaluationRequestedExternalEvent(
     String eventType,
     Integer schemaVersion,
-    String examAttemptId,
+    String assessmentAttemptId,
     String answerId,
     String questionId,
     Payload payload
 ) implements HasPartitionKey {
     public AssessmentAttemptEvaluationRequestedExternalEvent(
-            String examAttemptId,
+            String assessmentAttemptId,
             String answerId,
             String questionId,
             Payload payload) {
-        this("AssessmentAttemptEvaluationRequested", 1, examAttemptId, answerId, questionId, payload);
+        this("AssessmentAttemptEvaluationRequested", 1, assessmentAttemptId, answerId, questionId, payload);
     }
 
     @Override

@@ -11,11 +11,11 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.projection.dto.ExamAwaitingPublishDto;
+import com.sep.vox.application.projection.dto.AssessmentAwaitingPublishDto;
 import com.sep.vox.application.projection.dto.SchoolGradingFailureDto;
 import com.sep.vox.application.projection.dto.SchoolUnscoredWorkloadDto;
 import com.sep.vox.application.projection.repository.SchoolWorkloadQueryRepository;
-import com.sep.vox.domain.model.assessment.ExamSession;
+import com.sep.vox.domain.model.assessment.AssessmentSession;
 import com.sep.vox.domain.shared.PageResult;
 
 import jakarta.persistence.EntityManager;
@@ -50,7 +50,7 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
         WITH unscored AS (
             SELECT
                 s.id           AS session_id,
-                s.exam_id      AS exam_id,
+                s.assessment_id      AS assessment_id,
                 s.submitted_at AS submitted_at,
                 CASE
                     WHEN r.id IS NULL AND s.school_regrade_count < :maxSchoolRegrades
@@ -63,12 +63,12 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
                         THEN 'ASSIGNED_OVERDUE'
                     ELSE 'ASSIGNED_IN_PROGRESS'
                 END AS bucket
-            FROM exam_sessions s
-            JOIN exams e ON e.id = s.exam_id
-            LEFT JOIN exam_candidate_results r
+            FROM assessment_sessions s
+            JOIN assessments e ON e.id = s.assessment_id
+            LEFT JOIN assessment_candidate_results r
                    ON r.session_id = s.id
                   AND r.status <> 'DELETED'
-            LEFT JOIN exam_grading_assignments ga
+            LEFT JOIN assessment_grading_assignments ga
                    ON ga.active_result_id = r.id
             WHERE e.school_id = :schoolId
               AND e.kind = 'CENTRALIZED'
@@ -98,12 +98,12 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
                 COUNT(*) FILTER (WHERE bucket = 'ASSIGNED_OVERDUE'),
                 COUNT(*) FILTER (WHERE bucket = 'ASSIGNED_IN_PROGRESS'),
                 MIN(submitted_at),
-                COUNT(DISTINCT exam_id)
+                COUNT(DISTINCT assessment_id)
             FROM unscored
             """)
             .setParameter("schoolId", schoolId)
             .setParameter("now", now)
-            .setParameter("maxSchoolRegrades", ExamSession.MAX_SCHOOL_REGRADES)
+            .setParameter("maxSchoolRegrades", AssessmentSession.MAX_SCHOOL_REGRADES)
             .getSingleResult();
 
         return new SchoolUnscoredWorkloadDto(
@@ -118,7 +118,7 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
      */
     @Override
     @SuppressWarnings("unchecked")
-    public List<ExamAwaitingPublishDto> findExamsAwaitingPublish(UUID schoolId, Instant now, int limit) {
+    public List<AssessmentAwaitingPublishDto> findAssessmentsAwaitingPublish(UUID schoolId, Instant now, int limit) {
         List<Object[]> rows = em.createNativeQuery(UNSCORED_CTE + """
             SELECT
                 e.id,
@@ -131,20 +131,20 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
                 COUNT(*) FILTER (WHERE u.bucket IN
                     ('AWAITING_ASSIGNMENT', 'ASSIGNED_OVERDUE', 'ASSIGNED_IN_PROGRESS'))
             FROM unscored u
-            JOIN exams e ON e.id = u.exam_id
+            JOIN assessments e ON e.id = u.assessment_id
             WHERE e.status = 'CLOSED'
             GROUP BY e.id, e.code, e.name, e.close_at
             ORDER BY COUNT(*) DESC, e.close_at ASC NULLS LAST, e.id ASC
-            LIMIT :maxExams
+            LIMIT :maxAssessments
             """)
             .setParameter("schoolId", schoolId)
             .setParameter("now", now)
-            .setParameter("maxSchoolRegrades", ExamSession.MAX_SCHOOL_REGRADES)
-            .setParameter("maxExams", limit)
+            .setParameter("maxSchoolRegrades", AssessmentSession.MAX_SCHOOL_REGRADES)
+            .setParameter("maxAssessments", limit)
             .getResultList();
 
         return rows.stream()
-            .map(row -> new ExamAwaitingPublishDto(
+            .map(row -> new AssessmentAwaitingPublishDto(
                 toUuid(row[0]),
                 (String) row[1],
                 (String) row[2],
@@ -170,17 +170,17 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
     @Override
     @SuppressWarnings("unchecked")
     public PageResult<SchoolGradingFailureDto> findUnhandledAiFailures(
-            UUID schoolId, UUID examId, Boolean retryLeft, int page, int size) {
-        // Xuống dòng ở cuối là BẮT BUỘC: mệnh đề có thể kết thúc bằng một tham số có tên (:examId), và
-        // nối thẳng với "ORDER BY" ngay sau sẽ tạo ra tên tham số ":examIdORDER" -- Hibernate báo "no
+            UUID schoolId, UUID assessmentId, Boolean retryLeft, int page, int size) {
+        // Xuống dòng ở cuối là BẮT BUỘC: mệnh đề có thể kết thúc bằng một tham số có tên (:assessmentId), và
+        // nối thẳng với "ORDER BY" ngay sau sẽ tạo ra tên tham số ":assessmentIdORDER" -- Hibernate báo "no
         // parameter named" chứ không báo lỗi cú pháp SQL.
         var where = " WHERE u.bucket IN ('AI_RETRY_LEFT', 'AI_NO_RETRY')"
-            + (examId == null ? "" : " AND u.exam_id = :examId")
+            + (assessmentId == null ? "" : " AND u.assessment_id = :assessmentId")
             + allowancePredicate(retryLeft)
             + "\n";
 
         var total = toLong(bind(em.createNativeQuery(
-            UNSCORED_CTE + "SELECT COUNT(*) FROM unscored u" + where), schoolId, examId)
+            UNSCORED_CTE + "SELECT COUNT(*) FROM unscored u" + where), schoolId, assessmentId)
             .getSingleResult());
 
         if (total == 0) {
@@ -190,7 +190,7 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
         List<Object[]> rows = bind(em.createNativeQuery(UNSCORED_CTE + """
             SELECT
                 u.session_id,
-                u.exam_id,
+                u.assessment_id,
                 e.code,
                 e.name,
                 usr.full_name,
@@ -205,14 +205,14 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
                 s.grading_retry_count,
                 u.bucket = 'AI_RETRY_LEFT'
             FROM unscored u
-            JOIN exam_sessions s ON s.id = u.session_id
-            JOIN exams e ON e.id = u.exam_id
-            JOIN exam_candidates c ON c.id = s.candidate_id
+            JOIN assessment_sessions s ON s.id = u.session_id
+            JOIN assessments e ON e.id = u.assessment_id
+            JOIN assessment_candidates c ON c.id = s.candidate_id
             LEFT JOIN users usr ON usr.id = c.student_id
             """ + where + """
             ORDER BY u.submitted_at ASC, u.session_id ASC
             LIMIT :pageSize OFFSET :offset
-            """), schoolId, examId)
+            """), schoolId, assessmentId)
             .setParameter("pageSize", size)
             .setParameter("offset", (long) (page - 1) * size)
             .getResultList();
@@ -235,13 +235,13 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
     }
 
     @Override
-    public int[] countAiFailuresByAllowance(UUID schoolId, UUID examId) {
+    public int[] countAiFailuresByAllowance(UUID schoolId, UUID assessmentId) {
         Object[] row = (Object[]) bind(em.createNativeQuery(UNSCORED_CTE + """
             SELECT
                 COUNT(*) FILTER (WHERE u.bucket = 'AI_RETRY_LEFT'),
                 COUNT(*) FILTER (WHERE u.bucket = 'AI_NO_RETRY')
             FROM unscored u
-            """ + (examId == null ? "" : " WHERE u.exam_id = :examId")), schoolId, examId)
+            """ + (assessmentId == null ? "" : " WHERE u.assessment_id = :assessmentId")), schoolId, assessmentId)
             .getSingleResult();
 
         return new int[] { toInt(row[0]), toInt(row[1]) };
@@ -259,12 +259,12 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
         return retryLeft ? " AND u.bucket = 'AI_RETRY_LEFT'" : " AND u.bucket = 'AI_NO_RETRY'";
     }
 
-    private Query bind(Query query, UUID schoolId, UUID examId) {
+    private Query bind(Query query, UUID schoolId, UUID assessmentId) {
         query.setParameter("schoolId", schoolId)
             .setParameter("now", Instant.now())
-            .setParameter("maxSchoolRegrades", ExamSession.MAX_SCHOOL_REGRADES);
-        if (examId != null) {
-            query.setParameter("examId", examId);
+            .setParameter("maxSchoolRegrades", AssessmentSession.MAX_SCHOOL_REGRADES);
+        if (assessmentId != null) {
+            query.setParameter("assessmentId", assessmentId);
         }
         return query;
     }

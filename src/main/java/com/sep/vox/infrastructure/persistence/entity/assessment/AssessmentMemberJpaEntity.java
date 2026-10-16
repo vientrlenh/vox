@@ -12,14 +12,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-// TODO(perf): thiếu index (exam_id, user_id) gây EXISTS-subquery chậm ở
+// TODO(perf): thiếu index (assessment_id, user_id) gây EXISTS-subquery chậm ở
 // SpringDataQuestionRepository.findAccessibleByIdIn. Chờ được yêu cầu mới insert:
-// @Table(name = "exam_members", indexes = {
-//     @Index(columnList = "exam_id, user_id", name = "idx_exam_members_exam_user"),
-//     @Index(columnList = "user_id", name = "idx_exam_members_user")
+// @Table(name = "assessment_members", indexes = {
+//     @Index(columnList = "assessment_id, user_id", name = "idx_assessment_members_assessment_user"),
+//     @Index(columnList = "user_id", name = "idx_assessment_members_user")
 // })
 @Entity
-@Table(name = "exam_members")
+@Table(name = "assessment_members")
 public class AssessmentMemberJpaEntity {
     
     @Id
@@ -33,8 +33,8 @@ public class AssessmentMemberJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "exam_id", nullable = false, updatable = false)
-    private UUID examId;
+    @Column(name = "assessment_id", nullable = false, updatable = false)
+    private UUID assessmentId;
 
     @Column(name = "user_id", nullable = false, updatable = false)
     private UUID userId;
@@ -55,10 +55,10 @@ public class AssessmentMemberJpaEntity {
 
     protected AssessmentMemberJpaEntity() {}
 
-    public AssessmentMemberJpaEntity(UUID id, UUID examId, UUID userId, String role, Instant grantedAt,
+    public AssessmentMemberJpaEntity(UUID id, UUID assessmentId, UUID userId, String role, Instant grantedAt,
             UUID grantedBy) {
         this.id = id;
-        this.examId = examId;
+        this.assessmentId = assessmentId;
         this.userId = userId;
         this.role = role;
         this.grantedAt = grantedAt;
@@ -73,12 +73,12 @@ public class AssessmentMemberJpaEntity {
         this.id = id;
     }
 
-    public UUID getExamId() {
-        return examId;
+    public UUID getAssessmentId() {
+        return assessmentId;
     }
 
-    public void setExamId(UUID examId) {
-        this.examId = examId;
+    public void setAssessmentId(UUID assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public UUID getUserId() {

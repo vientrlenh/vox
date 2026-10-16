@@ -10,7 +10,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 
 /**
- * Phải có {@code examId} hoặc {@code scheduleId} — ràng buộc "ít nhất một" nằm ở
+ * Phải có {@code assessmentId} hoặc {@code scheduleId} — ràng buộc "ít nhất một" nằm ở
  * use case vì Bean Validation không diễn đạt được nó gọn hơn. Ràng buộc
  * "{@code percent} bắt buộc khi chế độ là RANDOM_PERCENT" cũng vậy.
  *
@@ -18,7 +18,7 @@ import jakarta.validation.constraints.NotEmpty;
  *                      {@code MANUAL_LIST}; bỏ trống = {@code ALL}
  */
 public record AutoAssignGradingRequest(
-    UUID examId,
+    UUID assessmentId,
 
     UUID scheduleId,
 

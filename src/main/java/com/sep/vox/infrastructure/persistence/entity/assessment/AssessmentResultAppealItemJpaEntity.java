@@ -13,9 +13,9 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_result_appeal_items", indexes = {
+@Table(name = "assessment_result_appeal_items", indexes = {
     @Index(columnList = "appeal_id, paper_item_id", name = "uq_appeal_item", unique = true),
-    @Index(columnList = "appeal_id", name = "idx_exam_result_appeal_items_appeal")
+    @Index(columnList = "appeal_id", name = "idx_assessment_result_appeal_items_appeal")
 })
 public class AssessmentResultAppealItemJpaEntity {
 

@@ -5,13 +5,13 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.assessment.GradingAssignmentDeclinedPayloadV1;
+import com.sep.vox.application.event.assessment.AssessmentGradingAssignmentDeclinedPayload;
 import com.sep.vox.application.port.input.command.GradingDecisionCommand;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.response.input.assessmentgrading.GradingActionResponse;
-import com.sep.vox.domain.model.assessment.GradingOutcome;
+import com.sep.vox.domain.model.assessment.AssessmentGradingOutcome;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.shared.AggregateTypeConstant;
@@ -45,7 +45,7 @@ public class DeclineGradingAssignmentUseCase
     @Transactional
     public GradingActionResponse execute(GradingDecisionCommand command) {
         var prepared = gradingActionSupport.prepare(
-            command.assignmentId(), GradingOutcome.DECLINED, command.reason());
+            command.assignmentId(), AssessmentGradingOutcome.DECLINED, command.reason());
 
         var result = prepared.context().candidateResult();
         var assignment = prepared.context().assignment();
@@ -53,18 +53,18 @@ public class DeclineGradingAssignmentUseCase
 
         // Người cần biết là admin đã giao, không phải học sinh: bài đang nằm chờ
         // người điều phối xử lý tiếp.
-        var payload = new GradingAssignmentDeclinedPayloadV1(
+        var payload = new AssessmentGradingAssignmentDeclinedPayload(
             assignment.getId(),
             result.getId(),
             assignment.getTeacherId(),
             assignment.getAssignedBy(),
-            prepared.context().examName(),
+            prepared.context().assessmentName(),
             prepared.reason(),
-            result.getExamId(),
-            prepared.context().examKind()
+            result.getAssessmentId(),
+            prepared.context().assessmentKind()
         );
         outboxRepository.save(Outbox.create(
-            AggregateTypeConstant.EXAM_GRADING_ASSIGNMENT,
+            AggregateTypeConstant.ASSESSMENT_GRADING_ASSIGNMENT,
             assignment.getId(),
             EventTypeConstant.GRADING_ASSIGNMENT_DECLINED,
             jsonSerializationPort.toJson(payload),
@@ -74,7 +74,7 @@ public class DeclineGradingAssignmentUseCase
         return new GradingActionResponse(
             command.assignmentId(),
             result.getId(),
-            GradingOutcome.DECLINED.name(),
+            AssessmentGradingOutcome.DECLINED.name(),
             result.getStatus() == null ? null : result.getStatus().name(),
             result.getTotalScore(),
             null

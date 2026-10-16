@@ -43,7 +43,7 @@ public class PracticeItemResponseJpaEntity {
      * Vòng đời chấm -- giá trị theo {@link com.sep.vox.domain.model.personalization.PracticeGradingStatus}.
      *
      * <p>Để String kèm {@code @CheckConstraint} chứ không {@code @Enumerated}, bám đúng khuôn
-     * {@code ExamSessionJpaEntity.status}: ràng buộc nằm ở DB nên dữ liệu rác không vào được kể
+     * {@code AssessmentSessionJpaEntity.status}: ràng buộc nằm ở DB nên dữ liệu rác không vào được kể
      * cả khi ai đó sửa tay, còn enum lo phần an toàn kiểu ở tầng ứng dụng.
      */
     @Column(name = "grading_status", nullable = false, length = 16, check = {

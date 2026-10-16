@@ -11,82 +11,82 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteClassTestSectionCommand;
-import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
+import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.ExamDto;
-import com.sep.vox.domain.mapper.ExamDtoMapper;
-import com.sep.vox.domain.model.assessment.Exam;
-import com.sep.vox.domain.model.assessment.ExamKind;
-import com.sep.vox.domain.model.assessment.ExamMemberRole;
-import com.sep.vox.domain.model.assessment.ExamStatus;
-import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
-import com.sep.vox.domain.repository.assessment.ExamPaperItemRepository;
-import com.sep.vox.domain.repository.assessment.ExamPaperRepository;
-import com.sep.vox.domain.repository.assessment.ExamPaperSectionRepository;
-import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.dto.AssessmentDto;
+import com.sep.vox.domain.mapper.AssessmentDtoMapper;
+import com.sep.vox.domain.model.assessment.Assessment;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
+import com.sep.vox.domain.model.assessment.AssessmentStatus;
+import com.sep.vox.domain.repository.assessment.AssessmentMemberRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentPaperItemRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentPaperRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentPaperSectionRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentRepository;
 
 @Service
-public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSectionCommand, ExamDto> {
+public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSectionCommand, AssessmentDto> {
 
-    private final ExamRepository examRepository;
-    private final ExamMemberRepository examMemberRepository;
-    private final ExamPaperRepository examPaperRepository;
-    private final ExamPaperSectionRepository examPaperSectionRepository;
-    private final ExamPaperItemRepository examPaperItemRepository;
-    private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentMemberRepository assessmentMemberRepository;
+    private final AssessmentPaperRepository assessmentPaperRepository;
+    private final AssessmentPaperSectionRepository assessmentPaperSectionRepository;
+    private final AssessmentPaperItemRepository assessmentPaperItemRepository;
+    private final RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService;
     private final UserContextPort userContextPort;
 
     public DeleteClassTestSectionUseCase(
-            ExamRepository examRepository,
-            ExamMemberRepository examMemberRepository,
-            ExamPaperRepository examPaperRepository,
-            ExamPaperSectionRepository examPaperSectionRepository,
-            ExamPaperItemRepository examPaperItemRepository,
-            RecalculateExamTimeDurationService recalculateExamTimeDurationService,
+            AssessmentRepository assessmentRepository,
+            AssessmentMemberRepository assessmentMemberRepository,
+            AssessmentPaperRepository assessmentPaperRepository,
+            AssessmentPaperSectionRepository assessmentPaperSectionRepository,
+            AssessmentPaperItemRepository assessmentPaperItemRepository,
+            RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService,
             UserContextPort userContextPort) {
-        this.examRepository = examRepository;
-        this.examMemberRepository = examMemberRepository;
-        this.examPaperRepository = examPaperRepository;
-        this.examPaperSectionRepository = examPaperSectionRepository;
-        this.examPaperItemRepository = examPaperItemRepository;
-        this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
+        this.assessmentRepository = assessmentRepository;
+        this.assessmentMemberRepository = assessmentMemberRepository;
+        this.assessmentPaperRepository = assessmentPaperRepository;
+        this.assessmentPaperSectionRepository = assessmentPaperSectionRepository;
+        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
+        this.recalculateAssessmentTimeDurationService = recalculateAssessmentTimeDurationService;
         this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional
-    public ExamDto execute(DeleteClassTestSectionCommand input) {
+    public AssessmentDto execute(DeleteClassTestSectionCommand input) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var exam = examRepository.findById(input.examId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+        var assessment = assessmentRepository.findById(input.assessmentId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
-        if (exam.getKind() != ExamKind.CLASS_TEST) {
+        if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
             throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra trên lớp");
         }
-        if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR)) {
+        if (!assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
-        if (exam.getStatus() != ExamStatus.DRAFT && exam.getStatus() != ExamStatus.SCHEDULED) {
+        if (assessment.getStatus() != AssessmentStatus.DRAFT && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
             throw new IllegalStateException("Chỉ được sửa khi bài kiểm tra chưa bắt đầu");
         }
-        if (examRepository.existsSubmittedSessionByExamId(exam.getId())) {
+        if (assessmentRepository.existsSubmittedSessionByAssessmentId(assessment.getId())) {
             throw new IllegalStateException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
         }
-        requireNoAttachedBlueprint(exam);
+        requireNoAttachedBlueprint(assessment);
 
         // Suy mã đề từ chính section được xoá: bài trên lớp giờ có thể có nhiều mã đề, đoán "đề đầu
         // tiên" là xoá nhầm section của mã đề khác.
-        var paperSection = examPaperSectionRepository.findById(input.sectionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
-        var paper = examPaperRepository.findById(paperSection.getPaperId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
-        if (!paper.getExamId().equals(exam.getId())) {
-            throw new NotFoundException("Không tìm thấy section");
+        var paperSection = assessmentPaperSectionRepository.findById(input.sectionId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy section"));
+        var paper = assessmentPaperRepository.findById(paperSection.getPaperId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
+        if (!paper.getAssessmentId().equals(assessment.getId())) {
+            throw new ResourceNotFoundException("Không tìm thấy section");
         }
-        var allPaperSections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
+        var allPaperSections = assessmentPaperSectionRepository.findByPaperId(paper.getId()).stream()
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();
         if (allPaperSections.size() <= 1) {
@@ -95,10 +95,10 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
 
         var shouldRebalanceAfterDelete = ClassTestSectionWeightPolicy.looksAutoWeighted(allPaperSections);
 
-        for (var item : examPaperItemRepository.findBySectionId(paperSection.getId())) {
-            examPaperItemRepository.deleteById(item.getId());
+        for (var item : assessmentPaperItemRepository.findBySectionId(paperSection.getId())) {
+            assessmentPaperItemRepository.deleteById(item.getId());
         }
-        examPaperSectionRepository.deleteById(paperSection.getId());
+        assessmentPaperSectionRepository.deleteById(paperSection.getId());
 
         var now = Instant.now();
         var remainingPaperSections = allPaperSections.stream().filter(item -> !item.getId().equals(paperSection.getId())).toList();
@@ -110,7 +110,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
             }
             remaining.setUpdatedAt(now);
             remaining.setUpdatedBy(currentUserId);
-            examPaperSectionRepository.save(remaining);
+            assessmentPaperSectionRepository.save(remaining);
         }
         if (shouldRebalanceAfterDelete) {
             rebalanceSectionWeights(paper.getId(), now, currentUserId);
@@ -118,21 +118,21 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
             normalizeSectionWeights(remainingPaperSections, now, currentUserId);
         }
 
-        exam.setUpdatedAt(now);
-        exam.setUpdatedBy(currentUserId);
-        var saved = examRepository.save(exam);
-        recalculateExamTimeDurationService.recalculate(exam.getId());
-        return ExamDtoMapper.toDto(saved);
+        assessment.setUpdatedAt(now);
+        assessment.setUpdatedBy(currentUserId);
+        var saved = assessmentRepository.save(assessment);
+        recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
+        return AssessmentDtoMapper.toDto(saved);
     }
 
-    private void requireNoAttachedBlueprint(Exam exam) {
-        if (exam.getBlueprintId() != null) {
+    private void requireNoAttachedBlueprint(Assessment assessment) {
+        if (assessment.getBlueprintId() != null) {
             throw new IllegalStateException(
                 "Bài đang dùng blueprint dùng chung, không thể sửa câu hỏi trực tiếp — dùng \"Đổi blueprint khác\" ở tab Blueprint để thay đổi cấu trúc");
         }
     }
     private void rebalanceSectionWeights(UUID paperId, Instant now, UUID currentUserId) {
-        var sections = examPaperSectionRepository.findByPaperId(paperId).stream()
+        var sections = assessmentPaperSectionRepository.findByPaperId(paperId).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
         var weights = distributeEqualWeights(sections.size());
@@ -141,18 +141,18 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
             section.setWeight(weights.get(i));
             section.setUpdatedAt(now);
             section.setUpdatedBy(currentUserId);
-            examPaperSectionRepository.save(section);
+            assessmentPaperSectionRepository.save(section);
         }
     }
 
-    private void normalizeSectionWeights(List<com.sep.vox.domain.model.assessment.ExamPaperSection> sections, Instant now, UUID currentUserId) {
+    private void normalizeSectionWeights(List<com.sep.vox.domain.model.assessment.AssessmentPaperSection> sections, Instant now, UUID currentUserId) {
         var weights = ClassTestSectionWeightPolicy.normalizeStoredWeights(sections);
         for (int i = 0; i < sections.size(); i++) {
             var section = sections.get(i);
             section.setWeight(weights.get(i));
             section.setUpdatedAt(now);
             section.setUpdatedBy(currentUserId);
-            examPaperSectionRepository.save(section);
+            assessmentPaperSectionRepository.save(section);
         }
     }
 

@@ -4,7 +4,7 @@ import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSystemRubricResultBandsCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -61,7 +61,7 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
 
         // 2. Lấy Version và kiểm tra trạng thái DRAFT
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric."));
 
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalStateException("Chỉ được thêm Thang điểm kết quả khi Rubric ở trạng thái DRAFT.");
@@ -69,7 +69,7 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
 
         // 3. Phân quyền: Chặn System Admin sửa vào Rubric của Trường học
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Rubric này thuộc về Trường học. System Admin không có quyền can thiệp.");

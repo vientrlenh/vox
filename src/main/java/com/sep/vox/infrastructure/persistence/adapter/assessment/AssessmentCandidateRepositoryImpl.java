@@ -51,35 +51,35 @@ public class AssessmentCandidateRepositoryImpl implements AssessmentCandidateRep
     }
 
     @Override
-    public List<AssessmentCandidate> findByExamId(UUID examId) {
-        return springDataAssessmentCandidateRepository.findByExamIdOrderByAssignedAtAscIdAsc(examId).stream()
+    public List<AssessmentCandidate> findByAssessmentId(UUID assessmentId) {
+        return springDataAssessmentCandidateRepository.findByAssessmentIdOrderByAssignedAtAscIdAsc(assessmentId).stream()
             .map(AssessmentCandidateMapper::toDomain)
             .toList();
     }
 
     @Override
-    public List<AssessmentCandidate> findByExamIdIn(Collection<UUID> examIds) {
-        if (examIds.isEmpty()) {
+    public List<AssessmentCandidate> findByAssessmentIdIn(Collection<UUID> assessmentIds) {
+        if (assessmentIds.isEmpty()) {
             return List.of();
         }
-        return springDataAssessmentCandidateRepository.findByExamIdIn(examIds).stream()
+        return springDataAssessmentCandidateRepository.findByAssessmentIdIn(assessmentIds).stream()
             .map(AssessmentCandidateMapper::toDomain)
             .toList();
     }
 
     @Override
-    public long countByExamId(UUID examId) {
-        return springDataAssessmentCandidateRepository.countByExamId(examId);
+    public long countByAssessmentId(UUID assessmentId) {
+        return springDataAssessmentCandidateRepository.countByAssessmentId(assessmentId);
     }
 
     @Override
-    public Map<UUID, Long> countByExamIdIn(Collection<UUID> examIds) {
-        if (examIds.isEmpty()) {
+    public Map<UUID, Long> countByAssessmentIdIn(Collection<UUID> assessmentIds) {
+        if (assessmentIds.isEmpty()) {
             return Map.of();
         }
-        return springDataAssessmentCandidateRepository.countByExamIdIn(examIds).stream()
+        return springDataAssessmentCandidateRepository.countByAssessmentIdIn(assessmentIds).stream()
             .collect(Collectors.toMap(
-                count -> count.getExamId(),
+                count -> count.getAssessmentId(),
                 count -> count.getCandidateCount()
             ));
     }
@@ -98,8 +98,8 @@ public class AssessmentCandidateRepositoryImpl implements AssessmentCandidateRep
     }
 
     @Override
-    public void deleteByExamId(UUID examId) {
-        springDataAssessmentCandidateRepository.deleteByExamId(examId);
+    public void deleteByAssessmentId(UUID assessmentId) {
+        springDataAssessmentCandidateRepository.deleteByAssessmentId(assessmentId);
     }
 
     public Optional<AssessmentCandidate> findById(UUID id) {
@@ -108,14 +108,14 @@ public class AssessmentCandidateRepositoryImpl implements AssessmentCandidateRep
     }
 
     @Override
-    public Optional<AssessmentCandidate> findByExamIdAndStudentId(UUID examId, UUID studentId) {
-        return springDataAssessmentCandidateRepository.findByExamIdAndStudentId(examId, studentId)
+    public Optional<AssessmentCandidate> findByAssessmentIdAndStudentId(UUID assessmentId, UUID studentId) {
+        return springDataAssessmentCandidateRepository.findByAssessmentIdAndStudentId(assessmentId, studentId)
             .map(AssessmentCandidateMapper::toDomain);
     }
 
     @Override
-    public boolean existsByExamIdAndStudentId(UUID examId, UUID studentId) {
-        return springDataAssessmentCandidateRepository.existsByExamIdAndStudentId(examId, studentId);
+    public boolean existsByAssessmentIdAndStudentId(UUID assessmentId, UUID studentId) {
+        return springDataAssessmentCandidateRepository.existsByAssessmentIdAndStudentId(assessmentId, studentId);
     }
 
     @Override
@@ -140,18 +140,18 @@ public class AssessmentCandidateRepositoryImpl implements AssessmentCandidateRep
     }
 
     @Override
-    public Set<UUID> findStudentIdsByExamId(UUID examId) {
-        return new HashSet<>(springDataAssessmentCandidateRepository.findStudentIdsByExamId(examId));
+    public Set<UUID> findStudentIdsByAssessmentId(UUID assessmentId) {
+        return new HashSet<>(springDataAssessmentCandidateRepository.findStudentIdsByAssessmentId(assessmentId));
     }
 
     @Override
-    public List<UUID> findUnblockedStudentIdsByExamId(UUID examId) {
-        return springDataAssessmentCandidateRepository.findDistinctUnblockedStudentIdsByExamId(examId);
+    public List<UUID> findUnblockedStudentIdsByAssessmentId(UUID assessmentId) {
+        return springDataAssessmentCandidateRepository.findDistinctUnblockedStudentIdsByAssessmentId(assessmentId);
     }
 
     @Override
-    public List<AssessmentCandidate> findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(UUID examId) {
-        return springDataAssessmentCandidateRepository.findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(examId).stream()
+    public List<AssessmentCandidate> findByAssessmentIdAndScheduleIdIsNullOrderByAssignedAtAsc(UUID assessmentId) {
+        return springDataAssessmentCandidateRepository.findByAssessmentIdAndScheduleIdIsNullOrderByAssignedAtAsc(assessmentId).stream()
             .map(AssessmentCandidateMapper::toDomain)
             .toList();
     }
@@ -167,11 +167,11 @@ public class AssessmentCandidateRepositoryImpl implements AssessmentCandidateRep
     }
 
     @Override
-    public List<AssessmentCandidate> findByIdInAndExamId(Collection<UUID> ids, UUID examId) {
+    public List<AssessmentCandidate> findByIdInAndAssessmentId(Collection<UUID> ids, UUID assessmentId) {
         if (ids.isEmpty()) {
             return List.of();
         }
-        return springDataAssessmentCandidateRepository.findByIdInAndExamId(ids, examId).stream()
+        return springDataAssessmentCandidateRepository.findByIdInAndAssessmentId(ids, assessmentId).stream()
             .map(AssessmentCandidateMapper::toDomain)
             .toList();
     }
@@ -187,8 +187,8 @@ public class AssessmentCandidateRepositoryImpl implements AssessmentCandidateRep
     }
 
     @Override
-    public boolean existsByExamIdAndScheduleIdIsNotNull(UUID examId) {
-        return springDataAssessmentCandidateRepository.existsByExamIdAndScheduleIdIsNotNull(examId);
+    public boolean existsByAssessmentIdAndScheduleIdIsNotNull(UUID assessmentId) {
+        return springDataAssessmentCandidateRepository.existsByAssessmentIdAndScheduleIdIsNotNull(assessmentId);
     }
 
     @Override
@@ -208,7 +208,7 @@ public class AssessmentCandidateRepositoryImpl implements AssessmentCandidateRep
     public List<StudentScheduleConflict> findConflictsForStudents(
             Collection<UUID> studentIds, Instant start, Instant end, UUID excludeScheduleId) {
         // Ca thi chưa đặt giờ thì không có gì để so — coi như không vướng, đúng như cách
-        // ExamScheduleRoomValidator bỏ qua khi thiếu dữ liệu.
+        // AssessmentScheduleRoomValidator bỏ qua khi thiếu dữ liệu.
         if (studentIds == null || studentIds.isEmpty() || start == null || end == null) {
             return List.of();
         }

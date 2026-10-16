@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.application.projection.dto.ExamAwaitingPublishDto;
+import com.sep.vox.application.projection.dto.AssessmentAwaitingPublishDto;
 import com.sep.vox.application.projection.dto.SchoolGradingFailureDto;
 import com.sep.vox.application.projection.dto.SchoolUnscoredWorkloadDto;
 import com.sep.vox.domain.shared.PageResult;
@@ -30,7 +30,7 @@ public interface SchoolWorkloadQueryRepository {
     SchoolUnscoredWorkloadDto countUnscored(UUID schoolId, Instant now);
 
     /** Kỳ nào còn nhiều bài trống nhất xếp trước — đó là kỳ dễ gây thiệt hại nhất khi bấm công bố. */
-    List<ExamAwaitingPublishDto> findExamsAwaitingPublish(UUID schoolId, Instant now, int limit);
+    List<AssessmentAwaitingPublishDto> findAssessmentsAwaitingPublish(UUID schoolId, Instant now, int limit);
 
     /**
      * Danh sách bài AI chấm lỗi mà chưa ai xử lý — chỗ đáp của dòng cùng tên trên trang tổng quan.
@@ -39,14 +39,14 @@ public interface SchoolWorkloadQueryRepository {
      * khớp. Không nhận {@code now}: hai nhóm AI không phụ thuộc vào mốc thời gian nào (chỉ nhóm phân
      * công mới xét quá hạn), nên thêm tham số vào đây chỉ ngụ ý sai rằng nó có ảnh hưởng.
      *
-     * @param examId       thu hẹp về một kỳ; null là mọi kỳ.
+     * @param assessmentId       thu hẹp về một kỳ; null là mọi kỳ.
      * @param retryLeft    true = chỉ bài còn lượt AI, false = chỉ bài đã hết lượt, null = không lọc.
      *                     Đây là bộ lọc đáng giá nhất trên màn này: hai nhóm dẫn tới hai hành động
      *                     khác hẳn nhau, và trộn chúng lại thì mỗi dòng phải đọc riêng mới biết bấm
      *                     được nút nào.
      */
     PageResult<SchoolGradingFailureDto> findUnhandledAiFailures(
-        UUID schoolId, UUID examId, Boolean retryLeft, int page, int size);
+        UUID schoolId, UUID assessmentId, Boolean retryLeft, int page, int size);
 
     /**
      * Số bài của hai nhóm định mức, ĐÃ áp bộ lọc kỳ thi nhưng CHƯA áp bộ lọc định mức.
@@ -57,5 +57,5 @@ public interface SchoolWorkloadQueryRepository {
      *
      * @return {@code [số bài còn lượt AI, số bài hết lượt AI]}
      */
-    int[] countAiFailuresByAllowance(UUID schoolId, UUID examId);
+    int[] countAiFailuresByAllowance(UUID schoolId, UUID assessmentId);
 }

@@ -13,7 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_blueprint_versions")
+@Table(name = "assessment_blueprint_versions")
 public class AssessmentBlueprintVersionJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)
@@ -40,7 +40,7 @@ public class AssessmentBlueprintVersionJpaEntity {
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_blueprint_versions_status_valid", 
+            name = "chk_assessment_blueprint_versions_status_valid", 
             constraint = "status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')"
         )
     })
@@ -48,7 +48,7 @@ public class AssessmentBlueprintVersionJpaEntity {
 
     @Column(name = "total_time_limit_seconds", check = {
         @CheckConstraint(
-            name = "chk_exam_blueprint_versions_total_time_limit_seconds_valid", 
+            name = "chk_assessment_blueprint_versions_total_time_limit_seconds_valid", 
             constraint = "total_time_limit_seconds > 0"
         )
     })

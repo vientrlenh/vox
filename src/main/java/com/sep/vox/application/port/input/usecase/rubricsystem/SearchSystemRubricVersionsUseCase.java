@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.SearchSystemRubricVersionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -55,7 +55,7 @@ public class SearchSystemRubricVersionsUseCase implements IUseCase<SearchSystemR
 
         // 2. Chốt chặn bảo mật hệ thống: Chống xem chéo Rubric của Trường học
         Rubric rubric = rubricRepository.findById(query.rubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("BẢO MẬT: Bộ Rubric này thuộc về Trường học. System Admin không được quyền tìm kiếm các phiên bản của nó.");

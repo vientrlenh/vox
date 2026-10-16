@@ -14,8 +14,8 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_candidates", indexes = {
-    @Index(name = "uq_exam_candidates_exam_student", columnList = "exam_id, student_id", unique = true)
+@Table(name = "assessment_candidates", indexes = {
+    @Index(name = "uq_assessment_candidates_assessment_student", columnList = "assessment_id, student_id", unique = true)
 })
 public class AssessmentCandidateJpaEntity {
     @Id
@@ -29,8 +29,8 @@ public class AssessmentCandidateJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "exam_id", nullable = false, updatable = false)
-    private UUID examId;
+    @Column(name = "assessment_id", nullable = false, updatable = false)
+    private UUID assessmentId;
 
     @Column(name = "student_id", nullable = false, updatable = false)
     private UUID studentId;
@@ -43,7 +43,7 @@ public class AssessmentCandidateJpaEntity {
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_candidates_status_valid", 
+            name = "chk_assessment_candidates_status_valid", 
             constraint = "status IN ('ASSIGNED', 'ATTENDED', 'ABSENT', 'COMPLETED', 'EXEMPTED', 'CANCELLED')"
         )
     })
@@ -66,10 +66,10 @@ public class AssessmentCandidateJpaEntity {
 
     protected AssessmentCandidateJpaEntity() {}
 
-    public AssessmentCandidateJpaEntity(UUID id, UUID examId, UUID studentId, UUID assignedPaperId, UUID scheduleId,
+    public AssessmentCandidateJpaEntity(UUID id, UUID assessmentId, UUID studentId, UUID assignedPaperId, UUID scheduleId,
             String status, Instant assignedAt, Instant updatedAt, Instant blockedAt, UUID assignedBy, UUID updatedBy) {
         this.id = id;
-        this.examId = examId;
+        this.assessmentId = assessmentId;
         this.studentId = studentId;
         this.assignedPaperId = assignedPaperId;
         this.scheduleId = scheduleId;
@@ -90,11 +90,11 @@ public class AssessmentCandidateJpaEntity {
     }
 
     public UUID getAssessmentId() {
-        return examId;
+        return assessmentId;
     }
 
-    public void setAssessmentId(UUID examId) {
-        this.examId = examId;
+    public void setAssessmentId(UUID assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public UUID getStudentId() {

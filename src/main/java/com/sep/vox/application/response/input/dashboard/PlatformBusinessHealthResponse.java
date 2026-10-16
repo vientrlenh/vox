@@ -6,7 +6,7 @@ import java.math.BigDecimal;
  * Sức khỏe kinh doanh nền tảng cho dashboard system admin.
  *
  * <p>Cố ý KHÔNG gộp vào {@code SystemAdminDashboardSummaryResponse}: bản tóm tắt đó đã mang 13 trường
- * trộn nhiều mối quan tâm, và dự án vốn đã tách {@code nearestCentralizedExam} / {@code questionBankStats}
+ * trộn nhiều mối quan tâm, và dự án vốn đã tách {@code nearestCentralizedAssessment} / {@code questionBankStats}
  * ra khỏi {@code schoolAdminDashboard} theo đúng cách này. Tách riêng cũng có nghĩa màn hình cũ không
  * phải trả giá cho các phép gộp mới, và một query hỏng không kéo cả dashboard xuống.
  *

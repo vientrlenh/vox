@@ -12,105 +12,105 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ChangeClassTestBlueprintCommand;
-import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
-import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
+import com.sep.vox.application.port.input.service.AssessmentTimeQuotaGuardService;
+import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.ExamDto;
-import com.sep.vox.domain.mapper.ExamDtoMapper;
-import com.sep.vox.domain.model.assessment.Exam;
-import com.sep.vox.domain.model.assessment.ExamBlueprintSection;
-import com.sep.vox.domain.model.assessment.ExamBlueprintSlot;
-import com.sep.vox.domain.model.assessment.ExamBlueprintSlotType;
-import com.sep.vox.domain.model.assessment.ExamBlueprintVersionStatus;
-import com.sep.vox.domain.model.assessment.ExamKind;
-import com.sep.vox.domain.model.assessment.ExamMemberRole;
-import com.sep.vox.domain.model.assessment.ExamPaper;
-import com.sep.vox.domain.model.assessment.ExamPaperSection;
-import com.sep.vox.domain.model.assessment.ExamSecurePoolReleaseMode;
-import com.sep.vox.domain.model.assessment.ExamStatus;
+import com.sep.vox.domain.dto.AssessmentDto;
+import com.sep.vox.domain.mapper.AssessmentDtoMapper;
+import com.sep.vox.domain.model.assessment.Assessment;
+import com.sep.vox.domain.model.assessment.AssessmentBlueprintSection;
+import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
+import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
+import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersionStatus;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
+import com.sep.vox.domain.model.assessment.AssessmentPaper;
+import com.sep.vox.domain.model.assessment.AssessmentPaperSection;
+import com.sep.vox.domain.model.assessment.AssessmentSecurePoolReleaseMode;
+import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.model.question.QuestionStatus;
-import com.sep.vox.domain.repository.ExamBlueprintRepository;
-import com.sep.vox.domain.repository.ExamBlueprintSectionRepository;
-import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentBlueprintRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentBlueprintSectionRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentBlueprintSlotRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
-import com.sep.vox.domain.repository.assessment.ExamBlueprintVersionRepository;
-import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
-import com.sep.vox.domain.repository.assessment.ExamPaperItemRepository;
-import com.sep.vox.domain.repository.assessment.ExamPaperRepository;
-import com.sep.vox.domain.repository.assessment.ExamPaperSectionRepository;
-import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentBlueprintVersionRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentMemberRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentPaperItemRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentPaperRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentPaperSectionRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentRepository;
 
 @Service
-public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTestBlueprintCommand, ExamDto> {
+public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTestBlueprintCommand, AssessmentDto> {
 
     private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
 
-    private final ExamRepository examRepository;
-    private final ExamMemberRepository examMemberRepository;
-    private final ExamBlueprintRepository examBlueprintRepository;
-    private final ExamBlueprintVersionRepository examBlueprintVersionRepository;
-    private final ExamBlueprintSectionRepository examBlueprintSectionRepository;
-    private final ExamBlueprintSlotRepository examBlueprintSlotRepository;
-    private final ExamPaperRepository examPaperRepository;
-    private final ExamPaperSectionRepository examPaperSectionRepository;
-    private final ExamPaperItemRepository examPaperItemRepository;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentMemberRepository assessmentMemberRepository;
+    private final AssessmentBlueprintRepository assessmentBlueprintRepository;
+    private final AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository;
+    private final AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository;
+    private final AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository;
+    private final AssessmentPaperRepository assessmentPaperRepository;
+    private final AssessmentPaperSectionRepository assessmentPaperSectionRepository;
+    private final AssessmentPaperItemRepository assessmentPaperItemRepository;
     private final QuestionRepository questionRepository;
-    private final ExamQuestionSecureLockService examQuestionSecureLockService;
-    private final ExamTimeQuotaGuardService examTimeQuotaGuardService;
-    private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
+    private final AssessmentQuestionSecureLockService assessmentQuestionSecureLockService;
+    private final AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService;
+    private final RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService;
     private final UserContextPort userContextPort;
 
     public ChangeClassTestBlueprintUseCase(
-            ExamRepository examRepository,
-            ExamMemberRepository examMemberRepository,
-            ExamBlueprintRepository examBlueprintRepository,
-            ExamBlueprintVersionRepository examBlueprintVersionRepository,
-            ExamBlueprintSectionRepository examBlueprintSectionRepository,
-            ExamBlueprintSlotRepository examBlueprintSlotRepository,
-            ExamPaperRepository examPaperRepository,
-            ExamPaperSectionRepository examPaperSectionRepository,
-            ExamPaperItemRepository examPaperItemRepository,
+            AssessmentRepository assessmentRepository,
+            AssessmentMemberRepository assessmentMemberRepository,
+            AssessmentBlueprintRepository assessmentBlueprintRepository,
+            AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository,
+            AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository,
+            AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository,
+            AssessmentPaperRepository assessmentPaperRepository,
+            AssessmentPaperSectionRepository assessmentPaperSectionRepository,
+            AssessmentPaperItemRepository assessmentPaperItemRepository,
             QuestionRepository questionRepository,
-            ExamQuestionSecureLockService examQuestionSecureLockService,
-            ExamTimeQuotaGuardService examTimeQuotaGuardService,
-            RecalculateExamTimeDurationService recalculateExamTimeDurationService,
+            AssessmentQuestionSecureLockService assessmentQuestionSecureLockService,
+            AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService,
+            RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService,
             UserContextPort userContextPort) {
-        this.examRepository = examRepository;
-        this.examMemberRepository = examMemberRepository;
-        this.examBlueprintRepository = examBlueprintRepository;
-        this.examBlueprintVersionRepository = examBlueprintVersionRepository;
-        this.examBlueprintSectionRepository = examBlueprintSectionRepository;
-        this.examBlueprintSlotRepository = examBlueprintSlotRepository;
-        this.examPaperRepository = examPaperRepository;
-        this.examPaperSectionRepository = examPaperSectionRepository;
-        this.examPaperItemRepository = examPaperItemRepository;
+        this.assessmentRepository = assessmentRepository;
+        this.assessmentMemberRepository = assessmentMemberRepository;
+        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
+        this.assessmentBlueprintVersionRepository = assessmentBlueprintVersionRepository;
+        this.assessmentBlueprintSectionRepository = assessmentBlueprintSectionRepository;
+        this.assessmentBlueprintSlotRepository = assessmentBlueprintSlotRepository;
+        this.assessmentPaperRepository = assessmentPaperRepository;
+        this.assessmentPaperSectionRepository = assessmentPaperSectionRepository;
+        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
         this.questionRepository = questionRepository;
-        this.examQuestionSecureLockService = examQuestionSecureLockService;
-        this.examTimeQuotaGuardService = examTimeQuotaGuardService;
-        this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
+        this.assessmentQuestionSecureLockService = assessmentQuestionSecureLockService;
+        this.assessmentTimeQuotaGuardService = assessmentTimeQuotaGuardService;
+        this.recalculateAssessmentTimeDurationService = recalculateAssessmentTimeDurationService;
         this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional
-    public ExamDto execute(ChangeClassTestBlueprintCommand input) {
+    public AssessmentDto execute(ChangeClassTestBlueprintCommand input) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var exam = examRepository.findById(input.examId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+        var assessment = assessmentRepository.findById(input.assessmentId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
-        if (exam.getKind() != ExamKind.CLASS_TEST) {
+        if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
             throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra trên lớp");
         }
-        if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR)) {
+        if (!assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
-        if (exam.getStatus() != ExamStatus.DRAFT && exam.getStatus() != ExamStatus.SCHEDULED) {
+        if (assessment.getStatus() != AssessmentStatus.DRAFT && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
             throw new IllegalStateException("Chỉ được đổi blueprint khi bài kiểm tra chưa bắt đầu");
         }
-        if (examRepository.existsSubmittedSessionByExamId(exam.getId())) {
+        if (assessmentRepository.existsSubmittedSessionByAssessmentId(assessment.getId())) {
             throw new IllegalStateException("Không thể đổi blueprint khi đã có học sinh nộp bài");
         }
         if ((input.blueprintId() == null) != (input.blueprintVersionId() == null)) {
@@ -118,110 +118,110 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
                 "Phải cung cấp đầy đủ blueprintId và blueprintVersionId, hoặc để trống cả hai để gỡ blueprint");
         }
         if (input.blueprintId() != null) {
-            validateExistingBlueprintDuration(input, exam);
+            validateExistingBlueprintDuration(input, assessment);
         }
 
         var now = Instant.now();
         // Đổi blueprint viết lại toàn bộ nội dung của mã đề. Bài có nhiều mã đề thì không có mã đề
         // nào là "mã đề của blueprint" cả — chặn hẳn thay vì âm thầm ghi đè mã đề đầu tiên.
-        var papers = examPaperRepository.findByExamId(exam.getId());
+        var papers = assessmentPaperRepository.findByAssessmentId(assessment.getId());
         if (papers.size() > 1) {
             throw new IllegalStateException(
                 "Bài có nhiều mã đề, hãy xoá bớt chỉ còn một mã đề trước khi đổi blueprint");
         }
         var paper = papers.stream()
             .findFirst()
-            .orElseThrow(() -> new NotFoundException("Bài kiểm tra chưa có mã đề nào"));
+            .orElseThrow(() -> new ResourceNotFoundException("Bài kiểm tra chưa có mã đề nào"));
 
         clearExistingPaperContent(paper, currentUserId);
 
         if (input.blueprintId() != null) {
-            switchToExistingBlueprint(input, exam, paper, currentUserId, now);
+            switchToExistingBlueprint(input, assessment, paper, currentUserId, now);
         } else {
             // Gỡ blueprint: để trống hoàn toàn, không tạo blueprint ẩn nào — bài trở về chế độ câu hỏi trực tiếp tự do.
-            exam.setBlueprintId(null);
-            exam.setBlueprintVersionId(null);
+            assessment.setBlueprintId(null);
+            assessment.setBlueprintVersionId(null);
         }
 
-        exam.setUpdatedAt(now);
-        exam.setUpdatedBy(currentUserId);
-        var saved = examRepository.save(exam);
-        recalculateExamTimeDurationService.recalculate(exam.getId());
-        return ExamDtoMapper.toDto(saved);
+        assessment.setUpdatedAt(now);
+        assessment.setUpdatedBy(currentUserId);
+        var saved = assessmentRepository.save(assessment);
+        recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
+        return AssessmentDtoMapper.toDto(saved);
     }
 
-    private void validateExistingBlueprintDuration(ChangeClassTestBlueprintCommand input, Exam exam) {
-        var blueprint = examBlueprintRepository.findById(input.blueprintId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint"));
-        if (!blueprint.getSchoolId().equals(exam.getSchoolId())) {
+    private void validateExistingBlueprintDuration(ChangeClassTestBlueprintCommand input, Assessment assessment) {
+        var blueprint = assessmentBlueprintRepository.findById(input.blueprintId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint"));
+        if (!blueprint.getSchoolId().equals(assessment.getSchoolId())) {
             throw new IllegalStateException("Blueprint không thuộc trường của giáo viên");
         }
-        var version = examBlueprintVersionRepository.findById(input.blueprintVersionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
+        var version = assessmentBlueprintVersionRepository.findById(input.blueprintVersionId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
         if (!version.getBlueprintId().equals(blueprint.getId())) {
             throw new IllegalStateException("Version không thuộc blueprint đã chọn");
         }
-        if (version.getStatus() != ExamBlueprintVersionStatus.PUBLISHED) {
+        if (version.getStatus() != AssessmentBlueprintVersionStatus.PUBLISHED) {
             throw new IllegalStateException("Chỉ được dùng version đã PUBLISHED");
         }
-        examTimeQuotaGuardService.requireWithinPlan(
-            exam.getSchoolId(),
+        assessmentTimeQuotaGuardService.requireWithinPlan(
+            assessment.getSchoolId(),
             version.getTotalTimeLimitSeconds(),
             "Phiên bản blueprint " + version.getCode()
         );
     }
 
-    private void clearExistingPaperContent(ExamPaper paper, UUID currentUserId) {
-        for (var paperSection : examPaperSectionRepository.findByPaperId(paper.getId())) {
-            for (var item : examPaperItemRepository.findBySectionId(paperSection.getId())) {
+    private void clearExistingPaperContent(AssessmentPaper paper, UUID currentUserId) {
+        for (var paperSection : assessmentPaperSectionRepository.findByPaperId(paper.getId())) {
+            for (var item : assessmentPaperItemRepository.findBySectionId(paperSection.getId())) {
                 if (item.getQuestionId() != null) {
-                    examQuestionSecureLockService.unlockQuestion(item.getQuestionId(), currentUserId);
+                    assessmentQuestionSecureLockService.unlockQuestion(item.getQuestionId(), currentUserId);
                 }
-                examPaperItemRepository.deleteById(item.getId());
+                assessmentPaperItemRepository.deleteById(item.getId());
             }
-            examPaperSectionRepository.deleteById(paperSection.getId());
+            assessmentPaperSectionRepository.deleteById(paperSection.getId());
         }
     }
 
     private void switchToExistingBlueprint(
             ChangeClassTestBlueprintCommand input,
-            Exam exam,
-            ExamPaper paper,
+            Assessment assessment,
+            AssessmentPaper paper,
             UUID currentUserId,
             Instant now) {
-        var blueprint = examBlueprintRepository.findById(input.blueprintId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint"));
-        if (!blueprint.getSchoolId().equals(exam.getSchoolId())) {
+        var blueprint = assessmentBlueprintRepository.findById(input.blueprintId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint"));
+        if (!blueprint.getSchoolId().equals(assessment.getSchoolId())) {
             throw new IllegalStateException("Blueprint không thuộc trường của giáo viên");
         }
-        var version = examBlueprintVersionRepository.findById(input.blueprintVersionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
+        var version = assessmentBlueprintVersionRepository.findById(input.blueprintVersionId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
         if (!version.getBlueprintId().equals(blueprint.getId())) {
             throw new IllegalStateException("Version không thuộc blueprint đã chọn");
         }
-        if (version.getStatus() != ExamBlueprintVersionStatus.PUBLISHED) {
+        if (version.getStatus() != AssessmentBlueprintVersionStatus.PUBLISHED) {
             throw new IllegalStateException("Chỉ được dùng version đã PUBLISHED");
         }
 
-        var sections = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId()).stream()
+        var sections = assessmentBlueprintSectionRepository.findByBlueprintVersionId(version.getId()).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
         if (sections.isEmpty()) {
             throw new IllegalStateException("Blueprint version không có section nào");
         }
-        var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
+        var slotsBySectionId = assessmentBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
             .collect(Collectors.groupingBy(slot -> slot.getSectionId()));
         validateVersionWeights(sections, slotsBySectionId);
         validateReusableSlots(slotsBySectionId.values().stream().flatMap(list -> list.stream()).toList());
 
-        exam.setBlueprintId(blueprint.getId());
-        exam.setBlueprintVersionId(version.getId());
+        assessment.setBlueprintId(blueprint.getId());
+        assessment.setBlueprintVersionId(version.getId());
 
         for (var section : sections) {
             var slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
                 .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
                 .toList();
-            var paperSection = examPaperSectionRepository.save(new ExamPaperSection(
+            var paperSection = assessmentPaperSectionRepository.save(new AssessmentPaperSection(
                 paper.getId(),
                 section.getOrder(),
                 section.getTitle(),
@@ -234,13 +234,13 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
                 currentUserId
             ));
             for (var slot : slots) {
-                var questionId = slot.getSlotType() == ExamBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
+                var questionId = slot.getSlotType() == AssessmentBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
                 if (questionId != null) {
                     var fixedQuestion = questionRepository.findById(questionId)
-                        .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
                     if (fixedQuestion.getStatus() != QuestionStatus.PUBLISHED) {
                         // Câu hỏi fixed đã bị archived sau khi blueprint publish — để trống ô này, CHAIR tự chọn câu khác qua picker.
-                        examPaperItemRepository.save(new com.sep.vox.domain.model.assessment.ExamPaperItem(
+                        assessmentPaperItemRepository.save(new com.sep.vox.domain.model.assessment.AssessmentPaperItem(
                             null,
                             paperSection.getId(),
                             paper.getId(),
@@ -251,7 +251,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
                         continue;
                     }
                 }
-                var item = new com.sep.vox.domain.model.assessment.ExamPaperItem(
+                var item = new com.sep.vox.domain.model.assessment.AssessmentPaperItem(
                     slot.getId(),
                     paperSection.getId(),
                     paper.getId(),
@@ -259,17 +259,17 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
                     slot.getOrder(),
                     slot.getWeight()
                 );
-                examPaperItemRepository.save(item);
+                assessmentPaperItemRepository.save(item);
                 if (questionId != null) {
-                    examQuestionSecureLockService.lockQuestionForExam(
-                        questionId, exam.getId(), ExamSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
+                    assessmentQuestionSecureLockService.lockQuestionForAssessment(
+                        questionId, assessment.getId(), AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
                     );
                 }
             }
         }
     }
 
-    private void validateVersionWeights(List<ExamBlueprintSection> sections, Map<UUID, List<ExamBlueprintSlot>> slotsBySectionId) {
+    private void validateVersionWeights(List<AssessmentBlueprintSection> sections, Map<UUID, List<AssessmentBlueprintSlot>> slotsBySectionId) {
         var sectionWeightSum = sections.stream()
             .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
@@ -289,9 +289,9 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         }
     }
 
-    private void validateReusableSlots(List<ExamBlueprintSlot> slots) {
+    private void validateReusableSlots(List<AssessmentBlueprintSlot> slots) {
         for (var slot : slots) {
-            if (slot.getSlotType() == ExamBlueprintSlotType.SELECTION) {
+            if (slot.getSlotType() == AssessmentBlueprintSlotType.SELECTION) {
                 continue;
             }
             if (slot.getFixedQuestionId() == null) {

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.importfile.ImportRowResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportRowsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -94,7 +94,7 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
 
     private User findCurrentUser(UUID currentUserId) {
         var user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalStateException("Người dùng hiện tại không hoạt động");
         }
@@ -109,7 +109,7 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
 
     private void validateSchool(UUID schoolId) {
         var school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
         }
@@ -117,7 +117,7 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
 
     private ImportSession findSession(UUID importSessionId) {
         return importSessionRepository.findById(importSessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên import"));
     }
 
     private void validateSessionBelongsToSchool(ImportSession session, UUID schoolId) {

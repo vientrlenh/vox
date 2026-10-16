@@ -10,13 +10,13 @@ import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.usecase.assessmentcandidate.ViewMyProctorScheduleCandidatesUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentcandidate.ViewMyProctorSchedulesUseCase;
-import com.sep.vox.application.port.input.usecase.proctoring.ViewMonitorableExamUseCase;
-import com.sep.vox.application.port.input.usecase.proctoring.ViewMonitorableExamsUseCase;
+import com.sep.vox.application.port.input.usecase.proctoring.ViewMonitorableAssessmentUseCase;
+import com.sep.vox.application.port.input.usecase.proctoring.ViewMonitorableAssessmentsUseCase;
 import com.sep.vox.application.port.input.usecase.proctoring.ViewScheduleProctoringAlertsUseCase;
-import com.sep.vox.application.projection.dto.MonitoredExamSummary;
+import com.sep.vox.application.projection.dto.MonitoredAssessmentSummary;
 import com.sep.vox.application.projection.dto.ProctorCandidateSummary;
 import com.sep.vox.application.projection.dto.ProctorScheduleSummary;
-import com.sep.vox.domain.dto.ExamProctoringAlertDto;
+import com.sep.vox.domain.dto.AssessmentProctoringAlertDto;
 
 @Controller("graphqlProctorAttendanceController")
 public class ProctorAttendanceController {
@@ -24,20 +24,20 @@ public class ProctorAttendanceController {
     private final ViewMyProctorSchedulesUseCase viewMyProctorSchedulesUseCase;
     private final ViewMyProctorScheduleCandidatesUseCase viewMyProctorScheduleCandidatesUseCase;
     private final ViewScheduleProctoringAlertsUseCase viewScheduleProctoringAlertsUseCase;
-    private final ViewMonitorableExamsUseCase viewMonitorableExamsUseCase;
-    private final ViewMonitorableExamUseCase viewMonitorableExamUseCase;
+    private final ViewMonitorableAssessmentsUseCase viewMonitorableAssessmentsUseCase;
+    private final ViewMonitorableAssessmentUseCase viewMonitorableAssessmentUseCase;
 
     public ProctorAttendanceController(
             ViewMyProctorSchedulesUseCase viewMyProctorSchedulesUseCase,
             ViewMyProctorScheduleCandidatesUseCase viewMyProctorScheduleCandidatesUseCase,
             ViewScheduleProctoringAlertsUseCase viewScheduleProctoringAlertsUseCase,
-            ViewMonitorableExamsUseCase viewMonitorableExamsUseCase,
-            ViewMonitorableExamUseCase viewMonitorableExamUseCase) {
+            ViewMonitorableAssessmentsUseCase viewMonitorableAssessmentsUseCase,
+            ViewMonitorableAssessmentUseCase viewMonitorableAssessmentUseCase) {
         this.viewMyProctorSchedulesUseCase = viewMyProctorSchedulesUseCase;
         this.viewMyProctorScheduleCandidatesUseCase = viewMyProctorScheduleCandidatesUseCase;
         this.viewScheduleProctoringAlertsUseCase = viewScheduleProctoringAlertsUseCase;
-        this.viewMonitorableExamsUseCase = viewMonitorableExamsUseCase;
-        this.viewMonitorableExamUseCase = viewMonitorableExamUseCase;
+        this.viewMonitorableAssessmentsUseCase = viewMonitorableAssessmentsUseCase;
+        this.viewMonitorableAssessmentUseCase = viewMonitorableAssessmentUseCase;
     }
 
     @QueryMapping
@@ -49,20 +49,20 @@ public class ProctorAttendanceController {
     /**
      * Kỳ thi đang diễn ra hoặc sắp diễn ra mà người đang đăng nhập giám sát được.
      *
-     * <p>Cố ý KHÔNG dùng {@code exams}: đó là đường vào của màn quản lý kỳ thi, và nới nó cho giám
+     * <p>Cố ý KHÔNG dùng {@code assessments}: đó là đường vào của màn quản lý kỳ thi, và nới nó cho giám
      * thị đồng nghĩa mở luôn dashboard kỳ thi cho họ.
      */
-    @QueryMapping
+    @QueryMapping(name = "monitorableAssessments")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public List<MonitoredExamSummary> monitorableExams() {
-        return viewMonitorableExamsUseCase.execute(null);
+    public List<MonitoredAssessmentSummary> monitorableAssessments() {
+        return viewMonitorableAssessmentsUseCase.execute(null);
     }
 
-    /** Cùng lý do với {@code monitorableExams}, cho phần đầu trang danh sách ca thi. */
-    @QueryMapping
+    /** Cùng lý do với {@code monitorableAssessments}, cho phần đầu trang danh sách ca thi. */
+    @QueryMapping(name = "monitorableAssessment")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public MonitoredExamSummary monitorableExam(@Argument(name = "examId") UUID examId) {
-        return viewMonitorableExamUseCase.execute(examId);
+    public MonitoredAssessmentSummary monitorableAssessment(@Argument(name = "assessmentId") UUID assessmentId) {
+        return viewMonitorableAssessmentUseCase.execute(assessmentId);
     }
 
     @QueryMapping
@@ -78,7 +78,7 @@ public class ProctorAttendanceController {
      */
     @QueryMapping
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
-    public List<ExamProctoringAlertDto> scheduleProctoringAlerts(
+    public List<AssessmentProctoringAlertDto> scheduleProctoringAlerts(
             @Argument(name = "scheduleId") UUID scheduleId) {
         return viewScheduleProctoringAlertsUseCase.execute(scheduleId);
     }

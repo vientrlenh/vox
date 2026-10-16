@@ -15,16 +15,16 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.SchoolWorkloadQueryRepository;
-import com.sep.vox.application.response.input.dashboard.ExamAppealStatsResponse;
-import com.sep.vox.application.response.input.dashboard.ExamAwaitingPublishResponse;
-import com.sep.vox.application.response.input.dashboard.ExamStatusCountResponse;
+import com.sep.vox.application.response.input.dashboard.AssessmentAppealStatsResponse;
+import com.sep.vox.application.response.input.dashboard.AssessmentAwaitingPublishResponse;
+import com.sep.vox.application.response.input.dashboard.AssessmentStatusCountResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolAdminDashboardSummaryResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolFundingResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolMonthlySpendingResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolSubscriptionRenewalResponse;
 import com.sep.vox.application.response.input.dashboard.UnscoredWorkloadResponse;
-import com.sep.vox.domain.model.assessment.ExamAppealStatus;
-import com.sep.vox.domain.model.assessment.ExamStatus;
+import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
+import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderStatus;
@@ -37,8 +37,8 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
-import com.sep.vox.domain.repository.assessment.ExamRepository;
-import com.sep.vox.domain.repository.assessment.ExamResultAppealRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentResultAppealRepository;
 import com.sep.vox.domain.shared.BusinessDays;
 import com.sep.vox.domain.shared.ZoneConstant;
 
@@ -63,8 +63,8 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     private static final int AWAITING_PUBLISH_LIMIT = 5;
 
     private final UserContextPort userContextPort;
-    private final ExamRepository examRepository;
-    private final ExamResultAppealRepository examResultAppealRepository;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentResultAppealRepository assessmentResultAppealRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private final SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
@@ -73,8 +73,8 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     private final SchoolBalanceRepository schoolBalanceRepository;
     private final SchoolWorkloadQueryRepository schoolWorkloadQueryRepository;
 
-    public ViewSchoolAdminDashboardUseCase(UserContextPort userContextPort, ExamRepository examRepository,
-            ExamResultAppealRepository examResultAppealRepository,
+    public ViewSchoolAdminDashboardUseCase(UserContextPort userContextPort, AssessmentRepository assessmentRepository,
+            AssessmentResultAppealRepository assessmentResultAppealRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
             SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
@@ -82,8 +82,8 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
             SchoolBalanceRepository schoolBalanceRepository,
             SchoolWorkloadQueryRepository schoolWorkloadQueryRepository) {
         this.userContextPort = userContextPort;
-        this.examRepository = examRepository;
-        this.examResultAppealRepository = examResultAppealRepository;
+        this.assessmentRepository = assessmentRepository;
+        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
@@ -108,14 +108,14 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
         var schoolId = userContextPort.getCurrentSchoolId();
 
         var activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId);
-        var examQuota = activeExamQuota(activeSubscription);
+        var assessmentQuota = activeAssessmentQuota(activeSubscription);
         var paidOrders = fetchPaidOrders(schoolId);
-        var quotaTotal = examQuota.map(quota -> quota.getTotalAllocatedAmountVnd()).orElse(BigDecimal.ZERO);
-        var quotaUsed = examQuota.map(quota -> quota.getUsedAmountVnd()).orElse(BigDecimal.ZERO);
+        var quotaTotal = assessmentQuota.map(quota -> quota.getTotalAllocatedAmountVnd()).orElse(BigDecimal.ZERO);
+        var quotaUsed = assessmentQuota.map(quota -> quota.getUsedAmountVnd()).orElse(BigDecimal.ZERO);
         var committedToUsers = committedToUsers(activeSubscription);
 
         return new SchoolAdminDashboardSummaryResponse(
-            buildExamStatusCounts(currentUserId, schoolId),
+            buildAssessmentStatusCounts(currentUserId, schoolId),
             buildAppealStats(schoolId),
             sumAmount(paidOrders),
             buildMonthlySpending(paidOrders),
@@ -126,23 +126,23 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
                 schoolBalanceRepository.findBySchoolId(schoolId).orElse(null)),
             UnscoredWorkloadResponse.of(schoolWorkloadQueryRepository.countUnscored(schoolId, now), now),
             schoolWorkloadQueryRepository
-                .findExamsAwaitingPublish(schoolId, now, AWAITING_PUBLISH_LIMIT).stream()
-                .map(ExamAwaitingPublishResponse::of)
+                .findAssessmentsAwaitingPublish(schoolId, now, AWAITING_PUBLISH_LIMIT).stream()
+                .map(AssessmentAwaitingPublishResponse::of)
                 .toList(),
             BusinessDays.waitedDaysSince(
-                examResultAppealRepository.findOldestPendingRequestedAt(schoolId), now)
+                assessmentResultAppealRepository.findOldestPendingRequestedAt(schoolId), now)
         );
     }
 
-    private ExamStatusCountResponse buildExamStatusCounts(UUID currentUserId, UUID schoolId) {
-        var draft = countExamsByStatus(currentUserId, schoolId, ExamStatus.DRAFT);
-        var scheduled = countExamsByStatus(currentUserId, schoolId, ExamStatus.SCHEDULED);
-        var inProgress = countExamsByStatus(currentUserId, schoolId, ExamStatus.IN_PROGRESS);
-        var closed = countExamsByStatus(currentUserId, schoolId, ExamStatus.CLOSED);
-        var resultsPublished = countExamsByStatus(currentUserId, schoolId, ExamStatus.RESULTS_PUBLISHED);
-        var cancelled = countExamsByStatus(currentUserId, schoolId, ExamStatus.CANCELLED);
+    private AssessmentStatusCountResponse buildAssessmentStatusCounts(UUID currentUserId, UUID schoolId) {
+        var draft = countAssessmentsByStatus(currentUserId, schoolId, AssessmentStatus.DRAFT);
+        var scheduled = countAssessmentsByStatus(currentUserId, schoolId, AssessmentStatus.SCHEDULED);
+        var inProgress = countAssessmentsByStatus(currentUserId, schoolId, AssessmentStatus.IN_PROGRESS);
+        var closed = countAssessmentsByStatus(currentUserId, schoolId, AssessmentStatus.CLOSED);
+        var resultsPublished = countAssessmentsByStatus(currentUserId, schoolId, AssessmentStatus.RESULTS_PUBLISHED);
+        var cancelled = countAssessmentsByStatus(currentUserId, schoolId, AssessmentStatus.CANCELLED);
         var total = draft + scheduled + inProgress + closed + resultsPublished + cancelled;
-        return new ExamStatusCountResponse(total, draft, scheduled, inProgress, closed, resultsPublished, cancelled);
+        return new AssessmentStatusCountResponse(total, draft, scheduled, inProgress, closed, resultsPublished, cancelled);
     }
 
     /**
@@ -153,20 +153,20 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
      * <p>Chỗ này chỉ cần {@code totalElements()} nên nội dung trang không quan trọng -- lấy trang
      * đầu, cỡ 1, để đếm mà không kéo về dòng nào thừa.
      */
-    private long countExamsByStatus(UUID currentUserId, UUID schoolId, ExamStatus status) {
-        return examRepository.findAccessible(
+    private long countAssessmentsByStatus(UUID currentUserId, UUID schoolId, AssessmentStatus status) {
+        return assessmentRepository.findAccessible(
             currentUserId, schoolId, false, true, schoolId, null, null, status, null, 1, 1
         ).totalElements();
     }
 
-    private ExamAppealStatsResponse buildAppealStats(UUID schoolId) {
-        return new ExamAppealStatsResponse(
-            examResultAppealRepository.countBySchoolIdAndStatusIn(schoolId, EnumSet.of(ExamAppealStatus.PENDING)),
-            examResultAppealRepository.countBySchoolIdAndStatusIn(schoolId,
-                EnumSet.of(ExamAppealStatus.APPROVED, ExamAppealStatus.GRADING)),
-            examResultAppealRepository.countBySchoolIdAndStatusIn(schoolId, EnumSet.of(ExamAppealStatus.PUBLISHED)),
-            examResultAppealRepository.countBySchoolIdAndStatusIn(schoolId, EnumSet.of(ExamAppealStatus.REJECTED)),
-            examResultAppealRepository.countBySchoolIdAndStatusIn(schoolId, EnumSet.of(ExamAppealStatus.WITHDRAWN))
+    private AssessmentAppealStatsResponse buildAppealStats(UUID schoolId) {
+        return new AssessmentAppealStatsResponse(
+            assessmentResultAppealRepository.countBySchoolIdAndStatusIn(schoolId, EnumSet.of(AssessmentAppealStatus.PENDING)),
+            assessmentResultAppealRepository.countBySchoolIdAndStatusIn(schoolId,
+                EnumSet.of(AssessmentAppealStatus.APPROVED, AssessmentAppealStatus.GRADING)),
+            assessmentResultAppealRepository.countBySchoolIdAndStatusIn(schoolId, EnumSet.of(AssessmentAppealStatus.PUBLISHED)),
+            assessmentResultAppealRepository.countBySchoolIdAndStatusIn(schoolId, EnumSet.of(AssessmentAppealStatus.REJECTED)),
+            assessmentResultAppealRepository.countBySchoolIdAndStatusIn(schoolId, EnumSet.of(AssessmentAppealStatus.WITHDRAWN))
         );
     }
 
@@ -219,16 +219,16 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
             .toList();
     }
 
-    private Optional<SchoolSubscriptionQuotaRecord> activeExamQuota(Optional<SchoolSubscription> activeSubscription) {
+    private Optional<SchoolSubscriptionQuotaRecord> activeAssessmentQuota(Optional<SchoolSubscription> activeSubscription) {
         return activeSubscription.flatMap(subscription -> subscriptionQuotaRepository
-            .findBySchoolSubscriptionIdAndQuotaType(subscription.getId(), QuotaType.EXAM));
+            .findBySchoolSubscriptionIdAndQuotaType(subscription.getId(), QuotaType.ASSESSMENT));
     }
 
 
     private BigDecimal committedToUsers(Optional<SchoolSubscription> activeSubscription) {
         return activeSubscription
             .map(subscription -> subscriptionQuotaUserAllocationRepository
-                .sumUnusedAllocation(subscription.getId(), QuotaType.EXAM))
+                .sumUnusedAllocation(subscription.getId(), QuotaType.ASSESSMENT))
             .orElse(BigDecimal.ZERO);
     }
 

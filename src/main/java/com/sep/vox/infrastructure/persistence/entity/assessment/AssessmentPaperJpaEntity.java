@@ -12,13 +12,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-// TODO(perf): thiếu index cho exam_id/blueprint_version_id. Chờ được yêu cầu mới insert:
-// @Table(name = "exam_papers", indexes = {
-//     @Index(columnList = "exam_id", name = "idx_exam_papers_exam"),
-//     @Index(columnList = "blueprint_version_id", name = "idx_exam_papers_blueprint_version")
+// TODO(perf): thiếu index cho assessment_id/blueprint_version_id. Chờ được yêu cầu mới insert:
+// @Table(name = "assessment_papers", indexes = {
+//     @Index(columnList = "assessment_id", name = "idx_assessment_papers_assessment"),
+//     @Index(columnList = "blueprint_version_id", name = "idx_assessment_papers_blueprint_version")
 // })
 @Entity
-@Table(name = "exam_papers")
+@Table(name = "assessment_papers")
 public class AssessmentPaperJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)
@@ -31,8 +31,8 @@ public class AssessmentPaperJpaEntity {
     )
     private UUID id; 
     
-    @Column(name = "exam_id", nullable = false, updatable = false)
-    private UUID examId;
+    @Column(name = "assessment_id", nullable = false, updatable = false)
+    private UUID assessmentId;
 
     @Column(name = "blueprint_version_id")
     private UUID blueprintVersionId;
@@ -45,7 +45,7 @@ public class AssessmentPaperJpaEntity {
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_papers_status_valid", 
+            name = "chk_assessment_papers_status_valid", 
             constraint = "status IN ('DRAFT', 'IN_REVIEW', 'APPROVED', 'LOCKED')"
         )
     })
@@ -68,10 +68,10 @@ public class AssessmentPaperJpaEntity {
 
     protected AssessmentPaperJpaEntity() {}
 
-    public AssessmentPaperJpaEntity(UUID id, UUID examId, UUID blueprintVersionId, String code, int variant, String status, Integer timeDurationSeconds, Instant createdAt,
+    public AssessmentPaperJpaEntity(UUID id, UUID assessmentId, UUID blueprintVersionId, String code, int variant, String status, Integer timeDurationSeconds, Instant createdAt,
             Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.examId = examId;
+        this.assessmentId = assessmentId;
         this.blueprintVersionId = blueprintVersionId;
         this.code = code;
         this.variant = variant;
@@ -91,12 +91,12 @@ public class AssessmentPaperJpaEntity {
         this.id = id;
     }
 
-    public UUID getExamId() {
-        return examId;
+    public UUID getAssessmentId() {
+        return assessmentId;
     }
 
-    public void setExamId(UUID examId) {
-        this.examId = examId;
+    public void setAssessmentId(UUID assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public UUID getBlueprintVersionId() {

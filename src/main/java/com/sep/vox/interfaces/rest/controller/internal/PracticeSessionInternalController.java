@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.usecase.practicesession.GetPracticeTurnUploadUrlUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.ResolveNextPracticeQuestionUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.SubmitPracticeTurnUseCase;
-import com.sep.vox.application.response.input.examturn.TurnUploadUrlResponse;
+import com.sep.vox.application.response.input.assessmentturn.TurnUploadUrlResponse;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.SubmitTurnResult;
 import com.sep.vox.domain.model.personalization.SubmitPracticeTurn;
 import com.sep.vox.domain.model.personalization.TurnCorrectionSubmission;
@@ -96,7 +96,7 @@ public class PracticeSessionInternalController {
             @PathVariable UUID sessionId,
             @RequestBody TurnRequest request) {
         var studentId = practiceSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."))
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."))
             .getStudentId();
         var turn = new SubmitPracticeTurn(
             sessionId,

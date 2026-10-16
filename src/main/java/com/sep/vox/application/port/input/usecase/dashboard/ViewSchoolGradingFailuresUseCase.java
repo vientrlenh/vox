@@ -30,8 +30,8 @@ public class ViewSchoolGradingFailuresUseCase
         var schoolId = userContextPort.getCurrentSchoolId();
 
         var page = schoolWorkloadQueryRepository.findUnhandledAiFailures(
-            schoolId, input.examId(), input.retryLeft(), input.page(), input.size());
-        var counts = schoolWorkloadQueryRepository.countAiFailuresByAllowance(schoolId, input.examId());
+            schoolId, input.assessmentId(), input.retryLeft(), input.page(), input.size());
+        var counts = schoolWorkloadQueryRepository.countAiFailuresByAllowance(schoolId, input.assessmentId());
 
         return new SchoolGradingFailurePageResponse(
             page.content().stream().map(SchoolGradingFailureResponse::of).toList(),

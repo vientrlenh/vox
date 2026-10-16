@@ -1,0 +1,75 @@
+# ==================================================================
+# Danh bạ nguồn thí sinh / giám thị của một kỳ thi (chỉ đọc)
+#
+# Các type dưới đây chỉ được sinh ra từ bốn root query ở cuối file, không type nào
+# khác trỏ tới chúng. Nhờ vậy chúng không thừa hưởng field resolver của `SchoolClass`
+# / `SchoolUser` / `SchoolGrade` (vốn gated ở SCHOOL_ADMIN và chạm tới được từ nhiều
+# nhánh khác trong graph). Cùng lý do đã ghi ở `myclass.graphqls`.
+#
+# Mọi field đều là scalar — cố tình giữ đây là nhánh lá, không mở thêm cạnh nào
+# trong graph cho vai trò TEACHER.
+#
+# Phân quyền thật nằm ở `AssessmentDirectoryAccessService`, không ở @PreAuthorize:
+# school admin cùng trường HOẶC chủ tịch (CHAIR) của kỳ thi. Chủ tịch bài trên lớp
+# chỉ thấy lớp/học sinh của chính mình và không có đường theo niên khóa.
+# ==================================================================
+
+type AssessmentDirectoryClass {
+    id: ID!
+    schoolId: ID!
+    languageId: ID!
+    schoolGradeId: ID!
+    code: String!
+    name: String!
+    description: String
+    status: String!
+}
+
+type AssessmentDirectoryGrade {
+    id: ID!
+    code: String!
+    name: String!
+    status: String!
+}
+
+type AssessmentDirectoryUser {
+    userId: ID!
+    fullName: String
+    email: String
+    status: String!
+}
+
+type AssessmentDirectoryClassPage {
+    content: [AssessmentDirectoryClass!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type AssessmentDirectoryGradePage {
+    content: [AssessmentDirectoryGrade!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type AssessmentDirectoryUserPage {
+    content: [AssessmentDirectoryUser!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+extend type Query {
+    assessmentDirectoryClasses(assessmentId: ID!, search: String, page: Int! = 1, size: Int! = 20): AssessmentDirectoryClassPage!
+    assessmentDirectoryGrades(assessmentId: ID!, search: String, page: Int! = 1, size: Int! = 20): AssessmentDirectoryGradePage!
+    """
+    `excludeUserIds`: những người phía gọi ĐÃ CÓ rồi (thí sinh của kỳ thi, giám thị của ca) —
+    loại ngay trong SQL để `content`, `totalElements` và `totalPages` cùng nói một chuyện.
+    """
+    assessmentDirectoryStudents(assessmentId: ID!, search: String, page: Int! = 1, size: Int! = 20, excludeUserIds: [ID!]): AssessmentDirectoryUserPage!
+    assessmentDirectoryProctors(assessmentId: ID!, search: String, page: Int! = 1, size: Int! = 20, excludeUserIds: [ID!]): AssessmentDirectoryUserPage!
+}

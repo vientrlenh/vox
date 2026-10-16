@@ -1,8 +1,8 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSchoolRubricCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -66,18 +66,18 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
         }
 
         var school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy thông tin trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin trường học."));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học đang bị khóa, không thể thực hiện thao tác này.");
         }
 
         // 3. Khảo sát ngôn ngữ và khung tiêu chuẩn
         if (!languageRepository.existsById(command.languageId())) {
-            throw new NotFoundException("Ngôn ngữ chỉ định không tồn tại trên hệ thống.");
+            throw new ResourceNotFoundException("Ngôn ngữ chỉ định không tồn tại trên hệ thống.");
         }
 
         Framework framework = frameworkRepository.findById(command.frameworkId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework)."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework)."));
         if (!framework.isActive()) {
             throw new IllegalStateException("Khung tiêu chuẩn (Framework) này đã bị vô hiệu hóa.");
         }
@@ -103,7 +103,7 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
                 RubricOwnerType.SCHOOL.toString(), command.schoolId(), command.languageId(),
                 command.frameworkId(), safeCode);
         if (isCodeTaken) {
-            throw new DuplicatedException("Trường của bạn đã có một bộ tiêu chí đánh giá mang mã '"
+            throw new ResourceDuplicatedException("Trường của bạn đã có một bộ tiêu chí đánh giá mang mã '"
                     + safeCode + "' cho ngôn ngữ và khung năng lực này. Hãy dùng mã khác"
                     + " (ví dụ đặt theo khối: ENG-K10, ENG-K11).");
         }

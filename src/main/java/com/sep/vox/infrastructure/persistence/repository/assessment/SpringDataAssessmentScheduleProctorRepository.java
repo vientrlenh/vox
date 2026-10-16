@@ -22,7 +22,7 @@ public interface SpringDataAssessmentScheduleProctorRepository extends JpaReposi
     /**
      * Đếm ca thi còn hiệu lực mà giáo viên đã gác và giao thời gian với [start, end).
      *
-     * <p>Giờ nằm ở bảng cha nên phải join sang {@code exam_schedules}. Điều kiện giao khoảng dùng
+     * <p>Giờ nằm ở bảng cha nên phải join sang {@code assessment_schedules}. Điều kiện giao khoảng dùng
      * đúng dạng nửa mở như {@code SpringDataAssessmentScheduleRepository.countOverlapping}: hai ca kề nhau
      * (ca trước kết thúc đúng lúc ca sau bắt đầu) KHÔNG tính là trùng.
      */

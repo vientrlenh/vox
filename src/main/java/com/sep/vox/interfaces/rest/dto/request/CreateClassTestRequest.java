@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.exam.ResultDecisionMethod;
+import com.sep.vox.domain.model.assessment.AssessmentResultDecisionMethod;
 
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.DecimalMax;
@@ -37,9 +37,9 @@ public record CreateClassTestRequest(
     Integer maxAttempt,
 
     @Min(value = 1, message = "Thời lượng bài thi phải lớn hơn 0 giây")
-    Integer examTimeDurationSecond,
+    Integer assessmentTimeDurationSecond,
 
-    ResultDecisionMethod resultDecisionMethod,
+    AssessmentResultDecisionMethod resultDecisionMethod,
 
     /** Các loại stream giám sát: CAMERA và/hoặc SCREEN. Bỏ trống = không giám sát bằng stream. */
     List<String> requiredStreamTypes,
@@ -61,7 +61,7 @@ public record CreateClassTestRequest(
      * ngưỡng cứng như trước.
      *
      * <p>Đặt rồi thì bản chấm nào có overall_confidence thấp hơn ngưỡng sẽ sang PENDING_REVIEW,
-     * và các luật cứng nội bộ bị bỏ qua -- xem RecordExamAttemptEvaluationUseCase.
+     * và các luật cứng nội bộ bị bỏ qua -- xem RecordAssessmentAttemptEvaluationUseCase.
      */
     @DecimalMin(value = "0.0", message = "Ngưỡng tin cậy phải từ 0 đến 100")
     @DecimalMax(value = "100.0", message = "Ngưỡng tin cậy phải từ 0 đến 100")

@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Pattern;
 
 public record CreateSubscriptionPlanQuotaRequest(
     @NotBlank(message = "Loại quota không được để trống")
-    @Pattern(regexp = "^(EXAM|PRACTICE)$", message = "Chỉ chấp nhận các loại quota EXAM/PRACTICE")
+    @Pattern(regexp = "^(ASSESSMENT|PRACTICE)$", message = "Chỉ chấp nhận các loại quota ASSESSMENT/PRACTICE")
     String quotaType,
 
     @NotNull(message = "Số tiền của một loại quota không được để trống")

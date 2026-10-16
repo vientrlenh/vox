@@ -54,7 +54,7 @@ public class JpaPracticeTopicQueryRepository implements PracticeTopicQueryReposi
     }
 
     @Override
-    public List<QuestionTopicInfo> findPublishedExamTopics(UUID schoolId, UUID gradeId) {
-        return repository.findPublishedExamTopics(schoolId, gradeId);
+    public List<QuestionTopicInfo> findPublishedAssessmentTopics(UUID schoolId, UUID gradeId) {
+        return repository.findPublishedAssessmentTopics(schoolId, gradeId);
     }
 }

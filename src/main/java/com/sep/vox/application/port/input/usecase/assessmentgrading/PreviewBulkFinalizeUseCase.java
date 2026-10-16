@@ -5,12 +5,12 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.BulkFinalizePreviewInfo;
-import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.application.projection.repository.AssessmentGradingQueryRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentRepository;
 
 /**
  * Xem trước hậu quả của việc chốt sổ, KHÔNG ghi gì.
@@ -20,8 +20,8 @@ import com.sep.vox.domain.repository.assessment.ExamRepository;
  * quyết định công bố theo điểm AI.
  *
  * <p>Rộng hơn người được chốt sổ MỘT bậc, và đó là chủ ý: quyền đọc ở đây là
- * {@code authorizeSchoolAdminOrExamChair} (chủ tịch của kỳ thi, mọi loại) trong khi
- * {@link BulkFinalizeExamResultsUseCase} vẫn chỉ nhận school admin hoặc chủ tịch bài trên
+ * {@code authorizeSchoolAdminOrAssessmentChair} (chủ tịch của kỳ thi, mọi loại) trong khi
+ * {@link BulkFinalizeAssessmentResultsUseCase} vẫn chỉ nhận school admin hoặc chủ tịch bài trên
  * lớp. Chủ tịch kỳ thi tập trung bấm được nút công bố kết quả nhưng không chốt sổ được,
  * nên nếu không đọc được đúng bảng này thì lần bấm nào hỏng họ cũng chỉ nhận một con số
  * "còn N kết quả chưa RELEASED" mà không có đường nào tra ra N bài đó là bài nào. Con số
@@ -30,27 +30,27 @@ import com.sep.vox.domain.repository.assessment.ExamRepository;
 @Service
 public class PreviewBulkFinalizeUseCase implements IUseCase<UUID, BulkFinalizePreviewInfo> {
 
-    private final ExamGradingQueryRepository examGradingQueryRepository;
-    private final ExamRepository examRepository;
-    private final ExamGradingAccessService examGradingAccessService;
+    private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentGradingAccessService assessmentGradingAccessService;
 
     public PreviewBulkFinalizeUseCase(
-            ExamGradingQueryRepository examGradingQueryRepository,
-            ExamRepository examRepository,
-            ExamGradingAccessService examGradingAccessService) {
-        this.examGradingQueryRepository = examGradingQueryRepository;
-        this.examRepository = examRepository;
-        this.examGradingAccessService = examGradingAccessService;
+            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
+            AssessmentRepository assessmentRepository,
+            AssessmentGradingAccessService assessmentGradingAccessService) {
+        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
+        this.assessmentRepository = assessmentRepository;
+        this.assessmentGradingAccessService = assessmentGradingAccessService;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public BulkFinalizePreviewInfo execute(UUID examId) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var exam = examRepository.findById(examId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
-        examGradingAccessService.authorizeSchoolAdminOrExamChair(
-            exam.getSchoolId(), exam.getId(), currentUserId);
-        return examGradingQueryRepository.previewBulkFinalize(exam.getSchoolId(), examId);
+    public BulkFinalizePreviewInfo execute(UUID assessmentId) {
+        var currentUserId = assessmentGradingAccessService.requireActiveUserId();
+        var assessment = assessmentRepository.findById(assessmentId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
+        assessmentGradingAccessService.authorizeSchoolAdminOrAssessmentChair(
+            assessment.getSchoolId(), assessment.getId(), currentUserId);
+        return assessmentGradingQueryRepository.previewBulkFinalize(assessment.getSchoolId(), assessmentId);
     }
 }

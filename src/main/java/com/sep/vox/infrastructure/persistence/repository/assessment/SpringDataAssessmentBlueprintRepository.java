@@ -19,10 +19,10 @@ public interface SpringDataAssessmentBlueprintRepository extends JpaRepository<A
           AND (:isActive IS NULL OR b.isActive = :isActive)
           AND (:languageId IS NULL OR b.languageId = :languageId)
           AND (
-                :examKind IS NULL
+                :assessmentKind IS NULL
                 OR EXISTS (
                     SELECT 1 FROM AssessmentJpaEntity e
-                    WHERE e.blueprintId = b.id AND e.kind = :examKind
+                    WHERE e.blueprintId = b.id AND e.kind = :assessmentKind
                 )
               )
           AND (
@@ -44,7 +44,7 @@ public interface SpringDataAssessmentBlueprintRepository extends JpaRepository<A
         @Param("schoolId") UUID schoolId,
         @Param("isActive") Boolean isActive,
         @Param("languageId") UUID languageId,
-        @Param("examKind") String examKind,
+        @Param("assessmentKind") String assessmentKind,
         @Param("keywordPattern") String keywordPattern,
         Pageable pageable
     );
@@ -54,7 +54,7 @@ public interface SpringDataAssessmentBlueprintRepository extends JpaRepository<A
         FROM AssessmentJpaEntity e
         WHERE e.blueprintId = :blueprintId
     """)
-    boolean existsUsedByExam(@Param("blueprintId") UUID blueprintId);
+    boolean existsUsedByAssessment(@Param("blueprintId") UUID blueprintId);
 
     // Nhánh EXISTS thứ hai nhận CHAIR ngang AUTHOR, KHÔNG phải chỉ AUTHOR.
     //
@@ -77,7 +77,7 @@ public interface SpringDataAssessmentBlueprintRepository extends JpaRepository<A
                 )
                 OR EXISTS (
                     SELECT 1 FROM AssessmentJpaEntity e
-                    JOIN AssessmentMemberJpaEntity em ON em.examId = e.id
+                    JOIN AssessmentMemberJpaEntity em ON em.assessmentId = e.id
                     WHERE e.blueprintId = b.id AND em.userId = :userId
                       AND em.role IN ('AUTHOR', 'CHAIR')
                 )
@@ -107,7 +107,7 @@ public interface SpringDataAssessmentBlueprintRepository extends JpaRepository<A
                 )
                 OR EXISTS (
                     SELECT 1 FROM AssessmentJpaEntity e
-                    JOIN AssessmentMemberJpaEntity em ON em.examId = e.id
+                    JOIN AssessmentMemberJpaEntity em ON em.assessmentId = e.id
                     WHERE e.blueprintId = b.id AND em.userId = :userId AND em.role IN ('CHAIR', 'REVIEWER')
                 )
             )
@@ -135,14 +135,14 @@ public interface SpringDataAssessmentBlueprintRepository extends JpaRepository<A
             b.schoolId = :schoolId
             AND EXISTS (
                 SELECT 1 FROM AssessmentJpaEntity e
-                JOIN AssessmentMemberJpaEntity em ON em.examId = e.id
+                JOIN AssessmentMemberJpaEntity em ON em.assessmentId = e.id
                 WHERE e.blueprintId = b.id AND em.userId = :userId AND em.role = 'CHAIR'
             )
         ) THEN true ELSE false END
         FROM AssessmentBlueprintJpaEntity b
         WHERE b.id = :blueprintId
     """)
-    boolean isChairOfExamUsingBlueprint(
+    boolean isChairOfAssessmentUsingBlueprint(
         @Param("blueprintId") UUID blueprintId,
         @Param("userId") UUID userId,
         @Param("schoolId") UUID schoolId

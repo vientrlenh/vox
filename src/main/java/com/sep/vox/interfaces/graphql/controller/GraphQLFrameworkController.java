@@ -15,6 +15,7 @@ import org.springframework.stereotype.Controller;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.RequiredArgsConstructor;
 
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkCriteriaQuery;
 import com.sep.vox.application.port.input.query.ViewFrameworkCriterionDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewFrameworkDetailsQuery;
@@ -215,7 +216,7 @@ public class GraphQLFrameworkController {
     public CompletableFuture<List<FrameworkCriterionBandDto>> criterionBands(FrameworkCriterionDto criterion, DataFetchingEnvironment env) {
         DataLoader<UUID, List<FrameworkCriterionBandDto>> loader = env.getDataLoader("criterionBandsByFrameworkCriterion");
         if (loader == null) {
-            throw new NotFoundException("Không tìm thấy criterionBandsByFrameworkCriterion schema mapping");
+            throw new ResourceNotFoundException("Không tìm thấy criterionBandsByFrameworkCriterion schema mapping");
         }
         return loader.load(criterion.id());
     }

@@ -36,8 +36,8 @@ public class RecordAiUsageUseCase implements IUseCase<RecordAiUsageCommand, Void
         if (input.usageEventId() == null) {
             throw new IllegalArgumentException("Thiếu usageEventId trong dữ liệu usage");
         }
-        if (input.examSessionId() == null) {
-            throw new IllegalArgumentException("Thiếu examSessionId trong dữ liệu usage");
+        if (input.assessmentSessionId() == null) {
+            throw new IllegalArgumentException("Thiếu assessmentSessionId trong dữ liệu usage");
         }
         // Chặn sớm thay vì để NPE ở phép nhân bên dưới: cost_vnd là NOT NULL nên một dòng thiếu
         // costUsd không thể ghi được, và nuốt lặng nó nghĩa là mất trắng một khoản chi thật.
@@ -63,7 +63,7 @@ public class RecordAiUsageUseCase implements IUseCase<RecordAiUsageCommand, Void
         var costVnd = input.costUsd().multiply(exchangeRateVnd).setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
 
         aiUsageRecordRepository.save(new AiUsageRecord(
-            input.examSessionId(),
+            input.assessmentSessionId(),
             input.turnId(),
             input.usageEventId(),
             input.usageType(),

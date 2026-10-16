@@ -2,13 +2,13 @@ package com.sep.vox.domain.model.assessment;
 
 /**
  * Ai/cái gì đã đổi trạng thái một bài — cột {@code source} của
- * {@link ExamResultStatusHistory}.
+ * {@link AssessmentResultStatusHistory}.
  *
  * <p>Bốn giá trị {@code TEACHER_*} bám đúng {@link GradingRoundType} để tra ngược ra
  * vòng chấm mà không phải join sang bảng phân công.
  */
 public enum AssessmentResultStatusChangeSource {
-    /** AI chấm tự động (RecordExamAttemptEvaluation / Upsert...). */
+    /** AI chấm tự động (RecordAssessmentAttemptEvaluation / Upsert...). */
     AI_EVALUATION,
     TEACHER_INITIAL,
     TEACHER_SPOT_CHECK,
@@ -17,7 +17,7 @@ public enum AssessmentResultStatusChangeSource {
     /** Admin chốt sổ hàng loạt cả kỳ thi. */
     ADMIN_BULK_FINALIZE,
     /** Kỳ thi chuyển RESULTS_PUBLISHED kéo theo kết quả sang FINAL/PASSED/FAILED. */
-    EXAM_PUBLISH,
+    ASSESSMENT_PUBLISH,
     SYSTEM;
 
     /** Nguồn tương ứng với vòng chấm — dùng khi ghi audit từ các use case của giáo viên. */

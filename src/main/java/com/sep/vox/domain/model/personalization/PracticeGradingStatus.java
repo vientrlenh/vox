@@ -7,8 +7,8 @@ package com.sep.vox.domain.model.personalization;
  * tả HÀNH VI NGƯỜI HỌC -- "em có nói không" -- chứ không tả tiến độ chấm. Hai thứ cố ý tách rời,
  * xem chú thích dài ở {@code EndPracticeSessionUseCase}.
  *
- * <p>Đặt tên bám {@code ExamSessionStatus} bên thi để cả repo dùng chung một bộ từ vựng. Riêng
- * {@link #GRADING_FAILED} phải giữ đủ tiền tố: {@code ExamCandidateResultStatus.FAILED} trong
+ * <p>Đặt tên bám {@code AssessmentSessionStatus} bên thi để cả repo dùng chung một bộ từ vựng. Riêng
+ * {@link #GRADING_FAILED} phải giữ đủ tiền tố: {@code AssessmentCandidateResultStatus.FAILED} trong
  * repo này nghĩa là HỌC SINH TRƯỢT, nên đặt {@code FAILED} cho lỗi kỹ thuật là mời người đọc sau
  * hiểu sai theo hướng tệ nhất.
  */

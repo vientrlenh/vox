@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.PreviewRubricCriterionImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -76,9 +76,9 @@ public class PreviewSystemRubricCriterionImportFromFileUseCase implements IUseCa
 
         //  Dò ngược từ Version -> Rubric
         var version = rubricVersionRepository.findById(command.rubricVersionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản (Version) yêu cầu."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản (Version) yêu cầu."));
         var rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         //  Chốt chặn Owner Type
         if (command.schoolId() == null && rubric.getOwnerType() != RubricOwnerType.SYSTEM) {

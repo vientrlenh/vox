@@ -10,7 +10,7 @@ import com.sep.vox.domain.shared.DecimalText;
  * không làm giàu dữ liệu.
  *
  * <p>Trả {@code actorId} thô chứ không phải tên người thực hiện: cùng cách {@code SchoolDebtEvent}
- * trả {@code triggerExamSessionId}. Muốn hiện tên thì cần LEFT JOIN sang users, và khi đó DTO không
+ * trả {@code triggerAssessmentSessionId}. Muốn hiện tên thì cần LEFT JOIN sang users, và khi đó DTO không
  * còn dựng được từ một mình domain model nữa -- đó là một quyết định riêng, đáng làm khi có màn hình
  * thật sự cần, không phải làm sẵn ở đây.
  *
@@ -25,7 +25,7 @@ public record SchoolBalanceEntryDto(
     String occurredAt,
     UUID subscriptionId,
     UUID orderId,
-    UUID examSessionId,
+    UUID assessmentSessionId,
     UUID practiceSessionId,
     String quotaType,
     String costUsd,
@@ -44,7 +44,7 @@ public record SchoolBalanceEntryDto(
             entry.getOccurredAt() == null ? null : entry.getOccurredAt().toString(),
             entry.getSubscriptionId(),
             entry.getOrderId(),
-            entry.getExamSessionId(),
+            entry.getAssessmentSessionId(),
             entry.getPracticeSessionId(),
             // Nullable ở tầng DB: chỉ OVERAGE_CHARGE mới bắt buộc có quota_type.
             entry.getQuotaType() == null ? null : entry.getQuotaType().name(),

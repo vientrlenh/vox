@@ -15,7 +15,7 @@ import java.util.UUID;
  * @param candidateResultIds chỉ dùng cho {@code MANUAL_LIST}
  */
 public record AutoAssignGradingCommand(
-    UUID examId,
+    UUID assessmentId,
     UUID scheduleId,
     String roundType,
     String selectionMode,

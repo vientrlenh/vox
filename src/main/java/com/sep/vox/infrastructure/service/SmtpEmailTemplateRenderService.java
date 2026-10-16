@@ -74,16 +74,16 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
 
 
     @Override
-    public String renderAppealRejectedEmail(String examName, String reason) {
+    public String renderAppealRejectedEmail(String assessmentName, String reason) {
         return loadTemplate(APPEAL_REJECTED_TEMPLATE)
-            .replace("{{examName}}", escapeHtml(examName))
+            .replace("{{assessmentName}}", escapeHtml(assessmentName))
             .replace("{{reason}}", escapeHtml(reason));
     }
 
     @Override
-    public String renderAppealPublishedEmail(String examName, String scoreBefore, String scoreAfter) {
+    public String renderAppealPublishedEmail(String assessmentName, String scoreBefore, String scoreAfter) {
         return loadTemplate(APPEAL_PUBLISHED_TEMPLATE)
-            .replace("{{examName}}", escapeHtml(examName))
+            .replace("{{assessmentName}}", escapeHtml(assessmentName))
             .replace("{{scoreBefore}}", escapeHtml(scoreBefore))
             .replace("{{scoreAfter}}", escapeHtml(scoreAfter));
     }
@@ -91,20 +91,20 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
     // ---- thông báo vòng đời điểm ------------------------------------------
 
     @Override
-    public String renderResultReleasedEmail(String examName, String totalScore) {
+    public String renderResultReleasedEmail(String assessmentName, String totalScore) {
         return renderNotification(
             "Điểm thi của bạn đã có",
-            "Bài thi của bạn ở kỳ thi <strong>" + escapeHtml(examName) + "</strong> đã được chấm xong.",
+            "Bài thi của bạn ở kỳ thi <strong>" + escapeHtml(assessmentName) + "</strong> đã được chấm xong.",
             "Kết quả",
             "Tổng điểm: <strong>" + escapeHtml(totalScore) + "</strong>");
     }
 
     @Override
     public String renderResultRegradedEmail(
-            String examName, String roundLabel, String scoreBefore, String scoreAfter) {
+            String assessmentName, String roundLabel, String scoreBefore, String scoreAfter) {
         return renderNotification(
             "Điểm thi của bạn đã thay đổi",
-            "Bài thi của bạn ở kỳ thi <strong>" + escapeHtml(examName)
+            "Bài thi của bạn ở kỳ thi <strong>" + escapeHtml(assessmentName)
                 + "</strong> vừa được " + escapeHtml(roundLabel) + ".",
             "Điểm sau khi chấm lại",
             "Điểm trước: " + escapeHtml(scoreBefore)
@@ -112,59 +112,59 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
     }
 
     @Override
-    public String renderResultInvalidatedEmail(String examName, String reason) {
+    public String renderResultInvalidatedEmail(String assessmentName, String reason) {
         return renderNotification(
             "Bài thi của bạn đã bị vô hiệu",
-            "Bài thi của bạn ở kỳ thi <strong>" + escapeHtml(examName)
+            "Bài thi của bạn ở kỳ thi <strong>" + escapeHtml(assessmentName)
                 + "</strong> đã bị kết luận vi phạm quy chế.",
             "Lý do",
             escapeHtml(reason));
     }
 
     @Override
-    public String renderResultInvalidClearedEmail(String examName, String reason) {
+    public String renderResultInvalidClearedEmail(String assessmentName, String reason) {
         return renderNotification(
             "Bài thi của bạn đã được khôi phục",
-            "Sau khi xem xét lại, bài thi của bạn ở kỳ thi <strong>" + escapeHtml(examName)
+            "Sau khi xem xét lại, bài thi của bạn ở kỳ thi <strong>" + escapeHtml(assessmentName)
                 + "</strong> không bị coi là vi phạm và sẽ được chấm lại.",
             "Lý do",
             escapeHtml(reason));
     }
 
     @Override
-    public String renderAppealApprovedEmail(String examName, String deadline) {
+    public String renderAppealApprovedEmail(String assessmentName, String deadline) {
         return renderNotification(
             "Đơn phúc khảo của bạn đã được duyệt",
-            "Đơn phúc khảo cho kỳ thi <strong>" + escapeHtml(examName)
+            "Đơn phúc khảo cho kỳ thi <strong>" + escapeHtml(assessmentName)
                 + "</strong> đã được duyệt và đang được chấm lại.",
             "Hạn xử lý",
             escapeHtml(deadline));
     }
 
     @Override
-    public String renderResultOutcomeDecidedEmail(String examName, String outcomeLabel, String totalScore) {
+    public String renderResultOutcomeDecidedEmail(String assessmentName, String outcomeLabel, String totalScore) {
         return renderNotification(
             "Kết quả cuối cùng của bạn",
-            "Kỳ thi <strong>" + escapeHtml(examName) + "</strong> đã chốt kết quả.",
+            "Kỳ thi <strong>" + escapeHtml(assessmentName) + "</strong> đã chốt kết quả.",
             "Kết quả",
             "Xếp loại: <strong>" + escapeHtml(outcomeLabel) + "</strong>"
                 + "<br>Tổng điểm: " + escapeHtml(totalScore));
     }
 
     @Override
-    public String renderGradingDeadlineReminderEmail(String examName, String roundLabel, String deadline) {
+    public String renderGradingDeadlineReminderEmail(String assessmentName, String roundLabel, String deadline) {
         return renderNotification(
             "Nhắc hạn chấm bài",
-            "Bạn còn một bài chưa chấm xong ở kỳ thi <strong>" + escapeHtml(examName) + "</strong>.",
+            "Bạn còn một bài chưa chấm xong ở kỳ thi <strong>" + escapeHtml(assessmentName) + "</strong>.",
             "Chi tiết",
             "Vòng chấm: " + escapeHtml(roundLabel) + "<br><strong>Hạn: " + escapeHtml(deadline) + "</strong>");
     }
 
     @Override
-    public String renderGradingDeclinedEmail(String examName, String teacherName, String reason) {
+    public String renderGradingDeclinedEmail(String assessmentName, String teacherName, String reason) {
         return renderNotification(
             "Có giáo viên trả lại phân công chấm bài",
-            "Một phân công ở kỳ thi <strong>" + escapeHtml(examName)
+            "Một phân công ở kỳ thi <strong>" + escapeHtml(assessmentName)
                 + "</strong> vừa được trả lại và đang chờ giao cho người khác.",
             "Chi tiết",
             "Giáo viên: " + escapeHtml(teacherName) + "<br>Lý do: " + escapeHtml(reason));

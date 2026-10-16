@@ -27,10 +27,10 @@ import com.sep.vox.domain.shared.EventTypeConstant;
 public enum NotificationTarget {
 
     /** Học sinh: kết quả của một bài thi. */
-    EXAM_RESULT_DETAIL,
+    ASSESSMENT_RESULT_DETAIL,
 
     /** Học sinh: chi tiết một đơn phúc khảo. */
-    EXAM_APPEAL_DETAIL,
+    ASSESSMENT_APPEAL_DETAIL,
 
     /** Giáo viên: một phân công chấm cụ thể. */
     TEACHER_GRADING_TASK,
@@ -46,7 +46,7 @@ public enum NotificationTarget {
      * giống hệt nhau -- "vào chấm những bài còn chờ" -- chỉ khác đường dẫn theo vai trò của
      * người mở, mà đó là việc của bảng route bên client.
      */
-    EXAM_HUMAN_GRADING_REQUIRED,
+    ASSESSMENT_HUMAN_GRADING_REQUIRED,
 
     /** School admin: blueprint đề thi vừa được publish. */
     SCHOOL_BLUEPRINT_DETAIL,
@@ -72,15 +72,15 @@ public enum NotificationTarget {
      * {@code NotificationCategoryMappingValidator}.
      */
     private static final Map<String, NotificationTarget> BY_EVENT_TYPE = Map.ofEntries(
-        Map.entry(EventTypeConstant.EXAM_RESULT_RELEASED, EXAM_RESULT_DETAIL),
-        Map.entry(EventTypeConstant.EXAM_RESULT_REGRADED, EXAM_RESULT_DETAIL),
-        Map.entry(EventTypeConstant.EXAM_RESULT_INVALIDATED, EXAM_RESULT_DETAIL),
-        Map.entry(EventTypeConstant.EXAM_RESULT_INVALID_CLEARED, EXAM_RESULT_DETAIL),
-        Map.entry(EventTypeConstant.EXAM_RESULT_OUTCOME_DECIDED, EXAM_RESULT_DETAIL),
+        Map.entry(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, ASSESSMENT_RESULT_DETAIL),
+        Map.entry(EventTypeConstant.ASSESSMENT_RESULT_REGRADED, ASSESSMENT_RESULT_DETAIL),
+        Map.entry(EventTypeConstant.ASSESSMENT_RESULT_INVALIDATED, ASSESSMENT_RESULT_DETAIL),
+        Map.entry(EventTypeConstant.ASSESSMENT_RESULT_INVALID_CLEARED, ASSESSMENT_RESULT_DETAIL),
+        Map.entry(EventTypeConstant.ASSESSMENT_RESULT_OUTCOME_DECIDED, ASSESSMENT_RESULT_DETAIL),
 
-        Map.entry(EventTypeConstant.EXAM_APPEAL_PUBLISHED, EXAM_APPEAL_DETAIL),
-        Map.entry(EventTypeConstant.EXAM_APPEAL_REJECTED, EXAM_APPEAL_DETAIL),
-        Map.entry(EventTypeConstant.EXAM_APPEAL_APPROVED, EXAM_APPEAL_DETAIL),
+        Map.entry(EventTypeConstant.ASSESSMENT_APPEAL_PUBLISHED, ASSESSMENT_APPEAL_DETAIL),
+        Map.entry(EventTypeConstant.ASSESSMENT_APPEAL_REJECTED, ASSESSMENT_APPEAL_DETAIL),
+        Map.entry(EventTypeConstant.ASSESSMENT_APPEAL_APPROVED, ASSESSMENT_APPEAL_DETAIL),
 
         Map.entry(EventTypeConstant.GRADING_DEADLINE_REMINDER, TEACHER_GRADING_TASK),
         // Cùng đích với nhắc hạn: cả hai đều dẫn giáo viên vào đúng phân công của họ, nên
@@ -90,9 +90,9 @@ public enum NotificationTarget {
         // không phải giáo viên -- nên là target khác, màn hình khác.
         Map.entry(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, ADMIN_GRADING_ASSIGNMENT),
 
-        Map.entry(EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED, EXAM_HUMAN_GRADING_REQUIRED),
+        Map.entry(EventTypeConstant.ASSESSMENT_HUMAN_GRADING_REQUIRED, ASSESSMENT_HUMAN_GRADING_REQUIRED),
 
-        Map.entry(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED, SCHOOL_BLUEPRINT_DETAIL),
+        Map.entry(EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED, SCHOOL_BLUEPRINT_DETAIL),
 
         Map.entry(EventTypeConstant.INVOICE_PAID, SCHOOL_INVOICE_DETAIL),
 

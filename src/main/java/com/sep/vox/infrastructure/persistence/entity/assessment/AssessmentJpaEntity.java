@@ -14,9 +14,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exams", check = {
+@Table(name = "assessments", check = {
     @CheckConstraint(
-        name = "chk_exams_required_stream_type_and_stream_type_permission_valid", 
+        name = "chk_assessments_required_stream_type_and_stream_type_permission_valid", 
         constraint = """
             (
                 required_stream_type IS NULL 
@@ -70,7 +70,7 @@ public class AssessmentJpaEntity {
 
     @Column(name = "kind", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exams_kind_valid",
+            name = "chk_assessments_kind_valid",
             constraint = "kind IN ('CENTRALIZED', 'CLASS_TEST')"
         )
     })
@@ -78,7 +78,7 @@ public class AssessmentJpaEntity {
 
     @Column(name = "delivery_mode", length = 20, check = {
         @CheckConstraint(
-            name = "chk_exams_delivery_mode_valid",
+            name = "chk_assessments_delivery_mode_valid",
             constraint = "delivery_mode IN ('STUDENT_DEVICE', 'LAB')"
         )
     })
@@ -86,7 +86,7 @@ public class AssessmentJpaEntity {
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exams_status_valid", 
+            name = "chk_assessments_status_valid", 
             constraint = "status IN ('DRAFT', 'SCHEDULED', 'IN_PROGRESS', 'CLOSED', 'RESULTS_PUBLISHED', 'CANCELLED')"
         )
     })
@@ -95,15 +95,15 @@ public class AssessmentJpaEntity {
     @Column(name = "max_attempt")
     private Integer maxAttempt;
 
-    // H.1: mặc định tự động tính = MAX(paperDuration) qua recalculateExamTimeDuration, nhưng
-    // vẫn nhận giá trị người dùng nhập lúc tạo exam, bị ghi đè ngay khi paper/section đầu tiên
+    // H.1: mặc định tự động tính = MAX(paperDuration) qua recalculateAssessmentTimeDuration, nhưng
+    // vẫn nhận giá trị người dùng nhập lúc tạo assessment, bị ghi đè ngay khi paper/section đầu tiên
     // được tạo.
-    @Column(name = "exam_time_duration_second")
-    private Integer examTimeDurationSecond;
+    @Column(name = "assessment_time_duration_second")
+    private Integer assessmentTimeDurationSecond;
 
     @Column(name = "result_decision_method", length = 20, check = {
         @CheckConstraint(
-            name = "chk_exams_result_decision_method_valid",
+            name = "chk_assessments_result_decision_method_valid",
             constraint = "result_decision_method IN ('HIGHEST', 'LATEST', 'AVERAGE', 'FIRST', 'LOWEST')"
         )
     })
@@ -111,7 +111,7 @@ public class AssessmentJpaEntity {
 
     @Column(name = "required_stream_type", length = 20, check = {
         @CheckConstraint(
-            name = "chk_exams_required_stream_type_valid", 
+            name = "chk_assessments_required_stream_type_valid", 
             constraint = "required_stream_type IN ('CAMERA', 'SCREEN', 'CAMERA_AND_SCREEN')"
         )
     })
@@ -119,7 +119,7 @@ public class AssessmentJpaEntity {
 
     @Column(name = "stream_type_permission", length = 20, check = {
         @CheckConstraint(
-            name = "chk_exams_stream_type_permission_valid", 
+            name = "chk_assessments_stream_type_permission_valid", 
             constraint = "stream_type_permission IN ('ANY', 'ALL')"
         )
     })
@@ -173,7 +173,7 @@ public class AssessmentJpaEntity {
     protected AssessmentJpaEntity() {}
 
     public AssessmentJpaEntity(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
-            String kind, String deliveryMode, String status, Integer maxAttempt, Integer examTimeDurationSecond, String resultDecisionMethod, String requiredStreamType, String streamTypePermission,
+            String kind, String deliveryMode, String status, Integer maxAttempt, Integer assessmentTimeDurationSecond, String resultDecisionMethod, String requiredStreamType, String streamTypePermission,
             Instant openAt, Instant closeAt, UUID assessmentPolicyId,boolean requiresOtp,
             Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
@@ -188,7 +188,7 @@ public class AssessmentJpaEntity {
         this.deliveryMode = deliveryMode;
         this.status = status;
         this.maxAttempt = maxAttempt;
-        this.examTimeDurationSecond = examTimeDurationSecond;
+        this.assessmentTimeDurationSecond = assessmentTimeDurationSecond;
         this.resultDecisionMethod = resultDecisionMethod;
         this.requiredStreamType = requiredStreamType;
         this.streamTypePermission = streamTypePermission;
@@ -282,12 +282,12 @@ public class AssessmentJpaEntity {
         this.maxAttempt = maxAttempt;
     }
 
-    public Integer getExamTimeDurationSecond() {
-        return examTimeDurationSecond;
+    public Integer getAssessmentTimeDurationSecond() {
+        return assessmentTimeDurationSecond;
     }
 
-    public void setExamTimeDurationSecond(Integer examTimeDurationSecond) {
-        this.examTimeDurationSecond = examTimeDurationSecond;
+    public void setAssessmentTimeDurationSecond(Integer assessmentTimeDurationSecond) {
+        this.assessmentTimeDurationSecond = assessmentTimeDurationSecond;
     }
 
     public String getResultDecisionMethod() {

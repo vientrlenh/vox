@@ -18,7 +18,7 @@ import com.sep.vox.application.port.input.query.ViewSchoolAiCostQuery.AiCostGran
 import com.sep.vox.application.port.input.query.ViewSchoolsAtRiskQuery;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewGradingFailureOverviewUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewGradingFailureSessionsUseCase;
-import com.sep.vox.application.port.input.usecase.dashboard.ViewNearestCentralizedExamUseCase;
+import com.sep.vox.application.port.input.usecase.dashboard.ViewNearestCentralizedAssessmentUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformBusinessHealthUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformOperationalHealthUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewSchoolAdminDashboardUseCase;
@@ -30,7 +30,7 @@ import com.sep.vox.application.port.input.usecase.dashboard.ViewSystemAdminDashb
 import com.sep.vox.application.port.input.usecase.dashboard.ViewQuestionBankStatsUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewTeacherDashboardUseCase;
 import com.sep.vox.application.projection.dto.GradingFailureSessionDto;
-import com.sep.vox.application.projection.dto.NearestCentralizedExamDto;
+import com.sep.vox.application.projection.dto.NearestCentralizedAssessmentDto;
 import com.sep.vox.application.projection.dto.QuestionBankStatsDto;
 import com.sep.vox.application.projection.dto.SchoolRiskBucket;
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -55,7 +55,7 @@ public class GraphQLDashboardController {
     private final ViewSystemAdminDashboardUseCase viewSystemAdminDashboardUseCase;
     private final ViewSchoolAdminDashboardUseCase viewSchoolAdminDashboardUseCase;
     private final ViewTeacherDashboardUseCase viewTeacherDashboardUseCase;
-    private final ViewNearestCentralizedExamUseCase viewNearestCentralizedExamUseCase;
+    private final ViewNearestCentralizedAssessmentUseCase viewNearestCentralizedAssessmentUseCase;
     private final ViewQuestionBankStatsUseCase viewQuestionBankStatsUseCase;
     private final ViewPlatformOperationalHealthUseCase viewPlatformOperationalHealthUseCase;
     private final ViewPlatformBusinessHealthUseCase viewPlatformBusinessHealthUseCase;
@@ -87,12 +87,12 @@ public class GraphQLDashboardController {
     @QueryMapping(name = "schoolGradingFailures")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public SchoolGradingFailurePageResponse schoolGradingFailures(
-            @Argument(name = "examId") UUID examId,
+            @Argument(name = "assessmentId") UUID assessmentId,
             @Argument(name = "retryLeft") Boolean retryLeft,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         return viewSchoolGradingFailuresUseCase.execute(
-            new SearchSchoolGradingFailuresQuery(examId, retryLeft, page, size));
+            new SearchSchoolGradingFailuresQuery(assessmentId, retryLeft, page, size));
     }
 
     /**
@@ -132,10 +132,10 @@ public class GraphQLDashboardController {
         return viewTeacherDashboardUseCase.execute(null);
     }
 
-    @QueryMapping(name = "nearestCentralizedExam")
+    @QueryMapping(name = "nearestCentralizedAssessment")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
-    public NearestCentralizedExamDto nearestCentralizedExam() {
-        return viewNearestCentralizedExamUseCase.execute(null).orElse(null);
+    public NearestCentralizedAssessmentDto nearestCentralizedAssessment() {
+        return viewNearestCentralizedAssessmentUseCase.execute(null).orElse(null);
     }
 
     @QueryMapping(name = "questionBankStats")

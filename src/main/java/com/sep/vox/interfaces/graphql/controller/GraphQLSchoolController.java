@@ -33,7 +33,7 @@ import com.sep.vox.application.port.input.query.ViewSchoolTeachersBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolsQuery;
-import com.sep.vox.application.port.input.usecase.school.ListSchoolsWithOnGoingExamUseCase;
+import com.sep.vox.application.port.input.usecase.school.ListSchoolsWithOnGoingAssessmentUseCase;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
@@ -121,7 +121,7 @@ public class GraphQLSchoolController {
     private final ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase;
     private final ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
     private final ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
-    private final ListSchoolsWithOnGoingExamUseCase listSchoolsWithOnGoingExamUseCase;
+    private final ListSchoolsWithOnGoingAssessmentUseCase listSchoolsWithOnGoingAssessmentUseCase;
 
     @QueryMapping(name = "schools")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
@@ -476,9 +476,9 @@ public class GraphQLSchoolController {
         return viewSchoolDirectoryDetailsUseCase.execute(query);
     }
 
-    @QueryMapping(name = "schoolsWithOngoingExam")
+    @QueryMapping(name = "schoolsWithOngoingAssessment")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public List<UUID> schoolsWithOngoingExam() {
-        return listSchoolsWithOnGoingExamUseCase.execute(null);
+    public List<UUID> schoolsWithOngoingAssessment() {
+        return listSchoolsWithOnGoingAssessmentUseCase.execute(null);
     }
 }

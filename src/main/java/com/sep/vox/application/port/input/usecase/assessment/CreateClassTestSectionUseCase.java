@@ -12,93 +12,93 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateClassTestSectionCommand;
 import com.sep.vox.application.port.input.service.ClassTestPaperResolver;
-import com.sep.vox.application.port.input.service.RecalculateExamTimeDurationService;
+import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.ExamDto;
-import com.sep.vox.domain.mapper.ExamDtoMapper;
-import com.sep.vox.domain.model.assessment.Exam;
-import com.sep.vox.domain.model.assessment.ExamKind;
-import com.sep.vox.domain.model.assessment.ExamMemberRole;
-import com.sep.vox.domain.model.assessment.ExamPaperItem;
-import com.sep.vox.domain.model.assessment.ExamPaperSection;
-import com.sep.vox.domain.model.assessment.ExamSecurePoolReleaseMode;
-import com.sep.vox.domain.model.assessment.ExamStatus;
+import com.sep.vox.domain.dto.AssessmentDto;
+import com.sep.vox.domain.mapper.AssessmentDtoMapper;
+import com.sep.vox.domain.model.assessment.Assessment;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
+import com.sep.vox.domain.model.assessment.AssessmentPaperItem;
+import com.sep.vox.domain.model.assessment.AssessmentPaperSection;
+import com.sep.vox.domain.model.assessment.AssessmentSecurePoolReleaseMode;
+import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
-import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
-import com.sep.vox.domain.repository.assessment.ExamPaperItemRepository;
-import com.sep.vox.domain.repository.assessment.ExamPaperSectionRepository;
-import com.sep.vox.domain.repository.assessment.ExamRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentMemberRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentPaperItemRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentPaperSectionRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentRepository;
 
 @Service
-public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSectionCommand, ExamDto> {
+public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSectionCommand, AssessmentDto> {
 
-    private final ExamRepository examRepository;
-    private final ExamMemberRepository examMemberRepository;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentMemberRepository assessmentMemberRepository;
     private final ClassTestPaperResolver classTestPaperResolver;
-    private final ExamPaperSectionRepository examPaperSectionRepository;
-    private final ExamPaperItemRepository examPaperItemRepository;
+    private final AssessmentPaperSectionRepository assessmentPaperSectionRepository;
+    private final AssessmentPaperItemRepository assessmentPaperItemRepository;
     private final QuestionRepository questionRepository;
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
-    private final ExamQuestionSecureLockService examQuestionSecureLockService;
-    private final RecalculateExamTimeDurationService recalculateExamTimeDurationService;
+    private final AssessmentQuestionSecureLockService assessmentQuestionSecureLockService;
+    private final RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService;
     private final UserContextPort userContextPort;
 
     public CreateClassTestSectionUseCase(
-            ExamRepository examRepository,
-            ExamMemberRepository examMemberRepository,
+            AssessmentRepository assessmentRepository,
+            AssessmentMemberRepository assessmentMemberRepository,
             ClassTestPaperResolver classTestPaperResolver,
-            ExamPaperSectionRepository examPaperSectionRepository,
-            ExamPaperItemRepository examPaperItemRepository,
+            AssessmentPaperSectionRepository assessmentPaperSectionRepository,
+            AssessmentPaperItemRepository assessmentPaperItemRepository,
             QuestionRepository questionRepository,
             QuestionCollaboratorRepository questionCollaboratorRepository,
-            ExamQuestionSecureLockService examQuestionSecureLockService,
-            RecalculateExamTimeDurationService recalculateExamTimeDurationService,
+            AssessmentQuestionSecureLockService assessmentQuestionSecureLockService,
+            RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService,
             UserContextPort userContextPort) {
-        this.examRepository = examRepository;
-        this.examMemberRepository = examMemberRepository;
+        this.assessmentRepository = assessmentRepository;
+        this.assessmentMemberRepository = assessmentMemberRepository;
         this.classTestPaperResolver = classTestPaperResolver;
-        this.examPaperSectionRepository = examPaperSectionRepository;
-        this.examPaperItemRepository = examPaperItemRepository;
+        this.assessmentPaperSectionRepository = assessmentPaperSectionRepository;
+        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
         this.questionRepository = questionRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
-        this.examQuestionSecureLockService = examQuestionSecureLockService;
-        this.recalculateExamTimeDurationService = recalculateExamTimeDurationService;
+        this.assessmentQuestionSecureLockService = assessmentQuestionSecureLockService;
+        this.recalculateAssessmentTimeDurationService = recalculateAssessmentTimeDurationService;
         this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional
-    public ExamDto execute(CreateClassTestSectionCommand input) {
+    public AssessmentDto execute(CreateClassTestSectionCommand input) {
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var exam = examRepository.findById(input.examId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+        var assessment = assessmentRepository.findById(input.assessmentId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
-        if (exam.getKind() != ExamKind.CLASS_TEST) {
+        if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
             throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra trên lớp");
         }
-        if (!examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR)) {
+        if (!assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
-        if (exam.getStatus() != ExamStatus.DRAFT && exam.getStatus() != ExamStatus.SCHEDULED) {
+        if (assessment.getStatus() != AssessmentStatus.DRAFT && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
             throw new IllegalStateException("Chỉ được sửa khi bài kiểm tra chưa bắt đầu");
         }
-        if (examRepository.existsSubmittedSessionByExamId(exam.getId())) {
+        if (assessmentRepository.existsSubmittedSessionByAssessmentId(assessment.getId())) {
             throw new IllegalStateException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
         }
-        requireNoAttachedBlueprint(exam);
+        requireNoAttachedBlueprint(assessment);
         if (input.questions() == null || input.questions().isEmpty()) {
             throw new IllegalStateException("Section phải có ít nhất 1 câu hỏi");
         }
 
         for (var questionCommand : input.questions()) {
-            var question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, exam.getSchoolId(), false, false)
+            var question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, assessment.getSchoolId(), false, false)
                 .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionCommand.questionId()));
             boolean isOwner = currentUserId.equals(question.getCreatedBy());
             boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
@@ -110,11 +110,11 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
             }
         }
 
-        var paper = classTestPaperResolver.resolve(exam.getId(), input.paperId());
-        var order = examPaperSectionRepository.findByPaperId(paper.getId()).size() + 1;
+        var paper = classTestPaperResolver.resolve(assessment.getId(), input.paperId());
+        var order = assessmentPaperSectionRepository.findByPaperId(paper.getId()).size() + 1;
 
         var now = Instant.now();
-        var paperSection = examPaperSectionRepository.save(new ExamPaperSection(
+        var paperSection = assessmentPaperSectionRepository.save(new AssessmentPaperSection(
             paper.getId(), order, input.title(), input.instruction(), null, input.weight(), now, now, currentUserId, currentUserId
         ));
 
@@ -122,7 +122,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         var weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
         for (int i = 0; i < questions.size(); i++) {
             var questionId = questions.get(i).questionId();
-            examPaperItemRepository.save(new ExamPaperItem(
+            assessmentPaperItemRepository.save(new AssessmentPaperItem(
                 null,
                 paperSection.getId(),
                 paper.getId(),
@@ -130,28 +130,28 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
                 i + 1,
                 weights.get(i)
             ));
-            examQuestionSecureLockService.lockQuestionForExam(
-                questionId, exam.getId(), ExamSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
+            assessmentQuestionSecureLockService.lockQuestionForAssessment(
+                questionId, assessment.getId(), AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
             );
         }
         if (input.weight() == null) {
             rebalanceSectionWeights(paper.getId(), now, currentUserId);
         } else {
-            var sections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
+            var sections = assessmentPaperSectionRepository.findByPaperId(paper.getId()).stream()
                 .sorted(Comparator.comparingInt(section -> section.getOrder()))
                 .toList();
             ClassTestSectionWeightPolicy.validateStoredWeights(sections, "Tổng trọng số section phải bằng 1.00");
         }
 
-        exam.setUpdatedAt(now);
-        exam.setUpdatedBy(currentUserId);
-        var saved = examRepository.save(exam);
-        recalculateExamTimeDurationService.recalculate(exam.getId());
-        return ExamDtoMapper.toDto(saved);
+        assessment.setUpdatedAt(now);
+        assessment.setUpdatedBy(currentUserId);
+        var saved = assessmentRepository.save(assessment);
+        recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
+        return AssessmentDtoMapper.toDto(saved);
     }
 
-    private void requireNoAttachedBlueprint(Exam exam) {
-        if (exam.getBlueprintId() != null) {
+    private void requireNoAttachedBlueprint(Assessment assessment) {
+        if (assessment.getBlueprintId() != null) {
             throw new IllegalStateException(
                 "Bài đang dùng blueprint dùng chung, không thể sửa câu hỏi trực tiếp — dùng \"Đổi blueprint khác\" ở tab Blueprint để thay đổi cấu trúc");
         }
@@ -170,7 +170,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
     }
 
     private void rebalanceSectionWeights(UUID paperId, Instant now, UUID currentUserId) {
-        var sections = examPaperSectionRepository.findByPaperId(paperId).stream()
+        var sections = assessmentPaperSectionRepository.findByPaperId(paperId).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
         var weights = distributeEqualWeights(sections.size());
@@ -179,7 +179,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
             section.setWeight(weights.get(i));
             section.setUpdatedAt(now);
             section.setUpdatedBy(currentUserId);
-            examPaperSectionRepository.save(section);
+            assessmentPaperSectionRepository.save(section);
         }
     }
 }

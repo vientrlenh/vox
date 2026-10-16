@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.usecase.subscription;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteDraftSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
@@ -27,7 +27,7 @@ public class DeleteDraftSubscriptionPlanUseCase implements IUseCase<DeleteDraftS
     @Transactional
     public Void execute(DeleteDraftSubscriptionPlanCommand input) {
         var plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
 
         // Gói đã publish thì có thể đã có trường mua, và kể cả chưa có thì dòng đơn hàng
         // (order_items.item_id) vẫn trỏ về id này -- xóa cứng là làm mồ côi chứng từ. Cột đó cố ý

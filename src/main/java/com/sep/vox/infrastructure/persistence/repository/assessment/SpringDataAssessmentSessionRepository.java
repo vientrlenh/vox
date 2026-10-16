@@ -22,12 +22,12 @@ public interface SpringDataAssessmentSessionRepository extends JpaRepository<Ass
     // thái dương (IN_PROGRESS, SUBMITTED...) nên tự khắc không dính DELETED.
     @Query("""
         SELECT s FROM AssessmentSessionJpaEntity s
-        WHERE s.examId = :examId AND s.candidateId = :candidateId AND s.status <> 'DELETED'
+        WHERE s.assessmentId = :assessmentId AND s.candidateId = :candidateId AND s.status <> 'DELETED'
         ORDER BY s.startedAt DESC
         LIMIT 1
     """)
-    Optional<AssessmentSessionJpaEntity> findTopByExamIdAndCandidateIdOrderByStartedAtDesc(
-        @Param("examId") UUID examId, @Param("candidateId") UUID candidateId);
+    Optional<AssessmentSessionJpaEntity> findTopByAssessmentIdAndCandidateIdOrderByStartedAtDesc(
+        @Param("assessmentId") UUID assessmentId, @Param("candidateId") UUID candidateId);
 
     @Query("""
         SELECT s FROM AssessmentSessionJpaEntity s
@@ -60,16 +60,16 @@ public interface SpringDataAssessmentSessionRepository extends JpaRepository<Ass
         SELECT COUNT(s)
         FROM AssessmentSessionJpaEntity s
         JOIN AssessmentCandidateJpaEntity c ON c.id = s.candidateId
-        WHERE s.examId = :examId
+        WHERE s.assessmentId = :assessmentId
           AND s.status IN ('IN_PROGRESS', 'INTERRUPTED')
           AND c.blockedAt IS NULL
     """)
-    long countActiveByExamId(@Param("examId") UUID examId);
+    long countActiveByAssessmentId(@Param("assessmentId") UUID assessmentId);
 
     @Query("""
         SELECT s
         FROM AssessmentSessionJpaEntity s
-        JOIN AssessmentJpaEntity e ON e.id = s.examId
+        JOIN AssessmentJpaEntity e ON e.id = s.assessmentId
         JOIN AssessmentCandidateJpaEntity c ON c.id = s.candidateId
         WHERE (e.status IN ('CLOSED', 'CANCELLED') OR (e.closeAt IS NOT NULL AND e.closeAt < :now))
           AND (
@@ -98,14 +98,14 @@ public interface SpringDataAssessmentSessionRepository extends JpaRepository<Ass
         ORDER BY sch.endDate ASC, s.startedAt ASC
     """)
     List<AssessmentSessionJpaEntity> findPastScheduleEndCandidates(@Param("threshold") java.time.Instant threshold);
-    Optional<AssessmentSessionJpaEntity> findByExamIdAndCandidateIdAndStatus(UUID examId, UUID candidateId, String status);
+    Optional<AssessmentSessionJpaEntity> findByAssessmentIdAndCandidateIdAndStatus(UUID assessmentId, UUID candidateId, String status);
     Optional<AssessmentSessionJpaEntity> findByIdAndStatusIn(UUID id, Collection<String> statuses);
 
     @Query("""
         SELECT s 
         FROM AssessmentSessionJpaEntity s 
         JOIN AssessmentJpaEntity e 
-            ON s.examId = e.id 
+            ON s.assessmentId = e.id 
         WHERE s.id IN :ids
             AND s.startedAt <= :now 
             AND s.submittedAt IS NULL 

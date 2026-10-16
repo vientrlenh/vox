@@ -9,7 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_item_evaluation_turns")
+@Table(name = "assessment_item_evaluation_turns")
 public class AssessmentItemEvaluationTurnJpaEntity {
     @Id
     @Column(name = "id", nullable = false, updatable = false)
@@ -23,7 +23,7 @@ public class AssessmentItemEvaluationTurnJpaEntity {
 
     @Column(name = "turn_type", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_item_evaluation_turns_turn_type_valid",
+            name = "chk_assessment_item_evaluation_turns_turn_type_valid",
             constraint = "turn_type IN ('MAIN', 'FOLLOWUP')"
         )
     }

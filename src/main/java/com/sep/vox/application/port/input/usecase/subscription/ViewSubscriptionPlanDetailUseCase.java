@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.usecase.subscription;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewSubscriptionPlanDetailQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -28,13 +28,13 @@ public class ViewSubscriptionPlanDetailUseCase implements IUseCase<ViewSubscript
     @Transactional(readOnly = true)
     public SubscriptionPlanDto execute(ViewSubscriptionPlanDetailQuery input) {
         var plan = subscriptionPlanRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
 
         // Chỉ System Admin mới quản lý gói nên được xem mọi trạng thái (DRAFT/ARCHIVED để biết
         // gói nào chưa xuất bản/đã ngừng bán). Các role khác chỉ được xem gói đang bán — ẩn hẳn
         // sự tồn tại của gói DRAFT/ARCHIVED thay vì trả lỗi quyền, đồng nhất với ViewPlansUseCase.
         if (!userContextPort.isSystemAdmin() && plan.getStatus() != SubscriptionPlanStatus.ACTIVE) {
-            throw new NotFoundException("Không tìm thấy gói");
+            throw new ResourceNotFoundException("Không tìm thấy gói");
         }
 
         return SubscriptionPlanDto.toDto(plan);

@@ -57,24 +57,24 @@ public class SchoolBalanceEntryJpaEntity {
     @Column(name = "order_id", updatable = false)
     private UUID orderId;
 
-    @Column(name = "exam_session_id", updatable = false)
-    private UUID examSessionId;
+    @Column(name = "assessment_session_id", updatable = false)
+    private UUID assessmentSessionId;
 
-    // Cột RIÊNG chứ không dùng chung exam_session_id cho cả hai loại phiên: mỗi cột ở đây là một khóa
-    // ngoại được thật (fk_..._exam_session -> exam_sessions), nên nhét practice session id vào cột
-    // exam sẽ vi phạm FK. Đây cũng đúng lựa chọn "cột CÓ KIỂU" mà bảng này đã cố ý dùng thay cho cặp
+    // Cột RIÊNG chứ không dùng chung assessment_session_id cho cả hai loại phiên: mỗi cột ở đây là một khóa
+    // ngoại được thật (fk_..._assessment_session -> assessment_sessions), nên nhét practice session id vào cột
+    // assessment sẽ vi phạm FK. Đây cũng đúng lựa chọn "cột CÓ KIỂU" mà bảng này đã cố ý dùng thay cho cặp
     // (source_type, source_id) đa hình kiểu invoice cũ -- xem javadoc SchoolBalanceEntry.
     //
     // Ràng buộc chk_school_balance_entries_overage_traceable phải đòi ĐÚNG MỘT trong hai cột được set
-    // với OVERAGE_CHARGE (num_nonnulls(exam_session_id, practice_session_id) = 1), không phải chỉ
-    // riêng exam_session_id NOT NULL như trước.
+    // với OVERAGE_CHARGE (num_nonnulls(assessment_session_id, practice_session_id) = 1), không phải chỉ
+    // riêng assessment_session_id NOT NULL như trước.
     @Column(name = "practice_session_id", updatable = false)
     private UUID practiceSessionId;
 
     @Column(name = "quota_type", updatable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_school_balance_entries_quota_type_valid",
-            constraint = "quota_type IS NULL OR quota_type IN ('EXAM', 'PRACTICE')"
+            constraint = "quota_type IS NULL OR quota_type IN ('ASSESSMENT', 'PRACTICE')"
         )
     })
     private String quotaType;
@@ -100,7 +100,7 @@ public class SchoolBalanceEntryJpaEntity {
     protected SchoolBalanceEntryJpaEntity() {}
 
     public SchoolBalanceEntryJpaEntity(UUID id, UUID schoolId, UUID subscriptionId, String entryType,
-            BigDecimal amountVnd, BigDecimal balanceAfterVnd, UUID orderId, UUID examSessionId,
+            BigDecimal amountVnd, BigDecimal balanceAfterVnd, UUID orderId, UUID assessmentSessionId,
             UUID practiceSessionId, String quotaType,
             BigDecimal costUsd, BigDecimal fxRateUsed, UUID actorId, String reason, Instant occurredAt) {
         this.id = id;
@@ -110,7 +110,7 @@ public class SchoolBalanceEntryJpaEntity {
         this.amountVnd = amountVnd;
         this.balanceAfterVnd = balanceAfterVnd;
         this.orderId = orderId;
-        this.examSessionId = examSessionId;
+        this.assessmentSessionId = assessmentSessionId;
         this.practiceSessionId = practiceSessionId;
         this.quotaType = quotaType;
         this.costUsd = costUsd;
@@ -176,12 +176,12 @@ public class SchoolBalanceEntryJpaEntity {
         this.orderId = orderId;
     }
 
-    public UUID getExamSessionId() {
-        return examSessionId;
+    public UUID getAssessmentSessionId() {
+        return assessmentSessionId;
     }
 
-    public void setExamSessionId(UUID examSessionId) {
-        this.examSessionId = examSessionId;
+    public void setAssessmentSessionId(UUID assessmentSessionId) {
+        this.assessmentSessionId = assessmentSessionId;
     }
 
     public UUID getPracticeSessionId() {

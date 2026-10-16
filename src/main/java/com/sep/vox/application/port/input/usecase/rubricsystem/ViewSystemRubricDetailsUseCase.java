@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSystemRubricDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -45,7 +45,7 @@ public class ViewSystemRubricDetailsUseCase implements IUseCase<ViewSystemRubric
 
         // 2. Lấy bộ Rubric
         Rubric rubric = rubricRepository.findById(query.rubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
 
         // 3. Đảm bảo đây là Rubric của Hệ thống
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {

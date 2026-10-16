@@ -15,10 +15,10 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(
-    name = "exam_recordings",
+    name = "assessment_recordings",
     uniqueConstraints = @UniqueConstraint(
-        name = "uq_exam_recordings_session_stream_source",
-        columnNames = {"exam_session_id", "stream_type", "source"}
+        name = "uq_assessment_recordings_session_stream_source",
+        columnNames = {"assessment_session_id", "stream_type", "source"}
     )
 )
 public class AssessmentRecordingJpaEntity {
@@ -33,15 +33,15 @@ public class AssessmentRecordingJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "exam_session_id", nullable = false, updatable = false)
-    private UUID examSessionId;
+    @Column(name = "assessment_session_id", nullable = false, updatable = false)
+    private UUID assessmentSessionId;
 
     @Column(name = "candidate_id", nullable = false, updatable = false)
     private UUID candidateId;
 
     @Column(name = "stream_type", nullable = false, updatable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_recordings_stream_type_valid", 
+            name = "chk_assessment_recordings_stream_type_valid", 
             constraint = "stream_type IN ('SCREEN', 'CAMERA')"
         )
     })
@@ -55,7 +55,7 @@ public class AssessmentRecordingJpaEntity {
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_recordings_status_valid", 
+            name = "chk_assessment_recordings_status_valid", 
             constraint = "status IN ('PROCESSING', 'READY', 'PARTIAL', 'FAILED', 'ABANDONED')"
         )
     })
@@ -80,11 +80,11 @@ public class AssessmentRecordingJpaEntity {
 
     protected AssessmentRecordingJpaEntity() {}
 
-    public AssessmentRecordingJpaEntity(UUID id, UUID examSessionId, UUID candidateId, String streamType, String bucket, String s3Key, 
+    public AssessmentRecordingJpaEntity(UUID id, UUID assessmentSessionId, UUID candidateId, String streamType, String bucket, String s3Key, 
             String status, Long sizeBytes, Integer durationSeconds, String source, Instant createdAt,
             Instant assembledAt) {
         this.id = id;
-        this.examSessionId = examSessionId;
+        this.assessmentSessionId = assessmentSessionId;
         this.candidateId = candidateId;
         this.streamType = streamType;
         this.bucket = bucket; 
@@ -105,12 +105,12 @@ public class AssessmentRecordingJpaEntity {
         this.id = id;
     }
 
-    public UUID getExamSessionId() {
-        return examSessionId;
+    public UUID getAssessmentSessionId() {
+        return assessmentSessionId;
     }
 
-    public void setExamSessionId(UUID examSessionId) {
-        this.examSessionId = examSessionId;
+    public void setAssessmentSessionId(UUID assessmentSessionId) {
+        this.assessmentSessionId = assessmentSessionId;
     }
 
     public UUID getCandidateId() {

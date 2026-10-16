@@ -34,23 +34,23 @@ public class AssessmentSecurePoolRepositoryImpl implements AssessmentSecurePoolR
     }
 
     @Override
-    public Optional<AssessmentSecurePool> findByExamId(UUID examId) {
-        return springDataAssessmentSecurePoolRepository.findByExamId(examId)
+    public Optional<AssessmentSecurePool> findByAssessmentId(UUID assessmentId) {
+        return springDataAssessmentSecurePoolRepository.findByAssessmentId(assessmentId)
             .map(AssessmentSecurePoolMapper::toDomain);
     }
 
     @Override
-    public List<AssessmentSecurePool> findByExamIdIn(Collection<UUID> examIds) {
-        if (examIds.isEmpty()) {
+    public List<AssessmentSecurePool> findByAssessmentIdIn(Collection<UUID> assessmentIds) {
+        if (assessmentIds.isEmpty()) {
             return List.of();
         }
-        return springDataAssessmentSecurePoolRepository.findByExamIdIn(examIds).stream()
+        return springDataAssessmentSecurePoolRepository.findByAssessmentIdIn(assessmentIds).stream()
             .map(AssessmentSecurePoolMapper::toDomain)
             .toList();
     }
 
     @Override
-    public void deleteByExamId(UUID examId) {
-        springDataAssessmentSecurePoolRepository.deleteByExamId(examId);
+    public void deleteByAssessmentId(UUID assessmentId) {
+        springDataAssessmentSecurePoolRepository.deleteByAssessmentId(assessmentId);
     }
 }

@@ -14,7 +14,7 @@ public interface SpringDataAssessmentProctoringAlertRepository extends JpaReposi
 
     boolean existsByEventId(String eventId);
 
-    List<AssessmentProctoringAlertJpaEntity> findByExamSessionIdOrderByCapturedAtAsc(UUID examSessionId);
+    List<AssessmentProctoringAlertJpaEntity> findByAssessmentSessionIdOrderByCapturedAtAsc(UUID assessmentSessionId);
 
     /**
      * Phiên này có cảnh báo nào thuộc nhóm đặt nghi vấn về LIÊM CHÍNH của bài không.
@@ -32,11 +32,11 @@ public interface SpringDataAssessmentProctoringAlertRepository extends JpaReposi
      */
     @Query("""
         SELECT COUNT(alert) > 0 FROM AssessmentProctoringAlertJpaEntity alert
-        WHERE alert.examSessionId = :examSessionId
+        WHERE alert.assessmentSessionId = :assessmentSessionId
           AND UPPER(TRIM(alert.alertType)) IN :alertTypes
     """)
     boolean existsIntegrityAlert(
-        @Param("examSessionId") UUID examSessionId,
+        @Param("assessmentSessionId") UUID assessmentSessionId,
         @Param("alertTypes") Collection<String> alertTypes);
 
     /**
@@ -48,7 +48,7 @@ public interface SpringDataAssessmentProctoringAlertRepository extends JpaReposi
      */
     @Query("""
         SELECT alert FROM AssessmentProctoringAlertJpaEntity alert
-        WHERE alert.examSessionId IN (
+        WHERE alert.assessmentSessionId IN (
             SELECT session.id FROM AssessmentSessionJpaEntity session
             JOIN AssessmentCandidateJpaEntity candidate ON candidate.id = session.candidateId
             WHERE candidate.scheduleId = :scheduleId

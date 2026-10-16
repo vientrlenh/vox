@@ -22,19 +22,19 @@ public class AssessmentRecordingRepositoryImpl implements AssessmentRecordingRep
     }
 
     @Override
-    public List<AssessmentRecording> findByExamSessionId(UUID examSessionId) {
-        return springDataAssessmentRecordingRepository.findByExamSessionId(examSessionId)
+    public List<AssessmentRecording> findByAssessmentSessionId(UUID assessmentSessionId) {
+        return springDataAssessmentRecordingRepository.findByAssessmentSessionId(assessmentSessionId)
             .stream()
             .map(AssessmentRecordingMapper::toDomain)
             .toList();
     }
 
     @Override
-    public Optional<AssessmentRecording> findByExamSessionIdAndStreamTypeAndSource(
-        UUID examSessionId, AssessmentRequiredStreamType streamType, String source
+    public Optional<AssessmentRecording> findByAssessmentSessionIdAndStreamTypeAndSource(
+        UUID assessmentSessionId, AssessmentRequiredStreamType streamType, String source
     ) {
         return springDataAssessmentRecordingRepository
-            .findByExamSessionIdAndStreamTypeAndSource(examSessionId, streamType.name(), source)
+            .findByAssessmentSessionIdAndStreamTypeAndSource(assessmentSessionId, streamType.name(), source)
             .map(AssessmentRecordingMapper::toDomain);
     }
 
@@ -45,7 +45,7 @@ public class AssessmentRecordingRepositoryImpl implements AssessmentRecordingRep
     }
 
     @Override
-    public void deleteByExamSessionId(UUID examSessionId) {
-        springDataAssessmentRecordingRepository.deleteByExamSessionId(examSessionId);
+    public void deleteByAssessmentSessionId(UUID assessmentSessionId) {
+        springDataAssessmentRecordingRepository.deleteByAssessmentSessionId(assessmentSessionId);
     }
 }

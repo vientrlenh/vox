@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ForceSuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionSuspensionNotificationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -16,7 +16,7 @@ import com.sep.vox.domain.model.subscription.SchoolSubscriptionEvent;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
 import com.sep.vox.domain.repository.SchoolSubscriptionEventRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
-import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentScheduleRepository;
 
 /**
  * System Admin cưỡng chế cắt quyền dùng NGAY LẬP TỨC -- dùng khi phát hiện trường vi phạm (gian
@@ -35,19 +35,19 @@ public class ForceSuspendSubscriptionUseCase implements IUseCase<ForceSuspendSub
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolSubscriptionEventRepository schoolSubscriptionEventRepository;
     private final SchoolSubscriptionSuspensionNotificationService suspensionNotificationService;
-    private final ExamScheduleRepository examScheduleRepository;
+    private final AssessmentScheduleRepository assessmentScheduleRepository;
     private final UserContextPort userContextPort;
 
     public ForceSuspendSubscriptionUseCase(
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SchoolSubscriptionEventRepository schoolSubscriptionEventRepository,
             SchoolSubscriptionSuspensionNotificationService suspensionNotificationService,
-            ExamScheduleRepository examScheduleRepository,
+            AssessmentScheduleRepository assessmentScheduleRepository,
             UserContextPort userContextPort) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.schoolSubscriptionEventRepository = schoolSubscriptionEventRepository;
         this.suspensionNotificationService = suspensionNotificationService;
-        this.examScheduleRepository = examScheduleRepository;
+        this.assessmentScheduleRepository = assessmentScheduleRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -63,7 +63,7 @@ public class ForceSuspendSubscriptionUseCase implements IUseCase<ForceSuspendSub
         }
 
         var subscription = schoolSubscriptionRepository.findById(input.subscriptionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đăng ký"));
         if (subscription.getStatus() != SchoolSubscriptionStatus.ACTIVE) {
             throw new IllegalStateException("Chỉ đình chỉ được gói đang ở trạng thái đang hoạt động");
         }
@@ -71,9 +71,9 @@ public class ForceSuspendSubscriptionUseCase implements IUseCase<ForceSuspendSub
         var now = Instant.now();
         // Cắt quyền giữa ca thi là làm hỏng bài của học sinh đang ngồi trong phòng -- lỗi không thuộc
         // về các em. Bắt đợi hết ca rồi đình chỉ: chậm vài tiếng, đổi lại không ai mất bài.
-        var hasOngoingExam = examScheduleRepository.findBySchoolId(subscription.getSchoolId()).stream()
+        var hasOngoingAssessment = assessmentScheduleRepository.findBySchoolId(subscription.getSchoolId()).stream()
             .anyMatch(schedule -> schedule.isOngoingAt(now));
-        if (hasOngoingExam) {
+        if (hasOngoingAssessment) {
             throw new IllegalStateException(
                 "Trường đang có ca thi diễn ra, không thể đình chỉ ngay bây giờ. Vui lòng thử lại sau khi ca thi kết thúc.");
         }

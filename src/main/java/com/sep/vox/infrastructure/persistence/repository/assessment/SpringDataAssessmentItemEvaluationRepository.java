@@ -52,7 +52,7 @@ public interface SpringDataAssessmentItemEvaluationRepository extends JpaReposit
     // kết quả của học sinh mất nội dung câu hỏi ngay khi có người chấm lại.
     // UNDER_REVIEW loại tường minh: đó là báo cáo phúc khảo chưa công bố.
     // ORDER BY ... LIMIT 1 thay vì MAX(evaluatedAt) — hai hàng trùng mốc thời gian thì
-    // phép so bằng trả về cả hai (cùng lý do đã ghi ở JpaExamGradingQueryRepository).
+    // phép so bằng trả về cả hai (cùng lý do đã ghi ở JpaAssessmentGradingQueryRepository).
     @Query("""
         SELECT e FROM AssessmentItemEvaluationJpaEntity e
         WHERE e.responseId = :responseId

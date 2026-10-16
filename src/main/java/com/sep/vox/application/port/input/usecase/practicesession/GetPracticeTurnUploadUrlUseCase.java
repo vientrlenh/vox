@@ -6,10 +6,10 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.StoragePort;
-import com.sep.vox.application.response.input.examturn.TurnUploadUrlResponse;
+import com.sep.vox.application.response.input.assessmentturn.TurnUploadUrlResponse;
 
 /**
- * Mirror của GetTurnUploadUrlUseCase (examturn) cho luyện tập -- cùng StoragePort, khác
+ * Mirror của GetTurnUploadUrlUseCase (assessmentturn) cho luyện tập -- cùng StoragePort, khác
  * key prefix. Gọi từ endpoint nội bộ (Python, không phải client) vì Python là bên đang giữ
  * buffer audio của turn, xem PracticeAttemptConnection._write_turn_wav.
  */

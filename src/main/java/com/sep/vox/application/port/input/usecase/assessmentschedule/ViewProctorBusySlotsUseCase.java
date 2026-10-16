@@ -5,36 +5,36 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewProctorBusySlotsQuery;
-import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
+import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.assessmentschedule.ProctorBusySlotResponse;
-import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
-import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentScheduleProctorRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentScheduleRepository;
 
 /**
  * Ai trong danh sách giáo viên đang bận vào đúng khung giờ của một ca thi.
  *
  * <p>Chỉ để giao diện làm mờ sẵn người bận kèm lý do — luật chặn thật nằm ở
- * {@link com.sep.vox.application.port.input.service.ExamScheduleProctorConflictValidator}, chạy
+ * {@link com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator}, chạy
  * trong transaction lúc ghi. Đây không phải lớp bảo vệ.
  */
 @Service
 public class ViewProctorBusySlotsUseCase
         implements IUseCase<ViewProctorBusySlotsQuery, List<ProctorBusySlotResponse>> {
 
-    private final ExamScheduleRepository examScheduleRepository;
-    private final ExamScheduleProctorRepository examScheduleProctorRepository;
-    private final ExamDirectoryAccessService examDirectoryAccessService;
+    private final AssessmentScheduleRepository assessmentScheduleRepository;
+    private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
+    private final AssessmentDirectoryAccessService assessmentDirectoryAccessService;
 
     public ViewProctorBusySlotsUseCase(
-            ExamScheduleRepository examScheduleRepository,
-            ExamScheduleProctorRepository examScheduleProctorRepository,
-            ExamDirectoryAccessService examDirectoryAccessService) {
-        this.examScheduleRepository = examScheduleRepository;
-        this.examScheduleProctorRepository = examScheduleProctorRepository;
-        this.examDirectoryAccessService = examDirectoryAccessService;
+            AssessmentScheduleRepository assessmentScheduleRepository,
+            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
+            AssessmentDirectoryAccessService assessmentDirectoryAccessService) {
+        this.assessmentScheduleRepository = assessmentScheduleRepository;
+        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
+        this.assessmentDirectoryAccessService = assessmentDirectoryAccessService;
     }
 
     @Override
@@ -43,13 +43,13 @@ public class ViewProctorBusySlotsUseCase
         if (input.teacherIds() == null || input.teacherIds().isEmpty()) {
             return List.of();
         }
-        var schedule = examScheduleRepository.findById(input.scheduleId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+        var schedule = assessmentScheduleRepository.findById(input.scheduleId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
         // Cùng luật quyền với danh bạ giám thị: người xem được danh sách giáo viên thì cũng được
         // biết ai trong số đó đang bận.
-        examDirectoryAccessService.resolveByExamId(schedule.getExamId());
+        assessmentDirectoryAccessService.resolveByAssessmentId(schedule.getAssessmentId());
 
-        return examScheduleProctorRepository.findConflictsForTeachers(
+        return assessmentScheduleProctorRepository.findConflictsForTeachers(
                 input.teacherIds(), schedule.getStartDate(), schedule.getEndDate(), schedule.getId()).stream()
             .map(conflict -> new ProctorBusySlotResponse(
                 conflict.teacherId(),

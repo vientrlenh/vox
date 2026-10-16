@@ -19,27 +19,27 @@ import jakarta.persistence.LockModeType;
 
 public interface SpringDataAssessmentScheduleRepository extends JpaRepository<AssessmentScheduleJpaEntity, UUID> {
 
-  List<AssessmentScheduleJpaEntity> findByExamIdAndStatusNot(UUID examId, String status);
+  List<AssessmentScheduleJpaEntity> findByAssessmentIdAndStatusNot(UUID assessmentId, String status);
 
-  List<AssessmentScheduleJpaEntity> findByExamIdInAndStatusNot(java.util.Collection<UUID> examIds, String status);
+  List<AssessmentScheduleJpaEntity> findByAssessmentIdInAndStatusNot(java.util.Collection<UUID> assessmentIds, String status);
 
   List<AssessmentScheduleJpaEntity> findByIdIn(java.util.Collection<UUID> ids);
 
   List<AssessmentScheduleJpaEntity> findByIdInAndStatusNot(java.util.Collection<UUID> ids, String status);
 
-  @Query("SELECT s.id FROM AssessmentScheduleJpaEntity s WHERE s.examId = :examId")
-  List<UUID> findAllIdsByExamId(@Param("examId") UUID examId);
+  @Query("SELECT s.id FROM AssessmentScheduleJpaEntity s WHERE s.assessmentId = :assessmentId")
+  List<UUID> findAllIdsByAssessmentId(@Param("assessmentId") UUID assessmentId);
 
-  void deleteByExamId(UUID examId);
+  void deleteByAssessmentId(UUID assessmentId);
 
   @Query("""
               SELECT s FROM AssessmentScheduleJpaEntity s
-              WHERE s.examId = :examId
+              WHERE s.assessmentId = :assessmentId
                       AND s.status = 'PUBLISHED'
                       AND s.startDate <= :now AND s.endDate > :now
       """)
-  List<AssessmentScheduleJpaEntity> findByExamIdAndInSchedule(
-      @Param("examId") UUID examId,
+  List<AssessmentScheduleJpaEntity> findByAssessmentIdAndInSchedule(
+      @Param("assessmentId") UUID assessmentId,
       @Param("now") Instant now);
 
   @Query("""
@@ -52,7 +52,7 @@ public interface SpringDataAssessmentScheduleRepository extends JpaRepository<As
   @Query("""
       SELECT s FROM AssessmentScheduleJpaEntity s
       WHERE s.status <> 'DELETED'
-        AND s.examId IN (SELECT e.id FROM AssessmentJpaEntity e WHERE e.schoolId = :schoolId)
+        AND s.assessmentId IN (SELECT e.id FROM AssessmentJpaEntity e WHERE e.schoolId = :schoolId)
       """)
   List<AssessmentScheduleJpaEntity> findBySchoolId(@Param("schoolId") UUID schoolId);
 
@@ -113,7 +113,7 @@ public interface SpringDataAssessmentScheduleRepository extends JpaRepository<As
   @Query("""
       SELECT s FROM AssessmentScheduleJpaEntity s 
       JOIN AssessmentJpaEntity e 
-        ON s.examId = e.id 
+        ON s.assessmentId = e.id 
       WHERE s.id IN :ids
         AND s.startDate <= :now
         AND s.endDate > :now

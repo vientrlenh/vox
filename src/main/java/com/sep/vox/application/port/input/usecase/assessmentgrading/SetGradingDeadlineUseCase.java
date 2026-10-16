@@ -9,9 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.command.SetGradingDeadlineCommand;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentGradingAssignmentRepository;
 
 /**
  * Admin đặt hoặc sửa hạn chấm, một hay nhiều bài cùng lúc.
@@ -22,20 +22,20 @@ import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
 @Service
 public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCommand, List<UUID>> {
 
-    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
-    private final ExamGradingAccessService examGradingAccessService;
+    private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
+    private final AssessmentGradingAccessService assessmentGradingAccessService;
 
     public SetGradingDeadlineUseCase(
-            ExamGradingAssignmentRepository examGradingAssignmentRepository,
-            ExamGradingAccessService examGradingAccessService) {
-        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
-        this.examGradingAccessService = examGradingAccessService;
+            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
+            AssessmentGradingAccessService assessmentGradingAccessService) {
+        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
+        this.assessmentGradingAccessService = assessmentGradingAccessService;
     }
 
     @Override
     @Transactional
     public List<UUID> execute(SetGradingDeadlineCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
+        var currentUserId = assessmentGradingAccessService.requireActiveUserId();
         var assignmentIds = command.assignmentIds() == null ? List.<UUID>of() : command.assignmentIds();
         if (assignmentIds.isEmpty()) {
             throw new IllegalArgumentException("Phải chọn ít nhất một phân công để đặt hạn.");
@@ -52,9 +52,9 @@ public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCom
         // khoá chéo và deadlock. Sắp trước cho mọi transaction đi cùng một chiều.
         // Thứ tự đầu vào không ảnh hưởng kết quả trả về nên sắp lại là vô hại.
         var lockOrderedIds = assignmentIds.stream().sorted().toList();
-        var contexts = new ArrayList<ExamGradingAccessService.GradingContext>();
+        var contexts = new ArrayList<AssessmentGradingAccessService.GradingContext>();
         for (var assignmentId : lockOrderedIds) {
-            var context = examGradingAccessService.loadForUpdate(assignmentId);
+            var context = assessmentGradingAccessService.loadForUpdate(assignmentId);
             if (context.assignment().isCompleted()) {
                 throw new IllegalStateException("Không thể đặt hạn cho phân công đã chốt.");
             }
@@ -63,9 +63,9 @@ public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCom
         contexts.stream()
             .map(context -> context.schoolId())
             .distinct()
-            .forEach(schoolId -> examGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId));
+            .forEach(schoolId -> assessmentGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId));
         // Bài trên lớp không có hạn chấm hành chính — nhà trường không đặt hạn hộ giáo viên.
-        examGradingAccessService.rejectClassTestCoordination(
+        assessmentGradingAccessService.rejectClassTestCoordination(
             contexts.stream().map(context -> context.candidateResult().getId()).toList());
 
         var updated = contexts.stream()
@@ -76,7 +76,7 @@ public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCom
                 return assignment;
             })
             .toList();
-        return examGradingAssignmentRepository.saveAll(updated).stream()
+        return assessmentGradingAssignmentRepository.saveAll(updated).stream()
             .map(assignment -> assignment.getId())
             .toList();
     }

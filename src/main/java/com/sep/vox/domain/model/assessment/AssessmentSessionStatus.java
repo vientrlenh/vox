@@ -13,17 +13,17 @@ public enum AssessmentSessionStatus {
     EXPIRED, // hết thời gian nộp
     GRADING_FAILED, // AI chấm lỗi
     /**
-     * Đã xoá mềm (xem {@code DeleteExamSessionUseCase}). Không phải một bước trong vòng đời bài thi
+     * Đã xoá mềm (xem {@code DeleteAssessmentSessionUseCase}). Không phải một bước trong vòng đời bài thi
      * mà là điểm dừng.
      *
-     * <p>KHÔNG bị Hibernate tự lọc -- {@code ExamSessionJpaEntity} cố tình không dùng
+     * <p>KHÔNG bị Hibernate tự lọc -- {@code AssessmentSessionJpaEntity} cố tình không dùng
      * {@code @SQLRestriction} (xem chú thích ở đó), vì quản trị trường/chủ tịch hội đồng vẫn phải
      * đọc được phiên đã xoá để giải trình. Nghĩa là {@code findByCandidateId} và mọi truy vấn khác
      * trên bảng này VẪN TRẢ VỀ dòng DELETED -- người viết truy vấn/luồng nghiệp vụ mới phải tự loại
      * nó ra khi cần, không có tấm lưới nào ở tầng ORM đỡ hộ.
      *
      * <p>Từng bị hiểu nhầm là có {@code @SQLRestriction} (chú thích cũ ở đây nói vậy, sai với thực
-     * tế) -- {@code UpdateExamStatusUseCase.requirePublishReadiness} là nạn nhân thật của hiểu nhầm
+     * tế) -- {@code UpdateAssessmentStatusUseCase.requirePublishReadiness} là nạn nhân thật của hiểu nhầm
      * đó: thiếu bộ lọc DELETED khiến một học sinh thi hỏng, bị xoá phiên, thi lại là chặn công bố
      * kết quả của CẢ KỲ THI vĩnh viễn.
      */

@@ -63,7 +63,7 @@ import com.sep.vox.domain.service.rubric.RubricScoringConsistencyValidator;
  * <p>Ghi chú lịch sử: trước đây chỗ này giải thích là cố ý KHÔNG dựng chính sách hệ thống, vì
  * {@code findCandidatePolicies} lọc {@code WHERE p.schoolId = :schoolId} nên chính sách không thuộc
  * trường nào sẽ không bao giờ được chọn. Lý do đó không còn mô tả đúng hệ thống đang chạy: hai hàm
- * phân giải phạm vi ấy nay là mã chết (đường chấm thật đọc {@code exams.assessment_policy_id}), và
+ * phân giải phạm vi ấy nay là mã chết (đường chấm thật đọc {@code assessments.assessment_policy_id}), và
  * quan trọng hơn, chính sách mẫu của hệ thống không tồn tại để chấm -- nó tồn tại để trường SAO VỀ
  * kèm bộ tiêu chí qua {@code CloneSystemRubricToSchoolUseCase}. Bản sao mới là bản đi chấm.
  *

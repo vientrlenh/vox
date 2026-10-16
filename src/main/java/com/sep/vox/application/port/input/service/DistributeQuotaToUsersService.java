@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.WalletDrawConfirmationRequiredException;
 import com.sep.vox.application.port.input.command.AllocateUserQuotaAmountCommand;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -300,7 +300,7 @@ public class DistributeQuotaToUsersService {
         // Vượt distributableVnd không còn bị từ chối thẳng nữa: phần vượt có thể ăn vào ví tự nạp của
         // trường (school_balances) -- CHỈ nới TRẦN, không giữ tiền, y hệt cách ConsumeQuotaService đã
         // tự động rút ví khi tiêu thật vượt pool. Đòi confirmWalletDraw vì ví đó dùng chung cho cả
-        // EXAM lẫn PRACTICE, quản trị viên phải biết mình đang ăn vào phần chung đó.
+        // ASSESSMENT lẫn PRACTICE, quản trị viên phải biết mình đang ăn vào phần chung đó.
         var overDistributableVnd = sumInRequest.add(sumOthers).subtract(distributableVnd);
         if (overDistributableVnd.signum() > 0) {
             if (overDistributableVnd.compareTo(walletHeadroomVnd) > 0) {
@@ -361,16 +361,16 @@ public class DistributeQuotaToUsersService {
 
     private SchoolSubscription findActiveSubscription(UUID schoolId) {
         return schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
-            .orElseThrow(() -> new NotFoundException("Trường chưa có gói subscription đang hoạt động"));
+            .orElseThrow(() -> new ResourceNotFoundException("Trường chưa có gói subscription đang hoạt động"));
     }
 
     private SchoolSubscriptionQuotaRecord findPool(UUID subscriptionId, QuotaType quotaType) {
         return subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, quotaType)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
     }
 
     private Role findRole(String roleCode) {
         return roleRepository.findByCode(roleCode)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò: " + roleCode));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò: " + roleCode));
     }
 }

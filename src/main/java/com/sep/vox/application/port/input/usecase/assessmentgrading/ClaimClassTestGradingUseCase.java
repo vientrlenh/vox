@@ -10,15 +10,15 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ClaimClassTestGradingCommand;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.model.assessment.ExamGradingAssignment;
-import com.sep.vox.domain.model.assessment.GradingRoundType;
-import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.model.assessment.AssessmentGradingAssignment;
+import com.sep.vox.domain.model.assessment.AssessmentGradingRoundType;
+import com.sep.vox.domain.repository.assessment.AssessmentCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentGradingAssignmentRepository;
 import com.sep.vox.domain.service.assessment.GradingRoundPolicy;
 
 /**
@@ -29,7 +29,7 @@ import com.sep.vox.domain.service.assessment.GradingRoundPolicy;
  * trên <em>mọi</em> kỳ thi, còn ở đây phạm vi đóng đúng bằng bài mà người gọi làm CHAIR.
  *
  * <p>Vòng {@code APPEAL} KHÔNG nhận qua đây: nó gắn với một đơn phúc khảo cụ thể nên
- * phải đi qua {@code AssignExamAppealReviewerUseCase} — chỗ duy nhất biết luật xung
+ * phải đi qua {@code AssignAssessmentAppealReviewerUseCase} — chỗ duy nhất biết luật xung
  * đột lợi ích và biết cách chuyển trạng thái đơn.
  *
  * <p>Validate hết rồi mới ghi: một dòng sai không được để lại phân công nửa vời của
@@ -39,24 +39,24 @@ import com.sep.vox.domain.service.assessment.GradingRoundPolicy;
 public class ClaimClassTestGradingUseCase
         implements IUseCase<ClaimClassTestGradingCommand, List<UUID>> {
 
-    private final ExamCandidateResultRepository examCandidateResultRepository;
-    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
-    private final ExamGradingAccessService examGradingAccessService;
+    private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
+    private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
+    private final AssessmentGradingAccessService assessmentGradingAccessService;
 
     public ClaimClassTestGradingUseCase(
-            ExamCandidateResultRepository examCandidateResultRepository,
-            ExamGradingAssignmentRepository examGradingAssignmentRepository,
-            ExamGradingAccessService examGradingAccessService) {
-        this.examCandidateResultRepository = examCandidateResultRepository;
-        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
-        this.examGradingAccessService = examGradingAccessService;
+            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
+            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
+            AssessmentGradingAccessService assessmentGradingAccessService) {
+        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
+        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
+        this.assessmentGradingAccessService = assessmentGradingAccessService;
     }
 
     @Override
     @Transactional
     public List<UUID> execute(ClaimClassTestGradingCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        examGradingAccessService.authorizeClassTestChair(command.examId(), currentUserId);
+        var currentUserId = assessmentGradingAccessService.requireActiveUserId();
+        assessmentGradingAccessService.authorizeClassTestChair(command.assessmentId(), currentUserId);
 
         var roundType = parseRoundType(command.roundType());
         var candidateResultIds = command.candidateResultIds() == null
@@ -65,40 +65,40 @@ public class ClaimClassTestGradingUseCase
             throw new IllegalArgumentException("Phải chọn ít nhất một bài để nhận chấm.");
         }
         if (new HashSet<>(candidateResultIds).size() != candidateResultIds.size()) {
-            throw new DuplicatedException("Không được chọn trùng bài.");
+            throw new ResourceDuplicatedException("Không được chọn trùng bài.");
         }
 
-        var resultsById = examCandidateResultRepository.findByIdIn(candidateResultIds).stream()
+        var resultsById = assessmentCandidateResultRepository.findByIdIn(candidateResultIds).stream()
             .collect(Collectors.toMap(result -> result.getId(), Function.identity(), (left, right) -> left));
 
         // Một query cho cả lô — pre-check để báo lỗi tiếng Việt thay vì để unique index
         // ném DataIntegrityViolation; index vẫn là chốt cuối khi có race.
-        var alreadyOpen = examGradingAssignmentRepository
+        var alreadyOpen = assessmentGradingAssignmentRepository
             .findOpenByCandidateResultIdIn(candidateResultIds).stream()
             .map(assignment -> assignment.getCandidateResultId())
             .collect(Collectors.toSet());
 
         var now = Instant.now();
-        var assignments = new java.util.ArrayList<ExamGradingAssignment>();
+        var assignments = new java.util.ArrayList<AssessmentGradingAssignment>();
         for (var candidateResultId : candidateResultIds) {
             var result = resultsById.get(candidateResultId);
             if (result == null) {
-                throw new NotFoundException("Không tìm thấy kết quả bài thi.");
+                throw new ResourceNotFoundException("Không tìm thấy kết quả bài thi.");
             }
-            // Chặn nhận bài của bài kiểm tra khác — examId ở URL mới là thứ đã qua phân quyền.
-            if (!command.examId().equals(result.getExamId())) {
-                throw new NotFoundException("Bài thi không thuộc bài kiểm tra này.");
+            // Chặn nhận bài của bài kiểm tra khác — assessmentId ở URL mới là thứ đã qua phân quyền.
+            if (!command.assessmentId().equals(result.getAssessmentId())) {
+                throw new ResourceNotFoundException("Bài thi không thuộc bài kiểm tra này.");
             }
             if (!GradingRoundPolicy.isAssignable(roundType, result.getStatus())) {
                 throw new IllegalStateException(
                     "Bài thi không ở trạng thái phù hợp với vòng chấm " + roundType.name() + ".");
             }
             if (alreadyOpen.contains(candidateResultId)) {
-                throw new DuplicatedException("Bài thi này đang được chấm.");
+                throw new ResourceDuplicatedException("Bài thi này đang được chấm.");
             }
 
             // scoreBefore chụp NGAY LÚC NHẬN — mốc đo độ lệch so với vòng trước.
-            assignments.add(ExamGradingAssignment.open(
+            assignments.add(AssessmentGradingAssignment.open(
                 candidateResultId,
                 currentUserId,
                 roundType,
@@ -110,22 +110,22 @@ public class ClaimClassTestGradingUseCase
             ));
         }
 
-        return examGradingAssignmentRepository.saveAll(assignments).stream()
+        return assessmentGradingAssignmentRepository.saveAll(assignments).stream()
             .map(assignment -> assignment.getId())
             .toList();
     }
 
-    private GradingRoundType parseRoundType(String value) {
+    private AssessmentGradingRoundType parseRoundType(String value) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("Phải chọn vòng chấm.");
         }
-        GradingRoundType roundType;
+        AssessmentGradingRoundType roundType;
         try {
-            roundType = GradingRoundType.valueOf(value);
+            roundType = AssessmentGradingRoundType.valueOf(value);
         } catch (IllegalArgumentException ignored) {
             throw new IllegalArgumentException("Vòng chấm không hợp lệ.");
         }
-        if (roundType == GradingRoundType.APPEAL) {
+        if (roundType == AssessmentGradingRoundType.APPEAL) {
             throw new IllegalArgumentException(
                 "Vòng phúc khảo được nhận từ màn đơn phúc khảo, không nhận ở đây.");
         }

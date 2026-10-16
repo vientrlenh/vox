@@ -5,16 +5,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.assessment.AssessmentItemResponseTurn;
+import com.sep.vox.domain.model.assessment.AssessmentItemAnswerTurn;
 
 public interface AssessmentItemResponseTurnRepository {
-    record SessionFollowupCount(UUID examItemResponseId, long followupCount, long totalTurns) {
+    record SessionFollowupCount(UUID assessmentItemAnswerId, long followupCount, long totalTurns) {
     }
 
-    AssessmentItemResponseTurn upsert(AssessmentItemResponseTurn turn);
-    List<AssessmentItemResponseTurn> findByExamItemResponseId(UUID examItemResponseId);
-    Optional<AssessmentItemResponseTurn> findByExamItemResponseIdAndTurnOrder(UUID examItemResponseId, int turnOrder);
-    Optional<AssessmentItemResponseTurn> findLatestByExamItemResponseId(UUID examItemResponseId);
+    AssessmentItemAnswerTurn upsert(AssessmentItemAnswerTurn turn);
+    List<AssessmentItemAnswerTurn> findByAssessmentItemAnswerId(UUID assessmentItemAnswerId);
+    Optional<AssessmentItemAnswerTurn> findByAssessmentItemAnswerIdAndTurnOrder(UUID assessmentItemAnswerId, int turnOrder);
+    Optional<AssessmentItemAnswerTurn> findLatestByAssessmentItemAnswerId(UUID assessmentItemAnswerId);
     List<SessionFollowupCount> countFollowupsBySessionId(UUID sessionId);
-    void deleteByExamItemResponseIdIn(Collection<UUID> examItemResponseIds);
+    void deleteByAssessmentItemAnswerIdIn(Collection<UUID> assessmentItemAnswerIds);
 }

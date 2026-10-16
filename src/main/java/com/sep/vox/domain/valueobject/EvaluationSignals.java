@@ -48,7 +48,7 @@ public record EvaluationSignals(
         // asrConfidence null khi dùng ASR không trả logprob) -- null KHÁC 0 (đã đo, tệ nhất),
         // nên chỉ validate range khi có giá trị thật, không ép non-null như trước (từng khiến
         // caller phải giả 0.0 cho "chưa đo được", hiện ra sai thành "audio quality 0%" ở
-        // frontend -- xem ExamEvaluationSignalMapper.clamp01).
+        // frontend -- xem AssessmentEvaluationSignalMapper.clamp01).
         if (taskRelevance != null && (taskRelevance.compareTo(BigDecimal.ZERO) < 0 || taskRelevance.compareTo(BigDecimal.ONE) > 0)) {
             throw new IllegalArgumentException("Relevance của task phải nằm trong khoảng 0 đến 1");
         }

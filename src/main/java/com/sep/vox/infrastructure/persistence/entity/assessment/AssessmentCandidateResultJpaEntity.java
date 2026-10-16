@@ -14,7 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_candidate_results")
+@Table(name = "assessment_candidate_results")
 public class AssessmentCandidateResultJpaEntity {
     
     @Id
@@ -28,8 +28,8 @@ public class AssessmentCandidateResultJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "exam_id", nullable = false, updatable = false)
-    private UUID examId;
+    @Column(name = "assessment_id", nullable = false, updatable = false)
+    private UUID assessmentId;
 
     @Column(name = "candidate_id", nullable = false, updatable = false)
     private UUID candidateId;
@@ -62,7 +62,7 @@ public class AssessmentCandidateResultJpaEntity {
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_candidate_results_status_valid",
+            name = "chk_assessment_candidate_results_status_valid",
             constraint = "status IN ('PENDING_REVIEW', 'RELEASED', 'APPEALED', 'RE_GRADING', 'FINAL', 'INVALID', 'RETAKE_REQUIRED', 'PASSED', 'FAILED', 'DELETED')"
         )
     })
@@ -96,12 +96,12 @@ public class AssessmentCandidateResultJpaEntity {
 
     protected AssessmentCandidateResultJpaEntity() {}
 
-    public AssessmentCandidateResultJpaEntity(UUID id, UUID examId, UUID candidateId, UUID sessionId, UUID assessmentPolicyId,
+    public AssessmentCandidateResultJpaEntity(UUID id, UUID assessmentId, UUID candidateId, UUID sessionId, UUID assessmentPolicyId,
         int policyVersion, UUID rubricVersionId, UUID frameworkVersionId, UUID targetFrameworkBandId, UUID rubricResultBandId, BigDecimal totalScore, String status,
         Instant releasedAt, Instant finalizedAt, Instant createdAt, Instant updatedAt,
         UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.examId = examId;
+        this.assessmentId = assessmentId;
         this.candidateId = candidateId;
         this.sessionId = sessionId;
         this.assessmentPolicyId = assessmentPolicyId;
@@ -129,11 +129,11 @@ public class AssessmentCandidateResultJpaEntity {
     }
 
     public UUID getAssessmentId() {
-        return examId;
+        return assessmentId;
     }
 
-    public void setAssessmentId(UUID examId) {
-        this.examId = examId;
+    public void setAssessmentId(UUID assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public UUID getCandidateId() {

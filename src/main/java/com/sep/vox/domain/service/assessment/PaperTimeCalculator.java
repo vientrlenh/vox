@@ -19,7 +19,7 @@ import com.sep.vox.domain.model.question.QuestionAssetType;
  *       thể sinh chi phí AI. Chỉ ước tính tiền dùng số này
  *       ({@code ClassTestTokenQuotaGuardService}), vì rate ở đó có đơn vị USD trên mỗi giây thí sinh
  *       THẬT SỰ nói (xem {@code QuotaPricingCalibrationService} -- mẫu số calibrate là
- *       {@code exam_item_responses.duration_seconds}).
+ *       {@code assessment_item_answers.duration_seconds}).
  *   <li>{@code totalSeconds} = billable + thời lượng phát AUDIO/VIDEO. Đây là thời gian thật thí sinh
  *       ngồi trong phòng, nên đồng hồ đếm ngược, độ dài ca thi và trần {@code maxTimePerAttemptMin}
  *       đều phải dùng số này.
@@ -34,7 +34,7 @@ import com.sep.vox.domain.model.question.QuestionAssetType;
  *
  * <h2>⚠️ Giới hạn đã biết: sửa câu hỏi/tài nguyên KHÔNG tự tính lại mã đề</h2>
  *
- * <p>{@code RecalculateExamTimeDurationService} chỉ được gọi từ các thao tác trên KỲ THI / MÃ ĐỀ
+ * <p>{@code RecalculateAssessmentTimeDurationService} chỉ được gọi từ các thao tác trên KỲ THI / MÃ ĐỀ
  * (tạo/xoá mã đề, sửa item, sửa phần của bài trên lớp, đổi blueprint). Không đường nào đi từ
  * {@code usecase/question/}. Nên nếu mã đề ĐÃ tạo rồi mới:
  *
@@ -43,7 +43,7 @@ import com.sep.vox.domain.model.question.QuestionAssetType;
  *   <li>sửa {@code preparationTimeSeconds} / {@code maxResponseSeconds} của câu hỏi,
  * </ul>
  *
- * <p>thì {@code paper.timeDurationSeconds} và {@code exam.examTimeDurationSecond} GIỮ SỐ CŨ cho tới
+ * <p>thì {@code paper.timeDurationSeconds} và {@code assessment.timeDurationSecond} GIỮ SỐ CŨ cho tới
  * lần kế tiếp có ai đó đụng vào cấu trúc mã đề.
  *
  * <p>Đây là hành vi CÓ SẴN từ trước (hai trường thời gian của câu hỏi vốn đã như vậy), việc cộng
@@ -51,7 +51,7 @@ import com.sep.vox.domain.model.question.QuestionAssetType;
  * nhập câu hỏi hàng loạt.
  *
  * <p><b>Cách tránh:</b> hoàn thiện câu hỏi (kể cả upload media) TRƯỚC, rồi mới tạo mã đề. Lúc
- * {@code CreateExamPaperUseCase} chạy nó gọi recalculate và đọc đúng số. Quyết định 2026-08-21:
+ * {@code CreateAssessmentPaperUseCase} chạy nó gọi recalculate và đọc đúng số. Quyết định 2026-08-21:
  * ghi tài liệu chứ chưa tự động hoá, vì sửa đúng cần truy vấn ngược câu hỏi → item → mã đề → kỳ thi
  * ở mọi đường sửa câu hỏi và tài nguyên.
  */

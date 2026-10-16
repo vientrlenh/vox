@@ -36,11 +36,11 @@ public interface SpringDataAssessmentResultAppealRepository extends JpaRepositor
 
     List<AssessmentResultAppealJpaEntity> findByCandidateResultId(UUID candidateResultId);
 
-    /** candidateResultId/examId là cột FK trần, không có quan hệ JPA — join tường minh qua 3 bảng. */
+    /** candidateResultId/assessmentId là cột FK trần, không có quan hệ JPA — join tường minh qua 3 bảng. */
     @Query("""
         SELECT COUNT(a) FROM AssessmentResultAppealJpaEntity a, AssessmentCandidateResultJpaEntity r, AssessmentJpaEntity e
         WHERE a.candidateResultId = r.id
-        AND r.examId = e.id
+        AND r.assessmentId = e.id
         AND e.schoolId = :schoolId
         AND a.status IN :statuses
     """)
@@ -59,7 +59,7 @@ public interface SpringDataAssessmentResultAppealRepository extends JpaRepositor
     @Query("""
         SELECT MIN(a.requestedAt) FROM AssessmentResultAppealJpaEntity a, AssessmentCandidateResultJpaEntity r, AssessmentJpaEntity e
         WHERE a.candidateResultId = r.id
-        AND r.examId = e.id
+        AND r.assessmentId = e.id
         AND e.schoolId = :schoolId
         AND a.status = 'PENDING'
     """)

@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.usecase.rubricschool;
 import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSchoolRubricCriteriaCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -70,7 +70,7 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
 
         // 2. Lấy Version và kiểm tra DRAFT
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric này."));
 
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalStateException("Chỉ được phép thêm tiêu chí khi Rubric đang ở trạng thái Nháp (DRAFT).");
@@ -78,7 +78,7 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
 
         // 3. Kiểm tra Rubric gốc & Quyền
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         var schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
@@ -89,7 +89,7 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
 
         // (Bổ sung) Kiểm tra xem trường học có đang hoạt động không
         var school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
 
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");

@@ -27,7 +27,7 @@ public record SchoolUnscoredWorkloadDto(
     /** Mốc nộp bài của bài chờ LÂU NHẤT; null khi không còn bài nào chưa có điểm. */
     Instant oldestSubmittedAt,
     /** Số kỳ thi KHÁC NHAU đang có bài chưa ra điểm. */
-    int examCount
+    int assessmentCount
 ) {
 
     public int total() {

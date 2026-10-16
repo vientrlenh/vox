@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateQuestionStatusCommand;
 import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -53,9 +53,9 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
 
         var actor = questionStatusActorResolver.resolve();
         var question = questionRepository.findById(input.questionId())
-            .orElseThrow(() -> new NotFoundException(QuestionStatusTransition.QUESTION_NOT_FOUND));
+            .orElseThrow(() -> new ResourceNotFoundException(QuestionStatusTransition.QUESTION_NOT_FOUND));
         var bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException(QuestionStatusTransition.QUESTION_BANK_NOT_FOUND));
+            .orElseThrow(() -> new ResourceNotFoundException(QuestionStatusTransition.QUESTION_BANK_NOT_FOUND));
         var editorCollaborator = questionCollaboratorRepository
             .findByQuestionIdAndUserId(question.getId(), actor.userId())
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)

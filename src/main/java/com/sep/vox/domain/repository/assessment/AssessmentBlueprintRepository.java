@@ -20,17 +20,17 @@ public interface AssessmentBlueprintRepository {
         UUID schoolId,
         Boolean isActive,
         UUID languageId,
-        String examKind,
+        String assessmentKind,
         String keyword,
         int page,
         int size
     );
-    boolean existsUsedByExam(UUID blueprintId);
+    boolean existsUsedByAssessment(UUID blueprintId);
     boolean canEditBlueprint(UUID blueprintId, UUID userId, UUID schoolId);
     boolean canChangeVersionStatus(UUID blueprintId, UUID userId, UUID schoolId);
 
     /** CHAIR của một kỳ thi đang gắn blueprint này -- chỉ CHAIR, không tính REVIEWER. */
-    boolean isChairOfExamUsingBlueprint(UUID blueprintId, UUID userId, UUID schoolId);
+    boolean isChairOfAssessmentUsingBlueprint(UUID blueprintId, UUID userId, UUID schoolId);
     boolean canViewBlueprint(UUID blueprintId, UUID userId, UUID schoolId);
     void deleteById(UUID id);
 }

@@ -1,8 +1,8 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicyschool;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.service.GradeLevelBandScopeGuardService;
@@ -121,14 +121,14 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
 
             // 2. Validate Framework
             FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(command.frameworkVersionId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn."));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn."));
             if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
                 throw new IllegalStateException("Chỉ có thể tạo Assessment Policy trên Framework đã PUBLISHED.");
             }
 
             // 3. Validate Ngôn ngữ
             if (!languageRepository.existsById(command.languageId())) {
-                throw new NotFoundException("Ngôn ngữ chỉ định không tồn tại.");
+                throw new ResourceNotFoundException("Ngôn ngữ chỉ định không tồn tại.");
             }
 
             // 4. Validate Scope
@@ -138,21 +138,21 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             }
 
             if (command.schoolClassId() != null) {
-                SchoolClass schoolClass = schoolClassRepository.findById(command.schoolClassId()).orElseThrow(() -> new NotFoundException("Không tìm thấy Lớp học."));
+                SchoolClass schoolClass = schoolClassRepository.findById(command.schoolClassId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Lớp học."));
                 if (!schoolId.equals(schoolClass.getSchoolId())) throw new ForbiddenException("Lớp học không thuộc trường của bạn.");
             } else if (command.schoolGradeId() != null) {
-                SchoolGrade schoolGrade = schoolGradeRepository.findById(command.schoolGradeId()).orElseThrow(() -> new NotFoundException("Không tìm thấy Khối năm học."));
+                SchoolGrade schoolGrade = schoolGradeRepository.findById(command.schoolGradeId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khối năm học."));
                 if (!schoolId.equals(schoolGrade.getSchoolId())) throw new ForbiddenException("Khối năm học không thuộc trường của bạn.");
             } else {
                 // Khối lớp là catalog dùng chung: chỉ cần tồn tại, không còn ràng buộc thuộc trường nào.
                 if (gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
-                    throw new NotFoundException("Không tìm thấy Khối.");
+                    throw new ResourceNotFoundException("Không tìm thấy Khối.");
                 }
             }
 
             // 5. Validate Band
             FrameworkResultBand targetBand = frameworkResultBandRepository.findById(command.targetFrameworkBandId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Band mục tiêu."));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Band mục tiêu."));
             if (!targetBand.getFrameworkVersionId().equals(command.frameworkVersionId())) {
                 throw new IllegalStateException("Band mục tiêu phải thuộc đúng Khung năng lực đang chọn.");
             }
@@ -187,16 +187,16 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             ScopeClaimKey scopeClaimKey = new ScopeClaimKey(command.languageId(), command.frameworkVersionId(),
                     command.gradeLevelId(), command.schoolGradeId(), command.schoolClassId());
             if (!scopeClaimsInBatch.add(scopeClaimKey)) {
-                throw new DuplicatedException(
+                throw new ResourceDuplicatedException(
                         "Trong cùng một lần tạo có hai Assessment Policy trùng phạm vi áp dụng."
                                 + " Mỗi phạm vi chỉ được một chính sách.");
             }
 
             UUID rubricVersionId = command.rubricVersionId();
             RubricVersion rubricVersion = rubricVersionRepository.findById(rubricVersionId)
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric ID: " + rubricVersionId));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric ID: " + rubricVersionId));
             Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric gốc của version ID: " + rubricVersionId));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric gốc của version ID: " + rubricVersionId));
 
             if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !schoolId.equals(rubric.getSchoolId())) {
                 throw new ForbiddenException("Phiên bản Rubric không thuộc trường học của bạn.");
@@ -213,7 +213,7 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             // Bỏ chặn PUBLISHED không phá gì: PublishSchoolAssessmentPolicyUseCase cố ý không xét
             // trạng thái phiên bản Rubric, existsPublishedByRubricVersionId chỉ là cửa chặn cho việc
             // ban hành PHIÊN BẢN (đã ban hành rồi thì vô nghĩa), và đường chấm đọc thẳng
-            // exams.assessment_policy_id nên chính sách mới không hồi tố vào bài đã chấm. Ngược lại,
+            // assessments.assessment_policy_id nên chính sách mới không hồi tố vào bài đã chấm. Ngược lại,
             // phiên bản PUBLISHED đã bị đóng băng -- gắn chính sách vào nó AN TOÀN HƠN gắn vào bản
             // DRAFT còn sửa được tiêu chí bên dưới.
             //
@@ -231,7 +231,7 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
                     schoolId, command.languageId(), command.frameworkVersionId(),
                     command.gradeLevelId(), command.schoolGradeId(), command.schoolClassId());
             if (isDuplicated) {
-                throw new DuplicatedException("Phạm vi này đã có một Assessment Policy còn hiệu lực"
+                throw new ResourceDuplicatedException("Phạm vi này đã có một Assessment Policy còn hiệu lực"
                         + " (DRAFT hoặc PUBLISHED). Hãy Archive bản cũ trước khi tạo bản mới.");
             }
 

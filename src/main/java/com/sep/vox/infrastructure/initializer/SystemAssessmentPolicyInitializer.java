@@ -78,7 +78,7 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
  * nó ở đây dưới dạng bản mẫu tuỳ chọn: trường nào không có lớp chuyên thì không sao bản này.
  *
  * <p>Bậc mục tiêu quyết định bộ mô tả nào được gửi sang AI chấm
- * ({@code SubmitExamSessionUseCase.buildCriteriaFrameworks}), nên hai bậc nghĩa là hai thước đo khác
+ * ({@code SubmitAssessmentSessionUseCase.buildCriteriaFrameworks}), nên hai bậc nghĩa là hai thước đo khác
  * nhau -- điểm thô của lớp chuyên và lớp thường không so trực tiếp được. Đó là chủ đích: đây là hai
  * nhóm học sinh có đích cần đạt khác nhau.
  *
@@ -262,7 +262,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
         // chuyên (đều không khai khối) còn đè lên nhau vì cùng một phạm vi rỗng.
         //
         // Bỏ luật đó ở đây KHÔNG ảnh hưởng gì: chính sách hệ thống không đi chấm bài (đường chấm đọc
-        // exams.assessment_policy_id), findActivePolicy không còn nơi gọi, và idx_assessment_policies
+        // assessments.assessment_policy_id), findActivePolicy không còn nơi gọi, và idx_assessment_policies
         // _scope_version không bắt được hàng nào có NULL trong khoá. Đường tạo tay của system admin
         // (CreateSystemAssessmentPolicyUseCase) vẫn giữ nguyên luật cũ.
         boolean alreadySeeded = assessmentPolicyRepository

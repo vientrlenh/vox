@@ -55,11 +55,11 @@ public class SearchSchoolRubricResultBandsUseCase implements IUseCase<SearchScho
         if (!schoolUser.getSchoolId().equals(query.schoolId()))
             throw new ForbiddenException("BẢO MẬT: Xâm phạm trường học khác.");
 
-        var school = schoolRepository.findById(query.schoolId()).orElseThrow(() -> new NotFoundException("Không tìm thấy trường."));
+        var school = schoolRepository.findById(query.schoolId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường."));
         if (!school.isActive()) throw new ForbiddenException("Trường học đang bị khóa.");
 
-        var version = rubricVersionRepository.findById(query.versionId()).orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản."));
-        var rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric."));
+        var version = rubricVersionRepository.findById(query.versionId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản."));
+        var rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(query.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Thang điểm này không thuộc trường của bạn.");

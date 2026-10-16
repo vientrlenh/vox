@@ -5,7 +5,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateSubscriptionOrderCommand;
 import com.sep.vox.application.port.input.command.RenewSchoolSubscriptionCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPlanResolver;
@@ -58,11 +58,11 @@ public class RenewSchoolSubscriptionUseCase implements IUseCase<RenewSchoolSubsc
         var schoolId = userContextPort.getCurrentSchoolId();
 
         var subscription = schoolSubscriptionRepository.findMostRecentBySchoolId(schoolId)
-            .orElseThrow(() -> new NotFoundException(
+            .orElseThrow(() -> new ResourceNotFoundException(
                 "Trường chưa từng đăng ký gói nào, hãy chọn gói từ danh sách thay vì gia hạn."));
 
         var currentPlan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
         var renewalPlan = subscriptionPlanResolver.resolveActivePlan(currentPlan);
 
         // Đối chiếu với gói trường ĐÃ XÁC NHẬN ở màn xem trước. Không phải thủ tục cho có: giữa lúc

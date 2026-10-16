@@ -86,7 +86,7 @@ public final class QuestionStatusTransition {
      * Kiểm tra một action có được phép trên câu hỏi đã tồn tại hay không.
      *
      * <p>{@code question} và {@code bank} phải khác {@code null}: "dữ liệu có tồn tại không" là
-     * việc của tầng gọi (nó mới biết nên ném {@code NotFoundException} hay gom vào {@code failed[]}),
+     * việc của tầng gọi (nó mới biết nên ném {@code ResourceNotFoundException} hay gom vào {@code failed[]}),
      * còn ở đây chỉ còn thuần quy tắc nghiệp vụ.
      *
      * @return {@code null} nếu action được phép, ngược lại là lý do từ chối.

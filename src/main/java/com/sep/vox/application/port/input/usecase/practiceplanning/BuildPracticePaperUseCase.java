@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.mapper.practiceplanning.PracticePlanningResponseMapper;
 import com.sep.vox.application.port.input.command.BuildPracticePaperCommand;
@@ -93,12 +93,12 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         var selection = selectionService
             .resolveNextQuestion(topic, studentId, focus, chosenBandOrder, chosen.bandCount(),
                 chosen.frameworkVersionId(), List.of())
-            .orElseThrow(() -> new NotFoundException("Chủ đề chưa có câu luyện phù hợp."));
+            .orElseThrow(() -> new ResourceNotFoundException("Chủ đề chưa có câu luyện phù hợp."));
         var question = selection.question();
         // Ước lượng worst-case (giây x giá/giây calibrate) -- không phải chi phí thật, cùng tinh
         // thần Công thức 1 của ClassTestTokenQuotaGuardService (xem AI_USAGE_QUOTA_USD_MIGRATION.md
         // mục 5/6), nhưng dùng rate calibrate RIÊNG cho PRACTICE (currentEstimatedCostPerPracticeSecondUsd,
-        // xem QuotaPricingCalibrationService/QuotaPricingSource) vì pipeline AI khác hẳn exam. Cộng
+        // xem QuotaPricingCalibrationService/QuotaPricingSource) vì pipeline AI khác hẳn assessment. Cộng
         // cả reservedSeconds (câu đang chờ nộp của các phiên khác) để không cho 2 phiên cùng lúc
         // cùng vượt hạn mức trong lúc chưa phiên nào submit turn thật.
         //
@@ -198,7 +198,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
      */
     private ChosenBand chosenBand(UUID bandId) {
         if (bandId == null) {
-            throw new NotFoundException("Chưa chọn bậc muốn luyện.");
+            throw new ResourceNotFoundException("Chưa chọn bậc muốn luyện.");
         }
         for (var framework : enrichmentService.activeFrameworks()) {
             var match = enrichmentService.frameworkBandLadder(framework.versionId()).stream()
@@ -212,7 +212,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
                 );
             }
         }
-        throw new NotFoundException("Bậc luyện tập không thuộc khung đánh giá nào đang ban hành.");
+        throw new ResourceNotFoundException("Bậc luyện tập không thuộc khung đánh giá nào đang ban hành.");
     }
 
     private record ChosenBand(int order, int bandCount, UUID frameworkVersionId) {
@@ -221,6 +221,6 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
     private PracticeTopic requireTopic(UUID topicId) {
         return topicRepository.findTopicById(topicId)
             .filter(candidate -> candidate.isActive())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề luyện tập."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề luyện tập."));
     }
 }

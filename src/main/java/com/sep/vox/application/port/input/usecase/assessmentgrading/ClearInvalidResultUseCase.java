@@ -5,20 +5,20 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.assessment.ExamResultInvalidClearedPayloadV1;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.event.assessment.AssessmentResultInvalidClearedPayload;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.GradingDecisionCommand;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.response.input.assessmentgrading.GradingActionResponse;
-import com.sep.vox.domain.model.assessment.ExamGradingAssignment;
-import com.sep.vox.domain.model.assessment.GradingOutcome;
-import com.sep.vox.domain.model.assessment.GradingRoundType;
+import com.sep.vox.domain.model.assessment.AssessmentGradingAssignment;
+import com.sep.vox.domain.model.assessment.AssessmentGradingOutcome;
+import com.sep.vox.domain.model.assessment.AssessmentGradingRoundType;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.OutboxRepository;
-import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
-import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentCandidateRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentGradingAssignmentRepository;
 import com.sep.vox.domain.shared.AggregateTypeConstant;
 import com.sep.vox.domain.shared.EventTypeConstant;
 
@@ -36,27 +36,27 @@ import com.sep.vox.domain.shared.EventTypeConstant;
  * sẽ kéo bài về INVALID và quyết định của giáo viên bị vô hiệu hoá âm thầm.
  *
  * <p>Đây là chỗ DUY NHẤT giáo viên gỡ được chặn thí sinh (bình thường là quyền
- * SCHOOL_ADMIN qua {@code UnblockExamCandidateUseCase}). Phạm vi bị siết chặt: đúng
+ * SCHOOL_ADMIN qua {@code UnblockAssessmentCandidateUseCase}). Phạm vi bị siết chặt: đúng
  * bài được giao vòng {@code REMEDIATION}, lý do bắt buộc, và mọi lần dùng đều vào audit.
  */
 @Service
 public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionCommand, GradingActionResponse> {
 
     private final GradingActionSupport gradingActionSupport;
-    private final ExamCandidateRepository examCandidateRepository;
-    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
+    private final AssessmentCandidateRepository assessmentCandidateRepository;
+    private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
 
     public ClearInvalidResultUseCase(
             GradingActionSupport gradingActionSupport,
-            ExamCandidateRepository examCandidateRepository,
-            ExamGradingAssignmentRepository examGradingAssignmentRepository,
+            AssessmentCandidateRepository assessmentCandidateRepository,
+            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
             OutboxRepository outboxRepository,
             JsonSerializationPort jsonSerializationPort) {
         this.gradingActionSupport = gradingActionSupport;
-        this.examCandidateRepository = examCandidateRepository;
-        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
+        this.assessmentCandidateRepository = assessmentCandidateRepository;
+        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
         this.outboxRepository = outboxRepository;
         this.jsonSerializationPort = jsonSerializationPort;
     }
@@ -65,18 +65,18 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
     @Transactional
     public GradingActionResponse execute(GradingDecisionCommand command) {
         var prepared = gradingActionSupport.prepare(
-            command.assignmentId(), GradingOutcome.CLEARED_INVALID, command.reason());
+            command.assignmentId(), AssessmentGradingOutcome.CLEARED_INVALID, command.reason());
 
         var result = prepared.context().candidateResult();
         var now = Instant.now();
 
-        var candidate = examCandidateRepository.findById(result.getCandidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của bài thi."));
+        var candidate = assessmentCandidateRepository.findById(result.getCandidateId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của bài thi."));
         if (candidate.getBlockedAt() != null) {
             candidate.setBlockedAt(null);
             candidate.setUpdatedAt(now);
             candidate.setUpdatedBy(prepared.currentUserId());
-            examCandidateRepository.save(candidate);
+            assessmentCandidateRepository.save(candidate);
         }
 
         // finish() đóng dòng REMEDIATION và nhả active_result_id; chỉ sau đó mới mở
@@ -88,10 +88,10 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
         // trôi qua — đỏ "quá hạn" ngay lúc tạo, job nhắc bắn ngay lượt sau, và lọt vào
         // danh sách thu hồi dù giáo viên chưa có một phút nào để chấm. Để trống, admin
         // đặt hạn sau qua PUT /grading-assignments/{id}/deadline.
-        var next = examGradingAssignmentRepository.save(ExamGradingAssignment.open(
+        var next = assessmentGradingAssignmentRepository.save(AssessmentGradingAssignment.open(
             result.getId(),
             prepared.currentUserId(),
-            GradingRoundType.INITIAL,
+            AssessmentGradingRoundType.INITIAL,
             null,
             result.getTotalScore(),
             now,
@@ -101,13 +101,13 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
 
         var studentId = gradingActionSupport.resolveStudentId(result);
         if (studentId != null) {
-            var payload = new ExamResultInvalidClearedPayloadV1(
-                result.getId(), studentId, prepared.context().examName(), prepared.reason(),
-                result.getSessionId(), prepared.context().examKind());
+            var payload = new AssessmentResultInvalidClearedPayload(
+                result.getId(), studentId, prepared.context().assessmentName(), prepared.reason(),
+                result.getSessionId(), prepared.context().assessmentKind());
             outboxRepository.save(Outbox.create(
-                AggregateTypeConstant.EXAM_CANDIDATE_RESULT,
+                AggregateTypeConstant.ASSESSMENT_CANDIDATE_RESULT,
                 result.getId(),
-                EventTypeConstant.EXAM_RESULT_INVALID_CLEARED,
+                EventTypeConstant.ASSESSMENT_RESULT_INVALID_CLEARED,
                 jsonSerializationPort.toJson(payload),
                 now
             ));
@@ -116,7 +116,7 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
         return new GradingActionResponse(
             command.assignmentId(),
             result.getId(),
-            GradingOutcome.CLEARED_INVALID.name(),
+            AssessmentGradingOutcome.CLEARED_INVALID.name(),
             result.getStatus() == null ? null : result.getStatus().name(),
             result.getTotalScore(),
             next.getId()

@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.usecase.notification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.notification.NotificationDtoMapper;
 import com.sep.vox.application.port.input.query.ViewMyNotificationQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -40,6 +40,6 @@ public class ViewMyNotificationUseCase implements IUseCase<ViewMyNotificationQue
 
         return notificationRepository.findByIdAndUserId(input.id(), userId)
             .map(NotificationDtoMapper::toNotificationDto)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thông báo"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông báo"));
     }
 }

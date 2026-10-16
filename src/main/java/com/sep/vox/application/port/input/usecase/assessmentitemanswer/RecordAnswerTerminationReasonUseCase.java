@@ -5,26 +5,26 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentItemAnswerRepository;
 
 @Service
 public class RecordAnswerTerminationReasonUseCase implements IUseCase<RecordAnswerTerminationReasonUseCase.Command, Void> {
 
-    private final ExamItemResponseRepository examItemResponseRepository;
+    private final AssessmentItemAnswerRepository assessmentItemAnswerRepository;
 
-    public RecordAnswerTerminationReasonUseCase(ExamItemResponseRepository examItemResponseRepository) {
-        this.examItemResponseRepository = examItemResponseRepository;
+    public RecordAnswerTerminationReasonUseCase(AssessmentItemAnswerRepository assessmentItemAnswerRepository) {
+        this.assessmentItemAnswerRepository = assessmentItemAnswerRepository;
     }
 
     @Override
     @Transactional
     public Void execute(Command input) {
-        var response = examItemResponseRepository.findById(input.answerId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu trả lời để lưu lý do kết thúc"));
+        var response = assessmentItemAnswerRepository.findById(input.answerId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu trả lời để lưu lý do kết thúc"));
         response.setTerminationReason(input.reason());
-        examItemResponseRepository.save(response);
+        assessmentItemAnswerRepository.save(response);
         return null;
     }
 

@@ -17,13 +17,13 @@ public interface AssessmentScheduleRepository {
     Optional<AssessmentSchedule> findByIdForUpdate(UUID id);
 
     /** Danh sách ca thi của một bài kiểm tra (đã loại các ca DELETED). */
-    List<AssessmentSchedule> findByExamId(UUID examId);
+    List<AssessmentSchedule> findByAssessmentId(UUID assessmentId);
 
     /**
      * Ca thi của nhiều kỳ thi cùng lúc (đã loại các ca DELETED) — dùng cho DataLoader
-     * {@code examSchedulesByExamId} để trang danh sách kỳ thi dựng được thanh tiến độ mà không N+1.
+     * {@code assessmentSchedulesByAssessmentId} để trang danh sách kỳ thi dựng được thanh tiến độ mà không N+1.
      */
-    List<AssessmentSchedule> findByExamIdIn(Collection<UUID> examIds);
+    List<AssessmentSchedule> findByAssessmentIdIn(Collection<UUID> assessmentIds);
 
     /** Danh sách ca thi của toàn trường (đã loại các ca DELETED). */
     List<AssessmentSchedule> findBySchoolId(UUID schoolId);
@@ -33,13 +33,13 @@ public interface AssessmentScheduleRepository {
 
     /**
      * Id của MỌI ca thi thuộc kỳ thi, kể cả ca đã xoá mềm — dùng khi dọn dữ liệu con lúc xoá hẳn
-     * kỳ thi. {@link #findByExamId(UUID)} lọc bỏ DELETED nên dùng nó ở đó sẽ bỏ sót giám thị của
+     * kỳ thi. {@link #findByAssessmentId(UUID)} lọc bỏ DELETED nên dùng nó ở đó sẽ bỏ sót giám thị của
      * những ca đã xoá mềm.
      */
-    List<UUID> findAllIdsByExamId(UUID examId);
+    List<UUID> findAllIdsByAssessmentId(UUID assessmentId);
 
     /** Xoá cứng mọi ca thi của kỳ thi (kể cả ca đã xoá mềm). */
-    void deleteByExamId(UUID examId);
+    void deleteByAssessmentId(UUID assessmentId);
 
     AssessmentSchedule save(AssessmentSchedule schedule);
 
@@ -62,7 +62,7 @@ public interface AssessmentScheduleRepository {
      */
     List<AssessmentSchedule> findPublishedEndedBefore(Instant now, int limit);
 
-    List<AssessmentSchedule> findByExamIdAndInSchedule(UUID examId, Instant now);
+    List<AssessmentSchedule> findByAssessmentIdAndInSchedule(UUID assessmentId, Instant now);
     List<AssessmentSchedule> findByIdInAndInSchedule(Collection<UUID> ids, Instant now);
     Optional<AssessmentSchedule> findByIdAndInSchedule(UUID id, Instant now);
     List<AssessmentSchedule> findByIdInAndInScheduleAndSchoolId(Collection<UUID> ids, Instant now, UUID schoolId);

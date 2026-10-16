@@ -6,7 +6,7 @@ This document describes the target state for moving Vox from school-only use to 
 
 ## 1. Goal
 
-Anyone can create an account and practice without belonging to a school. Schools remain supported for exams and class management, but a school is something a user joins, not where an account comes from.
+Anyone can create an account and practice without belonging to a school. Schools remain supported for assessments and class management, but a school is something a user joins, not where an account comes from.
 
 ## 2. Principles
 
@@ -19,7 +19,7 @@ Anyone can create an account and practice without belonging to a school. Schools
 
 | Decision | Recommended default |
 |---|---|
-| Do school exams stay? | Yes, as an optional membership feature |
+| Do school assessments stay? | Yes, as an optional membership feature |
 | Who pays for practice? | Undecided; hidden behind `PracticeEntitlementPort` (5.4) |
 | Is there production data to keep? | If yes, every schema change is a new Flyway migration (V14+) |
 | Can a school have several admins? | Yes |
@@ -53,7 +53,7 @@ Holds platform-wide roles: `SYSTEM_ADMIN`, plus a default role for regular users
 | `school_id`, `user_id` | Exist | Unchanged |
 | `role` | Missing (role is global in `user_roles`) | `STUDENT`, `TEACHER`, `SCHOOL_ADMIN` |
 | `member_code` | Missing | Student or staff code, unique per school |
-| `official_name` | Missing | Name as the school records it, used on exam results |
+| `official_name` | Missing | Name as the school records it, used on assessment results |
 | `status` | Missing | `INVITED`, `ACTIVE`, `ENDED` |
 | `invited_by` | Missing | User who invited or imported the member |
 | `start_date`, `end_date` | Exist | Unchanged |

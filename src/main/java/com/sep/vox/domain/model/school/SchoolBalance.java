@@ -9,7 +9,7 @@ import java.util.UUID;
  * hạn mức kèm gói nằm ở school_subscription_quota_records, tách theo từng QuotaType và có bộ đếm
  * used riêng.
  *
- * <p>Cố tình KHÔNG gộp hai thứ đó vào một con số: gói cấp hạn mức theo TỪNG loại (EXAM /
+ * <p>Cố tình KHÔNG gộp hai thứ đó vào một con số: gói cấp hạn mức theo TỪNG loại (ASSESSMENT /
  * PRACTICE), nên một số dư cấp trường duy nhất không diễn đạt được "còn 300.000 nhưng
  * không được dùng để chấm bài". Gộp lại là âm thầm xóa mất giới hạn theo loại.
  *

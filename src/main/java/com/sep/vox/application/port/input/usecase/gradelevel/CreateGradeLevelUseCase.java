@@ -70,7 +70,7 @@ public class CreateGradeLevelUseCase implements IUseCase<CreateGradeLevelCommand
             return gradeLevelRepository.save(newGradeLevel).getId();
         } catch (DataIntegrityViolationException e) {
             // Chống race-condition: hai request cùng tạo trùng mã/thứ tự vượt qua check exists rồi mới đụng unique index.
-            throw new DuplicatedException("Mã hoặc thứ tự khối học đã tồn tại.");
+            throw new ResourceDuplicatedException("Mã hoặc thứ tự khối học đã tồn tại.");
         }
     }
 }

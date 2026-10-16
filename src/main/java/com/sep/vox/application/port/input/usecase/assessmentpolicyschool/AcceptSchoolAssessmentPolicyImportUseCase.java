@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicyschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.AcceptSchoolAssessmentPolicyImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -55,7 +55,7 @@ public class AcceptSchoolAssessmentPolicyImportUseCase implements IUseCase<Accep
             throw new ForbiddenException("BẢO MẬT: Mã bảo mật trường học không trùng khớp.");
 
         var session = importSessionRepository.findById(command.sessionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import."));
 
         if (session.getType() != ImportType.ASSESSMENT_POLICY || session.getSchoolId() == null
                 || !session.getSchoolId().equals(command.schoolId())) {

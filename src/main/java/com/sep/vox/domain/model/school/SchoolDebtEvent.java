@@ -7,7 +7,7 @@ import java.util.UUID;
 import com.sep.vox.domain.model.metering.QuotaType;
 
 /**
- * Sổ audit "nguyên nhân nợ hạn mức AI" -- mỗi dòng là ĐÚNG 1 ví quota (EXAM/PRACTICE) của 1 trường
+ * Sổ audit "nguyên nhân nợ hạn mức AI" -- mỗi dòng là ĐÚNG 1 ví quota (ASSESSMENT/PRACTICE) của 1 trường
  * vừa đổi trạng thái (rơi vào nợ / vượt trần cảnh báo / hết nợ), kèm session và số tiền VND đã gây ra
  * transition đó. Khác với notification (chỉ tồn tại tạm qua outbox/Kafka), bảng này là ledger
  * append-only để system admin tra lại lịch sử bất kỳ lúc nào -- mirror SchoolSubscriptionEvent.
@@ -27,7 +27,7 @@ public class SchoolDebtEvent {
     /** null với CLEARED: hết nợ là sự kiện cấp TRƯỜNG, số dư không chia theo ví hạn mức nào. */
     private QuotaType quotaType;
     /** LOCKED/CAP_EXCEEDED: ĐÚNG MỘT trong hai cột session dưới đây được set. CLEARED: cả hai null. */
-    private UUID triggerExamSessionId;
+    private UUID triggerAssessmentSessionId;
     private UUID triggerPracticeSessionId;
     private BigDecimal triggerAmountVnd;
     private BigDecimal totalAllocatedVnd;
@@ -38,7 +38,7 @@ public class SchoolDebtEvent {
     public SchoolDebtEvent() {}
 
     public SchoolDebtEvent(UUID id, UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType,
-            QuotaType quotaType, UUID triggerExamSessionId, UUID triggerPracticeSessionId,
+            QuotaType quotaType, UUID triggerAssessmentSessionId, UUID triggerPracticeSessionId,
             BigDecimal triggerAmountVnd,
             BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant occurredAt) {
         this.id = id;
@@ -46,7 +46,7 @@ public class SchoolDebtEvent {
         this.subscriptionId = subscriptionId;
         this.eventType = eventType;
         this.quotaType = quotaType;
-        this.triggerExamSessionId = triggerExamSessionId;
+        this.triggerAssessmentSessionId = triggerAssessmentSessionId;
         this.triggerPracticeSessionId = triggerPracticeSessionId;
         this.triggerAmountVnd = triggerAmountVnd;
         this.totalAllocatedVnd = totalAllocatedVnd;
@@ -56,14 +56,14 @@ public class SchoolDebtEvent {
     }
 
     public SchoolDebtEvent(UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType,
-            QuotaType quotaType, UUID triggerExamSessionId, UUID triggerPracticeSessionId,
+            QuotaType quotaType, UUID triggerAssessmentSessionId, UUID triggerPracticeSessionId,
             BigDecimal triggerAmountVnd,
             BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant occurredAt) {
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
         this.eventType = eventType;
         this.quotaType = quotaType;
-        this.triggerExamSessionId = triggerExamSessionId;
+        this.triggerAssessmentSessionId = triggerAssessmentSessionId;
         this.triggerPracticeSessionId = triggerPracticeSessionId;
         this.triggerAmountVnd = triggerAmountVnd;
         this.totalAllocatedVnd = totalAllocatedVnd;
@@ -112,12 +112,12 @@ public class SchoolDebtEvent {
         this.quotaType = quotaType;
     }
 
-    public UUID getTriggerExamSessionId() {
-        return triggerExamSessionId;
+    public UUID getTriggerAssessmentSessionId() {
+        return triggerAssessmentSessionId;
     }
 
-    public void setTriggerExamSessionId(UUID triggerExamSessionId) {
-        this.triggerExamSessionId = triggerExamSessionId;
+    public void setTriggerAssessmentSessionId(UUID triggerAssessmentSessionId) {
+        this.triggerAssessmentSessionId = triggerAssessmentSessionId;
     }
 
     public UUID getTriggerPracticeSessionId() {

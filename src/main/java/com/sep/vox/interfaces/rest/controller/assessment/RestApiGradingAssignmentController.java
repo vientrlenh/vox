@@ -79,7 +79,7 @@ public class RestApiGradingAssignmentController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> autoAssign(
             @Valid @RequestBody AutoAssignGradingRequest request) {
-        var command = ExamGradingCommandMapper.fromRequest(request);
+        var command = AssessmentGradingCommandMapper.fromRequest(request);
         var assignmentIds = autoAssignGradingUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Phân công tự động thành công!", assignmentIds));
@@ -91,7 +91,7 @@ public class RestApiGradingAssignmentController {
     public ResponseEntity<ApiResponse<UUID>> reassign(
             @PathVariable("assignmentId") UUID assignmentId,
             @Valid @RequestBody ReassignGradingRequest request) {
-        var command = ExamGradingCommandMapper.fromRequest(assignmentId, request);
+        var command = AssessmentGradingCommandMapper.fromRequest(assignmentId, request);
         return ResponseEntity.ok(
             ApiResponse.success("Đổi giáo viên chấm bài thành công!", reassignGradingUseCase.execute(command)));
     }
@@ -100,7 +100,7 @@ public class RestApiGradingAssignmentController {
     @DeleteMapping("/{assignmentId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> remove(@PathVariable("assignmentId") UUID assignmentId) {
-        var command = ExamGradingCommandMapper.toRemoveCommand(assignmentId);
+        var command = AssessmentGradingCommandMapper.toRemoveCommand(assignmentId);
         return ResponseEntity.ok(
             ApiResponse.success("Gỡ phân công thành công!", removeGradingAssignmentUseCase.execute(command)));
     }
@@ -111,7 +111,7 @@ public class RestApiGradingAssignmentController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> setDeadline(
             @Valid @RequestBody SetGradingDeadlineRequest request) {
-        var command = ExamGradingCommandMapper.fromRequest(request);
+        var command = AssessmentGradingCommandMapper.fromRequest(request);
         return ResponseEntity.ok(
             ApiResponse.success("Đặt hạn chấm thành công!", setGradingDeadlineUseCase.execute(command)));
     }
@@ -126,7 +126,7 @@ public class RestApiGradingAssignmentController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ReclaimOverdueResponse>> reclaimOverdue(
             @Valid @RequestBody ReclaimOverdueAssignmentsRequest request) {
-        var command = ExamGradingCommandMapper.fromRequest(request);
+        var command = AssessmentGradingCommandMapper.fromRequest(request);
         return ResponseEntity.ok(
             ApiResponse.success("Thu hồi phân công quá hạn thành công!",
                 reclaimOverdueAssignmentsUseCase.execute(command)));
@@ -139,7 +139,7 @@ public class RestApiGradingAssignmentController {
     public ResponseEntity<ApiResponse<GradingActionResponse>> uphold(
             @PathVariable("assignmentId") UUID assignmentId,
             @Valid @RequestBody(required = false) GradingDecisionRequest request) {
-        var command = ExamGradingCommandMapper.toDecisionCommand(assignmentId, request);
+        var command = AssessmentGradingCommandMapper.toDecisionCommand(assignmentId, request);
         return ResponseEntity.ok(
             ApiResponse.success("Đã giữ nguyên điểm bài thi!", upholdResultUseCase.execute(command)));
     }
@@ -151,7 +151,7 @@ public class RestApiGradingAssignmentController {
     public ResponseEntity<ApiResponse<GradingActionResponse>> regrade(
             @PathVariable("assignmentId") UUID assignmentId,
             @Valid @RequestBody SubmitGradingRequest request) {
-        var command = ExamGradingCommandMapper.fromRequest(assignmentId, request);
+        var command = AssessmentGradingCommandMapper.fromRequest(assignmentId, request);
         return ResponseEntity.ok(
             ApiResponse.success("Nộp điểm chấm bài thành công!", regradeResultUseCase.execute(command)));
     }
@@ -163,7 +163,7 @@ public class RestApiGradingAssignmentController {
     public ResponseEntity<ApiResponse<GradingPreviewResponse>> previewRegrade(
             @PathVariable("assignmentId") UUID assignmentId,
             @Valid @RequestBody SubmitGradingRequest request) {
-        var command = ExamGradingCommandMapper.fromRequest(assignmentId, request);
+        var command = AssessmentGradingCommandMapper.fromRequest(assignmentId, request);
         return ResponseEntity.ok(
             ApiResponse.success("Tính thử điểm thành công!", previewGradingUseCase.execute(command)));
     }
@@ -174,7 +174,7 @@ public class RestApiGradingAssignmentController {
     public ResponseEntity<ApiResponse<GradingActionResponse>> invalidate(
             @PathVariable("assignmentId") UUID assignmentId,
             @Valid @RequestBody GradingDecisionRequest request) {
-        var command = ExamGradingCommandMapper.toDecisionCommand(assignmentId, request);
+        var command = AssessmentGradingCommandMapper.toDecisionCommand(assignmentId, request);
         return ResponseEntity.ok(
             ApiResponse.success("Vô hiệu bài thi thành công!", invalidateResultUseCase.execute(command)));
     }
@@ -186,7 +186,7 @@ public class RestApiGradingAssignmentController {
     public ResponseEntity<ApiResponse<GradingActionResponse>> clearInvalid(
             @PathVariable("assignmentId") UUID assignmentId,
             @Valid @RequestBody GradingDecisionRequest request) {
-        var command = ExamGradingCommandMapper.toDecisionCommand(assignmentId, request);
+        var command = AssessmentGradingCommandMapper.toDecisionCommand(assignmentId, request);
         return ResponseEntity.ok(
             ApiResponse.success("Đã gỡ vô hiệu bài thi!", clearInvalidResultUseCase.execute(command)));
     }
@@ -198,7 +198,7 @@ public class RestApiGradingAssignmentController {
     public ResponseEntity<ApiResponse<GradingActionResponse>> decline(
             @PathVariable("assignmentId") UUID assignmentId,
             @Valid @RequestBody GradingDecisionRequest request) {
-        var command = ExamGradingCommandMapper.toDecisionCommand(assignmentId, request);
+        var command = AssessmentGradingCommandMapper.toDecisionCommand(assignmentId, request);
         return ResponseEntity.ok(
             ApiResponse.success("Đã trả lại phân công!", declineGradingAssignmentUseCase.execute(command)));
     }

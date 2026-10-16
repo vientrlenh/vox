@@ -56,7 +56,7 @@ public class AssessmentBlueprintRepositoryImpl implements AssessmentBlueprintRep
 
     @Override
     public PageResult<AssessmentBlueprint> findAccessible(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
-            boolean schoolAdmin, UUID schoolId, Boolean isActive, UUID languageId, String examKind, String keyword, int page, int size) {
+            boolean schoolAdmin, UUID schoolId, Boolean isActive, UUID languageId, String assessmentKind, String keyword, int page, int size) {
         var pageable = PageRequest.of(page - 1, size);
         var result = springDataAssessmentBlueprintRepository.findAccessible(
             currentUserId,
@@ -66,7 +66,7 @@ public class AssessmentBlueprintRepositoryImpl implements AssessmentBlueprintRep
             schoolId,
             isActive,
             languageId,
-            examKind,
+            assessmentKind,
             StringNormalization.toLikePattern(keyword),
             pageable
         );
@@ -80,8 +80,8 @@ public class AssessmentBlueprintRepositoryImpl implements AssessmentBlueprintRep
     }
 
     @Override
-    public boolean existsUsedByExam(UUID blueprintId) {
-        return springDataAssessmentBlueprintRepository.existsUsedByExam(blueprintId);
+    public boolean existsUsedByAssessment(UUID blueprintId) {
+        return springDataAssessmentBlueprintRepository.existsUsedByAssessment(blueprintId);
     }
 
     @Override
@@ -95,8 +95,8 @@ public class AssessmentBlueprintRepositoryImpl implements AssessmentBlueprintRep
     }
 
     @Override
-    public boolean isChairOfExamUsingBlueprint(UUID blueprintId, UUID userId, UUID schoolId) {
-        return springDataAssessmentBlueprintRepository.isChairOfExamUsingBlueprint(blueprintId, userId, schoolId);
+    public boolean isChairOfAssessmentUsingBlueprint(UUID blueprintId, UUID userId, UUID schoolId) {
+        return springDataAssessmentBlueprintRepository.isChairOfAssessmentUsingBlueprint(blueprintId, userId, schoolId);
     }
 
     @Override

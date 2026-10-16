@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSchoolScoringRuleCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -84,14 +84,14 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
         }
 
         var school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
 
         // 3. Kiểm tra Scoring Rule tồn tại
         ScoringRule rule = scoringRuleRepository.findById(command.ruleId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Scoring Rule."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Scoring Rule."));
 
         // 4. BẢO MẬT: policyId trên path phải khớp với policyId thật sự của rule
         if (!rule.getPolicyId().equals(command.policyId())) {
@@ -100,7 +100,7 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
 
         // 5. Kiểm tra Assessment Policy tồn tại và thuộc đúng trường học
         AssessmentPolicy policy = assessmentPolicyRepository.findById(rule.getPolicyId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() == null || !policy.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
         }
@@ -162,16 +162,16 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
 
     private RubricCriterion requireCriterion(UUID rubricVersionId, String criterionCode) {
         return rubricCriterionRepository.findByRubricVersionIdAndCode(rubricVersionId, criterionCode)
-                .orElseThrow(() -> new NotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Mã tiêu chí (criterionCode) '" + criterionCode + "' không tồn tại trong Rubric Version của Assessment Policy này."));
     }
 
     private void requireFrameworkResultBand(UUID frameworkVersionId, UUID frameworkResultBandId) {
         FrameworkResultBand band = frameworkResultBandRepository.findById(frameworkResultBandId)
-                .orElseThrow(() -> new NotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy Framework Result Band với ID '" + frameworkResultBandId + "'."));
         if (!band.getFrameworkVersionId().equals(frameworkVersionId)) {
-            throw new NotFoundException(
+            throw new ResourceNotFoundException(
                     "Framework Result Band '" + frameworkResultBandId + "' không thuộc Framework Version của Assessment Policy này.");
         }
     }

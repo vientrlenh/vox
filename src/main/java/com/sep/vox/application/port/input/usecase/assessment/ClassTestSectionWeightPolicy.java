@@ -7,11 +7,11 @@ import java.util.List;
 
 import com.sep.vox.application.port.input.command.ClassTestQuestionCommand;
 import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
-import com.sep.vox.domain.model.exam.ExamPaperSection;
+import com.sep.vox.domain.model.assessment.AssessmentPaperSection;
 
 /**
- * Luật trọng số của bài kiểm tra trên lớp. Public vì {@code CreateExamPaperUseCase} (package
- * {@code usecase.exampaper}) cũng dựng đề trên lớp từ câu hỏi trực tiếp — hai nơi suy lại luật
+ * Luật trọng số của bài kiểm tra trên lớp. Public vì {@code CreateAssessmentPaperUseCase} (package
+ * {@code usecase.assessmentpaper}) cũng dựng đề trên lớp từ câu hỏi trực tiếp — hai nơi suy lại luật
  * trọng số là sớm muộn hai nơi lệch.
  */
 public final class ClassTestSectionWeightPolicy {
@@ -55,11 +55,11 @@ public final class ClassTestSectionWeightPolicy {
         }
     }
 
-    static void validateStoredWeights(List<ExamPaperSection> sections, String message) {
+    static void validateStoredWeights(List<AssessmentPaperSection> sections, String message) {
         validateWeightSum(sections.stream().map(section -> section.getWeight()).toList(), message);
     }
 
-    static boolean looksAutoWeighted(List<ExamPaperSection> sections) {
+    static boolean looksAutoWeighted(List<AssessmentPaperSection> sections) {
         if (sections.isEmpty() || sections.stream().anyMatch(section -> section.getWeight() == null)) {
             return true;
         }
@@ -72,7 +72,7 @@ public final class ClassTestSectionWeightPolicy {
         return true;
     }
 
-    static List<BigDecimal> normalizeStoredWeights(List<ExamPaperSection> sections) {
+    static List<BigDecimal> normalizeStoredWeights(List<AssessmentPaperSection> sections) {
         var totalWeight = sections.stream()
             .map(section -> section.getWeight() == null ? BigDecimal.ZERO : section.getWeight())
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));

@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.AcceptSchoolRubricVersionImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -58,7 +58,7 @@ public class AcceptSchoolRubricVersionImportUseCase implements IUseCase<AcceptSc
             throw new ForbiddenException("BẢO MẬT: Mã bảo mật trường học không trùng khớp.");
 
         var session = importSessionRepository.findById(command.sessionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import."));
 
         if (session.getType() != ImportType.RUBRIC_VERSION || session.getImportedEntityId() == null
                 || session.getSchoolId() == null || !session.getSchoolId().equals(command.schoolId())) {
@@ -69,7 +69,7 @@ public class AcceptSchoolRubricVersionImportUseCase implements IUseCase<AcceptSc
         }
 
         var rubricId = session.getImportedEntityId();
-        var rubric = rubricRepository.findById(rubricId).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+        var rubric = rubricRepository.findById(rubricId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("Bảo mật: Bộ Rubric này không thuộc sở hữu của trường học bạn.");
         }

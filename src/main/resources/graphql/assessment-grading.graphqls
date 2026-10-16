@@ -1,0 +1,507 @@
+enum GradingAssignmentStatus {
+    ASSIGNED
+    COMPLETED
+}
+
+"""
+Vòng chấm. Một bài đi qua nhiều vòng theo thời gian, mỗi vòng một dòng phân công
+và tối đa một dòng đang mở.
+"""
+enum GradingRoundType {
+    "Chấm lần đầu bài chờ chấm"
+    INITIAL
+    "Hậu kiểm bài đã công bố — bài GIỮ NGUYÊN trạng thái RELEASED suốt quá trình"
+    SPOT_CHECK
+    "Soi lại bài bị vô hiệu"
+    REMEDIATION
+    "Chấm phúc khảo theo đơn học sinh; nộp là công bố"
+    APPEAL
+}
+
+"Kết luận của giáo viên khi đóng một phân công."
+enum GradingOutcome {
+    "Giữ nguyên điểm đang có"
+    UPHELD
+    "Chấm lại, điểm thay đổi"
+    REGRADED
+    "Kết luận vi phạm -> bài INVALID"
+    INVALIDATED
+    "Kết luận không vi phạm -> gỡ INVALID"
+    CLEARED_INVALID
+    "Giáo viên trả lại phân công"
+    DECLINED
+}
+
+"Cách chọn tập bài khi giao tự động."
+enum GradingSampleSelectionMode {
+    ALL
+    "Bốc ngẫu nhiên N% — dùng cho hậu kiểm"
+    RANDOM_PERCENT
+    "Ưu tiên AI kém tự tin / điểm sát ngưỡng đạt"
+    RISK_BASED
+    MANUAL_LIST
+}
+
+"Tiến độ của một giáo viên trong phạm vi đang xem."
+type GradingTeacherProgress {
+    teacherId: ID!
+    teacherName: String
+    assigned: Int!
+    completed: Int!
+    overdue: Int!
+    "Hồ sơ giáo viên, nạp qua DataLoader `userById`. Dùng cho ảnh đại diện."
+    teacher: User
+}
+
+"Số bài theo một trạng thái kết quả."
+type GradingResultStatusCount {
+    status: String!
+    count: Int!
+}
+
+"""
+Thẻ số đầu màn điều phối. Mẫu số là TOÀN BỘ bài của phạm vi đang xem — khác bản cũ
+vốn chỉ đếm bài chờ chấm, vì admin nay điều phối cả bốn vòng.
+"""
+type GradingStats {
+    total: Int!
+    byResultStatus: [GradingResultStatusCount!]!
+    """
+    Bài còn có thể nhận một vòng chấm (PENDING_REVIEW / RELEASED / INVALID / APPEALED /
+    RE_GRADING) mà chưa có phân công đang mở. Bài đã kết thúc vòng đời không tính vào đây.
+    """
+    unassigned: Int!
+    "Phân công đang mở"
+    assigned: Int!
+    "Phân công đang mở đã quá hạn"
+    overdue: Int!
+    teacherProgress: [GradingTeacherProgress!]!
+}
+
+"Một lượt hỏi-đáp trong một phần thi. Một phần có NHIỀU lượt, mỗi lượt audio/transcript riêng."
+type GradingTurn {
+    id: ID!
+    turnOrder: Int
+    turnType: String
+    promptText: String
+    audioUrl: String
+    transcript: String
+    durationSeconds: Int
+    wordCount: Int
+    asrConfidence: Float
+    "JSON string — điểm phát âm tổng của lượt. FE tự parse, giống AssessmentItemEvaluationTurn."
+    pronunciationOverall: String
+    "JSON string — mảng WordFeedback (chip từng chữ + chi tiết phoneme)"
+    wordFeedback: String
+}
+
+type GradingCriterionScore {
+    criterionId: ID!
+    criterionCode: String
+    label: String
+    score: Float
+    rationale: String
+}
+
+"""
+Tiêu chí rubric kèm dải điểm THẬT. FE dựng ô nhập từ minScore/maxScore ở đây,
+không hardcode 0-9 — mỗi rubric một thang khác nhau.
+"""
+type GradingCriterionMeta {
+    id: ID!
+    code: String
+    label: String
+    description: String
+    minScore: Float
+    maxScore: Float
+    "Trọng số dùng để quy đổi điểm tiêu chí thành điểm phần thi"
+    weight: Float
+    required: Boolean!
+}
+
+"""
+MỘT CÂU HỎI cần chấm, không phải một phần thi — một phần (section) có thể có nhiều câu.
+`partLabel` là tiêu đề section nên nhiều item dùng chung một nhãn; FE ghép thêm
+`orderInSection` để phân biệt.
+"""
+type GradingTaskItem {
+    paperItemId: ID!
+    responseId: ID!
+    partLabel: String
+    "Section chứa câu này. Gộp câu theo ID này, KHÔNG theo partLabel — hai section có thể trùng tên."
+    sectionId: ID
+    "Thứ tự của câu trong section, bắt đầu từ 1"
+    orderInSection: Int!
+    """
+    Đề bài của câu — cùng nguồn với màn Xem kết quả (`questions.question_text`).
+    Null khi paper item không trỏ tới câu hỏi nào hoặc câu hỏi đã bị xoá.
+    KHÁC `GradingTurn.promptText`: cái đó là lời AI đọc lúc vào lượt, không phải đề bài.
+    """
+    questionText: String
+    """
+    Tài nguyên đi kèm câu hỏi (ảnh / audio / video / đoạn văn). Null khi câu không có.
+    Thiếu nó thì giáo viên chấm câu tả tranh chỉ thấy đề bài và transcript, không có tấm ảnh —
+    không đối chiếu nổi câu trả lời với thứ thí sinh thực sự nhìn/nghe.
+    """
+    asset: QuestionAsset
+    "Điểm của bản chấm đang có hiệu lực (lần đầu là điểm AI) — mốc để đối chiếu"
+    currentItemScore: Float
+    currentFeedbackSummary: String
+    currentScores: [GradingCriterionScore!]!
+    "Luôn lấy từ bản AI — chỉ bản AI mới sinh lượt nói"
+    turns: [GradingTurn!]!
+    """
+    Điểm tiêu chí kèm rationale của BẢN AI. Khác `currentScores`: sau khi chấm tay,
+    bản đang hiệu lực là bản HUMAN nên rationale của AI biến mất khỏi `currentScores`,
+    trong khi giáo viên ở vòng phúc khảo vẫn cần đọc AI đã lập luận gì.
+    """
+    aiScores: [GradingCriterionScore!]!
+    aiOverallConfidence: Float
+    aiFeedbackSummary: String
+    aiRequiresHumanReview: Boolean!
+    aiReviewReasonCode: String
+    aiMarkedInvalid: Boolean!
+    aiRequiresRetake: Boolean!
+    "JSON string — EvaluationSignals (audioQuality, audioGateStatus, evidenceStatus, confidenceMode…)"
+    aiSignals: String
+    "JSON string — ValidityResult, chứa ruleResults[] cho khối Vi phạm quy tắc"
+    aiValidity: String
+}
+
+"""
+Màn chấm của giáo viên.
+
+Kỳ thi tập trung chấm ẩn danh (`studentName`/`className` = null). Bài kiểm tra trên lớp
+thì có, vì người chấm chính là giáo viên dạy lớp đó.
+"""
+type GradingTaskDetail {
+    assignmentId: ID!
+    candidateResultId: ID!
+    "8 ký tự hex đầu của candidateResultId, viết hoa (vd A2041F3C)"
+    resultCode: String!
+    assessmentName: String
+    roundType: GradingRoundType!
+    assignmentStatus: GradingAssignmentStatus!
+    resultStatus: String
+    flagged: Boolean!
+    flagReason: String
+    currentTotalScore: Float
+    "Điểm lúc được giao — mốc để giáo viên biết mình đang sửa từ đâu"
+    scoreBefore: Float
+    deadlineAt: String
+    overdue: Boolean!
+    """
+    Cờ chỉ-đọc do BE quyết: true chỉ khi phân công còn ASSIGNED và bài vẫn đúng
+    trạng thái của vòng. FE dựng chế độ xem-lại từ cờ này, không tự suy từ status.
+    """
+    editable: Boolean!
+    """
+    Những hành động được phép ở vòng này, do BE quyết theo GradingRoundPolicy.
+    FE dựng đúng các nút này, KHÔNG tự suy từ roundType — suy ở hai nơi thì sớm
+    muộn hai nơi lệch nhau.
+    """
+    allowedOutcomes: [GradingOutcome!]!
+    "Chỉ có ở vòng APPEAL: lý do học sinh nêu trong đơn"
+    appealReason: String
+    items: [GradingTaskItem!]!
+    criteria: [GradingCriterionMeta!]!
+    """
+    Tên học sinh. CHỈ có với bài kiểm tra trên lớp; kỳ thi tập trung luôn null vì chấm
+    ẩn danh là bảo đảm công bằng. FE render có điều kiện, không cần cờ bật/tắt riêng.
+    """
+    studentName: String
+    "Lớp của học sinh. Cùng luật với studentName."
+    className: String
+    "Phiên thi đang chấm — hai lượt của cùng một em khác nhau ở đây."
+    sessionId: ID
+    "Lượt thi thứ mấy, đếm từ 1 theo thời điểm bắt đầu làm bài."
+    attemptNo: Int!
+    "Tổng số lượt em đó đã làm. Bằng 1 thì FE khỏi hiện nhãn lượt."
+    attemptCount: Int!
+}
+
+"Hàng đợi của giáo viên — MỘT danh sách cho cả bốn vòng. Kỳ thi tập trung chấm ẩn danh."
+type GradingTask {
+    assignmentId: ID!
+    candidateResultId: ID!
+    resultCode: String!
+    assessmentName: String
+    "Số phần phải chấm"
+    partCount: Int!
+    roundType: GradingRoundType!
+    status: GradingAssignmentStatus!
+    resultStatus: String
+    "Điểm bài đang có — ở vòng hậu kiểm/phúc khảo đây là điểm đã công bố"
+    currentScore: Float
+    flagged: Boolean!
+    assignedAt: String
+    deadlineAt: String
+    overdue: Boolean!
+    """
+    Tên học sinh. CHỈ có với bài kiểm tra trên lớp; kỳ thi tập trung luôn null vì chấm
+    ẩn danh là bảo đảm công bằng. FE render có điều kiện, không cần cờ bật/tắt riêng.
+    """
+    studentName: String
+    "Lớp của học sinh. Cùng luật với studentName."
+    className: String
+    "Phiên thi sinh ra bài này — hai lượt của cùng một em khác nhau ở đây."
+    sessionId: ID
+    "Lượt thi thứ mấy, đếm từ 1 theo thời điểm bắt đầu làm bài."
+    attemptNo: Int!
+    "Tổng số lượt em đó đã làm. Bằng 1 thì FE khỏi hiện nhãn lượt."
+    attemptCount: Int!
+}
+
+type GradingTaskPage {
+    content: [GradingTask!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+"""
+Dòng bảng điều phối của school admin. Admin thấy tên học sinh bình thường.
+
+Một dòng là MỘT LƯỢT THI: em nào thi lại thì có bấy nhiêu dòng cùng tên, phân biệt bằng
+`attemptNo`/`attemptCount`.
+"""
+type GradingAssignmentRow {
+    candidateResultId: ID!
+    resultCode: String!
+    studentName: String
+    className: String
+    assessmentName: String
+    resultStatus: String
+    totalScore: Float
+    flagged: Boolean!
+    "null nghĩa là bài chưa có phân công nào đang mở"
+    assignmentId: ID
+    teacherId: ID
+    teacherName: String
+    roundType: GradingRoundType
+    assignmentStatus: GradingAssignmentStatus
+    outcome: GradingOutcome
+    assignedAt: String
+    completedAt: String
+    deadlineAt: String
+    overdue: Boolean!
+    "Còn đơn phúc khảo chưa kết thúc — không nên giao vòng khác lúc này"
+    hasOpenAppeal: Boolean!
+    "Phiên thi sinh ra bài này — hai lượt của cùng một em khác nhau ở đây."
+    sessionId: ID
+    "Lượt thi thứ mấy, đếm từ 1 theo thời điểm bắt đầu làm bài."
+    attemptNo: Int!
+    "Tổng số lượt em đó đã làm. Bằng 1 thì FE khỏi hiện nhãn lượt."
+    attemptCount: Int!
+}
+
+type GradingAssignmentRowPage {
+    content: [GradingAssignmentRow!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+"Giáo viên có thể nhận bài, kèm tải hiện tại."
+type AssignableTeacher {
+    id: ID!
+    name: String
+    "Số phân công đang mở đang giữ, gộp cả bốn vòng"
+    load: Int!
+    """
+    Hồ sơ người dùng của chính giáo viên này, nạp qua DataLoader `userById` -- không thêm join vào
+    read model. Chỉ hỏi khi cần ảnh đại diện; `name` ở trên vẫn đủ cho mọi thứ khác.
+    """
+    user: User
+}
+
+"""
+Một mục trong bộ lọc kỳ thi của hàng đợi giáo viên. Cố ý mỏng — đây là dropdown, không
+phải màn kỳ thi: mỗi field thêm vào đây là một field giáo viên đọc được về kỳ thi tập
+trung mà họ không phải thành viên.
+"""
+type GradingAssessmentOption {
+    id: ID!
+    "Mã kỳ thi — tên kỳ thi trùng nhau giữa các đợt, mã thì không."
+    code: String
+    name: String
+    "Tổng số bài được giao ở kỳ thi này, gộp cả bốn vòng và cả phân công đã đóng"
+    taskCount: Int!
+    "Trong đó còn phải chấm (ASSIGNED)"
+    openTaskCount: Int!
+}
+
+"Ai/cái gì đã đổi trạng thái một bài."
+enum ResultStatusChangeSource {
+    AI_EVALUATION
+    TEACHER_INITIAL
+    TEACHER_SPOT_CHECK
+    TEACHER_REMEDIATION
+    TEACHER_APPEAL
+    ADMIN_BULK_FINALIZE
+    ASSESSMENT_PUBLISH
+    SYSTEM
+}
+
+"""
+Một mốc trong dòng thời gian điểm. Bảng chỉ-ghi-thêm: không có gì sửa được ở đây.
+`actorName` null nghĩa là hệ thống tự đổi (AI chấm xong, job chốt sổ).
+"""
+type ResultStatusHistoryEntry {
+    id: ID!
+    candidateResultId: ID!
+    "null khi đây là mốc đầu tiên của bài"
+    fromStatus: String
+    toStatus: String!
+    scoreBefore: Float
+    scoreAfter: Float
+    source: ResultStatusChangeSource!
+    actorId: ID
+    actorName: String
+    reason: String
+    createdAt: String!
+}
+
+"Chất lượng AI theo từng giáo viên hậu kiểm."
+type AiQualityByTeacher {
+    teacherId: ID
+    teacherName: String
+    reviewed: Int!
+    regraded: Int!
+    "Lệch tuyệt đối trung bình trên các bài người này đã sửa điểm"
+    averageDelta: Float
+    "Hồ sơ giáo viên, nạp qua DataLoader `userById`. null khi teacherId null."
+    teacher: User
+}
+
+"""
+"AI chấm lệch bao nhiêu", đo từ chính dữ liệu hậu kiểm. Mẫu số là các vòng
+SPOT_CHECK đã hoàn thành — vòng INITIAL không tính vì ở đó AI vốn chưa được coi là chốt.
+"""
+type AiQualityReport {
+    reviewed: Int!
+    upheld: Int!
+    regraded: Int!
+    invalidated: Int!
+    "Phần trăm bài bị sửa điểm; null khi chưa hậu kiểm bài nào"
+    regradeRate: Float
+    "Lệch tuyệt đối trung bình, chỉ tính trên các bài bị sửa điểm"
+    averageDelta: Float
+    maxDelta: Float
+    byTeacher: [AiQualityByTeacher!]!
+}
+
+extend type Query {
+    """
+    Bảng điều phối chấm bài của trường. Liệt kê bài ở MỌI trạng thái (bản cũ khoá
+    cứng ở PENDING_REVIEW), gồm cả bài chưa gán ai. Phân trang 0-based.
+    `search` khớp tên học sinh, tên giáo viên hoặc mã bài.
+    """
+    gradingAssignments(
+        assessmentId: ID,
+        scheduleId: ID,
+        teacherId: ID,
+        resultStatus: String,
+        roundType: GradingRoundType,
+        status: GradingAssignmentStatus,
+        unassignedOnly: Boolean,
+        overdueOnly: Boolean,
+        hasOpenAppeal: Boolean,
+        search: String,
+        """
+        Bỏ trống = CENTRALIZED. Nhà trường điều phối kỳ thi tập trung; truyền
+        CLASS_TEST khi dùng cho màn theo dõi chấm bài kiểm tra trên lớp.
+        """
+        kind: AssessmentKind,
+        page: Int = 1,
+        "Tối đa 100 — giá trị lớn hơn bị kẹp xuống 100 chứ không báo lỗi."
+        size: Int = 20
+    ): GradingAssignmentRowPage!
+
+    "Cùng luật `kind` với `gradingAssignments` — hai chỗ phải đếm trên cùng một tập."
+    gradingStats(assessmentId: ID, scheduleId: ID, kind: AssessmentKind): GradingStats!
+
+    """
+    Tiến độ chấm của MỘT bài kiểm tra trên lớp, cho chính giáo viên tạo bài. Tách khỏi
+    `gradingStats` vì ở đó `assessmentId` rỗng nghĩa là toàn trường -- nới quyền chỗ đó là để
+    một giáo viên đọc được tiến độ chấm của cả trường.
+    """
+    classTestGradingStats(assessmentId: ID!): GradingStats!
+
+    """
+    Hàng đợi bài của giáo viên đang đăng nhập, cả bốn vòng. Phân trang 0-based.
+    CHỈ kỳ thi tập trung — bài kiểm tra trên lớp đi `myClassTestGradingTasks`.
+    """
+    myGradingTasks(
+        """
+        Thu hẹp về MỘT kỳ thi. Bỏ trống = mọi kỳ thi giáo viên đang có bài. Đây thuần là
+        bộ lọc, không phải cổng phân quyền: phạm vi vẫn là phân công của chính người gọi,
+        nên id của kỳ thi mình không có bài chỉ cho ra danh sách rỗng.
+        Danh sách kỳ thi để đổ vào dropdown lấy ở `myGradingAssessments`.
+        """
+        assessmentId: ID,
+        status: GradingAssignmentStatus,
+        roundType: GradingRoundType,
+        page: Int = 1,
+        "Tối đa 100 — giá trị lớn hơn bị kẹp xuống 100 chứ không báo lỗi."
+        size: Int = 20
+    ): GradingTaskPage!
+
+    """
+    Kỳ thi để dựng bộ lọc cho `myGradingTasks`: CHỈ những kỳ thi TẬP TRUNG mà giáo viên
+    đang đăng nhập đang hoặc ĐÃ có phân công chấm, mới nhận việc xếp trước. Không phân
+    trang — tập này đóng theo số phân công của MỘT người.
+
+    Phải có query riêng vì `assessments` không phải đường đi ở đây: luật hiển thị bên đó đòi
+    người gọi là admin hoặc thành viên kỳ thi, mà giáo viên chấm kỳ thi tập trung không
+    phải thành viên — hỏi ở đó chỉ nhận về danh sách rỗng.
+
+    Kỳ thi đã chấm xong hết vẫn nằm trong danh sách: nộp bài cuối cùng mà mục đang chọn
+    biến mất khỏi dropdown ngay dưới tay là lỗi, không phải tính năng.
+    """
+    myGradingAssessments: [GradingAssessmentOption!]!
+
+    """
+    MỌI bài của một bài kiểm tra trên lớp, cho chính giáo viên tạo bài — gồm cả bài
+    CHƯA có phân công. `myClassTestGradingTasks` chỉ trả bài đã giao cho người gọi,
+    nên bài AI chấm sạch (đi thẳng RELEASED, không được mở phân công) không lọt vào đó;
+    đây là chỗ giáo viên nhìn thấy chúng và lấy `candidateResultId` để bấm Nhận chấm.
+    Một dòng là một LƯỢT THI: em thi lại có bao nhiêu lượt thì bấy nhiêu dòng.
+    """
+    classTestGradingResults(
+        assessmentId: ID!,
+        resultStatus: String,
+        "Chỉ bài chưa có phân công đang mở — đúng những bài còn phải nhận chấm."
+        unassignedOnly: Boolean,
+        search: String,
+        page: Int = 1,
+        "Tối đa 100 — giá trị lớn hơn bị kẹp xuống 100 chứ không báo lỗi."
+        size: Int = 20
+    ): GradingAssignmentRowPage!
+
+    myClassTestGradingTasks(
+        assessmentId: ID!,
+        status: GradingAssignmentStatus,
+        roundType: GradingRoundType,
+        page: Int = 1,
+        size: Int = 20
+    ): GradingTaskPage!
+
+    gradingTaskDetail(assignmentId: ID!): GradingTaskDetail!
+
+    "Dùng cho cả modal phân công tự động lẫn dropdown gán tay / đổi giáo viên."
+    assignableTeachers(search: String): [AssignableTeacher!]!
+
+    """
+    Dòng thời gian điểm của một bài, cũ trước. Học sinh xem được của CHÍNH MÌNH,
+    school admin xem được của bài thuộc trường mình, giáo viên xem được bài mình ĐÃ
+    TỪNG được giao chấm — kể cả khi phân công đó đã đóng, vì ở vòng phúc khảo người
+    chấm vòng trước chính là người bị hỏi lại.
+    """
+    resultStatusHistory(candidateResultId: ID!): [ResultStatusHistoryEntry!]!
+
+    "Báo cáo chất lượng AI. Bỏ trống assessmentId để xem toàn trường."
+    aiQualityReport(assessmentId: ID): AiQualityReport!
+}

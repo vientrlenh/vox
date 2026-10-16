@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicyschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.service.GradeLevelBandScopeGuardService;
@@ -71,14 +71,14 @@ public class UpdateSchoolAssessmentPolicyUseCase implements IUseCase<UpdateAsses
         }
 
         var school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
 
         // 3. Kiểm tra Assessment Policy tồn tại và thuộc đúng trường học
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() == null || !policy.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
         }
@@ -90,7 +90,7 @@ public class UpdateSchoolAssessmentPolicyUseCase implements IUseCase<UpdateAsses
 
         // 5. Kiểm tra Band mục tiêu (frameworkVersionId giữ nguyên, không cho đổi)
         FrameworkResultBand targetBand = frameworkResultBandRepository.findById(command.targetFrameworkBandId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Band mục tiêu (targetFrameworkBandId)."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Band mục tiêu (targetFrameworkBandId)."));
         if (!targetBand.getFrameworkVersionId().equals(policy.getFrameworkVersionId())) {
             throw new IllegalStateException("Band mục tiêu phải thuộc đúng Phiên bản Khung tiêu chuẩn của Policy này.");
         }

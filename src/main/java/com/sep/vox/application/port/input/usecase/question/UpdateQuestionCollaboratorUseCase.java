@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateQuestionCollaboratorCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -43,9 +43,9 @@ public class UpdateQuestionCollaboratorUseCase implements IUseCase<UpdateQuestio
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         var question = questionRepository.findById(command.questionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
         var bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
         if (!currentUserId.equals(question.getCreatedBy())) {
             throw new ForbiddenException("Chỉ owner mới được quản lý collaborator");
         }
@@ -54,7 +54,7 @@ public class UpdateQuestionCollaboratorUseCase implements IUseCase<UpdateQuestio
         }
 
         var collaborator = questionCollaboratorRepository.findById(command.collaboratorId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy collaborator"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy collaborator"));
         if (!collaborator.getQuestionId().equals(question.getId())) {
             throw new ForbiddenException("Collaborator không thuộc câu hỏi này");
         }

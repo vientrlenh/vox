@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper.assessment;
 
-import com.sep.vox.domain.model.assessment.AssessmentItemResponseTurn;
-import com.sep.vox.domain.model.assessment.TurnType;
+import com.sep.vox.domain.model.assessment.AssessmentItemAnswerTurn;
+import com.sep.vox.domain.model.assessment.AssessmentTurnType;
 import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentItemResponseTurnJpaEntity;
 
 public final class AssessmentItemResponseTurnMapper {
@@ -9,12 +9,12 @@ public final class AssessmentItemResponseTurnMapper {
     private AssessmentItemResponseTurnMapper() {
     }
 
-    public static AssessmentItemResponseTurn toDomain(AssessmentItemResponseTurnJpaEntity jpa) {
-        return new AssessmentItemResponseTurn(
+    public static AssessmentItemAnswerTurn toDomain(AssessmentItemResponseTurnJpaEntity jpa) {
+        return new AssessmentItemAnswerTurn(
             jpa.getId(),
-            jpa.getAssessmentItemResponseId(),
+            jpa.getAssessmentItemAnswerId(),
             jpa.getTurnOrder(),
-            TurnType.valueOf(jpa.getTurnType()),
+            AssessmentTurnType.valueOf(jpa.getTurnType()),
             jpa.getPromptText(),
             jpa.getAudioUrl(),
             jpa.getTranscript(),
@@ -25,10 +25,10 @@ public final class AssessmentItemResponseTurnMapper {
         );
     }
 
-    public static AssessmentItemResponseTurnJpaEntity toJpa(AssessmentItemResponseTurn domain) {
+    public static AssessmentItemResponseTurnJpaEntity toJpa(AssessmentItemAnswerTurn domain) {
         return new AssessmentItemResponseTurnJpaEntity(
             domain.getId(),
-            domain.getAssessmentItemResponseId(),
+            domain.getAssessmentItemAnswerId(),
             domain.getTurnOrder(),
             domain.getTurnType().name(),
             domain.getPromptText(),

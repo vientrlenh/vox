@@ -6,12 +6,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.command.RemoveGradingAssignmentCommand;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.model.exam.ExamAppealStatus;
-import com.sep.vox.domain.model.exam.GradingRoundType;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.ExamResultAppealRepository;
+import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
+import com.sep.vox.domain.model.assessment.AssessmentGradingRoundType;
+import com.sep.vox.domain.repository.assessment.AssessmentGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentResultAppealRepository;
 
 /**
  * Gỡ phân công = xoá dòng. Không có trạng thái "đã gỡ": bài quay lại đúng tình trạng
@@ -23,26 +23,26 @@ import com.sep.vox.domain.repository.ExamResultAppealRepository;
 @Service
 public class RemoveGradingAssignmentUseCase implements IUseCase<RemoveGradingAssignmentCommand, UUID> {
 
-    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
-    private final ExamResultAppealRepository examResultAppealRepository;
-    private final ExamGradingAccessService examGradingAccessService;
+    private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
+    private final AssessmentResultAppealRepository assessmentResultAppealRepository;
+    private final AssessmentGradingAccessService assessmentGradingAccessService;
 
     public RemoveGradingAssignmentUseCase(
-            ExamGradingAssignmentRepository examGradingAssignmentRepository,
-            ExamResultAppealRepository examResultAppealRepository,
-            ExamGradingAccessService examGradingAccessService) {
-        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
-        this.examResultAppealRepository = examResultAppealRepository;
-        this.examGradingAccessService = examGradingAccessService;
+            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
+            AssessmentResultAppealRepository assessmentResultAppealRepository,
+            AssessmentGradingAccessService assessmentGradingAccessService) {
+        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
+        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
+        this.assessmentGradingAccessService = assessmentGradingAccessService;
     }
 
     @Override
     @Transactional
     public UUID execute(RemoveGradingAssignmentCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var context = examGradingAccessService.load(command.assignmentId());
-        examGradingAccessService.authorizeSchoolAdmin(context.schoolId(), currentUserId);
-        examGradingAccessService.rejectClassTestCoordination(context.candidateResult().getId());
+        var currentUserId = assessmentGradingAccessService.requireActiveUserId();
+        var context = assessmentGradingAccessService.load(command.assignmentId());
+        assessmentGradingAccessService.authorizeSchoolAdmin(context.schoolId(), currentUserId);
+        assessmentGradingAccessService.rejectClassTestCoordination(context.candidateResult().getId());
 
         var assignment = context.assignment();
         // Đã chấm xong thì điểm đã ghi và bài đã công bố — xoá dòng phân công lúc
@@ -54,16 +54,16 @@ public class RemoveGradingAssignmentUseCase implements IUseCase<RemoveGradingAss
         // Xoá dòng là mất luôn con trỏ tới đơn phúc khảo, nên phải nhả đơn TRƯỚC:
         // đơn kẹt ở GRADING thì không giao lại được (chỉ nhận APPROVED) mà cũng không
         // duyệt lại được (chỉ nhận PENDING) — chỉ còn đường sửa tay dưới DB.
-        if (assignment.getRoundType() == GradingRoundType.APPEAL && assignment.getAppealId() != null) {
-            examResultAppealRepository.findById(assignment.getAppealId())
-                .filter(appeal -> appeal.getStatus() == ExamAppealStatus.GRADING)
+        if (assignment.getRoundType() == AssessmentGradingRoundType.APPEAL && assignment.getAppealId() != null) {
+            assessmentResultAppealRepository.findById(assignment.getAppealId())
+                .filter(appeal -> appeal.getStatus() == AssessmentAppealStatus.GRADING)
                 .ifPresent(appeal -> {
-                    appeal.setStatus(ExamAppealStatus.APPROVED);
-                    examResultAppealRepository.save(appeal);
+                    appeal.setStatus(AssessmentAppealStatus.APPROVED);
+                    assessmentResultAppealRepository.save(appeal);
                 });
         }
 
-        examGradingAssignmentRepository.deleteById(command.assignmentId());
+        assessmentGradingAssignmentRepository.deleteById(command.assignmentId());
         return command.assignmentId();
     }
 }

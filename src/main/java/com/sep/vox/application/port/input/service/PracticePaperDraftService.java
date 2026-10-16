@@ -15,7 +15,7 @@ import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
@@ -112,7 +112,7 @@ public class PracticePaperDraftService {
     public PracticePaperDraft get(UUID studentId, UUID draftId) {
         var entry = cacheManagerPort.get(DRAFT_KEY_PREFIX + draftId, Entry.class);
         if (entry == null) {
-            throw new NotFoundException("Không tìm thấy phiên dựng đề, vui lòng chọn lại chủ đề.");
+            throw new ResourceNotFoundException("Không tìm thấy phiên dựng đề, vui lòng chọn lại chủ đề.");
         }
         if (!entry.studentId().equals(studentId)) {
             throw new ForbiddenException("Bạn không có quyền xem phiên dựng đề này.");
@@ -148,7 +148,7 @@ public class PracticePaperDraftService {
         if (cause instanceof QuotaExceededException) {
             return new FailureReason(cause.getMessage(), "QUOTA_EXCEEDED");
         }
-        if (cause instanceof NotFoundException
+        if (cause instanceof ResourceNotFoundException
                 || cause instanceof IllegalStateException
                 || cause instanceof IllegalArgumentException) {
             return new FailureReason(cause.getMessage(), null);

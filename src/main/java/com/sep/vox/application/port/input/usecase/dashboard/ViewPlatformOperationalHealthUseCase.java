@@ -61,7 +61,7 @@ public class ViewPlatformOperationalHealthUseCase
         // một khoảng rỗng thì thật sự không có ngày nào, và đó là câu trả lời trung thực hơn là 0%.
         if (!from.isBefore(to)) {
             return new PlatformOperationalHealthResponse(
-                live.sessionsInProgress(), live.examsInProgress(), live.gradingQueueDepth(),
+                live.sessionsInProgress(), live.assessmentsInProgress(), live.gradingQueueDepth(),
                 0L, 0L, null, List.of());
         }
 
@@ -91,7 +91,7 @@ public class ViewPlatformOperationalHealthUseCase
         }
 
         return new PlatformOperationalHealthResponse(
-            live.sessionsInProgress(), live.examsInProgress(), live.gradingQueueDepth(),
+            live.sessionsInProgress(), live.assessmentsInProgress(), live.gradingQueueDepth(),
             graded, failed, successRatePercent(graded, failed), List.copyOf(daily));
     }
 

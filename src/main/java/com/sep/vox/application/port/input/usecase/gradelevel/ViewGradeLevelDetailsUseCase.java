@@ -5,7 +5,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewGradeLevelDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -41,7 +41,7 @@ public class ViewGradeLevelDetailsUseCase implements IUseCase<ViewGradeLevelDeta
         }
 
         GradeLevel gradeLevel = gradeLevelRepository.findById(input.gradeLevelId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy khối học."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khối học."));
 
         return GradeLevelDto.toDto(gradeLevel);
     }

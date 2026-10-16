@@ -15,9 +15,9 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_result_appeals", indexes = {
-    @Index(columnList = "candidate_result_id", name = "idx_exam_result_appeals_candidate_result"),
-    @Index(columnList = "status", name = "idx_exam_result_appeals_status")
+@Table(name = "assessment_result_appeals", indexes = {
+    @Index(columnList = "candidate_result_id", name = "idx_assessment_result_appeals_candidate_result"),
+    @Index(columnList = "status", name = "idx_assessment_result_appeals_status")
 })
 public class AssessmentResultAppealJpaEntity {
 
@@ -46,7 +46,7 @@ public class AssessmentResultAppealJpaEntity {
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_result_appeals_status_valid",
+            name = "chk_assessment_result_appeals_status_valid",
             constraint = "status IN ('PENDING', 'APPROVED', 'GRADING', 'PUBLISHED', 'REJECTED', 'WITHDRAWN')"
         )
     })

@@ -13,7 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_secure_pools")
+@Table(name = "assessment_secure_pools")
 public class AssessmentSecurePoolJpaEntity {
 
     @Id
@@ -27,12 +27,12 @@ public class AssessmentSecurePoolJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "exam_id", nullable = false, updatable = false)
-    private UUID examId;
+    @Column(name = "assessment_id", nullable = false, updatable = false)
+    private UUID assessmentId;
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_secure_pools_status_valid",
+            name = "chk_assessment_secure_pools_status_valid",
             constraint = "status IN ('SEALED', 'RELEASED')"
         )
     })
@@ -40,7 +40,7 @@ public class AssessmentSecurePoolJpaEntity {
 
     @Column(name = "release_mode", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_secure_pools_release_mode_valid",
+            name = "chk_assessment_secure_pools_release_mode_valid",
             constraint = "release_mode IN ('MANUAL', 'AUTO_AFTER_CLOSE')"
         )
     })
@@ -69,11 +69,11 @@ public class AssessmentSecurePoolJpaEntity {
 
     protected AssessmentSecurePoolJpaEntity() {}
 
-    public AssessmentSecurePoolJpaEntity(UUID id, UUID examId, String status, String releaseMode,
+    public AssessmentSecurePoolJpaEntity(UUID id, UUID assessmentId, String status, String releaseMode,
             Instant embargoUntil, Instant releasedAt, UUID releasedBy, Instant createdAt,
             Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.examId = examId;
+        this.assessmentId = assessmentId;
         this.status = status;
         this.releaseMode = releaseMode;
         this.embargoUntil = embargoUntil;
@@ -93,12 +93,12 @@ public class AssessmentSecurePoolJpaEntity {
         this.id = id;
     }
 
-    public UUID getExamId() {
-        return examId;
+    public UUID getAssessmentId() {
+        return assessmentId;
     }
 
-    public void setExamId(UUID examId) {
-        this.examId = examId;
+    public void setAssessmentId(UUID assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public String getStatus() {

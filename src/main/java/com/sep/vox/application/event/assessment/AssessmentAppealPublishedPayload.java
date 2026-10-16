@@ -6,7 +6,7 @@ import java.util.UUID;
 public record AssessmentAppealPublishedPayload(
     UUID appealId,
     UUID studentId,
-    String examName,
+    String assessmentName,
     BigDecimal scoreBefore,
     BigDecimal scoreAfter
 ) {

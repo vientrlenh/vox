@@ -13,7 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_paper_sections")
+@Table(name = "assessment_paper_sections")
 public class AssessmentPaperSectionJpaEntity {
     
     @Id

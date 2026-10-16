@@ -4,10 +4,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewAiQualityReportQuery;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.AiQualityReportInfo;
-import com.sep.vox.application.projection.repository.ExamResultAuditQueryRepository;
+import com.sep.vox.application.projection.repository.AssessmentResultAuditQueryRepository;
 
 /**
  * "AI chấm lệch bao nhiêu", tính từ chính kết quả hậu kiểm đã có.
@@ -18,22 +18,22 @@ import com.sep.vox.application.projection.repository.ExamResultAuditQueryReposit
 @Service
 public class ViewAiQualityReportUseCase implements IUseCase<ViewAiQualityReportQuery, AiQualityReportInfo> {
 
-    private final ExamResultAuditQueryRepository examResultAuditQueryRepository;
-    private final ExamGradingAccessService examGradingAccessService;
+    private final AssessmentResultAuditQueryRepository assessmentResultAuditQueryRepository;
+    private final AssessmentGradingAccessService assessmentGradingAccessService;
 
     public ViewAiQualityReportUseCase(
-            ExamResultAuditQueryRepository examResultAuditQueryRepository,
-            ExamGradingAccessService examGradingAccessService) {
-        this.examResultAuditQueryRepository = examResultAuditQueryRepository;
-        this.examGradingAccessService = examGradingAccessService;
+            AssessmentResultAuditQueryRepository assessmentResultAuditQueryRepository,
+            AssessmentGradingAccessService assessmentGradingAccessService) {
+        this.assessmentResultAuditQueryRepository = assessmentResultAuditQueryRepository;
+        this.assessmentGradingAccessService = assessmentGradingAccessService;
     }
 
     @Override
     @Transactional(readOnly = true)
     public AiQualityReportInfo execute(ViewAiQualityReportQuery input) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
-        examGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId);
-        return examResultAuditQueryRepository.aiQualityReport(schoolId, input.examId());
+        var currentUserId = assessmentGradingAccessService.requireActiveUserId();
+        var schoolId = assessmentGradingAccessService.requireCurrentSchoolId(currentUserId);
+        assessmentGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId);
+        return assessmentResultAuditQueryRepository.aiQualityReport(schoolId, input.assessmentId());
     }
 }

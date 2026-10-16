@@ -13,7 +13,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreatePaymentCheckoutUrlCommand;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -285,7 +285,7 @@ public class CreatePaymentCheckoutUrlUseCase
      */
     private Void attachCheckoutData(UUID paymentId, String checkoutUrl, String qrPayloadJson) {
         var payment = paymentRecordRepository.findById(paymentId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lần thanh toán vừa tạo"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lần thanh toán vừa tạo"));
         payment.setCheckoutUrl(checkoutUrl);
         if (qrPayloadJson != null) {
             payment.setProviderPayloadJson(qrPayloadJson);
@@ -336,7 +336,7 @@ public class CreatePaymentCheckoutUrlUseCase
      */
     private Order requirePayableOrder(UUID orderId) {
         var order = orderRepository.findByIdForUpdate(orderId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
 
         if (!order.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");

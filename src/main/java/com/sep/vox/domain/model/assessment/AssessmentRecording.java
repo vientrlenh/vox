@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public class AssessmentRecording {
     private UUID id;
-    private UUID examSessionId;
+    private UUID assessmentSessionId;
     private UUID candidateId;
     private AssessmentRequiredStreamType streamType;
     private String bucket;
@@ -19,11 +19,11 @@ public class AssessmentRecording {
 
     protected AssessmentRecording() {}
 
-    public AssessmentRecording(UUID id, UUID examSessionId, UUID candidateId, AssessmentRequiredStreamType streamType,
+    public AssessmentRecording(UUID id, UUID assessmentSessionId, UUID candidateId, AssessmentRequiredStreamType streamType,
             String bucket, String s3Key, AssessmentRecordingAssemblyStatus status, Long sizeBytes, Integer durationSeconds, String source,
             Instant createdAt, Instant assembledAt) {
         this.id = id;
-        this.examSessionId = examSessionId;
+        this.assessmentSessionId = assessmentSessionId;
         this.candidateId = candidateId;
         this.streamType = streamType;
         this.bucket = bucket;
@@ -44,12 +44,12 @@ public class AssessmentRecording {
         this.id = id;
     }
 
-    public UUID getExamSessionId() {
-        return examSessionId;
+    public UUID getAssessmentSessionId() {
+        return assessmentSessionId;
     }
 
-    public void setExamSessionId(UUID examSessionId) {
-        this.examSessionId = examSessionId;
+    public void setAssessmentSessionId(UUID assessmentSessionId) {
+        this.assessmentSessionId = assessmentSessionId;
     }
 
     public UUID getCandidateId() {

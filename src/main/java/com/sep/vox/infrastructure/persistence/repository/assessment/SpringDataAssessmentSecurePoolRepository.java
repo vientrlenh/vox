@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentSecurePoolJpaEntity;
 
 public interface SpringDataAssessmentSecurePoolRepository extends JpaRepository<AssessmentSecurePoolJpaEntity, UUID> {
-    Optional<AssessmentSecurePoolJpaEntity> findByExamId(UUID examId);
-    List<AssessmentSecurePoolJpaEntity> findByExamIdIn(Collection<UUID> examIds);
-    void deleteByExamId(UUID examId);
+    Optional<AssessmentSecurePoolJpaEntity> findByAssessmentId(UUID assessmentId);
+    List<AssessmentSecurePoolJpaEntity> findByAssessmentIdIn(Collection<UUID> assessmentIds);
+    void deleteByAssessmentId(UUID assessmentId);
 }

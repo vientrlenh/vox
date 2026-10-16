@@ -23,8 +23,8 @@ public class AssessmentMemberRepositoryImpl implements AssessmentMemberRepositor
     }
 
     @Override
-    public AssessmentMember save(AssessmentMember examMember) {
-        var saved = springDataAssessmentMemberRepository.save(AssessmentMemberMapper.toJpa(examMember));
+    public AssessmentMember save(AssessmentMember assessmentMember) {
+        var saved = springDataAssessmentMemberRepository.save(AssessmentMemberMapper.toJpa(assessmentMember));
         return AssessmentMemberMapper.toDomain(saved);
     }
 
@@ -35,31 +35,31 @@ public class AssessmentMemberRepositoryImpl implements AssessmentMemberRepositor
     }
 
     @Override
-    public List<AssessmentMember> findByExamId(UUID examId) {
-        return springDataAssessmentMemberRepository.findByExamId(examId).stream()
+    public List<AssessmentMember> findByAssessmentId(UUID assessmentId) {
+        return springDataAssessmentMemberRepository.findByAssessmentId(assessmentId).stream()
             .map(AssessmentMemberMapper::toDomain)
             .toList();
     }
 
     @Override
-    public List<AssessmentMember> findByExamIdIn(Collection<UUID> examIds) {
-        if (examIds.isEmpty()) {
+    public List<AssessmentMember> findByAssessmentIdIn(Collection<UUID> assessmentIds) {
+        if (assessmentIds.isEmpty()) {
             return List.of();
         }
-        return springDataAssessmentMemberRepository.findByExamIdIn(examIds).stream()
+        return springDataAssessmentMemberRepository.findByAssessmentIdIn(assessmentIds).stream()
             .map(AssessmentMemberMapper::toDomain)
             .toList();
     }
 
     @Override
-    public Optional<AssessmentMember> findByExamIdAndUserId(UUID examId, UUID userId) {
-        return springDataAssessmentMemberRepository.findByExamIdAndUserId(examId, userId)
+    public Optional<AssessmentMember> findByAssessmentIdAndUserId(UUID assessmentId, UUID userId) {
+        return springDataAssessmentMemberRepository.findByAssessmentIdAndUserId(assessmentId, userId)
             .map(AssessmentMemberMapper::toDomain);
     }
 
     @Override
-    public boolean existsByExamIdAndUserIdAndRole(UUID examId, UUID userId, AssessmentMemberRole role) {
-        return springDataAssessmentMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, role.name());
+    public boolean existsByAssessmentIdAndUserIdAndRole(UUID assessmentId, UUID userId, AssessmentMemberRole role) {
+        return springDataAssessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessmentId, userId, role.name());
     }
 
     @Override
@@ -68,8 +68,8 @@ public class AssessmentMemberRepositoryImpl implements AssessmentMemberRepositor
     }
 
     @Override
-    public boolean existsByExamIdAndRoleExcludingUserId(UUID examId, AssessmentMemberRole role, UUID excludeUserId) {
-        return springDataAssessmentMemberRepository.existsByExamIdAndRoleExcludingUserId(examId, role.name(), excludeUserId);
+    public boolean existsByAssessmentIdAndRoleExcludingUserId(UUID assessmentId, AssessmentMemberRole role, UUID excludeUserId) {
+        return springDataAssessmentMemberRepository.existsByAssessmentIdAndRoleExcludingUserId(assessmentId, role.name(), excludeUserId);
     }
 
     @Override
@@ -78,13 +78,13 @@ public class AssessmentMemberRepositoryImpl implements AssessmentMemberRepositor
     }
 
     @Override
-    public boolean canAttachBlueprint(UUID examId, UUID userId) {
-        return springDataAssessmentMemberRepository.canAttachBlueprint(examId, userId);
+    public boolean canAttachBlueprint(UUID assessmentId, UUID userId) {
+        return springDataAssessmentMemberRepository.canAttachBlueprint(assessmentId, userId);
     }
 
     @Override
-    public boolean canApproveBlueprintVersion(UUID examId, UUID userId) {
-        return springDataAssessmentMemberRepository.canApproveBlueprintVersion(examId, userId);
+    public boolean canApproveBlueprintVersion(UUID assessmentId, UUID userId) {
+        return springDataAssessmentMemberRepository.canApproveBlueprintVersion(assessmentId, userId);
     }
 
     @Override
@@ -93,7 +93,7 @@ public class AssessmentMemberRepositoryImpl implements AssessmentMemberRepositor
     }
 
     @Override
-    public void deleteByExamId(UUID examId) {
-        springDataAssessmentMemberRepository.deleteByExamId(examId);
+    public void deleteByAssessmentId(UUID assessmentId) {
+        springDataAssessmentMemberRepository.deleteByAssessmentId(assessmentId);
     }
 }

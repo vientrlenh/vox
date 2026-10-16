@@ -10,12 +10,12 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentPaperJpaEntity;
 
 public interface SpringDataAssessmentPaperRepository extends JpaRepository<AssessmentPaperJpaEntity, UUID> {
-    List<AssessmentPaperJpaEntity> findByExamIdOrderByVariantAsc(UUID examId);
-    List<AssessmentPaperJpaEntity> findByExamIdInOrderByVariantAsc(java.util.Collection<UUID> examIds);
-    List<AssessmentPaperJpaEntity> findByExamIdAndStatusOrderByVariantAsc(UUID examId, String status);
-    boolean existsByExamId(UUID examId);
-    void deleteByExamId(UUID examId);
+    List<AssessmentPaperJpaEntity> findByAssessmentIdOrderByVariantAsc(UUID assessmentId);
+    List<AssessmentPaperJpaEntity> findByAssessmentIdInOrderByVariantAsc(java.util.Collection<UUID> assessmentIds);
+    List<AssessmentPaperJpaEntity> findByAssessmentIdAndStatusOrderByVariantAsc(UUID assessmentId, String status);
+    boolean existsByAssessmentId(UUID assessmentId);
+    void deleteByAssessmentId(UUID assessmentId);
 
-    @Query("SELECT COALESCE(MAX(p.variant), 0) + 1 FROM AssessmentPaperJpaEntity p WHERE p.examId = :examId")
-    int nextVariant(@Param("examId") UUID examId);
+    @Query("SELECT COALESCE(MAX(p.variant), 0) + 1 FROM AssessmentPaperJpaEntity p WHERE p.assessmentId = :assessmentId")
+    int nextVariant(@Param("assessmentId") UUID assessmentId);
 }

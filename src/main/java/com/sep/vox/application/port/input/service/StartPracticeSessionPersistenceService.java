@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
 import com.sep.vox.application.mapper.practicesession.SessionRowMapper;
 import com.sep.vox.application.projection.repository.PracticeSessionQueryRepository;
@@ -38,7 +38,7 @@ public class StartPracticeSessionPersistenceService {
         var now = Instant.now();
         var paper = practicePaperRepository
             .findReservedPaper(paperId, studentId, now)
-            .orElseThrow(() -> new NotFoundException(
+            .orElseThrow(() -> new ResourceNotFoundException(
                 "Đề luyện không tồn tại hoặc đã hết thời gian giữ chỗ."
             ));
         var sessionId = UUID.randomUUID();
@@ -81,7 +81,7 @@ public class StartPracticeSessionPersistenceService {
      */
     private UUID requireTargetBand(UUID targetFrameworkBandId) {
         if (targetFrameworkBandId == null) {
-            throw new NotFoundException("Đề luyện chưa có bậc mục tiêu, hãy dựng lại đề.");
+            throw new ResourceNotFoundException("Đề luyện chưa có bậc mục tiêu, hãy dựng lại đề.");
         }
         return targetFrameworkBandId;
     }

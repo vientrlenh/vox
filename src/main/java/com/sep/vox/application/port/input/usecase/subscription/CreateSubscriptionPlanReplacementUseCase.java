@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateSubscriptionPlanReplacementCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -44,7 +44,7 @@ public class CreateSubscriptionPlanReplacementUseCase
     @Transactional
     public UUID execute(CreateSubscriptionPlanReplacementCommand input) {
         var replacedPlan = subscriptionPlanRepository.findById(input.replacedPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
 
         // Chỉ cho gói ĐANG BÁN: gói đã ARCHIVED cần sửa gói thay thế thì đi qua
         // UpdateSubscriptionPlanReplacementUseCase, gói DRAFT thì chưa có ai dùng nên chưa cần thay.

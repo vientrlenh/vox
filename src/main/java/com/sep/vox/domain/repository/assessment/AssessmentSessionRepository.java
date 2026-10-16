@@ -12,7 +12,7 @@ import com.sep.vox.domain.model.assessment.AssessmentSessionStatus;
 
 public interface AssessmentSessionRepository {
     Optional<AssessmentSession> findById(UUID id);
-    Optional<AssessmentSession> findLatestByExamIdAndCandidateId(UUID examId, UUID candidateId);
+    Optional<AssessmentSession> findLatestByAssessmentIdAndCandidateId(UUID assessmentId, UUID candidateId);
     Optional<AssessmentSession> findLatestByCandidateId(UUID candidateId);
     Optional<AssessmentSession> findLatestByCandidateIdAndStatuses(UUID candidateId, Collection<AssessmentSessionStatus> statuses);
     List<AssessmentSession> findByCandidateId(UUID candidateId);
@@ -22,16 +22,16 @@ public interface AssessmentSessionRepository {
      *
      * <p>Bỏ qua thí sinh đã bị đình chỉ ({@code blockedAt != null}) — phiên của họ sẽ không bao giờ
      * tự kết thúc, giữ lại thì một lệnh đình chỉ sẽ khoá luôn nút đóng bài. Cùng lý do mà
-     * {@code ExamScheduleTimeoutGradingJob} bỏ qua họ.
+     * {@code AssessmentScheduleTimeoutGradingJob} bỏ qua họ.
      */
-    long countActiveByExamId(UUID examId);
+    long countActiveByAssessmentId(UUID assessmentId);
 
     List<AssessmentSession> findDeferredGradingCandidates(Instant now);
     List<AssessmentSession> findPastScheduleEndCandidates(Instant threshold);
     boolean existsById(UUID id);
     /**
-     * Đã có phiên thi nào dựng trên mã đề này chưa. {@code exam_sessions.paper_id} là cột NOT NULL
-     * nên không gỡ được như {@code exam_candidates.assigned_paper_id} — chỉ dùng để chặn xoá mã đề.
+     * Đã có phiên thi nào dựng trên mã đề này chưa. {@code assessment_sessions.paper_id} là cột NOT NULL
+     * nên không gỡ được như {@code assessment_candidates.assigned_paper_id} — chỉ dùng để chặn xoá mã đề.
      */
     boolean existsByPaperId(UUID paperId);
     AssessmentSession save(AssessmentSession session);
@@ -47,7 +47,7 @@ public interface AssessmentSessionRepository {
      * Phiên thi đang ở một trong các trạng thái {@link AssessmentSessionStatus#RESUMABLE}.
      */
     Optional<AssessmentSession> findByIdAndResumable(UUID id);
-    Optional<AssessmentSession> findActiveByExamIdAndCandidateId(UUID examId, UUID candidateId);
+    Optional<AssessmentSession> findActiveByAssessmentIdAndCandidateId(UUID assessmentId, UUID candidateId);
     List<AssessmentSession> findActiveByIdInAndSchoolId(Collection<UUID> ids, Instant now, UUID schoolId);
 
     /** Atomic conditional transition: only succeeds if current status equals {@code from}. Returns false if another writer already moved it. */

@@ -12,7 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "exam_blueprints")
+@Table(name = "assessment_blueprints")
 public class AssessmentBlueprintJpaEntity {
     @Id
     @Generated(event = EventType.INSERT)

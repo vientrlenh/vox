@@ -212,7 +212,7 @@ public class SchoolDebtEmailConsumer {
             return "--";
         }
         return switch (quotaType) {
-            case EXAM -> "Bài kiểm tra";
+            case ASSESSMENT -> "Bài kiểm tra";
             case PRACTICE -> "Lượt ôn luyện cá nhân";
         };
     }

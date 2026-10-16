@@ -25,7 +25,7 @@ import jakarta.persistence.Table;
  * {@code AssessmentSessionStatus#DELETED}.
  */
 @Entity
-@Table(name = "exam_sessions")
+@Table(name = "assessment_sessions")
 public class AssessmentSessionJpaEntity {
     
     @Id
@@ -39,8 +39,8 @@ public class AssessmentSessionJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "exam_id", nullable = false, updatable = false)
-    private UUID examId;
+    @Column(name = "assessment_id", nullable = false, updatable = false)
+    private UUID assessmentId;
 
     @Column(name = "candidate_id", nullable = false, updatable = false)
     private UUID candidateId; 
@@ -56,7 +56,7 @@ public class AssessmentSessionJpaEntity {
 
     @Column(name = "status", nullable = false, length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_sessions_status_valid", 
+            name = "chk_assessment_sessions_status_valid", 
             constraint = "status IN ('IN_PROGRESS', 'SUBMITTED', 'INTERRUPTED', 'GRADING', 'GRADED', 'EXPIRED', 'GRADING_FAILED', 'DELETED')"
         )
     }
@@ -79,7 +79,7 @@ public class AssessmentSessionJpaEntity {
 
     @Column(name = "chosen_stream_type", length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_sessions_chosen_stream_type_valid",
+            name = "chk_assessment_sessions_chosen_stream_type_valid",
             constraint = "chosen_stream_type IN ('CAMERA', 'SCREEN', 'CAMERA_AND_SCREEN')"
         )
     })
@@ -103,10 +103,10 @@ public class AssessmentSessionJpaEntity {
 
     protected AssessmentSessionJpaEntity() {}
 
-    public AssessmentSessionJpaEntity(UUID id, UUID examId, UUID candidateId, UUID paperId, Instant startedAt,
+    public AssessmentSessionJpaEntity(UUID id, UUID assessmentId, UUID candidateId, UUID paperId, Instant startedAt,
             Instant submittedAt, String status, boolean flagged, String flagReason) {
         this.id = id;
-        this.examId = examId;
+        this.assessmentId = assessmentId;
         this.candidateId = candidateId;
         this.paperId = paperId;
         this.startedAt = startedAt;
@@ -124,12 +124,12 @@ public class AssessmentSessionJpaEntity {
         this.id = id;
     }
 
-    public UUID getExamId() {
-        return examId;
+    public UUID getAssessmentId() {
+        return assessmentId;
     }
 
-    public void setExamId(UUID examId) {
-        this.examId = examId;
+    public void setAssessmentId(UUID assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public UUID getCandidateId() {

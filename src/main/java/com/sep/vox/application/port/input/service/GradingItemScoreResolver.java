@@ -14,12 +14,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.command.SubmitGradingCommand;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService.GradingContext;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
-import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentItemAnswerRepository;
 import com.sep.vox.domain.service.assessment.RubricItemScoreFormula;
 
 /**
@@ -33,15 +33,15 @@ import com.sep.vox.domain.service.assessment.RubricItemScoreFormula;
 @Service
 public class GradingItemScoreResolver {
 
-    private final ExamItemResponseRepository examItemResponseRepository;
+    private final AssessmentItemAnswerRepository assessmentItemAnswerRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
     private final RubricVersionRepository rubricVersionRepository;
 
     public GradingItemScoreResolver(
-            ExamItemResponseRepository examItemResponseRepository,
+            AssessmentItemAnswerRepository assessmentItemAnswerRepository,
             RubricCriterionRepository rubricCriterionRepository,
             RubricVersionRepository rubricVersionRepository) {
-        this.examItemResponseRepository = examItemResponseRepository;
+        this.assessmentItemAnswerRepository = assessmentItemAnswerRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricVersionRepository = rubricVersionRepository;
     }
@@ -80,7 +80,7 @@ public class GradingItemScoreResolver {
             throw new IllegalArgumentException("Không được chấm trùng phần thi.");
         }
 
-        var responsesByPaperItemId = examItemResponseRepository
+        var responsesByPaperItemId = assessmentItemAnswerRepository
             .findBySessionId(context.candidateResult().getSessionId()).stream()
             .collect(Collectors.toMap(res -> res.getPaperItemId(), Function.identity(),
                 (left, right) -> left));
@@ -121,7 +121,7 @@ public class GradingItemScoreResolver {
 
     /**
      * Kiểm tra điểm giáo viên nhập rồi giao phép tính cho {@link RubricItemScoreFormula} -- công
-     * thức DÙNG CHUNG với đường AI chấm ({@code RecordExamAttemptEvaluationUseCase}).
+     * thức DÙNG CHUNG với đường AI chấm ({@code RecordAssessmentAttemptEvaluationUseCase}).
      *
      * <p>Trước 2026-08-11 đây là bản chép tay thứ hai của cùng công thức, và hai bản đã trôi lệch:
      * nhánh dự phòng (rubric không khai trọng số) bên này chia cho số tiêu chí NỘP LÊN, bên kia

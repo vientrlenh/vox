@@ -22,45 +22,45 @@ public interface SpringDataAssessmentCandidateRepository extends JpaRepository<A
      * đâu, F5 lại thấy. `assignedAt` là `updatable = false`; kèm `id` để nhập theo lớp/khối
      * (cả loạt chung một mốc thời gian) vẫn có thứ tự xác định.
      */
-    List<AssessmentCandidateJpaEntity> findByExamIdOrderByAssignedAtAscIdAsc(UUID examId);
-    List<AssessmentCandidateJpaEntity> findByExamIdIn(Collection<UUID> examIds);
-    void deleteByExamId(UUID examId);
+    List<AssessmentCandidateJpaEntity> findByAssessmentIdOrderByAssignedAtAscIdAsc(UUID assessmentId);
+    List<AssessmentCandidateJpaEntity> findByAssessmentIdIn(Collection<UUID> assessmentIds);
+    void deleteByAssessmentId(UUID assessmentId);
     void deleteByIdIn(Collection<UUID> ids);
-    Optional<AssessmentCandidateJpaEntity> findByExamIdAndStudentId(UUID examId, UUID studentId);
+    Optional<AssessmentCandidateJpaEntity> findByAssessmentIdAndStudentId(UUID assessmentId, UUID studentId);
     List<AssessmentCandidateJpaEntity> findByStudentId(UUID studentId);
     List<AssessmentCandidateJpaEntity> findByScheduleId(UUID scheduleId);
     List<AssessmentCandidateJpaEntity> findByAssignedPaperId(UUID paperId);
-    long countByExamId(UUID examId);
-    boolean existsByExamIdAndStudentId(UUID examId, UUID studentId);
+    long countByAssessmentId(UUID assessmentId);
+    boolean existsByAssessmentIdAndStudentId(UUID assessmentId, UUID studentId);
 
-    interface ExamIdCandidateCount {
-        UUID getExamId();
+    interface AssessmentIdCandidateCount {
+        UUID getAssessmentId();
         long getCandidateCount();
     }
 
     @Query("""
-        SELECT c.examId AS examId, COUNT(c) AS candidateCount
+        SELECT c.assessmentId AS assessmentId, COUNT(c) AS candidateCount
         FROM AssessmentCandidateJpaEntity c
-        WHERE c.examId IN :examIds
-        GROUP BY c.examId
+        WHERE c.assessmentId IN :assessmentIds
+        GROUP BY c.assessmentId
     """)
-    List<ExamIdCandidateCount> countByExamIdIn(@Param("examIds") Collection<UUID> examIds);
+    List<AssessmentIdCandidateCount> countByAssessmentIdIn(@Param("assessmentIds") Collection<UUID> assessmentIds);
 
-    @Query("SELECT c.studentId FROM AssessmentCandidateJpaEntity c WHERE c.examId = :examId")
-    List<UUID> findStudentIdsByExamId(UUID examId);
+    @Query("SELECT c.studentId FROM AssessmentCandidateJpaEntity c WHERE c.assessmentId = :assessmentId")
+    List<UUID> findStudentIdsByAssessmentId(UUID assessmentId);
 
     @Query("""
         SELECT DISTINCT c.studentId FROM AssessmentCandidateJpaEntity c
-        WHERE c.examId = :examId AND c.blockedAt IS NULL
+        WHERE c.assessmentId = :assessmentId AND c.blockedAt IS NULL
         ORDER BY c.studentId
         """)
-    List<UUID> findDistinctUnblockedStudentIdsByExamId(@Param("examId") UUID examId);
-    List<AssessmentCandidateJpaEntity> findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(UUID examId);
+    List<UUID> findDistinctUnblockedStudentIdsByAssessmentId(@Param("assessmentId") UUID assessmentId);
+    List<AssessmentCandidateJpaEntity> findByAssessmentIdAndScheduleIdIsNullOrderByAssignedAtAsc(UUID assessmentId);
     List<AssessmentCandidateJpaEntity> findByIdIn(Collection<UUID> ids);
-    List<AssessmentCandidateJpaEntity> findByIdInAndExamId(Collection<UUID> ids, UUID examId);
+    List<AssessmentCandidateJpaEntity> findByIdInAndAssessmentId(Collection<UUID> ids, UUID assessmentId);
     long countByScheduleId(UUID scheduleId);
     boolean existsByScheduleIdAndStudentId(UUID scheduleId, UUID studentId);
-    boolean existsByExamIdAndScheduleIdIsNotNull(UUID examId);
+    boolean existsByAssessmentIdAndScheduleIdIsNotNull(UUID assessmentId);
     Optional<AssessmentCandidateJpaEntity> findByScheduleIdAndStudentId(UUID scheduleId, UUID studentId);
 
     @Query("""
@@ -78,7 +78,7 @@ public interface SpringDataAssessmentCandidateRepository extends JpaRepository<A
      * Với mỗi học sinh trong {@code studentIds}, ca thi (DRAFT/PUBLISHED) mà họ đã được xếp và giao
      * thời gian với [start, end).
      *
-     * <p>Giờ nằm ở bảng cha nên phải join sang {@code exam_schedules}. Điều kiện giao khoảng dùng
+     * <p>Giờ nằm ở bảng cha nên phải join sang {@code assessment_schedules}. Điều kiện giao khoảng dùng
      * đúng dạng nửa mở như {@code SpringDataAssessmentScheduleProctorRepository.countOverlappingAssignments}:
      * hai ca kề nhau (ca trước kết thúc đúng lúc ca sau bắt đầu) KHÔNG tính là trùng.
      *

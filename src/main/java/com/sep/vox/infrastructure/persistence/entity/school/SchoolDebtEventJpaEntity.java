@@ -27,12 +27,12 @@ import jakarta.persistence.Table;
             + " AND quota_type IS NOT NULL"
             + " AND total_allocated_vnd IS NOT NULL"
             + " AND used_amount_vnd IS NOT NULL"
-            + " AND num_nonnulls(trigger_exam_session_id, trigger_practice_session_id) = 1)"
+            + " AND num_nonnulls(trigger_assessment_session_id, trigger_practice_session_id) = 1)"
             + " OR (event_type = 'CLEARED'"
             + " AND quota_type IS NULL"
             + " AND total_allocated_vnd IS NULL"
             + " AND used_amount_vnd IS NULL"
-            + " AND trigger_exam_session_id IS NULL"
+            + " AND trigger_assessment_session_id IS NULL"
             + " AND trigger_practice_session_id IS NULL"
             + " AND overage_vnd = 0)"
     )
@@ -70,13 +70,13 @@ public class SchoolDebtEventJpaEntity {
     @Column(name = "quota_type", updatable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_school_debt_events_quota_type_valid",
-            constraint = "quota_type IN ('EXAM', 'PRACTICE')"
+            constraint = "quota_type IN ('ASSESSMENT', 'PRACTICE')"
         )
     })
     private String quotaType;
 
-    @Column(name = "trigger_exam_session_id", updatable = false)
-    private UUID triggerExamSessionId;
+    @Column(name = "trigger_assessment_session_id", updatable = false)
+    private UUID triggerAssessmentSessionId;
 
     @Column(name = "trigger_practice_session_id", updatable = false)
     private UUID triggerPracticeSessionId;
@@ -99,7 +99,7 @@ public class SchoolDebtEventJpaEntity {
     protected SchoolDebtEventJpaEntity() {}
 
     public SchoolDebtEventJpaEntity(UUID id, UUID schoolId, UUID subscriptionId, String eventType, String quotaType,
-            UUID triggerExamSessionId, UUID triggerPracticeSessionId,
+            UUID triggerAssessmentSessionId, UUID triggerPracticeSessionId,
             BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd,
             BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant occurredAt) {
         this.id = id;
@@ -107,7 +107,7 @@ public class SchoolDebtEventJpaEntity {
         this.subscriptionId = subscriptionId;
         this.eventType = eventType;
         this.quotaType = quotaType;
-        this.triggerExamSessionId = triggerExamSessionId;
+        this.triggerAssessmentSessionId = triggerAssessmentSessionId;
         this.triggerPracticeSessionId = triggerPracticeSessionId;
         this.triggerAmountVnd = triggerAmountVnd;
         this.totalAllocatedVnd = totalAllocatedVnd;
@@ -160,12 +160,12 @@ public class SchoolDebtEventJpaEntity {
         return triggerPracticeSessionId;
     }
 
-    public UUID getTriggerExamSessionId() {
-        return triggerExamSessionId;
+    public UUID getTriggerAssessmentSessionId() {
+        return triggerAssessmentSessionId;
     }
 
-    public void setTriggerExamSessionId(UUID triggerExamSessionId) {
-        this.triggerExamSessionId = triggerExamSessionId;
+    public void setTriggerAssessmentSessionId(UUID triggerAssessmentSessionId) {
+        this.triggerAssessmentSessionId = triggerAssessmentSessionId;
     }
 
     public BigDecimal getTriggerAmountVnd() {

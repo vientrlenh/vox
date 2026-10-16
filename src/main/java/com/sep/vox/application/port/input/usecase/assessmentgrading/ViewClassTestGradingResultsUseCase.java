@@ -4,12 +4,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.query.ViewClassTestGradingResultsQuery;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.GradingAssignmentFilter;
 import com.sep.vox.application.projection.dto.GradingAssignmentRowInfo;
-import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.model.assessment.ExamKind;
+import com.sep.vox.application.projection.repository.AssessmentGradingQueryRepository;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.shared.PageResult;
 
 /**
@@ -29,26 +29,26 @@ import com.sep.vox.domain.shared.PageResult;
 public class ViewClassTestGradingResultsUseCase
         implements IUseCase<ViewClassTestGradingResultsQuery, PageResult<GradingAssignmentRowInfo>> {
 
-    private final ExamGradingQueryRepository examGradingQueryRepository;
-    private final ExamGradingAccessService examGradingAccessService;
+    private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
+    private final AssessmentGradingAccessService assessmentGradingAccessService;
 
     public ViewClassTestGradingResultsUseCase(
-            ExamGradingQueryRepository examGradingQueryRepository,
-            ExamGradingAccessService examGradingAccessService) {
-        this.examGradingQueryRepository = examGradingQueryRepository;
-        this.examGradingAccessService = examGradingAccessService;
+            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
+            AssessmentGradingAccessService assessmentGradingAccessService) {
+        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
+        this.assessmentGradingAccessService = assessmentGradingAccessService;
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResult<GradingAssignmentRowInfo> execute(ViewClassTestGradingResultsQuery input) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        examGradingAccessService.authorizeClassTestChair(input.examId(), currentUserId);
-        var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
+        var currentUserId = assessmentGradingAccessService.requireActiveUserId();
+        assessmentGradingAccessService.authorizeClassTestChair(input.assessmentId(), currentUserId);
+        var schoolId = assessmentGradingAccessService.requireCurrentSchoolId(currentUserId);
 
-        return examGradingQueryRepository.searchAssignments(new GradingAssignmentFilter(
+        return assessmentGradingQueryRepository.searchAssignments(new GradingAssignmentFilter(
             schoolId,
-            input.examId(),
+            input.assessmentId(),
             null,
             null,
             input.resultStatus(),
@@ -58,9 +58,9 @@ public class ViewClassTestGradingResultsUseCase
             false,
             null,
             input.search(),
-            // Khoá loại bài dù examId đã thu hẹp phạm vi: quyền ở trên chỉ chấp nhận bài
+            // Khoá loại bài dù assessmentId đã thu hẹp phạm vi: quyền ở trên chỉ chấp nhận bài
             // trên lớp, nên đây là hàng rào thứ hai cho cùng một luật.
-            ExamKind.CLASS_TEST.name()
+            AssessmentKind.CLASS_TEST.name()
         ), input.page(), input.size());
     }
 }

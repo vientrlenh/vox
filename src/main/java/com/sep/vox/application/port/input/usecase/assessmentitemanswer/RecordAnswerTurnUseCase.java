@@ -6,30 +6,30 @@ import java.util.Locale;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.RecordAnswerTurnCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.model.assessment.ExamItemResponse;
-import com.sep.vox.domain.model.assessment.ExamItemResponseTurn;
-import com.sep.vox.domain.model.assessment.TurnType;
-import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
-import com.sep.vox.domain.repository.assessment.ExamItemResponseTurnRepository;
-import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
+import com.sep.vox.domain.model.assessment.AssessmentItemAnswer;
+import com.sep.vox.domain.model.assessment.AssessmentItemAnswerTurn;
+import com.sep.vox.domain.model.assessment.AssessmentTurnType;
+import com.sep.vox.domain.repository.assessment.AssessmentItemAnswerRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentItemResponseTurnRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentSessionRepository;
 
 @Service
 public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand, Void> {
 
-    private final ExamSessionRepository examSessionRepository;
-    private final ExamItemResponseRepository examItemResponseRepository;
-    private final ExamItemResponseTurnRepository examItemResponseTurnRepository;
+    private final AssessmentSessionRepository assessmentSessionRepository;
+    private final AssessmentItemAnswerRepository assessmentItemAnswerRepository;
+    private final AssessmentItemResponseTurnRepository assessmentItemResponseTurnRepository;
 
     public RecordAnswerTurnUseCase(
-            ExamSessionRepository examSessionRepository,
-            ExamItemResponseRepository examItemResponseRepository,
-            ExamItemResponseTurnRepository examItemResponseTurnRepository) {
-        this.examSessionRepository = examSessionRepository;
-        this.examItemResponseRepository = examItemResponseRepository;
-        this.examItemResponseTurnRepository = examItemResponseTurnRepository;
+            AssessmentSessionRepository assessmentSessionRepository,
+            AssessmentItemAnswerRepository assessmentItemAnswerRepository,
+            AssessmentItemResponseTurnRepository assessmentItemResponseTurnRepository) {
+        this.assessmentSessionRepository = assessmentSessionRepository;
+        this.assessmentItemAnswerRepository = assessmentItemAnswerRepository;
+        this.assessmentItemResponseTurnRepository = assessmentItemResponseTurnRepository;
     }
 
     @Override
@@ -45,13 +45,13 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
             throw new IllegalArgumentException("turnOrder phải lớn hơn 0");
         }
 
-        if (!examSessionRepository.existsById(input.sessionId())) {
-            throw new NotFoundException("Không tìm thấy phiên thi cho turn đã ghi nhận");
+        if (!assessmentSessionRepository.existsById(input.sessionId())) {
+            throw new ResourceNotFoundException("Không tìm thấy phiên thi cho turn đã ghi nhận");
         }
 
         var answeredAt = input.answeredAt() == null ? Instant.now() : input.answeredAt();
-        var response = examItemResponseRepository.findById(input.answerId())
-            .orElseGet(() -> new ExamItemResponse(
+        var response = assessmentItemAnswerRepository.findById(input.answerId())
+            .orElseGet(() -> new AssessmentItemAnswer(
                 input.answerId(),
                 input.sessionId(),
                 input.paperItemId(),
@@ -87,17 +87,17 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
         if (input.answeredAt() != null || response.getSubmittedAt() == null) {
             response.setSubmittedAt(answeredAt);
         }
-        examItemResponseRepository.save(response);
+        assessmentItemAnswerRepository.save(response);
 
         // upsert() thay TOÀN BỘ dòng (xem AssessmentItemResponseTurnRepositoryImpl: chỉ giữ lại id và
         // createdAt của bản cũ), nên phải trộn Ở ĐÂY trước khi gọi. Không sửa ngữ nghĩa của
-        // upsert vì UpdateExamItemResponseTurnUseCase là đường giáo viên sửa tay, nơi xoá trắng
+        // upsert vì UpdateAssessmentItemAnswerTurnUseCase là đường giáo viên sửa tay, nơi xoá trắng
         // một trường là chủ ý.
-        var existingTurn = examItemResponseTurnRepository
-            .findByExamItemResponseIdAndTurnOrder(response.getId(), input.turnOrder())
+        var existingTurn = assessmentItemResponseTurnRepository
+            .findByAssessmentItemAnswerIdAndTurnOrder(response.getId(), input.turnOrder())
             .orElse(null);
 
-        var turn = new ExamItemResponseTurn(
+        var turn = new AssessmentItemAnswerTurn(
             response.getId(),
             input.turnOrder(),
             // normalizeTurnType trả MAIN khi thiếu, nên một pha không gửi turnType sẽ hạ cấp
@@ -119,7 +119,7 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
                 : existingTurn.getAnsweredAt(),
             null
         );
-        examItemResponseTurnRepository.upsert(turn);
+        assessmentItemResponseTurnRepository.upsert(turn);
         return null;
     }
 
@@ -133,14 +133,14 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
         return isMeaningful(incoming) ? incoming : existing;
     }
 
-    private TurnType normalizeTurnType(String turnType) {
+    private AssessmentTurnType normalizeTurnType(String turnType) {
         if (turnType == null || turnType.isBlank()) {
-            return TurnType.MAIN;
+            return AssessmentTurnType.MAIN;
         }
 
         var normalized = turnType.trim().toUpperCase(Locale.ROOT);
         try {
-            return TurnType.valueOf(normalized);
+            return AssessmentTurnType.valueOf(normalized);
         } catch (IllegalArgumentException ex) {
             throw new IllegalArgumentException("turnType không hợp lệ");
         }

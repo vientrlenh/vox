@@ -16,14 +16,14 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(
-    name = "exam_proctoring_alerts",
+    name = "assessment_proctoring_alerts",
     uniqueConstraints = @UniqueConstraint(
-        name = "uk_exam_proctoring_alert_event_id",
+        name = "uk_assessment_proctoring_alert_event_id",
         columnNames = {"event_id"}
     ),
     indexes = {
-        @Index(name = "idx_exam_proctoring_alert_session", columnList = "exam_session_id, captured_at"),
-        @Index(name = "idx_exam_proctoring_alert_candidate", columnList = "candidate_id, captured_at")
+        @Index(name = "idx_assessment_proctoring_alert_session", columnList = "assessment_session_id, captured_at"),
+        @Index(name = "idx_assessment_proctoring_alert_candidate", columnList = "candidate_id, captured_at")
     }
 )
 public class AssessmentProctoringAlertJpaEntity {

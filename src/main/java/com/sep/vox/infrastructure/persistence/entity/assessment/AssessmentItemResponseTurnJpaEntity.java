@@ -13,15 +13,15 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(
-    name = "exam_item_response_turns",
+    name = "assessment_item_answer_turns",
     indexes = {
-        @Index(name = "idx_exam_item_response_turns_response", columnList = "exam_item_response_id"),
-        @Index(name = "idx_exam_item_response_turns_response_order", columnList = "exam_item_response_id, turn_order")
+        @Index(name = "idx_assessment_item_answer_turns_response", columnList = "assessment_item_answer_id"),
+        @Index(name = "idx_assessment_item_answer_turns_response_order", columnList = "assessment_item_answer_id, turn_order")
     },
     uniqueConstraints = {
         @UniqueConstraint(
-            name = "uk_exam_item_response_turns_response_order",
-            columnNames = {"exam_item_response_id", "turn_order"}
+            name = "uk_assessment_item_answer_turns_response_order",
+            columnNames = {"assessment_item_answer_id", "turn_order"}
         )
     }
 )
@@ -31,15 +31,15 @@ public class AssessmentItemResponseTurnJpaEntity {
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "exam_item_response_id", nullable = false, updatable = false)
-    private UUID examItemResponseId;
+    @Column(name = "assessment_item_answer_id", nullable = false, updatable = false)
+    private UUID assessmentItemAnswerId;
 
     @Column(name = "turn_order", nullable = false, updatable = false)
     private int turnOrder;
 
     @Column(name = "turn_type", length = 20, check = {
         @CheckConstraint(
-            name = "chk_exam_item_response_turns_turn_type_valid",
+            name = "chk_assessment_item_answer_turns_turn_type_valid",
             constraint = "turn_type IN ('MAIN', 'FOLLOWUP')"
         )
     })
@@ -69,11 +69,11 @@ public class AssessmentItemResponseTurnJpaEntity {
     protected AssessmentItemResponseTurnJpaEntity() {
     }
 
-    public AssessmentItemResponseTurnJpaEntity(UUID id, UUID examItemResponseId, int turnOrder, String turnType,
+    public AssessmentItemResponseTurnJpaEntity(UUID id, UUID assessmentItemAnswerId, int turnOrder, String turnType,
             String promptText, String audioUrl, String transcript, Integer durationSeconds, Integer wordCount,
             Instant answeredAt, Instant createdAt) {
         this.id = id;
-        this.examItemResponseId = examItemResponseId;
+        this.assessmentItemAnswerId = assessmentItemAnswerId;
         this.turnOrder = turnOrder;
         this.turnType = turnType;
         this.promptText = promptText;
@@ -93,12 +93,12 @@ public class AssessmentItemResponseTurnJpaEntity {
         this.id = id;
     }
 
-    public UUID getExamItemResponseId() {
-        return examItemResponseId;
+    public UUID getAssessmentItemAnswerId() {
+        return assessmentItemAnswerId;
     }
 
-    public void setExamItemResponseId(UUID examItemResponseId) {
-        this.examItemResponseId = examItemResponseId;
+    public void setAssessmentItemAnswerId(UUID assessmentItemAnswerId) {
+        this.assessmentItemAnswerId = assessmentItemAnswerId;
     }
 
     public int getTurnOrder() {

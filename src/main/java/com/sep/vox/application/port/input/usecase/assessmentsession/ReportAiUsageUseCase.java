@@ -3,41 +3,41 @@ package com.sep.vox.application.port.input.usecase.assessmentsession;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ReportAiUsageCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.metering.RecordAiUsageUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
-import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentCandidateRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentSessionRepository;
 
 /**
  * Nhận báo cáo chi phí AI từ nguồn không có kết nối Kafka trực tiếp -- ví dụ desktop app tự tổng
- * hợp TTS ngay trên máy học viên (VoxExamDesktop/LocalAvatarSpeaker.cs) thay vì qua Agentic AI.
+ * hợp TTS ngay trên máy học viên (VoxAssessmentDesktop/LocalAvatarSpeaker.cs) thay vì qua Agentic AI.
  * Đường REST này song song với Kafka consumer AiUsageRecordedConsumer (nguồn từ Agentic AI), cả
  * hai cùng đổ vào RecordAiUsageUseCase để dùng chung logic idempotency
  * (uk_ai_usage_record_usage_event_id).
  *
  * <p>Chỉ chấp nhận báo cáo cho CHÍNH phiên thi của học viên đang gọi, và phiên đó phải còn
- * RESUMABLE (đang thi) -- cùng ràng buộc với UpdateExamSessionRemainingTimeUseCase, vì báo cáo
+ * RESUMABLE (đang thi) -- cùng ràng buộc với UpdateAssessmentSessionRemainingTimeUseCase, vì báo cáo
  * usage chỉ có ý nghĩa khi phiên thi đang diễn ra.
  */
 @Service
 public class ReportAiUsageUseCase implements IUseCase<ReportAiUsageCommand, Void> {
 
     private final UserContextPort userContextPort;
-    private final ExamSessionRepository examSessionRepository;
-    private final ExamCandidateRepository examCandidateRepository;
+    private final AssessmentSessionRepository assessmentSessionRepository;
+    private final AssessmentCandidateRepository assessmentCandidateRepository;
     private final RecordAiUsageUseCase recordAiUsageUseCase;
 
     public ReportAiUsageUseCase(
             UserContextPort userContextPort,
-            ExamSessionRepository examSessionRepository,
-            ExamCandidateRepository examCandidateRepository,
+            AssessmentSessionRepository assessmentSessionRepository,
+            AssessmentCandidateRepository assessmentCandidateRepository,
             RecordAiUsageUseCase recordAiUsageUseCase) {
         this.userContextPort = userContextPort;
-        this.examSessionRepository = examSessionRepository;
-        this.examCandidateRepository = examCandidateRepository;
+        this.assessmentSessionRepository = assessmentSessionRepository;
+        this.assessmentCandidateRepository = assessmentCandidateRepository;
         this.recordAiUsageUseCase = recordAiUsageUseCase;
     }
 
@@ -57,11 +57,11 @@ public class ReportAiUsageUseCase implements IUseCase<ReportAiUsageCommand, Void
     public Void execute(ReportAiUsageCommand input) {
         var userId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var session = examSessionRepository.findByIdAndResumable(input.examSessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi hoặc phiên thi đã kết thúc"));
+        var session = assessmentSessionRepository.findByIdAndResumable(input.assessmentSessionId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi hoặc phiên thi đã kết thúc"));
 
-        var candidate = examCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy học viên thi"));
+        var candidate = assessmentCandidateRepository.findById(session.getCandidateId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học viên thi"));
 
         if (!candidate.getStudentId().equals(userId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");

@@ -36,18 +36,18 @@ public class AssessmentScheduleRepositoryImpl implements AssessmentScheduleRepos
     }
 
     @Override
-    public List<AssessmentSchedule> findByExamId(UUID examId) {
-        return springDataAssessmentScheduleRepository.findByExamIdAndStatusNot(examId, AssessmentScheduleStatus.DELETED.name()).stream()
+    public List<AssessmentSchedule> findByAssessmentId(UUID assessmentId) {
+        return springDataAssessmentScheduleRepository.findByAssessmentIdAndStatusNot(assessmentId, AssessmentScheduleStatus.DELETED.name()).stream()
             .map(AssessmentScheduleMapper::toDomain)
             .toList();
     }
 
     @Override
-    public List<AssessmentSchedule> findByExamIdIn(Collection<UUID> examIds) {
-        if (examIds == null || examIds.isEmpty()) {
+    public List<AssessmentSchedule> findByAssessmentIdIn(Collection<UUID> assessmentIds) {
+        if (assessmentIds == null || assessmentIds.isEmpty()) {
             return List.of();
         }
-        return springDataAssessmentScheduleRepository.findByExamIdInAndStatusNot(examIds, AssessmentScheduleStatus.DELETED.name()).stream()
+        return springDataAssessmentScheduleRepository.findByAssessmentIdInAndStatusNot(assessmentIds, AssessmentScheduleStatus.DELETED.name()).stream()
             .map(AssessmentScheduleMapper::toDomain)
             .toList();
     }
@@ -60,7 +60,7 @@ public class AssessmentScheduleRepositoryImpl implements AssessmentScheduleRepos
     }
 
     /**
-     * Loại ca đã xoá mềm giống findByExamId/findBySchoolId -- nếu không, các màn dùng batch load
+     * Loại ca đã xoá mềm giống findByAssessmentId/findBySchoolId -- nếu không, các màn dùng batch load
      * theo id (lịch thi của học sinh, của giáo viên, DataLoader scheduleById) vẫn thấy ca đã xoá.
      */
     @Override
@@ -74,17 +74,17 @@ public class AssessmentScheduleRepositoryImpl implements AssessmentScheduleRepos
     }
 
     /**
-     * Ngược lại với findByIdIn/findByExamId: KHÔNG lọc DELETED. Dọn dữ liệu con lúc xoá hẳn kỳ thi
+     * Ngược lại với findByIdIn/findByAssessmentId: KHÔNG lọc DELETED. Dọn dữ liệu con lúc xoá hẳn kỳ thi
      * phải chạm cả ca đã xoá mềm, nếu không giám thị của những ca đó ở lại làm dòng mồ côi.
      */
     @Override
-    public List<UUID> findAllIdsByExamId(UUID examId) {
-        return springDataAssessmentScheduleRepository.findAllIdsByExamId(examId);
+    public List<UUID> findAllIdsByAssessmentId(UUID assessmentId) {
+        return springDataAssessmentScheduleRepository.findAllIdsByAssessmentId(assessmentId);
     }
 
     @Override
-    public void deleteByExamId(UUID examId) {
-        springDataAssessmentScheduleRepository.deleteByExamId(examId);
+    public void deleteByAssessmentId(UUID assessmentId) {
+        springDataAssessmentScheduleRepository.deleteByAssessmentId(assessmentId);
     }
 
     @Override
@@ -114,8 +114,8 @@ public class AssessmentScheduleRepositoryImpl implements AssessmentScheduleRepos
     }
 
     @Override
-    public List<AssessmentSchedule> findByExamIdAndInSchedule(UUID examId, Instant now) {
-        return springDataAssessmentScheduleRepository.findByExamIdAndInSchedule(examId, now)
+    public List<AssessmentSchedule> findByAssessmentIdAndInSchedule(UUID assessmentId, Instant now) {
+        return springDataAssessmentScheduleRepository.findByAssessmentIdAndInSchedule(assessmentId, now)
             .stream()
             .map(AssessmentScheduleMapper::toDomain)
             .toList();

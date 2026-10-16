@@ -8,7 +8,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.domain.model.assessment.AssessmentItemResponseTurn;
+import com.sep.vox.domain.model.assessment.AssessmentItemAnswerTurn;
 import com.sep.vox.domain.repository.assessment.AssessmentItemResponseTurnRepository;
 import com.sep.vox.infrastructure.persistence.mapper.assessment.AssessmentItemResponseTurnMapper;
 import com.sep.vox.infrastructure.persistence.repository.assessment.SpringDataAssessmentItemResponseTurnRepository;
@@ -24,9 +24,9 @@ public class AssessmentItemResponseTurnRepositoryImpl implements AssessmentItemR
     }
 
     @Override
-    public AssessmentItemResponseTurn upsert(AssessmentItemResponseTurn turn) {
-        var existing = springDataAssessmentItemResponseTurnRepository.findByExamItemResponseIdAndTurnOrder(
-            turn.getExamItemResponseId(),
+    public AssessmentItemAnswerTurn upsert(AssessmentItemAnswerTurn turn) {
+        var existing = springDataAssessmentItemResponseTurnRepository.findByAssessmentItemAnswerIdAndTurnOrder(
+            turn.getAssessmentItemAnswerId(),
             turn.getTurnOrder()
         ).orElse(null);
 
@@ -48,34 +48,34 @@ public class AssessmentItemResponseTurnRepositoryImpl implements AssessmentItemR
     }
 
     @Override
-    public List<AssessmentItemResponseTurn> findByExamItemResponseId(UUID examItemResponseId) {
-        return springDataAssessmentItemResponseTurnRepository.findByExamItemResponseIdOrderByTurnOrderAsc(examItemResponseId)
+    public List<AssessmentItemAnswerTurn> findByAssessmentItemAnswerId(UUID assessmentItemAnswerId) {
+        return springDataAssessmentItemResponseTurnRepository.findByAssessmentItemAnswerIdOrderByTurnOrderAsc(assessmentItemAnswerId)
             .stream()
             .map(AssessmentItemResponseTurnMapper::toDomain)
             .toList();
     }
 
     @Override
-    public Optional<AssessmentItemResponseTurn> findByExamItemResponseIdAndTurnOrder(UUID examItemResponseId, int turnOrder) {
-        return springDataAssessmentItemResponseTurnRepository.findByExamItemResponseIdAndTurnOrder(examItemResponseId, turnOrder)
+    public Optional<AssessmentItemAnswerTurn> findByAssessmentItemAnswerIdAndTurnOrder(UUID assessmentItemAnswerId, int turnOrder) {
+        return springDataAssessmentItemResponseTurnRepository.findByAssessmentItemAnswerIdAndTurnOrder(assessmentItemAnswerId, turnOrder)
             .map(AssessmentItemResponseTurnMapper::toDomain);
     }
 
     @Override
-    public Optional<AssessmentItemResponseTurn> findLatestByExamItemResponseId(UUID examItemResponseId) {
-        return springDataAssessmentItemResponseTurnRepository.findTopByExamItemResponseIdOrderByTurnOrderDesc(examItemResponseId)
+    public Optional<AssessmentItemAnswerTurn> findLatestByAssessmentItemAnswerId(UUID assessmentItemAnswerId) {
+        return springDataAssessmentItemResponseTurnRepository.findTopByAssessmentItemAnswerIdOrderByTurnOrderDesc(assessmentItemAnswerId)
             .map(AssessmentItemResponseTurnMapper::toDomain);
     }
 
     @Override
     public List<SessionFollowupCount> countFollowupsBySessionId(UUID sessionId) {
         return springDataAssessmentItemResponseTurnRepository.countFollowupsBySessionId(sessionId).stream()
-            .map(row -> new SessionFollowupCount(row.getExamItemResponseId(), row.getFollowupCount(), row.getTotalTurns()))
+            .map(row -> new SessionFollowupCount(row.getAssessmentItemAnswerId(), row.getFollowupCount(), row.getTotalTurns()))
             .toList();
     }
 
     @Override
-    public void deleteByExamItemResponseIdIn(Collection<UUID> examItemResponseIds) {
-        springDataAssessmentItemResponseTurnRepository.deleteByExamItemResponseIdIn(examItemResponseIds);
+    public void deleteByAssessmentItemAnswerIdIn(Collection<UUID> assessmentItemAnswerIds) {
+        springDataAssessmentItemResponseTurnRepository.deleteByAssessmentItemAnswerIdIn(assessmentItemAnswerIds);
     }
 }

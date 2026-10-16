@@ -9,49 +9,49 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
 import com.sep.vox.application.port.input.command.ReassignGradingCommand;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.model.assessment.GradingRoundType;
-import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
+import com.sep.vox.application.projection.repository.AssessmentGradingQueryRepository;
+import com.sep.vox.domain.model.assessment.AssessmentGradingRoundType;
+import com.sep.vox.domain.repository.assessment.AssessmentGradingAssignmentRepository;
 
 /**
  * Đổi giáo viên chấm một bài. Là UPDATE dòng sẵn có, không phải thêm dòng thứ
  * hai — một bài chỉ có một người chấm.
  *
  * <p>Vòng {@code APPEAL} chịu chung luật xung đột lợi ích với
- * {@code AssignExamAppealReviewerUseCase}: người đã từng ghi phán quyết điểm cho bài
+ * {@code AssignAssessmentAppealReviewerUseCase}: người đã từng ghi phán quyết điểm cho bài
  * này không được ngồi soi lại chính mình. Ở đây KHÔNG có cửa override — muốn phá lệ
  * thì đi qua màn đơn phúc khảo, chỗ duy nhất ghi được lý do ngoại lệ lên đơn.
  */
 @Service
 public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, UUID> {
 
-    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
-    private final ExamGradingQueryRepository examGradingQueryRepository;
-    private final ExamGradingAccessService examGradingAccessService;
+    private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
+    private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
+    private final AssessmentGradingAccessService assessmentGradingAccessService;
     private final GradingAssignmentNotificationService gradingAssignmentNotificationService;
 
     public ReassignGradingUseCase(
-            ExamGradingAssignmentRepository examGradingAssignmentRepository,
-            ExamGradingQueryRepository examGradingQueryRepository,
-            ExamGradingAccessService examGradingAccessService,
+            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
+            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
+            AssessmentGradingAccessService assessmentGradingAccessService,
             GradingAssignmentNotificationService gradingAssignmentNotificationService) {
-        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
-        this.examGradingQueryRepository = examGradingQueryRepository;
-        this.examGradingAccessService = examGradingAccessService;
+        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
+        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
+        this.assessmentGradingAccessService = assessmentGradingAccessService;
         this.gradingAssignmentNotificationService = gradingAssignmentNotificationService;
     }
 
     @Override
     @Transactional
     public UUID execute(ReassignGradingCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
+        var currentUserId = assessmentGradingAccessService.requireActiveUserId();
         // Khoá: nếu không, giáo viên nộp xong đúng lúc admin bấm đổi người thì bản ghi
         // đè lên sẽ mang ảnh chụp cũ (ASSIGNED, chưa có outcome) và làm bài đã chấm
         // sống lại thành chưa chấm.
-        var context = examGradingAccessService.loadForUpdate(command.assignmentId());
-        examGradingAccessService.authorizeSchoolAdmin(context.schoolId(), currentUserId);
+        var context = assessmentGradingAccessService.loadForUpdate(command.assignmentId());
+        assessmentGradingAccessService.authorizeSchoolAdmin(context.schoolId(), currentUserId);
 
         var assignment = context.assignment();
         if (assignment.isCompleted()) {
@@ -60,12 +60,12 @@ public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, 
         if (command.teacherId() == null) {
             throw new IllegalArgumentException("Thiếu giáo viên cần phân công.");
         }
-        examGradingAccessService.rejectClassTestCoordination(assignment.getCandidateResultId());
-        if (!examGradingAccessService.isTeacherOfSchool(command.teacherId(), context.schoolId())) {
+        assessmentGradingAccessService.rejectClassTestCoordination(assignment.getCandidateResultId());
+        if (!assessmentGradingAccessService.isTeacherOfSchool(command.teacherId(), context.schoolId())) {
             throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
         }
-        if (assignment.getRoundType() == GradingRoundType.APPEAL) {
-            var conflicted = examGradingQueryRepository
+        if (assignment.getRoundType() == AssessmentGradingRoundType.APPEAL) {
+            var conflicted = assessmentGradingQueryRepository
                 .findTeacherIdsWithHumanEvaluation(assignment.getCandidateResultId());
             if (conflicted.contains(command.teacherId())) {
                 throw new IllegalArgumentException(
@@ -83,7 +83,7 @@ public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, 
         // (lọc reminded_at IS NULL) bỏ qua dòng này mãi mãi và người mới không bao giờ
         // nhận mail nhắc hạn. Cùng lý lẽ với SetGradingDeadlineUseCase khi đổi hạn.
         assignment.setRemindedAt(null);
-        examGradingAssignmentRepository.save(assignment);
+        assessmentGradingAssignmentRepository.save(assignment);
 
         // Chỉ báo cho người MỚI. Người cũ mất việc là chuyện của điều phối viên, và một
         // thông báo "việc đã bị lấy đi" không giúp họ làm gì cả.

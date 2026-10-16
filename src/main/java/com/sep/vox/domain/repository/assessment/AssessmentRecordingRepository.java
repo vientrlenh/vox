@@ -8,15 +8,15 @@ import com.sep.vox.domain.model.assessment.AssessmentRecording;
 import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
 
 public interface AssessmentRecordingRepository {
-    List<AssessmentRecording> findByExamSessionId(UUID examSessionId);
+    List<AssessmentRecording> findByAssessmentSessionId(UUID assessmentSessionId);
 
     /**
      * Mỗi nguồn ingest giữ hàng riêng của mình, nên source là một phần khoá: hai đường ingest của
      * cùng một phiên thi không tranh nhau một hàng nữa. source không được null -- xem
      * RecordingPartChangedCommandMapper.
      */
-    Optional<AssessmentRecording> findByExamSessionIdAndStreamTypeAndSource(
-        UUID examSessionId, AssessmentRequiredStreamType streamType, String source);
+    Optional<AssessmentRecording> findByAssessmentSessionIdAndStreamTypeAndSource(
+        UUID assessmentSessionId, AssessmentRequiredStreamType streamType, String source);
 
     AssessmentRecording save(AssessmentRecording recording);
 
@@ -24,5 +24,5 @@ public interface AssessmentRecordingRepository {
      * Xoá bản ghi hình/tiếng của một phiên thi. Chỉ xoá dòng trong DB: file trên S3 để lifecycle
      * rule của bucket dọn, vì xoá file không rollback được cùng transaction.
      */
-    void deleteByExamSessionId(UUID examSessionId);
+    void deleteByAssessmentSessionId(UUID assessmentSessionId);
 }

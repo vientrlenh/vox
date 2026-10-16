@@ -137,8 +137,8 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     }
 
     @Override
-    public List<UUID> findIdsWithOngoingExam(Instant now) {
-        return springDataSchoolRepository.findIdsWithOngoingExam(now);
+    public List<UUID> findIdsWithOngoingAssessment(Instant now) {
+        return springDataSchoolRepository.findIdsWithOngoingAssessment(now);
     }
 
 }

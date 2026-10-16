@@ -69,16 +69,16 @@ public interface SpringDataAssessmentGradingAssignmentRepository
     @Query("""
         SELECT ga FROM AssessmentGradingAssignmentJpaEntity ga
         JOIN AssessmentCandidateResultJpaEntity cr ON cr.id = ga.candidateResultId
-        JOIN AssessmentJpaEntity e ON e.id = cr.examId
+        JOIN AssessmentJpaEntity e ON e.id = cr.assessmentId
         WHERE ga.status = 'ASSIGNED' AND ga.deadlineAt IS NOT NULL AND ga.deadlineAt < :now
         AND e.schoolId = :schoolId
-        AND (:examId IS NULL OR cr.examId = :examId)
+        AND (:assessmentId IS NULL OR cr.assessmentId = :assessmentId)
         ORDER BY ga.deadlineAt ASC
     """)
     List<AssessmentGradingAssignmentJpaEntity> findOverdueInSchool(
         @Param("now") Instant now,
         @Param("schoolId") UUID schoolId,
-        @Param("examId") UUID examId,
+        @Param("assessmentId") UUID assessmentId,
         Pageable pageable);
 
     /**
@@ -91,7 +91,7 @@ public interface SpringDataAssessmentGradingAssignmentRepository
      * chặn một lượt chạy ôm cả nghìn dòng trong một transaction.
      */
     @Query(value = """
-        SELECT * FROM exam_grading_assignments
+        SELECT * FROM assessment_grading_assignments
         WHERE status = 'ASSIGNED' AND reminded_at IS NULL
         AND deadline_at IS NOT NULL AND deadline_at < :threshold
         ORDER BY deadline_at ASC

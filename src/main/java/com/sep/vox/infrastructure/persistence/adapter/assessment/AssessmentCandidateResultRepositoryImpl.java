@@ -52,8 +52,8 @@ public class AssessmentCandidateResultRepositoryImpl implements AssessmentCandid
     }
 
     @Override
-    public List<AssessmentCandidateResult> findByExamId(UUID examId) {
-        return springDataAssessmentCandidateResultRepository.findByExamId(examId).stream()
+    public List<AssessmentCandidateResult> findByAssessmentId(UUID assessmentId) {
+        return springDataAssessmentCandidateResultRepository.findByAssessmentId(assessmentId).stream()
             .map(AssessmentCandidateResultMapper::toDomain)
             .toList();
     }

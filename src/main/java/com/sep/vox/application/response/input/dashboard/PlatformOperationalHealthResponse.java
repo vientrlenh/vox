@@ -8,7 +8,7 @@ import java.util.List;
  * <p>Trộn hai loại thời gian một cách CÓ CHỦ Ý, và client phải hiển thị đúng như vậy:
  *
  * <ul>
- *   <li>{@code sessionsInProgress}, {@code examsInProgress}, {@code gradingQueueDepth} là ảnh chụp
+ *   <li>{@code sessionsInProgress}, {@code assessmentsInProgress}, {@code gradingQueueDepth} là ảnh chụp
  *       NGAY LÚC GỌI — chúng không đổi theo cửa sổ thời gian người dùng chọn. "Đang có 6 kỳ thi
  *       chạy" mà lại đổi khi bấm sang tháng trước thì vô nghĩa.
  *   <li>{@code graded}, {@code gradingFailed}, {@code successRatePercent}, {@code daily} thuộc
@@ -17,7 +17,7 @@ import java.util.List;
  */
 public record PlatformOperationalHealthResponse(
     long sessionsInProgress,
-    long examsInProgress,
+    long assessmentsInProgress,
     long gradingQueueDepth,
     long graded,
     long gradingFailed,

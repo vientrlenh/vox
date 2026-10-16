@@ -8,14 +8,14 @@ import com.sep.vox.application.projection.dto.GradingOutcomeBucketDto;
 import com.sep.vox.application.projection.dto.LiveSessionCountsDto;
 
 /**
- * Đọc tình trạng VẬN HÀNH của nền tảng từ bảng {@code exam_sessions}, cho dashboard system admin.
+ * Đọc tình trạng VẬN HÀNH của nền tảng từ bảng {@code assessment_sessions}, cho dashboard system admin.
  *
  * <p>Là một BÁO CÁO, không phải cổng ghi của aggregate nào — cùng khuôn với
  * {@link SchoolAiCostQueryRepository} và {@link QuestionBankStatsQueryRepository}: gộp nhiều
  * phiên lại thành những con số không tương ứng với một thực thể nào và không có đường ghi ngược.
  *
- * <p>Nguồn sự thật là cột {@code exam_sessions.status}, nơi {@code GRADING_FAILED} nghĩa là AI chấm
- * lỗi — xem {@code ExamSessionStatus}. Không suy ra từ {@code exam_item_evaluations}: bảng đó chỉ có
+ * <p>Nguồn sự thật là cột {@code assessment_sessions.status}, nơi {@code GRADING_FAILED} nghĩa là AI chấm
+ * lỗi — xem {@code AssessmentSessionStatus}. Không suy ra từ {@code assessment_item_evaluations}: bảng đó chỉ có
  * bản ghi khi việc chấm đã THÀNH CÔNG, nên đếm ở đó thì mọi lượt chấm lỗi đều vô hình.
  */
 public interface PlatformOperationalHealthQueryRepository {

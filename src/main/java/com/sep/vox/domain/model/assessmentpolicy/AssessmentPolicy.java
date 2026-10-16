@@ -5,8 +5,6 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import com.sep.vox.domain.shared.BaseModel;
-import com.sep.vox.domain.valueobject.PositiveDecimal;
-import com.sep.vox.domain.valueobject.PositiveInteger;
 import com.sep.vox.domain.valueobject.PositiveLong;
 
 
@@ -30,11 +28,9 @@ public class AssessmentPolicy extends BaseModel {
 
     protected AssessmentPolicy() {}
 
-    public AssessmentPolicy(UUID id, UUID schoolId, UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId,
-            UUID learningLanguageId, UUID frameworkVersionId, UUID rubricVersionId, UUID targetFrameworkBandId,
-            PositiveDecimal passingScore, AssessmentPolicyStrictness strictness, PositiveInteger version,
-            AssessmentPolicyStatus status, Instant effectiveFrom, Instant effectiveTo) {
-        this.id = id;
+    public AssessmentPolicy(UUID gradeLevelId, UUID schoolId, UUID schoolGradeId, UUID schoolClassId,
+            UUID learningLanguageId, UUID frameworkVersionId, UUID rubricVersionId, UUID targetFrameworkBandId, PositiveLong version,
+            AssessmentPolicyStatus status, LocalDate effectiveFrom, Instant publishedAt, Instant archivedAt, UUID createdBy, UUID publishedBy, UUID archivedBy) {
         this.schoolId = schoolId;
         this.gradeLevelId = gradeLevelId;
         this.schoolGradeId = schoolGradeId;
@@ -43,16 +39,18 @@ public class AssessmentPolicy extends BaseModel {
         this.frameworkVersionId = frameworkVersionId;
         this.rubricVersionId = rubricVersionId;
         this.targetFrameworkBandId = targetFrameworkBandId;
-        this.passingScore = passingScore;
-        this.strictness = strictness;
         this.version = version;
         this.status = status;
         this.effectiveFrom = effectiveFrom;
-        this.effectiveTo = effectiveTo;
+        this.publishedAt = publishedAt;
+        this.archivedAt = archivedAt;
+        this.createdBy = createdBy;
+        this.publishedBy = publishedBy;
+        this.archivedBy = archivedBy;
     }
 
     public AssessmentPolicy(Builder builder) {
-        this.id = builder.id;
+        super(builder.id, builder.createdAt);
         this.schoolId = builder.schoolId;
         this.gradeLevelId = builder.gradeLevelId;
         this.schoolGradeId = builder.schoolGradeId;
@@ -61,20 +59,14 @@ public class AssessmentPolicy extends BaseModel {
         this.frameworkVersionId = builder.frameworkVersionId;
         this.rubricVersionId = builder.rubricVersionId;
         this.targetFrameworkBandId = builder.targetFrameworkBandId;
-        this.passingScore = builder.passingScore;
-        this.strictness = builder.strictness;
         this.version = builder.version;
         this.status = builder.status;
         this.effectiveFrom = builder.effectiveFrom;
-        this.effectiveTo = builder.effectiveTo;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
+        this.publishedAt = builder.publishedAt;
+        this.archivedAt = builder.archivedAt;
+        this.createdBy = builder.createdBy;
+        this.publishedBy = builder.publishedBy;
+        this.archivedBy = builder.archivedBy;
     }
 
     public UUID getSchoolId() {
@@ -141,27 +133,11 @@ public class AssessmentPolicy extends BaseModel {
         this.targetFrameworkBandId = targetFrameworkBandId;
     }
 
-    public PositiveDecimal getPassingScore() {
-        return passingScore;
-    }
-
-    public void setPassingScore(PositiveDecimal passingScore) {
-        this.passingScore = passingScore;
-    }
-
-    public AssessmentPolicyStrictness getStrictness() {
-        return strictness;
-    }
-
-    public void setStrictness(AssessmentPolicyStrictness strictness) {
-        this.strictness = strictness;
-    }
-
-    public PositiveInteger getVersion() {
+    public PositiveLong getVersion() {
         return version;
     }
 
-    public void setVersion(PositiveInteger version) {
+    public void setVersion(PositiveLong version) {
         this.version = version;
     }
 
@@ -173,20 +149,52 @@ public class AssessmentPolicy extends BaseModel {
         this.status = status;
     }
 
-    public Instant getEffectiveFrom() {
+    public LocalDate getEffectiveFrom() {
         return effectiveFrom;
     }
 
-    public void setEffectiveFrom(Instant effectiveFrom) {
+    public void setEffectiveFrom(LocalDate effectiveFrom) {
         this.effectiveFrom = effectiveFrom;
     }
 
-    public Instant getEffectiveTo() {
-        return effectiveTo;
+    public Instant getPublishedAt() {
+        return publishedAt;
     }
 
-    public void setEffectiveTo(Instant effectiveTo) {
-        this.effectiveTo = effectiveTo;
+    public void setPublishedAt(Instant publishedAt) {
+        this.publishedAt = publishedAt;
+    }
+
+    public Instant getArchivedAt() {
+        return archivedAt;
+    }
+
+    public void setArchivedAt(Instant archivedAt) {
+        this.archivedAt = archivedAt;
+    }
+
+    public UUID getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(UUID createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public UUID getPublishedBy() {
+        return publishedBy;
+    }
+
+    public void setPublishedBy(UUID publishedBy) {
+        this.publishedBy = publishedBy;
+    }
+
+    public UUID getArchivedBy() {
+        return archivedBy;
+    }
+
+    public void setArchivedBy(UUID archivedBy) {
+        this.archivedBy = archivedBy;
     }
 
     public static Builder builder() {
@@ -195,11 +203,6 @@ public class AssessmentPolicy extends BaseModel {
 
     public boolean isPublished() {
         return status == AssessmentPolicyStatus.PUBLISHED;
-    }
-
-    // có dùng được cho exam không
-    public boolean isSelectableAt(Instant examOpenAt) {
-        return isPublished() && !effectiveFrom.isAfter(examOpenAt) && (effectiveTo == null || !effectiveTo.isBefore(examOpenAt));
     }
 
     // scope theo thứ tự ưu tiên (class -> grade -> grade level)
@@ -218,20 +221,23 @@ public class AssessmentPolicy extends BaseModel {
 
     public static class Builder {
         private UUID id;
-        private UUID schoolId;
         private UUID gradeLevelId;
+        private UUID schoolId;
         private UUID schoolGradeId;
         private UUID schoolClassId;
         private UUID learningLanguageId;
         private UUID frameworkVersionId;
         private UUID rubricVersionId;
         private UUID targetFrameworkBandId;
-        private PositiveDecimal passingScore;
-        private AssessmentPolicyStrictness strictness;
-        private PositiveInteger version;
+        private PositiveLong version;
         private AssessmentPolicyStatus status;
-        private Instant effectiveFrom;
-        private Instant effectiveTo;
+        private LocalDate effectiveFrom;
+        private Instant publishedAt;
+        private Instant archivedAt;
+        private Instant createdAt;
+        private UUID createdBy;
+        private UUID publishedBy;
+        private UUID archivedBy;
 
         protected Builder() {}
 
@@ -280,17 +286,7 @@ public class AssessmentPolicy extends BaseModel {
             return this;
         }
 
-        public Builder passingScore(PositiveDecimal passingScore) {
-            this.passingScore = passingScore;
-            return this;
-        }
-
-        public Builder strictness(AssessmentPolicyStrictness strictness) {
-            this.strictness = strictness;
-            return this;
-        }
-
-        public Builder version(PositiveInteger version) {
+        public Builder version(PositiveLong version) {
             this.version = version;
             return this;
         }
@@ -300,13 +296,38 @@ public class AssessmentPolicy extends BaseModel {
             return this;
         }
 
-        public Builder effectiveFrom(Instant effectiveFrom) {
+        public Builder effectiveFrom(LocalDate effectiveFrom) {
             this.effectiveFrom = effectiveFrom;
             return this;
         }
 
-        public Builder effectiveTo(Instant effectiveTo) {
-            this.effectiveTo = effectiveTo;
+        public Builder publishedAt(Instant publishedAt) {
+            this.publishedAt = publishedAt;
+            return this;
+        }
+
+        public Builder archivedAt(Instant archivedAt) {
+            this.archivedAt = archivedAt;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder createdBy(UUID createdBy) {
+            this.createdBy = createdBy;
+            return this;
+        }
+
+        public Builder publishedBy(UUID publishedBy) {
+            this.publishedBy = publishedBy;
+            return this;
+        }
+
+        public Builder archivedBy(UUID archivedBy) {
+            this.archivedBy = archivedBy;
             return this;
         }
 

@@ -91,7 +91,6 @@ public class GraphQLDashboardController {
             @Argument(name = "retryLeft") Boolean retryLeft,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
         return viewSchoolGradingFailuresUseCase.execute(
             new SearchSchoolGradingFailuresQuery(examId, retryLeft, page, size));
     }

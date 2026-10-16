@@ -13,15 +13,7 @@ import com.sep.vox.application.projection.repository.SchoolsAtRiskQueryRepositor
 import com.sep.vox.application.response.input.dashboard.SchoolsAtRiskResponse;
 import com.sep.vox.domain.shared.BusinessConstant;
 
-/**
- * Trang "trường cần chú ý" — chỗ đáp của bốn dòng trên thẻ cùng tên ở trang tổng quan hệ thống.
- *
- * <p>MỘT trang, bốn bộ lọc, không phải bốn trang: bốn nhóm chỉ khác nhau ở vị từ trên cùng một bảng.
- *
- * <p>Số đếm lấy từ CHÍNH {@link PlatformBusinessHealthQueryRepository} mà trang tổng quan dùng, chứ
- * không đếm lại bằng câu khác. Đây là điểm dễ hỏng nhất của màn hình: thẻ ghi 5, người dùng bấm vào,
- * và một phép lọc khác sẽ cho ra 9 mà không ai biết số nào đúng.
- */
+
 @Service
 public class ViewSchoolsAtRiskUseCase implements IUseCase<ViewSchoolsAtRiskQuery, SchoolsAtRiskResponse> {
 

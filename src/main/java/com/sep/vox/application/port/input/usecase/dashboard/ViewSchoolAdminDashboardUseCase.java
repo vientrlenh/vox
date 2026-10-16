@@ -170,56 +170,24 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
         );
     }
 
-    /**
-     * Đơn đã thu được tiền của trường. SUCCESS là trạng thái DUY NHẤT có tiền thật: PENDING mới chỉ
-     * là ý định mua, còn FAILED/CANCELLED/EXPIRED thì không đồng nào về (xem OrderSettlementService).
-     */
+
     private List<Order> fetchPaidOrders(UUID schoolId) {
         var now = Instant.now();
-        // Mốc đầu = 00:00 ngày 1 của tháng CŨ NHẤT mà biểu đồ vẽ, tính theo giờ VN -- giống hệt
-        // ViewSystemAdminDashboardUseCase.
-        //
-        // KHÔNG dùng now.minus(SPENDING_MONTHS, ChronoUnit.MONTHS): Instant chỉ nhận đơn vị tới DAYS
-        // nên câu đó ném UnsupportedTemporalTypeException, tức là màn quản trị của trường 500 ở mọi
-        // lượt gọi. Mà kể cả nếu chạy được thì nó cũng sai: cửa sổ trượt bắt đầu từ giữa tháng sẽ cắt
-        // mất phần đầu của tháng cũ nhất, trong khi buildMonthlySpending gom theo NGUYÊN tháng -- cột
-        // xa nhất của biểu đồ vì thế thiếu tiền so với chính nó.
         var from = YearMonth.now(ZoneConstant.BUSINESS_ZONE)
             .minusMonths(SPENDING_MONTHS - 1L)
             .atDay(1)
             .atStartOfDay(ZoneConstant.BUSINESS_ZONE)
             .toInstant();
-        // findBySchoolIdAndStatusInRange chứ KHÔNG phải findByStatusInRange: bản kia không lọc trường
-        // nào cả (nó sinh ra cho màn System Admin), nên dùng ở đây là đưa đơn của mọi trường vào tổng
-        // chi và biểu đồ 12 tháng của đúng một trường đang đăng nhập.
         return orderRepository.findBySchoolIdAndStatusInRange(schoolId, OrderStatus.SUCCESS, from, now);
     }
 
-    /**
-     * Tổng chi lấy {@code totalAmountVnd} -- số trường THẬT SỰ trả, đã gồm phí dịch vụ và đã trừ
-     * khoản bù nâng cấp. Đây là màn của người trả tiền, nên con số phải khớp với sao kê ngân hàng
-     * của họ chứ không phải với giá niêm yết của gói.
-     */
     private static BigDecimal sumAmount(List<Order> orders) {
         return orders.stream()
             .map(order -> order.getTotalAmountVnd())
             .reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
     }
 
-    /**
-     * Chi tiêu 12 tháng gần nhất (kể cả tháng hiện tại), xếp cũ -> mới, tháng không có đơn nào trả về
-     * 0. Tách riêng phần chi cho gói (đăng ký/gia hạn/nâng cấp) và phần nạp thêm số dư -- gói thường
-     * trả theo năm nên hầu hết các tháng chỉ có nạp thêm (hoặc không có gì); tách hai phần giúp biểu
-     * đồ phân biệt được tháng "chỉ nạp thêm" với tháng "đến kỳ gia hạn gói".
-     *
-     * <p>Gom theo tháng của {@code createdAt} chứ không phải lúc tiền về: đơn chỉ sống tối đa 24
-     * tiếng (Order.PENDING_TTL) nên hai mốc chỉ lệch nhau khi đơn đặt vào ngày cuối tháng, và đây là
-     * mốc mà {@code sumTotalAmountByStatusInRange} đang dùng -- hai chỗ soi khác mốc thì tổng của
-     * biểu đồ và tổng của màn quản trị sẽ không khớp nhau.
-     *
-     * <p>Quy về giờ Việt Nam trước khi cắt tháng: cắt theo UTC sẽ đẩy 7 giờ đầu tiên của mỗi tháng
-     * sang tháng trước -- xem ZoneConstant.
-     */
+
     private static List<SchoolMonthlySpendingResponse> buildMonthlySpending(List<Order> orders) {
         var currentMonth = YearMonth.now(ZoneConstant.BUSINESS_ZONE);
         var subscriptionByMonth = new LinkedHashMap<YearMonth, BigDecimal>();
@@ -256,17 +224,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
             .findBySchoolSubscriptionIdAndQuotaType(subscription.getId(), QuotaType.EXAM));
     }
 
-    /**
-     * Phần hạn mức thi đã hứa cho giáo viên mà họ chưa tiêu.
-     *
-     * <p>Chỉ ví EXAM: trần chi của học sinh nằm ở ví PRACTICE, và cộng nó vào đây sẽ làm "còn tự do"
-     * của kỳ thi bị trừ bởi một túi tiền không hề trả cho việc chấm thi -- cùng luật "hai túi khác
-     * nhau, đừng gộp" mà SchoolFundingResponse đang giữ.
-     *
-     * <p>Không có kỳ đăng ký đang chạy thì không có trần nào để hứa: allocation gắn với
-     * schoolSubscriptionId, và bản ghi hạn mức được dựng lại mỗi kỳ (OrderSettlementService
-     * .seedQuotaRecords), nên hỏi ở đây là hỏi về một kỳ không tồn tại.
-     */
+
     private BigDecimal committedToUsers(Optional<SchoolSubscription> activeSubscription) {
         return activeSubscription
             .map(subscription -> subscriptionQuotaUserAllocationRepository

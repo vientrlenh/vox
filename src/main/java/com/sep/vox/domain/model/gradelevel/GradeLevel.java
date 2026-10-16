@@ -94,6 +94,26 @@ public class GradeLevel extends BaseModel {
         this.updatedBy = updatedBy;
     }
 
+    public boolean isNotActive() {
+        return this.status != GradeLevelStatus.ACTIVE;
+    }
+
+    public void delete(UUID updatedBy) {
+        this.status = GradeLevelStatus.INACTIVE;
+        this.updatedBy = updatedBy;
+    }
+
+    public static GradeLevel create(String name, String description, Integer order, UUID createdBy) {
+        return GradeLevel.builder()
+            .name(name)
+            .description(description)
+            .order(PositiveInteger.from(order))
+            .status(GradeLevelStatus.ACTIVE)
+            .createdBy(createdBy)
+            .updatedBy(createdBy)
+            .build();
+    }
+
     public static Builder builder() {
         return new GradeLevel.Builder();
     }

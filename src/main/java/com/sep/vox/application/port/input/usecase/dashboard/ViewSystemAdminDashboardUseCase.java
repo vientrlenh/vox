@@ -27,12 +27,7 @@ import com.sep.vox.domain.repository.UserRoleRepository;
 import com.sep.vox.domain.shared.BusinessDays;
 import com.sep.vox.domain.shared.ZoneConstant;
 
-/**
- * Doanh thu đọc từ ĐƠN HÀNG đã thu được tiền (Order.status = SUCCESS) thay vì từ hóa đơn: hóa đơn
- * giờ chỉ là chứng từ phát hành sau khi tiền về và không còn cột status lẫn amount -- xem
- * InvoiceRepository. Đây cũng là con số ĐÚNG hơn bản cũ: hóa đơn chỉ tồn tại cho đơn đã thành công,
- * nên "lọc hóa đơn PAID" trước đây là lọc một điều kiện luôn đúng.
- */
+
 @Service
 public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdminDashboardSummaryResponse> {
 

@@ -1,6 +1,7 @@
 package com.sep.vox.domain.model.user;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -183,8 +184,15 @@ public class User extends BaseModel {
         return new User.Builder();
     }
 
-    public static User createStudent() {
+    public static User createSystemAdmin(String email, String passwordHash, String phone, String fullName, LocalDate birthDate, String address) {
         return User.builder()
+            .email(Email.from(email))
+            .passwordHash(passwordHash)
+            .phone(Phone.from(phone))
+            .fullName(PersonName.from(fullName))
+            .birthDate(BirthDate.from(birthDate))
+            .address(address)
+            .status(UserStatus.ACTIVE)
             .build();
     }
 

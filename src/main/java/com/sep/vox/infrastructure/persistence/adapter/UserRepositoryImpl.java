@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.shared.PageResult;
@@ -140,6 +141,11 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public boolean existsByEmailAndStatusActive(String email) {
         return springDataUserRepository.existsByEmailAndStatus(email, UserStatus.ACTIVE.name());
+    }
+
+    @Override
+    public boolean existsByRole(UserRole role) {
+        return springDataUserRepository.existsByRole(role.name());
     }
     
 }

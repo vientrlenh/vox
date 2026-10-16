@@ -9,17 +9,18 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.gradelevel.GradeLevelBandScope;
 import com.sep.vox.domain.repository.GradeLevelBandScopeRepository;
+import com.sep.vox.infrastructure.persistence.entity.GradeLevelBandScopeJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.GradeLevelBandScopeMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataGradeLevelBandScopeRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Repository
+@RequiredArgsConstructor 
 public class GradeLevelBandScopeRepositoryImpl implements GradeLevelBandScopeRepository {
 
-    private final SpringDataGradeLevelBandScopeRepository bandScopeRepository;
+    private final SpringDataGradeLevelBandScopeRepository springDataGradeLevelBandScopeRepository;
 
-    public GradeLevelBandScopeRepositoryImpl(SpringDataGradeLevelBandScopeRepository bandScopeRepository) {
-        this.bandScopeRepository = bandScopeRepository;
-    }
 
     @Override
     public Optional<GradeLevelBandScope> findByGradeLevelIdAndFrameworkVersionId(
@@ -27,7 +28,7 @@ public class GradeLevelBandScopeRepositoryImpl implements GradeLevelBandScopeRep
         if (gradeLevelId == null || frameworkVersionId == null) {
             return Optional.empty();
         }
-        return bandScopeRepository.findByGradeLevelIdAndFrameworkVersionId(gradeLevelId, frameworkVersionId)
+        return springDataGradeLevelBandScopeRepository.findByGradeLevelIdAndFrameworkVersionId(gradeLevelId, frameworkVersionId)
                 .map(GradeLevelBandScopeMapper::toDomain);
     }
 
@@ -38,7 +39,7 @@ public class GradeLevelBandScopeRepositoryImpl implements GradeLevelBandScopeRep
                 || frameworkVersionIds == null || frameworkVersionIds.isEmpty()) {
             return List.of();
         }
-        return bandScopeRepository.findByGradeLevelIdInAndFrameworkVersionIdIn(gradeLevelIds, frameworkVersionIds)
+        return springDataGradeLevelBandScopeRepository.findByGradeLevelIdInAndFrameworkVersionIdIn(gradeLevelIds, frameworkVersionIds)
                 .stream()
                 .map(GradeLevelBandScopeMapper::toDomain)
                 .toList();
@@ -46,17 +47,18 @@ public class GradeLevelBandScopeRepositoryImpl implements GradeLevelBandScopeRep
 
     @Override
     public boolean existsByBandId(UUID bandId) {
-        return bandId != null && bandScopeRepository.existsByBandId(bandId);
+        return bandId != null && springDataGradeLevelBandScopeRepository.existsByBandId(bandId);
     }
 
     @Override
     public GradeLevelBandScope save(GradeLevelBandScope bandScope) {
-        var saved = bandScopeRepository.save(GradeLevelBandScopeMapper.toEntity(bandScope));
+        GradeLevelBandScopeJpaEntity entity = GradeLevelBandScopeMapper.toJpa(bandScope);
+        GradeLevelBandScopeJpaEntity saved = springDataGradeLevelBandScopeRepository.save(entity);
         return GradeLevelBandScopeMapper.toDomain(saved);
     }
 
     @Override
     public void deleteById(UUID id) {
-        bandScopeRepository.deleteById(id);
+        springDataGradeLevelBandScopeRepository.deleteById(id);
     }
 }

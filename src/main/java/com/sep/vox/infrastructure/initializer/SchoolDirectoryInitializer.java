@@ -23,19 +23,6 @@ import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
-/**
- * Nạp sẵn danh mục trường THPT từ school/school-directory-seed.json (sinh từ file Excel do nghiệp
- * vụ cung cấp) để hệ thống có sẵn danh mục cho luồng đăng ký, thay vì phải import tay qua
- * PreviewSchoolDirectoryImportFromFileUseCase mỗi lần dựng môi trường mới.
- *
- * <p>Ghi bằng origin OFFICIAL_IMPORT và verified = true: đây là danh sách chính thức được nạp sẵn
- * (không phải admin gõ từng dòng), và đã tin cậy sẵn nên trường có email đúng tên miền đăng ký
- * được qua OTP thay vì phải nộp tài liệu -- xem RegisterFromSchoolDirectoryUseCase.
- *
- * <p>Idempotent theo MÃ TRƯỜNG chứ không phải theo "bảng có rỗng hay không": chỉ chèn những mã
- * chưa có. Nhờ vậy thêm trường mới vào file seed rồi khởi động lại là nạp được phần thiếu, mà
- * KHÔNG đụng vào entry admin đã sửa tay hay đã xác minh trước đó.
- */
 @Component
 @Order(5)
 public class SchoolDirectoryInitializer implements ApplicationRunner {

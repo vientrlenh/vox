@@ -28,7 +28,7 @@ import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
 import com.sep.vox.domain.repository.ExamBlueprintRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.ExamRepository;
-import com.sep.vox.domain.service.exam.ExamDeliveryModeSupport;
+import com.sep.vox.domain.service.assessment.ExamDeliveryModeSupport;
 
 @Service
 public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {

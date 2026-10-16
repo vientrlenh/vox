@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamResultOutcomeDecidedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamResultOutcomeDecidedPayloadV1;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DecideExamCandidateResultOutcomeCommand;
 import com.sep.vox.application.port.input.service.ExamSessionModerationAccessService;

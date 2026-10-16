@@ -24,7 +24,7 @@ import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
 import com.sep.vox.domain.repository.assessment.ExamRepository;
-import com.sep.vox.domain.service.exam.ExamEditingGuard;
+import com.sep.vox.domain.service.assessment.ExamEditingGuard;
 
 @Service
 public class AddExamCandidateUseCase implements IUseCase<AddExamCandidateCommand, ExamCandidateDto> {

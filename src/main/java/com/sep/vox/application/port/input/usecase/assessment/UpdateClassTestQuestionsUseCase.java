@@ -39,7 +39,7 @@ import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
 import com.sep.vox.domain.repository.assessment.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.assessment.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.assessment.ExamRepository;
-import com.sep.vox.domain.service.exam.PaperTimeCalculator;
+import com.sep.vox.domain.service.assessment.PaperTimeCalculator;
 
 @Service
 public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTestQuestionsCommand, ExamDto> {

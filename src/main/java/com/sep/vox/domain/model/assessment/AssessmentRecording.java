@@ -84,11 +84,11 @@ public class AssessmentRecording {
         this.s3Key = s3Key;
     }
 
-    public ExamRecordingAssemblyStatus getStatus() {
+    public AssessmentRecordingAssemblyStatus getStatus() {
         return status;
     }
 
-    public void setStatus(ExamRecordingAssemblyStatus status) {
+    public void setStatus(AssessmentRecordingAssemblyStatus status) {
         this.status = status;
     }
 

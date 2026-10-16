@@ -42,7 +42,7 @@ import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
 import com.sep.vox.domain.repository.assessment.ExamRepository;
 import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
-import com.sep.vox.domain.service.exam.ExamDeliveryModeSupport;
+import com.sep.vox.domain.service.assessment.ExamDeliveryModeSupport;
 
 /**
  * Tạo "vỏ" bài kiểm tra trên lớp: exam DRAFT + ca thi nháp + CHAIR + danh sách học sinh của lớp.

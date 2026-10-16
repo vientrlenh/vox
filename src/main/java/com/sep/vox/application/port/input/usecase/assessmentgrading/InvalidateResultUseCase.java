@@ -5,7 +5,7 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamResultInvalidatedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamResultInvalidatedPayloadV1;
 import com.sep.vox.application.port.input.command.GradingDecisionCommand;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;

@@ -5,11 +5,11 @@ import java.util.UUID;
 
 public class AssessmentSchedule {
     private UUID id;
-    private UUID examId;
+    private UUID assessmentId;
     private UUID schoolRoomId;
     private Instant startDate;
     private Instant endDate;
-    private ExamScheduleStatus status;
+    private AssessmentScheduleStatus status;
     private UUID movedToScheduleId;
     private Instant createdAt;
     private Instant updatedAt;
@@ -18,11 +18,11 @@ public class AssessmentSchedule {
 
     protected AssessmentSchedule() {}
 
-    public AssessmentSchedule(UUID id, UUID examId, UUID schoolRoomId, Instant startDate, Instant endDate,
-            ExamScheduleStatus status, UUID movedToScheduleId, Instant createdAt, Instant updatedAt,
+    public AssessmentSchedule(UUID id, UUID assessmentId, UUID schoolRoomId, Instant startDate, Instant endDate,
+            AssessmentScheduleStatus status, UUID movedToScheduleId, Instant createdAt, Instant updatedAt,
             UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.examId = examId;
+        this.assessmentId = assessmentId;
         this.schoolRoomId = schoolRoomId;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -37,17 +37,17 @@ public class AssessmentSchedule {
     /**
      * Tạo mới một ca thi ở trạng thái DRAFT (id do DB sinh).
      */
-    public static ExamSchedule createFresh(UUID examId, UUID schoolRoomId, Instant startDate,
+    public static AssessmentSchedule createFresh(UUID assessmentId, UUID schoolRoomId, Instant startDate,
             Instant endDate, UUID createdBy, Instant now) {
-        return new ExamSchedule(examId, schoolRoomId, startDate, endDate,
-                ExamScheduleStatus.DRAFT, null, now, now, createdBy, createdBy);
+        return new AssessmentSchedule(assessmentId, schoolRoomId, startDate, endDate,
+                AssessmentScheduleStatus.DRAFT, null, now, now, createdBy, createdBy);
     }
 
     /**
      * Ca thi chỉ được phép sửa (đổi phòng/giờ) khi còn ở trạng thái DRAFT.
      */
     public boolean isModifiable() {
-        return this.status == ExamScheduleStatus.DRAFT;
+        return this.status == AssessmentScheduleStatus.DRAFT;
     }
 
     /** Đã tới giờ bắt đầu. Đúng khoảnh khắc {@code startDate} tính là đã bắt đầu. */
@@ -66,11 +66,11 @@ public class AssessmentSchedule {
 
     /**
      * Ca đang diễn ra: đã công bố, đã tới giờ và chưa hết giờ. Cùng vị từ với
-     * {@code findByExamIdAndInSchedule}, viết lại ở domain để service và worker khỏi phải chép biểu
+     * {@code findByAssessmentIdAndInSchedule}, viết lại ở domain để service và worker khỏi phải chép biểu
      * thức so sánh {@code Instant}.
      */
     public boolean isOngoingAt(Instant now) {
-        return this.status == ExamScheduleStatus.PUBLISHED && hasStartedAt(now) && !hasEndedAt(now);
+        return this.status == AssessmentScheduleStatus.PUBLISHED && hasStartedAt(now) && !hasEndedAt(now);
     }
 
     public UUID getId() {
@@ -81,12 +81,12 @@ public class AssessmentSchedule {
         this.id = id;
     } 
 
-    public UUID getExamId() {
-        return examId;
+    public UUID getAssessmentId() {
+        return assessmentId;
     }
 
-    public void setExamId(UUID examId) {
-        this.examId = examId;
+    public void setAssessmentId(UUID assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public UUID getSchoolRoomId() {
@@ -113,11 +113,11 @@ public class AssessmentSchedule {
         this.endDate = endDate;
     }
 
-    public ExamScheduleStatus getStatus() {
+    public AssessmentScheduleStatus getStatus() {
         return status;
     }
 
-    public void setStatus(ExamScheduleStatus status) {
+    public void setStatus(AssessmentScheduleStatus status) {
         this.status = status;
     }
 

@@ -128,11 +128,11 @@ public class AssessmentCandidateResultJpaEntity {
         this.id = id;
     }
 
-    public UUID getExamId() {
+    public UUID getAssessmentId() {
         return examId;
     }
 
-    public void setExamId(UUID examId) {
+    public void setAssessmentId(UUID examId) {
         this.examId = examId;
     }
 

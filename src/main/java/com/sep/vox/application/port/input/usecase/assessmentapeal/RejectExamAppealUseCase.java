@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamAppealRejectedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamAppealRejectedPayloadV1;
 import com.sep.vox.application.port.input.command.RejectExamAppealCommand;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;

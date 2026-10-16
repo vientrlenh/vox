@@ -17,11 +17,11 @@ import org.springframework.kafka.retrytopic.DltStrategy;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.application.event.ExamResultInvalidClearedPayloadV1;
-import com.sep.vox.application.event.ExamResultInvalidatedPayloadV1;
-import com.sep.vox.application.event.ExamResultOutcomeDecidedPayloadV1;
-import com.sep.vox.application.event.ExamResultRegradedPayloadV1;
-import com.sep.vox.application.event.ExamResultReleasedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamResultInvalidClearedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamResultInvalidatedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamResultOutcomeDecidedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamResultRegradedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamResultReleasedPayloadV1;
 import com.sep.vox.application.port.output.MailSendingPort;
 import com.sep.vox.application.port.output.MailTemplatePort;
 import com.sep.vox.domain.model.assessment.GradingRoundType;

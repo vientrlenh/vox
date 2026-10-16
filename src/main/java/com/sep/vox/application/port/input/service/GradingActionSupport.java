@@ -7,9 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamAppealPublishedPayloadV1;
-import com.sep.vox.application.event.ExamResultRegradedPayloadV1;
-import com.sep.vox.application.event.ExamResultReleasedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamAppealPublishedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamResultRegradedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamResultReleasedPayloadV1;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -17,7 +17,6 @@ import com.sep.vox.domain.model.assessment.ExamAppealStatus;
 import com.sep.vox.domain.model.assessment.ExamCandidateResult;
 import com.sep.vox.domain.model.assessment.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.GradingOutcome;
-import com.sep.vox.domain.model.assessment.GradingRoundPolicy;
 import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.domain.model.assessment.ResultStatusChangeSource;
 import com.sep.vox.domain.model.outbox.Outbox;
@@ -26,6 +25,7 @@ import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
 import com.sep.vox.domain.repository.assessment.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.assessment.ExamGradingAssignmentRepository;
 import com.sep.vox.domain.repository.assessment.ExamResultAppealRepository;
+import com.sep.vox.domain.service.assessment.GradingRoundPolicy;
 import com.sep.vox.domain.shared.AggregateTypeConstant;
 import com.sep.vox.domain.shared.EventTypeConstant;
 

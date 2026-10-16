@@ -18,7 +18,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.ExamRepository;
 import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
-import com.sep.vox.domain.service.exam.ExamEditingGuard;
+import com.sep.vox.domain.service.assessment.ExamEditingGuard;
 
 @Service
 public class AddExamScheduleProctorUseCase implements IUseCase<AddExamScheduleProctorCommand, ExamScheduleProctorDto> {

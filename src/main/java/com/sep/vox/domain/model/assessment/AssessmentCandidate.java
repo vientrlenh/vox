@@ -5,11 +5,11 @@ import java.util.UUID;
 
 public class AssessmentCandidate {
     private UUID id;
-    private UUID examId;
+    private UUID assessmentId;
     private UUID studentId;
     private UUID assignedPaperId;
     private UUID scheduleId;
-    private ExamCandidateStatus status;
+    private AssessmentCandidateStatus status;
     private Instant assignedAt;
     private Instant updatedAt;
     private Instant blockedAt;
@@ -18,11 +18,11 @@ public class AssessmentCandidate {
 
     protected AssessmentCandidate() {}
 
-    public AssessmentCandidate(UUID id, UUID examId, UUID studentId, UUID assignedPaperId, UUID scheduleId,
-            ExamCandidateStatus status, Instant assignedAt, Instant updatedAt, Instant blockedAt, UUID assignedBy,
+    public AssessmentCandidate(UUID id, UUID assessmentId, UUID studentId, UUID assignedPaperId, UUID scheduleId,
+            AssessmentCandidateStatus status, Instant assignedAt, Instant updatedAt, Instant blockedAt, UUID assignedBy,
             UUID updatedBy) {
         this.id = id;
-        this.examId = examId;
+        this.assessmentId = assessmentId;
         this.studentId = studentId;
         this.assignedPaperId = assignedPaperId;
         this.scheduleId = scheduleId;
@@ -37,9 +37,9 @@ public class AssessmentCandidate {
     /**
      * Tạo mới một thí sinh cho kỳ thi ở trạng thái ASSIGNED (id do DB sinh), chưa gán ca và chưa gán đề.
      */
-    public static ExamCandidate createFresh(UUID examId, UUID studentId, UUID createdBy, Instant now) {
-        return new ExamCandidate(examId, studentId, null, null,
-                ExamCandidateStatus.ASSIGNED, now, now, null, createdBy, createdBy);
+    public static AssessmentCandidate createFresh(UUID assessmentId, UUID studentId, UUID createdBy, Instant now) {
+        return new AssessmentCandidate(assessmentId, studentId, null, null,
+                AssessmentCandidateStatus.ASSIGNED, now, now, null, createdBy, createdBy);
     }
 
     /**
@@ -87,12 +87,12 @@ public class AssessmentCandidate {
         this.id = id;
     }
 
-    public UUID getExamId() {
-        return examId;
+    public UUID getAssessmentId() {
+        return assessmentId;
     }
 
-    public void setExamId(UUID examId) {
-        this.examId = examId;
+    public void setAssessmentId(UUID assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public UUID getStudentId() {
@@ -119,11 +119,11 @@ public class AssessmentCandidate {
         this.scheduleId = scheduleId;
     }
 
-    public ExamCandidateStatus getStatus() {
+    public AssessmentCandidateStatus getStatus() {
         return status;
     }
 
-    public void setStatus(ExamCandidateStatus status) {
+    public void setStatus(AssessmentCandidateStatus status) {
         this.status = status;
     }
 

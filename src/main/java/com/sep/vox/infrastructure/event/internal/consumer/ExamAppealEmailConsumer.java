@@ -18,9 +18,9 @@ import org.springframework.kafka.retrytopic.DltStrategy;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.application.event.ExamAppealApprovedPayloadV1;
-import com.sep.vox.application.event.ExamAppealPublishedPayloadV1;
-import com.sep.vox.application.event.ExamAppealRejectedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamAppealApprovedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamAppealPublishedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamAppealRejectedPayloadV1;
 import com.sep.vox.application.port.output.MailSendingPort;
 import com.sep.vox.application.port.output.MailTemplatePort;
 import com.sep.vox.application.shared.DateMapper;

@@ -10,26 +10,26 @@ public enum AssessmentCandidateStatus {
     EXEMPTED, // được miễn/hoãn thi
     CANCELLED; 
 
-    private static final EnumSet<ExamCandidateStatus> NON_SCORABLE_STATUSES = EnumSet.of(
-        ExamCandidateStatus.EXEMPTED,
-        ExamCandidateStatus.CANCELLED
+    private static final EnumSet<AssessmentCandidateStatus> NON_SCORABLE_STATUSES = EnumSet.of(
+        AssessmentCandidateStatus.EXEMPTED,
+        AssessmentCandidateStatus.CANCELLED
     );
 
-    private static final EnumSet<ExamCandidateStatus> ENTRY_BLOCKED_STATUSES = EnumSet.of(
-        ExamCandidateStatus.ABSENT,
-        ExamCandidateStatus.EXEMPTED,
-        ExamCandidateStatus.CANCELLED
+    private static final EnumSet<AssessmentCandidateStatus> ENTRY_BLOCKED_STATUSES = EnumSet.of(
+        AssessmentCandidateStatus.ABSENT,
+        AssessmentCandidateStatus.EXEMPTED,
+        AssessmentCandidateStatus.CANCELLED
     );
 
-    public static boolean isNonScorable(ExamCandidateStatus status) {
+    public static boolean isNonScorable(AssessmentCandidateStatus status) {
         return status != null && NON_SCORABLE_STATUSES.contains(status);
     }
 
-    public static boolean isBlockedForEntry(ExamCandidateStatus status) {
+    public static boolean isBlockedForEntry(AssessmentCandidateStatus status) {
         return status != null && ENTRY_BLOCKED_STATUSES.contains(status);
     }
 
-    public static boolean isAttended(ExamCandidateStatus status) {
-        return status == ExamCandidateStatus.ATTENDED;
+    public static boolean isAttended(AssessmentCandidateStatus status) {
+        return status == AssessmentCandidateStatus.ATTENDED;
     }
 }

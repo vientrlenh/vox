@@ -9,10 +9,10 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.event.assessment.ExamResultsPublishedEvent;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.PlanLimitExceededException;
-import com.sep.vox.application.event.ExamResultsPublishedEvent;
 import com.sep.vox.application.port.input.command.UpdateExamStatusCommand;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.service.ExamScheduleClosureService;
@@ -49,7 +49,7 @@ import com.sep.vox.domain.repository.assessment.ExamRepository;
 import com.sep.vox.domain.repository.assessment.ExamScheduleProctorRepository;
 import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
 import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
-import com.sep.vox.domain.service.exam.ExamScheduleWindowMessages;
+import com.sep.vox.domain.service.assessment.ExamScheduleWindowMessages;
 
 @Service
 public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand, ExamDto> {

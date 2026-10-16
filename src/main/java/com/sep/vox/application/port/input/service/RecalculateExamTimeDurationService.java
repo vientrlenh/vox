@@ -19,8 +19,8 @@ import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
-import com.sep.vox.domain.service.exam.ExamScheduleWindowMessages;
-import com.sep.vox.domain.service.exam.PaperTimeCalculator;
+import com.sep.vox.domain.service.assessment.ExamScheduleWindowMessages;
+import com.sep.vox.domain.service.assessment.PaperTimeCalculator;
 
 /**
  * H.1: paper.timeDurationSeconds = tổng thời gian THẬT của mọi item đã gán câu hỏi trong mã đề --

@@ -36,7 +36,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.ExamPaperItemRepository;
 import com.sep.vox.domain.repository.assessment.ExamPaperRepository;
 import com.sep.vox.domain.repository.assessment.ExamRepository;
-import com.sep.vox.domain.service.exam.PaperTimeCalculator;
+import com.sep.vox.domain.service.assessment.PaperTimeCalculator;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 
 @Service

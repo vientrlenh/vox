@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamAttemptForceEndRequestedExternalEvent;
+import com.sep.vox.application.event.assessment.ExamAttemptForceEndRequestedExternalEvent;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ForceEndExamSessionCommand;
 import com.sep.vox.application.port.input.service.ExamCandidateResultFinalizationService;

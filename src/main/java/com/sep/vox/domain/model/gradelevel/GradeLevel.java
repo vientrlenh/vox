@@ -4,9 +4,11 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.shared.BaseModel;
+import com.sep.vox.domain.valueobject.Code;
 import com.sep.vox.domain.valueobject.PositiveInteger;
 
 public class GradeLevel extends BaseModel {
+    private Code code;
     private String name;
     private String description;
     private PositiveInteger order;
@@ -17,7 +19,8 @@ public class GradeLevel extends BaseModel {
 
     protected GradeLevel() {}
 
-    public GradeLevel(String name, String description, PositiveInteger order, GradeLevelStatus status, Instant updatedAt, UUID createdBy, UUID updatedBy) {
+    public GradeLevel(Code code, String name, String description, PositiveInteger order, GradeLevelStatus status, Instant updatedAt, UUID createdBy, UUID updatedBy) {
+        this.code = code;
         this.name = name;
         this.description = description;
         this.order = order;
@@ -29,6 +32,7 @@ public class GradeLevel extends BaseModel {
 
     public GradeLevel(Builder builder) {
         super(builder.id, builder.createdAt);
+        this.code = builder.code;
         this.name = builder.name;
         this.description = builder.description;
         this.order = builder.order;
@@ -36,6 +40,14 @@ public class GradeLevel extends BaseModel {
         this.updatedAt = builder.updatedAt;
         this.createdBy = builder.createdBy;
         this.updatedBy = builder.updatedBy;
+    }
+
+    public Code getCode() {
+        return code;
+    }
+
+    public void setCode(Code code) {
+        this.code = code;
     }
 
     public String getName() {
@@ -120,6 +132,7 @@ public class GradeLevel extends BaseModel {
 
     public static class Builder {
         private UUID id;
+        private Code code;
         private String name;
         private String description;
         private PositiveInteger order;
@@ -133,6 +146,11 @@ public class GradeLevel extends BaseModel {
 
         public Builder id(UUID id) {
             this.id = id;
+            return this;
+        }
+
+        public Builder code(Code code) {
+            this.code = code;
             return this;
         }
 

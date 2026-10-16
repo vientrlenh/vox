@@ -10,7 +10,7 @@ import com.sep.vox.application.port.input.query.ExportExamScoresQuery;
 import com.sep.vox.application.projection.dto.ExamScoreRowInfo;
 import com.sep.vox.application.projection.dto.GradingAssignmentFilter;
 import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.service.exam.GradingScopeKind;
+import com.sep.vox.domain.service.assessment.GradingScopeKind;
 
 /**
  * Phần dùng chung của mọi định dạng xuất bảng điểm: phân quyền, chốt phạm vi, nạp dòng.

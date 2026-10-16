@@ -17,10 +17,10 @@ import com.sep.vox.application.port.input.command.SubmitGradingCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
-import com.sep.vox.domain.service.exam.RubricItemScoreFormula;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
+import com.sep.vox.domain.service.assessment.RubricItemScoreFormula;
 
 /**
  * Validate + quy đổi điểm tiêu chí thành điểm phần thi.

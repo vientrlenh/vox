@@ -21,7 +21,7 @@ public enum AssessmentResultStatusChangeSource {
     SYSTEM;
 
     /** Nguồn tương ứng với vòng chấm — dùng khi ghi audit từ các use case của giáo viên. */
-    public static ResultStatusChangeSource ofRound(GradingRoundType roundType) {
+    public static AssessmentResultStatusChangeSource ofRound(AssessmentGradingRoundType roundType) {
         if (roundType == null) {
             return SYSTEM;
         }

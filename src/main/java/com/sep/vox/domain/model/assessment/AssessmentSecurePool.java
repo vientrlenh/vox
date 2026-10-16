@@ -6,9 +6,9 @@ import java.util.UUID;
 public class AssessmentSecurePool {
     private UUID id;
     private UUID examId;
-    private ExamSecurePoolStatus status;
-    private ExamSecurePoolReleaseMode releaseMode;
-    private Instant embargoUntil; // auto thì tự release sau thời gian này
+    private AssessmentSecurePoolStatus status;
+    private AssessmentSecurePoolReleaseMode releaseMode;
+    private Instant embargoUntil;
     private Instant releasedAt;
     private UUID releasedBy;
     private Instant createdAt;
@@ -18,7 +18,7 @@ public class AssessmentSecurePool {
 
     protected AssessmentSecurePool() {}
 
-    public AssessmentSecurePool(UUID id, UUID examId, ExamSecurePoolStatus status, ExamSecurePoolReleaseMode releaseMode,
+    public AssessmentSecurePool(UUID id, UUID examId, AssessmentSecurePoolStatus status, AssessmentSecurePoolReleaseMode releaseMode,
             Instant embargoUntil, Instant releasedAt, UUID releasedBy, Instant createdAt,
             Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
@@ -50,19 +50,19 @@ public class AssessmentSecurePool {
         this.examId = examId;
     }
 
-    public ExamSecurePoolStatus getStatus() {
+    public AssessmentSecurePoolStatus getStatus() {
         return status;
     }
 
-    public void setStatus(ExamSecurePoolStatus status) {
+    public void setStatus(AssessmentSecurePoolStatus status) {
         this.status = status;
     }
 
-    public ExamSecurePoolReleaseMode getReleaseMode() {
+    public AssessmentSecurePoolReleaseMode getReleaseMode() {
         return releaseMode;
     }
 
-    public void setReleaseMode(ExamSecurePoolReleaseMode releaseMode) {
+    public void setReleaseMode(AssessmentSecurePoolReleaseMode releaseMode) {
         this.releaseMode = releaseMode;
     }
 

@@ -14,7 +14,7 @@ import com.sep.vox.domain.repository.ExamBlueprintSlotRepository;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.assessment.ExamBlueprintVersionRepository;
-import com.sep.vox.domain.service.exam.PaperTimeCalculator;
+import com.sep.vox.domain.service.assessment.PaperTimeCalculator;
 
 @Service
 public class RecalculateBlueprintVersionTimeLimitService {

@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamAppealApprovedPayloadV1;
+import com.sep.vox.application.event.assessment.ExamAppealApprovedPayloadV1;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.AssignExamAppealReviewerCommand;
 import com.sep.vox.application.port.input.service.ExamAppealAccessService;

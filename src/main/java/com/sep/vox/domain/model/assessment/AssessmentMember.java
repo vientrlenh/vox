@@ -5,18 +5,18 @@ import java.util.UUID;
 
 public class AssessmentMember {
     private UUID id;
-    private UUID examId;
+    private UUID assessmentId;
     private UUID userId;
-    private ExamMemberRole role;
+    private AssessmentMemberRole role;
     private Instant grantedAt;
     private UUID grantedBy; 
 
     public AssessmentMember() {}
 
-    public AssessmentMember(UUID id, UUID examId, UUID userId, ExamMemberRole role, Instant grantedAt,
+    public AssessmentMember(UUID id, UUID assessmentId, UUID userId, AssessmentMemberRole role, Instant grantedAt,
             UUID grantedBy) {
         this.id = id;
-        this.examId = examId;
+        this.assessmentId = assessmentId;
         this.userId = userId;
         this.role = role;
         this.grantedAt = grantedAt;
@@ -31,12 +31,12 @@ public class AssessmentMember {
         this.id = id;
     }
 
-    public UUID getExamId() {
-        return examId;
+    public UUID getAssessmentId() {
+        return assessmentId;
     }
 
-    public void setExamId(UUID examId) {
-        this.examId = examId;
+    public void setAssessmentId(UUID assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public UUID getUserId() {
@@ -47,11 +47,11 @@ public class AssessmentMember {
         this.userId = userId;
     }
 
-    public ExamMemberRole getRole() {
+    public AssessmentMemberRole getRole() {
         return role;
     }
 
-    public void setRole(ExamMemberRole role) {
+    public void setRole(AssessmentMemberRole role) {
         this.role = role;
     }
 

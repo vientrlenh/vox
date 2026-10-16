@@ -17,8 +17,8 @@ import org.springframework.kafka.retrytopic.DltStrategy;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
-import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
+import com.sep.vox.application.event.assessment.GradingAssignmentDeclinedPayloadV1;
+import com.sep.vox.application.event.assessment.GradingDeadlineReminderPayloadV1;
 import com.sep.vox.application.port.output.MailSendingPort;
 import com.sep.vox.application.port.output.MailTemplatePort;
 import com.sep.vox.application.shared.DateMapper;

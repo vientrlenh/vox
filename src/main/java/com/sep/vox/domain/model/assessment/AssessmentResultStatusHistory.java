@@ -4,25 +4,14 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Một dòng nhật ký đổi trạng thái của bài thi: ai, lúc nào, từ đâu sang đâu, vì sao,
- * điểm trước và sau.
- *
- * <p>Chỉ ghi, không sửa. Mọi use case đổi
- * {@link ExamCandidateResultStatus} đều phải đi qua
- * {@code ResultStatusHistoryRecorder} — nếu có hai chỗ ghi thì tranh chấp điểm sẽ
- * không truy được nữa.
- */
 public class AssessmentResultStatusHistory {
     private UUID id;
     private UUID candidateResultId;
-    /** null khi đây là dòng đầu tiên (bài vừa được tạo). */
     private AssessmentCandidateResultStatus fromStatus;
     private AssessmentCandidateResultStatus toStatus;
     private BigDecimal scoreBefore;
     private BigDecimal scoreAfter;
-    private ResultStatusChangeSource source;
-    /** null khi hệ thống tự đổi (AI chấm xong, job chốt sổ). */
+    private AssessmentResultStatusChangeSource source;
     private UUID actorId;
     private String reason;
     private Instant createdAt;
@@ -31,7 +20,7 @@ public class AssessmentResultStatusHistory {
 
     public AssessmentResultStatusHistory(UUID id, UUID candidateResultId, AssessmentCandidateResultStatus fromStatus,
             AssessmentCandidateResultStatus toStatus, BigDecimal scoreBefore, BigDecimal scoreAfter,
-            ResultStatusChangeSource source, UUID actorId, String reason, Instant createdAt) {
+            AssessmentResultStatusChangeSource source, UUID actorId, String reason, Instant createdAt) {
         this.id = id;
         this.candidateResultId = candidateResultId;
         this.fromStatus = fromStatus;
@@ -44,7 +33,7 @@ public class AssessmentResultStatusHistory {
         this.createdAt = createdAt;
     }
 
-    /** Trạng thái không đổi mà điểm đổi cũng là một sự kiện đáng ghi (hậu kiểm sửa điểm). */
+
     public boolean isScoreOnlyChange() {
         return fromStatus == toStatus;
     }
@@ -65,19 +54,19 @@ public class AssessmentResultStatusHistory {
         this.candidateResultId = candidateResultId;
     }
 
-    public ExamCandidateResultStatus getFromStatus() {
+    public AssessmentCandidateResultStatus getFromStatus() {
         return fromStatus;
     }
 
-    public void setFromStatus(ExamCandidateResultStatus fromStatus) {
+    public void setFromStatus(AssessmentCandidateResultStatus fromStatus) {
         this.fromStatus = fromStatus;
     }
 
-    public ExamCandidateResultStatus getToStatus() {
+    public AssessmentCandidateResultStatus getToStatus() {
         return toStatus;
     }
 
-    public void setToStatus(ExamCandidateResultStatus toStatus) {
+    public void setToStatus(AssessmentCandidateResultStatus toStatus) {
         this.toStatus = toStatus;
     }
 
@@ -97,11 +86,11 @@ public class AssessmentResultStatusHistory {
         this.scoreAfter = scoreAfter;
     }
 
-    public ResultStatusChangeSource getSource() {
+    public AssessmentResultStatusChangeSource getSource() {
         return source;
     }
 
-    public void setSource(ResultStatusChangeSource source) {
+    public void setSource(AssessmentResultStatusChangeSource source) {
         this.source = source;
     }
 

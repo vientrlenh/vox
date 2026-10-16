@@ -17,11 +17,11 @@ import com.sep.vox.domain.model.assessment.ExamItemCriterionScore;
 import com.sep.vox.domain.model.assessment.ExamItemEvaluation;
 import com.sep.vox.domain.model.assessment.ExamItemEvaluationStatus;
 import com.sep.vox.domain.model.assessment.GradingOutcome;
-import com.sep.vox.domain.model.assessment.GradingRoundPolicy;
 import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.domain.repository.assessment.ExamItemCriterionScoreRepository;
 import com.sep.vox.domain.repository.assessment.ExamItemEvaluationRepository;
 import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
+import com.sep.vox.domain.service.assessment.GradingRoundPolicy;
 
 /**
  * Giáo viên chấm lại — nộp là chốt, không có bước admin duyệt.

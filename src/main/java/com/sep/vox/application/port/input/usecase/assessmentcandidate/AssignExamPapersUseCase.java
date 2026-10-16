@@ -27,7 +27,7 @@ import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
 import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
 import com.sep.vox.domain.repository.assessment.ExamPaperRepository;
 import com.sep.vox.domain.repository.assessment.ExamRepository;
-import com.sep.vox.domain.service.exam.ExamEditingGuard;
+import com.sep.vox.domain.service.assessment.ExamEditingGuard;
 
 @Service
 public class AssignExamPapersUseCase implements IUseCase<AssignExamPapersCommand, AssignExamPapersResponse> {

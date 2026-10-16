@@ -22,7 +22,7 @@ import com.sep.vox.domain.model.assessment.ExamScheduleStatus;
 import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
 import com.sep.vox.domain.repository.assessment.ExamRepository;
 import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
-import com.sep.vox.domain.service.exam.ExamEditingGuard;
+import com.sep.vox.domain.service.assessment.ExamEditingGuard;
 
 /**
  * Xếp (hoặc gỡ) cả một nhóm thí sinh vào một ca thi trong đúng MỘT transaction.

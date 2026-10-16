@@ -9,7 +9,7 @@ public class AssessmentBlueprintVersion {
     private int version;
     private String code;
     private String description;
-    private ExamBlueprintVersionStatus status;
+    private AssessmentBlueprintVersionStatus status;
     private Integer totalTimeLimitSeconds;
     private Instant effectiveFrom;
     private Instant effectiveTo;
@@ -21,7 +21,7 @@ public class AssessmentBlueprintVersion {
     protected AssessmentBlueprintVersion() {}
 
     public AssessmentBlueprintVersion(UUID id, UUID blueprintId, int version, String code, String description,
-            ExamBlueprintVersionStatus status, Integer totalTimeLimitSeconds, Instant effectiveFrom,
+            AssessmentBlueprintVersionStatus status, Integer totalTimeLimitSeconds, Instant effectiveFrom,
             Instant effectiveTo, Instant createdAt, Instant updatedAt, UUID createdBy,
             UUID updatedBy) {
         this.id = id;
@@ -79,11 +79,11 @@ public class AssessmentBlueprintVersion {
         this.description = description;
     }
 
-    public ExamBlueprintVersionStatus getStatus() {
+    public AssessmentBlueprintVersionStatus getStatus() {
         return status;
     }
 
-    public void setStatus(ExamBlueprintVersionStatus status) {
+    public void setStatus(AssessmentBlueprintVersionStatus status) {
         this.status = status;
     }
 

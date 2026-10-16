@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent;
+import com.sep.vox.application.event.assessment.ExamAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.SubmitExamSessionCommand;
 import com.sep.vox.application.port.input.service.MissingResponseBackfillService;

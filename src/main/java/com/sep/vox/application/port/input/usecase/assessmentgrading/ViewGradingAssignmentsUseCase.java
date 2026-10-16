@@ -9,7 +9,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.GradingAssignmentFilter;
 import com.sep.vox.application.projection.dto.GradingAssignmentRowInfo;
 import com.sep.vox.application.projection.repository.ExamGradingQueryRepository;
-import com.sep.vox.domain.service.exam.GradingScopeKind;
+import com.sep.vox.domain.service.assessment.GradingScopeKind;
 import com.sep.vox.domain.shared.PageResult;
 
 /**

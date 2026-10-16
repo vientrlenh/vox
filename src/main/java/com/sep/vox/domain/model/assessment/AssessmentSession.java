@@ -5,73 +5,26 @@ import java.util.UUID;
 
 public class AssessmentSession {
     private UUID id;
-    private UUID examId;
+    private UUID assessmentId;
     private UUID candidateId;
     private UUID paperId;
     private Instant startedAt;
     private Instant submittedAt;
-    private ExamSessionStatus status;
+    private AssessmentSessionStatus status;
     private boolean flagged;
     private String flagReason;
-
-    /**
-     * Loại stream đã được chốt cho phiên thi này, null nếu chưa phát token stream lần nào.
-     *
-     * <p>Chỉ có ý nghĩa khi kỳ thi đặt {@code streamTypePermission = ANY} - lúc đó học viên được
-     * tự chọn trong số các loại mà kỳ thi chấp nhận, và lựa chọn ấy phải được ghi lại thay vì chỉ
-     * sống trong JWT: token được phát lại nhiều lần trong một phiên (reconnect, gia hạn credential
-     * upload), nên nếu không lưu thì mỗi lần phát lại là một cơ hội đổi sang loại giám sát nhẹ hơn
-     * giữa kỳ thi. Ghi một lần rồi khóa - xem
-     * {@code ExamSessionRepository#lockChosenStreamType}.
-     *
-     * <p>Đồng thời đây là bằng chứng để phân biệt "học viên chọn không stream màn hình" với
-     * "stream màn hình bị lỗi": cả hai đều dẫn tới việc thiếu bản ghi screen trên storage.
-     */
     private AssessmentRequiredStreamType chosenStreamType;
-
-    /**
-     * Checkpoint đồng hồ đếm ngược do client gửi lên, null nếu phiên thi chưa checkpoint lần nào.
-     *
-     * <p>Phải do client báo chứ server không tự suy ra được: đồng hồ phía WPF <b>không trừ giây khi
-     * avatar đang nói</b>, nên thời gian còn lại không phải là {@code startedAt + duration - now}.
-     * Chỉ client biết avatar đã nói mất bao lâu.
-     *
-     * <p>Không có giá trị này thì mỗi lần vào lại phiên thi là đếm ngược lại từ đầu - học viên thoát
-     * ra ở phút 25 của bài 30 phút sẽ được thêm trọn 30 phút nữa.
-     */
     private Integer remainingSeconds;
-
-    /**
-     * Vì sao lần chấm AI gần nhất hỏng; null khi phiên không ở {@link ExamSessionStatus#GRADING_FAILED}.
-     *
-     * <p>null KHI ĐANG lỗi cũng là một câu trả lời có nghĩa, không phải dữ liệu thiếu: nhánh DLT
-     * đánh dấu phiên hỏng khi bản tin đã hết đường retry, và ở đó không có lý do nào để lưu. Phân
-     * biệt được "hỏng vì X" với "hỏng, không rõ vì sao" là toàn bộ giá trị của trang phân loại.
-     */
     private String gradingError;
-
-    /** Dịch vụ chấm đã thử bao nhiêu lần trước khi bỏ cuộc; null cùng lúc với {@link #gradingError}. */
     private Integer gradingRetryCount;
-
-    /**
-     * Số lần NHÀ TRƯỜNG đã nhờ AI chấm lại phiên này.
-     *
-     * <p>Khác hẳn {@link #gradingRetryCount}: cột kia là số lần DỊCH VỤ CHẤM tự thử trong một lượt,
-     * lấy từ sự kiện Kafka. Cột này đếm số LƯỢT do người ở trường yêu cầu.
-     *
-     * <p>CHỈ đếm lượt phía trường. Lượt do quản trị hệ thống kích — và sau này là job tự chạy lại khi
-     * có sự cố diện rộng — không tiêu vào định mức của trường: bằng không, một lần AI hỏng hàng loạt
-     * sẽ âm thầm đốt sạch lượt chấm lại của mọi trường rồi ép hàng trăm bài sang chấm tay, vì một sự
-     * cố của chính nền tảng.
-     */
     private int schoolRegradeCount;
 
     protected AssessmentSession() {}
 
-    public AssessmentSession(UUID id, UUID examId, UUID candidateId, UUID paperId, Instant startedAt,
-            Instant submittedAt, ExamSessionStatus status, boolean flagged, String flagReason) {
+    public AssessmentSession(UUID id, UUID assessmentId, UUID candidateId, UUID paperId, Instant startedAt,
+            Instant submittedAt, AssessmentSessionStatus status, boolean flagged, String flagReason) {
         this.id = id;
-        this.examId = examId;
+        this.assessmentId = assessmentId;
         this.candidateId = candidateId;
         this.paperId = paperId;
         this.startedAt = startedAt;
@@ -89,12 +42,12 @@ public class AssessmentSession {
         this.id = id;
     }
 
-    public UUID getExamId() {
-        return examId;
+    public UUID getAssessmentId() {
+        return assessmentId;
     }
 
-    public void setExamId(UUID examId) {
-        this.examId = examId;
+    public void setAssessmentId(UUID assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public UUID getCandidateId() {
@@ -129,11 +82,11 @@ public class AssessmentSession {
         this.submittedAt = submittedAt;
     }
 
-    public ExamSessionStatus getStatus() {
+    public AssessmentSessionStatus getStatus() {
         return status;
     }
 
-    public void setStatus(ExamSessionStatus status) {
+    public void setStatus(AssessmentSessionStatus status) {
         this.status = status;
     }
 
@@ -173,8 +126,6 @@ public class AssessmentSession {
         return gradingError;
     }
 
-    /** Chỉ đặt cùng lúc với {@code setStatus(GRADING_FAILED)}: ràng buộc
-     * {@code chk_exam_sessions_grading_error_only_when_failed} ở DB từ chối lý do trên phiên không lỗi. */
     public void setGradingError(String gradingError) {
         this.gradingError = gradingError;
     }

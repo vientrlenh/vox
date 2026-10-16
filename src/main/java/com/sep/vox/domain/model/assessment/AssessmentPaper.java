@@ -5,11 +5,11 @@ import java.util.UUID;
 
 public class AssessmentPaper {
     private UUID id;
-    private UUID examId;
+    private UUID assessmentId;
     private UUID blueprintVersionId;
     private String code;
     private int variant;
-    private ExamPaperStatus status;
+    private AssessmentPaperStatus status;
     private Integer timeDurationSeconds;
     private Instant createdAt;
     private Instant updatedAt;
@@ -18,10 +18,10 @@ public class AssessmentPaper {
 
     public AssessmentPaper() {}
 
-    public AssessmentPaper(UUID id, UUID examId, UUID blueprintVersionId, String code, int variant, ExamPaperStatus status, Integer timeDurationSeconds, Instant createdAt,
+    public AssessmentPaper(UUID id, UUID assessmentId, UUID blueprintVersionId, String code, int variant, AssessmentPaperStatus status, Integer timeDurationSeconds, Instant createdAt,
             Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.id = id;
-        this.examId = examId;
+        this.assessmentId = assessmentId;
         this.blueprintVersionId = blueprintVersionId;
         this.code = code;
         this.variant = variant;
@@ -41,12 +41,12 @@ public class AssessmentPaper {
         this.id = id;
     }
 
-    public UUID getExamId() {
-        return examId;
+    public UUID getAssessmentId() {
+        return assessmentId;
     }
 
-    public void setExamId(UUID examId) {
-        this.examId = examId;
+    public void setAssessmentId(UUID assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public UUID getBlueprintVersionId() {
@@ -73,11 +73,11 @@ public class AssessmentPaper {
         this.variant = variant;
     }
 
-    public ExamPaperStatus getStatus() {
+    public AssessmentPaperStatus getStatus() {
         return status;
     }
 
-    public void setStatus(ExamPaperStatus status) {
+    public void setStatus(AssessmentPaperStatus status) {
         this.status = status;
     }
 

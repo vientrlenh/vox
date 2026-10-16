@@ -24,8 +24,8 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
 import com.sep.vox.domain.repository.assessment.ExamRepository;
 import com.sep.vox.domain.repository.assessment.ExamScheduleRepository;
-import com.sep.vox.domain.service.exam.ExamEditingGuard;
-import com.sep.vox.domain.service.exam.ExamScheduleWindowMessages;
+import com.sep.vox.domain.service.assessment.ExamEditingGuard;
+import com.sep.vox.domain.service.assessment.ExamScheduleWindowMessages;
 
 @Service
 public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCommand, UUID> {

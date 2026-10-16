@@ -6,7 +6,7 @@ public class AssessmentItemEvaluationTurn {
     private UUID id;
     private UUID evaluationId;
     private int turnOrder;
-    private TurnType turnType;
+    private AssessmentTurnType turnType;
     private String promptText;
     private String audioUrl;
     private String transcript;
@@ -19,7 +19,7 @@ public class AssessmentItemEvaluationTurn {
     protected AssessmentItemEvaluationTurn() {
     }
 
-    public AssessmentItemEvaluationTurn(UUID id, UUID evaluationId, int turnOrder, TurnType turnType, String promptText,
+    public AssessmentItemEvaluationTurn(UUID id, UUID evaluationId, int turnOrder, AssessmentTurnType turnType, String promptText,
             String audioUrl, String transcript, Integer wordCount, Integer durationSeconds, Double asrConfidence,
             String pronunciationOverallJson, String wordFeedbackJson) {
         this.id = id;
@@ -60,11 +60,11 @@ public class AssessmentItemEvaluationTurn {
         this.turnOrder = turnOrder;
     }
 
-    public TurnType getTurnType() {
+    public AssessmentTurnType getTurnType() {
         return turnType;
     }
 
-    public void setTurnType(TurnType turnType) {
+    public void setTurnType(AssessmentTurnType turnType) {
         this.turnType = turnType;
     }
 

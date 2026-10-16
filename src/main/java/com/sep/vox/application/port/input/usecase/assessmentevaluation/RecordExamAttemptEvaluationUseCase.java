@@ -34,7 +34,6 @@ import com.sep.vox.domain.model.assessment.ExamKind;
 import com.sep.vox.domain.model.assessment.TurnType;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
-import com.sep.vox.domain.service.exam.RubricItemScoreFormula;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.ConfidenceReviewCalculator;
 import com.sep.vox.domain.valueobject.ConfidenceCaseSignals;
@@ -48,6 +47,7 @@ import com.sep.vox.domain.repository.assessment.ExamItemResponseRepository;
 import com.sep.vox.domain.repository.assessment.ExamProctoringAlertRepository;
 import com.sep.vox.domain.repository.assessment.ExamRepository;
 import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
+import com.sep.vox.domain.service.assessment.RubricItemScoreFormula;
 
 @Service
 public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAttemptEvaluationCommand, Void> {

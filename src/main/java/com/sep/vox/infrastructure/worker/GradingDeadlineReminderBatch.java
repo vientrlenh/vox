@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
+import com.sep.vox.application.event.assessment.GradingDeadlineReminderPayloadV1;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.OutboxRepository;

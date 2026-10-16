@@ -5,8 +5,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
-public class Assessment {
-    private UUID id;
+import com.sep.vox.domain.shared.BaseModel;
+
+public class Assessment extends BaseModel {
     private UUID blueprintId;
     private UUID blueprintVersionId;
     private String code;
@@ -14,32 +15,19 @@ public class Assessment {
     private String description;
     private UUID schoolId;
     private UUID languageId;
-    private ExamKind kind;
+    private AssessmentKind kind;
     private AssessmentDeliveryMode deliveryMode;
-    private ExamStatus status;
+    private AssessmentStatus status;
     private Integer maxAttempt;
-    // H.1: mặc định tự động tính = MAX(paperDuration) trên mọi ExamPaper của kỳ thi qua
-    // recalculateExamTimeDuration ở các use case tạo/sửa paper -- nhưng vẫn nhận giá trị người
-    // dùng nhập lúc tạo exam (xem CreateExamRequest/CreateClassTestCommand), bị ghi đè ngay khi
-    // paper/section đầu tiên được tạo.
-    private Integer examTimeDurationSecond;
-    private ResultDecisionMethod resultDecisionMethod;
-    private ExamRequiredStreamType requiredStreamType;
-    private ExamStreamTypePermission streamTypePermission;
+    private Integer timeDurationSecond;
+    private AssessmentResultDecisionMethod resultDecisionMethod;
+    private AssessmentRequiredStreamType requiredStreamType;
+    private AssessmentStreamTypePermission streamTypePermission;
     private Instant openAt;
     private Instant closeAt;
     private UUID assessmentPolicyId;
     private boolean requiresOtp;
-
-    /**
-     * Ngưỡng tin cậy AI do nhà trường đặt cho bài này (0.00-1.00).
-     *
-     * <p>Bản chấm có {@code overall_confidence} THẤP HƠN ngưỡng sẽ bị đưa sang PENDING_REVIEW
-     * thay vì tự công bố. NULL = nhà trường không đặt ngưỡng, chỉ luật cứng trong
-     * {@code ConfidenceReviewCalculator} quyết định như trước.
-     */
     private BigDecimal aiConfidenceThresholdPercent;
-    private Instant createdAt;
     private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
@@ -47,40 +35,10 @@ public class Assessment {
 
     protected Assessment() {}
 
-    public Assessment(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
-            ExamKind kind, ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, Integer examTimeDurationSecond,
-            ResultDecisionMethod resultDecisionMethod, ExamRequiredStreamType requiredStreamType, ExamStreamTypePermission streamTypePermission,
+    public Assessment(UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
+            AssessmentKind kind, AssessmentDeliveryMode deliveryMode, AssessmentStatus status, Integer maxAttempt, Integer timeDurationSecond,
+            AssessmentResultDecisionMethod resultDecisionMethod, AssessmentRequiredStreamType requiredStreamType, AssessmentStreamTypePermission streamTypePermission,
             Instant openAt, Instant closeAt, UUID assessmentPolicyId, boolean requiresOtp,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.blueprintId = blueprintId;
-        this.blueprintVersionId = blueprintVersionId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.schoolId = schoolId;
-        this.languageId = languageId;
-        this.kind = kind;
-        this.deliveryMode = deliveryMode;
-        this.status = status;
-        this.maxAttempt = maxAttempt;
-        this.examTimeDurationSecond = examTimeDurationSecond;
-        this.resultDecisionMethod = resultDecisionMethod;
-        this.requiredStreamType = requiredStreamType;
-        this.streamTypePermission = streamTypePermission;
-        this.openAt = openAt;
-        this.closeAt = closeAt;
-        this.assessmentPolicyId = assessmentPolicyId;
-        this.requiresOtp = requiresOtp;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public Exam(UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId, ExamKind kind,
-            ExamDeliveryMode deliveryMode, ExamStatus status, Integer maxAttempt, Integer examTimeDurationSecond, ResultDecisionMethod resultDecisionMethod,
-            Instant openAt, Instant closeAt, UUID assessmentPolicyId, boolean requiresOtp, Instant createdAt,ExamRequiredStreamType requiredStreamType, ExamStreamTypePermission streamTypePermission,
             Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.blueprintId = blueprintId;
         this.blueprintVersionId = blueprintVersionId;
@@ -93,7 +51,7 @@ public class Assessment {
         this.deliveryMode = deliveryMode;
         this.status = status;
         this.maxAttempt = maxAttempt;
-        this.examTimeDurationSecond = examTimeDurationSecond;
+        this.timeDurationSecond = timeDurationSecond;
         this.resultDecisionMethod = resultDecisionMethod;
         this.requiredStreamType = requiredStreamType;
         this.streamTypePermission = streamTypePermission;
@@ -101,90 +59,9 @@ public class Assessment {
         this.closeAt = closeAt;
         this.assessmentPolicyId = assessmentPolicyId;
         this.requiresOtp = requiresOtp;
-        this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
-    }
-
-    /**
-     * H.1: một ca thi phải đủ dài để thí sinh làm hết đề, tức là (end - start) >= examTimeDurationSecond.
-     * Khi kỳ thi chưa tính được thời gian làm bài (chưa có mã đề/câu hỏi nên null hoặc 0) thì chưa ràng buộc.
-     */
-    public boolean isScheduleWindowShorterThanExamTime(Instant start, Instant end) {
-        if (examTimeDurationSecond == null || examTimeDurationSecond <= 0 || start == null || end == null) {
-            return false;
-        }
-        return Duration.between(start, end).getSeconds() < examTimeDurationSecond;
-    }
-
-    /**
-     * Ca thi phải nằm trọn trong khung mở/đóng của kỳ thi: openAt <= start && end <= closeAt.
-     * Hai cận kiểm tra độc lập nhau vì kỳ thi thường được phép chưa set openAt/closeAt
-     * (chỉ CLASS_TEST mới bắt buộc có, xem UpdateExamStatusUseCase.requireClassTestScheduleWindow).
-     */
-    public boolean isScheduleWindowOutsideExamWindow(Instant start, Instant end) {
-        if (start == null || end == null) {
-            return false;
-        }
-        if (openAt != null && start.isBefore(openAt)) {
-            return true;
-        }
-        return closeAt != null && end.isAfter(closeAt);
-    }
-
-    /**
-     * Từ lúc kỳ thi bắt đầu trở đi thì thông tin kỳ thi và lịch thi (ca thi, giám thị, thí sinh)
-     * bị khóa: thí sinh đã vào phòng nên mọi thay đổi đều làm lệch dữ liệu đang chạy. Các thao tác
-     * vận hành trong lúc thi (công bố/hoàn thành/huỷ ca, OTP, điểm danh, chấm bài) không nằm trong
-     * phạm vi khóa này.
-     */
-    public boolean isLockedForEditing() {
-        return status == ExamStatus.IN_PROGRESS
-            || status == ExamStatus.CLOSED
-            || status == ExamStatus.RESULTS_PUBLISHED
-            || status == ExamStatus.CANCELLED;
-    }
-
-    /**
-     * Kỳ thi đã chốt sổ: bài thi không còn được xoá nữa.
-     *
-     * <p>Khác {@link #isLockedForEditing()} ở hai đầu, và cố ý:
-     *
-     * <ul>
-     *   <li>{@code IN_PROGRESS} vẫn cho xoá — xoá phiên thi sinh ra chính là để cứu một lượt thi
-     *       hỏng (vào phòng lỗi, chấm lỗi) NGAY TRONG lúc thi; khoá lúc này là bịt đúng đường thoát.
-     *   <li>{@code CLOSED} / {@code RESULTS_PUBLISHED} thì cấm — điểm đã chốt (và có thể đã công bố
-     *       cho học sinh, đã dùng để phúc khảo). Xoá một phiên ở đây làm điểm biến mất khỏi bảng kết
-     *       quả mà không để lại dấu vết, và {@code DeleteExamSessionUseCase} là xoá cứng, không hoàn
-     *       tác được.
-     *   <li>{@code CANCELLED} vẫn cho xoá: kỳ thi đã huỷ thì dọn dữ liệu rác là việc nên làm.
-     * </ul>
-     */
-    public boolean isResultsFinalized() {
-        return status == ExamStatus.CLOSED || status == ExamStatus.RESULTS_PUBLISHED;
-    }
-
-    /**
-     * Đã phát ExamHumanGradingRequired cho bài thi này chưa. NULL = chưa nhắc lần nào.
-     *
-     * <p>Không nằm trong constructor vì cùng lý do với aiConfidenceThresholdPercent: constructor
-     * của Exam đã dài và có 58 nơi gọi, thêm tham số vào là sửa hết chỉ để mang một trường tuỳ chọn.
-     */
-    public Instant getHumanGradingNotifiedAt() {
-        return humanGradingNotifiedAt;
-    }
-
-    public void setHumanGradingNotifiedAt(Instant humanGradingNotifiedAt) {
-        this.humanGradingNotifiedAt = humanGradingNotifiedAt;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
     }
 
     public String getCode() {
@@ -227,27 +104,27 @@ public class Assessment {
         this.languageId = languageId;
     }
 
-    public ExamKind getKind() {
+    public AssessmentKind getKind() {
         return kind;
     }
 
-    public void setKind(ExamKind kind) {
+    public void setKind(AssessmentKind kind) {
         this.kind = kind;
     }
 
-    public ExamDeliveryMode getDeliveryMode() {
+    public AssessmentDeliveryMode getDeliveryMode() {
         return deliveryMode;
     }
 
-    public void setDeliveryMode(ExamDeliveryMode deliveryMode) {
+    public void setDeliveryMode(AssessmentDeliveryMode deliveryMode) {
         this.deliveryMode = deliveryMode;
     }
 
-    public ExamStatus getStatus() {
+    public AssessmentStatus getStatus() {
         return status;
     }
 
-    public void setStatus(ExamStatus status) {
+    public void setStatus(AssessmentStatus status) {
         this.status = status;
     }
 
@@ -259,19 +136,19 @@ public class Assessment {
         this.maxAttempt = maxAttempt;
     }
 
-    public Integer getExamTimeDurationSecond() {
-        return examTimeDurationSecond;
+    public Integer getTimeDurationSecond() {
+        return timeDurationSecond;
     }
 
-    public void setExamTimeDurationSecond(Integer examTimeDurationSecond) {
-        this.examTimeDurationSecond = examTimeDurationSecond;
+    public void setTimeDurationSecond(Integer timeDurationSecond) {
+        this.timeDurationSecond = timeDurationSecond;
     }
 
-    public ResultDecisionMethod getResultDecisionMethod() {
+    public AssessmentResultDecisionMethod getResultDecisionMethod() {
         return resultDecisionMethod;
     }
 
-    public void setResultDecisionMethod(ResultDecisionMethod resultDecisionMethod) {
+    public void setResultDecisionMethod(AssessmentResultDecisionMethod resultDecisionMethod) {
         this.resultDecisionMethod = resultDecisionMethod;
     }
 
@@ -297,14 +174,6 @@ public class Assessment {
 
     public void setAssessmentPolicyId(UUID assessmentPolicyId) {
         this.assessmentPolicyId = assessmentPolicyId;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
     }
 
     public Instant getUpdatedAt() {
@@ -355,23 +224,57 @@ public class Assessment {
         this.requiresOtp = requiresOtp;
     }
 
-        public ExamRequiredStreamType getRequiredStreamType () {
-            return requiredStreamType;
+    public AssessmentRequiredStreamType getRequiredStreamType () {
+        return requiredStreamType;
+    }
+
+    public void setRequiredStreamType (AssessmentRequiredStreamType requiredStreamType){
+        this.requiredStreamType = requiredStreamType;
+    }
+
+    public AssessmentStreamTypePermission getStreamTypePermission () {
+        return streamTypePermission;
+    }
+
+    public void setStreamTypePermission (AssessmentStreamTypePermission streamTypePermission){
+        this.streamTypePermission = streamTypePermission;
+    }
+
+     public boolean isScheduleWindowShorterThanAssessmentTime(Instant start, Instant end) {
+        if (timeDurationSecond == null || timeDurationSecond <= 0 || start == null || end == null) {
+            return false;
         }
+        return Duration.between(start, end).getSeconds() < timeDurationSecond;
+    }
 
-        public void setRequiredStreamType (ExamRequiredStreamType requiredStreamType){
-            this.requiredStreamType = requiredStreamType;
+    public boolean isScheduleWindowOutsideAssessmentWindow(Instant start, Instant end) {
+        if (start == null || end == null) {
+            return false;
         }
-
-        public ExamStreamTypePermission getStreamTypePermission () {
-            return streamTypePermission;
+        if (openAt != null && start.isBefore(openAt)) {
+            return true;
         }
+        return closeAt != null && end.isAfter(closeAt);
+    }
 
-        public void setStreamTypePermission (ExamStreamTypePermission streamTypePermission){
-            this.streamTypePermission = streamTypePermission;
-        }
+    public boolean isLockedForEditing() {
+        return status == AssessmentStatus.IN_PROGRESS
+            || status == AssessmentStatus.CLOSED
+            || status == AssessmentStatus.RESULTS_PUBLISHED
+            || status == AssessmentStatus.CANCELLED;
+    }
 
+    public boolean isResultsFinalized() {
+        return status == AssessmentStatus.CLOSED || status == AssessmentStatus.RESULTS_PUBLISHED;
+    }
 
+    public Instant getHumanGradingNotifiedAt() {
+        return humanGradingNotifiedAt;
+    }
+
+    public void setHumanGradingNotifiedAt(Instant humanGradingNotifiedAt) {
+        this.humanGradingNotifiedAt = humanGradingNotifiedAt;
+    }
     
     public java.math.BigDecimal getAiConfidenceThresholdPercent() {
         return aiConfidenceThresholdPercent;

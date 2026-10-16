@@ -4,9 +4,10 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-public class AssessmentCandidateResult {
-    private UUID id;
-    private UUID examId;
+import com.sep.vox.domain.shared.BaseModel;
+
+public class AssessmentCandidateResult extends BaseModel {
+    private UUID assessmentId;
     private UUID candidateId;
     private UUID sessionId;
     private UUID assessmentPolicyId;
@@ -16,23 +17,21 @@ public class AssessmentCandidateResult {
     private UUID targetFrameworkBandId;
     private UUID rubricResultBandId;
     private BigDecimal totalScore;
-    private ExamCandidateResultStatus status;
+    private AssessmentCandidateResultStatus status;
     private Instant releasedAt;
     private Instant finalizedAt;
-    private Instant createdAt;
     private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     protected AssessmentCandidateResult() {}
 
-    public AssessmentCandidateResult(UUID id, UUID examId, UUID candidateId, UUID sessionId, UUID assessmentPolicyId,
+    public AssessmentCandidateResult(UUID id, UUID assessmentId, UUID candidateId, UUID sessionId, UUID assessmentPolicyId,
             int policyVersion, UUID rubricVersionId, UUID frameworkVersionId, UUID targetFrameworkBandId, UUID rubricResultBandId, 
-            BigDecimal totalScore, ExamCandidateResultStatus status, Instant releasedAt,
-            Instant finalizedAt, Instant createdAt, Instant updatedAt, UUID createdBy,
+            BigDecimal totalScore, AssessmentCandidateResultStatus status, Instant releasedAt,
+            Instant finalizedAt, Instant updatedAt, UUID createdBy,
             UUID updatedBy) {
-        this.id = id;
-        this.examId = examId;
+        this.assessmentId = assessmentId;
         this.candidateId = candidateId;
         this.sessionId = sessionId;
         this.assessmentPolicyId = assessmentPolicyId;
@@ -45,26 +44,17 @@ public class AssessmentCandidateResult {
         this.status = status;
         this.releasedAt = releasedAt;
         this.finalizedAt = finalizedAt;
-        this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public UUID getId() {
-        return id;
+    public UUID getAssessmentId() {
+        return assessmentId;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public UUID getExamId() {
-        return examId;
-    }
-
-    public void setExamId(UUID examId) {
-        this.examId = examId;
+    public void setAssessmentId(UUID assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public UUID getCandidateId() {
@@ -131,11 +121,11 @@ public class AssessmentCandidateResult {
         this.totalScore = totalScore;
     }
 
-    public ExamCandidateResultStatus getStatus() {
+    public AssessmentCandidateResultStatus getStatus() {
         return status;
     }
 
-    public void setStatus(ExamCandidateResultStatus status) {
+    public void setStatus(AssessmentCandidateResultStatus status) {
         this.status = status;
     }
 
@@ -153,14 +143,6 @@ public class AssessmentCandidateResult {
 
     public void setFinalizedAt(Instant finalizedAt) {
         this.finalizedAt = finalizedAt;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
     }
 
     public Instant getUpdatedAt() {

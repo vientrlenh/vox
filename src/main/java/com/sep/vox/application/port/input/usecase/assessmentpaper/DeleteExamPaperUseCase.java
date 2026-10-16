@@ -20,7 +20,7 @@ import com.sep.vox.domain.repository.assessment.ExamPaperRepository;
 import com.sep.vox.domain.repository.assessment.ExamPaperSectionRepository;
 import com.sep.vox.domain.repository.assessment.ExamRepository;
 import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
-import com.sep.vox.domain.service.exam.ExamEditingGuard;
+import com.sep.vox.domain.service.assessment.ExamEditingGuard;
 
 @Service
 public class DeleteExamPaperUseCase implements IUseCase<DeleteExamPaperCommand, Void> {

@@ -19,7 +19,7 @@ import com.sep.vox.domain.repository.assessment.ExamCandidateRepository;
 import com.sep.vox.domain.repository.assessment.ExamMemberRepository;
 import com.sep.vox.domain.repository.assessment.ExamRepository;
 import com.sep.vox.domain.repository.assessment.ExamSessionRepository;
-import com.sep.vox.domain.service.exam.ExamEditingGuard;
+import com.sep.vox.domain.service.assessment.ExamEditingGuard;
 
 /**
  * Xoá cả nhóm thí sinh khỏi kỳ thi trong đúng MỘT transaction.

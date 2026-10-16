@@ -4,45 +4,27 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Phân công một giáo viên chấm tay một bài nộp ({@link ExamCandidateResult}) trong
- * một {@link GradingRoundType vòng chấm}.
- *
- * <p>Một bảng cho cả bốn vòng: chấm lần đầu, hậu kiểm, soi lại bài vô hiệu và phúc
- * khảo. Mỗi bài chỉ có <em>một</em> phân công đang mở tại một thời điểm, nhưng có thể
- * có nhiều dòng đã đóng qua các vòng — bất biến đó nằm ở DB qua unique index trên
- * {@link #activeResultId} (bằng {@code candidateResultId} khi ASSIGNED, {@code null}
- * khi COMPLETED; Postgres coi các NULL là khác nhau).
- *
- * <p>Điểm không nằm ở đây: nó đi thẳng vào {@link ExamItemEvaluation} theo từng phần
- * thi. Dòng này giữ trạng thái, kết luận ({@link GradingOutcome}) và điểm trước khi
- * chấm để đo độ lệch.
- */
 public class AssessmentGradingAssignment {
     private UUID id;
     private UUID candidateResultId;
     private UUID teacherId;
-    private GradingRoundType roundType;
-    /** Chỉ có giá trị khi {@code roundType = APPEAL}. */
+    private AssessmentGradingRoundType roundType;
     private UUID appealId;
-    private GradingAssignmentStatus status;
-    private GradingOutcome outcome;
-    /** Tổng điểm của bài lúc được giao — mốc so lệch sau khi chấm. */
+    private AssessmentGradingAssignmentStatus status;
+    private AssessmentGradingOutcome outcome;
     private BigDecimal scoreBefore;
     private Instant assignedAt;
     private UUID assignedBy;
     private Instant completedAt;
     private Instant deadlineAt;
-    /** Đã gửi mail nhắc hạn lúc nào; null = chưa nhắc. Chống nhắc trùng. */
     private Instant remindedAt;
-    /** Bắt buộc khi outcome là INVALIDATED / CLEARED_INVALID / DECLINED. */
     private String reason;
     private UUID activeResultId;
 
     protected AssessmentGradingAssignment() {}
 
-    public AssessmentGradingAssignment(UUID id, UUID candidateResultId, UUID teacherId, GradingRoundType roundType,
-            UUID appealId, GradingAssignmentStatus status, GradingOutcome outcome, BigDecimal scoreBefore,
+    public AssessmentGradingAssignment(UUID id, UUID candidateResultId, UUID teacherId, AssessmentGradingRoundType roundType,
+            UUID appealId, AssessmentGradingAssignmentStatus status, AssessmentGradingOutcome outcome, BigDecimal scoreBefore,
             Instant assignedAt, UUID assignedBy, Instant completedAt, Instant deadlineAt,
             Instant remindedAt, String reason, UUID activeResultId) {
         this.id = id;
@@ -62,19 +44,15 @@ public class AssessmentGradingAssignment {
         this.activeResultId = activeResultId;
     }
 
-    /**
-     * Mở một vòng chấm mới. {@code activeResultId} được set bằng chính bài — đây là
-     * chỗ duy nhất dựng bất biến "một phân công mở / bài", nên đừng tự new rồi set tay.
-     */
-    public static ExamGradingAssignment open(UUID candidateResultId, UUID teacherId, GradingRoundType roundType,
+    public static AssessmentGradingAssignment open(UUID candidateResultId, UUID teacherId, AssessmentGradingRoundType roundType,
             UUID appealId, BigDecimal scoreBefore, Instant assignedAt, UUID assignedBy,
             Instant deadlineAt) {
-        var assignment = new ExamGradingAssignment();
+        var assignment = new AssessmentGradingAssignment();
         assignment.candidateResultId = candidateResultId;
         assignment.teacherId = teacherId;
         assignment.roundType = roundType;
         assignment.appealId = appealId;
-        assignment.status = GradingAssignmentStatus.ASSIGNED;
+        assignment.status = AssessmentGradingAssignmentStatus.ASSIGNED;
         assignment.scoreBefore = scoreBefore;
         assignment.assignedAt = assignedAt;
         assignment.assignedBy = assignedBy;
@@ -83,17 +61,12 @@ public class AssessmentGradingAssignment {
         return assignment;
     }
 
-    /** Đã chốt thì không được gỡ, đổi giáo viên hay chấm lại. */
     public boolean isCompleted() {
-        return status == GradingAssignmentStatus.COMPLETED;
+        return status == AssessmentGradingAssignmentStatus.COMPLETED;
     }
 
-    /**
-     * Đóng phân công kèm kết luận. Nhả {@code activeResultId} về null để bài nhận
-     * được vòng tiếp theo mà unique index vẫn giữ nguyên ý nghĩa.
-     */
-    public void complete(GradingOutcome outcome, String reason, Instant at) {
-        this.status = GradingAssignmentStatus.COMPLETED;
+    public void complete(AssessmentGradingOutcome outcome, String reason, Instant at) {
+        this.status = AssessmentGradingAssignmentStatus.COMPLETED;
         this.outcome = outcome;
         this.reason = reason;
         this.completedAt = at;
@@ -128,11 +101,11 @@ public class AssessmentGradingAssignment {
         this.teacherId = teacherId;
     }
 
-    public GradingRoundType getRoundType() {
+    public AssessmentGradingRoundType getRoundType() {
         return roundType;
     }
 
-    public void setRoundType(GradingRoundType roundType) {
+    public void setRoundType(AssessmentGradingRoundType roundType) {
         this.roundType = roundType;
     }
 
@@ -144,19 +117,19 @@ public class AssessmentGradingAssignment {
         this.appealId = appealId;
     }
 
-    public GradingAssignmentStatus getStatus() {
+    public AssessmentGradingAssignmentStatus getStatus() {
         return status;
     }
 
-    public void setStatus(GradingAssignmentStatus status) {
+    public void setStatus(AssessmentGradingAssignmentStatus status) {
         this.status = status;
     }
 
-    public GradingOutcome getOutcome() {
+    public AssessmentGradingOutcome getOutcome() {
         return outcome;
     }
 
-    public void setOutcome(GradingOutcome outcome) {
+    public void setOutcome(AssessmentGradingOutcome outcome) {
         this.outcome = outcome;
     }
 

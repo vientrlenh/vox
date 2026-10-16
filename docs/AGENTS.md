@@ -27,6 +27,7 @@ The project currently using Spring Boot 4.1.1
 ## 5. Rules for Agents: 
 - Only using the official APIs of the current version of the library/framework (e.g. Spring Boot 4.1.1 with it bundled libraries), deprecated or older apis/methods are not allowed
 - If it is a complex flow or logic, ask for picking a file to edit and breakdown which other files should be done next
-- Only edit which the prompt contains, if it contains any edge cases that are not covered, leave it as a note at the end of the turn
+- Only edit which the prompt contains, if it contains any edge cases that are not covered, leave it as a note at the end of the turn. Also when encountering any part that cause confusing, ask before doing implementation (since the repository is on error state)
 - Use comments for only complex methods or logics, where the code itself can't tell all the works it does
 - After editing, if the prompt does not contain any section for running build or test command, do not do that
+- Note: NOT ALL THE PLANS IN THE MARKDOWN FILES ARE THE WAYS THE PROJECT WILL GO (MEANING THE REPOSITORY MAY CONTAIN DIFFERENT IMPLEMENTATION)

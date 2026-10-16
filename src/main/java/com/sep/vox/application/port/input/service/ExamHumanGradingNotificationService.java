@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamHumanGradingRequiredPayloadV1;
+import com.sep.vox.application.event.assessment.ExamHumanGradingRequiredPayloadV1;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.shared.RoleConstant;
 import com.sep.vox.domain.model.assessment.Exam;

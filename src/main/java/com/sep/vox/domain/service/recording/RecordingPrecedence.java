@@ -3,14 +3,14 @@ package com.sep.vox.domain.service.recording;
 import java.util.Comparator;
 import java.util.Map;
 
-import com.sep.vox.domain.model.exam.ExamRecording;
-import com.sep.vox.domain.model.exam.ExamRecordingAssemblyStatus;
+import com.sep.vox.domain.model.assessment.AssessmentRecording;
+import com.sep.vox.domain.model.assessment.AssessmentRecordingAssemblyStatus;
 
 /**
  * Quyết định bản ghi nào được coi là bản chuẩn khi một phiên thi có nhiều bản cùng streamType.
  *
  * <p>Hai đường ingest mint streamID độc lập nên sinh ra hai recording.mp4 ở hai prefix S3 khác
- * nhau. Mỗi nguồn giữ một hàng riêng trong exam_recordings, nên không nguồn nào ghi đè nguồn nào:
+ * nhau. Mỗi nguồn giữ một hàng riêng trong assessment_recordings, nên không nguồn nào ghi đè nguồn nào:
  * việc chọn bản nào để mở trước được hoãn tới lúc đọc, và không bản nào bị vứt đi.
  */
 public final class RecordingPrecedence {
@@ -41,16 +41,16 @@ public final class RecordingPrecedence {
     }
 
     /** Trạng thái mà bản ghi thực sự trỏ tới một file mở được. */
-    public static boolean hasRecording(ExamRecordingAssemblyStatus status) {
-        return status == ExamRecordingAssemblyStatus.READY
-            || status == ExamRecordingAssemblyStatus.PARTIAL;
+    public static boolean hasRecording(AssessmentRecordingAssemblyStatus status) {
+        return status == AssessmentRecordingAssemblyStatus.READY
+            || status == AssessmentRecordingAssemblyStatus.PARTIAL;
     }
 
-    public static boolean isTerminal(ExamRecordingAssemblyStatus status) {
-        return status == ExamRecordingAssemblyStatus.READY
-            || status == ExamRecordingAssemblyStatus.PARTIAL
-            || status == ExamRecordingAssemblyStatus.FAILED
-            || status == ExamRecordingAssemblyStatus.ABANDONED;
+    public static boolean isTerminal(AssessmentRecordingAssemblyStatus status) {
+        return status == AssessmentRecordingAssemblyStatus.READY
+            || status == AssessmentRecordingAssemblyStatus.PARTIAL
+            || status == AssessmentRecordingAssemblyStatus.FAILED
+            || status == AssessmentRecordingAssemblyStatus.ABANDONED;
     }
 
     /**
@@ -60,8 +60,8 @@ public final class RecordingPrecedence {
      * <p>Vế đầu phải đứng trước vế sau: một FAILED từ nguồn ưu tiên cao không được làm bản chuẩn
      * khi vẫn còn một READY từ nguồn thấp hơn. Một cái nhãn hỏng không hơn được một file xem được.
      */
-    public static final Comparator<ExamRecording> CANONICAL_ORDER =
-        Comparator.<ExamRecording, Boolean>comparing(recording -> hasRecording(recording.getStatus()))
+    public static final Comparator<AssessmentRecording> CANONICAL_ORDER =
+        Comparator.<AssessmentRecording, Boolean>comparing(recording -> hasRecording(recording.getStatus()))
             .thenComparingInt(recording -> rankOf(recording.getSource()));
 
     /**
@@ -72,14 +72,14 @@ public final class RecordingPrecedence {
      * sánh giữa các nguồn đã chuyển sang {@link #CANONICAL_ORDER} ở đường đọc.
      */
     public static boolean shouldKeepExisting(
-        ExamRecordingAssemblyStatus existingStatus,
-        ExamRecordingAssemblyStatus incomingStatus
+        AssessmentRecordingAssemblyStatus existingStatus,
+        AssessmentRecordingAssemblyStatus incomingStatus
     ) {
         if (!isTerminal(existingStatus)) {
             return false;
         }
         // Không hạ cấp một kết quả cuối về lại "đang xử lý".
-        if (incomingStatus == ExamRecordingAssemblyStatus.PROCESSING) {
+        if (incomingStatus == AssessmentRecordingAssemblyStatus.PROCESSING) {
             return true;
         }
         // Một thất bại không được xoá một bản ghi đang dùng được bằng cái nhãn hỏng của chính nó.

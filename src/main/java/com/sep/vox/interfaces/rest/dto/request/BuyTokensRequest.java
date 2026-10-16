@@ -3,6 +3,9 @@ package com.sep.vox.interfaces.rest.dto.request;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.BuyTokensCommand;
+import com.sep.vox.application.port.input.command.TokenPurchaseItemInput;
+
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -24,5 +27,16 @@ public record BuyTokensRequest(
     @AssertTrue(message = "Phương thức thanh toán không hợp lệ")
     public boolean isPaymentMethodValid() {
         return VALID_METHODS.contains(paymentMethod);
+    }
+
+    public static BuyTokensCommand toCommand(UUID schoolId, BuyTokensRequest request) {
+        return new BuyTokensCommand(
+            schoolId,
+            request.subscriptionId(),
+            request.items().stream()
+                .map(item -> new TokenPurchaseItemInput(item.quotaType(), item.quantity()))
+                .toList(),
+            request.paymentMethod()
+        );
     }
 }

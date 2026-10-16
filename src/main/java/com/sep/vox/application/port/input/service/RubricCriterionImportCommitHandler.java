@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
@@ -61,12 +61,12 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID versionId = session.getImportedEntityId();
         var version = rubricVersionRepository.findById(versionId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric khi xử lý ngầm."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric khi xử lý ngầm."));
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalStateException("Chỉ có thể import Tiêu chí khi phiên bản Rubric đang ở trạng thái DRAFT.");
         }
         var rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc khi xử lý ngầm."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc khi xử lý ngầm."));
 
         Map<String, String> mapping = new HashMap<>();
         if (session.getConfirmedMappingJson() != null && !session.getConfirmedMappingJson().isBlank()) {

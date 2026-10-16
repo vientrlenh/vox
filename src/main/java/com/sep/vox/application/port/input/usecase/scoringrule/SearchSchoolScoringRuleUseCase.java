@@ -6,13 +6,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.SearchSchoolScoringRuleQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ScoringRuleDto;
-import com.sep.vox.domain.mapper.ScoringRuleDtoMapper;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ScoringRuleRepository;
@@ -62,7 +61,7 @@ public class SearchSchoolScoringRuleUseCase implements IUseCase<SearchSchoolScor
 
         // 3. Kiểm tra Assessment Policy tồn tại và thuộc đúng trường học
         var policy = assessmentPolicyRepository.findById(query.policyId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() == null || !policy.getSchoolId().equals(query.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Scoring Rule của trường khác.");
         }
@@ -74,7 +73,7 @@ public class SearchSchoolScoringRuleUseCase implements IUseCase<SearchSchoolScor
                 query.policyId(), query.keyword(), query.isActive(), query.page(), query.size());
 
         return new PageResult<>(
-                pageResult.content().stream().map(ScoringRuleDtoMapper::toDto).toList(),
+                pageResult.content().stream().map(ScoringRuleDto::toDto).toList(),
                 pageResult.page(),
                 pageResult.size(),
                 pageResult.totalElements(),

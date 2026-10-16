@@ -15,7 +15,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.question.BulkUpdateQuestionBankStatusResponse;
 import com.sep.vox.application.response.input.question.BulkUpdateQuestionScopeStatusFailure;
 import com.sep.vox.application.shared.StringNormalization;
-import com.sep.vox.domain.mapper.QuestionBankDtoMapper;
+import com.sep.vox.domain.dto.QuestionBankDto;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionBankStatus;
@@ -109,7 +109,7 @@ public class BulkUpdateQuestionBankStatusUseCase
         // transaction thì số câu lệnh sinh ra không khác nhau.
         var updated = new ArrayList<com.sep.vox.domain.dto.QuestionBankDto>();
         for (var bank : toSave) {
-            updated.add(QuestionBankDtoMapper.toDto(questionBankRepository.save(bank)));
+            updated.add(QuestionBankDto.toDto(questionBankRepository.save(bank)));
         }
 
         return new BulkUpdateQuestionBankStatusResponse(List.copyOf(updated), List.copyOf(failed));

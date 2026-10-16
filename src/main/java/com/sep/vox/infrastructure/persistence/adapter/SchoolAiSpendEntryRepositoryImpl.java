@@ -4,7 +4,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.school.SchoolAiSpendEntry;
 import com.sep.vox.domain.repository.SchoolAiSpendEntryRepository;
-import com.sep.vox.infrastructure.persistence.entity.SchoolAiSpendEntryJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolAiSpendEntryJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolAiSpendEntryRepository;
 
 @Repository
@@ -28,7 +28,7 @@ public class SchoolAiSpendEntryRepositoryImpl implements SchoolAiSpendEntryRepos
             entry.getSubscriptionId(),
             entry.getQuotaType().name(),
             entry.getUserId(),
-            entry.getExamSessionId(),
+            entry.getAssessmentSessionId(),
             entry.getPracticeSessionId(),
             entry.getAmountVnd(),
             entry.getOccurredAt()

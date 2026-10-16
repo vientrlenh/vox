@@ -2,51 +2,55 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
-import com.sep.vox.infrastructure.persistence.entity.SchoolGradeJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolGradeJpaEntity;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j 
 public final class SchoolGradeMapper {
+
+    private SchoolGradeMapper() {}
     
-    public static final SchoolGrade toDomain(SchoolGradeJpaEntity jpa) {
-        return new SchoolGrade(
-            jpa.getId(),
-            jpa.getSchoolId(),
-            jpa.getGradeLevelId(),
-            jpa.getCode(),
-            jpa.getName(), 
-            jpa.getDescription(), 
-            jpa.getStartDate(), 
-            jpa.getEndDate(), 
-            statusFromString(jpa.getStatus()), 
-            jpa.getCreatedAt(), 
-            jpa.getUpdatedAt(), 
-            jpa.getCreatedBy(), 
-            jpa.getUpdatedBy()
-        );
+    public static SchoolGrade toDomain(SchoolGradeJpaEntity jpa) {
+        try {
+            return SchoolGrade.builder()
+                .id(jpa.getId())
+                .schoolId(jpa.getSchoolId())
+                .gradeLevelId(jpa.getGradeLevelId())
+                .name(jpa.getName())
+                .description(jpa.getDescription())
+                .academicYearId(jpa.getAcademicYearId())
+                .status(SchoolGradeStatus.from(jpa.getStatus()))
+                .createdAt(jpa.getCreatedAt())
+                .updatedAt(jpa.getUpdatedAt())
+                .createdBy(jpa.getCreatedBy())
+                .updatedBy(jpa.getUpdatedBy())
+                .build();
+        } catch (Exception ex) {
+            log.error("A problem occurred when mapping school grade entity to model: {}", ex.getMessage(), ex);
+            throw new IllegalStateException("An error occurred when converting entity to model");
+        }
+        
     }
 
-    public static final SchoolGradeJpaEntity toJpa(SchoolGrade grade) {
-        return new SchoolGradeJpaEntity(
-            grade.getId(),
-            grade.getSchoolId(),
-            grade.getGradeLevelId(),
-            grade.getCode(),
-            grade.getName(), 
-            grade.getDescription(), 
-            grade.getStartDate(), 
-            grade.getEndDate(), 
-            valueOf(grade.getStatus()), 
-            grade.getCreatedAt(), 
-            grade.getUpdatedAt(), 
-            grade.getCreatedBy(), 
-            grade.getUpdatedBy()
-        );
-    }
-
-    private static SchoolGradeStatus statusFromString(String status) {
-        return status == null ? null : SchoolGradeStatus.valueOf(status);
-    }
-
-    private static String valueOf(SchoolGradeStatus status) {
-        return status == null ? null : status.name();
+    public static SchoolGradeJpaEntity toJpa(SchoolGrade grade) {
+        try {
+            return SchoolGradeJpaEntity.builder()
+                .id(grade.getId())
+                .schoolId(grade.getSchoolId())
+                .gradeLevelId(grade.getGradeLevelId())
+                .name(grade.getName())
+                .description(grade.getDescription())
+                .academicYearId(grade.getAcademicYearId())
+                .status(SchoolGradeStatus.value(grade.getStatus()))
+                .createdAt(grade.getCreatedAt())
+                .updatedAt(grade.getUpdatedAt())
+                .createdBy(grade.getCreatedBy())
+                .updatedBy(grade.getUpdatedBy())
+                .build();
+        } catch (Exception ex) {
+            log.error("A problem occurred when mapping school grade model to entity: {}", ex.getMessage(), ex);
+            throw new IllegalStateException("An error occurred when converting model to entity");
+        }
     }
 }

@@ -41,13 +41,13 @@ public class InterestDimensionInitializer implements ApplicationRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(InterestDimensionInitializer.class);
 
     /**
-     * Sáu chiều đem ra hỏi trong quiz, cộng ACADEMIC_EXAM.
+     * Sáu chiều đem ra hỏi trong quiz, cộng ACADEMIC_ASSESSMENT.
      *
      * <p>Sáu mã đầu KHÔNG phải chọn tuỳ ý: chúng là đúng tập mã mà {@code dimensions_json} của các
      * câu quiz do AI sinh ra đang tham chiếu (đối chiếu trên dữ liệu thật). Đổi mã ở đây mà không
      * sinh lại câu quiz là quiz mất điểm ở chiều tương ứng, lại theo kiểu im lặng.
      *
-     * <p>ACADEMIC_EXAM khác hẳn nhóm còn lại: {@code quizEligible = false}. Đây là chiều hệ thống
+     * <p>ACADEMIC_ASSESSMENT khác hẳn nhóm còn lại: {@code quizEligible = false}. Đây là chiều hệ thống
      * TỰ gán cho chủ đề lấy từ ngân hàng đề ({@code ViewPracticeTopicOffersUseCase}), dùng để xếp
      * hạng chủ đề nhưng không phải sở thích nên không hỏi học sinh. Thiếu nó thì chủ đề từ ngân
      * hàng đề không xếp hạng được.
@@ -65,7 +65,7 @@ public class InterestDimensionInitializer implements ApplicationRunner {
             "Quan hệ, cộng đồng, vấn đề xã hội, giáo dục", true, 5),
         dimension("FUTURE_SCIENCE", "Khoa học & tương lai",
             "Khám phá khoa học, môi trường, xu hướng tương lai", true, 6),
-        dimension("ACADEMIC_EXAM", "Học thuật & luyện đề",
+        dimension("ACADEMIC_ASSESSMENT", "Học thuật & luyện đề",
             "Chủ đề lấy từ ngân hàng đề -- hệ thống tự gán, không hỏi học sinh", false, 7)
     );
 

@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -85,7 +85,7 @@ public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassU
 
     private User findCurrentUser(UUID currentUserId) {
         var user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
         validateCurrentUserIsActive(user);
         return user;
     }
@@ -110,7 +110,7 @@ public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassU
 
     private void validateSchool(UUID schoolId) {
         var school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
         }
@@ -118,9 +118,9 @@ public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassU
 
     private SchoolClass validateSchoolClass(UUID classId, UUID schoolId) {
         var schoolClass = schoolClassRepository.findById(classId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
-            throw new NotFoundException("Không tìm thấy lớp học");
+            throw new ResourceNotFoundException("Không tìm thấy lớp học");
         }
         if (schoolClass.getStatus() != SchoolClassStatus.ACTIVE) {
             throw new IllegalStateException("Lớp học không hoạt động");
@@ -130,7 +130,7 @@ public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassU
 
     private void validateTargetUser(UUID userId, UUID schoolId) {
         var targetUser = userRepository.findById(userId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
         if (targetUser.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalStateException("Người dùng không hoạt động");
         }
@@ -142,6 +142,6 @@ public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassU
 
     private SchoolClassUser findMembership(UUID userId, UUID classId) {
         return schoolClassUserRepository.findByUserIdAndSchoolClassId(userId, classId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng trong lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng trong lớp học"));
     }
 }

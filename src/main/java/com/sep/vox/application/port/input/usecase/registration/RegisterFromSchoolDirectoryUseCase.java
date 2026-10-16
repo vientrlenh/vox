@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.RegisterVerificationOtpRequestedPayloadV1;
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.RegisterFromSchoolDirectoryCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.CacheManagerPort;
@@ -72,26 +72,26 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
         var command = normalize(input);
 
         var schoolDirectory = schoolDirectoryRepository.findById(command.schoolDirectoryId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
         
         if (schoolRepository.existsByCode(schoolDirectory.getCode())) {
-            throw new DuplicatedException("Trường này đã được đăng ký");
+            throw new ResourceDuplicatedException("Trường này đã được đăng ký");
         }
 
         if (registerFormRepository.existsBySchoolDirectoryIdAndStatusIn(command.schoolDirectoryId(), blockingFormStatuses)) {
-            throw new DuplicatedException("Hiện đang có đơn đăng ký đang chờ phê duyệt cho danh mục trường này");
+            throw new ResourceDuplicatedException("Hiện đang có đơn đăng ký đang chờ phê duyệt cho danh mục trường này");
         }
 
         var formAlreadyPendingByContactInfo = registerFormRepository.existsByContactEmailAndStatus(command.contactEmail(), RegisterFormStatus.PENDING) || registerFormRepository.existsByContactPhoneAndStatus(command.contactPhone(), RegisterFormStatus.PENDING);
 
         if (formAlreadyPendingByContactInfo) {
-            throw new DuplicatedException("Thông tin yêu cầu đang tồn tại đơn đăng ký cần được phê duyệt");
+            throw new ResourceDuplicatedException("Thông tin yêu cầu đang tồn tại đơn đăng ký cần được phê duyệt");
         }
 
         var alreadyUser = userRepository.existsByEmail(command.contactEmail()) || userRepository.existsByPhone(command.contactPhone());
 
         if (alreadyUser) {
-            throw new DuplicatedException("Email hoặc số điện thoại yêu cầu đã được đăng ký");
+            throw new ResourceDuplicatedException("Email hoặc số điện thoại yêu cầu đã được đăng ký");
         }
 
         var method = getVerificationMethod(schoolDirectory, command);

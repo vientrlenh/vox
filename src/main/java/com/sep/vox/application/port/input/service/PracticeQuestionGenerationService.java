@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.PracticeQuestionGenerationPort;
 import com.sep.vox.application.port.output.PracticeQuestionGenerationPort.GeneratedQuestion;
 import com.sep.vox.application.port.output.PracticeQuestionGenerationPort.TopicDetails;
@@ -108,7 +108,7 @@ public class PracticeQuestionGenerationService {
     private TopicDetails topicDetails(UUID topicId) {
         var topic = practiceTopicRepository.findTopicById(topicId)
             .filter(candidate -> candidate.isActive())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề luyện tập."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề luyện tập."));
         return new TopicDetails(
             topic.getId(),
             topic.getName(),

@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.ViewSchoolDirectoryCursorPageQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.SchoolDirectoryDto;
-import com.sep.vox.domain.mapper.SchoolDirectoryDtoMapper;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 import com.sep.vox.domain.shared.CursorPage;
 
@@ -29,7 +28,7 @@ public class ViewSchoolDirectoryCursorPageUseCase implements IUseCase<ViewSchool
         var nextCursor = hasNext ? page.getLast().getId() : null;
 
         return new CursorPage<>(
-            SchoolDirectoryDtoMapper.toSchoolDirectoryDtoList(page), 
+            SchoolDirectoryDto.toDtoList(page), 
             nextCursor, 
             hasNext
         );

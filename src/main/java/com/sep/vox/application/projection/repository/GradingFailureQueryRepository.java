@@ -12,11 +12,11 @@ import com.sep.vox.domain.shared.PageResult;
  * Đọc phiên thi AI chấm lỗi, XUYÊN kỳ thi và XUYÊN trường.
  *
  * <p>Không có đường nào sẵn để hỏi câu này: màn kết quả hiện tại đi từ MỘT kỳ thi
- * ({@code ExamResultsListPage} đọc {@code examId} trên URL rồi lọc phía client), nên nó không trả
+ * ({@code AssessmentResultsListPage} đọc {@code assessmentId} trên URL rồi lọc phía client), nên nó không trả
  * lời được "toàn hệ thống đang có bao nhiêu phiên hỏng, vì những nguyên nhân nào".
  *
  * <p>Là một BÁO CÁO, cùng khuôn với {@link PlatformOperationalHealthQueryRepository} — gộp ở đây
- * thay vì thêm hàng loạt {@code findBy...} vào {@code ExamSessionRepository}, vốn là cổng nghiệp vụ
+ * thay vì thêm hàng loạt {@code findBy...} vào {@code AssessmentSessionRepository}, vốn là cổng nghiệp vụ
  * của phiên thi chứ không phải chỗ phục vụ một cái bảng.
  *
  * <p>MỌI hàm ở đây dùng CHUNG một vị từ: {@code status = 'GRADING_FAILED'} và {@code submitted_at}

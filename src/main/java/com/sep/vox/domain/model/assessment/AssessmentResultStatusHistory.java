@@ -1,0 +1,120 @@
+package com.sep.vox.domain.model.assessment;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
+
+public class AssessmentResultStatusHistory {
+    private UUID id;
+    private UUID candidateResultId;
+    private AssessmentCandidateResultStatus fromStatus;
+    private AssessmentCandidateResultStatus toStatus;
+    private BigDecimal scoreBefore;
+    private BigDecimal scoreAfter;
+    private AssessmentResultStatusChangeSource source;
+    private UUID actorId;
+    private String reason;
+    private Instant createdAt;
+
+    protected AssessmentResultStatusHistory() {}
+
+    public AssessmentResultStatusHistory(UUID id, UUID candidateResultId, AssessmentCandidateResultStatus fromStatus,
+            AssessmentCandidateResultStatus toStatus, BigDecimal scoreBefore, BigDecimal scoreAfter,
+            AssessmentResultStatusChangeSource source, UUID actorId, String reason, Instant createdAt) {
+        this.id = id;
+        this.candidateResultId = candidateResultId;
+        this.fromStatus = fromStatus;
+        this.toStatus = toStatus;
+        this.scoreBefore = scoreBefore;
+        this.scoreAfter = scoreAfter;
+        this.source = source;
+        this.actorId = actorId;
+        this.reason = reason;
+        this.createdAt = createdAt;
+    }
+
+
+    public boolean isScoreOnlyChange() {
+        return fromStatus == toStatus;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public UUID getCandidateResultId() {
+        return candidateResultId;
+    }
+
+    public void setCandidateResultId(UUID candidateResultId) {
+        this.candidateResultId = candidateResultId;
+    }
+
+    public AssessmentCandidateResultStatus getFromStatus() {
+        return fromStatus;
+    }
+
+    public void setFromStatus(AssessmentCandidateResultStatus fromStatus) {
+        this.fromStatus = fromStatus;
+    }
+
+    public AssessmentCandidateResultStatus getToStatus() {
+        return toStatus;
+    }
+
+    public void setToStatus(AssessmentCandidateResultStatus toStatus) {
+        this.toStatus = toStatus;
+    }
+
+    public BigDecimal getScoreBefore() {
+        return scoreBefore;
+    }
+
+    public void setScoreBefore(BigDecimal scoreBefore) {
+        this.scoreBefore = scoreBefore;
+    }
+
+    public BigDecimal getScoreAfter() {
+        return scoreAfter;
+    }
+
+    public void setScoreAfter(BigDecimal scoreAfter) {
+        this.scoreAfter = scoreAfter;
+    }
+
+    public AssessmentResultStatusChangeSource getSource() {
+        return source;
+    }
+
+    public void setSource(AssessmentResultStatusChangeSource source) {
+        this.source = source;
+    }
+
+    public UUID getActorId() {
+        return actorId;
+    }
+
+    public void setActorId(UUID actorId) {
+        this.actorId = actorId;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+}

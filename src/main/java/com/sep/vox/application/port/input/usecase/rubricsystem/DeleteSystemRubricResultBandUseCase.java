@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSystemRubricResultBandCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -38,13 +38,13 @@ public class DeleteSystemRubricResultBandUseCase implements IUseCase<DeleteSyste
         var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
-        RubricVersion version = rubricVersionRepository.findById(command.versionId()).orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản."));
+        RubricVersion version = rubricVersionRepository.findById(command.versionId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản."));
         if (version.getStatus() != RubricStatus.DRAFT) throw new IllegalStateException("Chỉ xóa được khi là DRAFT.");
 
-        Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric."));
+        Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) throw new ForbiddenException("Không thể xóa dữ liệu của trường.");
 
-        RubricResultBand resultBand = rubricResultBandRepository.findById(command.resultBandId()).orElseThrow(() -> new NotFoundException("Không tìm thấy Thang điểm."));
+        RubricResultBand resultBand = rubricResultBandRepository.findById(command.resultBandId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Thang điểm."));
         if (!resultBand.getRubricVersionId().equals(version.getId())) throw new IllegalArgumentException("Thang điểm sai phiên bản.");
 
         rubricResultBandRepository.deleteById(resultBand.getId());

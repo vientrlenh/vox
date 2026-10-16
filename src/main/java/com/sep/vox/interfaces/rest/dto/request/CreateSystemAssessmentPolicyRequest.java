@@ -9,26 +9,28 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 public record CreateSystemAssessmentPolicyRequest(
-        @NotNull(message = "Phiên bản Khung tiêu chuẩn không được để trống")
+        @NotNull(message = "Framework version ID is required")
         UUID frameworkVersionId,
 
-        @NotNull(message = "Phiên bản Rubric không được để trống")
+        @NotNull(message = "Rubric version ID is required")
         UUID rubricVersionId,
 
-        @NotNull(message = "Ngôn ngữ không được để trống")
+        @NotNull(message = "Learning language ID is required")
         UUID languageId,
 
-        @NotNull(message = "Band mục tiêu không được để trống")
+        @NotNull(message = "Target framework ID is required")
         UUID targetFrameworkBandId,
 
-        @DecimalMin(value = "0.0", message = "Điểm đạt phải lớn hơn hoặc bằng 0")
+        @DecimalMin(value = "0.0", message = "Passing score must not be lower than 0.0")
         BigDecimal passingScore,
 
         AssessmentPolicyStrictness strictness,
 
-        @NotBlank(message = "Ngày bắt đầu hiệu lực không được để trống")
+        @NotBlank(message = "Effective date from is required")
         String effectiveFrom,
 
         String effectiveTo
 ) {
+
+        public static CreateSystemAssessmentPolicyCommand
 }

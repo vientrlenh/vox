@@ -11,7 +11,7 @@ public class ImportRow {
     private String errorsJson;
     private ImportRowStatus status;
 
-    public ImportRow() {}
+    protected ImportRow() {}
 
     public ImportRow(UUID id, UUID sessionId, long rowNumber, String rawDataJson, String mappedDataJson,
             String errorsJson, ImportRowStatus status) {

@@ -13,7 +13,7 @@ import com.sep.vox.domain.repository.NotificationDeviceRepository;
 
 /**
  * Token FCM / FID không đổi khi người dùng đăng xuất -- nó gắn với bản cài đặt app chứ
- * không gắn với tài khoản. Trên máy phòng lab dùng chung (ExamDeliveryMode.LAB), nếu
+ * không gắn với tài khoản. Trên máy phòng lab dùng chung (AssessmentDeliveryMode.LAB), nếu
  * không gỡ ở đây thì giữa lúc học sinh A rời máy và lúc học sinh B đăng nhập, thiết bị
  * vẫn thuộc về A và thông báo điểm thi của A sẽ hiện lên màn hình A đã rời đi.
  *

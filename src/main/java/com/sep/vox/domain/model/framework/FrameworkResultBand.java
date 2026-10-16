@@ -1,47 +1,36 @@
 package com.sep.vox.domain.model.framework;
 
-import java.time.Instant;
 import java.util.UUID;
+
+import com.sep.vox.domain.valueobject.Code;
+import com.sep.vox.domain.valueobject.PositiveInteger;
 
 public class FrameworkResultBand {
     private UUID id;
     private UUID frameworkVersionId;
-    private String code;
+    private Code code;
     private String label;
     private String description;
-    private int order;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
+    private PositiveInteger order;
 
-    public FrameworkResultBand() {}
+    protected FrameworkResultBand() {}
 
-    public FrameworkResultBand(UUID id, UUID frameworkVersionId, String code, String label, String description, int order, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
+    public FrameworkResultBand(UUID id, UUID frameworkVersionId, Code code, String label, String description, PositiveInteger order) {
         this.id = id;
         this.frameworkVersionId = frameworkVersionId;
         this.code = code;
         this.label = label;
         this.description = description;
         this.order = order;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
     }
 
-    public FrameworkResultBand(UUID frameworkVersionId, String code, String label, String description, int order, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.frameworkVersionId = frameworkVersionId;
-        this.code = code;
-        this.label = label;
-        this.description = description;
-        this.order = order;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
+    public FrameworkResultBand(Builder builder) {
+        this.id = builder.id;
+        this.frameworkVersionId = builder.frameworkVersionId;
+        this.code = builder.code;
+        this.label = builder.label;
+        this.description = builder.description;
+        this.order = builder.order;
     }
 
     public UUID getId() {
@@ -60,11 +49,11 @@ public class FrameworkResultBand {
         this.frameworkVersionId = frameworkVersionId;
     }
 
-    public String getCode() {
+    public Code getCode() {
         return code;
     }
 
-    public void setCode(String code) {
+    public void setCode(Code code) {
         this.code = code;
     }
 
@@ -83,46 +72,71 @@ public class FrameworkResultBand {
     public void setDescription(String description) {
         this.description = description;
     }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
     
-    public int getOrder() {
+    public PositiveInteger getOrder() {
         return order;
     }
 
-    public void setOrder(int order) {
+    public void setOrder(PositiveInteger order) {
         this.order = order;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public static Builder builder() {
+        return new FrameworkResultBand.Builder();
     }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
+    public static FrameworkResultBand create(UUID frameworkVersionId, String code, String label, String description, Integer order) {
+        return FrameworkResultBand.builder()
+            .frameworkVersionId(frameworkVersionId)
+            .code(Code.from(code))
+            .label(label)
+            .description(description)
+            .order(PositiveInteger.from(order))
+            .build();
     }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+    public static class Builder {
+        private UUID id;
+        private UUID frameworkVersionId;
+        private Code code;
+        private String label;
+        private String description;
+        private PositiveInteger order;
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        protected Builder() {}
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder id(UUID id) {
+            this.id = id;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder frameworkVersionId(UUID frameworkVersionId) {
+            this.frameworkVersionId = frameworkVersionId;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+        public Builder code(Code code) {
+            this.code = code;
+            return this;
+        }
 
-    
+        public Builder label(String label) {
+            this.label = label;
+            return this;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder order(PositiveInteger order) {
+            this.order = order;
+            return this;
+        }
+
+        public FrameworkResultBand build() {
+            return new FrameworkResultBand(this);
+        }
+    }
 }

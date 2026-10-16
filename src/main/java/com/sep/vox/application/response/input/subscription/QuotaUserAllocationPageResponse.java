@@ -18,7 +18,7 @@ import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
  * trong tay thì phép cộng đó cho ra số SAI -- nên tổng phải do phía máy chủ tính trên toàn bộ tập,
  * cùng khuôn với {@code SchoolBalanceSummaryResponse}.
  *
- * @param pool                   ví hạn mức cấp trường -- EXAM khi chia cho giáo viên, PRACTICE khi
+ * @param pool                   ví hạn mức cấp trường -- ASSESSMENT khi chia cho giáo viên, PRACTICE khi
  *                               chia cho học sinh
  * @param distributedAmountVnd   tổng đã chia cho những người CÒN đủ điều kiện, trên toàn bộ tập chứ
  *                               không phải chỉ trang này. Người đã nghỉ/ra trường KHÔNG được cộng vào
@@ -43,7 +43,7 @@ import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
  *                               luyện (ClassTestTokenQuotaGuardService, findPracticeSpendableFundsVnd)
  * @param walletBalanceVnd       phần ví TỰ NẠP của trường (school_balances) CÓ THỂ ăn thêm ngoài
  *                               distributableAmountVnd khi nới trần cá nhân của MỘT người -- không
- *                               phải một túi tiền dành riêng, và dùng CHUNG cho cả EXAM lẫn PRACTICE
+ *                               phải một túi tiền dành riêng, và dùng CHUNG cho cả ASSESSMENT lẫn PRACTICE
  *                               (xem WalletDrawConfirmationRequiredException). Đã kẹp về 0, âm là nợ.
  * @param content                người đủ điều kiện ở trang đang xem, kể cả người chưa được chia gì
  */

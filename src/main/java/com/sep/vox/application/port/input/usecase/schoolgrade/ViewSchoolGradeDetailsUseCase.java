@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolGradeDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -48,15 +48,15 @@ public class ViewSchoolGradeDetailsUseCase implements IUseCase<ViewSchoolGradeDe
         validateUserAndAccess(currentUserId, input.schoolId());
 
         if (!schoolRepository.existsById(input.schoolId())) {
-            throw new NotFoundException("Không tìm thấy trường học.");
+            throw new ResourceNotFoundException("Không tìm thấy trường học.");
         }
 
         SchoolGrade grade = schoolGradeRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy năm học/khóa học."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy năm học/khóa học."));
 
         // Năm học đã lưu schoolId trực tiếp -- không còn phải bắc cầu qua Khối để xác định trường sở hữu.
         if (!grade.getSchoolId().equals(input.schoolId())) {
-            throw new NotFoundException("Không tìm thấy năm học/khóa học.");
+            throw new ResourceNotFoundException("Không tìm thấy năm học/khóa học.");
         }
 
         return SchoolGradeDto.toDto(grade);

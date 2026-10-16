@@ -3,11 +3,10 @@ package com.sep.vox.application.port.input.usecase.notification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.mapper.notification.NotificationDtoMapper;
 import com.sep.vox.application.port.input.query.ViewMyNotificationsCursorPageQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.dto.NotificationDto;
+import com.sep.vox.domain.dto.NotificationDto;
 import com.sep.vox.domain.repository.NotificationRepository;
 import com.sep.vox.domain.shared.CursorPage;
 
@@ -42,7 +41,7 @@ public class ViewMyNotificationsCursorPageUseCase
         var nextCursor = hasNext ? page.getLast().getId() : null;
 
         return new CursorPage<>(
-            NotificationDtoMapper.toNotificationDtoList(page),
+            NotificationDto.toDtoList(page),
             nextCursor,
             hasNext
         );

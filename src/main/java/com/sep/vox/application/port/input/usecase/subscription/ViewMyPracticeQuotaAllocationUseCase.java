@@ -12,7 +12,7 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationReposi
 
 /**
  * Cho học sinh tự xem hạn mức PRACTICE cá nhân của chính mình -- mirror của
- * ViewMyExamQuotaAllocationUseCase (giáo viên/EXAM), trước đây endpoint duy nhất đọc
+ * ViewMyAssessmentQuotaAllocationUseCase (giáo viên/ASSESSMENT), trước đây endpoint duy nhất đọc
  * SchoolSubscriptionQuotaUserAllocation loại PRACTICE chỉ SCHOOL_ADMIN gọi được và trả cả trường,
  * không lọc theo người gọi (xem ViewPracticeQuotaUserAllocationsUseCase).
  *

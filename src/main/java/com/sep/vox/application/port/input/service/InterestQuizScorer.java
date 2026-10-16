@@ -29,7 +29,7 @@ public class InterestQuizScorer {
         this.dimensionRepository = dimensionRepository;
     }
 
-    /** Các chiều được đem ra hỏi trong quiz -- không gồm chiều hệ thống như ACADEMIC_EXAM. */
+    /** Các chiều được đem ra hỏi trong quiz -- không gồm chiều hệ thống như ACADEMIC_ASSESSMENT. */
     public List<String> quizDimensionCodes() {
         return dimensionRepository.findQuizEligible().stream()
             .map(dimension -> dimension.getCode())

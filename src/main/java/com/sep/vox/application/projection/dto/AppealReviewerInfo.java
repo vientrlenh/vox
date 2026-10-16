@@ -5,7 +5,7 @@ import java.util.UUID;
 
 /**
  * Người chấm phúc khảo của một đơn — chỉ MỘT người, và dữ liệu lấy từ dòng
- * {@code exam_grading_assignments} vòng {@code APPEAL} chứ không từ bảng riêng.
+ * {@code assessment_grading_assignments} vòng {@code APPEAL} chứ không từ bảng riêng.
  *
  * <p>Không còn "điểm đề xuất": với một người chấm thì không có gì để đối chiếu, và
  * điểm họ nộp đi thẳng vào kết quả bài thi.

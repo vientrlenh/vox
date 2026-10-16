@@ -4,13 +4,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateQuestionAssetMutationCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionAssetDto;
-import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
 import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionAssetType;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
@@ -53,9 +52,9 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         var question = questionRepository.findById(command.questionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
         var bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         var owner = currentUserId.equals(question.getCreatedBy());
         var editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
@@ -69,7 +68,7 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
 
         var immutable = question.getStatus() == QuestionStatus.PUBLISHED
             || question.isLocked()
-            || questionRepository.existsUsedInExam(question.getId());
+            || questionRepository.existsUsedInAssessment(question.getId());
         if (!systemAdminOnSystemBank
                 && owner
                 && !immutable
@@ -114,7 +113,7 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
         // Tạm thời bỏ auto-publish yêu cầu AI phân tích asset để luồng lưu asset
         // luôn độc lập và ổn định. Sẽ bật lại ở task riêng về AI update asset sau.
         // questionAssetAnalysisRequestPublisher.publishIfNeeded(targetQuestion, saved);
-        return QuestionAssetDtoMapper.toDto(saved);
+        return QuestionAssetDto.toDto(saved);
     }
 
     private void validateAssetOrder(java.util.UUID questionId, int order, java.util.UUID currentAssetId) {

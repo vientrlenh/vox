@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import com.sep.vox.application.port.input.command.CreateSupportedLanguageCommand;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -16,4 +18,12 @@ public record CreateSupportedLanguageRequest(
     @Size(max = 2048, message = "Mô tả ngôn ngữ không được vượt quá 2048 ký tự")
     String description
 ) {
+
+    public static CreateSupportedLanguageCommand toCommand(CreateSupportedLanguageRequest request) {
+        return new CreateSupportedLanguageCommand(
+            request.code(),
+            request.name(),
+            request.description()
+        );
+    }
 }

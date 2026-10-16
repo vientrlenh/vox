@@ -6,7 +6,6 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.mapper.learnerprofile.LearnerProfileResponseMapper;
 import com.sep.vox.application.port.input.service.InterestQuizItemSelector;
 import com.sep.vox.application.port.input.service.InterestQuizScorer;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -166,6 +165,6 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
     }
 
     private List<InterestQuizItem> toResponse(List<InterestQuizSeedItem> items) {
-        return LearnerProfileResponseMapper.toResponse(items);
+        return InterestQuizItem.toResponseList(items);
     }
 }

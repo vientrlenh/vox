@@ -67,17 +67,17 @@ public class JpaQuestionQueryRepository implements QuestionQueryRepository {
                 (:systemAdmin = true AND qb.ownerType = 'SYSTEM')
                 OR EXISTS (
                     SELECT 1
-                    FROM ExamPaperItemJpaEntity epi
-                    JOIN ExamPaperJpaEntity ep ON ep.id = epi.paperId
-                    JOIN ExamMemberJpaEntity em ON em.examId = ep.examId
+                    FROM AssessmentPaperItemJpaEntity epi
+                    JOIN AssessmentPaperJpaEntity ep ON ep.id = epi.paperId
+                    JOIN AssessmentMemberJpaEntity em ON em.assessmentId = ep.assessmentId
                     WHERE epi.questionId = q.id
                       AND em.userId = :currentUserId
                 )
                 OR EXISTS (
                     SELECT 1
-                    FROM ExamBlueprintSlotJpaEntity bs
-                    JOIN ExamBlueprintVersionJpaEntity bv ON bv.id = bs.blueprintVersionId
-                    JOIN ExamBlueprintJpaEntity b ON b.id = bv.blueprintId
+                    FROM AssessmentBlueprintSlotJpaEntity bs
+                    JOIN AssessmentBlueprintVersionJpaEntity bv ON bv.id = bs.blueprintVersionId
+                    JOIN AssessmentBlueprintJpaEntity b ON b.id = bv.blueprintId
                     WHERE bs.fixedQuestionId = q.id
                       AND (:systemAdmin = true OR b.schoolId = :currentSchoolId)
                 )

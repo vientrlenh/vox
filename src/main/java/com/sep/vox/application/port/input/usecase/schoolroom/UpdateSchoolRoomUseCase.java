@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schoolroom;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSchoolRoomCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -51,7 +51,7 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
 
         // 2. Tìm phòng học cần sửa
         SchoolRoom room = schoolRoomRepository.findById(command.id())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng học với ID đã cho."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng học với ID đã cho."));
 
         // VÒNG BẢO MẬT: KIỂM TRA QUYỀN SCHOOL USER
         Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
@@ -78,7 +78,7 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
         );
 
         if (updatedRows == 0) {
-            throw new NotFoundException("Cập nhật thất bại hoặc không có thay đổi nào.");
+            throw new ResourceNotFoundException("Cập nhật thất bại hoặc không có thay đổi nào.");
         }
 
         // Trả về ID của phòng học vừa được update mới là chuẩn bài

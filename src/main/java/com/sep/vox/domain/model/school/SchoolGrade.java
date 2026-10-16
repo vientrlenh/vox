@@ -1,73 +1,62 @@
 package com.sep.vox.domain.model.school;
 
-import java.time.LocalDate;
 import java.time.Instant;
 import java.util.UUID;
 
-public class SchoolGrade {
-    private UUID id;
+import com.sep.vox.domain.shared.BaseModel;
+
+public class SchoolGrade extends BaseModel {
     private UUID schoolId;
     private UUID gradeLevelId;
-    private String code;
     private String name;
     private String description;
-    private LocalDate startDate;
-    private LocalDate endDate;
+    private UUID academicYearId;
     private SchoolGradeStatus status;
-    private Instant createdAt;
     private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
-    public SchoolGrade() {}
+    protected SchoolGrade() {}
 
-    public SchoolGrade(UUID id, UUID schoolId, UUID gradeLevelId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
+    public SchoolGrade(UUID schoolId, UUID gradeLevelId, String name, String description, UUID academicYearId, SchoolGradeStatus status, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.schoolId = schoolId;
         this.gradeLevelId = gradeLevelId;
-        this.code = code;
         this.name = name;
         this.description = description;
-        this.startDate = startDate;
-        this.endDate = endDate;
+        this.academicYearId = academicYearId;
         this.status = status;
-        this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public SchoolGrade(UUID schoolId, UUID gradeLevelId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
+    public SchoolGrade(Builder builder) {
+        super(builder.id, builder.createdAt);
+        this.schoolId = builder.schoolId;
+        this.gradeLevelId = builder.gradeLevelId;
+        this.name = builder.name;
+        this.description = builder.description;
+        this.academicYearId = builder.academicYearId;
+        this.status = builder.status;
+        this.updatedAt = builder.updatedAt;
+        this.createdBy = builder.createdBy;
+        this.updatedBy = builder.updatedBy;
+    }
+
+    public UUID getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(UUID schoolId) {
         this.schoolId = schoolId;
+    }
+
+    public UUID getGradeLevelId() {
+        return gradeLevelId;
+    }
+
+    public void setGradeLevelId(UUID gradeLevelId) {
         this.gradeLevelId = gradeLevelId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
     }
 
     public String getName() {
@@ -86,20 +75,20 @@ public class SchoolGrade {
         this.description = description;
     }
 
+    public UUID getAcademicYearId() {
+        return academicYearId;
+    }
+
+    public void setAcademicYearId(UUID academicYearId) {
+        this.academicYearId = academicYearId;
+    }
+
     public SchoolGradeStatus getStatus() {
         return status;
     }
 
     public void setStatus(SchoolGradeStatus status) {
         this.status = status;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
     }
 
     public Instant getUpdatedAt() {
@@ -126,37 +115,82 @@ public class SchoolGrade {
         this.updatedBy = updatedBy;
     }
 
-    public UUID getSchoolId() {
-        return schoolId;
+    public static Builder builder() {
+        return new SchoolGrade.Builder();
     }
-
-    public void setSchoolId(UUID schoolId) {
-        this.schoolId = schoolId;
-    }
-
-    public UUID getGradeLevelId() {
-        return gradeLevelId;
-    }
-
-    public void setGradeLevelId(UUID gradeLevelId) {
-        this.gradeLevelId = gradeLevelId;
-    }
-
-    public LocalDate getStartDate() {
-        return startDate;
-    }
-
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
-    }
-
-    public LocalDate getEndDate() {
-        return endDate;
-    }
-
-    public void setEndDate(LocalDate endDate) {
-        this.endDate = endDate;
-    }
-
     
+    public static class Builder {
+        private UUID id;
+        private UUID schoolId;
+        private UUID gradeLevelId;
+        private String name;
+        private String description;
+        private UUID academicYearId;
+        private SchoolGradeStatus status;
+        private Instant createdAt;
+        private Instant updatedAt;
+        private UUID createdBy;
+        private UUID updatedBy;
+
+        protected Builder() {}
+
+        public Builder id(UUID id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            this.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder gradeLevelId(UUID gradeLevelId) {
+            this.gradeLevelId = gradeLevelId;
+            return this;
+        }
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder academicYearId(UUID academicYearId) {
+            this.academicYearId = academicYearId;
+            return this;
+        }
+
+        public Builder status(SchoolGradeStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder updatedAt(Instant updatedAt) {
+            this.updatedAt = updatedAt;
+            return this;
+        }
+
+        public Builder createdBy(UUID createdBy) {
+            this.createdBy = createdBy;
+            return this;
+        }
+
+        public Builder updatedBy(UUID updatedBy) {
+            this.updatedBy = updatedBy;
+            return this;
+        }
+
+        public SchoolGrade build() {
+            return new SchoolGrade(this);
+        }
+    }
 }

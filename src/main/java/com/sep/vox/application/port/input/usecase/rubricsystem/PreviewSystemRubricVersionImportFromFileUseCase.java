@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.PreviewRubricVersionImportFromFileCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -69,7 +69,7 @@ public class PreviewSystemRubricVersionImportFromFileUseCase implements IUseCase
         }
 
         var rubric = rubricRepository.findById(command.rubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric hệ thống yêu cầu."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric hệ thống yêu cầu."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Bộ Rubric này thuộc về trường học. System Admin không thể nạp Version vào đây.");
         }

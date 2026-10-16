@@ -11,17 +11,17 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.IssueMonitorTokenCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.StreamTokenProvider;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
-import com.sep.vox.domain.model.exam.ExamSchedule;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
+import com.sep.vox.domain.model.assessment.AssessmentSchedule;
+import com.sep.vox.domain.repository.assessment.AssessmentMemberRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentScheduleProctorRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentScheduleRepository;
 
 
 @Service
@@ -31,28 +31,28 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
     private static final long CLOCK_SKEW_SECONDS = 30;
 
     private static final String SCOPE_SCHOOL_ADMIN = "SCHOOL_ADMIN";
-    private static final String SCOPE_EXAM_CHAIR = "EXAM_CHAIR";
+    private static final String SCOPE_ASSESSMENT_CHAIR = "ASSESSMENT_CHAIR";
     private static final String SCOPE_SCHEDULE_PROCTOR = "SCHEDULE_PROCTOR";
 
-    private final ExamRepository examRepository;
-    private final ExamScheduleRepository examScheduleRepository;
-    private final ExamScheduleProctorRepository examScheduleProctorRepository;
-    private final ExamMemberRepository examMemberRepository;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentScheduleRepository assessmentScheduleRepository;
+    private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
+    private final AssessmentMemberRepository assessmentMemberRepository;
     private final UserContextPort userContextPort;
     private final StreamTokenProvider streamTokenProvider;
 
     public IssueMonitorTokenUseCase(
-        ExamRepository examRepository,  
-        ExamScheduleRepository examScheduleRepository, 
-        ExamScheduleProctorRepository examScheduleProctorRepository, 
-        ExamMemberRepository examMemberRepository, 
+        AssessmentRepository assessmentRepository,  
+        AssessmentScheduleRepository assessmentScheduleRepository, 
+        AssessmentScheduleProctorRepository assessmentScheduleProctorRepository, 
+        AssessmentMemberRepository assessmentMemberRepository, 
         UserContextPort userContextPort, 
         StreamTokenProvider streamTokenProvider 
     ) {
-        this.examRepository = examRepository;
-        this.examScheduleRepository = examScheduleRepository;
-        this.examScheduleProctorRepository = examScheduleProctorRepository; 
-        this.examMemberRepository = examMemberRepository;
+        this.assessmentRepository = assessmentRepository;
+        this.assessmentScheduleRepository = assessmentScheduleRepository;
+        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository; 
+        this.assessmentMemberRepository = assessmentMemberRepository;
         this.userContextPort = userContextPort; 
         this.streamTokenProvider = streamTokenProvider;
     }
@@ -63,21 +63,21 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         var schoolId = userContextPort.getCurrentSchoolId();
         var now = Instant.now();
 
-        var exam = examRepository.findById(input.examId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi"));
+        var assessment = assessmentRepository.findById(input.assessmentId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi"));
 
-        if (schoolId == null || !exam.getSchoolId().equals(schoolId)) {
+        if (schoolId == null || !assessment.getSchoolId().equals(schoolId)) {
             throw new ForbiddenException("Bạn không có quyền giám sát kỳ thi của trường được yêu cầu");
         }
 
-        if (exam.getRequiredStreamType() == null) {
+        if (assessment.getRequiredStreamType() == null) {
             throw new IllegalArgumentException("Kỳ thi không hỗ trợ chức năng giám sát stream");
         }
 
-        var activeSchedules = examScheduleRepository.findByExamIdAndInSchedule(exam.getId(), now);
+        var activeSchedules = assessmentScheduleRepository.findByAssessmentIdAndInSchedule(assessment.getId(), now);
 
         if (activeSchedules.isEmpty()) {
-            throw new NotFoundException("Kỳ thi đang không có ca thi diễn ra");
+            throw new ResourceNotFoundException("Kỳ thi đang không có ca thi diễn ra");
         }
 
         var requestedIds = normalizeScheduleIds(input.scheduleIds());
@@ -85,7 +85,7 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         var activeScheduleByIds = activeSchedules.stream()
             .collect(Collectors.toMap(s -> s.getId(), s -> s));
 
-        List<ExamSchedule> selectedSchedules;
+        List<AssessmentSchedule> selectedSchedules;
 
         if (requestedIds.isEmpty()) {
             selectedSchedules = activeSchedules;
@@ -107,10 +107,10 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         } else if (userContextPort.isTeacher()) {
             role = "TEACHER";
 
-            var isChair = examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), userId, ExamMemberRole.CHAIR);
+            var isChair = assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), userId, AssessmentMemberRole.CHAIR);
 
             if (isChair) {
-                monitorScope = SCOPE_EXAM_CHAIR;
+                monitorScope = SCOPE_ASSESSMENT_CHAIR;
             } else {
                 monitorScope = SCOPE_SCHEDULE_PROCTOR;
 
@@ -142,7 +142,7 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         return streamTokenProvider.generateMonitorToken(
             userId.toString(), 
             schoolId.toString(), 
-            exam.getId().toString(), 
+            assessment.getId().toString(), 
             monitorScope, 
             scheduleIds, 
             List.of(role), 
@@ -151,9 +151,9 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         );
     }
 
-    private List<ExamSchedule> restrictToProctoredSchedules(List<ExamSchedule> schedules, List<UUID> explicityRequestedIds, UUID teacherId) {
+    private List<AssessmentSchedule> restrictToProctoredSchedules(List<AssessmentSchedule> schedules, List<UUID> explicityRequestedIds, UUID teacherId) {
         var scheduleIds = schedules.stream().map(s -> s.getId()).toList();
-        var proctoredIds = new HashSet<>(examScheduleProctorRepository.findScheduleIdsByTeacherIdAndScheduleIdIn(teacherId, scheduleIds));
+        var proctoredIds = new HashSet<>(assessmentScheduleProctorRepository.findScheduleIdsByTeacherIdAndScheduleIdIn(teacherId, scheduleIds));
         if (!explicityRequestedIds.isEmpty() && !proctoredIds.containsAll(explicityRequestedIds)) {
             throw new ForbiddenException("Bạn không được phân công vào một hoặc nhiều ca thi được yêu cầu");
         }

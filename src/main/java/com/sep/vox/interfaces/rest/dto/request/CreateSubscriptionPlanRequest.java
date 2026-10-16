@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -12,31 +13,34 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CreateSubscriptionPlanRequest(
-    @NotBlank(message = "Tên gói đăng ký không được để trống")
-    @Size(max = 255, message = "Tên gói đăng ký không được vượt quá 255 ký tự")
+    @NotBlank(message = "Subscription plan name is required")
+    @Size(max = 255, message = "Subscription plan name must not exceed 255 characters")
     String name, 
     
-    @NotBlank(message = "Mô tả gói không được để trống")
-    @Size(max = 2048, message = "Mô tả gói không được vượt quá 2048 ký tự")
+    @NotBlank(message = "Subscription plan tagline is required")
+    @Size(max = 2048, message = "Subscription plan tagline must not exceed 2048 characters")
     String tagline,
 
-    @NotNull(message = "Giá tiền của gói đăng ký không được để trống")
+    @NotNull(message = "Subscription plan price VND is required")
+    @DecimalMin(value = "0.0", message = "Subscription plan price VND must not be lower than 0.0 VND")
     BigDecimal priceVnd,
 
-    @NotBlank(message = "Kiểu giai đoạn của gói đăng ký không được để trống")
-    @Pattern(regexp = "^(DAY|MONTH|YEAR)$", message = "Giai đoạn của gói yêu cầu chỉ chấp nhận giá trị DAY/MONTH/YEAR")
+    @NotBlank(message = "Subscription plan period type is required")
+    @Pattern(regexp = "^(DAY|MONTH|YEAR)$", message = "Subscription plan period type only accepts DAY/MONTH/YEAR")
     String periodType,
 
-    @NotNull(message = "Số lượng thời gian giai đoạn gói đăng ký không được để trống")
-    @Min(value = 1, message = "Số lượng thời gian giai đoạn gói đăng ký không được nhỏ hơn 1")
+    @NotNull(message = "Subscription plan period count is required")
+    @Min(value = 1, message = "Subscription plan period count must not be lower than 1")
     Integer periodCount,
 
-    @NotNull(message = "Số phút của một bài kiểm tra không được để trống")
-    @Min(value = 1, message = "Số phút của một bài kiểm tra không được nhỏ hơn 1")
+    @NotNull(message = "Subscription plan max time per attempt min is required")
+    @Min(value = 1, message = "Subscription plan max time per attempt min must not be lower than 1")
     Integer maxTimePerAttemptMin,
 
-    @NotEmpty(message = "Danh sách các quota cho gói đăng ký không được để trống")
+    @NotEmpty(message = "Subscription plan quotas is required")
     @Valid
     List<CreateSubscriptionPlanQuotaRequest> quotas
 ) {
+
+    
 }

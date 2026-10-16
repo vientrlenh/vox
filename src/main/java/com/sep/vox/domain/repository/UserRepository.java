@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.shared.PageResult;
 
@@ -17,13 +18,18 @@ public interface UserRepository {
     Optional<User> findByPhone(String phone);
     Optional<User> findByEmail(String email);
     Optional<User> findByEmailAndStatus(String email, UserStatus status);
-    Optional<User> findByIdAndStatus(UUID id, UserStatus status);
+
+    // Replace the find with status method, mostly used with active state
+    Optional<User> findByIdAndStatusActive(UUID id); 
+
     User save(User user);
     User saveAndFlush(User user);
     boolean existsByEmail(String email);
-    boolean existsByEmailAndStatus(String email, UserStatus status);
+
+    boolean existsByEmailAndStatusActive(String email);
     int changeUserPassword(String email, String passwordHash);
     boolean existsByIdAndStatus(UUID id, UserStatus status);
     boolean existsByPhone(String phone);
-    PageResult<User> findAll(int pageNumber, int size);
+    PageResult<User> findAll(int page, int size);
+    boolean existsByRole(UserRole role); 
 }

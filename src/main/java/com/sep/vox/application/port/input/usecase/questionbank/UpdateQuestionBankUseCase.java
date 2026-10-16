@@ -1,22 +1,25 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateQuestionBankCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionBankDto;
-import com.sep.vox.domain.mapper.QuestionBankDtoMapper;
+import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionBankStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+
+import vn.payos.exception.UnauthorizedException;
 
 @Service
 public class UpdateQuestionBankUseCase implements IUseCase<UpdateQuestionBankCommand, QuestionBankDto> {
@@ -35,14 +38,15 @@ public class UpdateQuestionBankUseCase implements IUseCase<UpdateQuestionBankCom
     @Override
     @Transactional
     public QuestionBankDto execute(UpdateQuestionBankCommand input) {
-        var command = normalize(input);
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UpdateQuestionBankCommand command = normalize(input);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
 
-        var questionBank = questionBankRepository.findById(command.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+        QuestionBank questionBank = questionBankRepository.findById(command.id())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         validateAccess(questionBank.getOwnerType(), questionBank.getSchoolId(), currentSchoolId);
 
@@ -57,11 +61,11 @@ public class UpdateQuestionBankUseCase implements IUseCase<UpdateQuestionBankCom
         questionBank.setUpdatedAt(Instant.now());
         questionBank.setUpdatedBy(currentUserId);
 
-        var saved = questionBankRepository.save(questionBank);
-        return QuestionBankDtoMapper.toDto(saved);
+        QuestionBank saved = questionBankRepository.save(questionBank);
+        return QuestionBankDto.toDto(saved);
     }
 
-    private void validateAccess(QuestionBankOwnerType ownerType, java.util.UUID schoolId, java.util.UUID currentSchoolId) {
+    private void validateAccess(QuestionBankOwnerType ownerType, UUID schoolId, UUID currentSchoolId) {
         if (ownerType == QuestionBankOwnerType.SYSTEM) {
             if (!userContextPort.isSystemAdmin()) {
                 throw new ForbiddenException("Quyền truy cập bị từ chối");

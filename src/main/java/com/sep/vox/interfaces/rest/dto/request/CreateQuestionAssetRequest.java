@@ -1,5 +1,9 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.CreateQuestionAssetMutationCommand;
+
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -37,4 +41,18 @@ public record CreateQuestionAssetRequest(
     @Min(value = 0, message = "Thứ tự tài nguyên không được nhỏ hơn 0")
     Integer order
 ) {
+
+    public static CreateQuestionAssetMutationCommand toCommand(UUID questionId, CreateQuestionAssetRequest request) {
+        return new CreateQuestionAssetMutationCommand(
+            questionId,
+            request.title(),
+            request.durationSeconds(),
+            request.altText(),
+            request.type(),
+            request.url(),
+            request.transcript(),
+            request.description(),
+            request.order()
+        );
+    }
 }

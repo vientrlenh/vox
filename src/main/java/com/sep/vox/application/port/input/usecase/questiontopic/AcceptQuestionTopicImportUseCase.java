@@ -9,7 +9,7 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.AcceptQuestionTopicImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -58,7 +58,7 @@ public class AcceptQuestionTopicImportUseCase implements IUseCase<AcceptQuestion
         var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var session = importSessionRepository.findById(input.importSessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import với id: " + input.importSessionId()));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên import với id: " + input.importSessionId()));
 
         if (session.getType() != ImportType.QUESTION_TOPIC) {
             throw new IllegalArgumentException("Phiên import không phải là loại chủ đề câu hỏi");

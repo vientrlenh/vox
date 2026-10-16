@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolDebtEvent;
 import com.sep.vox.domain.model.school.SchoolDebtEventType;
-import com.sep.vox.infrastructure.persistence.entity.SchoolDebtEventJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolDebtEventJpaEntity;
 
 public final class SchoolDebtEventMapper {
 
@@ -17,7 +17,7 @@ public final class SchoolDebtEventMapper {
             SchoolDebtEventType.valueOf(jpa.getEventType()),
             // null hợp lệ: dòng CLEARED không gắn với ví hạn mức nào.
             jpa.getQuotaType() == null ? null : QuotaType.valueOf(jpa.getQuotaType()),
-            jpa.getTriggerExamSessionId(),
+            jpa.getTriggerAssessmentSessionId(),
             jpa.getTriggerPracticeSessionId(),
             jpa.getTriggerAmountVnd(),
             jpa.getTotalAllocatedVnd(),
@@ -34,7 +34,7 @@ public final class SchoolDebtEventMapper {
             domain.getSubscriptionId(),
             domain.getEventType().name(),
             domain.getQuotaType() == null ? null : domain.getQuotaType().name(),
-            domain.getTriggerExamSessionId(),
+            domain.getTriggerAssessmentSessionId(),
             domain.getTriggerPracticeSessionId(),
             domain.getTriggerAmountVnd(),
             domain.getTotalAllocatedVnd(),

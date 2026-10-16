@@ -7,35 +7,31 @@ public final class GradeLevelBandScopeMapper {
 
     private GradeLevelBandScopeMapper() {}
 
-    public static GradeLevelBandScope toDomain(GradeLevelBandScopeJpaEntity entity) {
-        if (entity == null) {
-            return null;
-        }
-        return new GradeLevelBandScope(
-                entity.getId(),
-                entity.getGradeLevelId(),
-                entity.getFrameworkVersionId(),
-                entity.getDefaultTargetBandId(),
-                entity.getHardMaxBandId(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt(),
-                entity.getCreatedBy(),
-                entity.getUpdatedBy());
+    public static GradeLevelBandScope toDomain(GradeLevelBandScopeJpaEntity jpa) {
+        return GradeLevelBandScope.builder()
+            .id(jpa.getId())
+            .gradeLevelId(jpa.getGradeLevelId())
+            .frameworkVersionId(jpa.getFrameworkVersionId())
+            .defaultTargetBandId(jpa.getDefaultTargetBandId())
+            .hardMaxBandId(jpa.getHardMaxBandId())
+            .createdAt(jpa.getCreatedAt())
+            .updatedAt(jpa.getUpdatedAt())
+            .createdBy(jpa.getCreatedBy())
+            .updatedBy(jpa.getUpdatedBy())
+            .build();
     }
 
-    public static GradeLevelBandScopeJpaEntity toEntity(GradeLevelBandScope domain) {
-        if (domain == null) {
-            return null;
-        }
-        return new GradeLevelBandScopeJpaEntity(
-                domain.getId(),
-                domain.getGradeLevelId(),
-                domain.getFrameworkVersionId(),
-                domain.getDefaultTargetBandId(),
-                domain.getHardMaxBandId(),
-                domain.getCreatedAt(),
-                domain.getUpdatedAt(),
-                domain.getCreatedBy(),
-                domain.getUpdatedBy());
+    public static GradeLevelBandScopeJpaEntity toJpa(GradeLevelBandScope scope) {
+        return GradeLevelBandScopeJpaEntity.builder()
+            .id(scope.getId())
+            .gradeLevelId(scope.getGradeLevelId())
+            .frameworkVersionId(scope.getFrameworkVersionId())
+            .defaultTargetBandId(scope.getDefaultTargetBandId())
+            .hardMaxBandId(scope.getHardMaxBandId())
+            .createdAt(scope.getCreatedAt())
+            .updatedAt(scope.getUpdatedAt())
+            .createdBy(scope.getCreatedBy())
+            .updatedBy(scope.getUpdatedBy())
+            .build();
     }
 }

@@ -37,19 +37,17 @@ import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.application.response.input.registration.RegisterFromSchoolDirectoryResponse;
 import com.sep.vox.interfaces.rest.dto.request.GoogleTokenLoginRequest;
-import com.sep.vox.interfaces.rest.dto.request.LoginRequest;
-import com.sep.vox.interfaces.rest.dto.request.LogoutRequest;
-import com.sep.vox.interfaces.rest.dto.request.RefreshRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterBySelfDeclaredRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterFromSchoolDirectoryRequest;
-import com.sep.vox.interfaces.rest.dto.request.ResetPasswordRequest;
-import com.sep.vox.interfaces.rest.dto.request.SendResetPasswordOtpRequest;
 import com.sep.vox.interfaces.rest.dto.request.SetUpPasswordRequest;
 
 import com.sep.vox.interfaces.rest.dto.request.VerifyRegisterFormOtpRequest;
+import com.sep.vox.interfaces.rest.dto.request.auth.LoginRequest;
+import com.sep.vox.interfaces.rest.dto.request.auth.LogoutRequest;
+import com.sep.vox.interfaces.rest.dto.request.auth.RefreshRequest;
+import com.sep.vox.interfaces.rest.dto.request.auth.ResetPasswordRequest;
+import com.sep.vox.interfaces.rest.dto.request.auth.SendResetPasswordOtpRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.SendResetPasswordOtpCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.ResetPasswordCommandMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -127,7 +125,7 @@ public class RestApiAuthController {
 
     @PostMapping("/reset-password/otp")
     public ResponseEntity<ApiResponse<Void>> sendResetPasswordOtp(@Valid @RequestBody SendResetPasswordOtpRequest request) {
-        SendResetPasswordOtpCommand command = SendResetPasswordOtpCommandMapper.fromRequest(request);
+        SendResetPasswordOtpCommand command = SendResetPasswordOtpRequest.toCommand(request);
         sendResetPasswordOtpUseCase.execute(command);
         ApiResponse<Void> response = ApiResponse.success("Password reset OTP has been sent successfully");
         return ResponseEntity.ok(response);
@@ -135,30 +133,11 @@ public class RestApiAuthController {
 
     @PatchMapping("/reset-password")
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        ResetPasswordCommand command = ResetPasswordCommandMapper.fromRequest(request);
+        ResetPasswordCommand command = ResetPasswordRequest.toCommand(request);
         resetPasswordUseCase.execute(command);
         ApiResponse<Void> response = ApiResponse.success("Password has been reseted successfully");
         return ResponseEntity.ok(response);
     }
-
-    /**
-     * Đăng nhập Google cho ứng dụng NATIVE (Flutter, WPF) -- đối trọng của
-     * {@link #startGoogleLogin} vốn chỉ dùng được từ trình duyệt.
-     *
-     * <p>Vì sao không dùng chung luồng redirect: luồng đó kết thúc bằng một cú chuyển hướng về ĐÚNG
-     * MỘT địa chỉ cấu hình sẵn ({@code app.frontend.oauth2-url}), tức là trang web. Ứng dụng native
-     * không có chỗ nhận cú chuyển hướng đó. Cho phép client tự truyền địa chỉ quay về thì lại mở ra
-     * một open redirect MANG THEO access token trên query string -- thứ nguy hiểm nhất có thể làm
-     * sai. Nên native tự lấy ID token ở máy người dùng (SDK trên mobile, PKCE + loopback trên
-     * desktop) rồi đổi lấy phiên tại đây.
-     *
-     * <p><b>Trả refresh token ở CẢ HAI nơi</b>: trong body và trong cookie. Không thừa --
-     * {@code POST /api/v1/auth/refresh} đọc refresh token bằng {@code @CookieValue} và KHÔNG có
-     * trường nào trong body để thay thế, nên chỉ trả body thôi là client cầm một chuỗi không dùng
-     * được vào việc gì. Cả hai client đều đã giữ cookie sẵn (Flutter có PersistCookieJar, WPF đọc
-     * tay Set-Cookie), còn bản trong body là để chúng cất vào kho bảo mật của hệ điều hành. Khác
-     * {@link #login}, nơi refreshToken bị ép null vì trình duyệt không được phép đọc tới nó.
-     */
     @PostMapping("/oauth2/google/token")
     public ResponseEntity<ApiResponse<LoginResponse>> googleTokenLogin(
         @Valid @RequestBody GoogleTokenLoginRequest request,

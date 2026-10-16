@@ -7,6 +7,8 @@ import java.util.UUID;
 
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
+import com.sep.vox.domain.valueobject.Code;
+import com.sep.vox.domain.valueobject.Name;
 
 public record SchoolGradeDto(
     UUID id,
@@ -17,7 +19,7 @@ public record SchoolGradeDto(
     String description,
     LocalDate startDate,
     LocalDate endDate,
-    String status,
+    SchoolGradeStatus status,
     Instant createdAt,
     Instant updatedAt
 ) {
@@ -27,18 +29,14 @@ public record SchoolGradeDto(
             grade.getId(),
             grade.getSchoolId(), 
             grade.getGradeLevelId(), 
-            grade.getCode(),
-            grade.getName(),
+            Code.valueOf(grade.getCode()),
+            Name.valueOf(grade.getName()),
             grade.getDescription(),
             grade.getStartDate(),
             grade.getEndDate(),
-            valueOf(grade.getStatus()),
+            grade.getStatus(),
             grade.getCreatedAt(),
             grade.getUpdatedAt()
         );
-    }
-
-    private static String valueOf(SchoolGradeStatus status) {
-        return status == null ? null : status.name();
     }
 }

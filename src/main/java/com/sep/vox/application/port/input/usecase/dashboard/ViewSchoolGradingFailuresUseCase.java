@@ -10,17 +10,7 @@ import com.sep.vox.application.projection.repository.SchoolWorkloadQueryReposito
 import com.sep.vox.application.response.input.dashboard.SchoolGradingFailurePageResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolGradingFailureResponse;
 
-/**
- * Chỗ đáp của dòng "AI chấm lỗi, chưa ai xử lý" trên trang tổng quan.
- *
- * <p>Phạm vi lấy từ NGƯỜI ĐANG ĐĂNG NHẬP, không nhận schoolId từ client — cùng cách như
- * {@code ViewSchoolAdminDashboardUseCase}. Nhận từ client là mở đường cho quản trị trường này đọc
- * bài của trường khác.
- *
- * <p>KHÔNG có hành động hàng loạt ở đây. Chấm lại bằng AI và chuyển người chấm đều là quyết định
- * theo TỪNG bài — chúng phụ thuộc vào lịch chấm, người rảnh, và định mức một lượt của chính phiên
- * đó. Hai mutation lẻ đã có sẵn và màn này chỉ dẫn tới chúng.
- */
+
 @Service
 public class ViewSchoolGradingFailuresUseCase
         implements IUseCase<SearchSchoolGradingFailuresQuery, SchoolGradingFailurePageResponse> {
@@ -40,8 +30,8 @@ public class ViewSchoolGradingFailuresUseCase
         var schoolId = userContextPort.getCurrentSchoolId();
 
         var page = schoolWorkloadQueryRepository.findUnhandledAiFailures(
-            schoolId, input.examId(), input.retryLeft(), input.page(), input.size());
-        var counts = schoolWorkloadQueryRepository.countAiFailuresByAllowance(schoolId, input.examId());
+            schoolId, input.assessmentId(), input.retryLeft(), input.page(), input.size());
+        var counts = schoolWorkloadQueryRepository.countAiFailuresByAllowance(schoolId, input.assessmentId());
 
         return new SchoolGradingFailurePageResponse(
             page.content().stream().map(SchoolGradingFailureResponse::of).toList(),

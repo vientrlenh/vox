@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
-import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionQuotaUserAllocationJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolSubscriptionQuotaUserAllocationJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolSubscriptionQuotaUserAllocationMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolSubscriptionQuotaUserAllocationRepository;
 

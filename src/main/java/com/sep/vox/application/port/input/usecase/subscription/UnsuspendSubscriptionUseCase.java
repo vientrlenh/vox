@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UnsuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionSuspensionNotificationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -52,7 +52,7 @@ public class UnsuspendSubscriptionUseCase implements IUseCase<UnsuspendSubscript
     @Transactional
     public UUID execute(UnsuspendSubscriptionCommand input) {
         var subscription = schoolSubscriptionRepository.findById(input.subscriptionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đăng ký"));
         if (subscription.getStatus() != SchoolSubscriptionStatus.SUSPENDED) {
             throw new IllegalStateException("Gói đăng ký này hiện không bị đình chỉ");
         }

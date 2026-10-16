@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.VerifySchoolDirectoryCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -29,7 +29,7 @@ public class VerifySchoolDirectoryUseCase implements IUseCase<VerifySchoolDirect
         var userId = userContextPort.getCurrentAuthenticatedUserId();
 
         var directory = schoolDirectoryRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục truờng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục truờng"));
 
         if (directory.isVerified()) {
             throw new IllegalStateException("Danh mục truờng đã được kiểm duyệt");

@@ -8,9 +8,9 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.command.RecordProctoringAlertCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.model.exam.ExamProctoringAlert;
-import com.sep.vox.domain.repository.ExamProctoringAlertRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.model.assessment.AssessmentProctoringAlert;
+import com.sep.vox.domain.repository.assessment.AssessmentProctoringAlertRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentSessionRepository;
 
 /**
  * Ghi một cảnh báo giám sát vào sổ.
@@ -25,14 +25,14 @@ public class RecordProctoringAlertUseCase implements IUseCase<RecordProctoringAl
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RecordProctoringAlertUseCase.class);
 
-    private final ExamProctoringAlertRepository examProctoringAlertRepository;
-    private final ExamSessionRepository examSessionRepository;
+    private final AssessmentProctoringAlertRepository assessmentProctoringAlertRepository;
+    private final AssessmentSessionRepository assessmentSessionRepository;
 
     public RecordProctoringAlertUseCase(
-            ExamProctoringAlertRepository examProctoringAlertRepository,
-            ExamSessionRepository examSessionRepository) {
-        this.examProctoringAlertRepository = examProctoringAlertRepository;
-        this.examSessionRepository = examSessionRepository;
+            AssessmentProctoringAlertRepository assessmentProctoringAlertRepository,
+            AssessmentSessionRepository assessmentSessionRepository) {
+        this.assessmentProctoringAlertRepository = assessmentProctoringAlertRepository;
+        this.assessmentSessionRepository = assessmentSessionRepository;
     }
 
     @Override
@@ -42,17 +42,17 @@ public class RecordProctoringAlertUseCase implements IUseCase<RecordProctoringAl
         // phiên WebRTC mà AI service tự sinh id, cộng dữ liệu tồn từ trước bản vá định danh. Ném lỗi
         // sẽ đẩy chúng vào DLT rồi retry mãi, làm tắc luôn những cảnh báo hợp lệ đứng sau trong cùng
         // partition -- đánh đổi tệ hại cho một bản ghi mà ta vốn không dùng được.
-        if (!examSessionRepository.findById(input.examSessionId()).isPresent()) {
+        if (!assessmentSessionRepository.findById(input.assessmentSessionId()).isPresent()) {
             LOGGER.warn(
-                "Bỏ qua cảnh báo giám sát vì không tìm thấy phiên thi: eventId={} examSessionId={} alertType={}",
-                input.eventId(), input.examSessionId(), input.alertType()
+                "Bỏ qua cảnh báo giám sát vì không tìm thấy phiên thi: eventId={} assessmentSessionId={} alertType={}",
+                input.eventId(), input.assessmentSessionId(), input.alertType()
             );
             return false;
         }
 
-        var alert = new ExamProctoringAlert(
+        var alert = new AssessmentProctoringAlert(
             input.eventId(),
-            input.examSessionId(),
+            input.assessmentSessionId(),
             input.candidateId(),
             input.streamId(),
             input.streamType(),
@@ -67,6 +67,6 @@ public class RecordProctoringAlertUseCase implements IUseCase<RecordProctoringAl
             Instant.now()
         );
 
-        return examProctoringAlertRepository.saveIfAbsent(alert);
+        return assessmentProctoringAlertRepository.saveIfAbsent(alert);
     }
 }

@@ -18,7 +18,7 @@ import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.question.BulkUpdateQuestionStatusFailure;
 import com.sep.vox.application.response.input.question.BulkUpdateQuestionStatusResponse;
-import com.sep.vox.domain.mapper.QuestionDtoMapper;
+import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
@@ -115,7 +115,7 @@ public class BulkUpdateQuestionStatusUseCase
         }
 
         var updated = questionRepository.saveAll(toSave).stream()
-            .map(QuestionDtoMapper::toQuestionDto)
+            .map(QuestionDto::toDto)
             .toList();
 
         return new BulkUpdateQuestionStatusResponse(List.copyOf(updated), List.copyOf(failed));

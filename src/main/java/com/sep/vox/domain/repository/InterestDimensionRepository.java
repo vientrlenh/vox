@@ -10,10 +10,10 @@ public interface InterestDimensionRepository {
     /** Toàn bộ danh mục, kể cả đã tắt -- dùng cho màn quản trị. */
     List<InterestDimension> findAll();
 
-    /** Chiều còn hiệu lực, dùng để xếp hạng chủ đề (gồm cả ACADEMIC_EXAM). */
+    /** Chiều còn hiệu lực, dùng để xếp hạng chủ đề (gồm cả ACADEMIC_ASSESSMENT). */
     List<InterestDimension> findActive();
 
-    /** Chiều được phép đem ra hỏi trong quiz sở thích -- KHÔNG gồm ACADEMIC_EXAM. */
+    /** Chiều được phép đem ra hỏi trong quiz sở thích -- KHÔNG gồm ACADEMIC_ASSESSMENT. */
     List<InterestDimension> findQuizEligible();
 
     Optional<InterestDimension> findByCode(String code);

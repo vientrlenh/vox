@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
@@ -34,7 +34,7 @@ public class ImportCommitService {
     }
     
     public void commit(UUID sessionId) {
-        var session = importSessionRepository.findById(sessionId).orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import yêu cầu"));
+        var session = importSessionRepository.findById(sessionId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên import yêu cầu"));
         var handler = handlers.get(session.getType());
         if (handler == null) throw new IllegalStateException("Thiếu handler cho " + session.getType());
 

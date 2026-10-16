@@ -6,7 +6,7 @@ import java.util.Map;
  * Nội dung một thông báo đẩy, không phụ thuộc nhà cung cấp.
  *
  * <p>{@code data} là payload để client điều hướng khi người dùng bấm vào thông báo
- * (ví dụ {@code screen}, {@code examId}). FCM chỉ nhận Map&lt;String, String&gt;,
+ * (ví dụ {@code screen}, {@code assessmentId}). FCM chỉ nhận Map&lt;String, String&gt;,
  * nên mọi giá trị phải được stringify từ trước khi tới đây.
  */
 public record PushMessage(

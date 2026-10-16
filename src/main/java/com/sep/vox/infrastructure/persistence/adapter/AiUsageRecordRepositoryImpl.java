@@ -35,8 +35,8 @@ public class AiUsageRecordRepositoryImpl implements AiUsageRecordRepository {
     }
 
     @Override
-    public List<AiUsageRecord> findByExamSessionId(UUID examSessionId) {
-        return springDataAiUsageRecordRepository.findByExamSessionId(examSessionId).stream()
+    public List<AiUsageRecord> findByAssessmentSessionId(UUID assessmentSessionId) {
+        return springDataAiUsageRecordRepository.findByAssessmentSessionId(assessmentSessionId).stream()
             .map(AiUsageRecordMapper::toDomain)
             .toList();
     }
@@ -47,24 +47,24 @@ public class AiUsageRecordRepositoryImpl implements AiUsageRecordRepository {
     }
 
     @Override
-    public int markChargedByExamSessionId(UUID examSessionId, Instant chargedAt) {
-        return springDataAiUsageRecordRepository.markChargedByExamSessionId(examSessionId, chargedAt);
+    public int markChargedByAssessmentSessionId(UUID assessmentSessionId, Instant chargedAt) {
+        return springDataAiUsageRecordRepository.markChargedByAssessmentSessionId(assessmentSessionId, chargedAt);
     }
 
     @Override
-    public int markWaivedByExamSessionId(UUID examSessionId, Instant waivedAt) {
-        return springDataAiUsageRecordRepository.markWaivedByExamSessionId(examSessionId, waivedAt);
+    public int markWaivedByAssessmentSessionId(UUID assessmentSessionId, Instant waivedAt) {
+        return springDataAiUsageRecordRepository.markWaivedByAssessmentSessionId(assessmentSessionId, waivedAt);
     }
 
     @Override
-    public BigDecimal sumCostVndByExamSessionIdAndChargedAt(UUID examSessionId, Instant chargedAt) {
+    public BigDecimal sumCostVndByAssessmentSessionIdAndChargedAt(UUID assessmentSessionId, Instant chargedAt) {
         return springDataAiUsageRecordRepository
-            .sumCostVndByExamSessionIdAndChargedAt(examSessionId, chargedAt);
+            .sumCostVndByAssessmentSessionIdAndChargedAt(assessmentSessionId, chargedAt);
     }
 
     @Override
-    public BigDecimal sumCostUsdByExamSessionIdAndChargedAt(UUID examSessionId, Instant chargedAt) {
+    public BigDecimal sumCostUsdByAssessmentSessionIdAndChargedAt(UUID assessmentSessionId, Instant chargedAt) {
         return springDataAiUsageRecordRepository
-            .sumCostUsdByExamSessionIdAndChargedAt(examSessionId, chargedAt);
+            .sumCostUsdByAssessmentSessionIdAndChargedAt(assessmentSessionId, chargedAt);
     }
 }

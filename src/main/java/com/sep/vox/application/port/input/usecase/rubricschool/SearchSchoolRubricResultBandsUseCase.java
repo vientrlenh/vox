@@ -5,7 +5,6 @@ import com.sep.vox.application.port.input.query.SearchSchoolRubricResultBandsQue
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricResultBandDto;
-import com.sep.vox.domain.mapper.RubricResultBandDtoMapper;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
@@ -55,11 +54,11 @@ public class SearchSchoolRubricResultBandsUseCase implements IUseCase<SearchScho
         if (!schoolUser.getSchoolId().equals(query.schoolId()))
             throw new ForbiddenException("BẢO MẬT: Xâm phạm trường học khác.");
 
-        var school = schoolRepository.findById(query.schoolId()).orElseThrow(() -> new NotFoundException("Không tìm thấy trường."));
+        var school = schoolRepository.findById(query.schoolId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường."));
         if (!school.isActive()) throw new ForbiddenException("Trường học đang bị khóa.");
 
-        var version = rubricVersionRepository.findById(query.versionId()).orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản."));
-        var rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric."));
+        var version = rubricVersionRepository.findById(query.versionId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản."));
+        var rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(query.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Thang điểm này không thuộc trường của bạn.");
@@ -70,7 +69,7 @@ public class SearchSchoolRubricResultBandsUseCase implements IUseCase<SearchScho
         return new PageResult<>(
                 pageResult.content()
                         .stream()
-                        .map(RubricResultBandDtoMapper::toDto)
+                        .map(RubricResultBandDto::toDto)
                         .toList(),
                 pageResult.page(), pageResult.size(), pageResult.totalElements(), pageResult.totalPages()
         );

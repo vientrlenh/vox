@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.SubmitGradingCommand;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -44,5 +46,22 @@ public record SubmitGradingRequest(
         @Size(max = 512, message = "Diễn giải tối đa 512 ký tự")
         String rationale
     ) {
+    }
+
+    public static SubmitGradingCommand toCommand(UUID assignmentId, SubmitGradingRequest request) {
+        return new SubmitGradingCommand(assignmentId, toItemGrades(request));
+    }
+
+    private static List<SubmitGradingCommand.ItemGrade> toItemGrades(SubmitGradingRequest request) {
+        return request.items() == null ? List.of() : request.items().stream()
+            .map(item -> new SubmitGradingCommand.ItemGrade(
+                item.paperItemId(),
+                item.criterionScores() == null ? List.of() : item.criterionScores().stream()
+                    .map(score -> new SubmitGradingCommand.CriterionScoreItem(
+                        score.rubricCriterionId(), score.score(), score.rationale()))
+                    .toList(),
+                item.feedbackSummary()
+            ))
+            .toList();
     }
 }

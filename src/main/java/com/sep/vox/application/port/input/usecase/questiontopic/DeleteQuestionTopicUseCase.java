@@ -5,9 +5,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteQuestionTopicCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -60,14 +60,14 @@ public class DeleteQuestionTopicUseCase implements IUseCase<DeleteQuestionTopicC
             .orElse(null);
 
         var topic = questionTopicRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
         var bank = questionBankRepository.findById(topic.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         validateAccess(bank.getOwnerType(), bank.getSchoolId(), currentSchoolId);
 
         if (questionRepository.existsPublishedAndUsedByQuestionTopicId(topic.getId())) {
-            throw new DuplicatedException("Chủ đề vẫn còn câu hỏi đã PUBLISHED và đang được dùng trong đề thi");
+            throw new ResourceDuplicatedException("Chủ đề vẫn còn câu hỏi đã PUBLISHED và đang được dùng trong đề thi");
         }
 
         var questions = questionRepository.findByQuestionTopicId(topic.getId());

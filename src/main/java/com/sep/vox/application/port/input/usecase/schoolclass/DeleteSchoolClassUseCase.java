@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -64,14 +64,14 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
         validateSchool(schoolId);
 
         var schoolClass = schoolClassRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
-            throw new NotFoundException("Không tìm thấy lớp học");
+            throw new ResourceNotFoundException("Không tìm thấy lớp học");
         }
 
         // Đã xóa mềm (ARCHIVED) trước đó → coi như không còn tồn tại, tránh archive/deactivate lại.
         if (schoolClass.getStatus() == SchoolClassStatus.ARCHIVED) {
-            throw new NotFoundException("Lớp học đã bị xóa trước đó");
+            throw new ResourceNotFoundException("Lớp học đã bị xóa trước đó");
         }
 
         if (!schoolClassDependencyRepository.existsDependencyBySchoolClassId(input.id())) {
@@ -96,7 +96,7 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
 
     private User findCurrentUser(UUID currentUserId) {
         var user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
         validateCurrentUserIsActive(user);
         return user;
     }
@@ -115,7 +115,7 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
 
     private void validateSchool(UUID schoolId) {
         var school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
         }

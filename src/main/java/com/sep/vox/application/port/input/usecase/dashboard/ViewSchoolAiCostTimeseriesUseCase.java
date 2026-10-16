@@ -14,17 +14,11 @@ import com.sep.vox.application.projection.repository.SchoolAiCostQueryRepository
 import com.sep.vox.application.response.input.dashboard.SchoolAiCostTimeseriesResponse;
 import com.sep.vox.domain.shared.DecimalText;
 
-/**
- * Chi phí AI của trường theo thời gian, đọc từ sổ {@code school_ai_spend_entries}.
- *
- * <p>Thay cho {@code schoolTokenUsageTimeseries} — trường GraphQL đó chưa bao giờ tồn tại trong
- * schema, và repository duy nhất có thể phục vụ nó đọc một bảng không mã nào còn ghi vào. Xem V10.
- */
+
 @Service
 public class ViewSchoolAiCostTimeseriesUseCase
         implements IUseCase<ViewSchoolAiCostQuery, SchoolAiCostTimeseriesResponse> {
 
-    /** Bỏ trống mốc đầu = lùi 30 ngày, cùng mặc định mà thẻ trên trang tổng quan vẫn hiển thị. */
     private static final int DEFAULT_WINDOW_DAYS = 30;
 
     private final UserContextPort userContextPort;

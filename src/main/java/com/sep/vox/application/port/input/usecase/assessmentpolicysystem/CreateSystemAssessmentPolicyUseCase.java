@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicysystem;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -93,12 +93,12 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
         for (CreateAssessmentPolicyCommand command : commands) {
             // 2. Validate Framework & Language
             FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(command.frameworkVersionId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn."));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn."));
             if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
                 throw new IllegalStateException("Chỉ có thể tạo Policy trên Framework đã PUBLISHED.");
             }
             if (!languageRepository.existsById(command.languageId())) {
-                throw new NotFoundException("Ngôn ngữ không tồn tại.");
+                throw new ResourceNotFoundException("Ngôn ngữ không tồn tại.");
             }
 
             // 2b. Khối (tùy chọn). Luồng SYSTEM không có trường nên KHÔNG nhận niên khóa/lớp --
@@ -109,12 +109,12 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
             }
             if (command.gradeLevelId() != null
                     && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
-                throw new NotFoundException("Không tìm thấy Khối.");
+                throw new ResourceNotFoundException("Không tìm thấy Khối.");
             }
 
             // 3. Validate Band
             FrameworkResultBand targetBand = frameworkResultBandRepository.findById(command.targetFrameworkBandId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Band mục tiêu."));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Band mục tiêu."));
             if (!targetBand.getFrameworkVersionId().equals(command.frameworkVersionId())) {
                 throw new IllegalStateException("Band mục tiêu phải thuộc Khung năng lực đang chọn.");
             }
@@ -138,22 +138,22 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
             // trong khi findActivePolicy chỉ dùng được một bản. Xem lý do đầy đủ ở
             // CreateSchoolAssessmentPolicyUseCase.
             if (!scopeClaimsInBatch.add(versionScopeKey)) {
-                throw new DuplicatedException(
+                throw new ResourceDuplicatedException(
                         "Trong cùng một lần tạo có hai Assessment Policy trùng ngôn ngữ và Khung"
                                 + " tiêu chuẩn. Mỗi phạm vi chỉ được một chính sách.");
             }
             if (assessmentPolicyRepository.existsActiveForScopeAnyRubricVersion(
                     null, command.languageId(), command.frameworkVersionId(),
                     command.gradeLevelId(), null, null)) {
-                throw new DuplicatedException("Phạm vi này đã có một Assessment Policy hệ thống còn"
+                throw new ResourceDuplicatedException("Phạm vi này đã có một Assessment Policy hệ thống còn"
                         + " hiệu lực (DRAFT hoặc PUBLISHED). Hãy Archive bản cũ trước khi tạo bản mới.");
             }
 
             UUID rubricVersionId = command.rubricVersionId();
             RubricVersion rubricVersion = rubricVersionRepository.findById(rubricVersionId)
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric ID: " + rubricVersionId));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric ID: " + rubricVersionId));
             Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric gốc của version ID: " + rubricVersionId));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric gốc của version ID: " + rubricVersionId));
 
             if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
                 throw new IllegalStateException("Chỉ được dùng Rubric SYSTEM cho luồng System Admin.");

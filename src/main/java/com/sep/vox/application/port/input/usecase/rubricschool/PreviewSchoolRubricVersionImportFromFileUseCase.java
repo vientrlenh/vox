@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.PreviewSchoolRubricVersionImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -69,7 +69,7 @@ public class PreviewSchoolRubricVersionImportFromFileUseCase implements IUseCase
         var schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) throw new ForbiddenException("Hành vi xâm nhập dữ liệu trường học khác bị từ chối.");
 
-        var rubric = rubricRepository.findById(command.rubricId()).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
+        var rubric = rubricRepository.findById(command.rubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("Bộ Rubric này không thuộc quyền quản lý của trường bạn.");
         }

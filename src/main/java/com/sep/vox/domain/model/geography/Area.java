@@ -5,19 +5,18 @@ import java.util.UUID;
 
 import com.sep.vox.domain.shared.BaseModel;
 import com.sep.vox.domain.valueobject.Code;
-import com.sep.vox.domain.valueobject.Name;
 
 public class Area extends BaseModel {
     private Code code; 
-    private Name name;
+    private String name;
     private AreaLevel level;
     private UUID parentId;
     private Instant effectiveFrom;
     private Instant effectiveTo;
 
-    public Area() {}
+    protected Area() {}
 
-    public Area(Code code, Name name, AreaLevel level, UUID parentId, Instant effectiveFrom, Instant effectiveTo) {
+    public Area(Code code, String name, AreaLevel level, UUID parentId, Instant effectiveFrom, Instant effectiveTo) {
         this.code = code;
         this.name = name;
         this.level = level;
@@ -44,11 +43,11 @@ public class Area extends BaseModel {
         this.code = code;
     }
 
-    public Name getName() {
+    public String getName() {
         return name;
     }
 
-    public void setName(Name name) {
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -85,14 +84,13 @@ public class Area extends BaseModel {
     }
 
     public static Builder builder() {
-        
         return new Area.Builder();
     }
 
     public static class Builder {
         private UUID id;
         private Code code; 
-        private Name name;
+        private String name;
         private AreaLevel level;
         private UUID parentId;
         private Instant effectiveFrom;
@@ -111,7 +109,7 @@ public class Area extends BaseModel {
             return this;
         }
 
-        public Builder name(Name name) {
+        public Builder name(String name) {
             this.name = name;
             return this;
         }

@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -32,17 +33,6 @@ import tools.jackson.databind.exc.InvalidFormatException;
 import tools.jackson.databind.exc.MismatchedInputException;
 import tools.jackson.databind.exc.ValueInstantiationException;
 
-/**
- * Giới hạn trong {@code com.sep.vox}: không khai basePackages thì advice này phủ lên MỌI
- * controller trong context, kể cả của thư viện.
- *
- * <p>Cụ thể là các controller của Spring Boot Admin ({@code de.codecentric...}). Chúng phục vụ
- * stream SSE {@code text/event-stream} chạy dài, và trình duyệt đóng tab là ngắt giữa chừng --
- * chuyện hoàn toàn bình thường. Nhưng {@code handleGeneric(Exception)} bắt luôn cả
- * {@code AsyncRequestNotUsableException} đó, ghi log ERROR như một sự cố thật, rồi cố ghi
- * {@code ErrorResponse} dạng JSON vào response đã chốt Content-Type là {@code text/event-stream}
- * và chết tiếp lần nữa với {@code HttpMessageNotWritableException}.
- */
 @RestControllerAdvice(basePackages = "com.sep.vox")
 @Slf4j 
 public class RestApiGlobalExceptionHandler {
@@ -158,6 +148,15 @@ public class RestApiGlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDisabled(DisabledException e) {
         ApiResponse<Void> error = ApiResponse.error("User is disabled");
         return ResponseEntity.status(HttpStatus.LOCKED).body(error);
+    }
+
+
+    // ================================== SPRING DATA EXCEPTION ============================
+ 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(DataIntegrityViolationException ex) {
+        ApiResponse<Void> error = ApiResponse.error("A resource is duplicated with the existing one");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
 

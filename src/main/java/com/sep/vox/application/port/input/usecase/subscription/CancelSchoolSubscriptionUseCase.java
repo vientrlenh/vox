@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
@@ -57,7 +57,7 @@ public class CancelSchoolSubscriptionUseCase implements IUseCase<Void, UUID> {
         var schoolId = userContextPort.getCurrentSchoolId();
 
         var subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
-            .orElseThrow(() -> new NotFoundException("Trường không có gói nào đang hoạt động để hủy."));
+            .orElseThrow(() -> new ResourceNotFoundException("Trường không có gói nào đang hoạt động để hủy."));
 
         if (subscription.getCancelledAt() != null) {
             throw new IllegalStateException("Gói đăng ký đã được hủy trước đó.");

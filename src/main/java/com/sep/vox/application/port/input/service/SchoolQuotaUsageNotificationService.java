@@ -18,7 +18,7 @@ import com.sep.vox.domain.shared.AggregateTypeConstant;
 import com.sep.vox.domain.shared.EventTypeConstant;
 
 /**
- * Phát event cảnh báo SỚM khi ví hạn mức AI (EXAM/PRACTICE) của 1 trường vừa vượt ngưỡng cảnh báo --
+ * Phát event cảnh báo SỚM khi ví hạn mức AI (ASSESSMENT/PRACTICE) của 1 trường vừa vượt ngưỡng cảnh báo --
  * mirror đúng cách {@link SchoolDebtNotificationService#publishSchoolLockedDueToDebt} ghi outbox:
  * CHỐT danh sách người nhận NGAY LÚC publish, nhúng thẳng vào payload, không để consumer truy vấn lại.
  *

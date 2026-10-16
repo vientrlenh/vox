@@ -37,4 +37,12 @@ public enum ScoringRuleActionType {
     public Class<? extends ScoringRuleActionParams> paramType() {
         return paramType;
     }
+
+    public static ScoringRuleActionType from(String value) {
+        return value == null ? null : ScoringRuleActionType.valueOf(value);
+    }
+
+    public static String value(ScoringRuleActionType value) {
+        return value == null ? null : value.name();
+    }
 }

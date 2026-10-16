@@ -95,7 +95,7 @@ public class JwtGrpcServerInterceptor implements ServerInterceptor {
         }
         try {
             String token = header.substring(BEARER_PREFIX.length());
-            String email = authTokenPort.getEmailFromToken(token);
+            String email = authTokenPort.extractEmail(token);
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
             if (!userDetails.isEnabled()) {
                 LOGGER.warn("gRPC auth rejected: disabled user {}", email);

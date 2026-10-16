@@ -8,9 +8,9 @@ import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Chặn các hành động tốn tài nguyên/AI (tạo Exam tập trung, tạo Class Test, bắt đầu luyện tập AI)
+ * Chặn các hành động tốn tài nguyên/AI (tạo Assessment tập trung, tạo Class Test, bắt đầu luyện tập AI)
  * khi trường không còn SchoolSubscription nào đang ACTIVE -- factor ra từ đoạn
- * findActiveBySchoolId(...).orElseThrow(...) đang lặp lại inline ở ExamTimeQuotaGuardService/
+ * findActiveBySchoolId(...).orElseThrow(...) đang lặp lại inline ở AssessmentTimeQuotaGuardService/
  * ClassTestTokenQuotaGuardService.
  */
 @Service

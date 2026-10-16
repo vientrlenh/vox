@@ -6,8 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.mapper.questiontopic.CreateQuestionTopicResponseMapper;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateQuestionTopicCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -52,7 +51,7 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         var questionBank = questionBankRepository.findById(command.questionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         if (questionBank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
             if (!userContextPort.isSystemAdmin()) {
@@ -75,7 +74,7 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
             currentUserId
         );
         var saved = questionTopicRepository.save(topic);
-        return CreateQuestionTopicResponseMapper.toResponse(saved.getId());
+        return CreateQuestionTopicResponse.toResponse(saved.getId());
     }
 
     private CreateQuestionTopicCommand normalize(CreateQuestionTopicCommand input) {

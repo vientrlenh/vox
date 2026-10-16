@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.CreateSchoolRubricCriteriaCommand;
+
 public record CreateSchoolRubricCriteriaRequest(
         @NotEmpty(message = "Phải có ít nhất 1 tiêu chí được gửi lên")
         @Valid
@@ -56,4 +58,32 @@ public record CreateSchoolRubricCriteriaRequest(
             @NotNull(message = "Điểm kỳ vọng không được để trống")
             BigDecimal expectedScore
     ) {}
+
+    public static CreateSchoolRubricCriteriaCommand toCommand(UUID schoolId, UUID versionId, CreateSchoolRubricCriteriaRequest request) {
+        List<CreateSchoolRubricCriteriaCommand.CriterionItemCommand> criteriaCommands = request.criteria().stream()
+                .map(c -> {
+                    List<CreateSchoolRubricCriteriaCommand.CriterionExampleCommand> exampleCommands = null;
+                    if (c.examples() != null) {
+                        exampleCommands = c.examples().stream()
+                                .map(ex -> new CreateSchoolRubricCriteriaCommand.CriterionExampleCommand(
+                                        ex.transcript(), ex.explanation(), ex.expectedScore()
+                                )).toList();
+                    }
+
+                    return new CreateSchoolRubricCriteriaCommand.CriterionItemCommand(
+                            c.frameworkCriterionId(),
+                            c.code(),
+                            c.name(),
+                            c.description(),
+                            exampleCommands,
+                            c.weight(),
+                            c.minScore(),
+                            c.maxScore(),
+                            c.order(),
+                            c.isRequired()
+                    );
+                }).toList();
+
+        return new CreateSchoolRubricCriteriaCommand(schoolId, versionId, criteriaCommands);
+    }
 }

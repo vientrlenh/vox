@@ -4,13 +4,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolUserDto;
-import com.sep.vox.domain.mapper.SchoolUserDtoMapper;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -47,8 +46,8 @@ public class ViewSchoolUserDetailsUseCase implements IUseCase<ViewSchoolUserDeta
         // Admin có thể xem cả người dùng đã vô hiệu hóa (DISABLED) — FE có bộ lọc "Hiện người dùng
         // đã vô hiệu hóa" và cho xem chi tiết. Quyền đã được giới hạn ở SCHOOL_ADMIN/SYSTEM_ADMIN phía trên.
         var schoolUser = schoolUserRepository.findBySchoolIdAndUserId(input.schoolId(), input.userId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng nhà trường theo yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng nhà trường theo yêu cầu"));
 
-        return SchoolUserDtoMapper.toSchoolUserDto(schoolUser);
+        return SchoolUserDto.toDto(schoolUser);
     }
 }

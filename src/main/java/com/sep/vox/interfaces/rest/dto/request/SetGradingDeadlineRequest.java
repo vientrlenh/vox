@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.SetGradingDeadlineCommand;
+
 import jakarta.validation.constraints.NotEmpty;
 
 /**
@@ -16,4 +18,8 @@ public record SetGradingDeadlineRequest(
 
     Instant deadlineAt
 ) {
+
+    public static SetGradingDeadlineCommand toCommand(SetGradingDeadlineRequest request) {
+        return new SetGradingDeadlineCommand(request.assignmentIds(), request.deadlineAt());
+    }
 }

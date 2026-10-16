@@ -1,0 +1,231 @@
+package com.sep.vox.interfaces.graphql.controller;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+
+import org.dataloader.DataLoader;
+import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.SchemaMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
+
+import com.sep.vox.application.port.input.query.SearchGradingAssignmentsQuery;
+import com.sep.vox.application.port.input.query.ViewAiQualityReportQuery;
+import com.sep.vox.application.port.input.query.ViewAssignableTeachersQuery;
+import com.sep.vox.application.port.input.query.ViewClassTestGradingResultsQuery;
+import com.sep.vox.application.port.input.query.ViewGradingStatsQuery;
+import com.sep.vox.application.port.input.query.ViewMyGradingTasksQuery;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewAiQualityReportUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewAssignableTeachersUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewClassTestGradingResultsUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewClassTestGradingStatsUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewGradingAssignmentsUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewGradingStatsUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewGradingTaskDetailUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewMyClassTestGradingTasksUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewMyGradingAssessmentsUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewMyGradingTasksUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewResultStatusHistoryUseCase;
+import com.sep.vox.application.port.input.query.ViewMyClassTestGradingTasksQuery;
+import com.sep.vox.application.projection.dto.AiQualityReportInfo;
+import com.sep.vox.application.projection.dto.AssignableTeacherInfo;
+import com.sep.vox.application.projection.dto.GradingAssignmentRowInfo;
+import com.sep.vox.application.projection.dto.GradingAssessmentOptionInfo;
+import com.sep.vox.application.projection.dto.GradingStatsInfo;
+import com.sep.vox.application.projection.dto.GradingTaskDetailInfo;
+import com.sep.vox.application.projection.dto.GradingTaskInfo;
+import com.sep.vox.application.projection.dto.ResultStatusHistoryInfo;
+import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.shared.PageResult;
+import com.sep.vox.interfaces.shared.PageArguments;
+
+import graphql.schema.DataFetchingEnvironment;
+import lombok.RequiredArgsConstructor;
+
+@Controller
+@Validated 
+@RequiredArgsConstructor 
+public class GraphQLGradingController {
+
+    private final ViewGradingAssignmentsUseCase viewGradingAssignmentsUseCase;
+    private final ViewGradingStatsUseCase viewGradingStatsUseCase;
+    private final ViewClassTestGradingStatsUseCase viewClassTestGradingStatsUseCase;
+    private final ViewClassTestGradingResultsUseCase viewClassTestGradingResultsUseCase;
+    private final ViewMyGradingTasksUseCase viewMyGradingTasksUseCase;
+    private final ViewMyGradingAssessmentsUseCase viewMyGradingAssessmentsUseCase;
+    private final ViewMyClassTestGradingTasksUseCase viewMyClassTestGradingTasksUseCase;
+    private final ViewGradingTaskDetailUseCase viewGradingTaskDetailUseCase;
+    private final ViewAssignableTeachersUseCase viewAssignableTeachersUseCase;
+    private final ViewResultStatusHistoryUseCase viewResultStatusHistoryUseCase;
+    private final ViewAiQualityReportUseCase viewAiQualityReportUseCase;
+
+    @QueryMapping(name = "gradingAssignments")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<GradingAssignmentRowInfo> gradingAssignments(
+            @Argument(name = "assessmentId") UUID assessmentId,
+            @Argument(name = "scheduleId") UUID scheduleId,
+            @Argument(name = "teacherId") UUID teacherId,
+            @Argument(name = "resultStatus") String resultStatus,
+            @Argument(name = "roundType") String roundType,
+            @Argument(name = "status") String status,
+            @Argument(name = "unassignedOnly") Boolean unassignedOnly,
+            @Argument(name = "overdueOnly") Boolean overdueOnly,
+            @Argument(name = "hasOpenAppeal") Boolean hasOpenAppeal,
+            @Argument(name = "search") String search,
+            @Argument(name = "kind") String kind,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        validatePageSize(page, size);
+        return viewGradingAssignmentsUseCase.execute(new SearchGradingAssignmentsQuery(
+            assessmentId, scheduleId, teacherId, resultStatus, roundType, status,
+            Boolean.TRUE.equals(unassignedOnly), Boolean.TRUE.equals(overdueOnly), hasOpenAppeal, search, kind,
+            page, size));
+    }
+
+    @QueryMapping(name = "gradingStats")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public GradingStatsInfo gradingStats(
+            @Argument(name = "assessmentId") UUID assessmentId,
+            @Argument(name = "scheduleId") UUID scheduleId,
+            @Argument(name = "kind") String kind) {
+        return viewGradingStatsUseCase.execute(new ViewGradingStatsQuery(assessmentId, scheduleId, kind));
+    }
+
+    @QueryMapping(name = "classTestGradingStats")
+    @PreAuthorize("hasRole('TEACHER')")
+    public GradingStatsInfo classTestGradingStats(@Argument(name = "assessmentId") UUID assessmentId) {
+        return viewClassTestGradingStatsUseCase.execute(assessmentId);
+    }
+
+    @QueryMapping(name = "classTestGradingResults")
+    @PreAuthorize("hasRole('TEACHER')")
+    public PageResult<GradingAssignmentRowInfo> classTestGradingResults(
+            @Argument(name = "assessmentId") UUID assessmentId,
+            @Argument(name = "resultStatus") String resultStatus,
+            @Argument(name = "unassignedOnly") Boolean unassignedOnly,
+            @Argument(name = "search") String search,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        validatePageSize(page, size);
+        return viewClassTestGradingResultsUseCase.execute(new ViewClassTestGradingResultsQuery(
+            assessmentId, resultStatus, Boolean.TRUE.equals(unassignedOnly), search,
+            page, size));
+    }
+
+    @QueryMapping(name = "myGradingTasks")
+    @PreAuthorize("hasRole('TEACHER')")
+    public PageResult<GradingTaskInfo> myGradingTasks(
+            @Argument(name = "assessmentId") UUID assessmentId,
+            @Argument(name = "status") String status,
+            @Argument(name = "roundType") String roundType,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        validatePageSize(page, size);
+        return viewMyGradingTasksUseCase.execute(new ViewMyGradingTasksQuery(
+            assessmentId, status, roundType,
+            page, size));
+    }
+
+    /**
+     * Không cần chốt phạm vi ở đây: phạm vi CHÍNH LÀ tập phân công của người gọi, đọc
+     * từ token trong use case. Chỉ TEACHER — nhà trường đã có {@code gradingAssignments}
+     * và hỏi ở đây cũng chỉ nhận về danh sách rỗng.
+     */
+    @QueryMapping(name = "myGradingAssessments")
+    @PreAuthorize("hasRole('TEACHER')")
+    public List<GradingAssessmentOptionInfo> myGradingAssessments() {
+        return viewMyGradingAssessmentsUseCase.execute(null);
+    }
+
+    @QueryMapping(name = "myClassTestGradingTasks")
+    @PreAuthorize("hasRole('TEACHER')")
+    public PageResult<GradingTaskInfo> myClassTestGradingTasks(
+            @Argument(name = "assessmentId") UUID assessmentId,
+            @Argument(name = "status") String status,
+            @Argument(name = "roundType") String roundType,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        validatePageSize(page, size);
+        return viewMyClassTestGradingTasksUseCase.execute(new ViewMyClassTestGradingTasksQuery(
+            assessmentId, status, roundType,
+            page, size
+        ));
+    }
+
+    @QueryMapping(name = "gradingTaskDetail")
+    @PreAuthorize("hasRole('TEACHER')")
+    public GradingTaskDetailInfo gradingTaskDetail(@Argument(name = "assignmentId") UUID assignmentId) {
+        return viewGradingTaskDetailUseCase.execute(assignmentId);
+    }
+
+    @QueryMapping(name = "assignableTeachers")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public List<AssignableTeacherInfo> assignableTeachers(@Argument(name = "search") String search) {
+        return viewAssignableTeachersUseCase.execute(new ViewAssignableTeachersQuery(search));
+    }
+
+    /**
+     * Học sinh xem được dòng thời gian điểm của CHÍNH MÌNH; admin xem được của bài
+     * thuộc trường mình. Phân quyền nằm trong use case, không ở đây.
+     */
+    @QueryMapping(name = "resultStatusHistory")
+    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")
+    public List<ResultStatusHistoryInfo> resultStatusHistory(
+            @Argument(name = "candidateResultId") UUID candidateResultId) {
+        return viewResultStatusHistoryUseCase.execute(candidateResultId);
+    }
+
+    @QueryMapping(name = "aiQualityReport")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public AiQualityReportInfo aiQualityReport(@Argument(name = "assessmentId") UUID assessmentId) {
+        return viewAiQualityReportUseCase.execute(new ViewAiQualityReportQuery(assessmentId));
+    }
+
+    /**
+     * Biên là chỗ duy nhất kiểm phân trang: repository bên dưới tin vào đây và chỉ còn trừ 1 để đổi
+     * sang offset, không tự kẹp lại giá trị sai nữa.
+     */
+    private void validatePageSize(Integer page, Integer size) {
+        PageArguments.validate(page, size);
+    }
+
+    /*
+     * Ba resolver dưới đây gắn hồ sơ người dùng vào các dòng THỐNG KÊ/PICKER của giáo viên, để FE
+     * hiện được ảnh đại diện. Đi qua DataLoader `userById` nên N dòng vẫn chỉ một truy vấn, và read
+     * model bên dưới không phải thêm join nào.
+     *
+     * CỐ Ý không có resolver tương ứng cho học sinh: read model chấm bài không mang studentId ở bất
+     * kỳ đâu (grep "studentId" trong assessment-grading.graphqls ra 0), và đó chính là thứ giữ cho hàng
+     * đợi kỳ thi tập trung ẩn danh. Muốn hiện mặt học sinh thì phải thêm studentId vào read model --
+     * đúng thay đổi mà luật ẩn danh dựng ra để ngăn.
+     */
+
+    @SchemaMapping(typeName = "AssignableTeacher", field = "user")
+    public CompletableFuture<UserDto> assignableTeacherUser(
+            AssignableTeacherInfo source, DataFetchingEnvironment env) {
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(source.id());
+    }
+
+    @SchemaMapping(typeName = "GradingTeacherProgress", field = "teacher")
+    public CompletableFuture<UserDto> teacherProgressUser(
+            GradingStatsInfo.TeacherProgress source, DataFetchingEnvironment env) {
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(source.teacherId());
+    }
+
+    @SchemaMapping(typeName = "AiQualityByTeacher", field = "teacher")
+    public CompletableFuture<UserDto> aiQualityTeacherUser(
+            AiQualityReportInfo.ByTeacher source, DataFetchingEnvironment env) {
+        // teacherId nullable ở type này. DataLoader ném NPE khi nhận khoá null và làm hỏng CẢ query
+        // aiQualityReport chứ không riêng field này -- xem AssessmentScheduleController#room.
+        if (source.teacherId() == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        return loader.load(source.teacherId());
+    }
+}

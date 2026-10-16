@@ -57,8 +57,8 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
      */
     private static final BigDecimal USD_TO_VND = new BigDecimal("26000");
 
-    /** V2 gộp GRADING và CLASS_TEST vào EXAM, nên chỉ còn hai loại hạn mức. */
-    private static final List<QuotaType> QUOTA_TYPES = List.of(QuotaType.EXAM, QuotaType.PRACTICE);
+    /** V2 gộp GRADING và CLASS_TEST vào ASSESSMENT, nên chỉ còn hai loại hạn mức. */
+    private static final List<QuotaType> QUOTA_TYPES = List.of(QuotaType.ASSESSMENT, QuotaType.PRACTICE);
 
     /**
      * Trần độ dài MỘT lượt thi, dùng chung cho cả thang gói. Đây là cái thước, không phải túi tiền --
@@ -240,7 +240,7 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
         BigDecimal priceVnd
     ) {
 
-        /** Hạn mức cho MỖI loại (EXAM và PRACTICE nhận bằng nhau), quy ra VNĐ. */
+        /** Hạn mức cho MỖI loại (ASSESSMENT và PRACTICE nhận bằng nhau), quy ra VNĐ. */
         BigDecimal includedAmountVnd() {
             return includedQuotaUsd.multiply(USD_TO_VND);
         }

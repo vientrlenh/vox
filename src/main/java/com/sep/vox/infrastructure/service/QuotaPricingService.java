@@ -14,7 +14,7 @@ import com.sep.vox.infrastructure.properties.QuotaPricingProperties;
 import com.sep.vox.infrastructure.properties.QuotaSellingPriceProperties;
 
 /**
- * Nguồn ĐỌC duy nhất cho pricing-related config -- estimatedCostPerExamSecondUsd (ưu tiên giá đã tự
+ * Nguồn ĐỌC duy nhất cho pricing-related config -- estimatedCostPerAssessmentSecondUsd (ưu tiên giá đã tự
  * calibrate từ dữ liệu thật qua QuotaPricingCalibrationService/Job, fallback về hằng số tĩnh trong
  * .env/QuotaPricingProperties khi chưa có lần calibrate nào thành công) và usdToVndRate (tỷ giá thị
  * trường, dùng chung mọi gói -- xem QuotaSellingPriceProperties). Dùng ở cả
@@ -44,10 +44,10 @@ public class QuotaPricingService implements QuotaPricingPort, ServiceFeePort {
     }
 
     @Override
-    public BigDecimal currentEstimatedCostPerExamSecondUsd() {
-        return quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.EXAM)
+    public BigDecimal currentEstimatedCostPerAssessmentSecondUsd() {
+        return quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.ASSESSMENT)
             .map(calibration -> calibration.getAppliedRateUsdPerSecond())
-            .orElseGet(quotaPricingProperties::estimatedCostPerExamSecondUsd);
+            .orElseGet(quotaPricingProperties::estimatedCostPerAssessmentSecondUsd);
     }
 
     @Override

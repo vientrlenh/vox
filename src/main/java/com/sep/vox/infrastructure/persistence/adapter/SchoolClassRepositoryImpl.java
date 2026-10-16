@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -17,6 +16,7 @@ import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.shared.PageResult;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolClassMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassRepository;
 

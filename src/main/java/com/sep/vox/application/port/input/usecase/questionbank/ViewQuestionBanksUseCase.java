@@ -9,7 +9,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.QuestionBankDto;
-import com.sep.vox.domain.mapper.QuestionBankDtoMapper;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.shared.PageResult;
@@ -58,6 +57,6 @@ public class ViewQuestionBanksUseCase implements IUseCase<ViewQuestionBanksQuery
             input.page(),
             input.size()
         );
-        return QuestionBankDtoMapper.toDtoPage(result);
+        return QuestionBankDto.toDtoPage(result);
     }
 }

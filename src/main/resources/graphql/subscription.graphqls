@@ -30,13 +30,13 @@ enum SchoolSubscriptionStatus {
 Hai VÍ hạn mức cấp trường, đều tính bằng VND. Mỗi hoạt động chỉ trừ vào ĐÚNG MỘT ví, và tiêu hết ví
 này không đụng tới ví kia -- để một tuần luyện nói nhiều bất thường không ăn mất ngân sách kỳ thi.
 
-CLASS_TEST đã bị bỏ: nó là TRẦN CHI nằm trong ví EXAM chứ không phải ví thứ ba, và bị trừ trùng
-cùng một khoản với EXAM cho mỗi bài kiểm tra trên lớp. Trần theo từng giáo viên vẫn còn, ở
-SchoolSubscriptionQuotaUserAllocation với quotaType = EXAM.
+CLASS_TEST đã bị bỏ: nó là TRẦN CHI nằm trong ví ASSESSMENT chứ không phải ví thứ ba, và bị trừ trùng
+cùng một khoản với ASSESSMENT cho mỗi bài kiểm tra trên lớp. Trần theo từng giáo viên vẫn còn, ở
+SchoolSubscriptionQuotaUserAllocation với quotaType = ASSESSMENT.
 """
 enum QuotaType {
     "Chấm thi -- cả kỳ thi tập trung lẫn bài kiểm tra trên lớp đều trừ vào đây"
-    EXAM
+    ASSESSMENT
     "Học sinh tự luyện nói"
     PRACTICE
 }
@@ -67,8 +67,8 @@ type SubscriptionPlan {
     maxTimePerAttemptMin: Int!
     status: SubscriptionPlanStatus!
     version: Int!
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime!
+    updatedAt: DateTime!
     createdBy: ID
     updatedBy: ID
     "Gói thay thế khi gói này đã ARCHIVED -- theo dây chuyền này để tìm gói còn bán được"
@@ -105,17 +105,17 @@ type SchoolSubscription {
     id: ID!
     schoolId: ID!
     subscriptionPlanId: ID!
-    startDate: String
-    endDate: String
+    startDate: DateTime
+    endDate: DateTime
     status: SchoolSubscriptionStatus!
     "Giá đã trả tại thời điểm mua -- chốt cứng, không đổi theo giá gói sau này"
     pricePaidSnapshot: Float!
-    cancelledAt: String
-    createdAt: String
+    cancelledAt: DateTime
+    createdAt: DateTime
     # 3 cột suspended_* bị xóa trắng khi gỡ đình chỉ nên chỉ phản ánh lần đình chỉ ĐANG hiệu lực,
     # không phải lịch sử. Lịch sử bền vững nằm ở school_subscription_events (V2 mục 12), do
     # ForceSuspend/UnsuspendSubscriptionUseCase ghi -- không phải FinancialEvent, thứ đã bị bỏ.
-    suspendedAt: String
+    suspendedAt: DateTime
     suspendedReason: String
     suspendedBy: ID
     plan: SubscriptionPlan
@@ -180,7 +180,7 @@ type SchoolSubscriptionRenewalPreview {
 Hạn mức CÁ NHÂN của một người dùng trong một ví cấp trường -- trần chi nhà trường đặt lên phần ví
 người này được tiêu, KHÔNG phải một ví riêng: tiền vẫn nằm ở ví cấp trường.
 
-quotaType = EXAM chỉ có ở giáo viên (trần cho bài kiểm tra trên lớp họ ra đề), PRACTICE chỉ có ở học
+quotaType = ASSESSMENT chỉ có ở giáo viên (trần cho bài kiểm tra trên lớp họ ra đề), PRACTICE chỉ có ở học
 sinh. Thay cho cặp MyClassTestQuotaAllocation/MyPracticeQuotaAllocation cũ -- cùng một khái niệm thì
 một kiểu là đủ.
 """
@@ -194,7 +194,7 @@ type SchoolSubscriptionQuotaUserAllocation {
 }
 
 type QuotaPricing {
-    estimatedCostPerExamSecondUsd: Float!
+    estimatedCostPerAssessmentSecondUsd: Float!
     estimatedCostPerPracticeSecondUsd: Float!
     usdToVndRate: Float!
 }
@@ -230,8 +230,8 @@ extend type Query {
     schoolSubscriptionHistory(schoolId: ID!): [SchoolSubscription!]!
 
     subscriptionUsage(schoolId: ID!): [SchoolSubscriptionQuotaRecord!]!
-    "null = giáo viên không có hạn mức cá nhân riêng, tức chỉ ví EXAM của trường áp dụng"
-    myExamQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
+    "null = giáo viên không có hạn mức cá nhân riêng, tức chỉ ví ASSESSMENT của trường áp dụng"
+    myAssessmentQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
     "null = trường CHƯA phân hạn mức PRACTICE riêng cho học sinh này, tức bị chặn hoàn toàn"
     myPracticeQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
 
@@ -288,7 +288,7 @@ distributedAmountVnd phải do máy chủ tính trên TOÀN BỘ tập: giao di�
 cột phân bổ của trang đó ra số sai ngay từ trang thứ hai.
 """
 type SchoolQuotaUserAllocationPage {
-    "Ví hạn mức cấp trường -- EXAM khi chia cho giáo viên, PRACTICE khi chia cho học sinh."
+    "Ví hạn mức cấp trường -- ASSESSMENT khi chia cho giáo viên, PRACTICE khi chia cho học sinh."
     pool: SchoolSubscriptionQuotaRecord!
     """
     Tổng đã chia cho những người CÒN đủ điều kiện, trên toàn bộ tập chứ không phải chỉ trang này.
@@ -323,7 +323,7 @@ type SchoolQuotaUserAllocationPage {
     spendableFundsVnd: Float!
     """
     Phần ví TỰ NẠP của trường (school_balances) CÓ THỂ ăn thêm ngoài distributableAmountVnd khi nới
-    trần cá nhân của MỘT người -- không phải một túi tiền dành riêng, và dùng CHUNG cho cả EXAM lẫn
+    trần cá nhân của MỘT người -- không phải một túi tiền dành riêng, và dùng CHUNG cho cả ASSESSMENT lẫn
     PRACTICE. Đã kẹp về 0, âm là nợ của trường (không phải phần chia được thêm).
     """
     walletBalanceVnd: Float!
@@ -338,10 +338,10 @@ extend type Query {
     """
     Hạn mức thi đã chia cho từng GIÁO VIÊN, có phân trang.
 
-    Thay cho GET /v1/schools/{schoolId}/teachers/exam-quota: đường REST đó trả về mọi giáo viên
+    Thay cho GET /v1/schools/{schoolId}/teachers/assessment-quota: đường REST đó trả về mọi giáo viên
     trong một lượt và không mang tên người dùng, nên cột "Họ tên" ở client luôn rỗng.
     """
-    schoolExamQuotaUserAllocations(
+    schoolAssessmentQuotaUserAllocations(
         schoolId: ID!,
         "Lọc theo TÊN. Bỏ trống thì không lọc."
         search: String,

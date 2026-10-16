@@ -5,9 +5,9 @@ import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.input.service.QuotaPricingCalibrationService;
 
-// Trước đây estimatedCostPerExamSecondUsd (ClassTestTokenQuotaGuardService) là hằng số tĩnh phải
+// Trước đây estimatedCostPerAssessmentSecondUsd (ClassTestTokenQuotaGuardService) là hằng số tĩnh phải
 // tự tay đoán/sửa .env (xem AI_COST_CALIBRATION_LOG.md) -- job này tự động chạy lại đúng phép
-// tính đó định kỳ trên dữ liệu ai_usage_record/exam_item_responses thật, để guard tự thích nghi
+// tính đó định kỳ trên dữ liệu ai_usage_record/assessment_item_answers thật, để guard tự thích nghi
 // theo chi phí AI thật tế mà không cần con người can thiệp liên tục.
 @Component
 public class QuotaPricingCalibrationJob {
@@ -20,12 +20,12 @@ public class QuotaPricingCalibrationJob {
 
     @Scheduled(cron = "0 0 3 * * MON")
     public void run() {
-        quotaPricingCalibrationService.recalibrateExam();
+        quotaPricingCalibrationService.recalibrateAssessment();
     }
 
     // Tách @Scheduled riêng (không gộp vào run() gọi tuần tự) để lỗi ở nguồn này không chặn nguồn
-    // kia -- mỗi bucket rate xử lý độc lập, đúng tinh thần EXAM/PRACTICE tách riêng ở
-    // CompleteExamSessionGradingUseCase.
+    // kia -- mỗi bucket rate xử lý độc lập, đúng tinh thần ASSESSMENT/PRACTICE tách riêng ở
+    // CompleteAssessmentSessionGradingUseCase.
     @Scheduled(cron = "0 0 3 * * MON")
     public void runPractice() {
         quotaPricingCalibrationService.recalibratePractice();

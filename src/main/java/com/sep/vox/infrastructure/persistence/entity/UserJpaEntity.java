@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.hibernate.annotations.UpdateTimestamp;
+
 import com.sep.vox.infrastructure.shared.BaseEntity;
 
 import jakarta.persistence.CheckConstraint;
@@ -67,6 +69,7 @@ public class UserJpaEntity extends BaseEntity {
     })
     private String status;
 
+    @UpdateTimestamp 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 

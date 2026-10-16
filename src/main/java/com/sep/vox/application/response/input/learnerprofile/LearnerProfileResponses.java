@@ -3,6 +3,9 @@ package com.sep.vox.application.response.input.learnerprofile;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.projection.dto.LearnerProfileInfo;
+import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
+
 public final class LearnerProfileResponses {
 
     private LearnerProfileResponses() {
@@ -15,9 +18,32 @@ public final class LearnerProfileResponses {
                 boolean interestAutoUpdateEnabled,
         String quizCompletedAt
     ) {
+
+        public static LearnerProfile toResponse(LearnerProfileInfo info) {
+            if (info == null) {
+                return null;
+            }
+            return new LearnerProfile(
+                info.goalType(),
+                info.targetFrameworkBandCode(),
+                info.targetFrameworkBandLabel(),
+                info.interestAutoUpdateEnabled(),
+                info.quizCompletedAt()
+            );
+        }
     }
 
     public record InterestQuizItem(UUID id, List<String> statements) {
+
+        public static InterestQuizItem toResponse(InterestQuizSeedItem item) {
+            return new InterestQuizItem(item.getId(), item.getStatements());
+        }
+
+        public static List<InterestQuizItem> toResponseList(List<InterestQuizSeedItem> items) {
+            return items.stream()
+                .map(InterestQuizItem::toResponse)
+                .toList();
+        }
     }
 
     /**

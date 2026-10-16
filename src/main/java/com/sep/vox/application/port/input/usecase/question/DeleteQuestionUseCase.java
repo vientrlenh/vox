@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -52,9 +52,9 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
                 .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         var question = questionRepository.findById(input.questionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
         var bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         var owner = currentUserId.equals(question.getCreatedBy());
         var systemAdminOnSystemBank = userContextPort.isSystemAdmin()
@@ -63,9 +63,9 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
             && schoolAdmin
             && currentSchoolId != null
             && currentSchoolId.equals(bank.getSchoolId());
-        var usedInExam = questionRepository.existsUsedInExam(question.getId());
+        var usedInAssessment = questionRepository.existsUsedInAssessment(question.getId());
 
-        if (owner && question.getStatus() == QuestionStatus.DRAFT && !usedInExam) {
+        if (owner && question.getStatus() == QuestionStatus.DRAFT && !usedInAssessment) {
             questionRepository.deleteById(question.getId());
             return new DeleteQuestionResponse(true, false);
         }
@@ -74,7 +74,7 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        if (usedInExam) {
+        if (usedInAssessment) {
             question.setStatus(QuestionStatus.ARCHIVED);
             question.setUpdatedAt(Instant.now());
             question.setUpdatedBy(currentUserId);

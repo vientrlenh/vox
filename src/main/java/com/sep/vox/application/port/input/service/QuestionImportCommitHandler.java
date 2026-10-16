@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.importfile.ImportRow;
@@ -209,9 +209,9 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         var questionBankId = parseUuid(rawData.get("questionBankId"), "Không tìm thấy question bank của phiên import");
         var questionTopicId = parseUuid(rawData.get("questionTopicId"), "Không tìm thấy question topic của phiên import");
         var questionBank = questionBankRepository.findById(questionBankId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
         var questionTopic = questionTopicRepository.findById(questionTopicId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
         if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
             throw new IllegalStateException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
         }

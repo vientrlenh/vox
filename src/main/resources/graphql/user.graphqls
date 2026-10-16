@@ -28,8 +28,8 @@ type User {
     address: String 
     avatarUrl: String
     status: UserStatus!
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime!
+    updatedAt: DateTime!
     school: School
 }
 
@@ -52,10 +52,9 @@ input UpdateProfileInput {
     fullName: String
     phone: String
     address: String
-    dateOfBirth: String
     avatarUrl: String
 }
 
 extend type Mutation {
-    updateProfile(input: UpdateProfileInput!): User!
+    updateMe(input: UpdateProfileInput!): ID!
 }

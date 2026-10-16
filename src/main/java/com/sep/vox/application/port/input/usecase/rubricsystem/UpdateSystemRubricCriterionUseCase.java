@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSystemRubricCriterionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -66,18 +66,18 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
 
         // 2. Lấy Criterion
         var criterion = rubricCriterionRepository.findById(command.criterionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
 
         // 3. Lấy Version và kiểm tra DRAFT
         var version = rubricVersionRepository.findById(criterion.getRubricVersionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric Version chứa tiêu chí này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version chứa tiêu chí này."));
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalStateException("Chỉ có thể sửa tiêu chí khi phiên bản Rubric đang ở trạng thái DRAFT.");
         }
 
         // 4. Lấy Rubric gốc và kiểm tra quyền SYSTEM
         var rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Hành động bị từ chối: Tiêu chí này thuộc về Trường học.");
         }

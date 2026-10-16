@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSchoolRubricCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -58,7 +58,7 @@ public class DeleteSchoolRubricUseCase implements IUseCase<DeleteSchoolRubricCom
 
         // 2. Lấy Rubric gốc
         Rubric rubric = rubricRepository.findById(command.rubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
 
         // 3. Chốt chặn an ninh: bằng SchoolUser, cùng pattern UpdateSchoolRubricUseCase
         var schoolUser = schoolUserRepository.findByUserId(currentUserId)
@@ -71,7 +71,7 @@ public class DeleteSchoolRubricUseCase implements IUseCase<DeleteSchoolRubricCom
         }
 
         var school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }

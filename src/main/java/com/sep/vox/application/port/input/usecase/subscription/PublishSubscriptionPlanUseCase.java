@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.PublishSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPlanReplacementValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -38,7 +38,7 @@ public class PublishSubscriptionPlanUseCase implements IUseCase<PublishSubscript
     @Transactional
     public UUID execute(PublishSubscriptionPlanCommand input) {
         var plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
 
         // ACTIVE thì đã bán rồi, ARCHIVED là đã ngừng bán VĨNH VIỄN -- cho publish lại gói ARCHIVED sẽ
         // hồi sinh một gói mà replacedByPlanId đang trỏ đi nơi khác, thành hai gói cùng sống trên một

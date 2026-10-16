@@ -1,0 +1,21 @@
+package com.sep.vox.application.port.input.command.assessmentevaluation;
+
+public record ConfidenceCaseSignalsInput(
+    Double cAsrLog,
+    Double qSnr,
+    Double qSpeech,
+    Double clippingRatio,
+    Double cRef,
+    Double cAlign,
+    Double cAlignAccuracy,
+    Double cAlignCoverage,
+    Double cAlignTiming,
+    Double cPfBranch,
+    Double cGrammar,
+    Double cVocabulary,
+    Double cCoherence,
+    Double grammarScoreDelta,
+    Double vocabularyScoreDelta,
+    Double coherenceScoreDelta
+) {
+}

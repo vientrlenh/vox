@@ -7,8 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.mapper.question.UpdateQuestionResponseMapper;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -50,9 +49,9 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         var question = questionRepository.findById(command.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
         var bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         var owner = currentUserId.equals(question.getCreatedBy());
         var editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
@@ -76,8 +75,8 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
                 || command.minResponseSeconds() != null || command.maxResponseSeconds() != null;
 
         if (hasContentUpdate) {
-            var usedInExam = questionRepository.existsUsedInExam(question.getId());
-            var immutable = question.getStatus() == QuestionStatus.PUBLISHED || question.isLocked() || usedInExam;
+            var usedInAssessment = questionRepository.existsUsedInAssessment(question.getId());
+            var immutable = question.getStatus() == QuestionStatus.PUBLISHED || question.isLocked() || usedInAssessment;
             if (immutable) {
                 throw new IllegalStateException(
                     "Câu hỏi đã publish hoặc đã dùng trong bài kiểm tra, không thể sửa trực tiếp — dùng nút Nhân bản để tạo bản có thể sửa");
@@ -98,7 +97,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
         question.setUpdatedBy(currentUserId);
         questionRepository.save(question);
 
-        return UpdateQuestionResponseMapper.toResponse(question);
+        return UpdateQuestionResponse.toResponse(question);
     }
 
     private void applyContentUpdates(Question question, UpdateQuestionCommand command, UUID currentUserId) {

@@ -4,14 +4,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesByUserQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.SchoolClassDto;
-import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
@@ -50,7 +49,7 @@ public class ViewSchoolClassesByUserUseCase implements IUseCase<ViewSchoolClasse
             throw new ForbiddenException("Quyền truy cập không hợp lệ");
         }
         if (!schoolUserRepository.existsBySchoolIdAndUserId(input.schoolId(), input.userId())) {
-            throw new NotFoundException("Không tìm thấy người dùng trong trường học");
+            throw new ResourceNotFoundException("Không tìm thấy người dùng trong trường học");
         }
 
         var schoolClassesPage = schoolClassRepository.findByUserId(
@@ -61,7 +60,7 @@ public class ViewSchoolClassesByUserUseCase implements IUseCase<ViewSchoolClasse
             input.size()
         );
 
-        return SchoolClassDtoMapper.toDtoPage(schoolClassesPage);
+        return SchoolClassDto.toDtoPage(schoolClassesPage);
     }
 
     private SchoolClassStatus parseStatus(String status) {

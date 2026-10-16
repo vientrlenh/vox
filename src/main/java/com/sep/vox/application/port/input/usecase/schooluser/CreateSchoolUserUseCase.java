@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.UserCreatedPayloadV1;
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -72,7 +72,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         var caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
         var callerSchoolUser = schoolUserRepository.findByUserId(caller.getId())
             .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
         if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
@@ -81,7 +81,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
 
         var command = normalize(input);
         var school = schoolRepository.findById(command.schoolId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
         }
@@ -90,13 +90,13 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             throw new IllegalArgumentException("Vai trò không hợp lệ, chỉ chấp nhận STUDENT hoặc TEACHER");
         }
         var role = roleRepository.findByCode(command.roleCode())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò: " + command.roleCode()));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò: " + command.roleCode()));
 
         if (userRepository.findByEmail(command.email()).isPresent()) {
-            throw new DuplicatedException("Email đã tồn tại");
+            throw new ResourceDuplicatedException("Email đã tồn tại");
         }
         if (userRepository.findByPhone(command.phone()).isPresent()) {
-            throw new DuplicatedException("Số điện thoại đã tồn tại");
+            throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
         }
 
         User user = User.create(command.email(), command.phone(), command.fullName(),
@@ -106,7 +106,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         try {
             savedUser = userRepository.save(user);
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicatedException("Email hoặc số điện thoại đã tồn tại");
+            throw new ResourceDuplicatedException("Email hoặc số điện thoại đã tồn tại");
         }
 
         userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), now));

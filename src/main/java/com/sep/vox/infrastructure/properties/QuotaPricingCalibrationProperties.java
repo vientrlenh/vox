@@ -8,8 +8,8 @@ import com.sep.vox.application.port.output.QuotaPricingCalibrationConfigPort;
 
 /**
  * Tham số cho QuotaPricingCalibrationJob/Service -- job tự tính lại
- * estimatedCostPerExamSecondUsd (xem QuotaPricingProperties) từ dữ liệu ai_usage_record +
- * exam_item_responses thật, thay vì phải tự tay sửa .env mỗi lần muốn calibrate lại.
+ * estimatedCostPerAssessmentSecondUsd (xem QuotaPricingProperties) từ dữ liệu ai_usage_record +
+ * assessment_item_answers thật, thay vì phải tự tay sửa .env mỗi lần muốn calibrate lại.
  */
 @ConfigurationProperties(prefix = "vox.quota.calibration")
 public record QuotaPricingCalibrationProperties(

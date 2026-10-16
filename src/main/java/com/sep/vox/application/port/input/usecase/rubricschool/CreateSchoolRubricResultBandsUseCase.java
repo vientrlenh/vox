@@ -4,7 +4,7 @@ import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSchoolRubricResultBandsCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -67,14 +67,14 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
 
         // 2 & 3. Validate Version và quyền School
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric."));
 
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalStateException("Chỉ được thêm Thang điểm kết quả khi Rubric đang ở trạng thái DRAFT.");
         }
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         // Lấy thông tin liên kết trường học của User hiện tại
         var schoolUser = schoolUserRepository.findByUserId(currentUserId)
@@ -87,7 +87,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
 
         // Kiểm tra xem trường học có đang hoạt động không
         var school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }

@@ -25,10 +25,10 @@ public class JpaSessionCostQueryRepository implements SessionCostQueryRepository
     public List<SessionCostDto> sumCostUsdGroupedBySessionSince(Instant since) {
         return em.createQuery("""
             SELECT new com.sep.vox.application.query.dto.SessionCostDto(
-                r.examSessionId, COALESCE(SUM(r.costUsd), 0))
+                r.assessmentSessionId, COALESCE(SUM(r.costUsd), 0))
             FROM AiUsageRecordJpaEntity r
             WHERE r.occurredAt >= :since
-            GROUP BY r.examSessionId
+            GROUP BY r.assessmentSessionId
             """, SessionCostDto.class)
             .setParameter("since", since)
             .getResultList();

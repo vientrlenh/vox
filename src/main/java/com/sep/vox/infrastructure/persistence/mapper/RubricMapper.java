@@ -4,41 +4,46 @@ import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.infrastructure.persistence.entity.RubricJpaEntity;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public final class RubricMapper {
 
     private RubricMapper() {}
 
     public static Rubric toDomain(RubricJpaEntity jpa) {
-        return new Rubric(
-            jpa.getId(),
-            jpa.getLanguageId(),
-            jpa.getFrameworkId(),
-            jpa.getCode(),
-            jpa.getName(),
-            jpa.getDescription(),
-            fromOwnerType(jpa.getOwnerType()),
-            jpa.getSchoolId()
-        );
+        try {
+            return Rubric.builder()
+                .id(jpa.getId())
+                .learningLanguageId(jpa.getLearningLanguageId())
+                .frameworkId(jpa.getFrameworkId())
+                .name(jpa.getName())
+                .description(jpa.getDescription())
+                .ownerType(RubricOwnerType.from(jpa.getOwnerType()))
+                .schoolId(jpa.getSchoolId())
+                .createdAt(jpa.getCreatedAt())
+                .build();
+        } catch (Exception ex) {
+            log.error("An error occurred when mapping rubric entity to model: {}", ex.getMessage(), ex);
+            throw new IllegalStateException("A problem occurred when converting entity to model");
+        }
     }
 
     public static RubricJpaEntity toJpa(Rubric rubric) {
-        return new RubricJpaEntity(
-            rubric.getId(),
-            rubric.getLanguageId(),
-            rubric.getFrameworkId(),
-            rubric.getCode(),
-            rubric.getName(),
-            rubric.getDescription(),
-            valueOf(rubric.getOwnerType()),
-            rubric.getSchoolId()
-        );
-    }
-
-    private static String valueOf(RubricOwnerType type) {
-        return type == null ? null : type.name();
-    }
-
-    private static RubricOwnerType fromOwnerType(String value) {
-        return value == null ? null : RubricOwnerType.valueOf(value);
+        try {
+            return RubricJpaEntity.builder()
+                .id(rubric.getId())
+                .learningLanguageId(rubric.getLearningLanguageId())
+                .frameworkId(rubric.getFrameworkId())
+                .name(rubric.getName())
+                .description(rubric.getDescription())
+                .ownerType(RubricOwnerType.value(rubric.getOwnerType()))
+                .schoolId(rubric.getSchoolId())
+                .createdAt(rubric.getCreatedAt())
+                .build();
+        } catch (Exception ex) {
+            log.error("An error occurred when mapping rubric model to entity: {}", ex.getMessage(), ex);
+            throw new IllegalStateException("A problem occurred when converting model to entity");
+        }
     }
 }

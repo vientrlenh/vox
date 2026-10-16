@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateSubscriptionOrderCommand;
 import com.sep.vox.application.port.input.service.SubscriptionUpgradePolicyService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -26,13 +26,6 @@ import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
-/**
- * Đặt đơn mua một CHU KỲ gói cho trường. Thay cho SubmitRequestUseCase cũ.
- *
- * <p>Use case này KHÔNG cấp gói. Nó chỉ ghi nhận ý định mua ở trạng thái PENDING; gói chỉ thực sự
- * được tạo khi tiền về (xem OrderSettlementService). Đây là khác biệt lớn nhất so với luồng cũ, nơi
- * ApproveRequestUseCase tạo thẳng subscription ACTIVE mà không có cổng nào xác nhận đã thu được tiền.
- */
 @Service
 public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscriptionOrderCommand, UUID> {
 
@@ -64,18 +57,7 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
     @Override
     @Transactional
     public UUID execute(CreateSubscriptionOrderCommand input) {
-        // Quyền đã chặn ở @PreAuthorize("hasRole('SCHOOL_ADMIN')"); ở đây chỉ còn lấy xem là trường
-        // NÀO -- và lấy từ token nên không có đường nào đặt đơn hộ trường khác.
         var schoolId = userContextPort.getCurrentSchoolId();
-
-        // Trường đang bị System Admin cưỡng chế đình chỉ (gian lận...) thì không cho đặt đơn mới cho
-        // tới khi được gỡ đình chỉ tường minh: settlement sẽ tạo một subscription ACTIVE mới mà không
-        // đụng tới bản ghi SUSPENDED, tức là đi vòng qua UnsuspendSubscriptionUseCase.
-        //
-        // Soi TOÀN BỘ lịch sử là cố ý -- không được lách bằng cách đợi kỳ bị đình chỉ trôi qua. Chế
-        // tài vẫn có điểm dừng: SubscriptionExpiryJob chuyển kỳ SUSPENDED đã qua endDate sang EXPIRED
-        // (xem SpringDataSchoolSubscriptionRepository.expireOverdue), nên cửa này khóa tối đa tới hết
-        // kỳ đã trả tiền chứ không khóa vĩnh viễn.
         var hasSuspended = schoolSubscriptionRepository.findBySchoolId(schoolId).stream()
             .anyMatch(subscription -> subscription.getStatus() == SchoolSubscriptionStatus.SUSPENDED);
         if (hasSuspended) {
@@ -83,17 +65,11 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
         }
 
         var plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
-        // Luồng cũ chỉ kiểm gói CÓ TỒN TẠI -- gap thật: đơn trỏ vào gói DRAFT (chưa chốt giá, admin
-        // còn sửa được) hoặc ARCHIVED (đã ngừng bán) vẫn tạo được, và tới lúc settlement thì trường
-        // đã trả tiền cho một gói lẽ ra không bán.
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
         if (plan.getStatus() != SubscriptionPlanStatus.ACTIVE) {
             throw new IllegalStateException("Gói này hiện không được mở bán.");
         }
 
-        // Chặn TRƯỚC cho ra thông báo đọc được. Nếu bỏ qua, uq_orders_one_open_subscription_order vẫn
-        // chặn nhưng dưới dạng DataIntegrityViolationException -- trường nhận lỗi 500 thay vì biết
-        // mình đang có một đơn dở dang cần trả hoặc hủy.
         if (orderRepository.findOpenSubscriptionOrderBySchoolId(schoolId).isPresent()) {
             throw new IllegalStateException(
                 "Trường đang có một đơn đăng ký chờ thanh toán, hãy hoàn tất hoặc hủy đơn đó trước khi đặt đơn mới.");

@@ -272,17 +272,15 @@ app:
   otp: 
     seed: ${OTP_SEED:0123456789}
   avatar:
-    # Host được phép xuất hiện trong users.avatar_url, ngăn cách bởi dấu phẩy.
-    #
-    # Ảnh đại diện do CLIENT tự tải lên kho của nó (hiện là Firebase Storage) rồi gửi về đây đúng
-    # một chuỗi URL -- backend không nhận file, nên chuỗi này là thứ duy nhất kiểm được. Bỏ trống
-    # thì chỉ còn ràng buộc "phải là URL https", nghĩa là người dùng trỏ được ảnh sang máy chủ bất
-    # kỳ, và mọi giáo viên mở danh sách chấm sẽ tự gọi sang đó (lộ IP, lộ thời điểm xem, và chủ
-    # host đổi được nội dung ảnh sau lưng).
-    #
-    # Để trống là chấp nhận đánh đổi đó -- tiện lúc dev, KHÔNG nên giữ ở môi trường thật. Với
-    # Firebase Storage, host cần điền là firebasestorage.googleapis.com.
     allowed-hosts: ${AVATAR_ALLOWED_HOSTS:}
+  initializer: 
+    system-admin:
+      email: ${SYS_ADMIN_EMAIL:}
+      password: ${SYS_ADMIN_PASSWORD:}
+      phone: ${SYS_ADMIN_PHONE:}
+      full-name: ${SYS_ADMIN_FULLNAME:}
+      birth-date: ${SYS_ADMIN_DATE_OF_BIRTH:}
+      address: ${SYS_ADMIN_ADDRESS:}
   admin:
     # Tài khoản HTTP Basic cho /admin/** (trang Spring Boot Admin + endpoint đăng ký).
     # KHÔNG đặt giá trị mặc định: sau cửa này là actuator của mọi instance đã đăng ký, kèm
@@ -291,67 +289,27 @@ app:
     username: ${SBA_ADMIN_USERNAME:}
     password: ${SBA_ADMIN_PASSWORD:}
   mail:
-    # Địa chỉ người gửi. BẮT BUỘC phải có: thiếu nó thì JavaMail tự suy địa chỉ local bằng
-    # user.name + hostname của máy chạy, và khi không suy được sẽ ném
-    # "can't determine local email address" -- toàn bộ mail không gửi được.
-    #
-    # Mặc định lấy chính tài khoản SMTP đang xác thực. Với Gmail thì gần như bắt buộc phải để
-    # vậy: đặt from khác tài khoản đăng nhập thì Gmail hoặc ghi đè lại, hoặc từ chối gửi.
     from: ${MAIL_FROM:${spring.mail.username}}
-    # Tên hiển thị trong hộp thư người nhận, không ảnh hưởng việc gửi.
     from-display-name: ${MAIL_FROM_DISPLAY_NAME:VOX}
   grpc:
-    # Bí mật dùng chung gắn vào mọi lời gọi gRPC sang vox-streaming (xem
-    # StreamingServiceTokenInterceptor). Phải trùng GRPC_SERVICE_TOKEN bên vox-streaming.
-    # Rỗng thì interceptor KHÔNG gắn header, và vox-streaming trả UNAUTHENTICATED với lý do
-    # đọc được -- hơn là gắn "Bearer " cụt rồi nhận PERMISSION_DENIED, hai lỗi đó dẫn người
-    # đọc log đi hai hướng khác nhau.
     streaming-token: ${GRPC_SERVICE_TOKEN:}
   cors:
-    # Chỉ những origin liệt kê ở đây gọi được API. Mặc định là các cổng dev quen thuộc
-    # để clone repo về là chạy được ngay; mỗi môi trường triển khai phải tự đặt
-    # CORS_ALLOWED_ORIGINS (phân tách bằng dấu phẩy), KHÔNG sửa dòng này.
-    # Ghi đúng dạng scheme://host[:port] -- thừa '/' ở cuối hay kèm path là app không
-    # khởi động, xem SecurityConfig#validatedAllowedOrigins.
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
   cookie:
     secure: ${COOKIE_SECURE:false} # Local dev use false
     same-site: ${COOKIE_SAME_SITE:Lax} # If using domain forward, make this as None
-    # Domain của cookie XSRF-TOKEN (SecurityConfig#apiCsrfTokenRepository).
-    #
-    # RỖNG khi chạy local: cookie host-only là đủ vì frontend (localhost:5173) và backend
-    # (localhost:8081) chung host "localhost" -- cookie không phân biệt cổng.
-    #
-    # Trên deployment PHẢI đặt ".voxenta.net": backend trả cookie từ api.voxenta.net, còn JS
-    # đọc nó lại chạy trên voxenta.net, mà cookie host-only thì document.cookie bên kia không
-    # thấy. Thiếu dòng này là axios không gắn được header X-XSRF-TOKEN và mọi lần gọi
-    # /api/v1/auth/refresh trả 403 -- người dùng bị đá ra đăng nhập lại mỗi khi access token hết hạn.
     domain: ${COOKIE_DOMAIN:}
-  data-initializer:
-    enabled: ${DATA_INITIALIZER:true}
   practice:
     heartbeat-cleanup-ms: ${PRACTICE_HEARTBEAT_CLEANUP_MS:30000}
   personalization:
-   
     quiz:
      item-count: ${PERSONALIZATION_QUIZ_ITEM_COUNT:7}
     generation:
       paper-target-question-count: ${PERSONALIZATION_PAPER_TARGET_QUESTION_COUNT:4}
       online-candidate-count: ${PERSONALIZATION_ONLINE_CANDIDATE_COUNT:2}
       online-budget: ${PERSONALIZATION_ONLINE_GENERATION_BUDGET:45s}
-  # Kiểm chứng ID token Google do ứng dụng NATIVE (Flutter, WPF) nộp lên
-  # POST /api/v1/auth/oauth2/google/token. KHÔNG liên quan tới luồng redirect của web ở
-  # spring.security.oauth2 phía trên -- luồng đó do Spring Security tự kiểm token.
   oauth2:
     google:
-      # Danh sách client ID CỦA MÌNH được chấp nhận trong claim `aud`. Bỏ trống thì mọi lần
-      # đăng nhập Google từ native bị từ chối (web không ảnh hưởng).
-      #
-      # Phải liệt kê ĐỦ vì mỗi client gửi một `aud` khác nhau:
-      #   - Flutter (Android/iOS) gửi client ID WEB -- đó là việc mà serverClientId của
-      #     google_sign_in làm, nên giá trị này TRÙNG với GOOGLE_CLIENT_ID ở trên;
-      #   - WPF gửi client ID DESKTOP riêng của nó.
-      # Đặt đúng một giá trị là một trong hai client luôn bị từ chối.
       allowed-audiences: ${GOOGLE_ALLOWED_AUDIENCES:}
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
@@ -370,10 +328,10 @@ app:
           topic:
             answer-turns-recorded: ${KAFKA_ANSWER_TURNS_TOPIC:answer-turns-recorded}
           group-id: ${KAFKA_ANSWER_TURNS_GROUP_ID:vox-answer-turns}
-        exam-evaluation:
+        assessment-evaluation:
           topic:
-            exam-attempt-evaluation-completed: ${KAFKA_EXAM_EVALUATION_COMPLETED_TOPIC:exam-attempt-evaluation-completed}
-          group-id: ${KAFKA_EXAM_EVALUATION_GROUP_ID:vox-exam-evaluation}
+            assessment-attempt-evaluation-completed: ${KAFKA_ASSESSMENT_EVALUATION_COMPLETED_TOPIC:assessment-attempt-evaluation-completed}
+          group-id: ${KAFKA_ASSESSMENT_EVALUATION_GROUP_ID:vox-assessment-evaluation}
         practice-evaluation:
           topic:
             practice-attempt-evaluation-completed: ${KAFKA_PRACTICE_EVALUATION_COMPLETED_TOPIC:practice-attempt-evaluation-completed}
@@ -384,16 +342,16 @@ app:
           group-id: ${KAFKA_QUESTION_ASSET_ANALYSIS_GROUP_ID:vox-question-asset-analysis}
         recording:
           topic:
-            recording-part-changed: ${KAFKA_RECORDING_PART_CHANGED_TOPIC:exam.recording.part.changed}
+            recording-part-changed: ${KAFKA_RECORDING_PART_CHANGED_TOPIC:assessment.recording.part.changed}
           group-id: ${KAFKA_RECORDING_GROUP_ID:vox-recording}
         ai-usage:
           topic:
-            ai-usage-recorded: ${KAFKA_AI_USAGE_TOPIC:exam-ai-usage-recorded}
+            ai-usage-recorded: ${KAFKA_AI_USAGE_TOPIC:assessment-ai-usage-recorded}
           group-id: ${KAFKA_AI_USAGE_GROUP_ID:vox-ai-usage}
         # Cảnh báo giám sát thi do vox-streaming phát (domain.TopicAlertRaised bên đó).
         proctoring-alert:
           topic:
-            alert-raised: ${KAFKA_PROCTORING_ALERT_TOPIC:exam.alert.raised}
+            alert-raised: ${KAFKA_PROCTORING_ALERT_TOPIC:assessment.alert.raised}
           group-id: ${KAFKA_PROCTORING_ALERT_GROUP_ID:vox-proctoring-alert}
   internal-event:
     kafka: 
@@ -402,8 +360,8 @@ app:
           topic: 
             register-form-rejected: ${KAFKA_REGISTER_FORM_REJECTED_TOPIC:vox.register-form-rejected.v1}
             user-created: ${KAFKA_USER_CREATED_TOPIC:vox.user-created.v1}
-            exam-appeal: ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
-            exam-result-lifecycle: ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
+            assessment-appeal: ${KAFKA_ASSESSMENT_APPEAL_TOPIC:vox.assessment-appeal.v1}
+            assessment-result-lifecycle: ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
             invoice: ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
             school-debt: ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
@@ -418,15 +376,15 @@ app:
         # khoản / chưa từng đăng nhập nên không có thiết bị nào để đẩy.
         notification:
           topic:
-            exam-appeal: ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
-            exam-result-lifecycle: ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
+            assessment-appeal: ${KAFKA_ASSESSMENT_APPEAL_TOPIC:vox.assessment-appeal.v1}
+            assessment-result-lifecycle: ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
-            exam-blueprint-version: ${KAFKA_EXAM_BLUEPRINT_VERSION_TOPIC:vox.exam-blueprint-version.v1}
+            assessment-blueprint-version: ${KAFKA_ASSESSMENT_BLUEPRINT_VERSION_TOPIC:vox.assessment-blueprint-version.v1}
             # CỐ TÌNH không có bản sao dưới nhóm email: nhắc chấm tay chỉ hiện trong app, không
             # gửi mail. Đây cũng là lý do nó không đi chung topic grading-assignment --
             # GradingAssignmentEmailConsumer ném với eventType lạ, nên dùng chung là đẩy mọi
             # message loại này vào DLT.
-            exam-grading-review: ${KAFKA_EXAM_GRADING_REVIEW_TOPIC:vox.exam-grading-review.v1}
+            assessment-grading-review: ${KAFKA_ASSESSMENT_GRADING_REVIEW_TOPIC:vox.assessment-grading-review.v1}
             invoice: ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
             school-debt: ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
           # Ngược lại, group-id BẮT BUỘC phải là biến riêng. Dùng chung KAFKA_EMAIL_GROUP_ID
@@ -448,23 +406,23 @@ app:
       "[RegisterFormRejected]": ${KAFKA_REGISTER_FORM_REJECTED_TOPIC:vox.register-form-rejected.v1}
       "[UserCreated]": ${KAFKA_USER_CREATED_TOPIC:vox.user-created.v1}
 
-      "[ExamAppealPublished]": ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
-      "[ExamAppealRejected]": ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
-      "[ExamAppealApproved]": ${KAFKA_EXAM_APPEAL_TOPIC:vox.exam-appeal.v1}
+      "[AssessmentAppealPublished]": ${KAFKA_ASSESSMENT_APPEAL_TOPIC:vox.assessment-appeal.v1}
+      "[AssessmentAppealRejected]": ${KAFKA_ASSESSMENT_APPEAL_TOPIC:vox.assessment-appeal.v1}
+      "[AssessmentAppealApproved]": ${KAFKA_ASSESSMENT_APPEAL_TOPIC:vox.assessment-appeal.v1}
 
-      "[ExamResultReleased]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
-      "[ExamResultRegraded]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
-      "[ExamResultInvalidated]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
-      "[ExamResultInvalidCleared]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
-      "[ExamResultOutcomeDecided]": ${KAFKA_EXAM_RESULT_LIFECYCLE_TOPIC:vox.exam-result-lifecycle.v1}
+      "[AssessmentResultReleased]": ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
+      "[AssessmentResultRegraded]": ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
+      "[AssessmentResultInvalidated]": ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
+      "[AssessmentResultInvalidCleared]": ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
+      "[AssessmentResultOutcomeDecided]": ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
 
       "[GradingDeadlineReminder]": ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
       "[GradingAssignmentDeclined]": ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
 
-      "[ExamBlueprintVersionPublished]": ${KAFKA_EXAM_BLUEPRINT_VERSION_TOPIC:vox.exam-blueprint-version.v1}
+      "[AssessmentBlueprintVersionPublished]": ${KAFKA_ASSESSMENT_BLUEPRINT_VERSION_TOPIC:vox.assessment-blueprint-version.v1}
 
-      "[ExamHumanGradingRequired]": ${KAFKA_EXAM_GRADING_REVIEW_TOPIC:vox.exam-grading-review.v1}
-      "[GradingAssignmentOpened]": ${KAFKA_EXAM_GRADING_REVIEW_TOPIC:vox.exam-grading-review.v1}
+      "[AssessmentHumanGradingRequired]": ${KAFKA_ASSESSMENT_GRADING_REVIEW_TOPIC:vox.assessment-grading-review.v1}
+      "[GradingAssignmentOpened]": ${KAFKA_ASSESSMENT_GRADING_REVIEW_TOPIC:vox.assessment-grading-review.v1}
 
       "[InvoicePaid]": ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
 
@@ -481,15 +439,6 @@ app:
       "[RegisterVerificationOtpRequested]": ${KAFKA_REGISTER_VERIFICATION_OTP_TOPIC:vox.register-verification-otp.v1}
     
 
-
-system-admin:
-  email: ${SYS_ADMIN_EMAIL}
-  password: ${SYS_ADMIN_PASSWORD}
-  phone: ${SYS_ADMIN_PHONE}
-  fullName: ${SYS_ADMIN_FULLNAME}
-  dateOfBirth: ${SYS_ADMIN_DATE_OF_BIRTH}
-  address: ${SYS_ADMIN_ADDRESS}
-
 payos:
   client-id: ${PAYOS_CLIENT_ID:}
   api-key: ${PAYOS_API_KEY:}
@@ -505,13 +454,13 @@ vox:
     # xong), chỉ là hệ số quy đổi tạm để chặn sớm khi trường rõ ràng không đủ hạn
     # mức. Cần thay bằng số đo thực tế (trung bình cost_usd / audio_duration_seconds
     # trên một khoảng thời gian đủ dài) trước khi dùng ở production..
-    estimated-cost-per-exam-second-usd: ${VOX_QUOTA_ESTIMATED_COST_PER_EXAM_SECOND_USD:}
+    estimated-cost-per-assessment-second-usd: ${VOX_QUOTA_ESTIMATED_COST_PER_ASSESSMENT_SECOND_USD:}
     # Cùng vai trò như dòng trên nhưng riêng cho PRACTICE -- tự tính lại độc lập qua
     # QuotaPricingCalibrationJob.runPractice(), xem QuotaPricingCalibrationService/QuotaPricingSource.
     estimated-cost-per-practice-second-usd: ${VOX_QUOTA_ESTIMATED_COST_PER_PRACTICE_SECOND_USD:}
     calibration:
-      # QuotaPricingCalibrationJob dùng các số này để tự tính lại estimated-cost-per-exam-second-usd
-      # ở trên từ dữ liệu ai_usage_record/exam_item_responses thật, thay vì phải tự sửa .env tay --
+      # QuotaPricingCalibrationJob dùng các số này để tự tính lại estimated-cost-per-assessment-second-usd
+      # ở trên từ dữ liệu ai_usage_record/assessment_item_answers thật, thay vì phải tự sửa .env tay --
       # xem QuotaPricingCalibrationService.
       window-days: ${VOX_QUOTA_CALIBRATION_WINDOW_DAYS:}
       min-sample-sessions: ${VOX_QUOTA_CALIBRATION_MIN_SAMPLE_SESSIONS:}

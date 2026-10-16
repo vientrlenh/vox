@@ -2,6 +2,8 @@ package com.sep.vox.interfaces.rest.dto.request;
 
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.CreateQuestionTopicCommand;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -21,4 +23,13 @@ public record CreateQuestionTopicRequest(
     @Size(max = 2048, message = "Mô tả không được vượt quá 2048 ký tự")
     String description
 ) {
+
+    public static CreateQuestionTopicCommand toCommand(CreateQuestionTopicRequest request) {
+        return new CreateQuestionTopicCommand(
+            request.questionBankId(),
+            request.code(),
+            request.name(),
+            request.description()
+        );
+    }
 }

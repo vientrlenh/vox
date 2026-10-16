@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolQuotaPolicy;
 import com.sep.vox.domain.repository.SchoolQuotaPolicyRepository;
-import com.sep.vox.infrastructure.persistence.entity.SchoolQuotaPolicyJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolQuotaPolicyJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolQuotaPolicyMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolQuotaPolicyRepository;
 

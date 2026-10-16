@@ -3,15 +3,19 @@ package com.sep.vox.infrastructure.persistence.entity;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.hibernate.annotations.Generated;
-import org.hibernate.generator.EventType;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import com.sep.vox.infrastructure.shared.BaseEntity;
 
 import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "framework_versions", indexes = {
@@ -24,12 +28,10 @@ import jakarta.persistence.Table;
         constraint = "effective_to IS NULL OR effective_from <= effective_to"
     )
 })
-public class FrameworkVersionJpaEntity {
-
-    @Id
-    @Generated(event = EventType.INSERT)
-    @Column(name = "id", nullable = false, updatable = false, insertable = false, columnDefinition = "UUID DEFAULT uuidv7()")
-    private UUID id;
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SuperBuilder
+public class FrameworkVersionJpaEntity extends BaseEntity {
 
     @Column(name = "framework_id", nullable = false, updatable = false)
     private UUID frameworkId;
@@ -45,11 +47,11 @@ public class FrameworkVersionJpaEntity {
 
     @Column(name = "version", nullable = false, check = {
         @CheckConstraint(
-            name = "chk_framework_versions_version_positive", 
+            name = "chk_framework_versions_version_positive",
             constraint = "version > 0"
         )
     })
-    private int version;
+    private Long version;
 
     @Column(name = "effective_from", nullable = false)
     private Instant effectiveFrom;
@@ -65,9 +67,7 @@ public class FrameworkVersionJpaEntity {
     })
     private String status;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
+    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
@@ -77,50 +77,4 @@ public class FrameworkVersionJpaEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
-    protected FrameworkVersionJpaEntity() {}
-
-    public FrameworkVersionJpaEntity(UUID id, UUID frameworkId, String code, String name, String description,
-            int version, Instant effectiveFrom, Instant effectiveTo, String status,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.frameworkId = frameworkId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.version = version;
-        this.effectiveFrom = effectiveFrom;
-        this.effectiveTo = effectiveTo;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public UUID getFrameworkId() { return frameworkId; }
-    public void setFrameworkId(UUID frameworkId) { this.frameworkId = frameworkId; }
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-    public int getVersion() { return version; }
-    public void setVersion(int version) { this.version = version; }
-    public Instant getEffectiveFrom() { return effectiveFrom; }
-    public void setEffectiveFrom(Instant effectiveFrom) { this.effectiveFrom = effectiveFrom; }
-    public Instant getEffectiveTo() { return effectiveTo; }
-    public void setEffectiveTo(Instant effectiveTo) { this.effectiveTo = effectiveTo; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
-    public UUID getCreatedBy() { return createdBy; }
-    public void setCreatedBy(UUID createdBy) { this.createdBy = createdBy; }
-    public UUID getUpdatedBy() { return updatedBy; }
-    public void setUpdatedBy(UUID updatedBy) { this.updatedBy = updatedBy; }
 }

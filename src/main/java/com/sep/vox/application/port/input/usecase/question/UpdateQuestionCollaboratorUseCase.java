@@ -4,13 +4,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateQuestionCollaboratorCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionCollaboratorDto;
-import com.sep.vox.domain.mapper.QuestionCollaboratorDtoMapper;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.repository.QuestionBankRepository;
@@ -43,9 +42,9 @@ public class UpdateQuestionCollaboratorUseCase implements IUseCase<UpdateQuestio
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         var question = questionRepository.findById(command.questionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
         var bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
         if (!currentUserId.equals(question.getCreatedBy())) {
             throw new ForbiddenException("Chỉ owner mới được quản lý collaborator");
         }
@@ -54,14 +53,14 @@ public class UpdateQuestionCollaboratorUseCase implements IUseCase<UpdateQuestio
         }
 
         var collaborator = questionCollaboratorRepository.findById(command.collaboratorId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy collaborator"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy collaborator"));
         if (!collaborator.getQuestionId().equals(question.getId())) {
             throw new ForbiddenException("Collaborator không thuộc câu hỏi này");
         }
 
         collaborator.setPermission(QuestionCollaboratorPermission.valueOf(command.permission()));
         var saved = questionCollaboratorRepository.save(collaborator);
-        return QuestionCollaboratorDtoMapper.toDto(saved);
+        return QuestionCollaboratorDto.toDto(saved);
     }
 
     private UpdateQuestionCollaboratorCommand normalize(UpdateQuestionCollaboratorCommand input) {

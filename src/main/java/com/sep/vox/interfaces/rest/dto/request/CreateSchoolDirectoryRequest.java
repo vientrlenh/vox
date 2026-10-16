@@ -1,34 +1,47 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.CreateSchoolDirectoryCommand;
+
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateSchoolDirectoryRequest(
-    @NotBlank(message = "Mã danh mục trường không được để trống")
-    @Size(max = 100, message = "Mã danh mục trường không được vượt quá 100 ký tự")
+    @NotBlank(message = "School code is required")
+    @Size(max = 100, message = "School code must not exceed 100 characters")
     String code, 
 
-    @NotBlank(message = "Tên danh mục trường không được để trống")
-    @Size(max = 255, message = "Tên danh mục trường không được vượt quá 255 ký tự")
+    @NotBlank(message = "School name is required")
+    @Size(max = 255, message = "School name must not exceed 255 characters")
     String name, 
 
-    @NotBlank(message = "Mã tỉnh/thành của danh mục trường không được để trống")
-    @Size(max = 100, message = "Mã tỉnh/thành của danh mục trường không được vượt quá 100 ký tự")
-    String provinceCode,
+    @NotNull(message = "School ward ID is required")
+    UUID wardId,
 
-    @NotBlank(message = "Tên tỉnh/thành của danh mục trường không được để trống")
-    @Size(max = 255, message = "Tên tỉnh/thành của danh mục trường không được vượt quá 255 ký tự")
-    String provinceName, 
+    UUID cityId,
 
-    @NotBlank(message = "Tên vùng của danh mục trường không được để trống")
-    @Size(max = 255, message = "Tên vùng của danh mục trường không được vượt quá 255 ký tự")
-    String districtName, 
+    @NotNull(message = "School province ID is required")
+    UUID provinceId,
 
-    @Size(max = 100, message = "Tên miền của trường không được vượt quá 100 ký tự")
+    @Size(max = 100, message = "School domain must not exceed 100 characters")
     String domain, 
 
-    @Size(max = 512, message = "Địa chỉ của danh mục trường không được vượt quá 512 ký tự")
-    String address
+    @NotBlank(message = "School street address is required")
+    @Size(max = 512, message = "School street address must not exceed 255 characters")
+    String streetAddress
 ) {
     
+    public static CreateSchoolDirectoryCommand toCommand(CreateSchoolDirectoryRequest request) {
+        return new CreateSchoolDirectoryCommand(
+            request.code, 
+            request.name, 
+            request.wardId, 
+            request.cityId, 
+            request.provinceId, 
+            request.domain, 
+            request.streetAddress
+        );
+    }
 }

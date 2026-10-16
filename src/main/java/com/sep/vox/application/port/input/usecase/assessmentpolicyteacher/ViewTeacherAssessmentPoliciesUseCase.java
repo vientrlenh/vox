@@ -1,13 +1,12 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicyteacher;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewTeacherAssessmentPoliciesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentPolicyDto;
-import com.sep.vox.domain.mapper.AssessmentPolicyDtoMapper;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -56,7 +55,7 @@ public class ViewTeacherAssessmentPoliciesUseCase implements IUseCase<ViewTeache
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
         var school = schoolRepository.findById(schoolUser.getSchoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
         }
@@ -68,6 +67,6 @@ public class ViewTeacherAssessmentPoliciesUseCase implements IUseCase<ViewTeache
         // Teacher chỉ được xem các chính sách đã PUBLISHED
         var policyPage = assessmentPolicyRepository.findAllBySchoolId(schoolUser.getSchoolId(), AssessmentPolicyStatus.PUBLISHED.name(),
                 query.languageId(), query.rubricVersionId(), query.effectiveFrom(), query.effectiveTo(), query.page(), query.size());
-        return AssessmentPolicyDtoMapper.toDtoPage(policyPage);
+        return AssessmentPolicyDto.toDtoPage(policyPage);
     }
 }

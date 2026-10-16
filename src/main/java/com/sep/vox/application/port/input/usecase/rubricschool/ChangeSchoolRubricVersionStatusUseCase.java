@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ChangeSchoolRubricVersionStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -60,7 +60,7 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
 
         // 2. Lấy Version ra kiểm tra
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric."));
 
         if (version.getStatus() == command.status()) {
             throw new IllegalStateException("Phiên bản đã đang ở trạng thái " + command.status() + ".");
@@ -68,7 +68,7 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
 
         // 3. KIỂM TRA BẢO MẬT SCHOOL OWNERSHIP (Sử dụng bảng SchoolUser mới)
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric gốc."));
 
         // Lấy thông tin mapping trường học của User hiện tại
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
@@ -97,7 +97,7 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
             }
 
             Framework framework = frameworkRepository.findById(rubric.getFrameworkId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework) liên kết."));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework) liên kết."));
             if (!framework.isActive()) {
                 throw new IllegalStateException("Không thể ban hành Rubric này vì Khung tiêu chuẩn (Framework) gốc đang bị vô hiệu hóa.");
             }

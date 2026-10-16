@@ -6,13 +6,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewScoringRuleDetailQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ScoringRuleDto;
-import com.sep.vox.domain.mapper.ScoringRuleDtoMapper;
 import com.sep.vox.domain.model.scoringrule.ScoringRule;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -51,7 +50,7 @@ public class ViewSystemScoringRuleDetailUseCase implements IUseCase<ViewScoringR
 
         // 2. Kiểm tra Scoring Rule tồn tại
         ScoringRule rule = scoringRuleRepository.findById(query.ruleId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Scoring Rule."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Scoring Rule."));
 
         // 3. BẢO MẬT: policyId trên path phải khớp với policyId thật sự của rule
         if (!rule.getPolicyId().equals(query.policyId())) {
@@ -60,11 +59,11 @@ public class ViewSystemScoringRuleDetailUseCase implements IUseCase<ViewScoringR
 
         // 4. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
         var policy = assessmentPolicyRepository.findById(rule.getPolicyId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Không thể xem Scoring Rule của Assessment Policy thuộc trường học.");
         }
 
-        return ScoringRuleDtoMapper.toDto(rule);
+        return ScoringRuleDto.toDto(rule);
     }
 }

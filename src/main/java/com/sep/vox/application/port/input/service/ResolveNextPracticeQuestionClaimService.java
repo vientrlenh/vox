@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.projection.dto.PracticeFocusInfo;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
@@ -100,7 +100,7 @@ public class ResolveNextPracticeQuestionClaimService {
         // FOR UPDATE: chỉ còn cần bảo vệ đúng đoạn đọc/kiểm tra ngắn này -- khoá JVM ở
         // ResolveNextPracticeQuestionUseCase mới là thứ serialize xuyên suốt cuộc gọi ngoài chậm.
         var session = practiceSessionRepository.findByIdForUpdate(sessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
         if (!"IN_PROGRESS".equals(session.getStatus())) {
             throw new IllegalStateException("Phiên luyện không còn hoạt động.");
         }
@@ -121,7 +121,7 @@ public class ResolveNextPracticeQuestionClaimService {
             var latestQuestionId = alreadyChosenIds.getLast();
             if (!practiceItemResponseRepository.existsResponse(sessionId, latestQuestionId)) {
                 var latestQuestion = questionRepository.findById(latestQuestionId)
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi luyện."));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi luyện."));
                 return new Claim(
                     session.getStudentId(), session.getPracticePaperId(), null, null, null,
                     latestQuestion, alreadyChosenIds.size(), null,
@@ -154,7 +154,7 @@ public class ResolveNextPracticeQuestionClaimService {
         }
 
         var topic = topicRepository.findTopicById(session.getChosenPracticeTopicId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề luyện tập."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề luyện tập."));
         var focus = selectionService.resolveFocus(session.getStudentId(), null);
         var alreadyChosen = questionRepository.findByIds(alreadyChosenIds);
 

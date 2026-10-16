@@ -6,9 +6,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.exception.UnauthorizedException;
@@ -26,12 +26,12 @@ public class GlobalGrpcExceptionHandler implements GrpcExceptionHandler{
                 .withDescription(exception.getMessage())
                 .asException();
         }
-        if (exception instanceof NotFoundException) {
+        if (exception instanceof ResourceNotFoundException) {
             return Status.NOT_FOUND
                 .withDescription(exception.getMessage())
                 .asException();
         }
-        if (exception instanceof DuplicatedException) {
+        if (exception instanceof ResourceDuplicatedException) {
             return Status.ALREADY_EXISTS
                 .withDescription(exception.getMessage())
                 .asException();
@@ -58,12 +58,12 @@ public class GlobalGrpcExceptionHandler implements GrpcExceptionHandler{
         }
         if (exception instanceof AccessDeniedException) {
             return Status.PERMISSION_DENIED
-                .withDescription("Quyền truy cập bị từ chối")
+                .withDescription("Access denied")
                 .asException();
         }
         if (exception instanceof AuthenticationException) {
             return Status.UNAUTHENTICATED
-                .withDescription("Trạng thái đăng nhập không hợp lệ")
+                .withDescription("Invalid login state")
                 .asException();
         }
         return null;

@@ -6,14 +6,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateQuestionCollaboratorCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionCollaboratorDto;
-import com.sep.vox.domain.mapper.QuestionCollaboratorDtoMapper;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionCollaborator;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
@@ -55,9 +54,9 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         var question = questionRepository.findById(command.questionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
         var bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         validateOwner(question.getCreatedBy(), currentUserId);
         validateSchoolQuestion(bank.getOwnerType());
@@ -93,7 +92,7 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
         collaborator.setAssignedAt(Instant.now());
 
         var saved = questionCollaboratorRepository.save(collaborator);
-        return QuestionCollaboratorDtoMapper.toDto(saved);
+        return QuestionCollaboratorDto.toDto(saved);
     }
 
     private void validateOwner(java.util.UUID ownerId, java.util.UUID currentUserId) {

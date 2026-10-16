@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation;
-import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionQuotaUserAllocationJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolSubscriptionQuotaUserAllocationJpaEntity;
 
 public final class SchoolSubscriptionQuotaUserAllocationMapper {
 

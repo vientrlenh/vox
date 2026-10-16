@@ -1,13 +1,12 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSystemRubricDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricDto;
-import com.sep.vox.domain.mapper.RubricDtoMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -45,7 +44,7 @@ public class ViewSystemRubricDetailsUseCase implements IUseCase<ViewSystemRubric
 
         // 2. Lấy bộ Rubric
         Rubric rubric = rubricRepository.findById(query.rubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
 
         // 3. Đảm bảo đây là Rubric của Hệ thống
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
@@ -53,6 +52,6 @@ public class ViewSystemRubricDetailsUseCase implements IUseCase<ViewSystemRubric
         }
 
         // 4. Map sang Domain DTO
-        return RubricDtoMapper.toRubricDto(rubric);
+        return RubricDto.toDto(rubric);
     }
 }

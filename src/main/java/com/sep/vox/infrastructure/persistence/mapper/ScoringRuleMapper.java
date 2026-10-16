@@ -4,89 +4,75 @@ import com.sep.vox.domain.model.scoringrule.ScoringRule;
 import com.sep.vox.domain.model.scoringrule.ScoringRuleActionType;
 import com.sep.vox.domain.model.scoringrule.ScoringRuleConditionType;
 import com.sep.vox.domain.model.scoringrule.ScoringRuleSeverity;
+import com.sep.vox.domain.valueobject.Code;
+import com.sep.vox.domain.valueobject.PositiveInteger;
 import com.sep.vox.domain.valueobject.scoringruleaction.ScoringRuleActionParams;
 import com.sep.vox.domain.valueobject.scoringrulecondition.ScoringRuleConditionParams;
 import com.sep.vox.infrastructure.persistence.entity.ScoringRuleJpaEntity;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public final class ScoringRuleMapper {
 
     private ScoringRuleMapper() {}
 
     public static ScoringRule toDomain(ScoringRuleJpaEntity jpa) {
-        var conditionType = fromConditionType(jpa.getConditionType());
-        var actionType = fromActionType(jpa.getActionType());
-        return new ScoringRule(
-            jpa.getId(),
-            jpa.getPolicyId(),
-            jpa.getCode(),
-            jpa.getName(),
-            jpa.getDescription(),
-            conditionType,
-            JsonValueObjectMapper.fromJson(jpa.getConditionParamsJson(), conditionParamsType(conditionType)),
-            actionType,
-            JsonValueObjectMapper.fromJson(jpa.getActionParamsJson(), actionParamsType(actionType)),
-            jpa.getPriority(),
-            fromSeverity(jpa.getSeverity()),
-            jpa.isStopProcessing(),
-            jpa.isActive(),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        try {
+            ScoringRuleConditionType conditionType = ScoringRuleConditionType.from(jpa.getConditionType());
+            ScoringRuleActionType actionType = ScoringRuleActionType.from(jpa.getActionType());
+
+            return ScoringRule.builder()
+                .id(jpa.getId())
+                .assessmentPolicyId(jpa.getAssessmentPolicyId())
+                .code(Code.from(jpa.getCode()))
+                .name(jpa.getName())
+                .description(jpa.getDescription())
+                .conditionType(conditionType)
+                .conditionParams(conditionParamsFromJson(conditionType, jpa.getConditionParamsJson()))
+                .actionType(actionType)
+                .actionParams(actionParamsFromJson(actionType, jpa.getActionParamsJson()))
+                .priority(PositiveInteger.from(jpa.getPriority()))
+                .severity(ScoringRuleSeverity.from(jpa.getSeverity()))
+                .stopProcessing(jpa.getStopProcessing())
+                .build();
+        } catch (Exception ex) {
+            log.error("An error occurred when mapping scoring rule entity to model: {}", ex.getMessage(), ex);
+            throw new IllegalStateException("A problem occurred when converting entity to model");
+        }
     }
 
     public static ScoringRuleJpaEntity toJpa(ScoringRule rule) {
-        return new ScoringRuleJpaEntity(
-            rule.getId(),
-            rule.getPolicyId(),
-            rule.getCode(),
-            rule.getName(),
-            rule.getDescription(),
-            valueOf(rule.getConditionType()),
-            JsonValueObjectMapper.toJson(rule.getConditionParams()),
-            valueOf(rule.getActionType()),
-            JsonValueObjectMapper.toJson(rule.getActionParams()),
-            rule.getPriority(),
-            valueOf(rule.getSeverity()),
-            rule.isStopProcessing(),
-            rule.isActive(),
-            rule.getCreatedAt(),
-            rule.getUpdatedAt(),
-            rule.getCreatedBy(),
-            rule.getUpdatedBy()
-        );
+        try {
+            return ScoringRuleJpaEntity.builder()
+                .id(rule.getId())
+                .assessmentPolicyId(rule.getAssessmentPolicyId())
+                .code(Code.valueOf(rule.getCode()))
+                .name(rule.getName())
+                .description(rule.getDescription())
+                .conditionType(ScoringRuleConditionType.value(rule.getConditionType()))
+                .conditionParamsJson(paramsToJson(rule.getConditionParams()))
+                .actionType(ScoringRuleActionType.value(rule.getActionType()))
+                .actionParamsJson(paramsToJson(rule.getActionParams()))
+                .priority(PositiveInteger.valueOf(rule.getPriority()))
+                .severity(ScoringRuleSeverity.value(rule.getSeverity()))
+                .stopProcessing(rule.getStopProcessing())
+                .build();
+        } catch (Exception ex) {
+            log.error("An error occurred when mapping scoring rule model to entity: {}", ex.getMessage(), ex);
+            throw new IllegalStateException("A problem occurred when converting model to entity");
+        }
     }
 
-    private static String valueOf(ScoringRuleSeverity severity) {
-        return severity == null ? null : severity.name();
+    private static ScoringRuleConditionParams conditionParamsFromJson(ScoringRuleConditionType type, String json) {
+        return type == null || json == null ? null : JsonValueObjectMapper.fromJson(json, type.paramTypes());
     }
 
-    private static String valueOf(ScoringRuleActionType type) {
-        return type == null ? null : type.name();
+    private static ScoringRuleActionParams actionParamsFromJson(ScoringRuleActionType type, String json) {
+        return type == null || json == null ? null : JsonValueObjectMapper.fromJson(json, type.paramType());
     }
 
-    private static String valueOf(ScoringRuleConditionType type) {
-        return type == null ? null : type.name();
-    }
-
-    private static ScoringRuleConditionType fromConditionType(String value) {
-        return value == null ? null : ScoringRuleConditionType.valueOf(value);
-    }
-
-    private static ScoringRuleActionType fromActionType(String value) {
-        return value == null ? null : ScoringRuleActionType.valueOf(value);
-    }
-
-    private static ScoringRuleSeverity fromSeverity(String value) {
-        return value == null ? null : ScoringRuleSeverity.valueOf(value);
-    }
-
-    private static Class<? extends ScoringRuleConditionParams> conditionParamsType(ScoringRuleConditionType type) {
-        return type == null ? null : type.paramTypes();
-    }
-
-    private static Class<? extends ScoringRuleActionParams> actionParamsType(ScoringRuleActionType type) {
-        return type == null ? null : type.paramType();
+    private static String paramsToJson(Object params) {
+        return params == null ? null : JsonValueObjectMapper.toJson(params);
     }
 }

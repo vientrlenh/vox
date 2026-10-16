@@ -9,11 +9,11 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.sep.vox.infrastructure.persistence.entity.SchoolJpaEntity;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolJpaEntity;
 
 public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntity, UUID> {
     Optional<SchoolJpaEntity> findByCode(String code);
@@ -79,22 +79,22 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
      *
      * <p>Soi LỊCH THI chứ không soi phiên thi đang mở, vì đây phải là ĐÚNG vị từ mà
      * {@code ForceSuspendSubscriptionUseCase} dùng để từ chối đình chỉ -- nó gọi
-     * {@code ExamSchedule.isOngoingAt}, tức trạng thái của LỊCH. Đếm theo phiên (status =
+     * {@code AssessmentSchedule.isOngoingAt}, tức trạng thái của LỊCH. Đếm theo phiên (status =
      * 'IN_PROGRESS') sẽ bỏ sót đúng ca hay gặp nhất: cửa thi vừa mở mà chưa em nào bấm vào. Lúc đó
      * BE vẫn chặn nhưng danh sách này rỗng, nên nút hiện bật, admin bấm, rồi mới nhận lỗi -- đúng
      * thứ mà trạng thái chặn sinh ra để tránh.
      *
-     * <p>Cùng biểu thức với {@code SpringDataExamScheduleRepository.findByExamIdAndInSchedule}, chỉ
+     * <p>Cùng biểu thức với {@code SpringDataAssessmentScheduleRepository.findByAssessmentIdAndInSchedule}, chỉ
      * khác là gom theo trường thay vì theo một bài thi.
      */
     @Query("""
-        SELECT DISTINCT exam.schoolId
-        FROM ExamScheduleJpaEntity schedule
-        JOIN ExamJpaEntity exam
-            ON schedule.examId = exam.id
+        SELECT DISTINCT assessment.schoolId
+        FROM AssessmentScheduleJpaEntity schedule
+        JOIN AssessmentJpaEntity assessment
+            ON schedule.assessmentId = assessment.id
         WHERE schedule.status = 'PUBLISHED'
             AND schedule.startDate <= :now
             AND schedule.endDate > :now
         """)
-    List<UUID> findIdsWithOngoingExam(@Param("now") Instant now);
+    List<UUID> findIdsWithOngoingAssessment(@Param("now") Instant now);
 }

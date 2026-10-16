@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CancelOrderCommand;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -21,20 +21,6 @@ import com.sep.vox.domain.model.payment.PaymentStatus;
 import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.PaymentRecordRepository;
 
-/**
- * Trường tự bỏ một đơn chưa trả tiền.
- *
- * <p>Có mặt vì {@code uq_orders_one_open_subscription_order} chỉ cho phép MỘT đơn đăng ký còn mở
- * mỗi trường: không có đường hủy thì một trường đặt nhầm gói bị chặn đặt đơn mới cho tới khi đơn cũ
- * tự hết hạn (tối đa 24 tiếng theo Order.PENDING_TTL). Đây là bản THỦ CÔNG của việc mà
- * PendingOrderReconciler làm tự động khi đơn quá hạn.
- *
- * <p>Phần khó KHÔNG nằm ở việc đổi trạng thái đơn mà ở phiên thanh toán còn sống bên cổng: đóng đơn
- * mà để link sống tiếp nghĩa là trường vẫn trả vào đó được, và lúc tiền về thì
- * OrderSettlementService thấy đơn không còn PENDING nên không giao hàng -- thu tiền xong không cấp
- * gì, mà hệ thống hiện chưa có luồng hoàn tiền nào. Nên quy tắc ở đây là: chỉ đóng đơn khi CHẮC
- * CHẮN không còn đường nào ra tiền nữa.
- */
 @Service
 public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
 
@@ -65,7 +51,7 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
         // cùng thấy đơn PENDING, một bên đóng CANCELLED, một bên đóng SUCCESS -- thứ tự ghi quyết
         // định kết quả, và một trong hai kết quả là sai.
         var order = orderRepository.findByIdForUpdate(input.orderId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
 
         if (!order.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
@@ -154,7 +140,7 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
      */
     private void markAttemptFailed(Order order, UUID attemptId) {
         var current = paymentRecordRepository.findById(attemptId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lần thanh toán của đơn"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lần thanh toán của đơn"));
 
         if (current.getStatus() == PaymentStatus.PAID) {
             throw new IllegalStateException(

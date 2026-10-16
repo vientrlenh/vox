@@ -3,17 +3,14 @@ package com.sep.vox.domain.model.school;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.language.LearningLanguage;
 import com.sep.vox.domain.shared.BaseModel;
-import com.sep.vox.domain.valueobject.Code;
-import com.sep.vox.domain.valueobject.Name;
 
 public class SchoolClass extends BaseModel {
     private UUID schoolId;
-    private LearningLanguage language;
+    private UUID academicYearId;
+    private UUID learningLanguageId;
     private UUID schoolGradeId;
-    private Code code;
-    private Name name;
+    private String name;
     private String description;
     private SchoolClassStatus status;
     private Instant updatedAt;
@@ -22,11 +19,11 @@ public class SchoolClass extends BaseModel {
 
     public SchoolClass() {}
 
-    public SchoolClass(UUID schoolId, LearningLanguage language, UUID schoolGradeId, Code code, Name name, String description, SchoolClassStatus status, Instant updatedAt, Instant archivedAt, UUID createdBy) {
+    public SchoolClass(UUID schoolId, UUID academicYearId, UUID learningLanguageId, UUID schoolGradeId, String name, String description, SchoolClassStatus status, Instant updatedAt, Instant archivedAt, UUID createdBy) {
         this.schoolId = schoolId;
-        this.language = language;
+        this.academicYearId = academicYearId;
+        this.learningLanguageId = learningLanguageId;
         this.schoolGradeId = schoolGradeId;
-        this.code = code;
         this.name = name;
         this.description = description;
         this.status = status;
@@ -38,9 +35,9 @@ public class SchoolClass extends BaseModel {
     public SchoolClass(Builder builder) {
         super(builder.id, builder.createdAt);
         this.schoolId = builder.schoolId;
-        this.language = builder.language;
+        this.academicYearId = builder.academicYearId;
+        this.learningLanguageId = builder.learningLanguageId;
         this.schoolGradeId = builder.schoolGradeId;
-        this.code = builder.code;
         this.name = builder.name;
         this.description = builder.description;
         this.status = builder.status;
@@ -57,12 +54,20 @@ public class SchoolClass extends BaseModel {
         this.schoolId = schoolId;
     }
 
-    public LearningLanguage getLanguage() {
-        return language;
+    public UUID getAcademicYearId() {
+        return academicYearId;
     }
 
-    public void setLanguage(LearningLanguage language) {
-        this.language = language;
+    public void setAcademicYearId(UUID academicYearId) {
+        this.academicYearId = academicYearId;
+    }
+
+    public UUID getLearningLanguageId() {
+        return learningLanguageId;
+    }
+
+    public void setLearningLanguageId(UUID learningLanguageId) {
+        this.learningLanguageId = learningLanguageId;
     }
 
     public UUID getSchoolGradeId() {
@@ -72,20 +77,11 @@ public class SchoolClass extends BaseModel {
     public void setSchoolGradeId(UUID schoolGradeId) {
         this.schoolGradeId = schoolGradeId;
     }
-
-    public Code getCode() {
-        return code;
-    }
-
-    public void setCode(Code code) {
-        this.code = code;
-    }
-
-    public Name getName() {
+    public String getName() {
         return name;
     }
 
-    public void setName(Name name) {
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -133,14 +129,13 @@ public class SchoolClass extends BaseModel {
         return new SchoolClass.Builder();
     }
 
-    public static SchoolClass create(UUID schoolId, LearningLanguage language, UUID schoolGradeId, String code, String name,
+    public static SchoolClass create(UUID schoolId, UUID learningLanguageId, UUID schoolGradeId, String name,
             String description, UUID createdBy) {
         return SchoolClass.builder()
                 .schoolId(schoolId)
-                .language(language)
+                .learningLanguageId(learningLanguageId)
                 .schoolGradeId(schoolGradeId)
-                .code(Code.from(code))
-                .name(Name.from(name))
+                .name(name)
                 .description(description)
                 .status(SchoolClassStatus.ACTIVE)
                 .createdBy(createdBy)
@@ -150,10 +145,10 @@ public class SchoolClass extends BaseModel {
     public static class Builder {
         private UUID id;
         private UUID schoolId;
-        private LearningLanguage language;
+        private UUID academicYearId;
+        private UUID learningLanguageId;
         private UUID schoolGradeId;
-        private Code code;
-        private Name name;
+        private String name;
         private String description;
         private SchoolClassStatus status;
         private Instant createdAt;
@@ -173,8 +168,13 @@ public class SchoolClass extends BaseModel {
             return this;
         }
 
-        public Builder language(LearningLanguage language) {
-            this.language = language;
+        public Builder academicYearId(UUID academicYearId) {
+            this.academicYearId = academicYearId;
+            return this;
+        }
+
+        public Builder learningLanguageId(UUID learningLanguageId) {
+            this.learningLanguageId = learningLanguageId;
             return this;
         }
 
@@ -183,12 +183,7 @@ public class SchoolClass extends BaseModel {
             return this;
         }
 
-        public Builder code(Code code) {
-            this.code = code;
-            return this;
-        }
-
-        public Builder name(Name name) {
+        public Builder name(String name) {
             this.name = name;
             return this;
         }

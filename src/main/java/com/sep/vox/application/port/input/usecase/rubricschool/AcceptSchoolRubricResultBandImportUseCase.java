@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.AcceptRubricResultBandImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -64,7 +64,7 @@ public class AcceptSchoolRubricResultBandImportUseCase implements IUseCase<Accep
         var schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) throw new ForbiddenException("BẢO MẬT: Mã bảo mật trường học không trùng khớp.");
 
-        var session = importSessionRepository.findById(command.sessionId()).orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import."));
+        var session = importSessionRepository.findById(command.sessionId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import."));
 
         // Xác minh chéo session thuộc về đúng trường học
         if (session.getType() != ImportType.RUBRIC_RESULT_BAND || session.getImportedEntityId() == null
@@ -75,7 +75,7 @@ public class AcceptSchoolRubricResultBandImportUseCase implements IUseCase<Accep
             throw new IllegalStateException("Phiên làm việc phải ở trạng thái PREVIEWED mới có thể thực hiện Xác nhận.");
         }
 
-        var version = rubricVersionRepository.findById(session.getImportedEntityId()).orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric tương ứng."));
+        var version = rubricVersionRepository.findById(session.getImportedEntityId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric tương ứng."));
         var rubric = rubricRepository.findById(version.getRubricId()).orElseThrow();
 
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId())) {

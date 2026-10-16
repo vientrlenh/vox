@@ -11,7 +11,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.SchoolUserDto;
-import com.sep.vox.domain.mapper.SchoolUserDtoMapper;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -21,7 +20,7 @@ import java.util.UUID;
 
 /**
  * Phục vụ query `schoolUsersBySchool` cho cả SCHOOL_ADMIN lẫn TEACHER (picker tìm đồng nghiệp ở Question
- * Share / Exam Member). Tách hoàn toàn khỏi {@link ViewSchoolUsersBySchoolUseCase} (không gọi/inject use
+ * Share / Assessment Member). Tách hoàn toàn khỏi {@link ViewSchoolUsersBySchoolUseCase} (không gọi/inject use
  * case đó) để 2 nhánh không ràng buộc lẫn nhau: SCHOOL_ADMIN/SYSTEM_ADMIN được lọc theo `role` truyền vào
  * như cũ; TEACHER luôn bị ép `role=TEACHER` ở tầng này, không phụ thuộc input, nên không thể duyệt danh
  * sách học sinh trong trường.
@@ -91,7 +90,7 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
             input.size()
         );
 
-        return SchoolUserDtoMapper.toSchoolUserPageDto(schoolUsersPage);
+        return SchoolUserDto.toDtoPage(schoolUsersPage);
     }
 
     private String validateStatus(String status) {

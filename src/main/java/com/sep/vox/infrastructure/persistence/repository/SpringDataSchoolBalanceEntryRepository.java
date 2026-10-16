@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolBalanceEntryJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolBalanceEntryJpaEntity;
 
 public interface SpringDataSchoolBalanceEntryRepository extends JpaRepository<SchoolBalanceEntryJpaEntity, UUID> {
 

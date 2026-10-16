@@ -5,7 +5,6 @@ import com.sep.vox.application.port.input.query.ViewSystemAssessmentPoliciesQuer
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentPolicyDto;
-import com.sep.vox.domain.mapper.AssessmentPolicyDtoMapper;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -68,6 +67,6 @@ public class ViewSystemAssessmentPoliciesUseCase implements IUseCase<ViewSystemA
 
         var policyPage = assessmentPolicyRepository.findAllSystemWide(safeStatus, query.languageId(), query.rubricVersionId(),
                 query.effectiveFrom(), query.effectiveTo(), query.page(), query.size());
-        return AssessmentPolicyDtoMapper.toDtoPage(policyPage);
+        return AssessmentPolicyDto.toDtoPage(policyPage);
     }
 }

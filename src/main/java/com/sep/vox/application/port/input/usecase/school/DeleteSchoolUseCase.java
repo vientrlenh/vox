@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.school;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSchoolCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -48,7 +48,7 @@ public class DeleteSchoolUseCase implements IUseCase<DeleteSchoolCommand, UUID> 
 
         // 1. Lock dữ liệu trường học (Tránh đụng độ khi có người đang update)
         School school = schoolRepository.findById(command.id())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học với ID đã cho."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học với ID đã cho."));
 
         // 2. Validate User & Bảo mật
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();

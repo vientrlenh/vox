@@ -1,0 +1,915 @@
+enum AssessmentKind {
+    CENTRALIZED
+    CLASS_TEST
+}
+
+enum AssessmentDeliveryMode {
+    STUDENT_DEVICE
+    LAB
+}
+
+enum AssessmentRequiredStreamType {
+    CAMERA
+    SCREEN
+    CAMERA_AND_SCREEN
+}
+
+enum AssessmentStreamTypePermission {
+    ANY
+    ALL
+}
+
+enum AssessmentStatus {
+    DRAFT
+    SCHEDULED
+    IN_PROGRESS
+    CLOSED
+    RESULTS_PUBLISHED
+    CANCELLED
+}
+
+enum ResultDecisionMethod {
+    HIGHEST
+    LATEST
+    AVERAGE
+    FIRST
+    LOWEST
+}
+
+enum AssessmentMemberRole {
+    CHAIR
+    AUTHOR
+    REVIEWER
+}
+
+enum AssessmentBlueprintVersionStatus {
+    DRAFT
+    PUBLISHED
+    ARCHIVED
+}
+
+enum AssessmentBlueprintSlotType {
+    FIXED
+    SELECTION
+}
+
+enum AssessmentPaperStatus {
+    DRAFT
+    IN_REVIEW
+    APPROVED
+    LOCKED
+}
+
+enum AssessmentScheduleStatus {
+    DRAFT
+    PUBLISHED
+    COMPLETED
+    MOVED
+    CANCELLED
+    DELETED
+}
+
+enum AssessmentCandidateStatus {
+    ASSIGNED
+    ATTENDED
+    ABSENT
+    COMPLETED
+    EXEMPTED
+    CANCELLED
+}
+
+enum AssessmentSessionStatus {
+    IN_PROGRESS
+    SUBMITTED
+    INTERRUPTED
+    GRADING
+    GRADED
+    EXPIRED
+    GRADING_FAILED
+    """Đã xoá mềm. Chỉ xuất hiện ở đường đọc của quản trị trường / chủ tịch hội đồng."""
+    DELETED
+}
+enum AssessmentSecurePoolStatus {
+    SEALED
+    RELEASED
+}
+
+enum AssessmentSecurePoolReleaseMode {
+    MANUAL
+    AUTO_AFTER_CLOSE
+}
+
+enum AssessmentRecordingStreamType {
+    CAMERA
+    SCREEN
+}
+
+type QuestionSelectionSpec {
+    questionType: QuestionType
+    difficulty: QuestionDifficulty
+    targetBandLevel: String
+    skillCode: String
+    topicId: ID
+}
+
+type AssessmentMember {
+    id: ID!
+    userId: ID!
+    role: AssessmentMemberRole!
+    grantedAt: String
+    grantedBy: ID
+    user: User
+}
+
+type AssessmentSecurePool {
+    id: ID!
+    assessmentId: ID!
+    status: AssessmentSecurePoolStatus!
+    releaseMode: AssessmentSecurePoolReleaseMode!
+    embargoUntil: String
+    releasedAt: String
+    releasedBy: ID
+}
+
+type AssessmentPaperItem {
+    id: ID!
+    blueprintSlotId: ID
+    sectionId: ID!
+    paperId: ID!
+    questionId: ID
+    order: Int!
+    weight: Float
+    """
+    Loại ô trong blueprint sinh ra câu này. null khi câu không sinh từ blueprint,
+    hoặc khi slot tương ứng đã bị xoá — cả hai trường hợp đều được phép gán câu tự do.
+    """
+    slotType: AssessmentBlueprintSlotType
+    """Tiêu chí rút câu của ô SELECTION; null với ô FIXED và câu không sinh từ blueprint."""
+    selectionSpec: QuestionSelectionSpec
+    question: Question
+}
+
+type AssessmentPaperSection {
+    id: ID!
+    paperId: ID!
+    order: Int!
+    title: String
+    instruction: String
+    weight: Float
+    sectionTimeLimitSeconds: Int
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    items: [AssessmentPaperItem!]!
+}
+
+type AssessmentPaper {
+    id: ID!
+    assessmentId: ID!
+    blueprintVersionId: ID
+    code: String!
+    variant: Int!
+    status: AssessmentPaperStatus!
+    timeDurationSeconds: Int
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    sections: [AssessmentPaperSection!]!
+}
+
+type Assessment {
+    id: ID!
+    blueprintId: ID
+    blueprintVersionId: ID
+    blueprint: AssessmentBlueprint
+    blueprintVersion: AssessmentBlueprintVersion
+    code: String!
+    name: String!
+    description: String
+    schoolId: ID!
+    languageId: ID!
+    kind: AssessmentKind!
+    deliveryMode: AssessmentDeliveryMode
+    status: AssessmentStatus!
+    maxAttempt: Int
+    assessmentTimeDurationSecond: Int
+    resultDecisionMethod: ResultDecisionMethod
+    openAt: String
+    closeAt: String
+    assessmentPolicyId: ID
+    requiresOtp: Boolean!
+    """Ngưỡng tin cậy AI (phần trăm 0-100). null = không đặt, hệ thống dùng luật cứng."""
+    aiConfidenceThresholdPercent: Float
+    requiredStreamType: AssessmentRequiredStreamType
+    streamTypePermission: AssessmentStreamTypePermission
+    papersLocked: Boolean
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    members: [AssessmentMember!]!
+    papers(status: AssessmentPaperStatus): [AssessmentPaper!]!
+    # Ca thi của kỳ thi (đã loại ca xoá mềm), chạy qua DataLoader assessmentSchedulesByAssessmentId nên trang
+    # danh sách kỳ thi dựng được thanh tiến độ "đã xếp lịch tới đâu" mà không N+1.
+    schedules: [AssessmentSchedule!]!
+    securePool: AssessmentSecurePool
+    schoolClassId: ID
+    candidateCount: Int!
+}
+
+type AssessmentStatusCounts {
+    total: Int!
+    draft: Int!
+    scheduled: Int!
+    inProgress: Int!
+    closed: Int!
+    resultsPublished: Int!
+    cancelled: Int!
+}
+
+type AssessmentPage {
+    content: [Assessment!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type AssessmentBlueprintSlot {
+    id: ID!
+    sectionId: ID
+    blueprintVersionId: ID!
+    order: Int!
+    weight: Float
+    prepTimeSecondsOverride: Int
+    responseTimeSecondsOverride: Int
+    slotType: AssessmentBlueprintSlotType!
+    fixedQuestionId: ID
+    selectionSpec: QuestionSelectionSpec
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    fixedQuestion: Question
+}
+
+type AssessmentBlueprintSection {
+    id: ID!
+    blueprintVersionId: ID!
+    order: Int!
+    title: String!
+    instruction: String
+    sectionTimeLimitSeconds: Int
+    sectionWeight: Float
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    slots: [AssessmentBlueprintSlot!]!
+}
+
+type AssessmentBlueprintVersion {
+    id: ID!
+    blueprintId: ID!
+    version: Int!
+    code: String!
+    description: String
+    status: AssessmentBlueprintVersionStatus!
+    totalTimeLimitSeconds: Int
+    effectiveFrom: String
+    effectiveTo: String
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    sections: [AssessmentBlueprintSection!]!
+    sectionCount: Int!
+    slotCount: Int!
+    weightSum: Float!
+}
+
+type AssessmentBlueprint {
+    id: ID!
+    schoolId: ID!
+    languageId: ID!
+    gradeLevelId: ID
+    code: String!
+    name: String!
+    description: String
+    isActive: Boolean!
+    createdAt: String
+    updatedAt: String
+    createdBy: ID
+    updatedBy: ID
+    versions(status: AssessmentBlueprintVersionStatus): [AssessmentBlueprintVersion!]!
+    versionCount: Int!
+    currentVersion: AssessmentBlueprintVersion
+    sectionCount: Int!
+}
+
+type AssessmentBlueprintPage {
+    content: [AssessmentBlueprint!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type AssessmentScheduleProctor {
+    id: ID!
+    scheduleId: ID!
+    teacher: User
+}
+
+type AssessmentSchedule {
+    id: ID!
+    assessmentId: ID!
+    assessment: Assessment
+    schoolRoomId: ID
+    room: SchoolRoom
+    startDate: String
+    endDate: String
+    status: AssessmentScheduleStatus!
+    movedToScheduleId: ID
+    proctors: [AssessmentScheduleProctor!]!
+    candidateCount: Int!
+    requiredProctorCount: Int!
+}
+
+# Một giáo viên đang vướng lịch: đã gác ca `scheduleId` chạy [startDate, endDate).
+# Chỉ để làm mờ sẵn người bận ở màn chọn giám thị — luật chặn thật chạy lúc ghi.
+type ProctorBusySlot {
+    teacherId: ID!
+    scheduleId: ID!
+    startDate: String
+    endDate: String
+}
+
+# Một học sinh đang vướng lịch khi cân nhắc xếp vào `targetScheduleId`: đã được xếp ca
+# `busyScheduleId` chạy [startDate, endDate).
+# Chỉ để làm mờ sẵn lựa chọn bị trùng ở màn xếp thí sinh — luật chặn thật chạy lúc ghi.
+type StudentBusySlot {
+    studentId: ID!
+    targetScheduleId: ID!
+    busyScheduleId: ID!
+    startDate: String
+    endDate: String
+}
+
+type AssessmentCandidate {
+    id: ID!
+    assessmentId: ID!
+    studentId: ID!
+    latestSessionId: ID
+    attempts: [AssessmentAttemptSummary!]!
+    officialAttempt: AssessmentAttemptSummary
+    officialScore: Float
+    assignedPaperId: ID
+    scheduleId: ID
+    status: AssessmentCandidateStatus!
+    assignedAt: String
+    updatedAt: String
+    blockedAt: String
+    student: User
+    assignedPaper: AssessmentPaper
+    schedule: AssessmentSchedule
+    assessment: Assessment
+}
+
+type ProctorScheduleSummary {
+    scheduleId: ID!
+    assessmentId: ID!
+    assessmentName: String
+    schoolRoomId: ID
+    roomName: String
+    startDate: String
+    endDate: String
+    status: String
+}
+
+"""
+Một kỳ thi nhìn từ màn GIÁM SÁT. Cố ý nhỏ hơn `Assessment`: giám thị cần đúng chừng này để nhận ra phòng
+của mình, và không được thấy blueprint/chính sách chấm/ngưỡng AI mà `Assessment` mang theo.
+"""
+type MonitoredAssessmentSummary {
+    assessmentId: ID!
+    code: String
+    name: String
+    kind: String
+    status: String
+    "Mốc bắt đầu sớm nhất trong các ca người xem giám sát được — KHÔNG phải openAt của kỳ thi."
+    windowStart: String
+    windowEnd: String
+    "Số ca đang chạy ngay lúc này. 0 nghĩa là kỳ thi lọt vào danh sách vì sắp bắt đầu."
+    liveScheduleCount: Int!
+}
+
+type ProctorCandidateSummary {
+    candidateId: ID!
+    studentId: ID!
+    studentName: String
+    studentEmail: String
+    status: String
+    blockedAt: String
+    sessionId: ID
+    sessionStatus: String
+    sessionFlagged: Boolean!
+}
+
+type AssessmentAttemptSummary {
+    sessionId: ID!
+    startedAt: String
+    submittedAt: String
+    status: AssessmentSessionStatus!
+    flagged: Boolean!
+    flagReason: String
+    totalScore: Float
+    """
+    Thang điểm của rubric đã chấm lượt này. Danh sách trộn nhiều kỳ thi, mỗi kỳ có thể
+    dùng rubric khác thang -- client PHẢI đọc theo từng dòng, không suy từ cấu hình chung.
+    Null khi chưa có kết quả hoặc điểm đang bị che.
+    """
+    scoringScaleMin: Float
+    scoringScaleMax: Float
+    rubricResultBandCode: String
+    rubricResultBandName: String
+    resultStatus: AssessmentCandidateResultStatus
+    """
+    Lý do lượt thi bị xoá, đi cùng `status = DELETED`. Chỉ quản trị trường và chủ tịch hội
+    đồng đọc được lượt đã xoá; đường của học sinh không trả về những lượt này.
+    """
+    deletedReason: String
+}
+
+enum AssessmentCandidateResultStatus {
+    PENDING_REVIEW
+    RELEASED
+    APPEALED
+    RE_GRADING
+    FINAL
+    INVALID
+    RETAKE_REQUIRED
+    PASSED
+    FAILED
+    """Phiên thi sinh ra kết quả này đã bị xoá mềm."""
+    DELETED
+}
+
+type AssessmentSession {
+    id: ID!
+    assessmentId: ID!
+    candidateId: ID!
+    paperId: ID!
+    startedAt: String
+    submittedAt: String
+    status: AssessmentSessionStatus!
+    flagged: Boolean!
+    flagReason: String
+    candidateBlocked: Boolean!
+}
+
+type AssessmentSessionFollowup {
+    assessmentItemAnswerId: ID!
+    followupCount: Int!
+    totalTurns: Int!
+}
+
+type AssessmentCandidateResultSection {
+    sectionId: ID!
+    title: String
+    score: Float!
+}
+
+type AssessmentCandidateResultItem {
+    paperItemId: ID!
+    responseId: ID!
+    sectionId: ID!
+    "Đề bài của câu. Null khi paper item không trỏ tới câu hỏi nào hoặc câu hỏi đã bị xoá."
+    questionText: String
+    """
+    Tài nguyên đi kèm câu hỏi. Null khi câu không có.
+    Hiện cho cả giáo viên lẫn học sinh: trang này vốn đã trả questionText nên asset không làm lộ
+    thêm gì, mà thiếu nó thì không đối chiếu được câu trả lời với thứ đã nhìn/nghe.
+    """
+    asset: QuestionAsset
+    "Null khi câu chưa được chấm -- bài vẫn trả về câu để client hiện bản ghi bài nói."
+    itemScore: Float
+    "Null khi câu chưa được chấm."
+    weightedScore: Float
+}
+
+type AssessmentCandidateResult {
+    id: ID!
+    sessionId: ID!
+    assessmentId: ID!
+    paperId: ID!
+    candidateId: ID!
+    flagged: Boolean!
+    flagReason: String
+    scoreVisible: Boolean!
+    totalScore: Float
+    scoringScaleMin: Float
+    scoringScaleMax: Float
+    targetFrameworkBandId: ID
+    targetFrameworkBandCode: String
+    targetFrameworkBandLabel: String
+    rubricResultBandId: ID
+    rubricResultBandCode: String
+    rubricResultBandName: String
+    status: AssessmentCandidateResultStatus!
+    sections: [AssessmentCandidateResultSection!]!
+    items: [AssessmentCandidateResultItem!]!
+}
+
+type AssessmentItemAnswerTurn {
+    id: ID!
+    assessmentItemAnswerId: ID!
+    turnOrder: Int!
+    turnType: String!
+    promptText: String
+    audioUrl: String
+    transcript: String
+    durationSeconds: Int
+    wordCount: Int
+    answeredAt: String
+    createdAt: String
+}
+
+type AssessmentItemAnswerDetails {
+    id: ID!
+    sessionId: ID!
+    paperItemId: ID!
+    audioUrl: String
+    durationSeconds: Int
+    transcript: String
+    submittedAt: String
+    turns: [AssessmentItemAnswerTurn!]!
+}
+
+type AssessmentItemCriterionScore {
+    id: ID!
+    rubricCriterionId: ID
+    criterionCode: String
+    criterionName: String
+    minScore: Float
+    maxScore: Float
+    rawScore: Float
+    finalScore: Float
+    rationale: String
+}
+
+type AssessmentItemEvaluationTurn {
+    id: ID!
+    turnOrder: Int
+    turnType: String
+    promptText: String
+    audioUrl: String
+    transcript: String
+    wordCount: Int
+    durationSeconds: Int
+    asrConfidence: Float
+    pronunciationOverall: String
+    wordFeedback: String
+}
+
+"""
+Bằng chứng của bản chấm AI, giữ lại kể cả khi giáo viên đã chấm lại (lúc đó bản AI mang
+SUPERSEDED). Điểm và rationale hiển thị vẫn là của bản đang có hiệu lực ở cấp trên — khối
+này chỉ là NGỮ CẢNH, không phải phán quyết. `null` khi bài chưa từng có bản AI.
+
+Báo cáo phúc khảo `UNDER_REVIEW` (chưa công bố) không bao giờ lọt vào đây.
+"""
+type AssessmentItemAiEvaluationContext {
+    evaluationId: ID!
+    engineType: String
+    gradedByModel: String
+    promptVersion: String
+    overallConfidence: Float
+    requiresHumanReview: Boolean!
+    reviewReasonCode: String
+    markedInvalid: Boolean!
+    requiresRetake: Boolean!
+    evaluatedAt: String
+    feedbackSummary: String
+    "JSON string — EvaluationSignals"
+    signals: String
+    "JSON string — ValidityResult"
+    validity: String
+    "JSON string"
+    suggestions: String
+}
+
+type AssessmentItemEvaluationDetails {
+    "Null khi câu CHƯA có bản chấm nào -- lúc đó chỉ `turns` có dữ liệu, mọi field điểm đều trống."
+    id: ID
+    responseId: ID!
+    paperItemId: ID!
+    engineType: String
+    gradedByModel: String
+    promptVersion: String
+    rawItemScore: Float
+    itemScore: Float
+    overallConfidence: Float
+    markedInvalid: Boolean!
+    requiresRetake: Boolean!
+    requiresHumanReview: Boolean!
+    reviewReasonCode: String
+    status: String
+    evaluatedAt: String
+    feedbackSummary: String
+    signals: String
+    validity: String
+    suggestions: String
+    criteria: [AssessmentItemCriterionScore!]!
+    "Luôn lấy từ bản AI — chỉ bản AI mới sinh lượt nói, bản chấm tay không có turn nào."
+    turns: [AssessmentItemEvaluationTurn!]!
+    ai: AssessmentItemAiEvaluationContext
+}
+
+type StudentAssessmentResultSummary {
+    candidateId: ID!
+    assessmentId: ID!
+    assessmentCode: String
+    assessmentName: String
+    kind: AssessmentKind!
+    sessionId: ID
+    paperId: ID
+    sessionStatus: String
+    sessionFlagged: Boolean!
+    startedAt: String
+    submittedAt: String
+    totalScore: Float
+    """
+    Thang điểm của rubric đã chấm lượt này. Danh sách trộn nhiều kỳ thi, mỗi kỳ có thể
+    dùng rubric khác thang -- client PHẢI đọc theo từng dòng, không suy từ cấu hình chung.
+    Null khi chưa có kết quả hoặc điểm đang bị che.
+    """
+    scoringScaleMin: Float
+    scoringScaleMax: Float
+    resultStatus: String
+    rubricResultBandId: ID
+    rubricResultBandCode: String
+    rubricResultBandName: String
+}
+type AssessmentRecording {
+    id: ID!
+    assessmentSessionId: ID!
+    candidateId: ID
+    streamType: String
+    status: String
+    sizeBytes: Int
+    durationSeconds: Int
+    source: String
+    canonical: Boolean!
+    createdAt: String
+    assembledAt: String
+}
+
+"""
+Bản ghi kèm LINK PHÁT được, dành cho màn chấm bài.
+
+Tách khỏi `AssessmentRecording` thay vì thêm field vào đó: `records` là API của app giám thị trên
+desktop (`AssessmentRecordingService`), chạy trong lúc thi và không cần link phát. Nhét thêm vào đó
+nghĩa là mỗi lượt gọi của giám thị đều phải ký link cho mọi bản ghi, cho một thứ nó không dùng.
+"""
+type AssessmentRecordingPlayback {
+    id: ID!
+    streamType: String
+    status: String
+    source: String
+    durationSeconds: Int
+    """Bản nên mở trước cho streamType này khi có nhiều nguồn cùng ghi."""
+    canonical: Boolean!
+    """
+    Link phát trực tiếp trong thẻ <video>, ký sẵn và HẾT HẠN sau 2 giờ.
+
+    NULL khi bản ghi chưa có file trên S3 (đang PROCESSING, hoặc FAILED/ABANDONED) -- đó là
+    trạng thái bình thường, không phải lỗi. Vì link có hạn, đừng lưu lại hay chia sẻ: hỏi lại
+    query này mỗi lần mở trình phát.
+    """
+    playbackUrl: String
+}
+
+"""
+Một đợt vi phạm được phát hiện trong lúc giám sát thi.
+
+Là BẰNG CHỨNG để người chấm tự phán đoán, không phải một con số tham gia tính điểm. Cảnh báo là
+phát hiện của AI kèm độ tin cậy, chạy trên webcam và có dương tính giả; còn điểm tiêu chí đo năng
+lực ngôn ngữ. Cho cảnh báo kéo điểm xuống nghĩa là phạt nghi vấn gian lận bằng cách giả vờ rằng
+học viên nói kém hơn thực tế. Cần cẩu đúng là quyết định uphold/regrade/invalidate và cờ nghi vấn
+trên phiên thi.
+"""
+type AssessmentProctoringAlert {
+    id: ID!
+    """Định danh sự kiện gốc. Dùng để khử trùng khi gộp lịch sử này với luồng cảnh báo trực tiếp."""
+    eventId: String!
+    assessmentSessionId: ID!
+    """
+    Thí sinh, nếu nguồn phát biết được.
+
+    NULL là câu trả lời hợp lệ chứ không phải dữ liệu hỏng: đường AI nối thẳng chỉ cầm id phiên thi
+    nên không có cách nào biết thí sinh nào. Để trống vẫn trung thực hơn là điền một id sai, vì id
+    sai sẽ gắn vi phạm này sang hồ sơ của người khác.
+    """
+    candidateId: ID
+    streamId: String
+    streamType: String
+    alertType: String!
+    level: String
+    source: String
+    detail: String
+    confidence: Float
+    """
+    Thời điểm SỰ VIỆC xảy ra, dạng ISO-8601 tuyệt đối -- KHÔNG phải mốc tua trong video.
+
+    Quy về offset cần thời điểm bắt đầu của bản ghi, thứ hiện chưa được lưu ở đâu.
+    """
+    capturedAt: String!
+    """Thời điểm cảnh báo được phát đi. Lệch với capturedAt chính là độ trễ của đường truyền."""
+    raisedAt: String!
+}
+
+input UpdateAssessmentScheduleInput {
+    schoolRoomId: ID
+    startDate: String
+    endDate: String
+}
+
+"""
+Cảnh báo (KHÔNG chặn) ước lượng worst-case chi phí AI + khả năng chi trả còn lại -- xem
+ClassTestTokenQuotaGuardService.estimateTokenQuota. Việc CHẶN thật vẫn xảy ra lúc publish/sửa/thêm
+thí sinh, không phải ở query này.
+
+Mọi số đều là VND theo GIÁ VỐN, không cộng phí dịch vụ: phí đã thu một lần lúc trường đặt đơn, còn
+ví hạn mức lẫn ví tự nạp đều ghi bằng giá vốn.
+"""
+type AssessmentTokenEstimate {
+    estimatedCostVnd: Float!
+    """
+    Tiền trường CÒN CHI ĐƯỢC cho ví ASSESSMENT = hạn mức kèm gói còn lại + số dư ví tự nạp (phần không
+    âm). Cộng cả số dư vì ConsumeQuotaService trừ phần vượt hạn mức sang ví tự nạp, nên một trường
+    cạn hạn mức mà đã nạp tiền thì vẫn chi trả được. null nếu trường chưa có subscription active
+    hoặc chưa cấu hình ví ASSESSMENT.
+    """
+    remainingAssessmentVnd: Float
+    """
+    Hạn mức CÁ NHÂN còn lại của giáo viên ra đề -- KHÔNG phải một ví cấp trường thứ hai (ví
+    CLASS_TEST đã bị bỏ, xem QuotaType), và KHÔNG cộng số dư ví trường vì đây là trần chi nội bộ
+    chứ không phải túi tiền. null nếu bài không phải CLASS_TEST, hoặc giáo viên không được cấp hạn
+    mức riêng nên chỉ tiền của trường áp dụng.
+    """
+    remainingMyClassTestVnd: Float
+    wouldExceedAssessment: Boolean!
+    wouldExceedMyClassTest: Boolean!
+    """
+    Trường đang bị khóa do nợ (số dư ví tự nạp âm) -- xem SchoolSubscriptionDebtGuardService. Khác
+    nguyên nhân với wouldExceedAssessment (hết hạn mức): khóa do nợ thì cần thanh toán/nạp thêm, không chỉ
+    là "mua thêm token". Có thể true dù wouldExceedAssessment=false nếu hạn mức gói vẫn còn dư.
+    """
+    schoolLocked: Boolean!
+    """
+    % ước lượng chi phí bài này chiếm trong PHẦN HẠN MỨC GÓI còn lại của ví ASSESSMENT (không tính số dư ví
+    tự nạp) -- chỉ có giá trị khi kind=CENTRALIZED và ví còn dư >0, dùng để cảnh báo sớm hiệu ứng
+    domino lên các giáo viên khác đang có hạn mức cá nhân (xem teachersWithUnusedPersonalAllocationCount).
+    null cho CLASS_TEST hoặc khi không áp dụng được.
+    """
+    sharedPoolUsageRatio: Float
+    """
+    Số giáo viên (thuộc subscription này) hiện còn hạn mức cá nhân CHƯA dùng hết cho CLASS_TEST. Chỉ có
+    giá trị cùng điều kiện với sharedPoolUsageRatio -- CENTRALIZED tiêu nhiều vào ví chung có thể khiến
+    các giáo viên này không lên lịch CLASS_TEST được nữa dù hạn mức cá nhân vẫn còn.
+    """
+    teachersWithUnusedPersonalAllocationCount: Int
+}
+
+extend type Query {
+    assessments(
+        kind: AssessmentKind,
+        status: AssessmentStatus,
+        schoolId: ID,
+        keyword: String,
+        page: Int = 1,
+        size: Int = 20
+    ): AssessmentPage!
+
+    assessment(id: ID!): Assessment
+
+    assessmentMyRole(assessmentId: ID!): String
+
+    assessmentPaper(id: ID!): AssessmentPaper
+
+    "Cảnh báo (KHÔNG chặn) ước lượng worst-case chi phí AI + hạn mức còn lại -- xem lúc tạo/sửa bài trước khi publish"
+    assessmentTokenEstimate(assessmentId: ID!): AssessmentTokenEstimate!
+
+    assessmentStatusCounts(schoolId: ID, kind: AssessmentKind, dateFrom: String, dateTo: String): AssessmentStatusCounts!
+
+    classTests(
+        status: AssessmentStatus,
+        schoolClassId: ID,
+        keyword: String,
+        page: Int = 1,
+        size: Int = 20
+    ): AssessmentPage!
+
+    assessmentBlueprints(
+        schoolId: ID,
+        isActive: Boolean,
+        languageId: ID,
+        assessmentKind: String,
+        keyword: String,
+        page: Int = 1,
+        size: Int = 20
+    ): AssessmentBlueprintPage!
+
+    assessmentBlueprint(id: ID!): AssessmentBlueprint
+    assessmentBlueprintVersion(id: ID!): AssessmentBlueprintVersion
+
+    assessmentSchedules(assessmentId: ID, status: AssessmentScheduleStatus, startDate: String, endDate: String): [AssessmentSchedule!]!
+    myAssessmentSchedules(assessmentId: ID, status: AssessmentScheduleStatus, startDate: String, endDate: String): [AssessmentSchedule!]!
+    proctorBusySlots(scheduleId: ID!, teacherIds: [ID!]!): [ProctorBusySlot!]!
+    studentBusySlots(scheduleIds: [ID!]!, studentIds: [ID!]!): [StudentBusySlot!]!
+
+    assessmentCandidates(assessmentId: ID!, scheduleId: ID, status: AssessmentCandidateStatus): [AssessmentCandidate!]!
+
+    assessmentSession(id: ID!): AssessmentSession
+
+    assessmentSessionResult(sessionId: ID!): AssessmentCandidateResult
+
+    assessmentSessionFollowups(sessionId: ID!): [AssessmentSessionFollowup!]!
+
+    myAssessmentResults: [StudentAssessmentResultSummary!]!
+
+    myProctorSchedules: [ProctorScheduleSummary!]!
+
+    """
+    Kỳ thi đang diễn ra hoặc sắp diễn ra mà người đang đăng nhập giám sát được.
+
+    Dùng thay cho `assessments` ở màn giám sát. `assessments` là đường vào của màn QUẢN LÝ kỳ thi, giới hạn
+    theo thành viên hội đồng — mà hội đồng không bắt buộc, nên giám thị của một kỳ thi do nhà
+    trường tự dựng sẽ không thấy phòng mình phải gác. Nới `assessments` để chữa việc đó lại mở luôn
+    dashboard kỳ thi cho giám thị, nên quyền giám sát tách hẳn ra đây.
+    """
+    monitorableAssessments: [MonitoredAssessmentSummary!]!
+
+    "Một kỳ thi đọc bằng quyền giám sát, cho phần đầu trang danh sách ca thi."
+    monitorableAssessment(assessmentId: ID!): MonitoredAssessmentSummary
+
+    myProctorScheduleCandidates(scheduleId: ID!): [ProctorCandidateSummary!]!
+
+    """
+    Lịch sử cảnh báo giám sát của cả ca thi, xếp theo thời gian xảy ra.
+
+    Kênh cảnh báo trực tiếp là Redis pub/sub (fire-and-forget), nên nó chỉ kể được những gì xảy ra
+    SAU khi giám thị kết nối. Query này là phần còn lại: vào ca muộn, tải lại trang, hay mở thêm một
+    người giám sát thứ hai đều thấy đủ như nhau.
+    """
+    scheduleProctoringAlerts(scheduleId: ID!): [AssessmentProctoringAlert!]!
+
+    assessmentItemAnswer(answerId: ID!): AssessmentItemAnswerDetails
+
+    assessmentItemAnswerTurns(answerId: ID!): [AssessmentItemAnswerTurn!]!
+
+    assessmentItemAnswerEvaluation(answerId: ID!): AssessmentItemEvaluationDetails
+    # Đổi tên `records` -> `recordings` (2026-08-07). Resolver luôn tên `recordings`
+    # (AssessmentSessionController#recordings), nên field `records` KHÔNG có ai phục vụ -- báo cáo
+    # schema inspection lúc khởi động liệt kê nó ở "Unmapped fields", và gọi vào sẽ vỡ vì kiểu
+    # trả về non-null. Không client nào đang gọi nên đổi tên field là an toàn.
+    recordings(assessmentSessionId: ID!, streamType: AssessmentRecordingStreamType): [AssessmentRecording!]!
+
+    """
+    Bản ghi camera + màn hình của một phiên thi, kèm link phát -- cho màn chấm bài và trang kết
+    quả phía giáo viên. Cùng luật quyền với `records` (school admin, hoặc giáo viên là chủ tịch
+    hội đồng / giám thị của đúng ca thi).
+    """
+    assessmentRecordingPlayback(assessmentSessionId: ID!): [AssessmentRecordingPlayback!]!
+
+    """
+    Cảnh báo giám sát của một phiên thi, xếp theo thời gian xảy ra.
+
+    Cùng luật quyền với `assessmentRecordingPlayback` (school admin, hoặc giáo viên là chủ tịch hội đồng /
+    giám thị / người đang cầm bài): hai thứ này là cùng một loại bằng chứng về cùng một con người.
+    """
+    assessmentSessionProctoringAlerts(assessmentSessionId: ID!): [AssessmentProctoringAlert!]!
+}
+
+extend type Mutation {
+    updateAssessmentSchedule(id: ID!, input: UpdateAssessmentScheduleInput!): ID!
+    # Toggle: flagged=true đánh dấu nghi vấn (reason bắt buộc), flagged=false bỏ đánh dấu.
+    flagAssessmentSession(sessionId: ID!, flagged: Boolean!, reason: String): ID!
+    forceEndAssessmentSession(sessionId: ID!, reason: String!): ID!
+    unblockAssessmentCandidate(candidateId: ID!, reason: String!): ID!
+    # reviewFlaggedAssessmentResult / releasePendingAssessmentResult đã bị gỡ: người quyết là GIÁO VIÊN
+    # ĐANG CẦM BÀI, qua REST /api/v1/grading-assignments/{id}/uphold | /regrade | /invalidate.
+    # Chỉ áp dụng khi kết quả đang FINAL (kỳ thi đã RESULTS_PUBLISHED nhưng assessmentPolicy
+    # không có passingScore) -- nhà trường tự chốt PASSED hoặc FAILED thủ công.
+    decideAssessmentCandidateResultOutcome(candidateResultId: ID!, decision: AssessmentCandidateResultStatus!): ID!
+    retryGradingAssessmentSession(sessionId: ID!): ID!
+    # TEST-ONLY: chấm lại 1 phiên thi bằng AI bất kể trạng thái (kể cả đã GRADED) -- re-publish
+    # grading request từ dữ liệu làm bài đã lưu, evaluation cũ bị ghi đè (upsert). Dùng để kiểm
+    # thử pipeline chấm điểm, không phải luồng nghiệp vụ chính thức.
+    regradeAssessmentSessionForTest(sessionId: ID!): ID!
+    updateAssessmentCandidateStatus(candidateId: ID!, status: AssessmentCandidateStatus!): ID!
+    updateAssessmentCandidatesAttendance(scheduleId: ID!, candidateIds: [ID!]!): [AssessmentCandidate!]!
+}

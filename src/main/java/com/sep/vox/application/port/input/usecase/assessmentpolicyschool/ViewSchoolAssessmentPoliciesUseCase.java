@@ -1,13 +1,12 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicyschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolAssessmentPoliciesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentPolicyDto;
-import com.sep.vox.domain.mapper.AssessmentPolicyDtoMapper;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -58,7 +57,7 @@ public class ViewSchoolAssessmentPoliciesUseCase implements IUseCase<ViewSchoolA
         }
 
         var school = schoolRepository.findById(query.schoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
         }
@@ -78,6 +77,6 @@ public class ViewSchoolAssessmentPoliciesUseCase implements IUseCase<ViewSchoolA
 
         var policyPage = assessmentPolicyRepository.findAllBySchoolId(query.schoolId(), safeStatus, query.languageId(), query.rubricVersionId(),
                 query.effectiveFrom(), query.effectiveTo(), query.page(), query.size());
-        return AssessmentPolicyDtoMapper.toDtoPage(policyPage);
+        return AssessmentPolicyDto.toDtoPage(policyPage);
     }
 }

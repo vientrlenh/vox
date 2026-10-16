@@ -1,6 +1,6 @@
 package com.sep.vox.application.event;
 
-import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent.Payload;
+import com.sep.vox.application.event.assessment.AssessmentAttemptEvaluationRequestedExternalEvent.Payload;
 
 @ExternalEventTopic("practice-attempt-evaluation-requested")
 public record PracticeAttemptEvaluationRequestedExternalEvent(

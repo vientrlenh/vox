@@ -6,9 +6,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CloneSystemRubricToSchoolCommand;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
@@ -104,9 +104,9 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
         }
 
         var sourceVersion = rubricVersionRepository.findById(command.sourceRubricVersionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric mẫu."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric mẫu."));
         var sourceRubric = rubricRepository.findById(sourceVersion.getRubricId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric gốc của bản mẫu."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric gốc của bản mẫu."));
 
         if (sourceRubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Chỉ được sao chép từ bộ tiêu chí mẫu của hệ thống.");
@@ -145,7 +145,7 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
             sourceRubric.getFrameworkId(),
             safeCode);
         if (isCodeTaken) {
-            throw new DuplicatedException("Trường của bạn đã có một bộ tiêu chí mang mã '" + safeCode
+            throw new ResourceDuplicatedException("Trường của bạn đã có một bộ tiêu chí mang mã '" + safeCode
                 + "' cho ngôn ngữ và khung năng lực này. Hãy dùng mã khác (ví dụ đặt theo khối:"
                 + " ENG-K10, ENG-K11).");
         }
@@ -215,7 +215,7 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
         var template = templates.stream()
                 .filter(candidate -> candidate.getId().equals(choice.sourcePolicyId()))
                 .findFirst()
-                .orElseThrow(() -> new NotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy chính sách mẫu đã ban hành nào thuộc phiên bản bộ tiêu chí này."));
         if (template.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
             throw new IllegalStateException("Chỉ được sao từ chính sách mẫu đã được ban hành (PUBLISHED).");

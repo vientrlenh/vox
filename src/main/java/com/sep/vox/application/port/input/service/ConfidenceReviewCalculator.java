@@ -8,7 +8,7 @@ import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.valueobject.ConfidenceCaseSignals;
 
 /**
@@ -43,8 +43,8 @@ public class ConfidenceReviewCalculator {
         MOCK_TEST,
         HIGH_STAKES;
 
-        public static ConfidenceMode fromExamKind(ExamKind examKind) {
-            return examKind == ExamKind.CENTRALIZED ? HIGH_STAKES : MOCK_TEST;
+        public static ConfidenceMode fromAssessmentKind(AssessmentKind assessmentKind) {
+            return assessmentKind == AssessmentKind.CENTRALIZED ? HIGH_STAKES : MOCK_TEST;
         }
     }
 
@@ -78,22 +78,22 @@ public class ConfidenceReviewCalculator {
 
     public Decision compute(
             ConfidenceCaseSignals signals,
-            ExamKind examKind,
+            AssessmentKind assessmentKind,
             BigDecimal codeSwitchingRatio,
             boolean isShortAnswer) {
-        return compute(signals, null, ConfidenceMode.fromExamKind(examKind), codeSwitchingRatio, isShortAnswer);
+        return compute(signals, null, ConfidenceMode.fromAssessmentKind(assessmentKind), codeSwitchingRatio, isShortAnswer);
     }
 
     public Decision compute(
             ConfidenceCaseSignals signals,
             BigDecimal audioQuality,
-            ExamKind examKind,
+            AssessmentKind assessmentKind,
             BigDecimal codeSwitchingRatio,
             boolean isShortAnswer) {
         return compute(
             signals,
             audioQuality,
-            ConfidenceMode.fromExamKind(examKind),
+            ConfidenceMode.fromAssessmentKind(assessmentKind),
             codeSwitchingRatio,
             isShortAnswer
         );

@@ -5,7 +5,6 @@ import com.sep.vox.application.port.input.query.SearchSystemRubricResultBandsQue
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricResultBandDto;
-import com.sep.vox.domain.mapper.RubricResultBandDtoMapper;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
@@ -45,8 +44,8 @@ public class SearchSystemRubricResultBandsUseCase implements IUseCase<SearchSyst
         var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản đã bị khóa.");
 
-        var version = rubricVersionRepository.findById(query.versionId()).orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric."));
-        var rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+        var version = rubricVersionRepository.findById(query.versionId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric."));
+        var rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("BẢO MẬT: Dữ liệu thuộc về Trường học. Bạn không có quyền truy cập.");
@@ -56,7 +55,7 @@ public class SearchSystemRubricResultBandsUseCase implements IUseCase<SearchSyst
 
         return new PageResult<>(
                 pageResult.content().stream()
-                        .map(RubricResultBandDtoMapper::toDto)
+                        .map(RubricResultBandDto::toDto)
                         .toList(),
                 pageResult.page(), pageResult.size(), pageResult.totalElements(), pageResult.totalPages()
         );

@@ -36,11 +36,11 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
                 s.grading_error                                 AS error,
                 s.grading_retry_count                           AS retry_count,
                 vox_grading_error_signature(s.grading_error)    AS signature,
-                s.exam_id                                       AS exam_id,
+                s.assessment_id                                       AS assessment_id,
                 e.school_id                                     AS school_id,
                 e.status <> 'RESULTS_PUBLISHED'                 AS retryable
-            FROM exam_sessions s
-            JOIN exams e ON e.id = s.exam_id
+            FROM assessment_sessions s
+            JOIN assessments e ON e.id = s.assessment_id
             WHERE s.status = 'GRADING_FAILED'
               AND s.submitted_at >= :fromInstant
               AND s.submitted_at < :toInstant
@@ -87,7 +87,7 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
                 (array_agg(error ORDER BY failed_at DESC))[1],
                 COUNT(*),
                 COUNT(DISTINCT school_id),
-                COUNT(DISTINCT exam_id),
+                COUNT(DISTINCT assessment_id),
                 MIN(failed_at),
                 MAX(failed_at),
                 COUNT(*) FILTER (WHERE retryable)
@@ -145,18 +145,18 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
                 f.school_id,
                 sc.name,
                 sc.code,
-                f.exam_id,
+                f.assessment_id,
                 e.name,
                 u.full_name,
                 f.failed_at,
                 f.retry_count,
                 f.error,
                 f.retryable,
-                EXISTS (SELECT 1 FROM exam_candidate_results r WHERE r.session_id = f.session_id)
+                EXISTS (SELECT 1 FROM assessment_candidate_results r WHERE r.session_id = f.session_id)
             FROM failed f
-            JOIN exams e ON e.id = f.exam_id
-            JOIN exam_sessions s ON s.id = f.session_id
-            JOIN exam_candidates c ON c.id = s.candidate_id
+            JOIN assessments e ON e.id = f.assessment_id
+            JOIN assessment_sessions s ON s.id = f.session_id
+            JOIN assessment_candidates c ON c.id = s.candidate_id
             LEFT JOIN schools sc ON sc.id = f.school_id
             LEFT JOIN users u ON u.id = c.student_id
             WHERE f.signature IS NOT DISTINCT FROM :signature

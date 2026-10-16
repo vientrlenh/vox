@@ -1,6 +1,9 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
 import java.util.List;
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.CreateFrameworkCriteriaCommand;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -22,4 +25,15 @@ public record CreateFrameworkCriteriaRequest(
 
             int order
     ) {}
+
+    public static CreateFrameworkCriteriaCommand toCommand(UUID frameworkId, UUID versionId, CreateFrameworkCriteriaRequest request) {
+        List<CreateFrameworkCriteriaCommand.CriterionItemCommand> criteria = request.criteria().stream()
+                .map(item -> new CreateFrameworkCriteriaCommand.CriterionItemCommand(
+                        item.code(),
+                        item.name(),
+                        item.description(),
+                        item.order()))
+                .toList();
+        return new CreateFrameworkCriteriaCommand(frameworkId, versionId, criteria);
+    }
 }

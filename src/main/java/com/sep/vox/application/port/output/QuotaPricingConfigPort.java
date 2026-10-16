@@ -12,7 +12,7 @@ import java.math.BigDecimal;
  */
 public interface QuotaPricingConfigPort {
 
-    BigDecimal estimatedCostPerExamSecondUsd();
+    BigDecimal estimatedCostPerAssessmentSecondUsd();
 
     BigDecimal estimatedCostPerPracticeSecondUsd();
 }

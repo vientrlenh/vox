@@ -6,13 +6,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateQuestionStatusCommand;
 import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionDto;
-import com.sep.vox.domain.mapper.QuestionDtoMapper;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
@@ -53,9 +52,9 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
 
         var actor = questionStatusActorResolver.resolve();
         var question = questionRepository.findById(input.questionId())
-            .orElseThrow(() -> new NotFoundException(QuestionStatusTransition.QUESTION_NOT_FOUND));
+            .orElseThrow(() -> new ResourceNotFoundException(QuestionStatusTransition.QUESTION_NOT_FOUND));
         var bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException(QuestionStatusTransition.QUESTION_BANK_NOT_FOUND));
+            .orElseThrow(() -> new ResourceNotFoundException(QuestionStatusTransition.QUESTION_BANK_NOT_FOUND));
         var editorCollaborator = questionCollaboratorRepository
             .findByQuestionIdAndUserId(question.getId(), actor.userId())
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
@@ -75,6 +74,6 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
         question.setUpdatedAt(Instant.now());
         question.setUpdatedBy(actor.userId());
         var saved = questionRepository.save(question);
-        return QuestionDtoMapper.toQuestionDto(saved);
+        return QuestionDto.toDto(saved);
     }
 }

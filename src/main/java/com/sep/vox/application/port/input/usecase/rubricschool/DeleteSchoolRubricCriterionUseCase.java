@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSchoolRubricCriterionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -51,7 +51,7 @@ public class DeleteSchoolRubricCriterionUseCase implements IUseCase<DeleteSchool
 
         // 2. Check Version (DRAFT)
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Version."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Version."));
 
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalStateException("Chỉ được xóa Tiêu chí khi phiên bản đang là bản Nháp (DRAFT).");
@@ -59,7 +59,7 @@ public class DeleteSchoolRubricCriterionUseCase implements IUseCase<DeleteSchool
 
         // 3. Check School Ownership (BẰNG SCHOOL_USER)
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric."));
 
         var schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
@@ -72,7 +72,7 @@ public class DeleteSchoolRubricCriterionUseCase implements IUseCase<DeleteSchool
 
         // (Bổ sung) Kiểm tra xem trường học có đang hoạt động không
         var school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
 
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
@@ -80,7 +80,7 @@ public class DeleteSchoolRubricCriterionUseCase implements IUseCase<DeleteSchool
 
         // 4. Lấy Criterion ra kiểm tra xem nó có đúng thuộc Version này không
         RubricCriterion criterion = rubricCriterionRepository.findById(command.criterionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí này."));
 
         if (!criterion.getRubricVersionId().equals(version.getId())) {
             throw new IllegalArgumentException("Tiêu chí này không thuộc về phiên bản Rubric đang chọn.");

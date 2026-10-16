@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.InvoicePaidPayloadV1;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.shared.RoleConstant;
 import com.sep.vox.domain.model.invoice.Invoice;
@@ -143,7 +143,7 @@ public class OrderSettlementService {
         // tiền là đúng kịch bản mà uq_payment_records_one_paid_per_order không chặn được, vì mỗi
         // luồng thao tác trên một dòng payment_records khác nhau của cùng một đơn.
         var order = orderRepository.findByIdForUpdate(payment.getOrderId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng của lần thanh toán"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng của lần thanh toán"));
 
         if (order.getStatus() == OrderStatus.SUCCESS) {
             LOGGER.info("Đơn {} đã SUCCESS -- bỏ qua lần chốt lặp cho payment {}",
@@ -214,7 +214,7 @@ public class OrderSettlementService {
     @Transactional
     public boolean expireIfOverdue(UUID orderId, Instant now) {
         var order = orderRepository.findByIdForUpdate(orderId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng cần hết hạn"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng cần hết hạn"));
 
         if (order.getStatus() != OrderStatus.PENDING || now.isBefore(order.getExpiresAt())) {
             return false;
@@ -338,7 +338,7 @@ public class OrderSettlementService {
                 "Đơn đăng ký " + order.getId() + " không có dòng SUBSCRIPTION nào để kích hoạt"));
 
         var plan = subscriptionPlanRepository.findById(planId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói dịch vụ của đơn đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói dịch vụ của đơn đăng ký"));
 
         var startsAt = order.getType() == OrderType.SUBSCRIPTION_UPGRADE
             ? cutOverToUpgrade(order.getSchoolId(), now)
@@ -517,7 +517,7 @@ public class OrderSettlementService {
      *   <li>PRACTICE: {@code findPracticeSpendableFundsVnd} lấy LEAST với COALESCE(...,0), nên không
      *       có dòng nghĩa là 0 -- CẢ TRƯỜNG mất quyền luyện nói cho tới khi có người vào chia lại,
      *       ngay sau khi trường vừa trả tiền gia hạn.</li>
-     *   <li>EXAM: {@code ClassTestTokenQuotaGuardService.remainingUserAllocation} trả null khi không
+     *   <li>ASSESSMENT: {@code ClassTestTokenQuotaGuardService.remainingUserAllocation} trả null khi không
      *       có dòng, và cửa chặn bỏ qua null -- mọi giáo viên thành không còn trần chi nào.</li>
      * </ul>
      *

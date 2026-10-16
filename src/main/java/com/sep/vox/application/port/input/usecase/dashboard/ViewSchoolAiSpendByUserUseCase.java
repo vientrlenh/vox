@@ -13,7 +13,7 @@ import com.sep.vox.application.projection.repository.SchoolAiCostQueryRepository
 import com.sep.vox.application.response.input.dashboard.SchoolAiSpendByUserPageResponse;
 import com.sep.vox.domain.shared.DecimalText;
 
-/** Bảng "ai đang tiêu hạn mức", đứng ngay dưới biểu đồ chi phí AI và đọc cùng một cửa sổ. */
+
 @Service
 public class ViewSchoolAiSpendByUserUseCase
         implements IUseCase<SearchSchoolAiSpendByUserQuery, SchoolAiSpendByUserPageResponse> {

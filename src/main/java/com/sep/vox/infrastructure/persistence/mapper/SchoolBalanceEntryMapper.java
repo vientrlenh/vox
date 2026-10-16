@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolBalanceEntry;
 import com.sep.vox.domain.model.school.SchoolBalanceEntryType;
-import com.sep.vox.infrastructure.persistence.entity.SchoolBalanceEntryJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolBalanceEntryJpaEntity;
 
 public final class SchoolBalanceEntryMapper {
 
@@ -18,7 +18,7 @@ public final class SchoolBalanceEntryMapper {
             jpa.getAmountVnd(),
             jpa.getBalanceAfterVnd(),
             jpa.getOrderId(),
-            jpa.getExamSessionId(),
+            jpa.getAssessmentSessionId(),
             jpa.getPracticeSessionId(),
             quotaTypeFromString(jpa.getQuotaType()),
             jpa.getCostUsd(),
@@ -38,7 +38,7 @@ public final class SchoolBalanceEntryMapper {
             domain.getAmountVnd(),
             domain.getBalanceAfterVnd(),
             domain.getOrderId(),
-            domain.getExamSessionId(),
+            domain.getAssessmentSessionId(),
             domain.getPracticeSessionId(),
             valueOf(domain.getQuotaType()),
             domain.getCostUsd(),

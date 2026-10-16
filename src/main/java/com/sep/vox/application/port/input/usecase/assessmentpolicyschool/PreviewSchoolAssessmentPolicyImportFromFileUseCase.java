@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicyschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.PreviewSchoolAssessmentPolicyImportFromFileCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -75,7 +75,7 @@ public class PreviewSchoolAssessmentPolicyImportFromFileUseCase implements IUseC
         }
 
         var school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }

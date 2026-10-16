@@ -11,7 +11,7 @@ import com.sep.vox.domain.shared.DecimalText;
  * <p>Hai túi tiền KHÁC NHAU, cố ý không gộp thành một con số:
  *
  * <ul>
- *   <li>Hạn mức kèm gói, tách theo {@code QuotaType} — chỉ ví {@code EXAM} trả tiền cho việc chấm
+ *   <li>Hạn mức kèm gói, tách theo {@code QuotaType} — chỉ ví {@code ASSESSMENT} trả tiền cho việc chấm
  *       thi. Ví {@code PRACTICE} còn rộng không giúp gì cho kỳ thi tuần sau.
  *   <li>Ví tự nạp — MỘT con số dùng chung, chỉ bị trừ khi hạn mức của loại tương ứng đã cạn.
  * </ul>
@@ -23,8 +23,8 @@ import com.sep.vox.domain.shared.DecimalText;
  */
 public record SchoolFundingResponse(
     /** Hạn mức CHẤM THI còn lại. Không bao giờ âm — phần vượt đã chuyển thành nợ trên ví. */
-    String examQuotaRemainingVnd,
-    String examQuotaTotalVnd,
+    String assessmentQuotaRemainingVnd,
+    String assessmentQuotaTotalVnd,
     /** Số dư ví tự nạp. Âm CHÍNH LÀ khoản nợ. */
     String balanceVnd,
     boolean locked,
@@ -59,9 +59,9 @@ public record SchoolFundingResponse(
      * @param balance             null khi trường chưa từng chạm vào ví — ví rỗng và ví 0 đồng là cùng
      *                            một nghĩa.
      */
-    public static SchoolFundingResponse of(BigDecimal examQuotaTotalVnd, BigDecimal examQuotaUsedVnd,
+    public static SchoolFundingResponse of(BigDecimal assessmentQuotaTotalVnd, BigDecimal assessmentQuotaUsedVnd,
             BigDecimal committedToUsersVnd, SchoolBalance balance) {
-        var remaining = examQuotaTotalVnd.subtract(examQuotaUsedVnd).max(BigDecimal.ZERO);
+        var remaining = assessmentQuotaTotalVnd.subtract(assessmentQuotaUsedVnd).max(BigDecimal.ZERO);
         var balanceVnd = balance == null ? BigDecimal.ZERO : balance.getBalanceVnd();
         var locked = balance != null && balance.isInDebt();
         var spendable = remaining.add(balanceVnd.max(BigDecimal.ZERO));
@@ -69,7 +69,7 @@ public record SchoolFundingResponse(
 
         return new SchoolFundingResponse(
             DecimalText.of(remaining),
-            DecimalText.of(examQuotaTotalVnd),
+            DecimalText.of(assessmentQuotaTotalVnd),
             DecimalText.of(balanceVnd),
             locked,
             DecimalText.of(spendable),

@@ -31,8 +31,8 @@ public class AiUsageRecordJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "exam_session_id", nullable = false, updatable = false)
-    private UUID examSessionId;
+    @Column(name = "assessment_session_id", nullable = false, updatable = false)
+    private UUID assessmentSessionId;
 
     @Column(name = "turn_id", nullable = false, updatable = false)
     private UUID turnId;
@@ -92,7 +92,7 @@ public class AiUsageRecordJpaEntity {
     // NULL = khoản chi này chưa được trừ vào ví trường. Cột DUY NHẤT của bảng không updatable=false,
     // vì nó là thứ duy nhất thay đổi sau khi dòng đã ghi -- và cố ý KHÔNG nằm trong constructor: dòng
     // mới luôn bắt đầu ở trạng thái chưa thu, không có chỗ nào được dựng sẵn một dòng "đã thu".
-    // Đóng dấu bằng bulk UPDATE (markChargedByExamSessionId), không qua save entity.
+    // Đóng dấu bằng bulk UPDATE (markChargedByAssessmentSessionId), không qua save entity.
     //
     // CẢNH BÁO nếu sau này có đường ghi lại một dòng ĐÃ TỒN TẠI: AiUsageRecord (domain) không mang cột
     // này, nên mapper dựng entity mới với chargedAt = null và một lần merge sẽ XÓA dấu đã thu -- phiên
@@ -117,12 +117,12 @@ public class AiUsageRecordJpaEntity {
 
     protected AiUsageRecordJpaEntity() {}
 
-    public AiUsageRecordJpaEntity(UUID id, UUID examSessionId, UUID turnId, UUID usageEventId, String usageType,
+    public AiUsageRecordJpaEntity(UUID id, UUID assessmentSessionId, UUID turnId, UUID usageEventId, String usageType,
             String provider, String modelName, Integer inputTokens, Integer outputTokens,
             Integer cacheCreationInputTokens, Integer cacheReadInputTokens, Long durationMs, String unitPriceJson,
             BigDecimal costUsd, BigDecimal costVnd, BigDecimal fxRateUsed, Instant occurredAt) {
         this.id = id;
-        this.examSessionId = examSessionId;
+        this.assessmentSessionId = assessmentSessionId;
         this.turnId = turnId;
         this.usageEventId = usageEventId;
         this.usageType = usageType;
@@ -164,12 +164,12 @@ public class AiUsageRecordJpaEntity {
         this.id = id;
     }
 
-    public UUID getExamSessionId() {
-        return examSessionId;
+    public UUID getAssessmentSessionId() {
+        return assessmentSessionId;
     }
 
-    public void setExamSessionId(UUID examSessionId) {
-        this.examSessionId = examSessionId;
+    public void setAssessmentSessionId(UUID assessmentSessionId) {
+        this.assessmentSessionId = assessmentSessionId;
     }
 
     public UUID getTurnId() {

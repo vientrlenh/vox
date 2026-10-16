@@ -16,7 +16,7 @@ import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.output.ParseImportFileResult;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -96,7 +96,7 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
 
     private User findCurrentUser(UUID currentUserId) {
         var user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalStateException("Người dùng hiện tại không hoạt động");
         }
@@ -111,7 +111,7 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
 
     private void validateSchool(UUID schoolId) {
         var school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
         }

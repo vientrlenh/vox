@@ -29,19 +29,6 @@ import org.springframework.kafka.retrytopic.DltStrategy;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.application.event.ExamAppealApprovedPayloadV1;
-import com.sep.vox.application.event.ExamAppealPublishedPayloadV1;
-import com.sep.vox.application.event.ExamAppealRejectedPayloadV1;
-import com.sep.vox.application.event.ExamBlueprintVersionPublishedEvent;
-import com.sep.vox.application.event.ExamHumanGradingRequiredPayloadV1;
-import com.sep.vox.application.event.ExamResultInvalidClearedPayloadV1;
-import com.sep.vox.application.event.ExamResultInvalidatedPayloadV1;
-import com.sep.vox.application.event.ExamResultOutcomeDecidedPayloadV1;
-import com.sep.vox.application.event.ExamResultRegradedPayloadV1;
-import com.sep.vox.application.event.ExamResultReleasedPayloadV1;
-import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
-import com.sep.vox.application.event.GradingAssignmentOpenedPayloadV1;
-import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
 import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.event.SchoolDebtCapExceededPayloadV1;
 import com.sep.vox.application.event.SchoolDebtClearedPayloadV1;
@@ -49,6 +36,19 @@ import com.sep.vox.application.event.SchoolLockedDueToDebtPayloadV1;
 import com.sep.vox.application.event.SchoolQuotaUsageWarningPayloadV1;
 import com.sep.vox.application.event.SchoolSubscriptionSuspendedPayloadV1;
 import com.sep.vox.application.event.SchoolSubscriptionUnsuspendedPayloadV1;
+import com.sep.vox.application.event.assessment.AssessmentAppealApprovedPayload;
+import com.sep.vox.application.event.assessment.AssessmentAppealPublishedPayload;
+import com.sep.vox.application.event.assessment.AssessmentAppealRejectedPayload;
+import com.sep.vox.application.event.assessment.AssessmentBlueprintVersionPublishedEvent;
+import com.sep.vox.application.event.assessment.AssessmentHumanGradingRequiredPayload;
+import com.sep.vox.application.event.assessment.AssessmentResultInvalidClearedPayload;
+import com.sep.vox.application.event.assessment.AssessmentResultInvalidatedPayload;
+import com.sep.vox.application.event.assessment.AssessmentResultOutcomeDecidedPayload;
+import com.sep.vox.application.event.assessment.AssessmentResultRegradedPayload;
+import com.sep.vox.application.event.assessment.AssessmentResultReleasedPayload;
+import com.sep.vox.application.event.assessment.AssessmentGradingAssignmentDeclinedPayload;
+import com.sep.vox.application.event.assessment.GradingAssignmentOpenedPayload;
+import com.sep.vox.application.event.assessment.GradingDeadlineReminderPayload;
 import com.sep.vox.application.port.output.PushNotificationPort;
 import com.sep.vox.application.response.output.PushMessage;
 import com.sep.vox.application.shared.DateMapper;
@@ -68,7 +68,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Đọc ba topic mà consumer mail cũng đang dùng (bằng một consumer group riêng), cộng thêm
- * topic exam-blueprint-version vốn chỉ có notification đọc.
+ * topic assessment-blueprint-version vốn chỉ có notification đọc.
  *
  * <p>Thứ tự xử lý là phần quan trọng nhất: <b>ghi bảng notifications trước, push sau</b>.
  * Dòng trong DB mới là bản ghi bền vững -- người dùng chưa đăng ký thiết bị nào, hoặc FCM
@@ -76,7 +76,7 @@ import tools.jackson.databind.json.JsonMapper;
  * thì bỏ qua chứ không kéo cả message vào vòng retry.
  *
  * <p>Cũng vì vậy mà consumer này parse chính payload của các event nghiệp vụ
- * ({@code ExamResultReleasedPayloadV1}...) rồi tự dựng title/body, thay vì trông chờ một
+ * ({@code AssessmentResultReleasedPayload}...) rồi tự dựng title/body, thay vì trông chờ một
  * payload notification dựng sẵn: message trên các topic đó mang hình dạng nghiệp vụ chứ
  * không mang hình dạng thông báo.
  *
@@ -136,13 +136,13 @@ public class NotificationPushedEventConsumer {
     )
     @KafkaListener(
         topics = {
-            "${app.internal-event.kafka.consumer-groups.notification.topic.exam-appeal}",
-            "${app.internal-event.kafka.consumer-groups.notification.topic.exam-result-lifecycle}",
+            "${app.internal-event.kafka.consumer-groups.notification.topic.assessment-appeal}",
+            "${app.internal-event.kafka.consumer-groups.notification.topic.assessment-result-lifecycle}",
             "${app.internal-event.kafka.consumer-groups.notification.topic.grading-assignment}",
-            "${app.internal-event.kafka.consumer-groups.notification.topic.exam-blueprint-version}",
+            "${app.internal-event.kafka.consumer-groups.notification.topic.assessment-blueprint-version}",
             // Topic riêng, KHÔNG dùng chung với grading-assignment: consumer mail đọc topic
             // đó và ném với eventType lạ. Nhắc chấm tay cũng cố tình chỉ hiện trong app.
-            "${app.internal-event.kafka.consumer-groups.notification.topic.exam-grading-review}",
+            "${app.internal-event.kafka.consumer-groups.notification.topic.assessment-grading-review}",
             // FIX: InvoicePaid đã có case xử lý bên dưới và category BILLING từ trước, nhưng thiếu
             // đúng dòng này nên consumer chưa từng nhận được message nào từ topic invoice -- thông
             // báo in-app "Hóa đơn đã được thanh toán" chưa bao giờ chạy (mail thì vẫn chạy bình
@@ -326,143 +326,143 @@ public class NotificationPushedEventConsumer {
         var category = NotificationCategory.of(eventType);
 
         return switch (eventType) {
-            case EventTypeConstant.EXAM_RESULT_RELEASED -> {
-                var payload = parse(value, ExamResultReleasedPayloadV1.class, eventType, eventId);
+            case EventTypeConstant.ASSESSMENT_RESULT_RELEASED -> {
+                var payload = parse(value, AssessmentResultReleasedPayload.class, eventType, eventId);
                 yield one(payload.studentId(), category,
                     "Điểm thi của bạn đã có",
-                    "%s: %s điểm".formatted(orPlaceholder(payload.examName()), formatScore(payload.totalScore())),
+                    "%s: %s điểm".formatted(orPlaceholder(payload.assessmentName()), formatScore(payload.totalScore())),
                     data(eventType)
                         .with("candidateResultId", payload.candidateResultId())
                         .with("sessionId", payload.sessionId())
-                        .with("examKind", payload.examKind())
-                        .with("examName", payload.examName())
+                        .with("assessmentKind", payload.assessmentKind())
+                        .with("assessmentName", payload.assessmentName())
                         .build());
             }
-            case EventTypeConstant.EXAM_RESULT_REGRADED -> {
-                var payload = parse(value, ExamResultRegradedPayloadV1.class, eventType, eventId);
+            case EventTypeConstant.ASSESSMENT_RESULT_REGRADED -> {
+                var payload = parse(value, AssessmentResultRegradedPayload.class, eventType, eventId);
                 yield one(payload.studentId(), category,
                     "Điểm thi của bạn đã thay đổi",
-                    "%s: %s -> %s điểm".formatted(orPlaceholder(payload.examName()),
+                    "%s: %s -> %s điểm".formatted(orPlaceholder(payload.assessmentName()),
                         formatScore(payload.scoreBefore()), formatScore(payload.scoreAfter())),
                     data(eventType)
                         .with("candidateResultId", payload.candidateResultId())
                         .with("sessionId", payload.sessionId())
-                        .with("examKind", payload.examKind())
-                        .with("examName", payload.examName())
+                        .with("assessmentKind", payload.assessmentKind())
+                        .with("assessmentName", payload.assessmentName())
                         .build());
             }
-            case EventTypeConstant.EXAM_RESULT_INVALIDATED -> {
-                var payload = parse(value, ExamResultInvalidatedPayloadV1.class, eventType, eventId);
+            case EventTypeConstant.ASSESSMENT_RESULT_INVALIDATED -> {
+                var payload = parse(value, AssessmentResultInvalidatedPayload.class, eventType, eventId);
                 yield one(payload.studentId(), category,
                     "Bài thi của bạn đã bị vô hiệu",
-                    "%s: %s".formatted(orPlaceholder(payload.examName()), orPlaceholder(payload.reason())),
+                    "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
                     data(eventType)
                         .with("candidateResultId", payload.candidateResultId())
                         .with("sessionId", payload.sessionId())
-                        .with("examKind", payload.examKind())
-                        .with("examName", payload.examName())
+                        .with("assessmentKind", payload.assessmentKind())
+                        .with("assessmentName", payload.assessmentName())
                         .build());
             }
-            case EventTypeConstant.EXAM_RESULT_INVALID_CLEARED -> {
-                var payload = parse(value, ExamResultInvalidClearedPayloadV1.class, eventType, eventId);
+            case EventTypeConstant.ASSESSMENT_RESULT_INVALID_CLEARED -> {
+                var payload = parse(value, AssessmentResultInvalidClearedPayload.class, eventType, eventId);
                 yield one(payload.studentId(), category,
                     "Bài thi của bạn đã được khôi phục",
-                    "%s: %s".formatted(orPlaceholder(payload.examName()), orPlaceholder(payload.reason())),
+                    "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
                     data(eventType)
                         .with("candidateResultId", payload.candidateResultId())
                         .with("sessionId", payload.sessionId())
-                        .with("examKind", payload.examKind())
-                        .with("examName", payload.examName())
+                        .with("assessmentKind", payload.assessmentKind())
+                        .with("assessmentName", payload.assessmentName())
                         .build());
             }
-            case EventTypeConstant.EXAM_RESULT_OUTCOME_DECIDED -> {
-                var payload = parse(value, ExamResultOutcomeDecidedPayloadV1.class, eventType, eventId);
+            case EventTypeConstant.ASSESSMENT_RESULT_OUTCOME_DECIDED -> {
+                var payload = parse(value, AssessmentResultOutcomeDecidedPayload.class, eventType, eventId);
                 yield one(payload.studentId(), category,
                     "Kết quả cuối cùng của bạn",
-                    "%s: %s".formatted(orPlaceholder(payload.examName()), orPlaceholder(payload.outcome())),
+                    "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.outcome())),
                     data(eventType)
                         .with("candidateResultId", payload.candidateResultId())
                         .with("sessionId", payload.sessionId())
-                        .with("examKind", payload.examKind())
-                        .with("examName", payload.examName())
+                        .with("assessmentKind", payload.assessmentKind())
+                        .with("assessmentName", payload.assessmentName())
                         .build());
             }
 
-            case EventTypeConstant.EXAM_APPEAL_PUBLISHED -> {
-                var payload = parse(value, ExamAppealPublishedPayloadV1.class, eventType, eventId);
+            case EventTypeConstant.ASSESSMENT_APPEAL_PUBLISHED -> {
+                var payload = parse(value, AssessmentAppealPublishedPayload.class, eventType, eventId);
                 yield one(payload.studentId(), category,
                     "Kết quả phúc khảo đã được công bố",
-                    "%s: %s -> %s điểm".formatted(orPlaceholder(payload.examName()),
+                    "%s: %s -> %s điểm".formatted(orPlaceholder(payload.assessmentName()),
                         formatScore(payload.scoreBefore()), formatScore(payload.scoreAfter())),
                     data(eventType).with("appealId", payload.appealId()).build());
             }
-            case EventTypeConstant.EXAM_APPEAL_REJECTED -> {
-                var payload = parse(value, ExamAppealRejectedPayloadV1.class, eventType, eventId);
+            case EventTypeConstant.ASSESSMENT_APPEAL_REJECTED -> {
+                var payload = parse(value, AssessmentAppealRejectedPayload.class, eventType, eventId);
                 yield one(payload.studentId(), category,
                     "Đơn phúc khảo không được chấp nhận",
-                    "%s: %s".formatted(orPlaceholder(payload.examName()), orPlaceholder(payload.reason())),
+                    "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
                     data(eventType).with("appealId", payload.appealId()).build());
             }
-            case EventTypeConstant.EXAM_APPEAL_APPROVED -> {
-                var payload = parse(value, ExamAppealApprovedPayloadV1.class, eventType, eventId);
+            case EventTypeConstant.ASSESSMENT_APPEAL_APPROVED -> {
+                var payload = parse(value, AssessmentAppealApprovedPayload.class, eventType, eventId);
                 yield one(payload.studentId(), category,
                     "Đơn phúc khảo của bạn đã được duyệt",
                     "%s -- dự kiến có kết quả trước %s".formatted(
-                        orPlaceholder(payload.examName()), formatDeadline(payload.deadline())),
+                        orPlaceholder(payload.assessmentName()), formatDeadline(payload.deadline())),
                     data(eventType).with("appealId", payload.appealId()).build());
             }
 
             case EventTypeConstant.GRADING_DEADLINE_REMINDER -> {
-                var payload = parse(value, GradingDeadlineReminderPayloadV1.class, eventType, eventId);
+                var payload = parse(value, GradingDeadlineReminderPayload.class, eventType, eventId);
                 yield one(payload.teacherId(), category,
                     "Sắp tới hạn chấm bài",
-                    "%s -- hạn %s".formatted(orPlaceholder(payload.examName()),
+                    "%s -- hạn %s".formatted(orPlaceholder(payload.assessmentName()),
                         formatDeadline(payload.deadlineAt())),
                     data(eventType)
                         .with("assignmentId", payload.assignmentId())
-                        .with("examId", payload.examId())
-                        .with("examKind", payload.examKind())
+                        .with("assessmentId", payload.assessmentId())
+                        .with("assessmentKind", payload.assessmentKind())
                         .build());
             }
             case EventTypeConstant.GRADING_ASSIGNMENT_DECLINED -> {
-                var payload = parse(value, GradingAssignmentDeclinedPayloadV1.class, eventType, eventId);
+                var payload = parse(value, AssessmentGradingAssignmentDeclinedPayload.class, eventType, eventId);
                 // Người nhận là admin đã giao việc, không phải giáo viên trả lại việc.
                 yield one(payload.assignedBy(), category,
                     "Có người trả lại phân công chấm",
-                    "%s: %s".formatted(orPlaceholder(payload.examName()), orPlaceholder(payload.reason())),
+                    "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
                     data(eventType)
                         .with("assignmentId", payload.assignmentId())
-                        .with("examId", payload.examId())
-                        .with("examKind", payload.examKind())
+                        .with("assessmentId", payload.assessmentId())
+                        .with("assessmentKind", payload.assessmentKind())
                         .build());
             }
 
             case EventTypeConstant.GRADING_ASSIGNMENT_OPENED -> {
-                var payload = parse(value, GradingAssignmentOpenedPayloadV1.class, eventType, eventId);
+                var payload = parse(value, GradingAssignmentOpenedPayload.class, eventType, eventId);
                 yield one(payload.teacherId(), category,
                     "Bạn được giao chấm bài",
                     // candidateLabel đã được chọn theo luật ẩn danh từ lúc phát: tên học sinh
                     // với bài trên lớp, mã bài với kỳ thi tập trung. KHÔNG suy lại ở đây.
                     "%s - %s: %s".formatted(
-                        orPlaceholder(payload.examName()),
+                        orPlaceholder(payload.assessmentName()),
                         roundLabel(payload.roundType()),
                         orPlaceholder(payload.candidateLabel())),
                     data(eventType)
                         .with("assignmentId", payload.assignmentId())
-                        .with("examId", payload.examId())
-                        .with("examKind", payload.examKind())
+                        .with("assessmentId", payload.assessmentId())
+                        .with("assessmentKind", payload.assessmentKind())
                         .build());
             }
 
-            case EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED -> {
-                var payload = parse(value, ExamHumanGradingRequiredPayloadV1.class, eventType, eventId);
+            case EventTypeConstant.ASSESSMENT_HUMAN_GRADING_REQUIRED -> {
+                var payload = parse(value, AssessmentHumanGradingRequiredPayload.class, eventType, eventId);
                 yield fanOut(payload.recipientIds(), category,
                     "Có bài chờ soát điểm AI",
                     "%s: %d bài cần chấm tay".formatted(
-                        orPlaceholder(payload.examName()), payload.pendingCount()),
+                        orPlaceholder(payload.assessmentName()), payload.pendingCount()),
                     data(eventType)
-                        .with("examId", payload.examId())
-                        .with("examKind", payload.examKind())
+                        .with("assessmentId", payload.assessmentId())
+                        .with("assessmentKind", payload.assessmentKind())
                         .build());
             }
 
@@ -477,8 +477,8 @@ public class NotificationPushedEventConsumer {
 
             // Cùng dạng fan-out với InvoicePaid: một blueprint được publish thì MỌI school
             // admin của trường đều cần biết.
-            case EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED -> {
-                var payload = parse(value, ExamBlueprintVersionPublishedEvent.class, eventType, eventId);
+            case EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED -> {
+                var payload = parse(value, AssessmentBlueprintVersionPublishedEvent.class, eventType, eventId);
                 yield fanOut(payload.schoolAdminIds(), category,
                     "Blueprint đề thi đã sẵn sàng",
                     "%s (%s)".formatted(orPlaceholder(payload.blueprintName()),
@@ -595,7 +595,7 @@ public class NotificationPushedEventConsumer {
      * Gom các khoá điều hướng của một thông báo.
      *
      * <p>Thay cho phiên bản cũ chỉ nhận đúng một khoá: từ khi màn hình đích cần thêm
-     * {@code sessionId}/{@code examId} và {@code examKind}, một khoá không còn đủ. Dạng
+     * {@code sessionId}/{@code assessmentId} và {@code assessmentKind}, một khoá không còn đủ. Dạng
      * fluent thay vì varargs {@code (key, value, key, value...)} vì varargs cùng kiểu
      * không có gì chặn lúc biên dịch khi ai đó lệch một đối số.
      *
@@ -693,7 +693,7 @@ public class NotificationPushedEventConsumer {
             return "--";
         }
         return switch (quotaType) {
-            case EXAM -> "Bài kiểm tra";
+            case ASSESSMENT -> "Bài kiểm tra";
             case PRACTICE -> "Lượt ôn luyện cá nhân";
         };
     }

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolGradesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -52,7 +52,7 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
         validateUserAndAccess(currentUserId, query.schoolId());
 
         if (!schoolRepository.existsById(query.schoolId())) {
-            throw new NotFoundException("Không tìm thấy trường học.");
+            throw new ResourceNotFoundException("Không tìm thấy trường học.");
         }
 
         // 1. Gọi DB lấy danh sách phân trang (PageResult<SchoolGrade>)

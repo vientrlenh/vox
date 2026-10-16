@@ -2,24 +2,26 @@ package com.sep.vox.interfaces.rest.dto.request;
 
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.CreateSystemQuestionBankCommand;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateSystemQuestionBankRequest(
 
-    @NotNull(message = "ID ngôn ngữ không được để trống")
-    UUID languageId,
+    @NotNull(message = "Learning language ID is required")
+    UUID learningLanguageId,
 
-    @NotBlank(message = "Mã ngân hàng câu hỏi không được để trống")
-    @Size(max = 100, message = "Mã ngân hàng câu hỏi không được vượt quá 100 ký tự")
-    String code, 
-
-    @NotBlank(message = "Tên ngân hàng câu hỏi không được để trống")
-    @Size(max = 255, message = "Tên ngân hàng câu hỏi không được vượt quá 255 ký tự")
+    @NotBlank(message = "Question bank name is required")
+    @Size(max = 255, message = "Question bank name must not exceed 255 characters")
     String name, 
 
-    @Size(max = 2048, message = "Mô tả ngân hàng câu hỏi không được vượt quá 2048 ký tự")
+    @Size(max = 2048, message = "Question bank description must not exceed 2048 characters")
     String description
 ) {
+
+    public static CreateSystemQuestionBankCommand toCommand(CreateSystemQuestionBankRequest request) {
+        return new CreateSystemQuestionBankCommand(request.learningLanguageId, request.name, request.description);
+    }
 }

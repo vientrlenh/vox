@@ -1,5 +1,9 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.UpdateQuestionBankCommand;
+
 import jakarta.validation.constraints.Size;
 
 public record UpdateQuestionBankRequest(
@@ -9,4 +13,12 @@ public record UpdateQuestionBankRequest(
     @Size(max = 2048, message = "Mô tả không được vượt quá 2048 ký tự")
     String description
 ) {
+
+    public static UpdateQuestionBankCommand toCommand(UUID id, UpdateQuestionBankRequest request) {
+        return new UpdateQuestionBankCommand(
+            id,
+            request.name(),
+            request.description()
+        );
+    }
 }

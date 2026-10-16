@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.PreviewRubricResultBandImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -75,9 +75,9 @@ public class PreviewSystemRubricResultBandImportFromFileUseCase implements IUseC
 
         // Bước 2: Bảo mật dữ liệu - Truy ngược kiểm tra quyền sở hữu Rubric
         var version = rubricVersionRepository.findById(command.rubricVersionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric yêu cầu."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric yêu cầu."));
         var rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc tương ứng."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc tương ứng."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Bảo mật: Bộ Rubric này thuộc về trường học. System Admin không được can thiệp.");

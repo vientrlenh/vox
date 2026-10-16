@@ -9,7 +9,7 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.AcceptQuestionBankImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -58,7 +58,7 @@ public class AcceptQuestionBankImportUseCase implements IUseCase<AcceptQuestionB
         var now = Instant.now();
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         var session = importSessionRepository.findById(input.importSessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import với id: " + input.importSessionId()));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên import với id: " + input.importSessionId()));
 
         if (session.getType() != ImportType.QUESTION_BANK) {
             throw new IllegalArgumentException("Phiên import không phải là loại ngân hàng câu hỏi");

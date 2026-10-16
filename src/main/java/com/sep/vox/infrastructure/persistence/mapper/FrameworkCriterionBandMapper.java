@@ -4,37 +4,50 @@ import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
 import com.sep.vox.infrastructure.persistence.entity.FrameworkCriterionBandJpaEntity;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public final class FrameworkCriterionBandMapper {
 
     private FrameworkCriterionBandMapper() {}
 
     public static FrameworkCriterionBand toDomain(FrameworkCriterionBandJpaEntity jpa) {
-        return new FrameworkCriterionBand(
-            jpa.getId(),
-            jpa.getFrameworkCriterionId(),
-            jpa.getFrameworkResultBandId(),
-            jpa.getDescriptor(),
-            jpa.getPositiveSignalsJson() == null ? null : JsonValueObjectMapper.fromJson(jpa.getPositiveSignalsJson(), FrameworkCriterionSignals.class),
-            jpa.getNegativeSignalsJson() == null ? null : JsonValueObjectMapper.fromJson(jpa.getNegativeSignalsJson(), FrameworkCriterionSignals.class),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        try {
+            return FrameworkCriterionBand.builder()
+                .id(jpa.getId())
+                .frameworkCriterionId(jpa.getFrameworkCriterionId())
+                .frameworkResultBandId(jpa.getFrameworkResultBandId())
+                .descriptor(jpa.getDescriptor())
+                .positiveSignals(signalsFromJson(jpa.getPositiveSignalsJson()))
+                .negativeSignals(signalsFromJson(jpa.getNegativeSignalsJson()))
+                .build();
+        } catch (Exception ex) {
+            log.error("An error occurred when mapping framework criterion band entity to model: {}", ex.getMessage(), ex);
+            throw new IllegalStateException("A problem occurred when converting entity to model");
+        }
     }
 
     public static FrameworkCriterionBandJpaEntity toJpa(FrameworkCriterionBand band) {
-        return new FrameworkCriterionBandJpaEntity(
-            band.getId(),
-            band.getFrameworkCriterionId(),
-            band.getFrameworkResultBandId(),
-            band.getDescriptor(),
-            JsonValueObjectMapper.toJson(band.getPositiveSignals()),
-            JsonValueObjectMapper.toJson(band.getNegativeSignals()),
-            band.getCreatedAt(),
-            band.getUpdatedAt(),
-            band.getCreatedBy(),
-            band.getUpdatedBy()
-        );
+        try {
+            return FrameworkCriterionBandJpaEntity.builder()
+                .id(band.getId())
+                .frameworkCriterionId(band.getFrameworkCriterionId())
+                .frameworkResultBandId(band.getFrameworkResultBandId())
+                .descriptor(band.getDescriptor())
+                .positiveSignalsJson(signalsToJson(band.getPositiveSignals()))
+                .negativeSignalsJson(signalsToJson(band.getNegativeSignals()))
+                .build();
+        } catch (Exception ex) {
+            log.error("An error occurred when mapping framework criterion band model to entity: {}", ex.getMessage(), ex);
+            throw new IllegalStateException("A problem occurred when converting model to entity");
+        }
+    }
+
+    private static FrameworkCriterionSignals signalsFromJson(String json) {
+        return json == null ? null : JsonValueObjectMapper.fromJson(json, FrameworkCriterionSignals.class);
+    }
+
+    private static String signalsToJson(FrameworkCriterionSignals signals) {
+        return signals == null ? null : JsonValueObjectMapper.toJson(signals);
     }
 }

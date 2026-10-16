@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schoolgrade;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSchoolGradeCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -66,7 +66,7 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
 
         // 2. Lấy School Grade (Năm học/Khóa học) cần xóa
         SchoolGrade grade = schoolGradeRepository.findById(command.id())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy năm học/khóa học này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy năm học/khóa học này."));
 
         // 3. school_grades mang schoolId trực tiếp -- không còn phải mượn Khối Lớp làm "cầu nối".
         if (!grade.getSchoolId().equals(command.schoolId())) {
@@ -75,7 +75,7 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
 
         // 4. Nếu đã xóa mềm (ARCHIVED) trước đó → coi như không còn tồn tại.
         if (grade.getStatus() == SchoolGradeStatus.ARCHIVED) {
-            throw new NotFoundException("Năm học/khóa học này đã bị xóa trước đó.");
+            throw new ResourceNotFoundException("Năm học/khóa học này đã bị xóa trước đó.");
         }
 
         // 5. Cascade xóa mềm trong cùng một transaction:

@@ -3,6 +3,11 @@ package com.sep.vox.application.response.input.practiceplanning;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.dto.personalization.PracticePaperDto;
+import com.sep.vox.domain.dto.personalization.PracticePaperQuestionDto;
+import com.sep.vox.domain.dto.personalization.PracticeTopicOfferDto;
+import com.sep.vox.domain.dto.personalization.TopicSearchResultDto;
+
 public final class PracticePlanningResponses {
 
     private PracticePlanningResponses() {
@@ -27,11 +32,28 @@ public final class PracticePlanningResponses {
         public PracticeTopicOffer(UUID topicId, String name, String dimension, boolean savedByMe) {
             this(topicId, name, dimension, savedByMe, null, 0, null, List.of());
         }
+
+        public static PracticeTopicOffer toResponse(PracticeTopicOfferDto dto) {
+            if (dto == null) {
+                return null;
+            }
+            return new PracticeTopicOffer(dto.topicId(), dto.name(), dto.dimension(), dto.savedByMe());
+        }
+
+        public static List<PracticeTopicOffer> toResponseList(List<PracticeTopicOfferDto> dtos) {
+            return dtos.stream()
+                .map(PracticeTopicOffer::toResponse)
+                .toList();
+        }
     }
 
     public record TopicSearchResult(
             List<PracticeTopicOffer> topics,
             boolean canGenerate) {
+
+        public static TopicSearchResult toResponse(TopicSearchResultDto dto) {
+            return new TopicSearchResult(PracticeTopicOffer.toResponseList(dto.topics()), dto.canGenerate());
+        }
     }
 
     public record PracticePaperQuestion(
@@ -44,6 +66,20 @@ public final class PracticePlanningResponses {
             int maxResponseSeconds,
             int minResponseSeconds,
             List<String> suggestedIdeas) {
+
+        public static PracticePaperQuestion toResponse(PracticePaperQuestionDto dto) {
+            return new PracticePaperQuestion(
+                dto.questionId(),
+                dto.slot(),
+                dto.questionText(),
+                dto.criterionCode(),
+                dto.subAttribute(),
+                dto.difficultyRank(),
+                dto.maxResponseSeconds(),
+                dto.minResponseSeconds(),
+                dto.suggestedIdeas()
+            );
+        }
     }
 
     public record PracticePaper(
@@ -55,6 +91,18 @@ public final class PracticePlanningResponses {
             /** Trần nói của cả phiên (giây) -- xem PracticePaperDto.sessionBudgetSeconds. */
             int sessionBudgetSeconds,
             List<PracticePaperQuestion> questions) {
+
+        public static PracticePaper toResponse(PracticePaperDto dto) {
+            return new PracticePaper(
+                dto.id(),
+                dto.topicId(),
+                dto.origin(),
+                dto.plannedSeconds(),
+                dto.reservedQuotaSeconds(),
+                dto.sessionBudgetSeconds(),
+                dto.questions().stream().map(PracticePaperQuestion::toResponse).toList()
+            );
+        }
     }
 
     /**

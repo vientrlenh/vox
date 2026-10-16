@@ -17,12 +17,12 @@ import org.springframework.kafka.retrytopic.DltStrategy;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
-import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
+import com.sep.vox.application.event.assessment.AssessmentGradingAssignmentDeclinedPayload;
+import com.sep.vox.application.event.assessment.GradingDeadlineReminderPayload;
 import com.sep.vox.application.port.output.MailSendingPort;
 import com.sep.vox.application.port.output.MailTemplatePort;
 import com.sep.vox.application.shared.DateMapper;
-import com.sep.vox.domain.model.exam.GradingRoundType;
+import com.sep.vox.domain.model.assessment.AssessmentGradingRoundType;
 import com.sep.vox.domain.model.outbox.ProcessedEvent;
 import com.sep.vox.domain.repository.ProcessedEventRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -34,7 +34,7 @@ import tools.jackson.databind.json.JsonMapper;
  * Mail cho phía <em>vận hành</em>: nhắc giáo viên sắp tới hạn, và báo admin khi có
  * người trả lại phân công.
  *
- * <p>Tách khỏi {@link ExamResultLifecycleEmailConsumer} vì người nhận khác hẳn — ở đây
+ * <p>Tách khỏi {@link AssessmentResultLifecycleEmailConsumer} vì người nhận khác hẳn — ở đây
  * là nhân sự của trường, không phải học sinh; trộn chung dễ dẫn tới gửi nhầm nhóm.
  */
 @Component
@@ -126,19 +126,19 @@ public class GradingAssignmentEmailConsumer {
     private Mail renderMail(String eventType, UUID eventId, String value) {
         return switch (eventType) {
             case EventTypeConstant.GRADING_DEADLINE_REMINDER -> {
-                var payload = parse(value, GradingDeadlineReminderPayloadV1.class, eventType, eventId);
+                var payload = parse(value, GradingDeadlineReminderPayload.class, eventType, eventId);
                 yield mail(payload.teacherId(), SUBJECT_DEADLINE_REMINDER,
                     () -> mailTemplatePort.renderGradingDeadlineReminderEmail(
-                        orPlaceholder(payload.examName()),
+                        orPlaceholder(payload.assessmentName()),
                         roundLabel(payload.roundType()),
                         formatDeadline(payload.deadlineAt())));
             }
             // Người nhận là admin ĐÃ GIAO bài, không phải học sinh: bài đang chờ giao lại.
             case EventTypeConstant.GRADING_ASSIGNMENT_DECLINED -> {
-                var payload = parse(value, GradingAssignmentDeclinedPayloadV1.class, eventType, eventId);
+                var payload = parse(value, AssessmentGradingAssignmentDeclinedPayload.class, eventType, eventId);
                 yield mail(payload.assignedBy(), SUBJECT_DECLINED,
                     () -> mailTemplatePort.renderGradingDeclinedEmail(
-                        orPlaceholder(payload.examName()),
+                        orPlaceholder(payload.assessmentName()),
                         teacherName(payload.teacherId()),
                         orPlaceholder(payload.reason())));
             }
@@ -186,9 +186,9 @@ public class GradingAssignmentEmailConsumer {
         if (roundType == null) {
             return PLACEHOLDER;
         }
-        GradingRoundType round;
+        AssessmentGradingRoundType round;
         try {
-            round = GradingRoundType.valueOf(roundType);
+            round = AssessmentGradingRoundType.valueOf(roundType);
         } catch (IllegalArgumentException e) {
             LOGGER.warn("Unknown roundType, fallback to default label: roundType={}", roundType);
             return PLACEHOLDER;

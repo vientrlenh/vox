@@ -1,13 +1,12 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSystemRubricResultBandsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricResultBandDto;
-import com.sep.vox.domain.mapper.RubricResultBandDtoMapper;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
@@ -52,11 +51,11 @@ public class ViewSystemRubricResultBandsUseCase implements IUseCase<ViewSystemRu
 
         // 2. Lấy Version ra để kiểm tra
         var version = rubricVersionRepository.findById(query.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric Version."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version."));
 
         // 3. Lấy Rubric gốc và kiểm tra quyền SYSTEM
         var rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Hành động bị từ chối: Phiên bản này thuộc về Trường học, không phải của Hệ thống.");
@@ -70,6 +69,6 @@ public class ViewSystemRubricResultBandsUseCase implements IUseCase<ViewSystemRu
         );
 
         // 5. Sử dụng Mapper toPage trả về cho Frontend (Có đủ 4 trường Audit)
-        return RubricResultBandDtoMapper.toPage(resultBandsPage);
+        return RubricResultBandDto.toDtoPage(resultBandsPage);
     }
 }

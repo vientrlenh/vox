@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * Python chấm bài luyện bằng cùng đồ thị chấm bài thi, nên payload phát ra là cùng một
- * hình dạng với {@link ExamAttemptEvaluationCompletedPayloadDto}. Ở đây chỉ khai những
+ * hình dạng với {@link AssessmentAttemptEvaluationCompletedPayloadDto}. Ở đây chỉ khai những
  * trường thật sự có nơi dùng -- Jackson bỏ qua phần còn lại.
  */
 public record PracticeAttemptEvaluationCompletedPayloadDto(

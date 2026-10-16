@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.RegisterVerificationConsumedEvent;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
 import com.sep.vox.application.port.input.command.VerifyRegisterFormOtpCommand;
@@ -64,7 +64,7 @@ public class VerifyRegisterFormOtpUseCase implements IUseCase<VerifyRegisterForm
         }
 
         var schoolDirectory = schoolDirectoryRepository.findById(payload.schoolDirectoryId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường"));
 
         var now = Instant.now();
         provisionSchoolService.provision(new ProvisionSchoolCommand(

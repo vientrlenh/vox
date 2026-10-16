@@ -48,8 +48,9 @@ public class LogoutUseCase implements IUseCase<LogoutCommand, Void> {
         LogoutCommand command = normalize(input);
         Instant now = Instant.now();
 
+        String refreshToken = sessionTokenManagerPort.getRawFromCookie(command.req());
         Set<UUID> sessionIds = new LinkedHashSet<>();
-        findSessionByRefreshToken(command.refreshToken()).ifPresent(sessionIds::add);
+        findSessionByRefreshToken(refreshToken).ifPresent(sessionIds::add);
         sessionIds.addAll(findLiveSessionsOnDevice(command.deviceId()));
         
         for (UUID sessionId : sessionIds) {
@@ -60,8 +61,9 @@ public class LogoutUseCase implements IUseCase<LogoutCommand, Void> {
 
     private LogoutCommand normalize(LogoutCommand input) {
         return new LogoutCommand(
-            StringNormalization.trimAndCollapseSpaces(input.refreshToken()),
-            StringNormalization.trimAndCollapseSpaces(input.deviceId())
+            StringNormalization.trimAndCollapseSpaces(input.deviceId()), 
+            input.req(), 
+            input.res()
         );
     }
 

@@ -1,0 +1,32 @@
+package com.sep.vox.interfaces.rest.dto.request.assessment;
+
+import java.time.Instant;
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.AssignAssessmentAppealReviewerCommand;
+
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+/**
+ * Giao MỘT người chấm phúc khảo.
+ *
+ * @param overrideReason bỏ trống = giữ luật xung đột lợi ích (người đã từng chấm bài
+ *        này sẽ bị từ chối). Có giá trị = admin chấp nhận giao cho họ, và lý do được
+ *        lưu lại trên đơn.
+ */
+public record AssignAssessmentAppealReviewerRequest(
+    @NotNull(message = "Thiếu người chấm phúc khảo")
+    UUID reviewerId,
+
+    @Size(max = 1024, message = "Lý do tối đa 1024 ký tự")
+    String overrideReason,
+
+    Instant deadlineAt
+) {
+
+    public static AssignAssessmentAppealReviewerCommand toCommand(UUID appealId, AssignAssessmentAppealReviewerRequest request) {
+        return new AssignAssessmentAppealReviewerCommand(
+            appealId, request.reviewerId(), request.overrideReason(), request.deadlineAt());
+    }
+}

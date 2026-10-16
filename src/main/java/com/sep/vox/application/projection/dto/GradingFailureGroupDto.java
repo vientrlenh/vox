@@ -12,7 +12,7 @@ import java.time.Instant;
  * @param sessionCount    số phiên trong nhóm
  * @param schoolCount     số trường khác nhau; kỳ thi cấp hệ thống không thuộc trường nào nên không
  *                        được đếm
- * @param examCount       số kỳ thi khác nhau
+ * @param assessmentCount       số kỳ thi khác nhau
  * @param firstFailedAt   mốc nộp sớm nhất trong nhóm — cùng với mốc muộn nhất, đây là thứ cho thấy
  *                        một sự cố gói gọn trong hai tiếng khác với một lỗi rỉ rả suốt hai tuần
  * @param lastFailedAt    mốc nộp muộn nhất trong nhóm
@@ -23,7 +23,7 @@ public record GradingFailureGroupDto(
     String sampleError,
     long sessionCount,
     long schoolCount,
-    long examCount,
+    long assessmentCount,
     Instant firstFailedAt,
     Instant lastFailedAt,
     long retryableCount

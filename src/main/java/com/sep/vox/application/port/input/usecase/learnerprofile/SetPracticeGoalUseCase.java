@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.learnerprofile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.mapper.learnerprofile.LearnerProfileResponseMapper;
 import com.sep.vox.application.port.input.command.SetPracticeGoalCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -32,7 +31,7 @@ public class SetPracticeGoalUseCase implements IUseCase<SetPracticeGoalCommand, 
     public LearnerProfile execute(SetPracticeGoalCommand input) {
         var studentId = userContextPort.getCurrentAuthenticatedUserId();
         commandService.setGoal(studentId, input.goalType());
-        return LearnerProfileResponseMapper.toResponse(
+        return LearnerProfile.toResponse(
             queryRepository.findCurrent(studentId)
         );
     }

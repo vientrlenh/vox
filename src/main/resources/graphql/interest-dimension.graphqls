@@ -18,7 +18,7 @@ input UpsertInterestDimensionInput {
     active: Boolean
     """
     Có đem ra hỏi trong quiz sở thích không. Đặt false cho chiều hệ thống tự gán
-    (ví dụ ACADEMIC_EXAM cho chủ đề lấy từ ngân hàng đề) -- vẫn dùng xếp hạng chủ đề
+    (ví dụ ACADEMIC_ASSESSMENT cho chủ đề lấy từ ngân hàng đề) -- vẫn dùng xếp hạng chủ đề
     nhưng không phải sở thích nên không hỏi học sinh.
     """
     quizEligible: Boolean

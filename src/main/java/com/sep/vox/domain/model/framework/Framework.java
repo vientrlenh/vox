@@ -3,58 +3,46 @@ package com.sep.vox.domain.model.framework;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.valueobject.FrameworkCode;
+import com.sep.vox.domain.shared.BaseModel;
+import com.sep.vox.domain.valueobject.Code;
 
-public class Framework {
-    private UUID id;
-    private FrameworkCode code;
+public class Framework extends BaseModel {
+    private Code code;
     private String name;
     private String description;
-    private boolean isActive;
-    private Instant createdAt;
+    private FrameworkStatus status;
     private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public Framework() {}
 
-    public Framework(UUID id, FrameworkCode code, String name, String description, boolean isActive, Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
+    public Framework(Code code, String name, String description, FrameworkStatus status, Instant updatedAt, UUID createdBy, UUID updatedBy) {
         this.code = code;
         this.name = name;
         this.description = description;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
+        this.status = status;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public Framework(FrameworkCode code, String name, String description, boolean isActive,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
+    public Framework(Builder builder) {
+        super(builder.id, builder.createdAt);
+        this.code = builder.code;
+        this.name = builder.name;
+        this.description = builder.description;
+        this.status = builder.status;
+        this.updatedAt = builder.updatedAt;
+        this.createdBy = builder.createdBy;
+        this.updatedBy = builder.updatedBy;
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public FrameworkCode getCode() {
+    public Code getCode() {
         return code;
     }
 
-    public void setCode(FrameworkCode code) {
+    public void setCode(Code code) {
         this.code = code;
     }
 
@@ -74,20 +62,12 @@ public class Framework {
         this.description = description;
     }
 
-    public boolean isActive() {
-        return isActive;
+    public FrameworkStatus getStatus() {
+        return status;
     }
 
-    public void setActive(boolean isActive) {
-        this.isActive = isActive;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public void setStatus(FrameworkStatus status) {
+        this.status = status;
     }
 
     public Instant getUpdatedAt() {
@@ -112,5 +92,72 @@ public class Framework {
 
     public void setUpdatedBy(UUID updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public static Builder builder() {
+        return new Framework.Builder();
+    }
+
+    public static class Builder {
+        private UUID id;
+        private Code code;
+        private String name;
+        private String description;
+        private FrameworkStatus status;
+        private Instant createdAt;
+        private Instant updatedAt;
+        private UUID createdBy;
+        private UUID updatedBy;
+
+        protected Builder() {}
+
+        public Builder id(UUID id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder code(Code code) {
+            this.code = code;
+            return this;
+        }
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder status(FrameworkStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder updatedAt(Instant updatedAt) {
+            this.updatedAt = updatedAt;
+            return this;
+        }
+
+        public Builder createdBy(UUID createdBy) {
+            this.createdBy = createdBy;
+            return this;
+        }
+
+        public Builder updatedBy(UUID updatedBy) {
+            this.updatedBy = updatedBy;
+            return this;
+        }
+
+        public Framework build() {
+            return new Framework(this);
+        }
     }
 }

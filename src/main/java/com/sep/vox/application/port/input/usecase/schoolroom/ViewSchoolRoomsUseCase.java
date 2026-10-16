@@ -4,7 +4,6 @@ import com.sep.vox.application.port.input.query.ViewSchoolRoomsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.MyClassAccessGuard;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
-import com.sep.vox.domain.mapper.SchoolRoomDtoMapper;
 import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
 import com.sep.vox.domain.shared.PageResult;
@@ -41,7 +40,7 @@ public class ViewSchoolRoomsUseCase implements IUseCase<ViewSchoolRoomsQuery, Pa
 
         return new PageResult<>(
                 pageResult.content().stream()
-                        .map(SchoolRoomDtoMapper::toDto)
+                        .map(SchoolRoomFromDto::toDto)
                         .toList(),
                 pageResult.page(),
                 pageResult.size(),

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -16,7 +16,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.RoleConstant;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.SchoolUserDto;
-import com.sep.vox.domain.mapper.SchoolUserDtoMapper;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -76,7 +75,7 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
             input.size()
         );
 
-        return SchoolUserDtoMapper.toSchoolUserPageDto(schoolUsersPage);
+        return SchoolUserDto.toDtoPage(schoolUsersPage);
     }
 
     /**
@@ -108,7 +107,7 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
         }
 
         return roleRepository.findByCode(normalized.toUpperCase())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò"))
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò"))
             .getId();
     }
 

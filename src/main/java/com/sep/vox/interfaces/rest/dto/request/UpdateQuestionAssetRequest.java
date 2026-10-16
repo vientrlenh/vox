@@ -1,5 +1,9 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.util.UUID;
+
+import com.sep.vox.application.port.input.command.UpdateQuestionAssetCommand;
+
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -31,4 +35,19 @@ public record UpdateQuestionAssetRequest(
     @Min(value = 0, message = "Thứ tự tài nguyên không được nhỏ hơn 0")
     Integer order
 ) {
+
+    public static UpdateQuestionAssetCommand toCommand(UUID questionId, UUID assetId, UpdateQuestionAssetRequest request) {
+        return new UpdateQuestionAssetCommand(
+            questionId,
+            assetId,
+            request.title(),
+            request.durationSeconds(),
+            request.altText(),
+            request.type(),
+            request.url(),
+            request.transcript(),
+            request.description(),
+            request.order()
+        );
+    }
 }

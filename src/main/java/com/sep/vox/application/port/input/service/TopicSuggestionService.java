@@ -98,7 +98,7 @@ public class TopicSuggestionService {
         //
         // Nó đếm MỌI dòng có keyword trong tuần lịch, không lọc kết quả -- mà
         // recordKeywordRequest ghi dòng ở cả bốn nhánh, nên ba nhánh KHÔNG tốn lượt LLM nào
-        // (MATCHED_EXISTING, REJECTED_UNSUITABLE, OUT_OF_EXAM_SCOPE) vẫn bị trừ lượt. Học sinh
+        // (MATCHED_EXISTING, REJECTED_UNSUITABLE, OUT_OF_ASSESSMENT_SCOPE) vẫn bị trừ lượt. Học sinh
         // gõ một từ khoá trỏ đúng vào chủ đề đã có sẵn cũng mất một lượt trong ba.
         //
         // Chi phí thật đã có nơi kiểm soát đúng chỗ của nó: quota PRACTICE tính theo giây nói
@@ -109,12 +109,12 @@ public class TopicSuggestionService {
             return new TopicFromKeywordResult(null, "REJECTED_UNSUITABLE");
         }
         var goal = currentGoal(studentId);
-        if ("EXAM_PREP".equals(goal)) {
-            // EXAM_PREP chỉ luyện trên topic lấy từ ngân hàng câu hỏi (question_bank/
+        if ("ASSESSMENT_PREP".equals(goal)) {
+            // ASSESSMENT_PREP chỉ luyện trên topic lấy từ ngân hàng câu hỏi (question_bank/
             // question_topic) của đúng trường + khối -- không cho AI tự sinh topic mới từ
-            // từ khoá tự do, giữ nguyên mã kết quả OUT_OF_EXAM_SCOPE (ý nghĩa vẫn đúng).
-            recordKeywordRequest(studentId, keyword, "OUT_OF_EXAM_SCOPE");
-            return new TopicFromKeywordResult(null, "OUT_OF_EXAM_SCOPE");
+            // từ khoá tự do, giữ nguyên mã kết quả OUT_OF_ASSESSMENT_SCOPE (ý nghĩa vẫn đúng).
+            recordKeywordRequest(studentId, keyword, "OUT_OF_ASSESSMENT_SCOPE");
+            return new TopicFromKeywordResult(null, "OUT_OF_ASSESSMENT_SCOPE");
         }
         var proposals = topicGenerationPort.propose(
             studentId,
@@ -190,7 +190,7 @@ public class TopicSuggestionService {
     // ổn định). Xem chú thích tại lời gọi propose().
 
     public List<PracticeTopicOffer> synchronousOffers(UUID studentId, int requestedCount) {
-        if (requestedCount <= 0 || "EXAM_PREP".equals(currentGoal(studentId))) {
+        if (requestedCount <= 0 || "ASSESSMENT_PREP".equals(currentGoal(studentId))) {
             return List.of();
         }
         var proposals = topicGenerationPort.propose(
@@ -273,7 +273,7 @@ public class TopicSuggestionService {
     }
 
     /** Danh mục chiều sở thích hiện hành, gửi xuống Python để ràng buộc đầu ra của LLM.
-     * Gồm CẢ chiều hệ thống (ACADEMIC_EXAM) vì đây là gán nhãn cho chủ đề, không phải hỏi
+     * Gồm CẢ chiều hệ thống (ACADEMIC_ASSESSMENT) vì đây là gán nhãn cho chủ đề, không phải hỏi
      * học sinh -- khác với quiz, nơi chỉ dùng chiều quiz_eligible. */
     private List<String> dimensionCodes() {
         return interestDimensionRepository.findActive().stream()

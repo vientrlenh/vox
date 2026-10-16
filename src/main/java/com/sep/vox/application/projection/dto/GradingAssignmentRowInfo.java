@@ -21,7 +21,7 @@ public record GradingAssignmentRowInfo(
     String resultCode,
     String studentName,
     String className,
-    String examName,
+    String assessmentName,
     String resultStatus,
     BigDecimal totalScore,
     boolean flagged,

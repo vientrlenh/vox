@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.usecase.schooluser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewSchoolStudentsBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -29,7 +29,7 @@ public class ViewSchoolStudentsBySchoolUseCase implements IUseCase<ViewSchoolStu
     @Transactional(readOnly = true)
     public PageResult<SchoolUserDto> execute(ViewSchoolStudentsBySchoolQuery input) {
         var role = roleRepository.findByCode(SchoolRoleCodes.STUDENT)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò học sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò học sinh"));
 
         return viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(
             input.schoolId(),

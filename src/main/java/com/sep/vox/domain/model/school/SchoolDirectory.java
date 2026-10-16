@@ -3,74 +3,63 @@ package com.sep.vox.domain.model.school;
 import java.time.Instant;
 import java.util.UUID;
 
-public class SchoolDirectory {
-    private UUID id;
-    private String code;
+import com.sep.vox.domain.shared.BaseModel;
+import com.sep.vox.domain.valueobject.Code;
+import com.sep.vox.domain.valueobject.SchoolDomain;
+
+public class SchoolDirectory extends BaseModel {
+    private Code code;
     private String name;
-    private String provinceCode;
-    private String provinceName;
-    private String districtName;
-    private String domain;
-    private String address; 
+    private UUID wardId;
+    private UUID cityId;
+    private UUID provinceId;
+    private SchoolDomain domain;
+    private String streetAddress; 
     private SchoolDirectoryOrigin origin;
     private boolean verified;
-    private Instant createdAt;
     private Instant updatedAt;
     private UUID createdBy;
     private UUID updatedBy;
 
     public SchoolDirectory() {}
 
-    public SchoolDirectory(UUID id, String code, String name, String provinceCode, String provinceName,
-            String districtName, String domain, String address, SchoolDirectoryOrigin origin, boolean verified, Instant createdAt,
+    public SchoolDirectory(Code code, String name, UUID wardId, UUID cityId, UUID provinceId, SchoolDomain domain, String streetAddress, SchoolDirectoryOrigin origin, boolean verified,
             Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
         this.code = code;
         this.name = name;
-        this.provinceCode = provinceCode;
-        this.provinceName = provinceName;
-        this.districtName = districtName;
+        this.wardId = wardId;
+        this.cityId = cityId;
+        this.provinceId = provinceId;
         this.domain = domain;
-        this.address = address;
+        this.streetAddress = streetAddress;
         this.origin = origin;
         this.verified = verified;
-        this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.updatedBy = updatedBy;
     }
 
-    public SchoolDirectory(String code, String name, String provinceCode, String provinceName, String districtName,
-            String domain, String address, SchoolDirectoryOrigin origin, boolean verified, Instant createdAt, Instant updatedAt,
-            UUID createdBy, UUID updatedBy) {
-        this.code = code;
-        this.name = name;
-        this.provinceCode = provinceCode;
-        this.provinceName = provinceName;
-        this.districtName = districtName;
-        this.domain = domain;
-        this.address = address;
-        this.origin = origin;
-        this.verified = verified;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
+    public SchoolDirectory(Builder builder) {
+        super(builder.id, builder.createdAt);
+        this.code = builder.code;
+        this.name = builder.name;
+        this.wardId = builder.wardId;
+        this.cityId = builder.cityId;
+        this.provinceId = builder.provinceId;
+        this.domain = builder.domain;
+        this.streetAddress = builder.streetAddress;
+        this.origin = builder.origin;
+        this.verified = builder.verified;
+        this.updatedAt = builder.updatedAt;
+        this.createdBy = builder.createdBy;
+        this.updatedBy = builder.updatedBy;
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getCode() {
+    public Code getCode() {
         return code;
     }
 
-    public void setCode(String code) {
+    public void setCode(Code code) {
         this.code = code;
     }
 
@@ -82,44 +71,44 @@ public class SchoolDirectory {
         this.name = name;
     }
 
-    public String getProvinceCode() {
-        return provinceCode;
+    public UUID getWardId() {
+        return wardId;
     }
 
-    public void setProvinceCode(String provinceCode) {
-        this.provinceCode = provinceCode;
+    public void setWardId(UUID wardId) {
+        this.wardId = wardId;
     }
 
-    public String getProvinceName() {
-        return provinceName;
+    public UUID getCityId() {
+        return cityId;
     }
 
-    public void setProvinceName(String provinceName) {
-        this.provinceName = provinceName;
+    public void setCityId(UUID cityId) {
+        this.cityId = cityId;
     }
 
-    public String getDistrictName() {
-        return districtName;
+    public UUID getProvinceId() {
+        return provinceId;
     }
 
-    public void setDistrictName(String districtName) {
-        this.districtName = districtName;
+    public void setProvinceId(UUID provinceId) {
+        this.provinceId = provinceId;
     }
 
-    public String getDomain() {
+    public SchoolDomain getDomain() {
         return domain;
     }
 
-    public void setDomain(String domain) {
+    public void setDomain(SchoolDomain domain) {
         this.domain = domain;
     }
 
-    public String getAddress() {
-        return address;
+    public String getStreetAddress() {
+        return streetAddress;
     }
 
-    public void setAddress(String address) {
-        this.address = address;
+    public void setStreetAddress(String streetAddress) {
+        this.streetAddress = streetAddress;
     }
 
     public SchoolDirectoryOrigin getOrigin() {
@@ -136,14 +125,6 @@ public class SchoolDirectory {
 
     public void setVerified(boolean verified) {
         this.verified = verified;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
     }
 
     public Instant getUpdatedAt() {
@@ -170,80 +151,171 @@ public class SchoolDirectory {
         this.updatedBy = updatedBy;
     } 
 
+    public static Builder builder() {
+        return new SchoolDirectory.Builder();
+    }
+
     public void verify(UUID updatedBy, Instant now) {
         this.verified = true;
         this.updatedAt = now;
         this.updatedBy = updatedBy;
     }
 
-    public static SchoolDirectory createByAdmin(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, Instant now, UUID createdBy) {
-        return new SchoolDirectory(
-            code, 
-            name, 
-            provinceCode, 
-            provinceName, 
-            districtName, 
-            domain, 
-            address, 
-            SchoolDirectoryOrigin.ADMIN_CREATED, true, 
-            now, 
-            now, 
-            createdBy, 
-            createdBy
-        );
+    public static SchoolDirectory createByAdmin(String code, String name, UUID wardId, UUID cityId, UUID provinceId, String domain, String streetAddress, UUID createdBy) {
+        return SchoolDirectory.builder()
+            .code(Code.from(code))
+            .name(name)
+            .wardId(wardId)
+            .cityId(cityId)
+            .provinceId(provinceId)
+            .domain(SchoolDomain.from(domain))
+            .streetAddress(streetAddress)
+            .origin(SchoolDirectoryOrigin.ADMIN_CREATED)
+            .verified(true)
+            .createdBy(createdBy)
+            .updatedBy(createdBy)
+            .build();
     }
 
-    public static SchoolDirectory createByUserSubmitted(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, Instant now, UUID createdBy) {
-        return new SchoolDirectory(
-            code, 
-            name, 
-            provinceCode, 
-            provinceName, 
-            districtName, 
-            domain, 
-            address, 
-            SchoolDirectoryOrigin.USER_SUBMITTED,
-            false,
-            now,
-            now,
-            createdBy,
-            createdBy
-        );
+    public static SchoolDirectory createByUserSubmitted(String code, String name, UUID wardId, UUID cityId, UUID provinceId, String domain, String streetAddress, UUID createdBy) {
+        return SchoolDirectory.builder()
+            .code(Code.from(code))
+            .name(name)
+            .wardId(wardId)
+            .cityId(cityId)
+            .provinceId(provinceId)
+            .domain(SchoolDomain.from(domain))
+            .streetAddress(streetAddress)
+            .origin(SchoolDirectoryOrigin.USER_SUBMITTED)
+            .verified(false)
+            .createdBy(createdBy)
+            .updatedBy(createdBy)
+            .build();
     }
 
-    public static SchoolDirectory createByImport(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, Instant now, UUID createdBy) {
-        return new SchoolDirectory(
-            code,
-            name,
-            provinceCode,
-            provinceName,
-            districtName,
-            domain,
-            address,
-            SchoolDirectoryOrigin.OFFICIAL_IMPORT,
-            false,
-            now,
-            now,
-            createdBy,
-            createdBy
-        );
+    public static SchoolDirectory createByImport(String code, String name, UUID wardId, UUID cityId, UUID provinceId, String domain, String streetAddress, UUID createdBy) {
+        return SchoolDirectory.builder()
+            .code(Code.from(code))
+            .name(name)
+            .wardId(wardId)
+            .cityId(cityId)
+            .provinceId(provinceId)
+            .domain(SchoolDomain.from(domain))
+            .streetAddress(streetAddress)
+            .origin(SchoolDirectoryOrigin.OFFICIAL_IMPORT)
+            .verified(false)
+            .createdBy(createdBy)
+            .updatedBy(createdBy)
+            .build();
     }
 
 
-    public void applyImportUpdate(String name, String provinceCode, String provinceName, String districtName, String domain, String address, UUID updatedBy, Instant now) {
+    public void applyImportUpdate(String name, UUID wardId, UUID cityId, UUID provinceId, String domain, String streetAddress, UUID updatedBy) {
         this.name = name;
-        this.provinceCode = provinceCode;
-        this.provinceName = provinceName;
-        this.districtName = districtName;
-        this.domain = domain;
-        this.address = address;
+        this.wardId = wardId;
+        this.cityId = cityId;
+        this.provinceId = provinceId;
+        this.domain = SchoolDomain.from(domain);
+        this.streetAddress = streetAddress;
         this.origin = SchoolDirectoryOrigin.OFFICIAL_IMPORT;
-        this.updatedAt = now;
         this.updatedBy = updatedBy;
     }
 
 
     public boolean isCurated() {
         return verified || origin == SchoolDirectoryOrigin.ADMIN_CREATED;
+    }
+
+    public static class Builder {
+        private UUID id;
+        private Code code;
+        private String name;
+        private UUID wardId;
+        private UUID cityId;
+        private UUID provinceId;
+        private SchoolDomain domain;
+        private String streetAddress;
+        private SchoolDirectoryOrigin origin;
+        private boolean verified;
+        private Instant createdAt;
+        private Instant updatedAt;
+        private UUID createdBy;
+        private UUID updatedBy;
+
+        protected Builder() {}
+
+        public Builder id(UUID id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder code(Code code) {
+            this.code = code;
+            return this;
+        }
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder wardId(UUID wardId) {
+            this.wardId = wardId;
+            return this;
+        }
+
+        public Builder cityId(UUID cityId) {
+            this.cityId = cityId;
+            return this;
+        }
+
+        public Builder provinceId(UUID provinceId) {
+            this.provinceId = provinceId;
+            return this;
+        }
+
+        public Builder domain(SchoolDomain domain) {
+            this.domain = domain;
+            return this;
+        }
+
+        public Builder streetAddress(String streetAddress) {
+            this.streetAddress = streetAddress;
+            return this;
+        }
+
+        public Builder origin(SchoolDirectoryOrigin origin) {
+            this.origin = origin;
+            return this;
+        }
+
+        public Builder verified(boolean verified) {
+            this.verified = verified;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder updatedAt(Instant updatedAt) {
+            this.updatedAt = updatedAt;
+            return this;
+        }
+
+        public Builder createdBy(UUID createdBy) {
+            this.createdBy = createdBy;
+            return this;
+        }
+
+        public Builder updatedBy(UUID updatedBy) {
+            this.updatedBy = updatedBy;
+            return this;
+        }
+
+        public SchoolDirectory build() {
+            return new SchoolDirectory(this);
+        }
     }
 }

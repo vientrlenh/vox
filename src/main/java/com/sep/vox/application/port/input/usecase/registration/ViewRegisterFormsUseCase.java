@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.query.ViewRegisterFormsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.RegisterFormDto;
-import com.sep.vox.domain.mapper.RegisterFormDtoMapper;
 import com.sep.vox.domain.repository.RegisterFormRepository;
 import com.sep.vox.domain.shared.PageResult;
 
@@ -23,7 +22,7 @@ public class ViewRegisterFormsUseCase implements IUseCase<ViewRegisterFormsQuery
     @Transactional(readOnly = true)
     public PageResult<RegisterFormDto> execute(ViewRegisterFormsQuery input) {
         var forms = registerFormRepository.findAll(input.page(), input.size());
-        return RegisterFormDtoMapper.toRegisterFormPage(forms);
+        return RegisterFormDto.toDtoPage(forms);
     }
     
 }

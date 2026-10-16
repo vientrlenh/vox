@@ -11,7 +11,7 @@ import java.util.UUID;
  * vô hiệu), và cho trường hợp bài {@code INITIAL} chưa có phân công vì lý do nào đó.
  */
 public record ClaimClassTestGradingCommand(
-    UUID examId,
+    UUID assessmentId,
     String roundType,
     List<UUID> candidateResultIds
 ) {

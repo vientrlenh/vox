@@ -1,56 +1,40 @@
 package com.sep.vox.domain.model.rubric;
 
-import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.UUID;
+
+import com.sep.vox.domain.valueobject.PositiveDecimal;
+import com.sep.vox.domain.valueobject.PositiveInteger;
 
 public class RubricResultBand {
     private UUID id;
     private UUID rubricVersionId;
-    private String code;
     private String name;
     private String description;
-    private BigDecimal scoreMin;
-    private BigDecimal scoreMax;
-    private int order;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
+    private PositiveDecimal scoreMin;
+    private PositiveDecimal scoreMax;
+    private PositiveInteger order;
 
     public RubricResultBand() {}
 
-    public RubricResultBand(UUID id, UUID rubricVersionId, String code, String name, String description,
-            BigDecimal scoreMin, BigDecimal scoreMax, int order, Instant createdAt, Instant updatedAt,
-            UUID createdBy, UUID updatedBy) {
+    public RubricResultBand(UUID id, UUID rubricVersionId, String name, String description,
+            PositiveDecimal scoreMin, PositiveDecimal scoreMax, PositiveInteger order) {
         this.id = id;
         this.rubricVersionId = rubricVersionId;
-        this.code = code;
         this.name = name;
         this.description = description;
         this.scoreMin = scoreMin;
         this.scoreMax = scoreMax;
         this.order = order;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
     }
 
-    public RubricResultBand(UUID rubricVersionId, String code, String name, String description, BigDecimal scoreMin,
-            BigDecimal scoreMax, int order, Instant createdAt, Instant updatedAt, UUID createdBy,
-            UUID updatedBy) {
-        this.rubricVersionId = rubricVersionId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.scoreMin = scoreMin;
-        this.scoreMax = scoreMax;
-        this.order = order;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
+    public RubricResultBand(Builder builder) {
+        this.id = builder.id;
+        this.rubricVersionId = builder.rubricVersionId;
+        this.name = builder.name;
+        this.description = builder.description;
+        this.scoreMin = builder.scoreMin;
+        this.scoreMax = builder.scoreMax;
+        this.order = builder.order;
     }
 
     public UUID getId() {
@@ -69,14 +53,6 @@ public class RubricResultBand {
         this.rubricVersionId = rubricVersionId;
     }
 
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
     public String getName() {
         return name;
     }
@@ -93,62 +69,82 @@ public class RubricResultBand {
         this.description = description;
     }
 
-    public BigDecimal getScoreMin() {
+    public PositiveDecimal getScoreMin() {
         return scoreMin;
     }
 
-    public void setScoreMin(BigDecimal scoreMin) {
+    public void setScoreMin(PositiveDecimal scoreMin) {
         this.scoreMin = scoreMin;
     }
 
-    public BigDecimal getScoreMax() {
+    public PositiveDecimal getScoreMax() {
         return scoreMax;
     }
 
-    public void setScoreMax(BigDecimal scoreMax) {
+    public void setScoreMax(PositiveDecimal scoreMax) {
         this.scoreMax = scoreMax;
     }
 
-    public int getOrder() {
+    public PositiveInteger getOrder() {
         return order;
     }
 
-    public void setOrder(int order) {
+    public void setOrder(PositiveInteger order) {
         this.order = order;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new RubricResultBand.Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public static class Builder {
+        private UUID id;
+        private UUID rubricVersionId;
+        private String name;
+        private String description;
+        private PositiveDecimal scoreMin;
+        private PositiveDecimal scoreMax;
+        private PositiveInteger order;
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        protected Builder() {}
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        public Builder id(UUID id) {
+            this.id = id;
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder rubricVersionId(UUID rubricVersionId) {
+            this.rubricVersionId = rubricVersionId;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+        public Builder scoreMin(PositiveDecimal scoreMin) {
+            this.scoreMin = scoreMin;
+            return this;
+        }
 
-    
-    
+        public Builder scoreMax(PositiveDecimal scoreMax) {
+            this.scoreMax = scoreMax;
+            return this;
+        }
+
+        public Builder order(PositiveInteger order) {
+            this.order = order;
+            return this;
+        }
+
+        public RubricResultBand build() {
+            return new RubricResultBand(this);
+        }
+    }
 }

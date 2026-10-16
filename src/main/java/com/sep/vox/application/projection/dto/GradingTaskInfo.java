@@ -11,13 +11,13 @@ import java.util.UUID;
  * <p><strong>Ẩn danh là luật của kỳ thi {@code CENTRALIZED}</strong>, không phải luật
  * chung: ở đó {@code studentName}/{@code className} luôn {@code null} để bảo đảm chấm
  * mù. Bài kiểm tra trên lớp thì ngược lại — người chấm chính là giáo viên dạy lớp đó,
- * họ cần biết đang chấm ai. Xem {@code JpaExamGradingQueryRepository}.
+ * họ cần biết đang chấm ai. Xem {@code JpaAssessmentGradingQueryRepository}.
  */
 public record GradingTaskInfo(
     UUID assignmentId,
     UUID candidateResultId,
     String resultCode,
-    String examName,
+    String assessmentName,
     int partCount,
     String roundType,
     String status,

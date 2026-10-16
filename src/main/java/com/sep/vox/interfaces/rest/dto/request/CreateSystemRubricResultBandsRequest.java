@@ -8,6 +8,10 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import com.sep.vox.application.port.input.command.CreateSystemRubricResultBandsCommand;
 
 public record CreateSystemRubricResultBandsRequest(
         @NotEmpty(message = "Phải có ít nhất 1 thang điểm được gửi lên")
@@ -33,4 +37,20 @@ public record CreateSystemRubricResultBandsRequest(
             @Min(value = 1, message = "Thứ tự (Order) phải lớn hơn 0")
             Integer order
     ) {}
+
+    public static CreateSystemRubricResultBandsCommand toCommand(UUID versionId, CreateSystemRubricResultBandsRequest request) {
+        List<CreateSystemRubricResultBandsCommand.ResultBandItemCommand> bandCommands = request.resultBands()
+                .stream()
+                .map(b -> new CreateSystemRubricResultBandsCommand.ResultBandItemCommand(
+                        b.code(),
+                        b.name(),
+                        b.description(),
+                        b.mappedScoreMin(),
+                        b.mappedScoreMax(),
+                        b.order()
+                ))
+                .collect(Collectors.toList());
+
+        return new CreateSystemRubricResultBandsCommand(versionId, bandCommands);
+    }
 }

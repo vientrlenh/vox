@@ -201,7 +201,7 @@ public class BulkCreateSchoolClassUsersUseCase
         var schoolClass = schoolClassRepository.findById(classId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
-            throw new NotFoundException("Không tìm thấy lớp học");
+            throw new ResourceNotFoundException("Không tìm thấy lớp học");
         }
         if (schoolClass.getStatus() != SchoolClassStatus.ACTIVE) {
             throw new IllegalStateException("Lớp học không hoạt động");

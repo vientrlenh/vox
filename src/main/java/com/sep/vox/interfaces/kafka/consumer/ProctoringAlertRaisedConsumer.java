@@ -18,7 +18,7 @@ import com.sep.vox.interfaces.kafka.mapper.ProctoringAlertCommandMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Đầu đọc của topic {@code exam.alert.raised}.
+ * Đầu đọc của topic {@code assessment.alert.raised}.
  *
  * <p>vox-streaming đã phát topic này từ trước mà không ai tiêu thụ, nên mọi cảnh báo giám sát chỉ
  * tồn tại trong bộ nhớ tab trình duyệt của giám thị đang mở. Consumer này là chỗ chúng trở thành bản

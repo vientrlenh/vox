@@ -7,9 +7,9 @@ import com.sep.vox.application.projection.dto.SchoolGradingFailureDto;
 /** Một dòng trên màn "AI chấm lỗi, chưa ai xử lý" của nhà trường. */
 public record SchoolGradingFailureResponse(
     UUID sessionId,
-    UUID examId,
-    String examCode,
-    String examName,
+    UUID assessmentId,
+    String assessmentCode,
+    String assessmentName,
     String candidateName,
     String className,
     /** ISO-8601. */
@@ -22,9 +22,9 @@ public record SchoolGradingFailureResponse(
     public static SchoolGradingFailureResponse of(SchoolGradingFailureDto dto) {
         return new SchoolGradingFailureResponse(
             dto.sessionId(),
-            dto.examId(),
-            dto.examCode(),
-            dto.examName(),
+            dto.assessmentId(),
+            dto.assessmentCode(),
+            dto.assessmentName(),
             dto.candidateName(),
             dto.className(),
             dto.failedAt() == null ? null : dto.failedAt().toString(),

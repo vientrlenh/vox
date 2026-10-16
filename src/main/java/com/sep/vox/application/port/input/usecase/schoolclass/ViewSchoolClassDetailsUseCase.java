@@ -6,12 +6,11 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolClassDto;
-import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.model.school.SchoolUser;
@@ -51,16 +50,16 @@ public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDe
         validateSchool(schoolId);
 
         var schoolClass = schoolClassRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
-            throw new NotFoundException("Không tìm thấy lớp học");
+            throw new ResourceNotFoundException("Không tìm thấy lớp học");
         }
-        return SchoolClassDtoMapper.toDto(schoolClass);
+        return SchoolClassDto.toDto(schoolClass);
     }
 
     private User findCurrentUser(UUID currentUserId) {
         var user = userRepository.findByIdAndStatus(currentUserId, UserStatus.ACTIVE)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
         return user;
     }
 
@@ -73,7 +72,7 @@ public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDe
 
     private void validateSchool(UUID schoolId) {
         var school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
         }

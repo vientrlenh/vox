@@ -3,7 +3,6 @@ package com.sep.vox.domain.model.school;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.valueobject.Name;
 import com.sep.vox.domain.shared.BaseModel;
 import com.sep.vox.domain.valueobject.Code;
 import com.sep.vox.domain.valueobject.SchoolDomain;
@@ -11,7 +10,7 @@ import com.sep.vox.domain.valueobject.PositiveInteger;
 
 public class School extends BaseModel {
     private Code code;
-    private Name name;
+    private String name;
     private String description;
     private SchoolDomain domain;
     private UUID wardId;
@@ -27,7 +26,7 @@ public class School extends BaseModel {
 
     protected School() {}
 
-    public School(Code code, Name name, String description, SchoolDomain domain, UUID wardId, UUID cityId, UUID provinceId, String streetAddress, PositiveInteger studentCount, SchoolStatus status, Instant updatedAt, UUID registeredBy, UUID createdBy, UUID updatedBy) {
+    public School(Code code, String name, String description, SchoolDomain domain, UUID wardId, UUID cityId, UUID provinceId, String streetAddress, PositiveInteger studentCount, SchoolStatus status, Instant updatedAt, UUID registeredBy, UUID createdBy, UUID updatedBy) {
         this.code = code;
         this.name = name;
         this.description = description;
@@ -70,11 +69,11 @@ public class School extends BaseModel {
         this.code = code;
     }
 
-    public Name getName() {
+    public String getName() {
         return name;
     }
 
-    public void setName(Name name) {
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -183,7 +182,7 @@ public class School extends BaseModel {
     ) {
         School school = School.builder()
             .code(Code.from(code))
-            .name(Name.from(name))
+            .name(name)
             .description(description)
             .domain(SchoolDomain.from(domain))
             .wardId(wardId)
@@ -204,7 +203,7 @@ public class School extends BaseModel {
     public static class Builder {
         private UUID id;
         private Code code;
-        private Name name;
+        private String name;
         private String description;
         private SchoolDomain domain;
         private UUID wardId;
@@ -231,7 +230,7 @@ public class School extends BaseModel {
             return this;
         }
 
-        public Builder name(Name name) {
+        public Builder name(String name) {
             this.name = name;
             return this;
         }

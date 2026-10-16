@@ -55,7 +55,7 @@ public interface SpringDataPracticeResponseTurnRepository
         @Param("questionId") UUID questionId
     );
 
-    // Không viết được JPQL constructor-expression như ExamItemResponseRepository (PracticeResponseTurnJpaEntity
+    // Không viết được JPQL constructor-expression như AssessmentItemAnswerRepository (PracticeResponseTurnJpaEntity
     // không có association JPA tới PracticeItemResponseJpaEntity) -- native SQL + Object[], mirror cách
     // JpaSchoolAiCostQueryRepository map row native query.
     @Query(value = """

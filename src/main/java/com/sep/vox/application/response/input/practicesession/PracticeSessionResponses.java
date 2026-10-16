@@ -3,6 +3,13 @@ package com.sep.vox.application.response.input.practicesession;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.dto.personalization.PracticeCriterionScoreDto;
+import com.sep.vox.domain.dto.personalization.PracticeSessionDto;
+import com.sep.vox.domain.dto.personalization.SubmitTurnResultDto;
+import com.sep.vox.domain.dto.personalization.TeacherPracticeSessionDetailDto;
+import com.sep.vox.domain.dto.personalization.TeacherPracticeTurnViewDto;
+import com.sep.vox.domain.dto.personalization.TurnCorrectionDto;
+
 public final class PracticeSessionResponses {
 
     private PracticeSessionResponses() {
@@ -21,6 +28,32 @@ public final class PracticeSessionResponses {
             String startedAt,
             String endedAt,
             int pendingEvaluations) {
+
+        public static PracticeSession toResponse(PracticeSessionDto dto) {
+            if (dto == null) {
+                return null;
+            }
+            return new PracticeSession(
+                dto.id(),
+                dto.paperId(),
+                dto.topicId(),
+                dto.topicName(),
+                dto.origin(),
+                dto.status(),
+                dto.abandonDiagnosis(),
+                dto.overallScore(),
+                dto.gradedSeconds(),
+                dto.startedAt(),
+                dto.endedAt(),
+                dto.pendingEvaluations()
+            );
+        }
+
+        public static List<PracticeSession> toResponseList(List<PracticeSessionDto> dtos) {
+            return dtos.stream()
+                .map(PracticeSession::toResponse)
+                .toList();
+        }
     }
 
     public record TurnCorrection(
@@ -29,6 +62,16 @@ public final class PracticeSessionResponses {
             String correctedText,
             String explanation,
             String correctAudioUrl) {
+
+        public static TurnCorrection toResponse(TurnCorrectionDto dto) {
+            return new TurnCorrection(
+                dto.category(),
+                dto.originalText(),
+                dto.correctedText(),
+                dto.explanation(),
+                dto.correctAudioUrl()
+            );
+        }
     }
 
     public record SubmitTurnResult(
@@ -49,6 +92,19 @@ public final class PracticeSessionResponses {
              */
             int sessionSpokenSeconds,
             int sessionBudgetSeconds) {
+
+        public static SubmitTurnResult toResponse(SubmitTurnResultDto dto) {
+            return new SubmitTurnResult(
+                dto.responseId(),
+                dto.turnId(),
+                dto.remainingGradedSeconds(),
+                dto.evaluationQueued(),
+                dto.corrections().stream().map(TurnCorrection::toResponse).toList(),
+                dto.quotaExhausted(),
+                dto.sessionSpokenSeconds(),
+                dto.sessionBudgetSeconds()
+            );
+        }
     }
 
     public record TeacherPracticeTurnView(
@@ -58,11 +114,26 @@ public final class PracticeSessionResponses {
             String wordFeedbackJson,
             Double turnScore,
             List<TurnCorrection> corrections) {
+
+        public static TeacherPracticeTurnView toResponse(TeacherPracticeTurnViewDto dto) {
+            return new TeacherPracticeTurnView(
+                dto.turnOrder(),
+                dto.transcript(),
+                dto.audioUrl(),
+                dto.wordFeedbackJson(),
+                dto.turnScore(),
+                dto.corrections().stream().map(TurnCorrection::toResponse).toList()
+            );
+        }
     }
 
     public record CriterionScore(
             String criterionCode,
             Double score) {
+
+        public static CriterionScore toResponse(PracticeCriterionScoreDto dto) {
+            return new CriterionScore(dto.criterionCode(), dto.score());
+        }
     }
 
     public record PracticeDashboardStats(
@@ -87,5 +158,26 @@ public final class PracticeSessionResponses {
             /** Thang chấm của CHÍNH phiên này -- 0-100 từ V13, thang rubric với phiên cũ. */
             double scoreScaleMin,
             double scoreScaleMax) {
+
+        public static TeacherPracticeSessionDetail toResponse(TeacherPracticeSessionDetailDto dto) {
+            return new TeacherPracticeSessionDetail(
+                dto.sessionId(),
+                dto.topicName(),
+                dto.startedAt(),
+                dto.durationSeconds(),
+                dto.itemCount(),
+                dto.overallScore(),
+                dto.criterionScores().stream().map(CriterionScore::toResponse).toList(),
+                dto.completed(),
+                dto.pendingEvaluationCount(),
+                dto.gradingGaveUpCount(),
+                dto.difficultyRank(),
+                dto.turns().stream().map(TeacherPracticeTurnView::toResponse).toList(),
+                // Forwarded as-is: the scale is already computed in the query (COALESCE on the
+                // LEFT JOIN of rubric_versions), nothing is looked up here.
+                dto.scoreScaleMin(),
+                dto.scoreScaleMax()
+            );
+        }
     }
 }

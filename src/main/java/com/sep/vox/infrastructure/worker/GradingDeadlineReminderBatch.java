@@ -7,13 +7,13 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
+import com.sep.vox.application.event.assessment.GradingDeadlineReminderPayload;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.outbox.Outbox;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentCandidateResultRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentGradingAssignmentRepository;
+import com.sep.vox.domain.repository.assessment.AssessmentRepository;
 import com.sep.vox.domain.shared.AggregateTypeConstant;
 import com.sep.vox.domain.shared.EventTypeConstant;
 
@@ -34,21 +34,21 @@ import com.sep.vox.domain.shared.EventTypeConstant;
 @Component
 public class GradingDeadlineReminderBatch {
 
-    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
-    private final ExamCandidateResultRepository examCandidateResultRepository;
-    private final ExamRepository examRepository;
+    private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
+    private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
+    private final AssessmentRepository assessmentRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
 
     public GradingDeadlineReminderBatch(
-            ExamGradingAssignmentRepository examGradingAssignmentRepository,
-            ExamCandidateResultRepository examCandidateResultRepository,
-            ExamRepository examRepository,
+            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
+            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
+            AssessmentRepository assessmentRepository,
             OutboxRepository outboxRepository,
             JsonSerializationPort jsonSerializationPort) {
-        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
-        this.examCandidateResultRepository = examCandidateResultRepository;
-        this.examRepository = examRepository;
+        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
+        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
+        this.assessmentRepository = assessmentRepository;
         this.outboxRepository = outboxRepository;
         this.jsonSerializationPort = jsonSerializationPort;
     }
@@ -63,7 +63,7 @@ public class GradingDeadlineReminderBatch {
      */
     @Transactional
     public int remindOnce(Instant threshold) {
-        var due = examGradingAssignmentRepository.findDueForReminder(threshold);
+        var due = assessmentGradingAssignmentRepository.findDueForReminder(threshold);
         if (due.isEmpty()) {
             return 0;
         }
@@ -71,34 +71,34 @@ public class GradingDeadlineReminderBatch {
 
         // Nạp kết quả + kỳ thi theo lô: một lô có thể tới vài trăm dòng, gọi lẻ từng
         // dòng là N+1 ngay trong background.
-        var resultsById = examCandidateResultRepository.findByIdIn(
+        var resultsById = assessmentCandidateResultRepository.findByIdIn(
                 due.stream().map(assignment -> assignment.getCandidateResultId()).distinct().toList()).stream()
             .collect(Collectors.toMap(
                 result -> result.getId(), Function.identity(), (left, right) -> left));
-        // Giữ nguyên Exam thay vì chỉ rút lấy tên: thông báo còn cần id và loại bài để mở
-        // đúng màn hình chấm, mà lô này là chỗ duy nhất trong luồng còn cầm Exam trong tay.
-        var examsById = examRepository.findByIdIn(
-                resultsById.values().stream().map(result -> result.getExamId()).distinct().toList()).stream()
+        // Giữ nguyên Assessment thay vì chỉ rút lấy tên: thông báo còn cần id và loại bài để mở
+        // đúng màn hình chấm, mà lô này là chỗ duy nhất trong luồng còn cầm Assessment trong tay.
+        var assessmentsById = assessmentRepository.findByIdIn(
+                resultsById.values().stream().map(result -> result.getAssessmentId()).distinct().toList()).stream()
             .collect(Collectors.toMap(
-                exam -> exam.getId(), Function.identity(), (left, right) -> left));
+                assessment -> assessment.getId(), Function.identity(), (left, right) -> left));
 
         for (var assignment : due) {
             assignment.setRemindedAt(now);
-            examGradingAssignmentRepository.save(assignment);
+            assessmentGradingAssignmentRepository.save(assignment);
 
             var result = resultsById.get(assignment.getCandidateResultId());
-            var exam = result == null ? null : examsById.get(result.getExamId());
-            var payload = new GradingDeadlineReminderPayloadV1(
+            var assessment = result == null ? null : assessmentsById.get(result.getAssessmentId());
+            var payload = new GradingDeadlineReminderPayload(
                 assignment.getId(),
                 assignment.getTeacherId(),
-                exam == null ? null : exam.getName(),
+                assessment == null ? null : assessment.getName(),
                 assignment.getRoundType() == null ? null : assignment.getRoundType().name(),
                 assignment.getDeadlineAt(),
-                result == null ? null : result.getExamId(),
-                exam == null ? null : exam.getKind()
+                result == null ? null : result.getAssessmentId(),
+                assessment == null ? null : assessment.getKind()
             );
             outboxRepository.save(Outbox.create(
-                AggregateTypeConstant.EXAM_GRADING_ASSIGNMENT,
+                AggregateTypeConstant.ASSESSMENT_GRADING_ASSIGNMENT,
                 assignment.getId(),
                 EventTypeConstant.GRADING_DEADLINE_REMINDER,
                 jsonSerializationPort.toJson(payload),

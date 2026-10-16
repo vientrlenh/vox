@@ -6,8 +6,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ApproveRegisterFormCommand;
 import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
 import com.sep.vox.application.port.input.service.ProvisionSchoolService;
@@ -48,7 +48,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         var registerForm = registerFormRepository.findById(command.registerFormId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn đăng ký theo yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đăng ký theo yêu cầu"));
         
         var updatedRows = registerFormRepository.updateApprovedRegisterForm(command.registerFormId(), currentUserId, now);
         if (updatedRows == 0) {
@@ -81,7 +81,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
         // Đơn từ danh mục: trường đã có entry sẵn -> dùng lại, xác minh nếu chưa
         if (registerForm.getSchoolDirectoryId() != null) {
             var directory = schoolDirectoryRepository.findById(registerForm.getSchoolDirectoryId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
             if (!directory.isVerified()) {
                 directory.verify(currentUserId, now);
                 schoolDirectoryRepository.save(directory);
@@ -91,7 +91,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
 
         // Đơn tự khai: chưa có trong danh mục -> tạo entry USER_SUBMITTED rồi xác minh
         if (schoolDirectoryRepository.existsByCode(command.schoolCode())) {
-            throw new DuplicatedException("Danh mục trường với mã yêu cầu đã tồn tại");
+            throw new ResourceDuplicatedException("Danh mục trường với mã yêu cầu đã tồn tại");
         }
         var directory = SchoolDirectory.createByUserSubmitted(
             command.schoolCode(),

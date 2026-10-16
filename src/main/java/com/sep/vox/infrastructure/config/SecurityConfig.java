@@ -86,7 +86,7 @@ public class SecurityConfig {
         "/graphql",
         "/graphiql/**",
         "/internal/practice-sessions/**",
-        "/internal/exam-turns/**",
+        "/internal/assessment-turns/**",
         "/actuator/**"
     };
 

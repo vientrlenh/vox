@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicyschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.PublishSchoolAssessmentPoliciesByRubricVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -75,14 +75,14 @@ public class PublishSchoolAssessmentPoliciesByRubricVersionUseCase
         }
 
         var school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
 
         // 3. Kiểm tra Rubric Version phải tồn tại và đang ở trạng thái DRAFT
         RubricVersion rubricVersion = rubricVersionRepository.findById(command.rubricVersionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric."));
         if (rubricVersion.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalStateException("Chỉ có thể publish hàng loạt Assessment Policy khi Rubric Version liên kết đang ở trạng thái DRAFT.");
         }
@@ -91,14 +91,14 @@ public class PublishSchoolAssessmentPoliciesByRubricVersionUseCase
         List<AssessmentPolicy> draftPolicies = assessmentPolicyRepository
                 .findDraftBySchoolIdAndRubricVersionId(command.schoolId(), command.rubricVersionId());
         if (draftPolicies.isEmpty()) {
-            throw new NotFoundException("Không có Assessment Policy nào của trường học đang ở trạng thái DRAFT liên kết với Rubric Version này.");
+            throw new ResourceNotFoundException("Không có Assessment Policy nào của trường học đang ở trạng thái DRAFT liên kết với Rubric Version này.");
         }
 
         // 5. Kiểm tra và publish từng policy (rollback toàn bộ nếu có 1 policy không hợp lệ)
         Instant now = Instant.now();
         for (AssessmentPolicy policy : draftPolicies) {
             FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(policy.getFrameworkVersionId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn (Framework Version) liên kết."));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn (Framework Version) liên kết."));
             if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
                 throw new IllegalStateException("Không thể xuất bản Assessment Policy (ID: " + policy.getId()
                         + ") vì Phiên bản Khung tiêu chuẩn liên kết không còn ở trạng thái PUBLISHED.");

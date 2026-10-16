@@ -44,4 +44,12 @@ public enum ScoringRuleConditionType {
     public Class<? extends ScoringRuleConditionParams> paramTypes() {
         return paramType;
     }
+
+    public static ScoringRuleConditionType from(String value) {
+        return value == null ? null : ScoringRuleConditionType.valueOf(value);
+    }
+
+    public static String value(ScoringRuleConditionType value) {
+        return value == null ? null : value.name();
+    }
 }

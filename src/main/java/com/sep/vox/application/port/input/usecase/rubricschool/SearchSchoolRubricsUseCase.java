@@ -6,7 +6,6 @@ import com.sep.vox.application.port.input.query.SearchSchoolRubricsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricDto;
-import com.sep.vox.domain.mapper.RubricDtoMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
@@ -72,7 +71,7 @@ public class SearchSchoolRubricsUseCase implements IUseCase<SearchSchoolRubricsQ
         // 4. Map sang DTO và trả về
         return new PageResult<>(
                 pageResult.content().stream()
-                        .map(RubricDtoMapper::toRubricDto)
+                        .map(RubricDto::toDto)
                         .toList(),
                 pageResult.page(),
                 pageResult.size(),

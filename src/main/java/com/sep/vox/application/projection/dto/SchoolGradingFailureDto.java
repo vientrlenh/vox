@@ -6,7 +6,7 @@ import java.util.UUID;
 /**
  * Một bài AI chấm lỗi mà CHƯA ai xử lý, nhìn từ phía nhà trường.
  *
- * <p>Không có điểm: phiên {@code GRADING_FAILED} chưa từng sinh dòng {@code exam_candidate_results}
+ * <p>Không có điểm: phiên {@code GRADING_FAILED} chưa từng sinh dòng {@code assessment_candidate_results}
  * nào. Thứ thay thế là những trường giúp quyết định giữa hai lối ra — nhờ AI chấm lại hay xếp giáo
  * viên chấm tay.
  *
@@ -15,15 +15,15 @@ import java.util.UUID;
  * <ul>
  *   <li>{@code aiRetryCount} là số lần dịch vụ chấm tự thử lại bên trong MỘT lượt, lấy từ payload
  *       Kafka. Nó nói về độ dai của sự cố, không nói ai đã bấm gì.
- *   <li>{@code schoolRetryLeft} suy từ {@code exam_sessions.school_regrade_count} — định mức một
+ *   <li>{@code schoolRetryLeft} suy từ {@code assessment_sessions.school_regrade_count} — định mức một
  *       lượt nhờ AI chấm lại của nhà trường. Đây mới là thứ quyết định nút nào còn bấm được.
  * </ul>
  */
 public record SchoolGradingFailureDto(
     UUID sessionId,
-    UUID examId,
-    String examCode,
-    String examName,
+    UUID assessmentId,
+    String assessmentCode,
+    String assessmentName,
     String candidateName,
     /** null khi học sinh chưa được xếp vào lớp đang hoạt động nào. */
     String className,

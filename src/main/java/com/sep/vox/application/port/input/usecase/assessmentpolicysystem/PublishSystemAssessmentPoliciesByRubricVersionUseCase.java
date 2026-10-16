@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicysystem;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.PublishSystemAssessmentPoliciesByRubricVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -60,7 +60,7 @@ public class PublishSystemAssessmentPoliciesByRubricVersionUseCase
 
         // 2. Kiểm tra Rubric Version phải tồn tại và đang ở trạng thái DRAFT
         RubricVersion rubricVersion = rubricVersionRepository.findById(command.rubricVersionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric."));
         if (rubricVersion.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalStateException("Chỉ có thể publish hàng loạt Assessment Policy khi Rubric Version liên kết đang ở trạng thái DRAFT.");
         }
@@ -69,14 +69,14 @@ public class PublishSystemAssessmentPoliciesByRubricVersionUseCase
         List<AssessmentPolicy> draftPolicies = assessmentPolicyRepository
                 .findDraftSystemWideByRubricVersionId(command.rubricVersionId());
         if (draftPolicies.isEmpty()) {
-            throw new NotFoundException("Không có Assessment Policy hệ thống nào đang ở trạng thái DRAFT liên kết với Rubric Version này.");
+            throw new ResourceNotFoundException("Không có Assessment Policy hệ thống nào đang ở trạng thái DRAFT liên kết với Rubric Version này.");
         }
 
         // 4. Kiểm tra và publish từng policy (rollback toàn bộ nếu có 1 policy không hợp lệ)
         Instant now = Instant.now();
         for (AssessmentPolicy policy : draftPolicies) {
             FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(policy.getFrameworkVersionId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn (Framework Version) liên kết."));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn (Framework Version) liên kết."));
             if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
                 throw new IllegalStateException("Không thể xuất bản Assessment Policy (ID: " + policy.getId()
                         + ") vì Phiên bản Khung tiêu chuẩn liên kết không còn ở trạng thái PUBLISHED.");

@@ -1,0 +1,25 @@
+package com.sep.vox.application.response.input.assessment;
+
+import java.util.List;
+import java.util.UUID;
+
+public record StudentAssessmentPaperResponse(
+    UUID assessmentId,
+    UUID assessmentPaperId,
+    String title,
+    String subject,
+    String description,
+    int durationSeconds,
+    int durationMinutes,
+    String assessmentDate,
+    String status,
+    String scheduleEndAt,
+    String startedAt,
+    /**
+     * Checkpoint đồng hồ đếm ngược, null nếu phiên thi chưa checkpoint lần nào - client hiểu là
+     * "đếm từ durationSeconds". Không suy ra được từ startedAt vì đồng hồ dừng lúc avatar nói.
+     */
+    Integer remainingSeconds,
+    List<StudentAssessmentPaperQuestionResponse> paperQuestions
+) {
+}

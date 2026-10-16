@@ -5,12 +5,10 @@ import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTra
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.ContainerTestConfig;
-
 @SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureTestGrpcTransport
-class VoxApplicationTests extends ContainerTestConfig {
+class VoxApplicationTests  {
 
 	@Test
 	void contextLoads() {

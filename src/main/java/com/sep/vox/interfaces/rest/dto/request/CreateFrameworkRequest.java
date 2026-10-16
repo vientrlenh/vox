@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import com.sep.vox.application.port.input.command.CreateFrameworkCommand;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -19,4 +21,12 @@ public record CreateFrameworkRequest(
 
     Boolean isActive
 ) {
+
+    public static CreateFrameworkCommand toCommand(CreateFrameworkRequest request) {
+        return new CreateFrameworkCommand(
+            request.code(),
+            request.name(),
+            request.description(),
+            request.isActive() != null && request.isActive());
+    }
 }

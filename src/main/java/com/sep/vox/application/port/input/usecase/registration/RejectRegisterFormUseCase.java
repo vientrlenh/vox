@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.RegisterFormRejectedPayloadV1;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.RejectRegisterFormCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -43,7 +43,7 @@ public class RejectRegisterFormUseCase implements IUseCase<RejectRegisterFormCom
         var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         var registerForm = registerFormRepository.findById(command.registerFormId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đăng ký"));
 
         var updatedRows = registerFormRepository.updateRejectedRegisterForm(command.registerFormId(), currentUserId, command.reason(), now);
         if (updatedRows == 0) {

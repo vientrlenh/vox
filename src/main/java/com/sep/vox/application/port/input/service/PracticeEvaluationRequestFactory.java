@@ -8,14 +8,14 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.event.ExamAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.event.PracticeAttemptEvaluationRequestedExternalEvent;
+import com.sep.vox.application.event.assessment.AssessmentAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.projection.dto.CriterionFrameworkInfo;
 import com.sep.vox.application.projection.repository.PracticeQuestionQueryRepository;
 import com.sep.vox.application.projection.repository.PracticeSessionQueryRepository;
 import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 
 /**
  * Dựng yêu cầu chấm cho MỘT câu của phiên luyện.
@@ -50,10 +50,10 @@ public class PracticeEvaluationRequestFactory {
             UUID responseId,
             UUID questionId) {
         var question = practiceQuestionQueryRepository.findQuestionWithTopic(questionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi luyện."));
         var turns = practiceResponseTurnRepository
             .findByPracticeResponseIdOrderByTurnOrder(responseId).stream()
-            .map(record -> new ExamAttemptEvaluationRequestedExternalEvent.TurnInput(
+            .map(record -> new AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput(
                 record.turnOrder(),
                 record.turnType(),
                 record.promptText(),
@@ -62,7 +62,7 @@ public class PracticeEvaluationRequestFactory {
                 record.durationSeconds()
             ))
             .toList();
-        var payload = new ExamAttemptEvaluationRequestedExternalEvent.Payload(
+        var payload = new AssessmentAttemptEvaluationRequestedExternalEvent.Payload(
             question.questionText(),
             // Dạng bài THẬT (V13). Trước đây gửi "SPEAKING" -- không thuộc enum QuestionType
             // bên Python nên bị validator nuốt về null trong im lặng, khiến
@@ -82,7 +82,7 @@ public class PracticeEvaluationRequestFactory {
             // SpeakingMode bên Python là scripted/unscripted (nói theo văn bản có sẵn hay nói
             // tự do), không phải thi/luyện. Enum không có 'practice' nên
             // SpeakingMode(request_payload.mode) ném ValueError, hỏng cả 3 lần retry rồi kết
-            // thúc bằng ExamAttemptEvaluationFailedEvent -- chuỗi chấm bài luyện chưa từng chạy.
+            // thúc bằng AssessmentAttemptEvaluationFailedEvent -- chuỗi chấm bài luyện chưa từng chạy.
             "unscripted",
             null,
             "en-US",
@@ -97,9 +97,9 @@ public class PracticeEvaluationRequestFactory {
         );
     }
 
-    private ExamAttemptEvaluationRequestedExternalEvent.EvaluationGuide evaluationGuide(String json) {
+    private AssessmentAttemptEvaluationRequestedExternalEvent.EvaluationGuide evaluationGuide(String json) {
         var fields = jsonSerializationPort.toStringMap(json);
-        return new ExamAttemptEvaluationRequestedExternalEvent.EvaluationGuide(
+        return new AssessmentAttemptEvaluationRequestedExternalEvent.EvaluationGuide(
             fields.get("expected_content"),
             fields.get("key_points"),
             fields.get("acceptable_responses"),
@@ -109,7 +109,7 @@ public class PracticeEvaluationRequestFactory {
         );
     }
 
-    private List<ExamAttemptEvaluationRequestedExternalEvent.CriterionFramework> criteriaFrameworks(UUID sessionId) {
+    private List<AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework> criteriaFrameworks(UUID sessionId) {
         var rows = practiceSessionQueryRepository.findCriteriaFrameworks(sessionId);
         var grouped = new LinkedHashMap<UUID, List<CriterionFrameworkInfo>>();
         for (var row : rows) {
@@ -118,7 +118,7 @@ public class PracticeEvaluationRequestFactory {
         return grouped.values().stream().map(group -> {
             var first = group.get(0);
             var bands = group.stream()
-                .map(row -> new ExamAttemptEvaluationRequestedExternalEvent.FrameworkBand(
+                .map(row -> new AssessmentAttemptEvaluationRequestedExternalEvent.FrameworkBand(
                     row.getBandCode(),
                     row.getBandLabel(),
                     row.getMinScore(),
@@ -133,7 +133,7 @@ public class PracticeEvaluationRequestFactory {
             if ("discourse".equals(criterionKey)) {
                 criterionKey = "coherence";
             }
-            return new ExamAttemptEvaluationRequestedExternalEvent.CriterionFramework(
+            return new AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework(
                 criterionKey,
                 first.getFrameworkCode(),
                 first.getFrameworkName(),

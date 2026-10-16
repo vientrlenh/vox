@@ -6,7 +6,7 @@ import java.util.UUID;
  * Một lượt hỏi-đáp trong một phần thi. Một phần có NHIỀU lượt, mỗi lượt audio riêng.
  *
  * <p>{@code pronunciationOverall}/{@code wordFeedback} giữ nguyên chuỗi JSON như đã
- * lưu, không parse ở BE — cùng quy ước với {@code ExamItemEvaluationTurnResponse} để
+ * lưu, không parse ở BE — cùng quy ước với {@code AssessmentItemEvaluationTurnResponse} để
  * FE dùng chung một bộ parser cho cả hai màn.
  */
 public record GradingTurnInfo(

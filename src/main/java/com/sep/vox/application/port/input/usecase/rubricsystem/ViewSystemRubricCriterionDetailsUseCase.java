@@ -1,13 +1,12 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSystemRubricCriterionDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricCriterionDto;
-import com.sep.vox.domain.mapper.RubricCriterionDtoMapper;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
@@ -52,21 +51,21 @@ public class ViewSystemRubricCriterionDetailsUseCase implements IUseCase<ViewSys
 
         // 2. Lấy Criterion ra
         var criterion = rubricCriterionRepository.findById(query.criterionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
 
         // 3. Lấy Version
         var version = rubricVersionRepository.findById(criterion.getRubricVersionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric Version chứa tiêu chí này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version chứa tiêu chí này."));
 
         // 4. Lấy Rubric gốc và kiểm tra phải là SYSTEM
         var rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Hành động bị từ chối: Tiêu chí này thuộc về Trường học, không phải của Hệ thống.");
         }
 
         // 5. Map sang DTO và trả về
-        return RubricCriterionDtoMapper.toDto(criterion);
+        return RubricCriterionDto.toDto(criterion);
     }
 }

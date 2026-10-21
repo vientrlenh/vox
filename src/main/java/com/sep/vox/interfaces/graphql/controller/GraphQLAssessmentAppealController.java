@@ -25,6 +25,7 @@ import com.sep.vox.application.projection.dto.AppealDetailInfo;
 import com.sep.vox.application.projection.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.projection.dto.AppealStatsInfo;
 import com.sep.vox.application.projection.dto.AppealSummaryInfo;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.shared.PageResult;
 
@@ -52,38 +53,38 @@ public class GraphQLAssessmentAppealController {
 
 
     @QueryMapping(name = "appeals")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasRole('SCHOOL_MEMBER')")
     public PageResult<AppealSummaryInfo> appeals(
             @Argument(name = "status") String status,
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewAssessmentAppealsUseCase.execute(new SearchAssessmentAppealsQuery(
-            status, keyword, page, size));
+            status, keyword, pageRequest));
     }
 
     @QueryMapping(name = "assessmentAppeals")
-    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    @PreAuthorize("hasAnyRole('SCHOOL_MEMBER')")
     public PageResult<AppealSummaryInfo> assessmentAppeals(
             @Argument(name = "assessmentId") UUID assessmentId,
             @Argument(name = "status") String status,
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewAssessmentAppealsByAssessmentUseCase.execute(new SearchAppealsByAssessmentQuery(
-            assessmentId, status, keyword, page, size));
+            assessmentId, status, keyword, pageRequest));
     }
 
     @QueryMapping(name = "appealStats")
-    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    @PreAuthorize("hasRole('SCHOOL_MEMBER')")
     public AppealStatsInfo appealStats() {
         return viewAssessmentAppealStatsUseCase.execute();
     }
 
     @QueryMapping(name = "appeal")
-    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
+    @PreAuthorize("hasAnyRole('SCHOOL_MEMBER')")
     public AppealDetailInfo appeal(@Argument(name = "id") UUID id) {
         return viewAssessmentAppealDetailUseCase.execute(id);
     }
@@ -94,9 +95,9 @@ public class GraphQLAssessmentAppealController {
             @Argument(name = "status") String status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewMyAppealsUseCase.execute(new SearchAssessmentAppealsQuery(
-            status, null, page, size));
+            status, null, pageRequest));
     }
 
     @QueryMapping(name = "myAppeal")

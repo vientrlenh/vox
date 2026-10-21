@@ -20,9 +20,9 @@ import com.sep.vox.application.port.input.usecase.assessmentpaper.DeleteAssessme
 import com.sep.vox.application.port.input.usecase.assessmentpaper.UpdateAssessmentPaperItemUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpaper.UpdateAssessmentPaperSectionUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpaper.UpdateAssessmentPaperStatusUseCase;
-import com.sep.vox.domain.dto.AssessmentPaperDto;
-import com.sep.vox.domain.dto.AssessmentPaperItemDto;
-import com.sep.vox.domain.dto.AssessmentPaperSectionDto;
+import com.sep.vox.domain.dto.assessment.AssessmentPaperDto;
+import com.sep.vox.domain.dto.assessment.AssessmentPaperItemDto;
+import com.sep.vox.domain.dto.assessment.AssessmentPaperSectionDto;
 import com.sep.vox.interfaces.rest.dto.request.assessment.CreateAssessmentPaperRequest;
 import com.sep.vox.interfaces.rest.dto.request.assessment.UpdateAssessmentPaperItemRequest;
 import com.sep.vox.interfaces.rest.dto.request.assessment.UpdateAssessmentPaperSectionRequest;

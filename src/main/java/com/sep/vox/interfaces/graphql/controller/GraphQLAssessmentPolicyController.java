@@ -12,6 +12,7 @@ import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.UpdateS
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.ViewSystemAssessmentPoliciesUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.ViewSystemAssessmentPolicyDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyteacher.ViewTeacherAssessmentPoliciesUseCase;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.AssessmentPolicyDto;
 import com.sep.vox.domain.dto.FrameworkResultBandDto;
 import com.sep.vox.domain.dto.FrameworkVersionDto;
@@ -35,6 +36,7 @@ import org.springframework.validation.annotation.Validated;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.RequiredArgsConstructor;
 
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -60,15 +62,15 @@ public class GraphQLAssessmentPolicyController {
             @Argument(name = "status") String status,
             @Argument(name = "languageId") UUID languageId,
             @Argument(name = "rubricVersionId") UUID rubricVersionId,
-            @Argument(name = "effectiveFrom") String effectiveFrom,
-            @Argument(name = "effectiveTo") String effectiveTo,
+            @Argument(name = "effectiveFrom") Instant effectiveFrom,
+            @Argument(name = "effectiveTo") Instant effectiveTo,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewSystemAssessmentPoliciesUseCase
                 .execute(new ViewSystemAssessmentPoliciesQuery(status, languageId, rubricVersionId,
-                        DateMapper.toInstant(effectiveFrom),
-                        DateMapper.toInstant(effectiveTo), page, size));
+                       effectiveFrom,
+                        effectiveTo, page, size));
     }
 
     @QueryMapping(name = "viewSchoolAssessmentPolicies")
@@ -78,15 +80,15 @@ public class GraphQLAssessmentPolicyController {
             @Argument(name = "status") String status,
             @Argument(name = "languageId") UUID languageId,
             @Argument(name = "rubricVersionId") UUID rubricVersionId,
-            @Argument(name = "effectiveFrom") String effectiveFrom,
-            @Argument(name = "effectiveTo") String effectiveTo,
+            @Argument(name = "effectiveFrom") Instant effectiveFrom,
+            @Argument(name = "effectiveTo") Instant effectiveTo,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewSchoolAssessmentPoliciesUseCase
                 .execute(new ViewSchoolAssessmentPoliciesQuery(schoolId, status, languageId, rubricVersionId,
-                        DateMapper.toInstant(effectiveFrom),
-                        DateMapper.toInstant(effectiveTo),
+                        effectiveFrom,
+                        effectiveTo,
                         page, size));
     }
 
@@ -95,16 +97,16 @@ public class GraphQLAssessmentPolicyController {
     public PageResult<AssessmentPolicyDto> viewTeacherAssessmentPolicies(
             @Argument(name = "languageId") UUID languageId,
             @Argument(name = "rubricVersionId") UUID rubricVersionId,
-            @Argument(name = "effectiveFrom") String effectiveFrom,
-            @Argument(name = "effectiveTo") String effectiveTo,
+            @Argument(name = "effectiveFrom") Instant effectiveFrom,
+            @Argument(name = "effectiveTo") Instant effectiveTo,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewTeacherAssessmentPoliciesUseCase.execute(new ViewTeacherAssessmentPoliciesQuery(
                 languageId,
                 rubricVersionId,
-                DateMapper.toInstant(effectiveFrom),
-                DateMapper.toInstant(effectiveTo),
+                effectiveFrom,
+                effectiveTo,
                 page,
                 size));
     }
@@ -208,12 +210,4 @@ public class GraphQLAssessmentPolicyController {
         return updateSchoolAssessmentPolicyUseCase.execute(command);
     }
 
-    private void validatePageSize(Integer page, Integer size) {
-        if (page == null || page <= 0) {
-            throw new IllegalArgumentException("Số trang yêu cầu không hợp lệ");
-        }
-        if (size == null || size <= 0) {
-            throw new IllegalArgumentException("Kích cỡ trang yêu cầu không hợp lệ");
-        }
-    }
 }

@@ -20,8 +20,8 @@ import com.sep.vox.application.port.input.usecase.assessmentschedule.CreateAsses
 import com.sep.vox.application.port.input.usecase.assessmentschedule.DeleteAssessmentScheduleUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentschedule.RemoveAssessmentScheduleProctorUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentschedule.UpdateAssessmentScheduleStatusUseCase;
-import com.sep.vox.domain.dto.AssessmentScheduleDto;
-import com.sep.vox.domain.dto.AssessmentScheduleProctorDto;
+import com.sep.vox.domain.dto.assessment.AssessmentScheduleDto;
+import com.sep.vox.domain.dto.assessment.AssessmentScheduleProctorDto;
 import com.sep.vox.interfaces.rest.dto.request.assessment.AddAssessmentScheduleProctorRequest;
 import com.sep.vox.interfaces.rest.dto.request.assessment.CreateAssessmentScheduleRequest;
 import com.sep.vox.interfaces.rest.dto.request.assessment.UpdateAssessmentScheduleStatusRequest;

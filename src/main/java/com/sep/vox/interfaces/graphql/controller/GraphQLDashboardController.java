@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -105,24 +106,23 @@ public class GraphQLDashboardController {
     @QueryMapping(name = "schoolAiCostTimeseries")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public SchoolAiCostTimeseriesResponse schoolAiCostTimeseries(
-            @Argument(name = "dateFrom") String dateFrom,
-            @Argument(name = "dateTo") String dateTo,
+            @Argument(name = "dateFrom") Instant dateFrom,
+            @Argument(name = "dateTo") Instant dateTo,
             @Argument(name = "granularity") AiCostGranularity granularity) {
         return viewSchoolAiCostTimeseriesUseCase.execute(new ViewSchoolAiCostQuery(
-            DateMapper.toInstant(dateFrom), DateMapper.toInstant(dateTo), granularity));
+            dateFrom, dateTo, granularity));
     }
 
     @QueryMapping(name = "schoolAiSpendByUser")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public SchoolAiSpendByUserPageResponse schoolAiSpendByUser(
-            @Argument(name = "dateFrom") String dateFrom,
-            @Argument(name = "dateTo") String dateTo,
+            @Argument(name = "dateFrom") Instant dateFrom,
+            @Argument(name = "dateTo") Instant dateTo,
             @Argument(name = "quotaType") QuotaType quotaType,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
         return viewSchoolAiSpendByUserUseCase.execute(new SearchSchoolAiSpendByUserQuery(
-            DateMapper.toInstant(dateFrom), DateMapper.toInstant(dateTo),
+            dateFrom, dateTo,
             quotaType, page, size));
     }
 
@@ -147,48 +147,47 @@ public class GraphQLDashboardController {
     @QueryMapping(name = "platformOperationalHealth")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PlatformOperationalHealthResponse platformOperationalHealth(
-            @Argument(name = "dateFrom") String dateFrom,
-            @Argument(name = "dateTo") String dateTo) {
+            @Argument(name = "dateFrom") Instant dateFrom,
+            @Argument(name = "dateTo") Instant dateTo) {
         return viewPlatformOperationalHealthUseCase.execute(new ViewPlatformOperationalHealthQuery(
-            DateMapper.toInstant(dateFrom),
-            DateMapper.toInstant(dateTo)
+            dateFrom,
+            dateTo
         ));
     }
 
     @QueryMapping(name = "platformBusinessHealth")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PlatformBusinessHealthResponse platformBusinessHealth(
-            @Argument(name = "dateFrom") String dateFrom,
-            @Argument(name = "dateTo") String dateTo) {
+            @Argument(name = "dateFrom") Instant dateFrom,
+            @Argument(name = "dateTo") Instant dateTo) {
         return viewPlatformBusinessHealthUseCase.execute(new ViewPlatformBusinessHealthQuery(
-            DateMapper.toInstant(dateFrom),
-            DateMapper.toInstant(dateTo)
+            dateFrom,
+            dateTo
         ));
     }
 
     @QueryMapping(name = "gradingFailureOverview")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public GradingFailureOverviewResponse gradingFailureOverview(
-            @Argument(name = "dateFrom") String dateFrom,
-            @Argument(name = "dateTo") String dateTo) {
+            @Argument(name = "dateFrom") Instant dateFrom,
+            @Argument(name = "dateTo") Instant dateTo) {
         return viewGradingFailureOverviewUseCase.execute(new ViewGradingFailureOverviewQuery(
-            DateMapper.toInstant(dateFrom),
-            DateMapper.toInstant(dateTo)
+            dateFrom, 
+            dateTo
         ));
     }
 
     @QueryMapping(name = "gradingFailureSessions")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<GradingFailureSessionDto> gradingFailureSessions(
-            @Argument(name = "dateFrom") String dateFrom,
-            @Argument(name = "dateTo") String dateTo,
+            @Argument(name = "dateFrom") Instant dateFrom,
+            @Argument(name = "dateTo") Instant dateTo,
             @Argument(name = "signature") String signature,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
         return viewGradingFailureSessionsUseCase.execute(new ViewGradingFailureSessionsQuery(
-            DateMapper.toInstant(dateFrom),
-            DateMapper.toInstant(dateTo),
+            dateFrom, 
+            dateTo, 
             signature,
             page,
             size
@@ -202,7 +201,6 @@ public class GraphQLDashboardController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
         return viewSchoolsAtRiskUseCase.execute(new ViewSchoolsAtRiskQuery(bucket, keyword, page, size));
     }
 

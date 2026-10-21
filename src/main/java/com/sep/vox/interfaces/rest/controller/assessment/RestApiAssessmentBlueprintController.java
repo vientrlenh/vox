@@ -35,10 +35,10 @@ import com.sep.vox.application.port.input.usecase.assessmentblueprint.UpdateAsse
 import com.sep.vox.application.port.input.usecase.assessmentblueprint.UpdateAssessmentBlueprintUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentblueprint.UpdateAssessmentBlueprintVersionStatusUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentblueprint.UpdateAssessmentBlueprintVersionUseCase;
-import com.sep.vox.domain.dto.AssessmentBlueprintDto;
-import com.sep.vox.domain.dto.AssessmentBlueprintSectionDto;
-import com.sep.vox.domain.dto.AssessmentBlueprintSlotDto;
-import com.sep.vox.domain.dto.AssessmentBlueprintVersionDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintSectionDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintSlotDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintVersionDto;
 import com.sep.vox.interfaces.rest.dto.request.assessment.CreateAssessmentBlueprintRequest;
 import com.sep.vox.interfaces.rest.dto.request.assessment.CreateAssessmentBlueprintSectionItemRequest;
 import com.sep.vox.interfaces.rest.dto.request.assessment.CreateAssessmentBlueprintSlotItemRequest;

@@ -80,8 +80,6 @@ import com.sep.vox.interfaces.graphql.dto.request.UpdateGradeLevelRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolGradeRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolRoomRequest;
-import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolClassCommandMapper;
-import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolUserCommandMapper;
 
 import graphql.schema.DataFetchingEnvironment;
 import lombok.RequiredArgsConstructor;

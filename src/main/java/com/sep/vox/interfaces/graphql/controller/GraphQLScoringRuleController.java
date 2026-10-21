@@ -26,7 +26,6 @@ import com.sep.vox.application.port.input.usecase.scoringrule.ViewSystemScoringR
 import com.sep.vox.domain.dto.ScoringRuleDto;
 import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateScoringRuleInput;
-import com.sep.vox.interfaces.graphql.mapper.UpdateScoringRuleGraphQLMapper;
 
 import lombok.RequiredArgsConstructor;
 

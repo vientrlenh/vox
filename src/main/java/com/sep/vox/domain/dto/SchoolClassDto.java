@@ -4,19 +4,16 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.language.LearningLanguage;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.shared.PageResult;
-import com.sep.vox.domain.valueobject.Code;
-import com.sep.vox.domain.valueobject.Name;
 
 public record SchoolClassDto(
         UUID id,
         UUID schoolId,
-        LearningLanguage language,
+        UUID academicYearId, 
+        UUID learningLanguageId,
         UUID schoolGradeId,
-        String code,
         String name,
         String description,
         SchoolClassStatus status,
@@ -28,10 +25,10 @@ public record SchoolClassDto(
                 return new SchoolClassDto(
                         sClass.getId(), 
                         sClass.getSchoolId(), 
-                        sClass.getLanguage(), 
+                        sClass.getAcademicYearId(),  
+                        sClass.getLearningLanguageId(), 
                         sClass.getSchoolGradeId(), 
-                        Code.valueOf(sClass.getCode()), 
-                        Name.valueOf(sClass.getName()), 
+                        sClass.getName(), 
                         sClass.getDescription(), 
                         sClass.getStatus(), 
                         sClass.getCreatedAt(), 

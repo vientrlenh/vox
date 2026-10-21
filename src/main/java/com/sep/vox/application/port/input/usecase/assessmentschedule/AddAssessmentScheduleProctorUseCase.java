@@ -10,7 +10,7 @@ import com.sep.vox.application.port.input.service.AssessmentScheduleManageAccess
 import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
-import com.sep.vox.domain.dto.AssessmentScheduleProctorDto;
+import com.sep.vox.domain.dto.assessment.AssessmentScheduleProctorDto;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleProctor;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.SchoolUserRepository;

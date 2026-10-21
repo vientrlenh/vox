@@ -10,7 +10,7 @@ import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintVersi
 import com.sep.vox.application.port.input.command.CreateQuestionSelectionSpecCommand;
 import com.sep.vox.application.port.input.command.DuplicateAssessmentBlueprintVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.dto.AssessmentBlueprintVersionDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintVersionDto;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
 import com.sep.vox.domain.repository.assessment.AssessmentBlueprintSectionRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentBlueprintSlotRepository;

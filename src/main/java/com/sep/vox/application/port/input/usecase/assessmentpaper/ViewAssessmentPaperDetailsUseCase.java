@@ -8,7 +8,7 @@ import com.sep.vox.application.port.input.query.ViewAssessmentDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewAssessmentPaperDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.assessment.ViewAssessmentDetailsUseCase;
-import com.sep.vox.domain.dto.AssessmentPaperDto;
+import com.sep.vox.domain.dto.assessment.AssessmentPaperDto;
 import com.sep.vox.domain.repository.assessment.AssessmentPaperRepository;
 
 @Service

@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -25,11 +26,11 @@ import com.sep.vox.application.port.input.usecase.assessmentschedule.ViewProctor
 import com.sep.vox.application.port.input.usecase.assessmentschedule.ViewStudentBusySlotsUseCase;
 import com.sep.vox.application.response.input.assessmentschedule.ProctorBusySlotResponse;
 import com.sep.vox.application.response.input.assessmentschedule.StudentBusySlotResponse;
-import com.sep.vox.domain.dto.AssessmentDto;
-import com.sep.vox.domain.dto.AssessmentScheduleDto;
-import com.sep.vox.domain.dto.AssessmentScheduleProctorDto;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.dto.assessment.AssessmentDto;
+import com.sep.vox.domain.dto.assessment.AssessmentScheduleDto;
+import com.sep.vox.domain.dto.assessment.AssessmentScheduleProctorDto;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
 import com.sep.vox.domain.repository.assessment.AssessmentCandidateRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentScheduleProctorRepository;
@@ -52,13 +53,13 @@ public class GraphQLAssessmentScheduleController {
     public List<AssessmentScheduleDto> myAssessmentSchedules(
             @Argument(name = "assessmentId") UUID assessmentId,
             @Argument(name = "status") AssessmentScheduleStatus status,
-            @Argument(name = "startDate") String startDate,
-            @Argument(name = "endDate") String endDate) {
+            @Argument(name = "startDate") Instant startDate,
+            @Argument(name = "endDate") Instant endDate) {
         return viewMyAssessmentSchedulesUseCase.execute(new ViewAssessmentSchedulesQuery(
             assessmentId,
             status,
-            DateMapper.toInstant(startDate),
-            DateMapper.toInstant(endDate)
+            startDate,
+            endDate
         ));
     }
 
@@ -67,14 +68,14 @@ public class GraphQLAssessmentScheduleController {
     public List<AssessmentScheduleDto> assessmentSchedules(
             @Argument(name = "assessmentId") UUID assessmentId,
             @Argument(name = "status") AssessmentScheduleStatus status,
-            @Argument(name = "startDate") String startDate,
-            @Argument(name = "endDate") String endDate) {
+            @Argument(name = "startDate") Instant startDate,
+            @Argument(name = "endDate") Instant endDate) {
         return viewAssessmentSchedulesUseCase.execute(
             new ViewAssessmentSchedulesQuery(
                 assessmentId, 
                 status, 
-                DateMapper.toInstant(startDate), 
-                DateMapper.toInstant(endDate)
+                startDate, 
+                endDate
             )
         );
     }

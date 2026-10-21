@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.port.input.query.GetAssessmentRecordsQuery;
 import com.sep.vox.application.port.input.service.AssessmentRecordingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.dto.AssessmentRecordingDto;
+import com.sep.vox.domain.dto.assessment.AssessmentRecordingDto;
 import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
 import com.sep.vox.domain.repository.assessment.AssessmentRecordingRepository;
 import com.sep.vox.domain.service.recording.RecordingPrecedence;

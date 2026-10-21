@@ -12,7 +12,7 @@ import com.sep.vox.application.port.input.command.UpdateAssessmentBlueprintSecti
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
-import com.sep.vox.domain.dto.AssessmentBlueprintSectionDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintSectionDto;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersionStatus;
 import com.sep.vox.domain.repository.assessment.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentBlueprintSectionRepository;

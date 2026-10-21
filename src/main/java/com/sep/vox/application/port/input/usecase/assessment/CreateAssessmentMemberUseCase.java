@@ -10,7 +10,7 @@ import com.sep.vox.application.port.input.command.CreateAssessmentMemberCommand;
 import com.sep.vox.application.port.input.service.AssessmentMemberManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.shared.StringNormalization;
-import com.sep.vox.domain.dto.AssessmentMemberDto;
+import com.sep.vox.domain.dto.assessment.AssessmentMemberDto;
 import com.sep.vox.domain.model.assessment.AssessmentMember;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.repository.SchoolUserRepository;

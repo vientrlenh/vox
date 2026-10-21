@@ -1,24 +1,18 @@
 package com.sep.vox.domain.dto;
 
-import java.time.LocalDate;
-
 import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
-import com.sep.vox.domain.valueobject.Code;
-import com.sep.vox.domain.valueobject.Name;
 
 public record SchoolGradeDto(
     UUID id,
     UUID schoolId, 
     UUID gradeLevelId,
-    String code,
     String name,
     String description,
-    LocalDate startDate,
-    LocalDate endDate,
+    UUID academicYearId, 
     SchoolGradeStatus status,
     Instant createdAt,
     Instant updatedAt
@@ -29,11 +23,9 @@ public record SchoolGradeDto(
             grade.getId(),
             grade.getSchoolId(), 
             grade.getGradeLevelId(), 
-            Code.valueOf(grade.getCode()),
-            Name.valueOf(grade.getName()),
+            grade.getName(),
             grade.getDescription(),
-            grade.getStartDate(),
-            grade.getEndDate(),
+            grade.getAcademicYearId(), 
             grade.getStatus(),
             grade.getCreatedAt(),
             grade.getUpdatedAt()

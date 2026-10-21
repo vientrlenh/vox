@@ -11,7 +11,7 @@ import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.domain.valueobject.BirthDate;
 import com.sep.vox.domain.valueobject.Email;
-import com.sep.vox.domain.valueobject.Name;
+import com.sep.vox.domain.valueobject.PersonName;
 import com.sep.vox.domain.valueobject.Phone;
 
 public record UserDto(
@@ -33,7 +33,7 @@ public record UserDto(
             user.getId(), 
             Email.valueOf(user.getEmail()),
             Phone.valueOf(user.getPhone()),
-            Name.valueOf(user.getFullName()),
+            PersonName.valueOf(user.getFullName()),
             user.getGender(), 
             BirthDate.valueOf(user.getBirthDate()), 
             user.getAddress(), 

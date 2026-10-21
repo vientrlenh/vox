@@ -8,7 +8,6 @@ import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolStatus;
 import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.domain.valueobject.Code;
-import com.sep.vox.domain.valueobject.Name;
 import com.sep.vox.domain.valueobject.PositiveInteger;
 import com.sep.vox.domain.valueobject.SchoolDomain;
 
@@ -33,7 +32,7 @@ public record SchoolDto(
         return new SchoolDto(
             school.getId(), 
             Code.valueOf(school.getCode()), 
-            Name.valueOf(school.getName()), 
+            school.getName(), 
             school.getDescription(), 
             SchoolDomain.valueOf(school.getDomain()), 
             school.getWardId(), 

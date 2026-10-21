@@ -16,7 +16,7 @@ import com.sep.vox.application.port.input.usecase.proctoring.ViewScheduleProctor
 import com.sep.vox.application.projection.dto.MonitoredAssessmentSummary;
 import com.sep.vox.application.projection.dto.ProctorCandidateSummary;
 import com.sep.vox.application.projection.dto.ProctorScheduleSummary;
-import com.sep.vox.domain.dto.AssessmentProctoringAlertDto;
+import com.sep.vox.domain.dto.assessment.AssessmentProctoringAlertDto;
 
 @Controller("graphqlProctorAttendanceController")
 public class ProctorAttendanceController {

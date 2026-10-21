@@ -28,8 +28,8 @@ import com.sep.vox.application.port.input.usecase.assessment.UpdateAssessmentUse
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ClaimClassTestGradingUseCase;
 import com.sep.vox.application.response.input.assessment.CreateClassTestResponse;
 import com.sep.vox.application.response.input.assessment.DeleteAssessmentResponse;
+import com.sep.vox.domain.dto.assessment.AssessmentDto;
 import com.sep.vox.application.port.input.command.DeleteAssessmentCommand;
-import com.sep.vox.domain.dto.AssessmentDto;
 import com.sep.vox.interfaces.rest.dto.request.ChangeClassTestBlueprintRequest;
 import com.sep.vox.interfaces.rest.dto.request.ClaimClassTestGradingRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateClassTestRequest;

@@ -23,11 +23,11 @@ import com.sep.vox.application.port.input.usecase.assessmentcandidate.UpdateAsse
 import com.sep.vox.application.port.input.usecase.assessmentcandidate.ViewAssessmentCandidatesUseCase;
 import com.sep.vox.application.projection.dto.AssessmentAttemptSummary;
 import com.sep.vox.application.projection.dto.AssessmentCandidateAttempts;
-import com.sep.vox.domain.dto.AssessmentCandidateDto;
-import com.sep.vox.domain.dto.AssessmentDto;
-import com.sep.vox.domain.dto.AssessmentPaperDto;
-import com.sep.vox.domain.dto.AssessmentScheduleDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.dto.assessment.AssessmentCandidateDto;
+import com.sep.vox.domain.dto.assessment.AssessmentDto;
+import com.sep.vox.domain.dto.assessment.AssessmentPaperDto;
+import com.sep.vox.domain.dto.assessment.AssessmentScheduleDto;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateStatus;
 
 @Controller

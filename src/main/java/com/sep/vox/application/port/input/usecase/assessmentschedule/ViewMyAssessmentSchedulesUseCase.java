@@ -11,7 +11,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewAssessmentSchedulesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.AssessmentScheduleDto;
+import com.sep.vox.domain.dto.assessment.AssessmentScheduleDto;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.repository.assessment.AssessmentCandidateRepository;

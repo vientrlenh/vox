@@ -37,9 +37,9 @@ import com.sep.vox.application.port.input.usecase.assessment.ViewMyAssessmentsUs
 import com.sep.vox.application.port.input.usecase.assessmentschedule.GetAssessmentScheduleOtpUseCase;
 import com.sep.vox.application.response.input.assessment.DeleteAssessmentResponse;
 import com.sep.vox.application.response.input.assessmentschedule.GetAssessmentScheduleOtpResponse;
-import com.sep.vox.domain.dto.AssessmentDto;
-import com.sep.vox.domain.dto.AssessmentMemberDto;
-import com.sep.vox.domain.dto.AssessmentSecurePoolDto;
+import com.sep.vox.domain.dto.assessment.AssessmentDto;
+import com.sep.vox.domain.dto.assessment.AssessmentMemberDto;
+import com.sep.vox.domain.dto.assessment.AssessmentSecurePoolDto;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.interfaces.rest.dto.request.assessment.AttachAssessmentBlueprintRequest;
 import com.sep.vox.interfaces.rest.dto.request.assessment.CreateAssessmentMemberRequest;

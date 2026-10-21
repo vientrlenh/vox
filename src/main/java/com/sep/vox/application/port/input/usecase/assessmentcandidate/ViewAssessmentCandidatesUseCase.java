@@ -11,7 +11,7 @@ import com.sep.vox.application.port.input.query.ViewAssessmentCandidatesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
-import com.sep.vox.domain.dto.AssessmentCandidateDto;
+import com.sep.vox.domain.dto.assessment.AssessmentCandidateDto;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.repository.SchoolUserRepository;

@@ -14,6 +14,8 @@ import com.sep.vox.domain.dto.QuestionTopicDto;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.shared.PageResult;
 
+import lombok.RequiredArgsConstructor;
+
 @Controller
 @RequiredArgsConstructor
 public class GraphQLQuestionTopicController {

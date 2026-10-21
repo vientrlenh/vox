@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -11,6 +12,7 @@ import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
+import lombok.RequiredArgsConstructor;
 
 import com.sep.vox.application.port.input.query.CanViewAssessmentBlueprintDataQuery;
 import com.sep.vox.application.port.input.query.EstimateAssessmentTokenQuotaQuery;
@@ -29,18 +31,18 @@ import com.sep.vox.application.port.input.usecase.assessmentpaper.ViewAssessment
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.AssessmentStatusCountsDto;
 import com.sep.vox.application.response.input.assessment.AssessmentTokenEstimateResponse;
-import com.sep.vox.domain.dto.AssessmentBlueprintDto;
-import com.sep.vox.domain.dto.AssessmentBlueprintSlotDto;
-import com.sep.vox.domain.dto.AssessmentBlueprintVersionDto;
-import com.sep.vox.domain.dto.AssessmentDto;
-import com.sep.vox.domain.dto.AssessmentMemberDto;
-import com.sep.vox.domain.dto.AssessmentPaperDto;
-import com.sep.vox.domain.dto.AssessmentPaperItemDto;
-import com.sep.vox.domain.dto.AssessmentPaperSectionDto;
-import com.sep.vox.domain.dto.AssessmentScheduleDto;
-import com.sep.vox.domain.dto.AssessmentSecurePoolDto;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintSlotDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintVersionDto;
+import com.sep.vox.domain.dto.assessment.AssessmentDto;
+import com.sep.vox.domain.dto.assessment.AssessmentMemberDto;
+import com.sep.vox.domain.dto.assessment.AssessmentPaperDto;
+import com.sep.vox.domain.dto.assessment.AssessmentPaperItemDto;
+import com.sep.vox.domain.dto.assessment.AssessmentPaperSectionDto;
+import com.sep.vox.domain.dto.assessment.AssessmentScheduleDto;
+import com.sep.vox.domain.dto.assessment.AssessmentSecurePoolDto;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentPaperStatus;
@@ -49,7 +51,7 @@ import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 
 @Controller
-@RequiredArgsConstructor
+@RequiredArgsConstructor 
 public class GraphQLAssessmentController {
 
     private final ViewAssessmentsUseCase viewAssessmentsUseCase;
@@ -110,13 +112,13 @@ public class GraphQLAssessmentController {
     public AssessmentStatusCountsDto assessmentStatusCounts(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "kind") AssessmentKind kind,
-            @Argument(name = "dateFrom") String dateFrom,
-            @Argument(name = "dateTo") String dateTo) {
+            @Argument(name = "dateFrom") Instant dateFrom,
+            @Argument(name = "dateTo") Instant dateTo) {
         return viewAssessmentStatusCountsUseCase.execute(new ViewAssessmentStatusCountsQuery(
             schoolId,
             kind,
-            DateMapper.toInstant(dateFrom),
-            DateMapper.toInstant(dateTo)
+            dateFrom, 
+            dateTo
         ));
     }
 

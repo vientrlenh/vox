@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.service.ProctorScheduleAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.dto.AssessmentProctoringAlertDto;
+import com.sep.vox.domain.dto.assessment.AssessmentProctoringAlertDto;
 import com.sep.vox.domain.repository.assessment.AssessmentProctoringAlertRepository;
 
 /**

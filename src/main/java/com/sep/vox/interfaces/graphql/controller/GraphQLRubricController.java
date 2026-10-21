@@ -12,7 +12,6 @@ import com.sep.vox.interfaces.graphql.dto.request.UpdateRubricCriterionInput;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateRubricInput;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateRubricResultBandInput;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateRubricVersionInput;
-import com.sep.vox.interfaces.graphql.mapper.*;
 import graphql.schema.DataFetchingEnvironment;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

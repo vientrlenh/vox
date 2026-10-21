@@ -1,4 +1,4 @@
-package com.sep.vox.domain.dto;
+package com.sep.vox.domain.dto.assessment;
 
 import java.util.List;
 import java.util.UUID;

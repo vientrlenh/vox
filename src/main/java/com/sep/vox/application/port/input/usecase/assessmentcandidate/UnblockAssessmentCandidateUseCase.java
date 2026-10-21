@@ -15,7 +15,7 @@ import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentServ
 import com.sep.vox.application.port.input.service.AssessmentSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentevaluation.UpsertAssessmentCandidateResultUseCase;
-import com.sep.vox.domain.dto.AssessmentCandidateDto;
+import com.sep.vox.domain.dto.assessment.AssessmentCandidateDto;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;

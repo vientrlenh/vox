@@ -18,7 +18,7 @@ import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.StringNormalization;
-import com.sep.vox.domain.dto.AssessmentBlueprintVersionDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintVersionDto;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;

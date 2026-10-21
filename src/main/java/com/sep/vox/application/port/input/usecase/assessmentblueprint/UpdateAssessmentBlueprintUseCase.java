@@ -11,7 +11,7 @@ import com.sep.vox.application.port.input.command.UpdateAssessmentBlueprintComma
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
-import com.sep.vox.domain.dto.AssessmentBlueprintDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintDto;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.repository.assessment.AssessmentBlueprintRepository;

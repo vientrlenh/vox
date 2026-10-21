@@ -40,7 +40,6 @@ import com.sep.vox.application.projection.dto.GradingTaskInfo;
 import com.sep.vox.application.projection.dto.ResultStatusHistoryInfo;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.shared.PageResult;
-import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;
 import lombok.RequiredArgsConstructor;
@@ -78,7 +77,6 @@ public class GraphQLGradingController {
             @Argument(name = "kind") String kind,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
         return viewGradingAssignmentsUseCase.execute(new SearchGradingAssignmentsQuery(
             assessmentId, scheduleId, teacherId, resultStatus, roundType, status,
             Boolean.TRUE.equals(unassignedOnly), Boolean.TRUE.equals(overdueOnly), hasOpenAppeal, search, kind,
@@ -109,7 +107,6 @@ public class GraphQLGradingController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
         return viewClassTestGradingResultsUseCase.execute(new ViewClassTestGradingResultsQuery(
             assessmentId, resultStatus, Boolean.TRUE.equals(unassignedOnly), search,
             page, size));
@@ -123,7 +120,6 @@ public class GraphQLGradingController {
             @Argument(name = "roundType") String roundType,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
         return viewMyGradingTasksUseCase.execute(new ViewMyGradingTasksQuery(
             assessmentId, status, roundType,
             page, size));
@@ -148,7 +144,6 @@ public class GraphQLGradingController {
             @Argument(name = "roundType") String roundType,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
         return viewMyClassTestGradingTasksUseCase.execute(new ViewMyClassTestGradingTasksQuery(
             assessmentId, status, roundType,
             page, size
@@ -182,14 +177,6 @@ public class GraphQLGradingController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public AiQualityReportInfo aiQualityReport(@Argument(name = "assessmentId") UUID assessmentId) {
         return viewAiQualityReportUseCase.execute(new ViewAiQualityReportQuery(assessmentId));
-    }
-
-    /**
-     * Biên là chỗ duy nhất kiểm phân trang: repository bên dưới tin vào đây và chỉ còn trừ 1 để đổi
-     * sang offset, không tự kẹp lại giá trị sai nữa.
-     */
-    private void validatePageSize(Integer page, Integer size) {
-        PageArguments.validate(page, size);
     }
 
     /*

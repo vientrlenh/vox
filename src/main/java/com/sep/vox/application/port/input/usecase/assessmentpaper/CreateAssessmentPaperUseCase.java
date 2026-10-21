@@ -24,7 +24,7 @@ import com.sep.vox.application.port.input.usecase.assessment.ClassTestSectionWei
 import com.sep.vox.application.port.input.usecase.assessment.AssessmentQuestionSecureLockService;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.AssessmentPaperDto;
+import com.sep.vox.domain.dto.assessment.AssessmentPaperDto;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSection;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;

@@ -18,7 +18,7 @@ import com.sep.vox.application.port.input.service.AssessmentTimeQuotaGuardServic
 import com.sep.vox.application.port.input.service.RecalculateBlueprintVersionTimeLimitService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.shared.StringNormalization;
-import com.sep.vox.domain.dto.AssessmentBlueprintVersionDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintVersionDto;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSection;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;

@@ -1,4 +1,4 @@
-package com.sep.vox.domain.dto;
+package com.sep.vox.domain.dto.assessment;
 
 import java.math.BigDecimal;
 import java.time.Instant;

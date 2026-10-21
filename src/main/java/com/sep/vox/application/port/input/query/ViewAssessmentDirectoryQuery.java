@@ -3,6 +3,8 @@ package com.sep.vox.application.port.input.query;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.application.shared.AppPageRequest;
+
 /**
  * Input chung của bốn query danh bạ kỳ thi (lớp / niên khóa / học sinh / giám thị) —
  * cả bốn nhận đúng bộ tham số này nên dùng chung một record thay vì bốn bản sao.
@@ -18,8 +20,7 @@ import java.util.UUID;
 public record ViewAssessmentDirectoryQuery(
     UUID assessmentId,
     String search,
-    int page,
-    int size,
+    AppPageRequest pageRequest, 
     List<UUID> excludeUserIds
 ) {
     public ViewAssessmentDirectoryQuery {

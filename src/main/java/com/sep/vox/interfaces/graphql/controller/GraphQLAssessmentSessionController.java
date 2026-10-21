@@ -47,8 +47,8 @@ import com.sep.vox.application.response.input.assessmentitemresponse.AssessmentS
 import com.sep.vox.application.response.input.assessmentsession.AssessmentCandidateResultResponse;
 import com.sep.vox.application.response.input.assessmentsession.AssessmentSessionResponse;
 import com.sep.vox.application.response.input.assessmentsession.StudentAssessmentResultSummaryResponse;
-import com.sep.vox.domain.dto.AssessmentProctoringAlertDto;
-import com.sep.vox.domain.dto.AssessmentRecordingDto;
+import com.sep.vox.domain.dto.assessment.AssessmentProctoringAlertDto;
+import com.sep.vox.domain.dto.assessment.AssessmentRecordingDto;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 
 import lombok.RequiredArgsConstructor;

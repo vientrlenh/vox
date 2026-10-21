@@ -5,8 +5,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
@@ -16,11 +14,11 @@ import com.sep.vox.application.port.input.query.ViewAssessmentBlueprintDetailsQu
 import com.sep.vox.application.port.input.query.ViewAssessmentBlueprintsQuery;
 import com.sep.vox.application.port.input.usecase.assessmentblueprint.ViewAssessmentBlueprintDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentblueprint.ViewAssessmentBlueprintsUseCase;
-import com.sep.vox.domain.dto.AssessmentBlueprintDto;
-import com.sep.vox.domain.dto.AssessmentBlueprintSectionDto;
-import com.sep.vox.domain.dto.AssessmentBlueprintSlotDto;
-import com.sep.vox.domain.dto.AssessmentBlueprintVersionDto;
 import com.sep.vox.domain.dto.QuestionDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintSectionDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintSlotDto;
+import com.sep.vox.domain.dto.assessment.AssessmentBlueprintVersionDto;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersionStatus;
 import com.sep.vox.domain.repository.assessment.AssessmentBlueprintSectionRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentBlueprintSlotRepository;
@@ -58,24 +56,18 @@ public class GraphQLAssessmentBlueprintController {
 
     @QueryMapping(name = "assessmentBlueprint")
     public AssessmentBlueprintDto assessmentBlueprint(@Argument(name = "id") UUID id) {
-        var startedAt = System.nanoTime();
-        LOGGER.info("[blueprint-perf] query assessmentBlueprint start id={}", id);
         var dto = viewAssessmentBlueprintDetailsUseCase.execute(new ViewAssessmentBlueprintDetailsQuery(id));
-        LOGGER.info("[blueprint-perf] query assessmentBlueprint done id={} tookMs={}", id, (System.nanoTime() - startedAt) / 1_000_000);
         return dto;
     }
 
     @QueryMapping(name = "assessmentBlueprintVersion")
     public AssessmentBlueprintVersionDto assessmentBlueprintVersion(@Argument(name = "id") UUID id) {
-        var startedAt = System.nanoTime();
-        LOGGER.info("[blueprint-perf] query assessmentBlueprintVersion start id={}", id);
         var dto = assessmentBlueprintVersionRepository.findById(id)
             .map(version -> {
                 viewAssessmentBlueprintDetailsUseCase.execute(new ViewAssessmentBlueprintDetailsQuery(version.getBlueprintId()));
                 return AssessmentBlueprintVersionDto.toDto(version);
             })
             .orElse(null);
-        LOGGER.info("[blueprint-perf] query assessmentBlueprintVersion done id={} tookMs={}", id, (System.nanoTime() - startedAt) / 1_000_000);
         return dto;
     }
 

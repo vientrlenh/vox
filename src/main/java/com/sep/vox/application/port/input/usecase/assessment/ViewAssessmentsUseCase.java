@@ -8,7 +8,7 @@ import com.sep.vox.application.port.input.query.ViewAssessmentsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
-import com.sep.vox.domain.dto.AssessmentDto;
+import com.sep.vox.domain.dto.assessment.AssessmentDto;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentRepository;
 import com.sep.vox.domain.shared.PageResult;

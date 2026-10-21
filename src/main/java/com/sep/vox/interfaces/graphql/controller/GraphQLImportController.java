@@ -18,21 +18,15 @@ import com.sep.vox.application.response.input.importfile.ImportSessionDetailsRes
 import com.sep.vox.application.response.input.importfile.ImportSessionSummaryResponse;
 import com.sep.vox.domain.shared.PageResult;
 
+import lombok.RequiredArgsConstructor;
+
 @Controller
+@RequiredArgsConstructor 
 public class GraphQLImportController {
 
     private final ViewImportSessionUseCase viewImportSessionUseCase;
     private final ViewImportSessionsUseCase viewImportSessionsUseCase;
     private final ViewImportRowsUseCase viewImportRowsUseCase;
-
-    public ImportController(
-            ViewImportSessionUseCase viewImportSessionUseCase,
-            ViewImportSessionsUseCase viewImportSessionsUseCase,
-            ViewImportRowsUseCase viewImportRowsUseCase) {
-        this.viewImportSessionUseCase = viewImportSessionUseCase;
-        this.viewImportSessionsUseCase = viewImportSessionsUseCase;
-        this.viewImportRowsUseCase = viewImportRowsUseCase;
-    }
 
     @QueryMapping(name = "importSession")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'SYSTEM_ADMIN')")

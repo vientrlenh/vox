@@ -30,7 +30,7 @@ import com.sep.vox.application.port.input.usecase.assessmentcandidate.ImportAsse
 import com.sep.vox.application.port.input.usecase.assessmentcandidate.UnblockAssessmentCandidateUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentcandidate.UpdateAssessmentCandidateStatusUseCase;
 import com.sep.vox.application.response.input.assessmentcandidate.AssignAssessmentPapersResponse;
-import com.sep.vox.domain.dto.AssessmentCandidateDto;
+import com.sep.vox.domain.dto.assessment.AssessmentCandidateDto;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateStatus;
 import com.sep.vox.interfaces.rest.dto.request.BulkDeleteAssessmentCandidatesRequest;
 import com.sep.vox.interfaces.rest.dto.request.ImportAssessmentCandidatesFromClassRequest;

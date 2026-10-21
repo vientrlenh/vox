@@ -15,6 +15,7 @@ import com.sep.vox.application.port.input.usecase.assessmentdirectory.ViewAssess
 import com.sep.vox.application.port.input.usecase.assessmentdirectory.ViewAssessmentDirectoryStudentsUseCase;
 import com.sep.vox.application.projection.dto.AssessmentDirectoryGradeInfo;
 import com.sep.vox.application.projection.dto.AssessmentDirectoryUserInfo;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.shared.PageResult;
 
@@ -36,7 +37,6 @@ public class GraphQLAssessmentDirectoryController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
         return viewAssessmentDirectoryClassesUseCase.execute(query(assessmentId, search, page, size));
     }
 
@@ -47,7 +47,6 @@ public class GraphQLAssessmentDirectoryController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
         return viewAssessmentDirectoryGradesUseCase.execute(query(assessmentId, search, page, size));
     }
 
@@ -59,7 +58,6 @@ public class GraphQLAssessmentDirectoryController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
             @Argument(name = "excludeUserIds") List<UUID> excludeUserIds) {
-        PageArguments.validate(page, size);
         return viewAssessmentDirectoryStudentsUseCase.execute(query(assessmentId, search, page, size, excludeUserIds));
     }
 
@@ -71,7 +69,6 @@ public class GraphQLAssessmentDirectoryController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
             @Argument(name = "excludeUserIds") List<UUID> excludeUserIds) {
-        PageArguments.validate(page, size);
         return viewAssessmentDirectoryProctorsUseCase.execute(query(assessmentId, search, page, size, excludeUserIds));
     }
 
@@ -81,7 +78,7 @@ public class GraphQLAssessmentDirectoryController {
 
     private static ViewAssessmentDirectoryQuery query(UUID assessmentId, String search, Integer page, Integer size,
             List<UUID> excludeUserIds) {
-        PageArguments.validate(page, size);
-        return new ViewAssessmentDirectoryQuery(assessmentId, search, page, size, excludeUserIds);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return new ViewAssessmentDirectoryQuery(assessmentId, search, pageRequest, excludeUserIds);
     }
 }

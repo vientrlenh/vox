@@ -9,15 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.PracticeBandOption;
+import com.sep.vox.domain.valueobject.Code;
+import com.sep.vox.domain.valueobject.PositiveInteger;
 
-/**
- * Thang bậc của khung đang áp, cho ô chọn độ khó trước mỗi phiên luyện.
- *
- * <p>Trước đây học sinh không chọn gì: hệ thống suy ra bậc từ bài chấm trên lớp cộng hiệu năng
- * luyện gần đây, rồi ra đề theo bậc đó. Suy như vậy là lấy độ khó của CÂU HỎI gán thành trình
- * độ của NGƯỜI HỌC -- một tuyên bố hệ thống không có cơ sở để đưa ra. Giờ chỉ còn liệt kê các
- * bậc kèm mô tả để học sinh tự chọn.
- */
+
 @Service
 public class ViewPracticeBandOptionsUseCase implements IUseCase<Void, List<PracticeBandOption>> {
 
@@ -51,10 +46,10 @@ public class ViewPracticeBandOptionsUseCase implements IUseCase<Void, List<Pract
         return ladder.stream()
             .map(band -> new PracticeBandOption(
                 band.getId(),
-                band.getCode(),
+                Code.valueOf(band.getCode()),
                 band.getLabel(),
                 band.getDescription(),
-                band.getOrder()
+                PositiveInteger.valueOf(band.getOrder())
             ))
             .toList();
     }

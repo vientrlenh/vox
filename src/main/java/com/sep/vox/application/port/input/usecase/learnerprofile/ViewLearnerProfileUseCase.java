@@ -1,7 +1,10 @@
 package com.sep.vox.application.port.input.usecase.learnerprofile;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.LearnerProfileQueryRepository;
@@ -22,7 +25,8 @@ public class ViewLearnerProfileUseCase implements IUseCase<Void, LearnerProfile>
 
     @Override
     public LearnerProfile execute(Void input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         return LearnerProfile.toResponse(
             learnerProfileQueryRepository.findCurrent(studentId)
         );

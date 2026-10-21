@@ -1,8 +1,11 @@
 package com.sep.vox.application.port.input.usecase.learnerprofile;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.SetPracticeGoalCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -29,7 +32,8 @@ public class SetPracticeGoalUseCase implements IUseCase<SetPracticeGoalCommand, 
     @Override
     @Transactional
     public LearnerProfile execute(SetPracticeGoalCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         commandService.setGoal(studentId, input.goalType());
         return LearnerProfile.toResponse(
             queryRepository.findCurrent(studentId)

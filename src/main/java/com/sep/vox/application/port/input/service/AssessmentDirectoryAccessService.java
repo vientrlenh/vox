@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.Assessment;
@@ -18,20 +19,6 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentMemberRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentRepository;
 
-/**
- * Ai được xem danh bạ nguồn thí sinh / giám thị của một kỳ thi, và xem tới đâu.
- *
- * <p>Sinh ra để vá một lệch quyền cụ thể: các use case nhập thí sinh
- * ({@code ImportAssessmentCandidatesFrom*UseCase}, {@code AddAssessmentCandidateUseCase}) cho phép
- * CHAIR ghi, nhưng danh sách lớp / niên khóa / học sinh mà họ phải chọn lại nằm sau
- * các query GraphQL gated {@code SCHOOL_ADMIN}. Quyền đọc và quyền ghi giờ đi chung
- * một luật ở đây.
- *
- * <p>Phạm vi tách theo {@link AssessmentKind}: kỳ thi tập trung cần lớp mà chủ tịch hội đồng
- * không dạy, nên mở toàn trường; còn bài trên lớp thì người tạo tự động thành CHAIR
- * ({@code CreateClassTestUseCase}) — mở toàn trường ở đó là phát quyền đọc danh bạ
- * trường cho mọi giáo viên.
- */
 @Service
 public class AssessmentDirectoryAccessService {
 
@@ -77,7 +64,8 @@ public class AssessmentDirectoryAccessService {
     }
 
     public AssessmentDirectoryScope resolve(Assessment assessment) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);

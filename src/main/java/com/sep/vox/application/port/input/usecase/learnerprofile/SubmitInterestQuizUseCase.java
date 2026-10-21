@@ -1,8 +1,11 @@
 package com.sep.vox.application.port.input.usecase.learnerprofile;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.SubmitInterestQuizCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -29,7 +32,8 @@ public class SubmitInterestQuizUseCase implements IUseCase<SubmitInterestQuizCom
     @Override
     @Transactional
     public LearnerProfile execute(SubmitInterestQuizCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         commandService.submitQuiz(studentId, input.answers());
         return LearnerProfile.toResponse(
             queryRepository.findCurrent(studentId)

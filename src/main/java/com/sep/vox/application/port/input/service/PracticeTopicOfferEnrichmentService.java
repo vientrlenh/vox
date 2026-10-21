@@ -10,6 +10,7 @@ import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import com.sep.vox.domain.repository.LearnerProfileRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
+import com.sep.vox.domain.valueobject.PositiveInteger;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 
 /**
@@ -65,7 +66,7 @@ public class PracticeTopicOfferEnrichmentService {
             return DEFAULT_BAND_ORDER;
         }
         return frameworkResultBandRepository.findById(bandId)
-            .map(band -> band.getOrder())
+            .map(band -> PositiveInteger.valueOf(band.getOrder()))
             .orElse(DEFAULT_BAND_ORDER);
     }
 

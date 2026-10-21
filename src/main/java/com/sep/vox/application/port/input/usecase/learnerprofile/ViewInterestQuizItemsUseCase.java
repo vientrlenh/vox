@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.service.InterestQuizItemSelector;
 import com.sep.vox.application.port.input.service.InterestQuizScorer;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -59,7 +60,8 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
     // repository bên dưới tự transact riêng qua Spring Data proxy.
     @Override
     public List<InterestQuizItem> execute(Void input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         if (quizItemRepository.hasQuizItemsForStudent(studentId)) {
             return toResponse(selectForStudent(studentId));
@@ -88,7 +90,8 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
      * trong, giữ transaction suốt quãng đó từng làm cạn pool kết nối.
      */
     public List<InterestQuizItem> regenerate() {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         var completed = learnerProfileRepository.findCurrent(studentId)
             .map(profile -> profile.getQuizCompletedAt() != null)

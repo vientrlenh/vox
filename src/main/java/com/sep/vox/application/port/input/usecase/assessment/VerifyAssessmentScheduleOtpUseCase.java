@@ -80,7 +80,8 @@ public class VerifyAssessmentScheduleOtpUseCase implements IUseCase<VerifyAssess
 
     @Override
     public AssessmentEntryTicketResponse execute(VerifyAssessmentScheduleOtpCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var candidate = assessmentCandidateRepository.findByAssessmentIdAndStudentId(input.assessmentId(), studentId)
             .orElseThrow(() -> new ResourceNotFoundException("Bạn không phải thí sinh của kỳ thi này"));
 

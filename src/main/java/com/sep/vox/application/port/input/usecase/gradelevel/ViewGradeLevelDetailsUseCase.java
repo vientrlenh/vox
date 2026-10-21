@@ -35,7 +35,8 @@ public class ViewGradeLevelDetailsUseCase implements IUseCase<ViewGradeLevelDeta
     @Override
     @Transactional(readOnly = true)
     public GradeLevelDto execute(ViewGradeLevelDetailsQuery input) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
         }

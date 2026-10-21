@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.mapper.importfile.ImportSessionResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportSessionQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -58,7 +59,8 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
             throw new IllegalArgumentException("Phiên import không được để trống");
         }
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = findCurrentUser(currentUserId);
         var session = findSession(input.importSessionId());
 

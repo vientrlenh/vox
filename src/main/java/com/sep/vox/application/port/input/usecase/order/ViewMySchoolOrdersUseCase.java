@@ -1,8 +1,11 @@
 package com.sep.vox.application.port.input.usecase.order;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewMySchoolOrdersQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -25,7 +28,8 @@ public class ViewMySchoolOrdersUseCase implements IUseCase<ViewMySchoolOrdersQue
     @Override
     @Transactional(readOnly = true)
     public PageResult<OrderDto> execute(ViewMySchoolOrdersQuery input) {
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID schoolId = userContextPort.getCurrentSchoolId()
+            .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
         var page = orderRepository.findBySchoolId(schoolId, input.page(), input.size());
 
         return new PageResult<>(

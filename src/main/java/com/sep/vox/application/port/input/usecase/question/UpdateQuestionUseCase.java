@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -46,7 +47,8 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
     @Transactional
     public UpdateQuestionResponse execute(UpdateQuestionCommand input) {
         var command = normalize(input);
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         var question = questionRepository.findById(command.id())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));

@@ -1,10 +1,12 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.service.SubscriptionPlanResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -51,7 +53,8 @@ public class PreviewSchoolSubscriptionRenewalUseCase
     @Override
     @Transactional(readOnly = true)
     public SchoolSubscriptionRenewalPreviewResponse execute(Void input) {
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID schoolId = userContextPort.getCurrentSchoolId()
+            .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
 
         // Kỳ GẦN NHẤT, không lọc trạng thái: gia hạn muộn (gói hết hạn tuần trước) là đường phổ biến
         // nhất, mà ở đó không còn kỳ nào ACTIVE để hỏi.

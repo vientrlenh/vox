@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.MonitoredAssessmentSummary;
@@ -46,7 +47,8 @@ public class ViewMonitorableAssessmentUseCase implements IUseCase<UUID, Monitore
     @Override
     @Transactional(readOnly = true)
     public MonitoredAssessmentSummary execute(UUID assessmentId) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var now = Instant.now();
 
         var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()

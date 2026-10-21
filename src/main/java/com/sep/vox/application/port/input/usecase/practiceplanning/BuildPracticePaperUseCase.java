@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.QuotaExceededException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.mapper.practiceplanning.PracticePlanningResponseMapper;
 import com.sep.vox.application.port.input.command.BuildPracticePaperCommand;
 import com.sep.vox.application.port.input.service.PracticePaperPersistenceService;
@@ -73,7 +74,8 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
 
     @Override
     public PracticePaper execute(BuildPracticePaperCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         schoolSubscriptionActiveGuardService.requireActiveForStudent(studentId, "bắt đầu buổi luyện tập cá nhân hóa AI");
         var topic = requireTopic(input.topicId());
         var spendableFundsVnd = spendablePracticeFundsVnd(studentId);

@@ -41,7 +41,8 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
     @Override
     @Transactional
     public Void execute(DeleteSystemRubricVersionCommand command) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 

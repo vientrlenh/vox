@@ -35,7 +35,7 @@ public class SetQuotaDistributionPolicyUseCase implements IUseCase<SetQuotaDistr
     @Override
     @Transactional
     public BigDecimal execute(SetQuotaDistributionPolicyCommand input) {
-        if (!userContextPort.isSystemAdmin() && !input.schoolId().equals(userContextPort.getCurrentSchoolId())) {
+        if (!userContextPort.isSystemAdmin() && userContextPort.getCurrentSchoolId().filter(input.schoolId()::equals).isEmpty()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 

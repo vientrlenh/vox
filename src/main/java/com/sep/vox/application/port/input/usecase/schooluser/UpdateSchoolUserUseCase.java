@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -9,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -48,7 +50,8 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
         }
 
         var now = Instant.now();
-        var callerId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID callerId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         var caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));

@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicyschool;
 
+import java.util.UUID;
+
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
@@ -43,7 +45,8 @@ public class ViewSchoolAssessmentPoliciesUseCase implements IUseCase<ViewSchoolA
     @Override
     @Transactional(readOnly = true)
     public PageResult<AssessmentPolicyDto> execute(ViewSchoolAssessmentPoliciesQuery query) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewAssessmentSessionPaperQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -75,7 +76,9 @@ public class GetAssessmentSessionPaperUseCase implements IUseCase<ViewAssessment
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
         var candidate = assessmentCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của phiên thi"));
-        if (!candidate.getStudentId().equals(userContextPort.getCurrentAuthenticatedUserId())) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
+        if (!candidate.getStudentId().equals(currentUserId)) {
             throw new ForbiddenException("Bạn không được phép xem đề thi của phiên này");
         }
 

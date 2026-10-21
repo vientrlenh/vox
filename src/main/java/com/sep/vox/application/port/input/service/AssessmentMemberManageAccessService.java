@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.Assessment;
@@ -57,7 +58,8 @@ public class AssessmentMemberManageAccessService {
 
     /** Ném {@link ForbiddenException} nếu người gọi không được lập hội đồng cho kỳ thi này. */
     public AssessmentMemberActor requireCanManage(Assessment assessment) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (assessment.getKind() != AssessmentKind.CENTRALIZED) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }

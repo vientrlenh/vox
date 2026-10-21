@@ -2,7 +2,9 @@ package com.sep.vox.application.port.input.usecase.stream;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
 import com.sep.vox.domain.model.assessment.AssessmentSession;
@@ -55,7 +57,8 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
         var command = normalizeCommand(input);
 
         var now = Instant.now();
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         var assessmentSession = assessmentSessionRepository.findByIdAndResumable(command.assessmentSessionId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi hoặc phiên thi đã hết hạn"));

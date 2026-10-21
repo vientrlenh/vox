@@ -14,6 +14,7 @@ import org.springframework.stereotype.Controller;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.RequiredArgsConstructor;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.CanViewAssessmentBlueprintDataQuery;
 import com.sep.vox.application.port.input.query.EstimateAssessmentTokenQuotaQuery;
 import com.sep.vox.application.port.input.query.ViewAssessmentDetailsQuery;
@@ -252,7 +253,8 @@ public class GraphQLAssessmentController {
             return CompletableFuture.completedFuture(true);
         }
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         DataLoader<UUID, List<AssessmentMemberDto>> loader = env.getDataLoader("assessmentMembersByAssessmentId");
         return loader.load(source.id()).thenApply(members -> members.stream()
             .anyMatch(member -> member.userId().equals(currentUserId)));

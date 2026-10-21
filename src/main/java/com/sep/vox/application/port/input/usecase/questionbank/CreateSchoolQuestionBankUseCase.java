@@ -1,11 +1,13 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSchoolQuestionBankCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -34,7 +36,8 @@ public class CreateSchoolQuestionBankUseCase implements IUseCase<CreateSchoolQue
     public CreateQuestionBankResponse execute(CreateSchoolQuestionBankCommand input) {
         var command = normalize(input);
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var schoolUser = schoolUserRepository.findByUserId(currentUserId)
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập không hợp lệ"));
 

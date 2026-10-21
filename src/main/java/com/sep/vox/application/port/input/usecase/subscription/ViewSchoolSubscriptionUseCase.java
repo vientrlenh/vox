@@ -35,7 +35,7 @@ public class ViewSchoolSubscriptionUseCase implements IUseCase<ViewSchoolSubscri
 
     @Override
     public SchoolSubscriptionDto execute(ViewSchoolSubscriptionQuery input) {
-        if (!userContextPort.isSystemAdmin() && !input.schoolId().equals(userContextPort.getCurrentSchoolId())) {
+        if (!userContextPort.isSystemAdmin() && userContextPort.getCurrentSchoolId().filter(input.schoolId()::equals).isEmpty()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         return schoolSubscriptionRepository.findActiveBySchoolId(input.schoolId())

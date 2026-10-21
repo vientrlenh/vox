@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewAssessmentSchedulesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -45,8 +46,9 @@ public class ViewAssessmentSchedulesUseCase implements IUseCase<ViewAssessmentSc
     @Override
     @Transactional(readOnly = true)
     public List<AssessmentScheduleDto> execute(ViewAssessmentSchedulesQuery input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = userContextPort.getCurrentSchoolId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
+        UUID currentSchoolId = userContextPort.getCurrentSchoolId().orElse(null);
         List<AssessmentSchedule> schedules;
         if (input.assessmentId() != null) {
             var assessment = assessmentRepository.findById(input.assessmentId())
@@ -72,7 +74,7 @@ public class ViewAssessmentSchedulesUseCase implements IUseCase<ViewAssessmentSc
      * được phép; trả về schoolId để giới hạn kết quả theo đúng trường của người dùng.
      */
     private UUID authorizeSchoolWide() {
-        var currentSchoolId = userContextPort.getCurrentSchoolId();
+        UUID currentSchoolId = userContextPort.getCurrentSchoolId().orElse(null);
         var schoolAdmin = userContextPort.isSchoolAdmin();
         if (schoolAdmin && currentSchoolId != null) {
             return currentSchoolId;

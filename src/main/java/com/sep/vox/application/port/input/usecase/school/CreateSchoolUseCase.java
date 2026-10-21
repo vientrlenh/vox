@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSchoolCommand;
 import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
 import com.sep.vox.application.port.input.service.ProvisionSchoolService;
@@ -54,7 +55,8 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
         validateCommand(command);
 
         var now = Instant.now();
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var school = resolveSchoolInfo(command, currentUserId, now);
 
         return provisionSchoolService.provision(new ProvisionSchoolCommand(

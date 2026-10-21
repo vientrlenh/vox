@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
+import java.util.UUID;
+
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
@@ -44,7 +46,8 @@ public class ViewSystemRubricCriteriaUseCase implements IUseCase<ViewSystemRubri
     @Transactional(readOnly = true)
     public PageResult<RubricCriterionDto> execute(ViewSystemRubricCriteriaQuery query) {
         // 1. Xác thực User
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }

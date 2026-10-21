@@ -1,9 +1,12 @@
 package com.sep.vox.application.port.input.usecase.assessment;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewAssessmentStatusCountsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -34,7 +37,8 @@ public class ViewAssessmentStatusCountsUseCase implements IUseCase<ViewAssessmen
     @Override
     @Transactional(readOnly = true)
     public AssessmentStatusCountsDto execute(ViewAssessmentStatusCountsQuery input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var systemAdmin = userContextPort.isSystemAdmin();
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())

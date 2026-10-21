@@ -3,11 +3,13 @@ package com.sep.vox.application.port.input.usecase.proctoring;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.MonitoredAssessmentSummary;
@@ -54,7 +56,8 @@ public class ViewMonitorableAssessmentsUseCase implements IUseCase<Void, List<Mo
     @Override
     @Transactional(readOnly = true)
     public List<MonitoredAssessmentSummary> execute(Void input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var now = Instant.now();
         var leadUntil = now.plus(LEAD_TIME);
 

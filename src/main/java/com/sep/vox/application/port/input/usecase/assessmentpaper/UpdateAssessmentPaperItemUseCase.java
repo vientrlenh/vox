@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentPaperItemCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccessService;
 import com.sep.vox.application.port.input.service.AssessmentTimeQuotaGuardService;
@@ -87,7 +88,8 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
     @Override
     @Transactional
     public AssessmentPaperItemDto execute(UpdateAssessmentPaperItemCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var item = assessmentPaperItemRepository.findById(input.itemId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi trong đề thi"));
         if (!item.getPaperId().equals(input.paperId())) {

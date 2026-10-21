@@ -47,8 +47,9 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolUserDto> execute(ViewSchoolUsersBySchoolQuery input) {
-        var callerId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID callerId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
+        UUID schoolId = userContextPort.getCurrentSchoolId().orElse(null);
 
         if (schoolId == null || !input.schoolId().equals(schoolId)) {
             throw new ForbiddenException("Bạn không có quyền xem danh sách người dùng của trường này");

@@ -38,7 +38,8 @@ public class MyClassAccessGuard {
 
     /** Trả về id người gọi sau khi chắc chắn tài khoản còn hoạt động. */
     public UUID requireActiveCaller() {
-        var callerId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID callerId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
         }

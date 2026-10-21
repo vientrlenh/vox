@@ -56,7 +56,8 @@ public class UpdateSystemRubricResultBandUseCase implements IUseCase<UpdateSyste
     @Transactional
     public UUID execute(UpdateSystemRubricResultBandCommand command) {
         // 1. Xác thực User
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }

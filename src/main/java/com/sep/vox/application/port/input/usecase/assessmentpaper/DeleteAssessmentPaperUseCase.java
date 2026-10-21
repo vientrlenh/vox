@@ -2,12 +2,14 @@ package com.sep.vox.application.port.input.usecase.assessmentpaper;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteAssessmentPaperCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccessService;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
@@ -59,7 +61,8 @@ public class DeleteAssessmentPaperUseCase implements IUseCase<DeleteAssessmentPa
     @Override
     @Transactional
     public Void execute(DeleteAssessmentPaperCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var paper = assessmentPaperRepository.findById(input.paperId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
         var assessment = assessmentRepository.findById(paper.getAssessmentId())

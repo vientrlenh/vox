@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.FundQuotaFromBalanceCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -87,7 +88,8 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
 
         var quotaType = parseQuotaType(input.quotaType());
         var amountVnd = requirePositiveAmount(input.amountVnd());
-        var actorId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID actorId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         var subscription = schoolSubscriptionRepository.findActiveBySchoolId(input.schoolId())
             .orElseThrow(() -> new ResourceNotFoundException("Trường chưa có gói subscription đang hoạt động"));
@@ -142,7 +144,7 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
         if (schoolId == null) {
             throw new IllegalArgumentException("Thiếu mã trường");
         }
-        if (!userContextPort.isSystemAdmin() && !schoolId.equals(userContextPort.getCurrentSchoolId())) {
+        if (!userContextPort.isSystemAdmin() && userContextPort.getCurrentSchoolId().filter(schoolId::equals).isEmpty()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
     }

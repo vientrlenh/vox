@@ -48,7 +48,8 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
         // 2. school_grades mang schoolId trực tiếp -- không còn phải mượn Khối Lớp làm "cầu nối".
 
         // 3. Validate User (Tối ưu bằng hàm exists)
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
         }

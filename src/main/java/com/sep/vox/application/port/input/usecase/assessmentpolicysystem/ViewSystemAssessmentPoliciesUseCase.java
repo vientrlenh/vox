@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicysystem;
 
+import java.util.UUID;
+
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSystemAssessmentPoliciesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -33,7 +35,8 @@ public class ViewSystemAssessmentPoliciesUseCase implements IUseCase<ViewSystemA
     @Override
     @Transactional(readOnly = true)
     public PageResult<AssessmentPolicyDto> execute(ViewSystemAssessmentPoliciesQuery query) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.AppealDetailInfo;
@@ -30,8 +31,9 @@ public class ViewMyAppealDetailUseCase implements IUseCase<UUID, AppealDetailInf
     @Override
     @Transactional(readOnly = true)
     public AppealDetailInfo execute(UUID appealId) {
-        return assessmentAppealQueryRepository.findStudentDetailById(
-                appealId, userContextPort.getCurrentAuthenticatedUserId())
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
+        return assessmentAppealQueryRepository.findStudentDetailById(appealId, studentId)
             .orElseThrow(() -> new ForbiddenException("Bạn không được xem đơn phúc khảo này."));
     }
 }

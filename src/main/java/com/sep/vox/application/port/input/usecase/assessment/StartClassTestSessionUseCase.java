@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateAssessmentSessionCommand;
 import com.sep.vox.application.port.input.command.StartClassTestSessionCommand;
 import com.sep.vox.application.port.input.command.UpdateAssessmentSessionStatusCommand;
@@ -76,7 +77,8 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
 
     @Override
     public AssessmentEntryTicketResponse execute(StartClassTestSessionCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var candidate = assessmentCandidateRepository.findByAssessmentIdAndStudentId(input.assessmentId(), studentId)
             .orElseThrow(() -> new ResourceNotFoundException("Bạn không phải thí sinh của bài kiểm tra này"));
 

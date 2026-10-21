@@ -2,10 +2,12 @@ package com.sep.vox.application.port.input.usecase.practiceplanning;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.SearchPracticeTopicsQuery;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -50,7 +52,8 @@ public class SearchPracticeTopicsSemanticUseCase
             return List.of();
         }
 
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         // HYDRATE từ Postgres. Không dùng tên trong vector store: đó là bản chụp lúc index, tên
         // có thể đã đổi và chủ đề có thể đã bị tắt. Query cũng lọc luôn `active = true`.
         var rows = practiceTopicQueryRepository.findActiveByIds(

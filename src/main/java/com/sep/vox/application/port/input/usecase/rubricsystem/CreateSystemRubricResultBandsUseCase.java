@@ -51,7 +51,8 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
     @Transactional
     public List<UUID> execute(CreateSystemRubricResultBandsCommand command) {
         // 1. Xác thực tài khoản
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
 

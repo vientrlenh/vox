@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ApproveRegisterFormCommand;
 import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
 import com.sep.vox.application.port.input.service.ProvisionSchoolService;
@@ -45,7 +46,8 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
     public Void execute(ApproveRegisterFormCommand input) {
         var command = normalize(input);
         var now = Instant.now();
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         var registerForm = registerFormRepository.findById(command.registerFormId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đăng ký theo yêu cầu"));

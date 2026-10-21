@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.MarkNotificationAsReadCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -26,7 +27,8 @@ public class MarkNotificationAsReadUseCase implements IUseCase<MarkNotificationA
     @Override
     @Transactional
     public UUID execute(MarkNotificationAsReadCommand input) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var now = Instant.now();
 
         var notification = notificationRepository.findByIdAndUserId(input.id(), userId)

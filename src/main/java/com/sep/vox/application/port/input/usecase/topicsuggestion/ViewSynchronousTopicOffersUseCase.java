@@ -1,9 +1,11 @@
 package com.sep.vox.application.port.input.usecase.topicsuggestion;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSynchronousTopicOffersQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -42,7 +44,8 @@ public class ViewSynchronousTopicOffersUseCase implements IUseCase<ViewSynchrono
      */
     @Override
     public List<PracticeTopicOffer> execute(ViewSynchronousTopicOffersQuery input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         return topicSuggestionRepository.synchronousOffers(studentId, input.requestedCount());
     }
 }

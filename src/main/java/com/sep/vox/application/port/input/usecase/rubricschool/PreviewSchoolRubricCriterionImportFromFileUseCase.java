@@ -76,7 +76,8 @@ public class PreviewSchoolRubricCriterionImportFromFileUseCase implements IUseCa
         }
 
         // Bước 1: Kiểm tra trạng thái tài khoản đang đăng nhập
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {

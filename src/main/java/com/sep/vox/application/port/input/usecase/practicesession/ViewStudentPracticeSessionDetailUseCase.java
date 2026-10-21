@@ -1,9 +1,12 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewStudentPracticeSessionDetailQuery;
 import com.sep.vox.application.port.input.service.PracticeSessionDetailAssemblyService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -35,7 +38,8 @@ public class ViewStudentPracticeSessionDetailUseCase
     @Override
     @Transactional(readOnly = true)
     public TeacherPracticeSessionDetail execute(ViewStudentPracticeSessionDetailQuery input) {
-        var teacherId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID teacherId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (!practiceSessionQueryRepository.canTeacherReadSession(teacherId, input.sessionId())) {
             throw new ForbiddenException("Bạn không được xem phiên luyện này.");
         }

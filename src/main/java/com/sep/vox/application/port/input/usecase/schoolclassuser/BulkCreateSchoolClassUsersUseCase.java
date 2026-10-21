@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.BulkCreateSchoolClassUsersCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -71,7 +72,8 @@ public class BulkCreateSchoolClassUsersUseCase
     public BulkCreateSchoolClassUsersResponse execute(BulkCreateSchoolClassUsersCommand input) {
         var requestedUserIds = validateCommand(input);
         var now = Instant.now();
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
 

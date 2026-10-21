@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -44,7 +45,8 @@ public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDe
     @Override
     @Transactional(readOnly = true)
     public SchoolClassDto execute(ViewSchoolClassDetailsQuery input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
         validateSchool(schoolId);

@@ -13,6 +13,7 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.BuildPracticePaperCommand;
 import com.sep.vox.application.port.input.command.DismissTopicOfferCommand;
 import com.sep.vox.application.port.input.command.SaveTopicCommand;
@@ -121,6 +122,7 @@ public class PracticePlanningController {
                 if (offers.size() < 3) {
                     topicOfferBackfillService.backfillAsync(
                         userContextPort.getCurrentAuthenticatedUserId()
+                            .orElseThrow(() -> new UnauthorizedException("User is not logged in"))
                     );
                 }
                 return (List<PracticeTopicOffer>) offers;
@@ -175,7 +177,8 @@ public class PracticePlanningController {
             input.previousOfferedTopicIds()
         );
         return practicePaperDraftService.start(
-            userContextPort.getCurrentAuthenticatedUserId(),
+            userContextPort.getCurrentAuthenticatedUserId()
+                .orElseThrow(() -> new UnauthorizedException("User is not logged in")),
             () -> buildPracticePaperUseCase.execute(command)
         );
     }
@@ -185,7 +188,8 @@ public class PracticePlanningController {
     @PreAuthorize("hasRole('STUDENT')")
     public PracticePaperDraft practicePaperDraft(@Argument("draftId") UUID draftId) {
         return practicePaperDraftService.get(
-            userContextPort.getCurrentAuthenticatedUserId(),
+            userContextPort.getCurrentAuthenticatedUserId()
+                .orElseThrow(() -> new UnauthorizedException("User is not logged in")),
             draftId
         );
     }

@@ -41,7 +41,8 @@ public class ViewSystemScoringRuleDetailUseCase implements IUseCase<ViewScoringR
     @Transactional(readOnly = true)
     public ScoringRuleDto execute(ViewScoringRuleDetailQuery query) {
         // 1. Kiểm tra tài khoản System Admin
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {

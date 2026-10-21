@@ -1,10 +1,12 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.SearchPracticeTopicsQuery;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -32,7 +34,8 @@ public class SearchPracticeTopicsUseCase implements IUseCase<SearchPracticeTopic
     @Override
     @Transactional(readOnly = true)
     public TopicSearchResult execute(SearchPracticeTopicsQuery input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var normalized = input.keyword() == null ? "" : input.keyword().strip().toLowerCase();
         if (normalized.isBlank()) {
             return new TopicSearchResult(List.of(), false);

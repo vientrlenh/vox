@@ -13,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.RequiredArgsConstructor;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewQuestionDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionStatusCountsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionsQuery;
@@ -171,7 +172,8 @@ public class GraphQLQuestionController {
 
     @SchemaMapping(typeName = "Question", field = "usableInAssessment")
     public CompletableFuture<Boolean> usableInAssessment(QuestionDto source, DataFetchingEnvironment env) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (currentUserId.equals(source.createdBy()) || QuestionSharing.SCHOOL_SHARED.name().equals(source.sharing())) {
             return CompletableFuture.completedFuture(true);
         }

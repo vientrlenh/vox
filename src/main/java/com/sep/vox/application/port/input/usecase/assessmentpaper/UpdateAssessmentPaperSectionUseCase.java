@@ -1,11 +1,13 @@
 package com.sep.vox.application.port.input.usecase.assessmentpaper;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentPaperSectionCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -43,7 +45,8 @@ public class UpdateAssessmentPaperSectionUseCase implements IUseCase<UpdateAsses
     @Override
     @Transactional
     public AssessmentPaperSectionDto execute(UpdateAssessmentPaperSectionCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var section = assessmentPaperSectionRepository.findById(input.sectionId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phần trong đề thi"));
         if (!section.getPaperId().equals(input.paperId())) {

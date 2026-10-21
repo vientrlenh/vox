@@ -90,7 +90,8 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
     @Override
     @Transactional
     public UUID execute(CloneSystemRubricToSchoolCommand command) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
             .orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {

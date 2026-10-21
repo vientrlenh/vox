@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UnsuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionSuspensionNotificationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -58,7 +59,8 @@ public class UnsuspendSubscriptionUseCase implements IUseCase<UnsuspendSubscript
         }
 
         var now = Instant.now();
-        var actorId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID actorId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         // Ghi chú không bắt buộc: gỡ đình chỉ là trả lại quyền, không phải tước đi, nên không cần
         // biện minh như lúc đình chỉ. CHECK ở DB cũng chỉ ép reason với SUSPENDED.
         var note = StringNormalization.trimAndCollapseSpaces(input.note());

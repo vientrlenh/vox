@@ -1,10 +1,13 @@
 package com.sep.vox.application.port.input.usecase.assessmentsession;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentSessionRemainingTimeCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -54,7 +57,8 @@ public class UpdateAssessmentSessionRemainingTimeUseCase
     @Override
     @Transactional
     public Integer execute(UpdateAssessmentSessionRemainingTimeCommand input) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         // RESUMABLE chứ không phải findById: checkpoint cho một phiên đã nộp hoặc đã chấm là vô
         // nghĩa, và nhận nó vào sẽ làm bẩn dữ liệu của lần chấm.

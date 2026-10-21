@@ -44,7 +44,8 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
     public UUID execute(UpdateSchoolRoomCommand command) {
 
         // 1. Validate User (Tối ưu bằng hàm exists)
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản của bạn không tồn tại hoặc đã bị khóa.");
         }

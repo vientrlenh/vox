@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.PreviewSchoolDirectoryImportFromFileCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.FileProcessingPort;
@@ -57,7 +58,8 @@ public class PreviewSchoolDirectoryImportFromFileUseCase
         }
 
         var now = Instant.now();
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         var parsed = fileProcessingPort.parse(input.file(), ImportType.SCHOOL_DIRECTORY);
         var expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);

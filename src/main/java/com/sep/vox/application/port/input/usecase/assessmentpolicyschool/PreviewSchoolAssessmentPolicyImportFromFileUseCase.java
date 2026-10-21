@@ -64,7 +64,8 @@ public class PreviewSchoolAssessmentPolicyImportFromFileUseCase implements IUseC
     @Override
     @Transactional
     public PreviewAssessmentPolicyImportResponse execute(PreviewSchoolAssessmentPolicyImportFromFileCommand command) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
 

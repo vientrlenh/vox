@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.PreviewQuestionBankImportFromFileCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.FileProcessingPort;
@@ -70,7 +71,8 @@ public class PreviewQuestionBankImportFromFileUseCase
             throw new IllegalArgumentException("File import không được để trống");
         }
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         UUID schoolId = null;
         if (!userContextPort.isSystemAdmin()) {
             schoolId = schoolUserRepository.findByUserId(currentUserId)

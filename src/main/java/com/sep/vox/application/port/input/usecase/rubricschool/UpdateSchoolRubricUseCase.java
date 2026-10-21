@@ -45,7 +45,8 @@ public class UpdateSchoolRubricUseCase implements IUseCase<UpdateSchoolRubricCom
     @Transactional
     public UUID execute(UpdateSchoolRubricCommand command) {
         // 1. Xác thực tài khoản
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
 

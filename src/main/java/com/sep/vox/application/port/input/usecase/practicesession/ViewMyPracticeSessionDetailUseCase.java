@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.service.PracticeSessionDetailAssemblyService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.TeacherPracticeSessionDetail;
@@ -39,7 +40,8 @@ public class ViewMyPracticeSessionDetailUseCase {
 
     @Transactional(readOnly = true)
     public TeacherPracticeSessionDetail execute(UUID sessionId) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var session = practiceSessionRepository.findById(sessionId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
         // hasRole('STUDENT') mới chỉ nói người gọi LÀ học sinh, chưa nói phiên này của ai --

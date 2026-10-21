@@ -1,8 +1,11 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UnsaveTopicCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -24,7 +27,8 @@ public class UnsaveTopicUseCase implements IUseCase<UnsaveTopicCommand, Boolean>
     @Override
     @Transactional
     public Boolean execute(UnsaveTopicCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         savedTopicRepository.delete(studentId, input.topicId());
         return true;
     }

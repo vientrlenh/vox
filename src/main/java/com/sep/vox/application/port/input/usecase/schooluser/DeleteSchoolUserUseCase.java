@@ -1,11 +1,13 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -30,7 +32,8 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
     @Transactional
     public Void execute(DeleteSchoolUserCommand input) {
         var now = Instant.now();
-        var callerId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID callerId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));

@@ -3,10 +3,12 @@ package com.sep.vox.application.port.input.usecase.dashboard;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewSchoolAiCostQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -33,7 +35,8 @@ public class ViewSchoolAiCostTimeseriesUseCase
     @Override
     @Transactional(readOnly = true)
     public SchoolAiCostTimeseriesResponse execute(ViewSchoolAiCostQuery input) {
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID schoolId = userContextPort.getCurrentSchoolId()
+            .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
         var to = input.to() == null ? Instant.now() : input.to();
         var from = input.from() == null ? to.minus(DEFAULT_WINDOW_DAYS, ChronoUnit.DAYS) : input.from();
 

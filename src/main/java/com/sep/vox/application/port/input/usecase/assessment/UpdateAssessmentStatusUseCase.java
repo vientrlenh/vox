@@ -13,6 +13,7 @@ import com.sep.vox.application.event.assessment.AssessmentResultsPublishedEvent;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentStatusCommand;
 import com.sep.vox.application.port.input.service.AssessmentCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.service.AssessmentScheduleClosureService;
@@ -138,7 +139,8 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
             StringNormalization.normalizeCode(input.action()),
             StringNormalization.trimAndCollapseSpaces(input.note())
         );
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(user -> user.getSchoolId())
             .orElse(null);

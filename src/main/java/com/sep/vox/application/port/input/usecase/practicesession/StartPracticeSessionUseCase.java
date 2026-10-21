@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
+import java.util.UUID;
+
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.StartPracticeSessionCommand;
 import com.sep.vox.application.port.input.service.StartPracticeSessionPersistenceService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -33,7 +36,8 @@ public class StartPracticeSessionUseCase implements IUseCase<StartPracticeSessio
 
     @Override
     public PracticeSession execute(StartPracticeSessionCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         agentAvailabilityPort.requireReady();
         return persistenceService.persist(studentId, input.paperId());
     }

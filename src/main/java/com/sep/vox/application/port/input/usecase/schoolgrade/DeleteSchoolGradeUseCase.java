@@ -51,7 +51,8 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
     @Transactional
     public Void execute(DeleteSchoolGradeCommand command) {
         // 1. Xác định User hiện tại
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }

@@ -1,10 +1,12 @@
 package com.sep.vox.application.port.input.usecase.notification;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateNotificationDeviceCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -28,7 +30,8 @@ public class CreateNotificationDeviceUseCase implements IUseCase<CreateNotificat
     public Void execute(CreateNotificationDeviceCommand input) {
         var command = normalize(input);
         var now = Instant.now();
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         
         NotificationDevicePlatform platform;
         try {

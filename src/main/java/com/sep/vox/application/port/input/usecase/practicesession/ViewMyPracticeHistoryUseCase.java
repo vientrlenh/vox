@@ -1,10 +1,12 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
 import com.sep.vox.application.mapper.practicesession.SessionRowMapper;
 import com.sep.vox.application.port.input.query.ViewMyPracticeHistoryQuery;
@@ -29,7 +31,8 @@ public class ViewMyPracticeHistoryUseCase implements IUseCase<ViewMyPracticeHist
     @Override
     @Transactional(readOnly = true)
     public List<PracticeSession> execute(ViewMyPracticeHistoryQuery input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var limit = Math.max(1, Math.min(input.limit(), 100));
         return practiceSessionQueryRepository.findHistory(studentId, limit).stream()
             .map(SessionRowMapper::toDto)

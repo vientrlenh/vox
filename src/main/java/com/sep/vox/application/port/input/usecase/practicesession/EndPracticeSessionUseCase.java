@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
 import com.sep.vox.application.mapper.practicesession.SessionRowMapper;
 import com.sep.vox.application.port.input.command.EndPracticeSessionCommand;
@@ -53,7 +54,8 @@ public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCom
     @Override
     @Transactional
     public PracticeSession execute(EndPracticeSessionCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var sessionId = input.sessionId();
         requireOwnedInProgress(sessionId, studentId);
         // Xả chấm TRƯỚC khi đọc điểm: câu học sinh bỏ dở chưa từng được chấm, và nếu không

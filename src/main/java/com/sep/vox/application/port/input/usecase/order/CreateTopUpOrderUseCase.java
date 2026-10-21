@@ -8,6 +8,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateTopUpOrderCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.ServiceFeePort;
@@ -42,7 +44,8 @@ public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand
     @Override
     @Transactional
     public UUID execute(CreateTopUpOrderCommand input) {
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID schoolId = userContextPort.getCurrentSchoolId()
+            .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
 
         var creditAmountVnd = validatedCreditAmount(input.creditAmountVnd());
 
@@ -67,6 +70,7 @@ public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand
             serviceFeeVnd,
             now,
             userContextPort.getCurrentAuthenticatedUserId()
+                .orElseThrow(() -> new UnauthorizedException("User is not logged in"))
         ));
 
         return savedOrder.getId();

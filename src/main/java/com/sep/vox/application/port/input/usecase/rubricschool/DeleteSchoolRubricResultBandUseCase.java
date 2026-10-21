@@ -46,7 +46,8 @@ public class DeleteSchoolRubricResultBandUseCase implements IUseCase<DeleteSchoo
     @Transactional
     public Void execute(DeleteSchoolRubricResultBandCommand command) {
         // 1. Auth
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {

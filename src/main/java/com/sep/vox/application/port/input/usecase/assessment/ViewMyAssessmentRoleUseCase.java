@@ -1,8 +1,11 @@
 package com.sep.vox.application.port.input.usecase.assessment;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewMyAssessmentRoleQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -22,7 +25,8 @@ public class ViewMyAssessmentRoleUseCase implements IUseCase<ViewMyAssessmentRol
     @Override
     @Transactional(readOnly = true)
     public String execute(ViewMyAssessmentRoleQuery input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         return assessmentMemberRepository.findByAssessmentIdAndUserId(input.assessmentId(), currentUserId)
             .map(member -> member.getRole().name())
             .orElse(null);

@@ -1,12 +1,14 @@
 package com.sep.vox.application.port.input.usecase.registration;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.RegisterFormRejectedPayloadV1;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.RejectRegisterFormCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -40,7 +42,8 @@ public class RejectRegisterFormUseCase implements IUseCase<RejectRegisterFormCom
     public Void execute(RejectRegisterFormCommand input) {
         var command = normalize(input);
         var now = Instant.now();
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         var registerForm = registerFormRepository.findById(command.registerFormId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đăng ký"));

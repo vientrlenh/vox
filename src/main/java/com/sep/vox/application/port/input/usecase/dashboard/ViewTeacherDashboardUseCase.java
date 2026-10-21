@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentevaluation.ResolveAssessmentCandidateAttemptsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -72,8 +74,10 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
 
     @Override
     public TeacherDashboardSummaryResponse execute(Void input) {
-        var teacherId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID teacherId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
+        UUID schoolId = userContextPort.getCurrentSchoolId()
+            .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
         var classTests = fetchTeacherClassTests(teacherId, schoolId);
 
         var candidates = assessmentCandidateRepository.findByAssessmentIdIn(classTests.stream().map(assessment -> assessment.getId()).toList());

@@ -42,7 +42,8 @@ public class SearchTeacherRubricsUseCase implements IUseCase<SearchTeacherRubric
     public PageResult<RubricDto> execute(SearchTeacherRubricsQuery query) {
 
         // 1. Xác thực tài khoản
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
 

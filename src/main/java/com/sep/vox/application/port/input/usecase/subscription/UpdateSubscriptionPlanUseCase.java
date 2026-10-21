@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -93,7 +94,8 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
         // của entity với version dưới DB -- tăng sẵn thành N+1 trong khi DB còn N thì mọi lần sửa đều
         // bị coi là ghi đè lên bản cũ và ném OptimisticLockException.
         plan.setUpdatedAt(Instant.now());
-        plan.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
+        plan.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in")));
         var savedPlan = subscriptionPlanRepository.save(plan);
 
         if (includedAmountByQuotaType != null) {

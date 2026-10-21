@@ -1,9 +1,12 @@
 package com.sep.vox.application.port.input.usecase.notification;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewMyNotificationQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -35,7 +38,8 @@ public class ViewMyNotificationUseCase implements IUseCase<ViewMyNotificationQue
 
     @Transactional(readOnly = true)
     public NotificationDto execute(ViewMyNotificationQuery input) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         return notificationRepository.findByIdAndUserId(input.id(), userId)
             .map(NotificationDto::toDto)

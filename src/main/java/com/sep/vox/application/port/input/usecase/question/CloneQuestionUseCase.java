@@ -1,10 +1,13 @@
 package com.sep.vox.application.port.input.usecase.question;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CloneQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -40,7 +43,8 @@ public class CloneQuestionUseCase implements IUseCase<CloneQuestionCommand, Ques
     @Override
     @Transactional
     public QuestionDto execute(CloneQuestionCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         var question = questionRepository.findById(input.questionId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));

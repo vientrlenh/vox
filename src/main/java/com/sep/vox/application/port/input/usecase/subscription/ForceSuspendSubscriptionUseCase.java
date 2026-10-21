@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ForceSuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionSuspensionNotificationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -78,7 +79,8 @@ public class ForceSuspendSubscriptionUseCase implements IUseCase<ForceSuspendSub
                 "Trường đang có ca thi diễn ra, không thể đình chỉ ngay bây giờ. Vui lòng thử lại sau khi ca thi kết thúc.");
         }
 
-        var actorId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID actorId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         subscription.setStatus(SchoolSubscriptionStatus.SUSPENDED);
         subscription.setSuspendedAt(now);
         subscription.setSuspendedReason(reason);

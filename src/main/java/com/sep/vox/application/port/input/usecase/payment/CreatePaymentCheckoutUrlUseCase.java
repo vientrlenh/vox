@@ -338,7 +338,7 @@ public class CreatePaymentCheckoutUrlUseCase
         var order = orderRepository.findByIdForUpdate(orderId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
 
-        if (!order.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
+        if (userContextPort.getCurrentSchoolId().filter(order.getSchoolId()::equals).isEmpty()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         if (order.getStatus() != OrderStatus.PENDING) {

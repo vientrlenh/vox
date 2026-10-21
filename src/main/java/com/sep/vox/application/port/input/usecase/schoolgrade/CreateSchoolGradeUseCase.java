@@ -53,7 +53,8 @@ public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeComma
         validateDates(command);
 
         // 2. Validate User & Security
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         checkUserAccess(currentUserId, command.schoolId());
 
         // 3. Validate Khối lớp -- catalog dùng chung nên không còn kiểm tra thuộc trường nào,

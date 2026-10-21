@@ -1,8 +1,11 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
@@ -38,8 +41,9 @@ public class ViewMyPracticeQuotaAllocationUseCase implements IUseCase<Void, Scho
     @Override
     @Transactional(readOnly = true)
     public SchoolSubscriptionQuotaUserAllocationDto execute(Void input) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
+        UUID schoolId = userContextPort.getCurrentSchoolId().orElse(null);
         if (schoolId == null) {
             return null;
         }

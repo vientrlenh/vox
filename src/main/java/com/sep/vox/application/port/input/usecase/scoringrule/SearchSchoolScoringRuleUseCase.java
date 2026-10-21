@@ -45,7 +45,8 @@ public class SearchSchoolScoringRuleUseCase implements IUseCase<SearchSchoolScor
     @Transactional(readOnly = true)
     public PageResult<ScoringRuleDto> execute(SearchSchoolScoringRuleQuery query) {
         // 1. Kiểm tra tài khoản School Admin
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {

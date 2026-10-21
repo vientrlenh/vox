@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintSectionCommand;
 import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintSlotCommand;
 import com.sep.vox.application.port.input.command.CreateQuestionSelectionSpecCommand;
@@ -76,7 +77,8 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
     @Transactional
     public AssessmentBlueprintVersionDto execute(UpdateAssessmentBlueprintVersionCommand input) {
         var command = normalize(input);
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));

@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateSubscriptionOrderCommand;
 import com.sep.vox.application.port.input.command.RenewSchoolSubscriptionCommand;
@@ -55,7 +56,8 @@ public class RenewSchoolSubscriptionUseCase implements IUseCase<RenewSchoolSubsc
     @Override
     @Transactional
     public UUID execute(RenewSchoolSubscriptionCommand input) {
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID schoolId = userContextPort.getCurrentSchoolId()
+            .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
 
         var subscription = schoolSubscriptionRepository.findMostRecentBySchoolId(schoolId)
             .orElseThrow(() -> new ResourceNotFoundException(

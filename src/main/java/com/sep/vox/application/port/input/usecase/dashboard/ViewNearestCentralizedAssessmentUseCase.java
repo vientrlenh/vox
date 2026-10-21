@@ -1,10 +1,12 @@
 package com.sep.vox.application.port.input.usecase.dashboard;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.NearestCentralizedAssessmentDto;
@@ -27,7 +29,8 @@ public class ViewNearestCentralizedAssessmentUseCase implements IUseCase<Void, O
     @Override
     @Transactional(readOnly = true)
     public Optional<NearestCentralizedAssessmentDto> execute(Void input) {
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID schoolId = userContextPort.getCurrentSchoolId()
+            .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
         return nearestCentralizedAssessmentQueryRepository.findNearestForSchool(schoolId);
     }
 }

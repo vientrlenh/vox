@@ -44,7 +44,8 @@ public class SearchSystemRubricVersionsUseCase implements IUseCase<SearchSystemR
     @Transactional(readOnly = true)
     public PageResult<RubricVersionDto> execute(SearchSystemRubricVersionsQuery query) {
         // 1. Xác thực tài khoản System Admin
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
 

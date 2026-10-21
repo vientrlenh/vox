@@ -51,7 +51,8 @@ public class DeleteSchoolUseCase implements IUseCase<DeleteSchoolCommand, UUID> 
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học với ID đã cho."));
 
         // 2. Validate User & Bảo mật
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản của bạn."));
 

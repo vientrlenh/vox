@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentPaperStatusCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccessService;
 import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccessService.PaperActor;
@@ -79,7 +80,8 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
             StringNormalization.normalizeCode(input.action()),
             StringNormalization.trimAndCollapseSpaces(input.note())
         );
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var paper = assessmentPaperRepository.findById(command.paperId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
         var assessment = assessmentRepository.findById(paper.getAssessmentId())

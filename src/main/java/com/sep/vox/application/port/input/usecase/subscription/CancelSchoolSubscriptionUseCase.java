@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -54,7 +55,8 @@ public class CancelSchoolSubscriptionUseCase implements IUseCase<Void, UUID> {
         // KHÔNG nhận subscriptionId: trường chỉ có đúng một kỳ đang hiệu lực, và nhận id từ ngoài thì
         // hasRole('SCHOOL_ADMIN') không trả lời được "kỳ này có thuộc trường đó không" -- lại phải
         // dựng thêm một lớp kiểm quyền sở hữu. Không nhận id thì không có gì để kiểm.
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID schoolId = userContextPort.getCurrentSchoolId()
+            .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
 
         var subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
             .orElseThrow(() -> new ResourceNotFoundException("Trường không có gói nào đang hoạt động để hủy."));

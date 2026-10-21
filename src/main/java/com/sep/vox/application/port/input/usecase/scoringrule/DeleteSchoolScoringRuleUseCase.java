@@ -50,7 +50,8 @@ public class DeleteSchoolScoringRuleUseCase implements IUseCase<DeleteSchoolScor
     @Transactional
     public Void execute(DeleteSchoolScoringRuleCommand command) {
         // 1. Kiểm tra tài khoản School Admin
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {

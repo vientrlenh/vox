@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ArchiveSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPlanReplacementValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -75,7 +76,8 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
             replacementValidator.requireValidReplacement(replacement, plan);
             plan.setReplacedByPlanId(replacement.getId());
         }
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var now = Instant.now();
 
         plan.setStatus(SubscriptionPlanStatus.ARCHIVED);

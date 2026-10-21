@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
+import java.util.UUID;
+
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSystemRubricsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -35,7 +37,8 @@ public class ViewSystemRubricsUseCase implements IUseCase<ViewSystemRubricsQuery
     @Transactional(readOnly = true)
     public PageResult<RubricDto> execute(ViewSystemRubricsQuery query) {
         // 1. Xác thực tài khoản (Đang Active)
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
 
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {

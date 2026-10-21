@@ -1,12 +1,14 @@
 package com.sep.vox.application.port.input.usecase.assessment;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentSecurePoolStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -43,7 +45,8 @@ public class UpdateAssessmentSecurePoolStatusUseCase implements IUseCase<UpdateA
     @Transactional
     public AssessmentSecurePoolDto execute(UpdateAssessmentSecurePoolStatusCommand input) {
         var action = StringNormalization.normalizeCode(input.action());
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var pool = assessmentSecurePoolRepository.findByAssessmentId(input.assessmentId())
             .orElseThrow(() -> new ResourceNotFoundException("Bài kiểm tra chưa có câu hỏi nào cần giữ kín"));
 

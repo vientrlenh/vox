@@ -57,7 +57,8 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
     @Transactional
     public List<UUID> execute(CreateSchoolRubricResultBandsCommand command) {
         // 1. Xác thực người dùng
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
 

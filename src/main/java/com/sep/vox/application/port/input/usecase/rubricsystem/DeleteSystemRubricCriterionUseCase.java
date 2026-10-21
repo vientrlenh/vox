@@ -40,7 +40,8 @@ public class DeleteSystemRubricCriterionUseCase implements IUseCase<DeleteSystem
     @Transactional
     public Void execute(DeleteSystemRubricCriterionCommand command) {
         // 1. Xác thực
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 

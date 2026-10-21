@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateQuestionAssetCommand;
 import com.sep.vox.application.port.input.command.CreateQuestionEvaluationGuideCommand;
 import com.sep.vox.application.port.input.command.CreateSystemQuestionBankQuestionCommand;
@@ -73,7 +74,8 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
     public CreateQuestionResponse execute(CreateSystemQuestionBankQuestionCommand input) {
         var command = normalize(input);
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);

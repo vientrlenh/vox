@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.IssueMonitorTokenCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.StreamTokenProvider;
@@ -59,8 +60,9 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
 
     @Override
     public String execute(IssueMonitorTokenCommand input) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
+        UUID schoolId = userContextPort.getCurrentSchoolId().orElse(null);
         var now = Instant.now();
 
         var assessment = assessmentRepository.findById(input.assessmentId())

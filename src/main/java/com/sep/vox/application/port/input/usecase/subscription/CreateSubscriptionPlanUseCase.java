@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.CreateSubscriptionPlanQuotaCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -78,7 +79,8 @@ public class CreateSubscriptionPlanUseCase implements IUseCase<CreateSubscriptio
         }
 
         var now = Instant.now();
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var plan = SubscriptionPlan.create(command.name(), command.tagline(), command.priceVnd(), periodType, command.periodCount(), command.maxTimePerAttemptMin(), now, userId);
         var savedPlan = subscriptionPlanRepository.save(plan);
 

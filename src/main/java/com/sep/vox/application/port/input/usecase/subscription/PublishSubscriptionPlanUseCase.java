@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.PublishSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPlanReplacementValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -67,7 +68,8 @@ public class PublishSubscriptionPlanUseCase implements IUseCase<PublishSubscript
         // Không tự tăng version: cột version do Hibernate quản lý qua @Version -- xem
         // UpdateSubscriptionPlanUseCase.
         plan.setUpdatedAt(Instant.now());
-        plan.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
+        plan.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in")));
         var savedPlan = subscriptionPlanRepository.save(plan);
 
         return savedPlan.getId();

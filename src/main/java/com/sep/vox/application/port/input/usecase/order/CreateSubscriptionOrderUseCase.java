@@ -7,7 +7,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSubscriptionOrderCommand;
 import com.sep.vox.application.port.input.service.SubscriptionUpgradePolicyService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -57,7 +59,8 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
     @Override
     @Transactional
     public UUID execute(CreateSubscriptionOrderCommand input) {
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID schoolId = userContextPort.getCurrentSchoolId()
+            .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
         var hasSuspended = schoolSubscriptionRepository.findBySchoolId(schoolId).stream()
             .anyMatch(subscription -> subscription.getStatus() == SchoolSubscriptionStatus.SUSPENDED);
         if (hasSuspended) {
@@ -115,7 +118,8 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
      * đáng một kiểu riêng.
      */
     private Order buildOrder(UUID schoolId, SubscriptionPlan plan, Instant now) {
-        var createdBy = userContextPort.getCurrentAuthenticatedUserId();
+        UUID createdBy = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var inForce = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).orElse(null);
 
         if (inForce != null && isUpgradeTo(plan, inForce)) {

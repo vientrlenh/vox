@@ -12,6 +12,7 @@ import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.SetPracticeGoalCommand;
 import com.sep.vox.application.port.input.command.SubmitInterestQuizCommand;
 import com.sep.vox.application.port.input.service.TopicOfferBackfillService;
@@ -108,7 +109,9 @@ public class GraphQLPracticeController {
         // không có transaction nên tới dòng này quiz đã commit xong.
         //
         // Gọi trùng không tốn thêm: backfillAsync có khoá in-flight theo studentId.
-        topicOfferBackfillService.backfillAsync(userContextPort.getCurrentAuthenticatedUserId());
+        topicOfferBackfillService.backfillAsync(
+            userContextPort.getCurrentAuthenticatedUserId()
+                .orElseThrow(() -> new UnauthorizedException("User is not logged in")));
         return profile;
     }
 

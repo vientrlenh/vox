@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.model.assessment.AssessmentSession;
@@ -72,8 +73,9 @@ public class AssessmentRecordingAccessService {
      * này im lặng suốt.
      */
     public AssessmentSession requireCanViewRecordings(UUID assessmentSessionId) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
+        UUID schoolId = userContextPort.getCurrentSchoolId().orElse(null);
 
         var session = assessmentSessionRepository.findById(assessmentSessionId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));

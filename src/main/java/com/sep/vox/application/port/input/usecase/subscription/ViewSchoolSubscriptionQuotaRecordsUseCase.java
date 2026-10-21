@@ -32,7 +32,7 @@ public class ViewSchoolSubscriptionQuotaRecordsUseCase implements IUseCase<ViewS
     @Override
     @Transactional(readOnly = true)
     public List<SchoolSubscriptionQuotaRecordDto> execute(ViewSchoolSubscriptionQuotaRecordsQuery input) {
-        if (!userContextPort.isSystemAdmin() && !input.schoolId().equals(userContextPort.getCurrentSchoolId())) {
+        if (!userContextPort.isSystemAdmin() && userContextPort.getCurrentSchoolId().filter(input.schoolId()::equals).isEmpty()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 

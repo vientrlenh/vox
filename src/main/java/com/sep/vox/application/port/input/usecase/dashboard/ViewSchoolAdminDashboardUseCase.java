@@ -12,6 +12,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.SchoolWorkloadQueryRepository;
@@ -104,8 +106,10 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     @Transactional(readOnly = true)
     public SchoolAdminDashboardSummaryResponse execute(Void input) {
         var now = Instant.now();
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
+        UUID schoolId = userContextPort.getCurrentSchoolId()
+            .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
 
         var activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId);
         var assessmentQuota = activeAssessmentQuota(activeSubscription);

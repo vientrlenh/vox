@@ -354,7 +354,7 @@ public class DistributeQuotaToUsersService {
     }
 
     private void requireSchoolAdminAccess(UUID schoolId) {
-        if (!userContextPort.isSystemAdmin() && !schoolId.equals(userContextPort.getCurrentSchoolId())) {
+        if (!userContextPort.isSystemAdmin() && userContextPort.getCurrentSchoolId().filter(schoolId::equals).isEmpty()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
     }

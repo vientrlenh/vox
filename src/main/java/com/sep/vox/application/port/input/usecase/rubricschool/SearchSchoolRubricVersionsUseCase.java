@@ -52,7 +52,8 @@ public class SearchSchoolRubricVersionsUseCase implements IUseCase<SearchSchoolR
     @Transactional(readOnly = true)
     public PageResult<RubricVersionDto> execute(SearchSchoolRubricVersionsQuery query) {
         // 1. Xác thực tài khoản
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
 

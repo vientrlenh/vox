@@ -40,7 +40,8 @@ public class SearchSystemRubricResultBandsUseCase implements IUseCase<SearchSyst
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricResultBandDto> execute(SearchSystemRubricResultBandsQuery query) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản đã bị khóa.");
 

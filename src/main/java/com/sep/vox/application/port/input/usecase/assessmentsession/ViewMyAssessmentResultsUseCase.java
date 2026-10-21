@@ -4,10 +4,12 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.assessmentsession.StudentAssessmentResultSummaryResponse;
@@ -49,7 +51,8 @@ public class ViewMyAssessmentResultsUseCase implements IUseCase<Void, List<Stude
     @Override
     @Transactional(readOnly = true)
     public List<StudentAssessmentResultSummaryResponse> execute(Void input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var candidates = assessmentCandidateRepository.findByStudentId(studentId);
         // Nhớ theo rubricVersionId trong đúng lượt gọi này. Một học sinh thường thi nhiều lượt
         // trên cùng một kỳ, tức cùng một rubric version -- tra lại từng dòng là hỏi DB đúng một

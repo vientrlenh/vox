@@ -47,7 +47,8 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
 
         // 2. Validate User bằng hàm exists cho tối ưu hiệu năng
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
         }

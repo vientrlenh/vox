@@ -50,7 +50,8 @@ public class AcceptSystemRubricResultBandImportUseCase implements IUseCase<Accep
     @Transactional
     public AcceptRubricResultBandImportResponse execute(AcceptRubricResultBandImportCommand command) {
         // Bước 1: Xác thực tài khoản Admin hệ thống
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {

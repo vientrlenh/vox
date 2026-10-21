@@ -11,6 +11,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewPracticeTopicOffersQuery;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
 import com.sep.vox.application.port.input.service.TopicSuggestionService;
@@ -64,7 +65,8 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
     @Override
     @Transactional
     public List<PracticeTopicOffer> execute(ViewPracticeTopicOffersQuery input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (!hasCompletedInterestQuiz(studentId)) {
             return List.of();
         }

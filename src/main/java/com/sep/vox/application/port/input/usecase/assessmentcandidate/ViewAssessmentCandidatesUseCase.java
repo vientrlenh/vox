@@ -1,12 +1,14 @@
 package com.sep.vox.application.port.input.usecase.assessmentcandidate;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewAssessmentCandidatesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -69,7 +71,8 @@ public class ViewAssessmentCandidatesUseCase implements IUseCase<ViewAssessmentC
     // bắt buộc phải truyền scheduleId, không cho xem toàn bộ candidate của cả kỳ thi qua
     // đường này (tránh giám thị 1 ca nhìn thấy dữ liệu của ca khác).
     private void authorize(Assessment assessment, java.util.UUID scheduleId) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);

@@ -45,7 +45,8 @@ public class DeleteSchoolRubricCriterionUseCase implements IUseCase<DeleteSchool
     @Transactional
     public Void execute(DeleteSchoolRubricCriterionCommand command) {
         // 1. Auth
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 

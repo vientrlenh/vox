@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.GetAssessmentScheduleOtpQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.CacheManagerPort;
@@ -58,7 +59,8 @@ public class GetAssessmentScheduleOtpUseCase implements IUseCase<GetAssessmentSc
     @Override
     public GetAssessmentScheduleOtpResponse execute(GetAssessmentScheduleOtpQuery input) {
         var now = Instant.now();
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var schedule = assessmentScheduleRepository.findByIdAndInSchedule(input.scheduleId(), now)
             .orElseThrow(() -> new ResourceNotFoundException("Lịch thi yêu cầu không tìm thấy hoặc đã hết hạn"));
 

@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.Assessment;
@@ -37,7 +38,8 @@ public class AssessmentSessionModerationAccessService {
     }
 
     public UUID getCurrentUserId() {
-        return userContextPort.getCurrentAuthenticatedUserId();
+        return userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
     }
 
     public void authorize(Assessment assessment, AssessmentCandidate candidate) {

@@ -26,7 +26,7 @@ public class SchoolScopedReadGuard {
     }
 
     public void requireCanRead(UUID schoolId) {
-        if (!userContextPort.isSystemAdmin() && !schoolId.equals(userContextPort.getCurrentSchoolId())) {
+        if (!userContextPort.isSystemAdmin() && userContextPort.getCurrentSchoolId().filter(schoolId::equals).isEmpty()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
     }

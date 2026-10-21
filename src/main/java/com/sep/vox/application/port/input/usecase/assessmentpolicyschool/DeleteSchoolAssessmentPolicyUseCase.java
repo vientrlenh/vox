@@ -45,7 +45,8 @@ public class DeleteSchoolAssessmentPolicyUseCase implements IUseCase<DeleteSchoo
     @Transactional
     public Void execute(DeleteSchoolAssessmentPolicyCommand command) {
         // 1. Kiểm tra tài khoản School Admin
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {

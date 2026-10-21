@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +35,8 @@ public class ViewSchoolUserDetailsUseCase implements IUseCase<ViewSchoolUserDeta
     @Override
     @Transactional(readOnly = true)
     public SchoolUserDto execute(ViewSchoolUserDetailsQuery input) {
-        var callerId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID callerId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");

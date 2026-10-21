@@ -48,7 +48,8 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolGradeDto> execute(ViewSchoolGradesQuery query) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         validateUserAndAccess(currentUserId, query.schoolId());
 
         if (!schoolRepository.existsById(query.schoolId())) {

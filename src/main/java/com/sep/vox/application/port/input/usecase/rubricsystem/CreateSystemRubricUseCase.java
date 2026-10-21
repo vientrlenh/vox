@@ -46,7 +46,8 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
     @Transactional
     public UUID execute(CreateSystemRubricCommand command) {
         // 1. Kiểm tra tài khoản và quyền SYSTEM_ADMIN
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
 

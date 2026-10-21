@@ -41,7 +41,8 @@ public class AddSchoolRoomUseCase implements IUseCase<AddSchoolRoomCommand, UUID
     @Override
     @Transactional
     public UUID execute(AddSchoolRoomCommand command) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         // 1. Validate User & Permission (Guard Clause)
         validateUserAndAccess(currentUserId, command.schoolId());

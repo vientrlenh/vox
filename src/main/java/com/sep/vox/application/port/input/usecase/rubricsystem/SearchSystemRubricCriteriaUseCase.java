@@ -46,7 +46,8 @@ public class SearchSystemRubricCriteriaUseCase implements IUseCase<SearchSystemR
     @Transactional(readOnly = true)
     public PageResult<RubricCriterionDto> execute(SearchSystemRubricCriteriaQuery query) {
         // Xác thực user
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {

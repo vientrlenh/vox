@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
+import java.util.UUID;
+
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
@@ -44,7 +46,8 @@ public class ViewSchoolRubricDetailsUseCase implements IUseCase<ViewSchoolRubric
     @Transactional(readOnly = true)
     public RubricDto execute(ViewSchoolRubricDetailsQuery query) {
         // 1. Xác thực tài khoản
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
 

@@ -39,7 +39,7 @@ public class EstimateAssessmentTokenQuotaUseCase implements IUseCase<EstimateAss
         var assessment = assessmentRepository.findById(input.assessmentId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
-        if (!userContextPort.isSystemAdmin() && !assessment.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
+        if (!userContextPort.isSystemAdmin() && userContextPort.getCurrentSchoolId().filter(assessment.getSchoolId()::equals).isEmpty()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 

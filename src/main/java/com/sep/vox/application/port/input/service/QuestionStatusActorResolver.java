@@ -1,7 +1,10 @@
 package com.sep.vox.application.port.input.service;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.RoleConstant;
@@ -35,7 +38,8 @@ public class QuestionStatusActorResolver {
     }
 
     public QuestionStatusTransition.Actor resolve() {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var systemAdmin = userContextPort.isSystemAdmin();
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())

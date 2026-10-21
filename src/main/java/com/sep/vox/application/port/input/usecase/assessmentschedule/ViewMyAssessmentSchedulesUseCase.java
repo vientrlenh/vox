@@ -3,11 +3,13 @@ package com.sep.vox.application.port.input.usecase.assessmentschedule;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewAssessmentSchedulesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -41,7 +43,8 @@ public class ViewMyAssessmentSchedulesUseCase
     @Override
     @Transactional(readOnly = true)
     public List<AssessmentScheduleDto> execute(ViewAssessmentSchedulesQuery input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var candidates = assessmentCandidateRepository.findByStudentId(studentId).stream()
             .filter(candidate -> input.assessmentId() == null || input.assessmentId().equals(candidate.getAssessmentId()))
             .toList();

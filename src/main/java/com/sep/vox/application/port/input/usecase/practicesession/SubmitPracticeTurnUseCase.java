@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.SubmitPracticeTurnCommand;
 import com.sep.vox.application.port.input.service.ConsumeQuotaService;
 import com.sep.vox.application.port.input.service.PracticeEvaluationRequestFactory;
@@ -94,7 +95,8 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
     @Override
     @Transactional
     public SubmitTurnResult execute(SubmitPracticeTurnCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         return execute(studentId, input.turn());
     }
 

@@ -25,7 +25,7 @@ public class ViewOrderDetailsUseCase implements IUseCase<ViewOrderDetailsQuery, 
     public OrderDto execute(ViewOrderDetailsQuery input) {
         var order = orderRepository.findById(input.id())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin của đơn hàng yêu cầu"));
-        if (!userContextPort.isSystemAdmin() && !order.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
+        if (!userContextPort.isSystemAdmin() && userContextPort.getCurrentSchoolId().filter(order.getSchoolId()::equals).isEmpty()) {
             throw new ForbiddenException("Bạn không có quyền truy cập vào đơn hàng này");
         }
         return OrderDto.toDto(order);

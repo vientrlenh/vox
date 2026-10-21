@@ -1,9 +1,12 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DismissTopicOfferCommand;
 import com.sep.vox.application.port.input.service.InterestVectorService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -34,7 +37,8 @@ public class DismissTopicOfferUseCase implements IUseCase<DismissTopicOfferComma
     @Override
     @Transactional
     public Boolean execute(DismissTopicOfferCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (!practiceTopicRepository.existsActiveById(input.topicId())) {
             throw new ResourceNotFoundException("Không tìm thấy chủ đề luyện tập.");
         }

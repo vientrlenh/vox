@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.mapper.importfile.ImportSessionResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportSessionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -57,7 +58,8 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
         var type = parseType(input.type());
         var status = parseStatus(input.status());
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var currentUser = findCurrentUser(currentUserId);
         var schoolId = getSchoolId(currentUser);
         validateSchool(schoolId);

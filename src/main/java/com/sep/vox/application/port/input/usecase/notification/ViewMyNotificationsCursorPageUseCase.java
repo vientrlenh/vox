@@ -1,8 +1,11 @@
 package com.sep.vox.application.port.input.usecase.notification;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewMyNotificationsCursorPageQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -30,7 +33,8 @@ public class ViewMyNotificationsCursorPageUseCase
     @Transactional(readOnly = true)
     public CursorPage<NotificationDto> execute(ViewMyNotificationsCursorPageQuery input) {
         var limit = Math.min(input.limit(), MAX_LIMIT);
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
         var results = input.cursor() == null
             ? notificationRepository.findByUserIdOrderByIdDesc(userId, limit)

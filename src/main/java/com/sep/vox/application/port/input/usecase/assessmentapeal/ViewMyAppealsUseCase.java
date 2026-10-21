@@ -1,8 +1,11 @@
 package com.sep.vox.application.port.input.usecase.assessmentapeal;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.SearchAssessmentAppealsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -30,8 +33,10 @@ public class ViewMyAppealsUseCase
     @Override
     @Transactional(readOnly = true)
     public PageResult<AppealSummaryInfo> execute(SearchAssessmentAppealsQuery input) {
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         return assessmentAppealQueryRepository.searchAppealsByStudentId(
-            userContextPort.getCurrentAuthenticatedUserId(),
+            studentId,
             input.status(),
             input.page(),
             input.size()

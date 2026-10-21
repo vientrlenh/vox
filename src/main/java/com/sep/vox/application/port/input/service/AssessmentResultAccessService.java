@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
@@ -126,7 +127,8 @@ public class AssessmentResultAccessService {
 
     /** @return true khi người gọi chính là thí sinh của bài — mọi nhánh khác đều false. */
     private boolean authorize(UUID assessmentId, UUID candidateId) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (userContextPort.isSystemAdmin()) {
             return false;
         }

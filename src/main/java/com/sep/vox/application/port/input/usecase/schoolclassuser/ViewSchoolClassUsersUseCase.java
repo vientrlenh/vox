@@ -49,7 +49,8 @@ public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUser
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolClassUserDto> execute(ViewSchoolClassUsersQuery input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
         }

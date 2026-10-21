@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.AttachAssessmentBlueprintCommand;
 import com.sep.vox.application.port.input.command.CreateBlueprintInlineCommand;
 import com.sep.vox.application.port.input.service.AssessmentTimeQuotaGuardService;
@@ -65,7 +66,8 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
             throw new IllegalStateException("Chỉ được cung cấp blueprintId hoặc newBlueprint, không được cung cấp cả hai");
         }
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
+            .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var assessment = assessmentRepository.findById(input.assessmentId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 

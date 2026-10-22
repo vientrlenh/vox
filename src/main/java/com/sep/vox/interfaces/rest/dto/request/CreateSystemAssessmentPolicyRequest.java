@@ -1,6 +1,5 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
-import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStrictness;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,8 +22,6 @@ public record CreateSystemAssessmentPolicyRequest(
 
         @DecimalMin(value = "0.0", message = "Passing score must not be lower than 0.0")
         BigDecimal passingScore,
-
-        AssessmentPolicyStrictness strictness,
 
         @NotBlank(message = "Effective date from is required")
         String effectiveFrom,

@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sep.vox.application.port.input.command.AllocateAssessmentQuotaCommand;
+import com.sep.vox.application.port.input.command.AllocatePracticeQuotaCommand;
 import com.sep.vox.application.port.input.command.ArchiveSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.CreateSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.CreateSubscriptionPlanReplacementCommand;
@@ -75,7 +77,7 @@ public class RestApiSubscriptionController {
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createPlan(@Valid @RequestBody CreateSubscriptionPlanRequest request) {
-        CreateSubscriptionPlanCommand command = CreateSubscriptionPlanRequest.toCommand(request);
+        CreateSubscriptionPlanCommand command = CreateSubscriptionPlanRequest.toCreatePlanCommand(request);
         UUID data = createSubscriptionPlanUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo gói đăng ký thành công", data));
     }
@@ -91,9 +93,8 @@ public class RestApiSubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> createPlanReplacement(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody CreateSubscriptionPlanRequest request) {
-        CreateSubscriptionPlanCommand command = CreateSubscriptionPlanRequest.toCommand(request);
-        UUID data = createSubscriptionPlanReplacementUseCase.execute(
-            new CreateSubscriptionPlanReplacementCommand(id, command));
+        CreateSubscriptionPlanReplacementCommand command = CreateSubscriptionPlanRequest.toReplacementCommand(id, request);
+        UUID data = createSubscriptionPlanReplacementUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo gói thay thế thành công", data));
     }
 
@@ -102,7 +103,8 @@ public class RestApiSubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> archivePlan(
             @PathVariable(name = "id") UUID id,
             @RequestParam(name = "replacedByPlanId", required = false) UUID replacedByPlanId) {
-        var data = archiveSubscriptionPlanUseCase.execute(new ArchiveSubscriptionPlanCommand(id, replacedByPlanId));
+        ArchiveSubscriptionPlanCommand command = new ArchiveSubscriptionPlanCommand(id, replacedByPlanId);
+        UUID data = archiveSubscriptionPlanUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ gói đăng ký thành công", data));
     }
 
@@ -118,7 +120,7 @@ public class RestApiSubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> updatePlanReplacement(
             @PathVariable(name = "id") UUID id,
             @RequestParam(name = "replacedByPlanId") UUID replacedByPlanId) {
-        var data = updateSubscriptionPlanReplacementUseCase.execute(
+        UUID data = updateSubscriptionPlanReplacementUseCase.execute(
             new UpdateSubscriptionPlanReplacementCommand(id, replacedByPlanId));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật gói thay thế thành công", data));
     }
@@ -187,8 +189,8 @@ public class RestApiSubscriptionController {
     public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> allocateAssessmentQuotaToTeachers(
             @PathVariable(name = "schoolId") UUID schoolId,
             @Valid @RequestBody AllocateQuotaRequest request) {
-        var data = allocateAssessmentQuotaToTeachersUseCase.execute(
-            AllocateQuotaCommandMapper.toAssessmentCommand(schoolId, request));
+        AllocateAssessmentQuotaCommand command = AllocateQuotaRequest.toAssessmentCommand(schoolId, request);
+        QuotaUserAllocationSummaryResponse data = allocateAssessmentQuotaToTeachersUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức thi cho giáo viên thành công", data));
     }
 
@@ -197,29 +199,12 @@ public class RestApiSubscriptionController {
     public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> allocatePracticeQuotaToStudents(
             @PathVariable(name = "schoolId") UUID schoolId,
             @Valid @RequestBody AllocateQuotaRequest request) {
-        var data = allocatePracticeQuotaToStudentsUseCase.execute(
-            AllocateQuotaCommandMapper.toPracticeCommand(schoolId, request));
+        AllocatePracticeQuotaCommand command = AllocateQuotaRequest.toPracticeCommand(schoolId, request);
+        QuotaUserAllocationSummaryResponse data = allocatePracticeQuotaToStudentsUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức luyện tập cho học sinh thành công", data));
     }
 
 
-    /**
-     * Đặt trần phân phối cho MỘT loại hạn mức của trường.
-     *
-     * <p>Chính sách thuộc về TRƯỜNG, không thuộc kỳ đăng ký -- nên đường dẫn cũng theo trường, không
-     * theo subscription. Bản ghi hạn mức được dựng lại mỗi kỳ, đặt chính sách ở đó là để nó biến mất
-     * sau mỗi lần gia hạn (xem V5).
-     */
-    /**
-     * Chuyển tiền từ ví tự nạp của trường sang ví hạn mức của {@code quotaType}.
-     *
-     * <p>POST chứ không PUT: đây là một phép CỘNG DỒN, không phải đặt một giá trị. Gọi hai lần là nạp
-     * hai lần -- khác hẳn endpoint chia hạn mức ngay trên (đặt số tuyệt đối nên bấm lại vô hại) và
-     * khác endpoint đặt trần. Giao diện phải chặn bấm đúp; chưa có khoá idempotency ở tầng này.
-     *
-     * <p>Thao tác MỘT CHIỀU và không hoàn lại được: tiền đã vào ví hạn mức thì không quay về ví tự
-     * nạp, cũng không chuyển sang loại quota kia. Xem FundQuotaFromBalanceUseCase.
-     */
     @PostMapping("/schools/{schoolId}/quota-funding/{quotaType}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<QuotaFundingResponse>> fundQuotaFromBalance(

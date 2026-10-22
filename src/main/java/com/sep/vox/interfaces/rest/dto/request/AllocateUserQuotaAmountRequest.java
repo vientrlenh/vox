@@ -3,6 +3,8 @@ package com.sep.vox.interfaces.rest.dto.request;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import com.sep.vox.application.port.input.command.AllocateUserQuotaAmountCommand;
+
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 
@@ -14,4 +16,8 @@ public record AllocateUserQuotaAmountRequest(
     @DecimalMin(value = "0", message = "Số tiền để phân bổ không được dưới 0")
     BigDecimal amountVnd
 ) {
+
+    public static AllocateUserQuotaAmountCommand toCommand(AllocateUserQuotaAmountRequest request) {
+        return new AllocateUserQuotaAmountCommand(request.userId, request.amountVnd);
+    }
 }

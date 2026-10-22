@@ -19,11 +19,10 @@ import com.sep.vox.application.port.input.service.SchoolSubscriptionActiveGuardS
 import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.assessment.CreateClassTestResponse;
 import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.application.shared.StringNormalization;
-import com.sep.vox.domain.model.user.SchoolRoleCodes;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.dto.assessment.AssessmentDto;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
@@ -38,6 +37,7 @@ import com.sep.vox.domain.model.assessment.AssessmentResultDecisionMethod;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentCandidateRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentMemberRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentRepository;
@@ -59,7 +59,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
     private final SchoolClassRepository schoolClassRepository;
     private final SchoolClassUserRepository schoolClassUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
+    private final SchoolUserRepository schoolUserRepository;
     private final AssessmentRepository assessmentRepository;
     private final AssessmentScheduleRepository assessmentScheduleRepository;
     private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
@@ -76,7 +76,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     public CreateClassTestUseCase(
             SchoolClassRepository schoolClassRepository,
             SchoolClassUserRepository schoolClassUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
+            SchoolUserRepository schoolUserRepository,
             AssessmentRepository assessmentRepository,
             AssessmentScheduleRepository assessmentScheduleRepository,
             AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
@@ -91,7 +91,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService) {
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
+        this.schoolUserRepository = schoolUserRepository;
         this.assessmentRepository = assessmentRepository;
         this.assessmentScheduleRepository = assessmentScheduleRepository;
         this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
@@ -113,8 +113,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
             .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
 
-        if (userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-                .noneMatch(role -> "TEACHER".equals(role.roleCode()))) {
+        if (!userContextPort.isTeacher()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
@@ -272,8 +271,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             UUID schoolClassId,
             UUID currentUserId,
             Instant now) {
-        // findBySchoolClassId là 1-based (PageRequest.of(page - 1, size)) → trang đầu là 1, KHÔNG phải 0.
-        var roster = schoolClassUserRepository.findBySchoolClassId(schoolClassId, 1, MAX_CLASS_ROSTER_SIZE).content();
+        var roster = schoolClassUserRepository.findBySchoolClassId(schoolClassId, 0, MAX_CLASS_ROSTER_SIZE).content();
 
         var activeUserIds = roster.stream()
             .filter(classUser -> classUser.isActive())
@@ -283,7 +281,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
         // MỘT query cho cả lớp thay vì hỏi vai trò từng học sinh — lớp 40 người là 40 query, và trần
         // roster là 2000. Giống hệt ImportAssessmentCandidatesFromClassUseCase.
-        var studentIds = userRoleQueryRepository.findUserIdsByRoleCode(activeUserIds, SchoolRoleCodes.STUDENT);
+        var studentIds = schoolUserRepository.findUserIdsByRole(activeUserIds, SchoolUserRole.STUDENT);
 
         var candidates = new ArrayList<AssessmentCandidate>();
         for (var userId : activeUserIds) {

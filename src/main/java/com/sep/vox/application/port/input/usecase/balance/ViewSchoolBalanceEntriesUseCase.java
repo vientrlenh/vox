@@ -40,8 +40,8 @@ public class ViewSchoolBalanceEntriesUseCase
             // dải lịch sử ở đây, thay vì đẩy một tham số null xuống JPQL.
             input.from() == null ? Instant.EPOCH : input.from(),
             input.to() == null ? Instant.now() : input.to(),
-            input.page(),
-            input.size()
+            input.pageRequest().repositoryPage(),
+            input.pageRequest().size()
         );
 
         return new PageResult<>(

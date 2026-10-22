@@ -57,7 +57,7 @@ public class AssessmentBlueprintRepositoryImpl implements AssessmentBlueprintRep
     @Override
     public PageResult<AssessmentBlueprint> findAccessible(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
             boolean schoolAdmin, UUID schoolId, Boolean isActive, UUID languageId, String assessmentKind, String keyword, int page, int size) {
-        var pageable = PageRequest.of(page - 1, size);
+        var pageable = PageRequest.of(page, size);
         var result = springDataAssessmentBlueprintRepository.findAccessible(
             currentUserId,
             currentSchoolId,
@@ -70,7 +70,7 @@ public class AssessmentBlueprintRepositoryImpl implements AssessmentBlueprintRep
             StringNormalization.toLikePattern(keyword),
             pageable
         );
-        return new PageResult<>(
+        return PageResult.fromRepository(
             result.getContent().stream().map(AssessmentBlueprintMapper::toDomain).toList(),
             page,
             size,

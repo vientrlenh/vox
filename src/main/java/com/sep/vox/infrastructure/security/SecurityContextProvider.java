@@ -72,6 +72,9 @@ public class SecurityContextProvider implements UserContextPort {
     }
     
     private CustomUserDetails getUserDetails(Authentication authentication) {
+        if (authentication == null) {
+            return null;
+        }
         Object principal = authentication.getPrincipal();
         if (!(principal instanceof CustomUserDetails userDetails)) {
             return null;
@@ -80,6 +83,9 @@ public class SecurityContextProvider implements UserContextPort {
     }
 
     private boolean isRoleMatch(CustomUserDetails userDetails, String role) {
+        if (userDetails == null) {
+            return false;
+        }
         Collection<? extends GrantedAuthority> authorities = userDetails.getAuthorities();
         return authorities.stream()
             .anyMatch(authority -> authority.getAuthority().equals(role));

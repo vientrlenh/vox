@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionDto;
@@ -68,7 +67,6 @@ public class QuestionSpreadsheetService {
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public QuestionSpreadsheetService(
             QuestionRepository questionRepository,
@@ -77,8 +75,7 @@ public class QuestionSpreadsheetService {
             QuestionTopicRepository questionTopicRepository,
             UserRepository userRepository,
             UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.questionRepository = questionRepository;
         this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
         this.questionBankRepository = questionBankRepository;
@@ -86,7 +83,6 @@ public class QuestionSpreadsheetService {
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     public byte[] exportQuestions(
@@ -100,10 +96,7 @@ public class QuestionSpreadsheetService {
             String keyword) {
         var access = resolveAccess();
         var questions = new ArrayList<QuestionDto>();
-        // findAccessible là 1-based (QuestionRepositoryImpl trừ 1 trước khi dựng PageRequest), nên
-        // bắt đầu từ 1 chứ KHÔNG phải 0 -- số 0 thành -1 và Spring Data ném "Page index must not be
-        // less than zero" ngay vòng lặp đầu, tức xuất Excel hỏng hoàn toàn.
-        var page = 1;
+        var page = 0;
         while (true) {
             var result = questionRepository.findAccessible(
                 access.currentUserId(),
@@ -127,10 +120,7 @@ public class QuestionSpreadsheetService {
                 .map(QuestionDto::toDto)
                 .toList());
             page++;
-            // `>` chứ không phải `>=`: đi kèm mốc bắt đầu 1-based ở trên. Giữ `>=` thì trang CUỐI
-            // không bao giờ được đọc (totalPages=3: đọc 1, 2 rồi thoát ở 3>=3), mà mất dòng trong
-            // file Excel thì không có gì báo -- lỗi lặng, tệ hơn cả ngoại lệ.
-            if (page > result.totalPages()) {
+            if (page >= result.totalPages()) {
                 break;
             }
         }
@@ -263,8 +253,7 @@ public class QuestionSpreadsheetService {
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var schoolAdmin = !systemAdmin && userContextPort.isSchoolAdmin();
         if (!systemAdmin && currentSchoolId == null) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }

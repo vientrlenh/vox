@@ -93,8 +93,8 @@ public class ViewSchoolRubricVersionsUseCase implements IUseCase<ViewSchoolRubri
         var versionPage = rubricVersionRepository.findAllByRubricIdAndStatus(
                 query.rubricId(),
                 safeStatus,
-                query.page(),
-                query.size()
+                query.pageRequest().repositoryPage(),
+                query.pageRequest().size()
         );
 
         // 5. Sử dụng hàm toRubricVersionPage tui đã viết sẵn ở bước trước để trả về

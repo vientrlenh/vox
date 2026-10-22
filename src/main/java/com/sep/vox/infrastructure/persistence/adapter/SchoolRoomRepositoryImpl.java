@@ -64,7 +64,7 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
 
     @Override
     public PageResult<SchoolRoom> findBySchoolId(UUID schoolId, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
+        var pageable = PageRequest.of(pageNumber, size);
 
         var page = springDataSchoolRoomRepository.findBySchoolId(schoolId, pageable);
 
@@ -72,7 +72,7 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
                 .map(SchoolRoomMapper::toDomain)
                 .toList();
 
-        return new PageResult<>(
+        return PageResult.fromRepository(
                 domainContent,
                 pageNumber,
                 size,

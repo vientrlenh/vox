@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.AssessmentStatusCountsDto;
 import com.sep.vox.application.projection.repository.AssessmentStatusCountsQueryRepository;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
@@ -21,17 +20,14 @@ public class ViewAssessmentStatusCountsUseCase implements IUseCase<ViewAssessmen
     private final AssessmentStatusCountsQueryRepository assessmentStatusCountsQueryRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public ViewAssessmentStatusCountsUseCase(
             AssessmentStatusCountsQueryRepository assessmentStatusCountsQueryRepository,
             UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.assessmentStatusCountsQueryRepository = assessmentStatusCountsQueryRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -43,8 +39,7 @@ public class ViewAssessmentStatusCountsUseCase implements IUseCase<ViewAssessmen
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var schoolAdmin = !systemAdmin && userContextPort.isSchoolAdmin();
 
         if (!systemAdmin && currentSchoolId == null) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");

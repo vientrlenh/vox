@@ -15,14 +15,14 @@ import com.sep.vox.application.port.input.command.ImportAssessmentCandidatesFrom
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.assessment.AssessmentCandidateDto;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
-import com.sep.vox.domain.model.user.SchoolRoleCodes;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentCandidateRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentRepository;
 import com.sep.vox.domain.service.assessment.AssessmentEditingGuard;
@@ -39,7 +39,7 @@ public class ImportAssessmentCandidatesFromGradeUseCase
     private final SchoolGradeRepository schoolGradeRepository;
     private final SchoolClassRepository schoolClassRepository;
     private final SchoolClassUserRepository schoolClassUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
+    private final SchoolUserRepository schoolUserRepository;
     private final AssessmentDirectoryAccessService assessmentDirectoryAccessService;
     private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
 
@@ -49,7 +49,7 @@ public class ImportAssessmentCandidatesFromGradeUseCase
             SchoolGradeRepository schoolGradeRepository,
             SchoolClassRepository schoolClassRepository,
             SchoolClassUserRepository schoolClassUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
+            SchoolUserRepository schoolUserRepository,
             AssessmentDirectoryAccessService assessmentDirectoryAccessService,
             ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService) {
         this.assessmentRepository = assessmentRepository;
@@ -57,7 +57,7 @@ public class ImportAssessmentCandidatesFromGradeUseCase
         this.schoolGradeRepository = schoolGradeRepository;
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
+        this.schoolUserRepository = schoolUserRepository;
         this.assessmentDirectoryAccessService = assessmentDirectoryAccessService;
         this.classTestTokenQuotaGuardService = classTestTokenQuotaGuardService;
     }
@@ -85,13 +85,12 @@ public class ImportAssessmentCandidatesFromGradeUseCase
 
         var now = Instant.now();
         var classes = schoolClassRepository.findBySchoolId(
-            assessment.getSchoolId(), null, null, null, grade.getId(), 1, MAX_CLASSES).content();
+            assessment.getSchoolId(), null, null, null, grade.getId(), 0, MAX_CLASSES).content();
 
         var activeUserIds = new LinkedHashSet<UUID>();
         for (var schoolClass : classes) {
-            // findBySchoolClassId là 1-based (PageRequest.of(page - 1, size)) → trang đầu là 1, KHÔNG phải 0.
             var roster = schoolClassUserRepository.findBySchoolClassId(
-                schoolClass.getId(), 1, MAX_CLASS_ROSTER_SIZE).content();
+                schoolClass.getId(), 0, MAX_CLASS_ROSTER_SIZE).content();
             for (var classUser : roster) {
                 if (classUser.isActive()) {
                     activeUserIds.add(classUser.getUserId());
@@ -99,7 +98,7 @@ public class ImportAssessmentCandidatesFromGradeUseCase
             }
         }
 
-        var studentIds = userRoleQueryRepository.findUserIdsByRoleCode(activeUserIds, SchoolRoleCodes.STUDENT);
+        var studentIds = schoolUserRepository.findUserIdsByRole(activeUserIds, SchoolUserRole.STUDENT);
         var existingStudentIds = assessmentCandidateRepository.findStudentIdsByAssessmentId(assessment.getId());
 
         var newCandidates = new ArrayList<AssessmentCandidate>();

@@ -71,7 +71,7 @@ public class SearchSchoolScoringRuleUseCase implements IUseCase<SearchSchoolScor
 
         // 4. Tìm kiếm/phân trang
         var pageResult = scoringRuleRepository.searchByPolicyId(
-                query.policyId(), query.keyword(), query.isActive(), query.page(), query.size());
+                query.policyId(), query.keyword(), query.isActive(), query.pageRequest().repositoryPage(), query.pageRequest().size());
 
         return new PageResult<>(
                 pageResult.content().stream().map(ScoringRuleDto::toDto).toList(),

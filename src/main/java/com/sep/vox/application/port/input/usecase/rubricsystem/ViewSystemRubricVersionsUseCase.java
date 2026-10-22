@@ -72,8 +72,8 @@ public class ViewSystemRubricVersionsUseCase implements IUseCase<ViewSystemRubri
         var versionPage = rubricVersionRepository.findAllByRubricIdAndStatus(
                 query.rubricId(),
                 safeStatus,
-                query.page(),
-                query.size()
+                query.pageRequest().repositoryPage(),
+                query.pageRequest().size()
         );
 
         // 4. Map sang DTO và trả về

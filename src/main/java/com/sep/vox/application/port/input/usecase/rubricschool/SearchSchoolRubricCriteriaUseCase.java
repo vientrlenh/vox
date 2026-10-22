@@ -81,7 +81,7 @@ public class SearchSchoolRubricCriteriaUseCase implements IUseCase<SearchSchoolR
         }
 
         // Thực thi
-        var pageResult = rubricCriterionRepository.searchRubricCriteria(query.versionId(), query.keyword(), query.isRequired(), query.page(), query.size()
+        var pageResult = rubricCriterionRepository.searchRubricCriteria(query.versionId(), query.keyword(), query.isRequired(), query.pageRequest().repositoryPage(), query.pageRequest().size()
         );
 
         return new PageResult<>(

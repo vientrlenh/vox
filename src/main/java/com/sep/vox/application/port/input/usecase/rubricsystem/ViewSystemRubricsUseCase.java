@@ -48,8 +48,8 @@ public class ViewSystemRubricsUseCase implements IUseCase<ViewSystemRubricsQuery
         // 2. Lấy dữ liệu phân trang từ Database (Chỉ lấy SYSTEM)
         var rubricPage = rubricRepository.findAllByOwnerType(
                 RubricOwnerType.SYSTEM,
-                query.page(),
-                query.size()
+                query.pageRequest().repositoryPage(),
+                query.pageRequest().size()
         );
 
         // 3. Sử dụng Mapper đã viết sẵn để chuyển PageResult<Rubric> thành PageResult<RubricDto>

@@ -23,6 +23,7 @@ import com.sep.vox.application.port.input.usecase.scoringrule.ViewAllSchoolScori
 import com.sep.vox.application.port.input.usecase.scoringrule.ViewAllSystemScoringRuleUseCase;
 import com.sep.vox.application.port.input.usecase.scoringrule.ViewSchoolScoringRuleDetailUseCase;
 import com.sep.vox.application.port.input.usecase.scoringrule.ViewSystemScoringRuleDetailUseCase;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.ScoringRuleDto;
 import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateScoringRuleInput;
@@ -51,10 +52,9 @@ public class GraphQLScoringRuleController {
             @Argument(name = "isActive") Boolean isActive,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        int validPage = (page != null && page > 0) ? page : 1;
-        int validSize = (size != null && size > 0) ? size : 10;
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return searchSystemScoringRuleUseCase.execute(
-                new SearchScoringRuleQuery(policyId, keyword, isActive, validPage, validSize));
+                new SearchScoringRuleQuery(policyId, keyword, isActive, pageRequest));
     }
 
     @QueryMapping(name = "searchSchoolScoringRules")
@@ -66,10 +66,9 @@ public class GraphQLScoringRuleController {
             @Argument(name = "isActive") Boolean isActive,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        int validPage = (page != null && page > 0) ? page : 1;
-        int validSize = (size != null && size > 0) ? size : 10;
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return searchSchoolScoringRuleUseCase.execute(
-                new SearchSchoolScoringRuleQuery(schoolId, policyId, keyword, isActive, validPage, validSize));
+                new SearchSchoolScoringRuleQuery(schoolId, policyId, keyword, isActive, pageRequest));
     }
 
     // Xem toàn bộ (phân trang) danh sách Scoring Rule thuộc 1 Assessment Policy hệ thống.
@@ -79,9 +78,8 @@ public class GraphQLScoringRuleController {
             @Argument(name = "policyId") UUID policyId,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        int validPage = (page != null && page > 0) ? page : 1;
-        int validSize = (size != null && size > 0) ? size : 10;
-        return viewAllSystemScoringRuleUseCase.execute(new ViewAllScoringRuleQuery(policyId, validPage, validSize));
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return viewAllSystemScoringRuleUseCase.execute(new ViewAllScoringRuleQuery(policyId, pageRequest));
     }
 
     // Xem toàn bộ (phân trang) danh sách Scoring Rule thuộc 1 Assessment Policy của trường học.
@@ -92,10 +90,9 @@ public class GraphQLScoringRuleController {
             @Argument(name = "policyId") UUID policyId,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        int validPage = (page != null && page > 0) ? page : 1;
-        int validSize = (size != null && size > 0) ? size : 10;
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewAllSchoolScoringRuleUseCase.execute(
-                new ViewAllSchoolScoringRuleQuery(schoolId, policyId, validPage, validSize));
+                new ViewAllSchoolScoringRuleQuery(schoolId, policyId, pageRequest));
     }
 
     // Xem chi tiết 1 Scoring Rule của Assessment Policy hệ thống.

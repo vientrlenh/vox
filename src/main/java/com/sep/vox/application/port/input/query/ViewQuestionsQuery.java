@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.query;
 
 import java.util.UUID;
 
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
@@ -17,7 +18,6 @@ public record ViewQuestionsQuery(
     String assetType,
     String scope,
     String keyword,
-    int page,
-    int size
+    AppPageRequest pageRequest
 ) {
 }

@@ -94,7 +94,7 @@ public class JpaAssessmentDirectoryQueryRepository implements AssessmentDirector
         // IN () không hợp lệ ở JPQL, và ngữ nghĩa đúng của "không phụ trách lớp nào" là
         // "không thấy ai" — tuyệt đối không được rơi về phạm vi toàn trường.
         if (schoolClassIds == null || schoolClassIds.isEmpty()) {
-            return new PageResult<>(List.of(), Math.max(page, 1), normalizeSize(size), 0, 0);
+            return PageResult.fromRepository(List.of(), Math.max(page, 0), normalizeSize(size), 0, 0);
         }
 
         var pattern = likePattern(search);
@@ -135,19 +135,19 @@ public class JpaAssessmentDirectoryQueryRepository implements AssessmentDirector
         return paginate(contentQuery, countQuery, page, size);
     }
 
-    /** `page` vào đây là 1-based; setFirstResult mới là 0-based. */
+    /** `page` vào đây là 0-based, khớp thẳng với setFirstResult. */
     private <T> PageResult<T> paginate(TypedQuery<T> contentQuery, TypedQuery<Long> countQuery, int page, int size) {
-        var normalizedPage = Math.max(page, 1);
+        var normalizedPage = Math.max(page, 0);
         var normalizedSize = normalizeSize(size);
 
         var content = contentQuery
-            .setFirstResult((normalizedPage - 1) * normalizedSize)
+            .setFirstResult(normalizedPage * normalizedSize)
             .setMaxResults(normalizedSize)
             .getResultList();
         var totalElements = countQuery.getSingleResult();
         var totalPages = totalElements == 0 ? 0 : (int) Math.ceil((double) totalElements / normalizedSize);
 
-        return new PageResult<>(content, normalizedPage, normalizedSize, totalElements, totalPages);
+        return PageResult.fromRepository(content, normalizedPage, normalizedSize, totalElements, totalPages);
     }
 
     private static int normalizeSize(int size) {

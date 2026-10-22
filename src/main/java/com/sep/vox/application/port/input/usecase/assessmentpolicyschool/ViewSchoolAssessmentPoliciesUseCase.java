@@ -79,7 +79,7 @@ public class ViewSchoolAssessmentPoliciesUseCase implements IUseCase<ViewSchoolA
         }
 
         var policyPage = assessmentPolicyRepository.findAllBySchoolId(query.schoolId(), safeStatus, query.languageId(), query.rubricVersionId(),
-                query.effectiveFrom(), query.effectiveTo(), query.page(), query.size());
+                query.effectiveFrom(), query.effectiveTo(), query.pageRequest().repositoryPage(), query.pageRequest().size());
         return AssessmentPolicyDto.toDtoPage(policyPage);
     }
 }

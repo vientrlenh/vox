@@ -36,6 +36,6 @@ public class ViewAssessmentAppealsUseCase implements IUseCase<SearchAssessmentAp
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
         return assessmentAppealQueryRepository.searchAppeals(
-            schoolId, null, input.status(), input.keyword(), input.page(), input.size());
+            schoolId, null, input.status(), input.keyword(), input.pageRequest().repositoryPage(), input.pageRequest().size());
     }
 }

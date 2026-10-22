@@ -8,8 +8,8 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentScheduleProctorRepository;
@@ -30,7 +30,6 @@ public class ProctorScheduleAccessService {
     private final AssessmentScheduleRepository assessmentScheduleRepository;
     private final AssessmentRepository assessmentRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public ProctorScheduleAccessService(
@@ -38,13 +37,11 @@ public class ProctorScheduleAccessService {
             AssessmentScheduleRepository assessmentScheduleRepository,
             AssessmentRepository assessmentRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
         this.assessmentScheduleRepository = assessmentScheduleRepository;
         this.assessmentRepository = assessmentRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -73,8 +70,7 @@ public class ProctorScheduleAccessService {
             return true;
         }
 
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var isSchoolAdmin = schoolUserRepository.hasRole(currentUserId, SchoolUserRole.SCHOOL_ADMIN);
         if (!isSchoolAdmin) {
             return false;
         }

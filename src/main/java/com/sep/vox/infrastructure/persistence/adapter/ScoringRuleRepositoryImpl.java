@@ -41,12 +41,11 @@ public class ScoringRuleRepositoryImpl implements ScoringRuleRepository {
 
     @Override
     public PageResult<ScoringRule> searchByPolicyId(UUID policyId, String keyword, Boolean isActive, int page, int size) {
-        // page từ Client là 1-based, PageRequest của Spring Data là 0-based -> trừ 1
-        var pageable = PageRequest.of(page - 1, size);
+        var pageable = PageRequest.of(page, size);
         var pageEntity = springDataScoringRuleRepository.searchByPolicyId(
                 policyId, StringNormalization.toLikePattern(keyword), isActive, pageable);
 
-        return new PageResult<>(
+        return PageResult.fromRepository(
                 pageEntity.getContent().stream().map(ScoringRuleMapper::toDomain).toList(),
                 page,
                 size,

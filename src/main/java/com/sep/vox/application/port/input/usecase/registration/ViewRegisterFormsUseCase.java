@@ -21,7 +21,7 @@ public class ViewRegisterFormsUseCase implements IUseCase<ViewRegisterFormsQuery
     @Override
     @Transactional(readOnly = true)
     public PageResult<RegisterFormDto> execute(ViewRegisterFormsQuery input) {
-        var forms = registerFormRepository.findAll(input.page(), input.size());
+        var forms = registerFormRepository.findAll(input.pageRequest().repositoryPage(), input.pageRequest().size());
         return RegisterFormDto.toDtoPage(forms);
     }
     

@@ -17,13 +17,13 @@ import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.RegisterFormRepository;
-import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
-import com.sep.vox.domain.repository.UserRoleRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.shared.BusinessDays;
 import com.sep.vox.domain.shared.ZoneConstant;
 
@@ -31,30 +31,24 @@ import com.sep.vox.domain.shared.ZoneConstant;
 @Service
 public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdminDashboardSummaryResponse> {
 
-    private static final String STUDENT_CODE = "STUDENT";
-    private static final String TEACHER_CODE = "TEACHER";
-    private static final String SCHOOL_ADMIN_CODE = "SCHOOL_ADMIN";
-
     /** Số tháng vẽ trên biểu đồ doanh thu, kể cả tháng hiện tại. */
     private static final int REVENUE_MONTHS = 24;
 
     private final SchoolRepository schoolRepository;
     private final RegisterFormRepository registerFormRepository;
     private final OrderRepository orderRepository;
-    private final RoleRepository roleRepository;
-    private final UserRoleRepository userRoleRepository;
+    private final SchoolUserRepository schoolUserRepository;
     private final FrameworkRepository frameworkRepository;
     private final RubricRepository rubricRepository;
 
     public ViewSystemAdminDashboardUseCase(SchoolRepository schoolRepository,
             RegisterFormRepository registerFormRepository, OrderRepository orderRepository,
-            RoleRepository roleRepository, UserRoleRepository userRoleRepository,
+            SchoolUserRepository schoolUserRepository,
             FrameworkRepository frameworkRepository, RubricRepository rubricRepository) {
         this.schoolRepository = schoolRepository;
         this.registerFormRepository = registerFormRepository;
         this.orderRepository = orderRepository;
-        this.roleRepository = roleRepository;
-        this.userRoleRepository = userRoleRepository;
+        this.schoolUserRepository = schoolUserRepository;
         this.frameworkRepository = frameworkRepository;
         this.rubricRepository = rubricRepository;
     }
@@ -72,7 +66,7 @@ public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdm
         var totalRevenue = orderRepository.sumTotalAmountByStatusInRange(OrderStatus.SUCCESS, Instant.EPOCH, now);
 
         var activeFrameworkCount = frameworkRepository.findAllActive(1, 1).totalElements();
-        var systemRubricCount = rubricRepository.findAllByOwnerType(RubricOwnerType.SYSTEM, 1, 1).totalElements();
+        var systemRubricCount = rubricRepository.findAllByOwnerType(RubricOwnerType.SYSTEM, 0, 1).totalElements();
 
         return new SystemAdminDashboardSummaryResponse(
             totalSchools,
@@ -84,9 +78,9 @@ public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdm
             registerFormRepository.countByCreatedAtAfter(now.minus(90, ChronoUnit.DAYS)),
             totalRevenue != null ? totalRevenue : BigDecimal.ZERO,
             buildMonthlyRevenue(now),
-            countUsersByRole(STUDENT_CODE),
-            countUsersByRole(TEACHER_CODE),
-            countUsersByRole(SCHOOL_ADMIN_CODE),
+            schoolUserRepository.countByRole(SchoolUserRole.STUDENT),
+            schoolUserRepository.countByRole(SchoolUserRole.TEACHER),
+            schoolUserRepository.countByRole(SchoolUserRole.SCHOOL_ADMIN),
             activeFrameworkCount,
             systemRubricCount
         );
@@ -107,12 +101,6 @@ public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdm
         return registerFormRepository.findOldestCreatedAtByStatus(RegisterFormStatus.PENDING)
             .map(oldest -> BusinessDays.waitedDaysSince(oldest, now))
             .orElse(null);
-    }
-
-    private long countUsersByRole(String roleCode) {
-        return roleRepository.findByCode(roleCode)
-            .map(role -> userRoleRepository.countByRoleId(role.getId()))
-            .orElse(0L);
     }
 
     /**

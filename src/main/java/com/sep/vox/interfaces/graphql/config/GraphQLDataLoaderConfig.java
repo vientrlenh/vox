@@ -13,6 +13,7 @@ import org.dataloader.BatchLoaderEnvironment;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolUserDto;
@@ -21,7 +22,6 @@ import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import com.sep.vox.interfaces.graphql.config.dataloader.DataLoaderPageKey;
 import com.sep.vox.interfaces.graphql.dto.key.SchoolClassPageKey;
 import com.sep.vox.interfaces.graphql.dto.key.SchoolUserPageKey;
 
@@ -61,15 +61,11 @@ public class GraphQLDataLoaderConfig {
                     Map<SchoolClassPageKey, List<SchoolClassDto>> result = new HashMap<>();
                     keys.forEach(key -> result.put(key, List.of()));
 
-                    Map<DataLoaderPageKey, List<SchoolClassPageKey>> pageKeys = keys.stream()
-                        .collect(Collectors.groupingBy(key -> new DataLoaderPageKey(
-                            key.pageRequest().page(), 
-                            key.pageRequest().size()
-                        ))
-                    );
+                    Map<AppPageRequest, List<SchoolClassPageKey>> pageKeys = keys.stream()
+                        .collect(Collectors.groupingBy(SchoolClassPageKey::pageRequest));
 
-                    for (Entry<DataLoaderPageKey, List<SchoolClassPageKey>> entry : pageKeys.entrySet()) {
-                        DataLoaderPageKey pageKey = entry.getKey();
+                    for (Entry<AppPageRequest, List<SchoolClassPageKey>> entry : pageKeys.entrySet()) {
+                        AppPageRequest pageKey = entry.getKey();
                         List<SchoolClassPageKey> groupedKeys = entry.getValue();
 
                         List<UUID> schoolIds = groupedKeys.stream()
@@ -77,7 +73,7 @@ public class GraphQLDataLoaderConfig {
                             .toList();
 
                         Map<UUID, List<SchoolClassDto>> schoolClasses = schoolClassRepository
-                            .findBySchoolIdIn(schoolIds, pageKey.page(), pageKey.size())
+                            .findBySchoolIdIn(schoolIds, pageKey.repositoryPage(), pageKey.size())
                             .stream()
                             .map(SchoolClassDto::toDto)
                             .collect(Collectors.groupingBy(c -> c.schoolId()));
@@ -98,18 +94,18 @@ public class GraphQLDataLoaderConfig {
                     Map<SchoolUserPageKey, List<SchoolUserDto>> result = new HashMap<>();
                     keys.forEach(key -> result.put(key, List.of()));
 
-                    Map<DataLoaderPageKey, List<SchoolUserPageKey>> pageKeys = keys.stream()
-                        .collect(Collectors.groupingBy(key -> new DataLoaderPageKey(key.pageRequest().page(), key.pageRequest().size())));
-                    
-                    for (Entry<DataLoaderPageKey, List<SchoolUserPageKey>> entry : pageKeys.entrySet()) {
-                        DataLoaderPageKey pageKey = entry.getKey();
+                    Map<AppPageRequest, List<SchoolUserPageKey>> pageKeys = keys.stream()
+                        .collect(Collectors.groupingBy(SchoolUserPageKey::pageRequest));
+
+                    for (Entry<AppPageRequest, List<SchoolUserPageKey>> entry : pageKeys.entrySet()) {
+                        AppPageRequest pageKey = entry.getKey();
                         List<SchoolUserPageKey> groupedKeys = entry.getValue();
 
                         List<UUID> schoolIds = groupedKeys.stream()
                             .map(gk -> gk.schoolId())
                             .toList();
 
-                        Map<UUID, List<SchoolUserDto>> schoolUsers = schoolUserRepository.findBySchoolIdIn(schoolIds, pageKey.page(), pageKey.size())
+                        Map<UUID, List<SchoolUserDto>> schoolUsers = schoolUserRepository.findBySchoolIdIn(schoolIds, pageKey.repositoryPage(), pageKey.size())
                             .stream()
                             .map(SchoolUserDto::toDto)
                             .collect(Collectors.groupingBy(u -> u.schoolId()));

@@ -83,8 +83,8 @@ public class ViewSchoolRubricResultBandsUseCase implements IUseCase<ViewSchoolRu
         // 5. Query danh sách phân trang (Tận dụng lại hàm đã viết ở phần System)
         var resultBandsPage = rubricResultBandRepository.findAllByRubricVersionId(
                 query.versionId(),
-                query.page(),
-                query.size()
+                query.pageRequest().repositoryPage(),
+                query.pageRequest().size()
         );
 
         // 6. Map và trả về

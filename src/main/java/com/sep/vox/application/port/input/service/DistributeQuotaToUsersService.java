@@ -18,6 +18,7 @@ import com.sep.vox.application.port.input.command.AllocateUserQuotaAmountCommand
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPageResponse;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -126,14 +127,14 @@ public class DistributeQuotaToUsersService {
      * tầng Java vẫn phải đọc đủ mọi người trước đã, tức là không tiết kiệm được gì.
      */
     public QuotaUserAllocationPageResponse viewPage(
-            UUID schoolId, QuotaType quotaType, SchoolUserRole role, String search, int page, int size) {
+            UUID schoolId, QuotaType quotaType, SchoolUserRole role, String search, AppPageRequest pageRequest) {
         requireSchoolAdminAccess(schoolId);
 
         var subscription = findActiveSubscription(schoolId);
         var pool = findPool(subscription.getId(), quotaType);
 
         var userPage = schoolUserRepository.findBySchoolId(
-            schoolId, blankToNull(search), role, UserStatus.ACTIVE.name(), null, false, page, size);
+            schoolId, blankToNull(search), role, UserStatus.ACTIVE.name(), null, false, pageRequest.repositoryPage(), pageRequest.size());
 
         var existing = fetchExistingAllocationsByUserId(subscription.getId(), quotaType);
 
@@ -343,7 +344,7 @@ public class DistributeQuotaToUsersService {
 
     private List<UUID> fetchEligibleUserIds(UUID schoolId, SchoolUserRole role) {
         var page = schoolUserRepository.findBySchoolId(
-            schoolId, null, role, UserStatus.ACTIVE.name(), null, false, 1, MAX_ELIGIBLE_USERS_PAGE_SIZE);
+            schoolId, null, role, UserStatus.ACTIVE.name(), null, false, 0, MAX_ELIGIBLE_USERS_PAGE_SIZE);
         return page.content().stream().map(schoolUser -> schoolUser.getUserId()).sorted().toList();
     }
 

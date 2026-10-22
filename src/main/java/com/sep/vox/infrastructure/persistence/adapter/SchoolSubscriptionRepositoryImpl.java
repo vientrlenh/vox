@@ -77,10 +77,9 @@ public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepos
             planId,
             status == null ? null : status.name(),
             StringNormalization.toLikePattern(keyword),
-            // 1-based vào, 0-based xuống PageRequest -- xem OrderRepositoryImpl.findBySchoolId.
-            PageRequest.of(page - 1, size)
+            PageRequest.of(page, size)
         );
-        return new PageResult<>(
+        return PageResult.fromRepository(
             result.getContent().stream().map(SchoolSubscriptionMapper::toDomain).toList(),
             page,
             size,

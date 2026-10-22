@@ -2,6 +2,8 @@ package com.sep.vox.application.port.input.query;
 
 import java.util.UUID;
 
+import com.sep.vox.application.shared.AppPageRequest;
+
 /**
  * Bộ lọc danh sách đơn cho System Admin. Mọi trường lọc đều nullable = "không lọc theo tiêu chí này".
  *
@@ -13,7 +15,6 @@ public record ViewOrdersQuery(
     String status,
     String type,
     String keyword,
-    int page,
-    int size
+    AppPageRequest pageRequest
 ) {
 }

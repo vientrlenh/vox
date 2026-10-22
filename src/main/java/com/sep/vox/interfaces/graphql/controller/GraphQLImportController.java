@@ -16,6 +16,7 @@ import com.sep.vox.application.port.input.usecase.importfile.ViewImportSessionsU
 import com.sep.vox.application.response.input.importfile.ImportRowResponse;
 import com.sep.vox.application.response.input.importfile.ImportSessionDetailsResponse;
 import com.sep.vox.application.response.input.importfile.ImportSessionSummaryResponse;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.shared.PageResult;
 
 import lombok.RequiredArgsConstructor;
@@ -41,8 +42,8 @@ public class GraphQLImportController {
             @Argument(name = "size") Integer size,
             @Argument(name = "type") String type,
             @Argument(name = "status") String status) {
-        validatePage(page, size);
-        return viewImportSessionsUseCase.execute(new ViewImportSessionsQuery(page, size, type, status));
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return viewImportSessionsUseCase.execute(new ViewImportSessionsQuery(pageRequest, type, status));
     }
 
     @QueryMapping(name = "importRows")
@@ -52,13 +53,7 @@ public class GraphQLImportController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
             @Argument(name = "status") String status) {
-        validatePage(page, size);
-        return viewImportRowsUseCase.execute(new ViewImportRowsQuery(sessionId, page, size, status));
-    }
-
-    private void validatePage(Integer page, Integer size) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích thuớc trang yêu cầu không hợp lệ");
-        }
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return viewImportRowsUseCase.execute(new ViewImportRowsQuery(sessionId, pageRequest, status));
     }
 }

@@ -65,7 +65,7 @@ public class SearchSchoolRubricResultBandsUseCase implements IUseCase<SearchScho
             throw new ForbiddenException("BẢO MẬT: Thang điểm này không thuộc trường của bạn.");
         }
 
-        var pageResult = rubricResultBandRepository.searchRubricResultBands(query.versionId(), query.keyword(), query.page(), query.size());
+        var pageResult = rubricResultBandRepository.searchRubricResultBands(query.versionId(), query.keyword(), query.pageRequest().repositoryPage(), query.pageRequest().size());
 
         return new PageResult<>(
                 pageResult.content()

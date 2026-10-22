@@ -8,7 +8,7 @@ import com.sep.vox.application.port.input.service.DistributeQuotaToUsersService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPageResponse;
 import com.sep.vox.domain.model.metering.QuotaType;
-import com.sep.vox.domain.model.user.SchoolRoleCodes;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 
 /** Đường đọc của màn chia hạn mức thi cho giáo viên -- có phân trang và tìm kiếm theo tên. */
 @Service
@@ -25,7 +25,7 @@ public class ViewAssessmentQuotaUserAllocationsUseCase
     @Transactional(readOnly = true)
     public QuotaUserAllocationPageResponse execute(ViewQuotaUserAllocationsQuery input) {
         return distributeQuotaToUsersService.viewPage(
-            input.schoolId(), QuotaType.ASSESSMENT, SchoolRoleCodes.TEACHER,
-            input.search(), input.page(), input.size());
+            input.schoolId(), QuotaType.ASSESSMENT, SchoolUserRole.TEACHER,
+            input.search(), input.pageRequest());
     }
 }

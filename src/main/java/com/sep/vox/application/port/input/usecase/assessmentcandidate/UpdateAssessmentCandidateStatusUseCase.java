@@ -13,10 +13,10 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentCandidateStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.assessment.AssessmentCandidateDto;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentCandidateRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentMemberRepository;
@@ -33,7 +33,6 @@ public class UpdateAssessmentCandidateStatusUseCase implements IUseCase<UpdateAs
     private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public UpdateAssessmentCandidateStatusUseCase(
@@ -43,7 +42,6 @@ public class UpdateAssessmentCandidateStatusUseCase implements IUseCase<UpdateAs
             AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
             AssessmentMemberRepository assessmentMemberRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.assessmentMemberRepository = assessmentMemberRepository;
         this.assessmentCandidateRepository = assessmentCandidateRepository;
@@ -51,7 +49,6 @@ public class UpdateAssessmentCandidateStatusUseCase implements IUseCase<UpdateAs
         this.assessmentScheduleRepository = assessmentScheduleRepository;
         this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -100,8 +97,7 @@ public class UpdateAssessmentCandidateStatusUseCase implements IUseCase<UpdateAs
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var isSchoolAdmin = schoolUserRepository.hasRole(currentUserId, SchoolUserRole.SCHOOL_ADMIN);
         return isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessment.getSchoolId());
     }
 }

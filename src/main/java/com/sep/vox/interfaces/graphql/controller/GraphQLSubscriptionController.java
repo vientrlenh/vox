@@ -35,6 +35,7 @@ import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.response.input.subscription.QuotaPricingResponse;
 import com.sep.vox.application.response.input.subscription.SchoolSubscriptionRenewalPreviewResponse;
 import com.sep.vox.application.response.input.subscription.ViewSubscriptionPlansResponse;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
 import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
@@ -72,8 +73,8 @@ public class GraphQLSubscriptionController {
     public PageResult<ViewSubscriptionPlansResponse> subscriptionPlans(
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
-        return viewSubscriptionPlansUseCase.execute(new ViewSubscriptionPlansQuery(page, size));
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return viewSubscriptionPlansUseCase.execute(new ViewSubscriptionPlansQuery(pageRequest));
     }
 
     @QueryMapping(name = "subscriptionPlan")
@@ -88,8 +89,8 @@ public class GraphQLSubscriptionController {
             @Argument(name = "status") SchoolSubscriptionStatus status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
-        return viewSchoolSubscriptionsUseCase.execute(new ViewSchoolSubscriptionsQuery(keyword, subscriptionPlanId, status, page, size));
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return viewSchoolSubscriptionsUseCase.execute(new ViewSchoolSubscriptionsQuery(keyword, subscriptionPlanId, status, pageRequest));
     } 
 
     @QueryMapping(name = "schoolSubscription")
@@ -171,16 +172,6 @@ public class GraphQLSubscriptionController {
         return loader.load(dto.schoolId());
     }
 
-    // page ĐẾM TỪ 1 theo quy ước chung của dự án -- các repository adapter trừ 1 trước khi xuống
-    // PageRequest (xem OrderRepositoryImpl/SubscriptionPlanRepositoryImpl). Guard này vốn đã đúng;
-    // thứ sai là schema từng khai mặc định `page: Int = 0`, nên client KHÔNG truyền page -- đường đi
-    // mặc định -- nhận số 0 rồi bị chính guard này từ chối.
-    private void validatePageSize(Integer page, Integer size) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Trang hoặc kích thước yêu cầu phải lớn hơn 0");
-        }
-    }
-
     @QueryMapping(name = "schoolAssessmentQuotaUserAllocations")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public QuotaUserAllocationPageResponse schoolAssessmentQuotaUserAllocations(
@@ -188,9 +179,9 @@ public class GraphQLSubscriptionController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePaging(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewAssessmentQuotaUserAllocationsUseCase.execute(
-            new ViewQuotaUserAllocationsQuery(schoolId, search, page, size));
+            new ViewQuotaUserAllocationsQuery(schoolId, search, pageRequest));
     }
 
     @QueryMapping(name = "schoolPracticeQuotaUserAllocations")
@@ -200,9 +191,9 @@ public class GraphQLSubscriptionController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePaging(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewPracticeQuotaUserAllocationsUseCase.execute(
-            new ViewQuotaUserAllocationsQuery(schoolId, search, page, size));
+            new ViewQuotaUserAllocationsQuery(schoolId, search, pageRequest));
     }
 
     /**
@@ -217,15 +208,5 @@ public class GraphQLSubscriptionController {
             QuotaUserAllocationPageResponse.Row row, DataFetchingEnvironment env) {
         DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
         return loader.load(row.userId());
-    }
-
-    // page ĐẾM TỪ 1 theo quy ước chung của dự án -- adapter trừ 1 trước khi xuống PageRequest.
-    private static void validatePaging(Integer page, Integer size) {
-        if (page == null || page < 1) {
-            throw new IllegalArgumentException("Số trang phải lớn hơn hoặc bằng 1");
-        }
-        if (size == null || size <= 0) {
-            throw new IllegalArgumentException("Kích thước trang phải lớn hơn 0");
-        }
     }
 }

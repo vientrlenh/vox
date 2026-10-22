@@ -34,8 +34,8 @@ public class ViewMyClassesUseCase implements IUseCase<ViewMyClassesQuery, PageRe
             callerId,
             StringNormalization.trimAndCollapseSpaces(input.search()),
             parseStatus(input.status()),
-            input.page(),
-            input.size()
+            input.pageRequest().repositoryPage(),
+            input.pageRequest().size()
         );
 
         return SchoolClassDto.toDtoPage(schoolClassesPage);

@@ -38,6 +38,7 @@ import com.sep.vox.application.projection.dto.GradingStatsInfo;
 import com.sep.vox.application.projection.dto.GradingTaskDetailInfo;
 import com.sep.vox.application.projection.dto.GradingTaskInfo;
 import com.sep.vox.application.projection.dto.ResultStatusHistoryInfo;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.shared.PageResult;
 
@@ -77,10 +78,11 @@ public class GraphQLGradingController {
             @Argument(name = "kind") String kind,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewGradingAssignmentsUseCase.execute(new SearchGradingAssignmentsQuery(
             assessmentId, scheduleId, teacherId, resultStatus, roundType, status,
             Boolean.TRUE.equals(unassignedOnly), Boolean.TRUE.equals(overdueOnly), hasOpenAppeal, search, kind,
-            page, size));
+            pageRequest));
     }
 
     @QueryMapping(name = "gradingStats")
@@ -107,9 +109,10 @@ public class GraphQLGradingController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewClassTestGradingResultsUseCase.execute(new ViewClassTestGradingResultsQuery(
             assessmentId, resultStatus, Boolean.TRUE.equals(unassignedOnly), search,
-            page, size));
+            pageRequest));
     }
 
     @QueryMapping(name = "myGradingTasks")
@@ -120,9 +123,10 @@ public class GraphQLGradingController {
             @Argument(name = "roundType") String roundType,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewMyGradingTasksUseCase.execute(new ViewMyGradingTasksQuery(
             assessmentId, status, roundType,
-            page, size));
+            pageRequest));
     }
 
     /**
@@ -144,9 +148,10 @@ public class GraphQLGradingController {
             @Argument(name = "roundType") String roundType,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewMyClassTestGradingTasksUseCase.execute(new ViewMyClassTestGradingTasksQuery(
             assessmentId, status, roundType,
-            page, size
+            pageRequest
         ));
     }
 

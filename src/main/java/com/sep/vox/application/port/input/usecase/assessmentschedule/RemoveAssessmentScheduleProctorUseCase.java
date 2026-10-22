@@ -11,7 +11,6 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteAssessmentScheduleProctorCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -29,7 +28,6 @@ public class RemoveAssessmentScheduleProctorUseCase implements IUseCase<DeleteAs
     private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public RemoveAssessmentScheduleProctorUseCase(
@@ -38,14 +36,12 @@ public class RemoveAssessmentScheduleProctorUseCase implements IUseCase<DeleteAs
             AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
             AssessmentMemberRepository assessmentMemberRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.assessmentRepository = assessmentRepository;
         this.assessmentScheduleRepository = assessmentScheduleRepository;
         this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
         this.assessmentMemberRepository = assessmentMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -78,8 +74,7 @@ public class RemoveAssessmentScheduleProctorUseCase implements IUseCase<DeleteAs
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var schoolAdmin = userContextPort.isSchoolAdmin();
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessment.getSchoolId())) {
             return currentUserId;
         }

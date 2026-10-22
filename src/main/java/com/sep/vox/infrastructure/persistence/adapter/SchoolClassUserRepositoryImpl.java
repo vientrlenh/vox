@@ -63,9 +63,9 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
 
     @Override
     public PageResult<SchoolClassUser> findBySchoolClassId(UUID schoolClassId, int page, int size) {
-        var pageRequest = PageRequest.of(page - 1, size);
+        var pageRequest = PageRequest.of(page, size);
         var pageable = springDataSchoolClassUserRepository.findBySchoolClassId(schoolClassId, pageRequest);
-        return new PageResult<>(
+        return PageResult.fromRepository(
             pageable.getContent().stream().map(SchoolClassUserMapper::toDomain).toList(),
             page,
             size,
@@ -78,7 +78,7 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
     public PageResult<SchoolClassUser> findBySchoolClassId(UUID schoolClassId, String roleCode, String search,
             int page, int size) {
         // Sort nằm sẵn trong ORDER BY của @Query nên PageRequest ở đây để unsorted.
-        var pageRequest = PageRequest.of(page - 1, size);
+        var pageRequest = PageRequest.of(page, size);
         var normalizedSearch = blankToNull(search);
         var pageable = springDataSchoolClassUserRepository.findBySchoolClassIdWithFilters(
             schoolClassId,
@@ -86,7 +86,7 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
             normalizedSearch == null ? null : "%" + normalizedSearch.toLowerCase() + "%",
             pageRequest
         );
-        return new PageResult<>(
+        return PageResult.fromRepository(
             pageable.getContent().stream().map(SchoolClassUserMapper::toDomain).toList(),
             page,
             size,

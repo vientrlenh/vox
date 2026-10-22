@@ -34,8 +34,8 @@ public class ViewSchoolRoomsUseCase implements IUseCase<ViewSchoolRoomsQuery, Pa
 
         PageResult<SchoolRoom> pageResult = schoolRoomRepository.findBySchoolId(
                 query.schoolId(),
-                query.page(), 
-                query.size()
+                query.pageRequest().repositoryPage(), 
+                query.pageRequest().size()
         );
 
         return new PageResult<>(

@@ -89,8 +89,8 @@ public class SearchSchoolRubricVersionsUseCase implements IUseCase<SearchSchoolR
                 query.rubricId(),
                 query.keyword(),
                 query.status(),
-                query.page(),
-                query.size()
+                query.pageRequest().repositoryPage(),
+                query.pageRequest().size()
         );
 
         // 6. Map sang DTO

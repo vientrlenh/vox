@@ -44,7 +44,7 @@ public class ImportSessionRepositoryImpl implements ImportSessionRepository {
     @Override
     public PageResult<ImportSession> findBySchoolId(UUID schoolId, ImportType type, ImportSessionStatus status, int pageNumber, int size) {
         var pageable = PageRequest.of(
-            pageNumber - 1,
+            pageNumber,
             size,
             Sort.by(Sort.Direction.DESC, (ImportSessionJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.DESC, (ImportSessionJpaEntity entity) -> entity.getId()))
         );
@@ -54,7 +54,7 @@ public class ImportSessionRepositoryImpl implements ImportSessionRepository {
             valueOf(status),
             pageable
         );
-        return new PageResult<>(
+        return PageResult.fromRepository(
             page.getContent().stream()
                 .map(ImportSessionMapper::toDomain)
                 .toList(),

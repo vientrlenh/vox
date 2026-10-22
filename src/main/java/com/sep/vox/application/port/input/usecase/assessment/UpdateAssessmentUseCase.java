@@ -19,7 +19,6 @@ import com.sep.vox.application.port.input.service.AssessmentStreamConfigResolver
 import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.assessment.AssessmentDto;
@@ -41,7 +40,6 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final AssessmentScheduleRepository assessmentScheduleRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final AssessmentPolicyValidator assessmentPolicyValidator;
     private final AssessmentStreamConfigResolver assessmentStreamConfigResolver;
     private final UserContextPort userContextPort;
@@ -56,7 +54,6 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
             AssessmentMemberRepository assessmentMemberRepository,
             AssessmentScheduleRepository assessmentScheduleRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             AssessmentPolicyValidator assessmentPolicyValidator,
             AssessmentStreamConfigResolver assessmentStreamConfigResolver,
             UserContextPort userContextPort,
@@ -75,7 +72,6 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
         this.assessmentMemberRepository = assessmentMemberRepository;
         this.assessmentScheduleRepository = assessmentScheduleRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
         this.classTestTokenQuotaGuardService = classTestTokenQuotaGuardService;
     }
@@ -89,8 +85,7 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var schoolAdmin = userContextPort.isSchoolAdmin();
 
         var assessment = assessmentRepository.findById(command.assessmentId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));

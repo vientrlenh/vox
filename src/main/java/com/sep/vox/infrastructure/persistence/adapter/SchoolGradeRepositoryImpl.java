@@ -100,9 +100,9 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
 
     @Override
     public PageResult<SchoolGrade> findBySchoolId(UUID schoolId, UUID gradeLevelId, String status, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
+        var pageable = PageRequest.of(pageNumber, size);
         var page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, gradeLevelId, status, pageable);
-        return new PageResult<>(
+        return PageResult.fromRepository(
                 page.getContent().stream()
                         .map(SchoolGradeMapper::toDomain)
                         .toList(),

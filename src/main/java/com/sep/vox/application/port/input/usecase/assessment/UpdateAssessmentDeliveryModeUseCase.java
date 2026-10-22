@@ -12,7 +12,6 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentDeliveryModeCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.assessment.AssessmentDto;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
@@ -33,7 +32,6 @@ public class UpdateAssessmentDeliveryModeUseCase implements IUseCase<UpdateAsses
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public UpdateAssessmentDeliveryModeUseCase(
@@ -42,14 +40,12 @@ public class UpdateAssessmentDeliveryModeUseCase implements IUseCase<UpdateAsses
             AssessmentMemberRepository assessmentMemberRepository,
             AssessmentCandidateRepository assessmentCandidateRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.assessmentRepository = assessmentRepository;
         this.assessmentPaperRepository = assessmentPaperRepository;
         this.assessmentMemberRepository = assessmentMemberRepository;
         this.assessmentCandidateRepository = assessmentCandidateRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -63,8 +59,7 @@ public class UpdateAssessmentDeliveryModeUseCase implements IUseCase<UpdateAsses
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var schoolAdmin = userContextPort.isSchoolAdmin();
 
         var assessment = assessmentRepository.findById(input.assessmentId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));

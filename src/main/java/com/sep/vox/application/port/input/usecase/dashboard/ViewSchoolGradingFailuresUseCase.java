@@ -34,7 +34,7 @@ public class ViewSchoolGradingFailuresUseCase
             .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
 
         var page = schoolWorkloadQueryRepository.findUnhandledAiFailures(
-            schoolId, input.assessmentId(), input.retryLeft(), input.page(), input.size());
+            schoolId, input.assessmentId(), input.retryLeft(), input.pageRequest().repositoryPage(), input.pageRequest().size());
         var counts = schoolWorkloadQueryRepository.countAiFailuresByAllowance(schoolId, input.assessmentId());
 
         return new SchoolGradingFailurePageResponse(

@@ -9,7 +9,6 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.CanViewAssessmentBlueprintDataQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
@@ -24,15 +23,12 @@ public class CanViewAssessmentBlueprintDataUseCase implements IUseCase<CanViewAs
 
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public CanViewAssessmentBlueprintDataUseCase(
             UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -51,8 +47,7 @@ public class CanViewAssessmentBlueprintDataUseCase implements IUseCase<CanViewAs
             return false;
         }
 
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var schoolAdmin = userContextPort.isSchoolAdmin();
         if (schoolAdmin) {
             return true;
         }

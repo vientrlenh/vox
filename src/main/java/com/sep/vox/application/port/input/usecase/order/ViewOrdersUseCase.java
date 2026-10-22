@@ -36,8 +36,8 @@ public class ViewOrdersUseCase implements IUseCase<ViewOrdersQuery, PageResult<O
             statusOf(input.status()),
             typeOf(input.type()),
             input.keyword(),
-            input.page(),
-            input.size()
+            input.pageRequest().repositoryPage(),
+            input.pageRequest().size()
         );
 
         return new PageResult<>(

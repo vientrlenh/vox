@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -23,21 +22,17 @@ import com.sep.vox.domain.repository.assessment.AssessmentMemberRepository;
 @Service
 public class AssessmentScheduleManageAccessService {
 
-    private static final String SCHOOL_ADMIN = "SCHOOL_ADMIN";
 
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public AssessmentScheduleManageAccessService(
             AssessmentMemberRepository assessmentMemberRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.assessmentMemberRepository = assessmentMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -48,8 +43,7 @@ public class AssessmentScheduleManageAccessService {
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> SCHOOL_ADMIN.equals(role.roleCode()));
+        var schoolAdmin = userContextPort.isSchoolAdmin();
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessment.getSchoolId())) {
             return currentUserId;
         }

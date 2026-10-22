@@ -56,7 +56,7 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     public PageResult<SchoolClass> findBySchoolId(UUID schoolId, String search, SchoolClassStatus status,
             UUID languageId, UUID schoolGradeId, int pageNumber, int size) {
         var pageable = PageRequest.of(
-            pageNumber - 1,
+            pageNumber,
             size,
             Sort.by(Sort.Direction.DESC, (SchoolClassJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.ASC, (SchoolClassJpaEntity entity) -> entity.getId()))
         );
@@ -77,7 +77,7 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
                 schoolGradeId,
                 pageable
             );
-        return new PageResult<>(
+        return PageResult.fromRepository(
             page.getContent().stream()
                 .map(SchoolClassMapper::toDomain)
                 .toList(),
@@ -97,7 +97,7 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     public PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, String search, SchoolClassStatus status,
             int pageNumber, int size) {
         var pageable = PageRequest.of(
-            pageNumber - 1,
+            pageNumber,
             size,
             Sort.by(Sort.Direction.DESC, (SchoolClassJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.ASC, (SchoolClassJpaEntity entity) -> entity.getId()))
         );
@@ -111,7 +111,7 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
                 valueOf(status),
                 pageable
             );
-        return new PageResult<>(
+        return PageResult.fromRepository(
             page.getContent().stream()
                 .map(SchoolClassMapper::toDomain)
                 .toList(),
@@ -185,8 +185,8 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
 
     @Override
     public List<SchoolClass> findBySchoolIdIn(Collection<UUID> schoolIds, int page, int size) {
-        var fromRow = (page - 1) * size + 1;
-        var toRow = page * size;
+        var fromRow = page * size + 1;
+        var toRow = (page + 1) * size;
         return springDataSchoolClassRepository.findBySchoolIdIn(schoolIds, fromRow, toRow)
             .stream()
             .map(SchoolClassMapper::toDomain)

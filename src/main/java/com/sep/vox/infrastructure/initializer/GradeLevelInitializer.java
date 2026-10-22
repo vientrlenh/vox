@@ -42,7 +42,7 @@ public class GradeLevelInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
-        PageResult<GradeLevel> existing = gradeLevelRepository.findAll(null, null, 1, 1);
+        PageResult<GradeLevel> existing = gradeLevelRepository.findAll(null, null, 0, 1);
         if (existing.totalElements() > 0) {
             log.info("Catalog khối lớp đã có {} bản ghi. Bỏ qua khởi tạo khối lớp mặc định",
                 existing.totalElements());

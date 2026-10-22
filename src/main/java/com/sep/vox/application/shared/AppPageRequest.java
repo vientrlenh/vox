@@ -4,9 +4,13 @@ public record AppPageRequest(
     int page, 
     int size
 ) {
+
+    public int repositoryPage() {
+        return page - 1;
+    }
     private static final int MAX_PAGE_SIZE = 50;
 
-    // Subtract by 1 for repository page queries
+    // page stays 1-based; use repositoryPage() when passing it to a repository query
     public static AppPageRequest pageRequest(Integer page, Integer size) {
         if (page == null) {
             throw new IllegalArgumentException("Page number is required");
@@ -23,6 +27,6 @@ public record AppPageRequest(
         if (size > MAX_PAGE_SIZE) {
             throw new IllegalArgumentException("Page size must not be greater than 50");
         }
-        return new AppPageRequest(page - 1, size);
+        return new AppPageRequest(page, size);
     }
 }

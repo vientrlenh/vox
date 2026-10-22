@@ -11,15 +11,16 @@ import com.sep.vox.application.event.SchoolDebtCapExceededPayloadV1;
 import com.sep.vox.application.event.SchoolDebtClearedPayloadV1;
 import com.sep.vox.application.event.SchoolLockedDueToDebtPayloadV1;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.application.shared.RoleConstant;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.school.SchoolDebtEvent;
 import com.sep.vox.domain.model.school.SchoolDebtEventType;
+import com.sep.vox.domain.model.school.SchoolUserRole;
+import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolDebtEventRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
-import com.sep.vox.domain.repository.UserRoleRepository;
+import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.shared.AggregateTypeConstant;
 import com.sep.vox.domain.shared.EventTypeConstant;
 
@@ -42,19 +43,19 @@ public class SchoolDebtNotificationService {
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleRepository userRoleRepository;
+    private final UserRepository userRepository;
     private final SchoolDebtEventRepository schoolDebtEventRepository;
 
     public SchoolDebtNotificationService(
             OutboxRepository outboxRepository,
             JsonSerializationPort jsonSerializationPort,
             SchoolUserRepository schoolUserRepository,
-            UserRoleRepository userRoleRepository,
+            UserRepository userRepository,
             SchoolDebtEventRepository schoolDebtEventRepository) {
         this.outboxRepository = outboxRepository;
         this.jsonSerializationPort = jsonSerializationPort;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleRepository = userRoleRepository;
+        this.userRepository = userRepository;
         this.schoolDebtEventRepository = schoolDebtEventRepository;
     }
 
@@ -73,7 +74,7 @@ public class SchoolDebtNotificationService {
             UUID triggerAssessmentSessionId, UUID triggerPracticeSessionId,
             BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd,
             BigDecimal overageVnd, BigDecimal capVnd, Instant now) {
-        var systemAdminIds = userRoleRepository.findActiveUserIdsByRoleCode(RoleConstant.SYSTEM_ADMIN_ROLE);
+        var systemAdminIds = userRepository.findActiveUserIdsByRole(UserRole.SYSTEM_ADMIN);
 
         var payload = jsonSerializationPort.toJson(new SchoolDebtCapExceededPayloadV1(
             systemAdminIds, schoolId, subscriptionId, quotaType, overageVnd, capVnd, now
@@ -159,7 +160,7 @@ public class SchoolDebtNotificationService {
     }
 
     private List<UUID> schoolAdminIdsOf(UUID schoolId) {
-        return schoolUserRepository.findBySchoolIdWithRole(schoolId, RoleConstant.SCHOOL_ADMIN_ROLE)
+        return schoolUserRepository.findBySchoolIdWithRole(schoolId, SchoolUserRole.SCHOOL_ADMIN)
             .stream().map(su -> su.getUserId()).toList();
     }
 }

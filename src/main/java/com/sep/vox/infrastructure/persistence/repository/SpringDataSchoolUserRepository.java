@@ -64,15 +64,8 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
             AND (:excludeUserId IS NULL OR su.userId <> :excludeUserId)
             AND (:search IS NULL OR LOWER(u.fullName) LIKE :search OR LOWER(u.email) LIKE :search OR LOWER(u.phone) LIKE :search)
             AND ((:status IS NULL AND u.status <> 'DISABLED') OR u.status = :status)
-            AND (:roleId IS NULL OR EXISTS (
-                SELECT 1 FROM UserRoleJpaEntity ur
-                WHERE ur.userId = u.id
-                    AND ur.roleId = :roleId))
-            AND (:excludeAdminRoles = FALSE OR NOT EXISTS (
-                SELECT 1 FROM UserRoleJpaEntity adminUserRole
-                JOIN RoleJpaEntity adminRole ON adminRole.id = adminUserRole.roleId
-                WHERE adminUserRole.userId = u.id
-                    AND adminRole.code IN ('SCHOOL_ADMIN', 'SYSTEM_ADMIN')))
+            AND (:role IS NULL OR su.role = :role)
+            AND (:excludeAdminRoles = FALSE OR su.role <> 'SCHOOL_ADMIN')
             AND (:excludeClassId IS NULL OR NOT EXISTS (
                 SELECT 1 FROM SchoolClassUserJpaEntity scu
                 WHERE scu.userId = u.id
@@ -87,15 +80,8 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
             AND (:excludeUserId IS NULL OR su.userId <> :excludeUserId)
             AND (:search IS NULL OR LOWER(u.fullName) LIKE :search OR LOWER(u.email) LIKE :search OR LOWER(u.phone) LIKE :search)
             AND ((:status IS NULL AND u.status <> 'DISABLED') OR u.status = :status)
-            AND (:roleId IS NULL OR EXISTS (
-                SELECT 1 FROM UserRoleJpaEntity ur
-                WHERE ur.userId = u.id
-                    AND ur.roleId = :roleId))
-            AND (:excludeAdminRoles = FALSE OR NOT EXISTS (
-                SELECT 1 FROM UserRoleJpaEntity adminUserRole
-                JOIN RoleJpaEntity adminRole ON adminRole.id = adminUserRole.roleId
-                WHERE adminUserRole.userId = u.id
-                    AND adminRole.code IN ('SCHOOL_ADMIN', 'SYSTEM_ADMIN')))
+            AND (:role IS NULL OR su.role = :role)
+            AND (:excludeAdminRoles = FALSE OR su.role <> 'SCHOOL_ADMIN')
             AND (:excludeClassId IS NULL OR NOT EXISTS (
                 SELECT 1 FROM SchoolClassUserJpaEntity scu
                 WHERE scu.userId = u.id
@@ -106,28 +92,22 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
         @Param("schoolId") UUID schoolId,
         @Param("excludeUserId") UUID excludeUserId,
         @Param("search") String search,
-        @Param("roleId") UUID roleId,
+        @Param("role") String role,
         @Param("status") String status,
         @Param("excludeClassId") UUID excludeClassId,
         @Param("excludeAdminRoles") boolean excludeAdminRoles,
         Pageable pageable);
 
 
-    /**
-     * DISTINCT là bắt buộc: ba JOIN ở đây nhân dòng khi một người được gán cùng vai trò
-     * nhiều lần. Không có nó thì danh sách người nhận trong payload outbox chứa UUID trùng.
-     */
     @Query("""
-        SELECT DISTINCT su FROM SchoolUserJpaEntity su
-        JOIN UserRoleJpaEntity ur
-            ON su.userId = ur.userId
+        SELECT su FROM SchoolUserJpaEntity su
         JOIN UserJpaEntity u
             ON su.userId = u.id
-        JOIN RoleJpaEntity r
-            ON ur.roleId = r.id
         WHERE su.schoolId = :schoolId
-            AND r.code = :roleCode
+            AND su.role = :role
             AND u.status <> 'DISABLED'
     """)
-    List<SchoolUserJpaEntity> findBySchoolIdWithRole(@Param("schoolId") UUID schoolId, @Param("roleCode") String roleCode);
+    List<SchoolUserJpaEntity> findBySchoolIdWithRole(@Param("schoolId") UUID schoolId, @Param("role") String role);
+
+    long countByRole(String role);
 }

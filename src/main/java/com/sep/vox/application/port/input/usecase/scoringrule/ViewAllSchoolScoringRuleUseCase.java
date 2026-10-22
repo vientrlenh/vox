@@ -69,7 +69,7 @@ public class ViewAllSchoolScoringRuleUseCase implements IUseCase<ViewAllSchoolSc
 
         // 4. Lấy toàn bộ danh sách (có phân trang, không lọc keyword/isActive)
         // Lưu ý: KHÔNG chặn theo status - cho phép xem kể cả khi Policy đã PUBLISHED/ARCHIVED
-        var pageResult = scoringRuleRepository.searchByPolicyId(query.policyId(), null, null, query.page(), query.size());
+        var pageResult = scoringRuleRepository.searchByPolicyId(query.policyId(), null, null, query.pageRequest().repositoryPage(), query.pageRequest().size());
 
         return new PageResult<>(
                 pageResult.content().stream().map(ScoringRuleDto::toDto).toList(),

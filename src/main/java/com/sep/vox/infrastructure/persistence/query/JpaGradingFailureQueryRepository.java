@@ -136,7 +136,7 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
             .getSingleResult());
 
         if (total == 0) {
-            return new PageResult<>(List.of(), page, size, 0, 0);
+            return PageResult.fromRepository(List.of(), page, size, 0, 0);
         }
 
         List<Object[]> rows = em.createNativeQuery(FAILED_SESSIONS_CTE + """
@@ -167,7 +167,7 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
             .setParameter("toInstant", to)
             .setParameter("signature", signature)
             .setParameter("pageSize", size)
-            .setParameter("offset", (long) (page - 1) * size)
+            .setParameter("offset", (long) page * size)
             .getResultList();
 
         var content = rows.stream()
@@ -186,7 +186,7 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
                 Boolean.TRUE.equals(row[11])))
             .toList();
 
-        return new PageResult<>(content, page, size, total, (int) Math.ceil((double) total / size));
+        return PageResult.fromRepository(content, page, size, total, (int) Math.ceil((double) total / size));
     }
 
 }

@@ -9,10 +9,9 @@ import com.sep.vox.application.port.input.command.AddAssessmentScheduleProctorCo
 import com.sep.vox.application.port.input.service.AssessmentScheduleManageAccessService;
 import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.assessment.AssessmentScheduleProctorDto;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleProctor;
-import com.sep.vox.domain.model.user.SchoolRoleCodes;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentScheduleProctorRepository;
@@ -28,7 +27,6 @@ public class AddAssessmentScheduleProctorUseCase implements IUseCase<AddAssessme
     private final AssessmentScheduleProctorConflictValidator assessmentScheduleProctorConflictValidator;
     private final AssessmentScheduleManageAccessService assessmentScheduleManageAccessService;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public AddAssessmentScheduleProctorUseCase(
             AssessmentRepository assessmentRepository,
@@ -36,15 +34,13 @@ public class AddAssessmentScheduleProctorUseCase implements IUseCase<AddAssessme
             AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
             AssessmentScheduleProctorConflictValidator assessmentScheduleProctorConflictValidator,
             AssessmentScheduleManageAccessService assessmentScheduleManageAccessService,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.assessmentRepository = assessmentRepository;
         this.assessmentScheduleRepository = assessmentScheduleRepository;
         this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
         this.assessmentScheduleProctorConflictValidator = assessmentScheduleProctorConflictValidator;
         this.assessmentScheduleManageAccessService = assessmentScheduleManageAccessService;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -64,8 +60,7 @@ public class AddAssessmentScheduleProctorUseCase implements IUseCase<AddAssessme
         if (!schoolUserRepository.existsBySchoolIdAndUserId(assessment.getSchoolId(), input.teacherId())) {
             throw new IllegalArgumentException("Giáo viên không thuộc trường của bài kiểm tra");
         }
-        var isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(input.teacherId()).stream()
-            .anyMatch(role -> SchoolRoleCodes.TEACHER.equals(role.roleCode()));
+        var isTeacher = schoolUserRepository.hasRole(input.teacherId(), SchoolUserRole.TEACHER);
         if (!isTeacher) {
             throw new IllegalArgumentException("Người dùng không phải là giáo viên");
         }

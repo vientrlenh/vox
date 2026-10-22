@@ -36,10 +36,10 @@ public class ViewGradingFailureSessionsUseCase
         // Khoảng rỗng/ngược: trang rỗng chứ không phải lỗi, cùng cách xử lý với các query dashboard
         // khác -- người dùng chọn nhầm khoảng thì thấy "không có phiên nào", không thấy màn lỗi.
         if (window.isEmpty()) {
-            return new PageResult<>(List.of(), input.page(), input.size(), 0, 0);
+            return new PageResult<>(List.of(), input.pageRequest().page(), input.pageRequest().size(), 0, 0);
         }
 
         return gradingFailureQueryRepository.findSessions(
-            window.from(), window.to(), input.signature(), input.page(), input.size());
+            window.from(), window.to(), input.signature(), input.pageRequest().repositoryPage(), input.pageRequest().size());
     }
 }

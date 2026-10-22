@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.security;
 
 
+import java.util.ArrayList;
 import java.util.UUID;
 
 import org.springframework.security.core.userdetails.UserDetails;
@@ -8,8 +9,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.projection.repository.SchoolUserProjectionRepository;
 import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
-    private final SchoolUserProjectionRepository schoolUserProjectionRepository;
+    private final SchoolUserRepository schoolUserRepository;
 
     @Override
     public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
@@ -32,11 +33,18 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Thông tin đăng nhập sai"));
         } 
         UUID schoolId = null;
+        // Authority gồm cả vai trò toàn hệ thống (UserRole) lẫn vai trò trong trường (SchoolUserRole),
+        // để hasRole('SCHOOL_ADMIN') và UserContextPort.isSchoolAdmin()/isTeacher() cùng đọc được.
+        var roles = new ArrayList<>(user.roleStrs());
         if (!user.isSystemAdmin()) {
-            schoolId = schoolUserProjectionRepository.findSchoolIdByUserId(user.getId())
+            var schoolUser = schoolUserRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User does not belong to any school"));
+            schoolId = schoolUser.getSchoolId();
+            if (schoolUser.getRole() != null) {
+                roles.add(schoolUser.getRole().name());
+            }
         }
-        return CustomUserDetails.createFromUser(user, schoolId, user.roleStrs());
+        return CustomUserDetails.createFromUser(user, schoolId, roles);
     }
     
 }

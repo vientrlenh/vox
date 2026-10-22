@@ -40,9 +40,9 @@ public class ViewAssessmentDirectoryClassesUseCase
 
         var page = scope.schoolWide()
             ? schoolClassRepository.findBySchoolId(
-                scope.schoolId(), search, SchoolClassStatus.ACTIVE, null, null, input.page(), input.size())
+                scope.schoolId(), search, SchoolClassStatus.ACTIVE, null, null, input.pageRequest().repositoryPage(), input.pageRequest().size())
             : schoolClassRepository.findByUserId(
-                scope.schoolId(), scope.callerId(), search, SchoolClassStatus.ACTIVE, input.page(), input.size());
+                scope.schoolId(), scope.callerId(), search, SchoolClassStatus.ACTIVE, input.pageRequest().repositoryPage(), input.pageRequest().size());
 
         return SchoolClassDto.toDtoPage(page);
     }

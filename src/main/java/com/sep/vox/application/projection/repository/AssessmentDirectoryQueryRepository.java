@@ -14,7 +14,7 @@ import com.sep.vox.domain.shared.PageResult;
  * bề mặt GraphQL của danh bạ không được lồng type `User`/`SchoolUser` (những type đó
  * có field resolver gated SCHOOL_ADMIN).
  *
- * <p>`page` là **1-based**, khớp với mọi repository phân trang khác trong repo này.
+ * <p>`page` là **0-based**: use case trừ 1 khỏi số trang 1-based của client trước khi gọi.
  */
 public interface AssessmentDirectoryQueryRepository {
 

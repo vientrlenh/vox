@@ -8,9 +8,9 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.SchoolUserDto;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -31,17 +31,14 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public ViewSchoolUsersForRequesterUseCase(
             UserContextPort userContextPort,
             UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -53,30 +50,23 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
         }
-        if (!schoolUserRepository.existsBySchoolIdAndUserId(input.schoolId(), callerId)) {
-            throw new ForbiddenException("Quyền truy cập không hợp lệ");
-        }
-
-        var callerRoles = userRoleQueryRepository.findByUserIdWithRoleInfo(callerId);
-        var isSchoolAdmin = callerRoles.stream()
-            .anyMatch(r -> "SYSTEM_ADMIN".equals(r.roleCode()) || "SCHOOL_ADMIN".equals(r.roleCode()));
+        var caller = schoolUserRepository.findBySchoolIdAndUserId(input.schoolId(), callerId)
+            .orElseThrow(() -> new ForbiddenException("Quyền truy cập không hợp lệ"));
 
         // Admin: filter by whatever role the caller passes (null = all); sees everyone.
-        // TEACHER: force filter to TEACHER role UUID, exclude self from results.
-        UUID roleId;
+        // TEACHER: force filter to TEACHER, exclude self from results.
+        SchoolUserRole role;
         UUID excludeUserId;
-        if (isSchoolAdmin) {
-            roleId = input.roleId();
+        if (caller.getRole() == SchoolUserRole.SCHOOL_ADMIN) {
+            role = input.role();
             excludeUserId = null;
-        } else {
-            // TEACHER bắt buộc phải có role TEACHER; nếu không, từ chối thay vì để roleId=null
-            // (roleId=null sẽ khiến truy vấn trả về mọi role, lộ danh sách học sinh).
-            roleId = callerRoles.stream()
-                .filter(r -> "TEACHER".equals(r.roleCode()))
-                .map(r -> r.roleId())
-                .findFirst()
-                .orElseThrow(() -> new ForbiddenException("Quyền truy cập không hợp lệ"));
+        } else if (caller.getRole() == SchoolUserRole.TEACHER) {
+            // Ép role=TEACHER thay vì tin input: role=null sẽ khiến truy vấn trả về mọi vai trò,
+            // lộ danh sách học sinh.
+            role = SchoolUserRole.TEACHER;
             excludeUserId = callerId;
+        } else {
+            throw new ForbiddenException("Quyền truy cập không hợp lệ");
         }
 
         var status = validateStatus(input.status());
@@ -85,10 +75,10 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
             input.schoolId(),
             excludeUserId,
             StringNormalization.trimAndCollapseSpaces(input.search()),
-            roleId,
+            role,
             status,
-            input.page(),
-            input.size()
+            input.pageRequest().repositoryPage(),
+            input.pageRequest().size()
         );
 
         return SchoolUserDto.toDtoPage(schoolUsersPage);

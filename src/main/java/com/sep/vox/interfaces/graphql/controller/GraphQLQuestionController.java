@@ -23,6 +23,7 @@ import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForAsses
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.QuestionStatusCountInfo;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.dto.QuestionBankDto;
 import com.sep.vox.domain.dto.QuestionCollaboratorDto;
@@ -79,7 +80,7 @@ public class GraphQLQuestionController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
-        validatePage(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         var query = new ViewQuestionsQuery(
             questionBankId,
             questionTopicId,
@@ -90,8 +91,7 @@ public class GraphQLQuestionController {
             assetType,
             scope,
             keyword,
-            page,
-            size
+            pageRequest
         );
         return viewQuestionsUseCase.execute(query);
     }
@@ -109,7 +109,7 @@ public class GraphQLQuestionController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
-        validatePage(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         var query = new ViewQuestionsQuery(
             questionBankId,
             questionTopicId,
@@ -120,8 +120,7 @@ public class GraphQLQuestionController {
             assetType,
             scope,
             keyword,
-            page,
-            size
+            pageRequest
         );
         return viewQuestionsForAssessmentPaperUseCase.execute(query);
     }
@@ -198,11 +197,5 @@ public class GraphQLQuestionController {
     public CompletableFuture<UserDto> collaboratorUser(QuestionCollaboratorDto source, DataFetchingEnvironment env) {
         DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
         return loader.load(source.userId());
-    }
-
-    private void validatePage(int page, int size) {
-        if (page < 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
     }
 }

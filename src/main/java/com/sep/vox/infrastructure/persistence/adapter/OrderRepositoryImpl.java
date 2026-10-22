@@ -54,10 +54,8 @@ public class OrderRepositoryImpl implements OrderRepository {
     @Override
     public PageResult<Order> findBySchoolId(UUID schoolId, int page, int size) {
         var result = springDataOrderRepository
-            // page vào theo lối 1-BASED (trang đầu = 1) như mọi repository khác trong dự án, còn
-            // PageRequest đếm từ 0 -- thiếu phép trừ này thì trang đầu tiên không cách nào lấy được.
-            .findBySchoolIdOrderByCreatedAtDesc(schoolId, PageRequest.of(page - 1, size));
-        return new PageResult<>(
+            .findBySchoolIdOrderByCreatedAtDesc(schoolId, PageRequest.of(page, size));
+        return PageResult.fromRepository(
             result.getContent().stream().map(OrderMapper::toDomain).toList(),
             page,
             size,
@@ -74,10 +72,9 @@ public class OrderRepositoryImpl implements OrderRepository {
             status == null ? null : status.name(),
             type == null ? null : type.name(),
             StringNormalization.toLikePattern(keyword),
-            // 1-based vào, 0-based xuống PageRequest -- xem findBySchoolId.
-            PageRequest.of(page - 1, size)
+            PageRequest.of(page, size)
         );
-        return new PageResult<>(
+        return PageResult.fromRepository(
             result.getContent().stream().map(OrderMapper::toDomain).toList(),
             page,
             size,

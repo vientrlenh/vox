@@ -147,5 +147,10 @@ public class UserRepositoryImpl implements UserRepository {
     public boolean existsByRole(UserRole role) {
         return springDataUserRepository.existsByRole(role.name());
     }
+
+    @Override
+    public List<UUID> findActiveUserIdsByRole(UserRole role) {
+        return springDataUserRepository.findActiveUserIdsByRole(role.name());
+    }
     
 }

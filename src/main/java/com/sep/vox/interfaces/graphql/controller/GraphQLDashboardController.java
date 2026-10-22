@@ -34,6 +34,7 @@ import com.sep.vox.application.projection.dto.GradingFailureSessionDto;
 import com.sep.vox.application.projection.dto.NearestCentralizedAssessmentDto;
 import com.sep.vox.application.projection.dto.QuestionBankStatsDto;
 import com.sep.vox.application.projection.dto.SchoolRiskBucket;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.application.response.input.dashboard.GradingFailureOverviewResponse;
@@ -92,8 +93,9 @@ public class GraphQLDashboardController {
             @Argument(name = "retryLeft") Boolean retryLeft,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewSchoolGradingFailuresUseCase.execute(
-            new SearchSchoolGradingFailuresQuery(assessmentId, retryLeft, page, size));
+            new SearchSchoolGradingFailuresQuery(assessmentId, retryLeft, pageRequest));
     }
 
     /**
@@ -121,9 +123,10 @@ public class GraphQLDashboardController {
             @Argument(name = "quotaType") QuotaType quotaType,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewSchoolAiSpendByUserUseCase.execute(new SearchSchoolAiSpendByUserQuery(
             dateFrom, dateTo,
-            quotaType, page, size));
+            quotaType, pageRequest));
     }
 
     @QueryMapping(name = "teacherDashboard")
@@ -185,12 +188,12 @@ public class GraphQLDashboardController {
             @Argument(name = "signature") String signature,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewGradingFailureSessionsUseCase.execute(new ViewGradingFailureSessionsQuery(
             dateFrom, 
             dateTo, 
             signature,
-            page,
-            size
+            pageRequest
         ));
     }
 
@@ -201,7 +204,8 @@ public class GraphQLDashboardController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        return viewSchoolsAtRiskUseCase.execute(new ViewSchoolsAtRiskQuery(bucket, keyword, page, size));
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return viewSchoolsAtRiskUseCase.execute(new ViewSchoolsAtRiskQuery(bucket, keyword, pageRequest));
     }
 
 }

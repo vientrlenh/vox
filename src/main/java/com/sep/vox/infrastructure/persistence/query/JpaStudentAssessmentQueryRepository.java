@@ -81,7 +81,7 @@ public class JpaStudentAssessmentQueryRepository implements StudentAssessmentQue
             int size,
             Instant now) {
 
-        var normalizedPage = Math.max(page, 1);
+        var normalizedPage = Math.max(page, 0);
         var normalizedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
 
         var total = em.createQuery("SELECT COUNT(c.id) " + FROM_WHERE, Long.class)
@@ -92,7 +92,7 @@ public class JpaStudentAssessmentQueryRepository implements StudentAssessmentQue
             .getSingleResult();
 
         if (total == 0) {
-            return new PageResult<>(List.of(), normalizedPage, normalizedSize, 0, 0);
+            return PageResult.fromRepository(List.of(), normalizedPage, normalizedSize, 0, 0);
         }
 
         // Bài chưa có ngày thi luôn xếp cuối ở CẢ HAI chiều -- đảo chiều mà kéo chúng lên đầu thì
@@ -114,7 +114,7 @@ public class JpaStudentAssessmentQueryRepository implements StudentAssessmentQue
             .setParameter("assessmentKind", assessmentKind)
             .setParameter("derivedStatus", derivedStatus)
             .setParameter("now", now)
-            .setFirstResult((normalizedPage - 1) * normalizedSize)
+            .setFirstResult(normalizedPage * normalizedSize)
             .setMaxResults(normalizedSize)
             .getResultList();
 
@@ -140,7 +140,7 @@ public class JpaStudentAssessmentQueryRepository implements StudentAssessmentQue
         }
 
         var totalPages = (int) Math.ceil(total / (double) normalizedSize);
-        return new PageResult<>(content, normalizedPage, normalizedSize, total, totalPages);
+        return PageResult.fromRepository(content, normalizedPage, normalizedSize, total, totalPages);
     }
 
     /**

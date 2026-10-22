@@ -100,7 +100,7 @@ public class JpaSchoolsAtRiskQueryRepository implements SchoolsAtRiskQueryReposi
             bucket, now, expiringThrough, keyword).getSingleResult());
 
         if (total == 0) {
-            return new PageResult<>(List.of(), page, size, 0, 0);
+            return PageResult.fromRepository(List.of(), page, size, 0, 0);
         }
 
         List<Object[]> rows = bind(em.createNativeQuery(SCHOOL_STATE_CTE + """
@@ -117,7 +117,7 @@ public class JpaSchoolsAtRiskQueryRepository implements SchoolsAtRiskQueryReposi
             LIMIT :pageSize OFFSET :offset
             """), bucket, now, expiringThrough, keyword)
             .setParameter("pageSize", size)
-            .setParameter("offset", (long) (page - 1) * size)
+            .setParameter("offset", (long) page * size)
             .getResultList();
 
         var content = rows.stream()
@@ -131,7 +131,7 @@ public class JpaSchoolsAtRiskQueryRepository implements SchoolsAtRiskQueryReposi
                 row[6] == null ? BigDecimal.ZERO : new BigDecimal(row[6].toString())))
             .toList();
 
-        return new PageResult<>(content, page, size, total, (int) Math.ceil((double) total / size));
+        return PageResult.fromRepository(content, page, size, total, (int) Math.ceil((double) total / size));
     }
 
     /**

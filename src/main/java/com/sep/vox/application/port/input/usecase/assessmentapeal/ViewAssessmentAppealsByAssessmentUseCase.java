@@ -71,6 +71,6 @@ public class ViewAssessmentAppealsByAssessmentUseCase
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(assessment.getSchoolId());
         return assessmentAppealQueryRepository.searchAppeals(
-            schoolId, input.assessmentId(), input.status(), input.keyword(), input.page(), input.size());
+            schoolId, input.assessmentId(), input.status(), input.keyword(), input.pageRequest().repositoryPage(), input.pageRequest().size());
     }
 }

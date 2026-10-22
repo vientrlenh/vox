@@ -30,7 +30,7 @@ public class ViewMySchoolOrdersUseCase implements IUseCase<ViewMySchoolOrdersQue
     public PageResult<OrderDto> execute(ViewMySchoolOrdersQuery input) {
         UUID schoolId = userContextPort.getCurrentSchoolId()
             .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
-        var page = orderRepository.findBySchoolId(schoolId, input.page(), input.size());
+        var page = orderRepository.findBySchoolId(schoolId, input.pageRequest().repositoryPage(), input.pageRequest().size());
 
         return new PageResult<>(
             page.content().stream().map(OrderDto::toDto).toList(),

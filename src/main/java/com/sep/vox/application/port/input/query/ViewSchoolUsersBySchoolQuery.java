@@ -2,18 +2,19 @@ package com.sep.vox.application.port.input.query;
 
 import java.util.UUID;
 
+import com.sep.vox.application.shared.AppPageRequest;
+import com.sep.vox.domain.model.school.SchoolUserRole;
+
 public record ViewSchoolUsersBySchoolQuery(
     UUID schoolId,
-    int page,
-    int size,
+    AppPageRequest pageRequest,
     String search,
-    UUID roleId,
-    String roleCode,
+    SchoolUserRole role,
     String status,
     UUID excludeClassId
 ) {
 
-    public ViewSchoolUsersBySchoolQuery(UUID schoolId, int page, int size, String search, UUID roleId, String status) {
-        this(schoolId, page, size, search, roleId, null, status, null);
+    public ViewSchoolUsersBySchoolQuery(UUID schoolId, AppPageRequest pageRequest, String search, SchoolUserRole role, String status) {
+        this(schoolId, pageRequest, search, role, status, null);
     }
 }

@@ -52,6 +52,6 @@ public class ViewGradingAssignmentsUseCase
             input.hasOpenAppeal(),
             input.search(),
             GradingScopeKind.orCentralized(input.kind())
-        ), input.page(), input.size());
+        ), input.pageRequest().repositoryPage(), input.pageRequest().size());
     }
 }

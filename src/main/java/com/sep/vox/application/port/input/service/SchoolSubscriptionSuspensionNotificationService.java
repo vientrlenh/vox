@@ -9,8 +9,8 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.event.SchoolSubscriptionSuspendedPayloadV1;
 import com.sep.vox.application.event.SchoolSubscriptionUnsuspendedPayloadV1;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.application.shared.RoleConstant;
 import com.sep.vox.domain.model.outbox.Outbox;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.shared.AggregateTypeConstant;
@@ -68,7 +68,7 @@ public class SchoolSubscriptionSuspensionNotificationService {
     }
 
     private List<UUID> schoolAdminIdsOf(UUID schoolId) {
-        return schoolUserRepository.findBySchoolIdWithRole(schoolId, RoleConstant.SCHOOL_ADMIN_ROLE)
+        return schoolUserRepository.findBySchoolIdWithRole(schoolId, SchoolUserRole.SCHOOL_ADMIN)
             .stream().map(su -> su.getUserId()).toList();
     }
 }

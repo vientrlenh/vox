@@ -9,7 +9,7 @@ import com.sep.vox.application.shared.AppPageRequest;
  * Input chung của bốn query danh bạ kỳ thi (lớp / niên khóa / học sinh / giám thị) —
  * cả bốn nhận đúng bộ tham số này nên dùng chung một record thay vì bốn bản sao.
  *
- * <p>`page` là 1-based.
+ * <p>`pageRequest.page()` là 1-based.
  *
  * <p>{@code excludeUserIds}: những người GỌI ĐÃ CÓ rồi (thí sinh của kỳ thi, giám thị của ca) và
  * không muốn thấy nữa. Phải lọc ngay trong SQL chứ không để client bỏ đi sau khi nhận trang: lọc ở

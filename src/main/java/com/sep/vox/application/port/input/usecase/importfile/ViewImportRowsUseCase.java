@@ -13,7 +13,6 @@ import com.sep.vox.application.mapper.importfile.ImportRowResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportRowsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.importfile.ImportRowResponse;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
@@ -38,7 +37,6 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
     private final UserContextPort userContextPort;
     private final ImportRowResponseMapper importRowResponseMapper;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public ViewImportRowsUseCase(
             ImportSessionRepository importSessionRepository,
@@ -47,8 +45,7 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
             SchoolRepository schoolRepository,
             UserContextPort userContextPort,
             ImportRowResponseMapper importRowResponseMapper,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.importSessionRepository = importSessionRepository;
         this.importRowRepository = importRowRepository;
         this.userRepository = userRepository;
@@ -56,7 +53,6 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
         this.userContextPort = userContextPort;
         this.importRowResponseMapper = importRowResponseMapper;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -65,9 +61,6 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
         if (input == null || input.sessionId() == null) {
             throw new IllegalArgumentException("Phiên import không được để trống");
         }
-        if (input.page() <= 0 || input.size() <= 0) {
-            throw new IllegalArgumentException("Số trang và kích thước trang không hợp lệ");
-        }
         var status = parseStatus(input.status());
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
@@ -75,8 +68,7 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
         var currentUser = findCurrentUser(currentUserId);
         var session = findSession(input.sessionId());
 
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var isSchoolAdmin = userContextPort.isSchoolAdmin();
         if (isSchoolAdmin) {
             var schoolId = getSchoolId(currentUser);
             validateSchool(schoolId);
@@ -88,8 +80,8 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
         var rows = importRowRepository.findBySessionId(
             session.getId(),
             status,
-            input.page(), 
-            input.size()
+            input.pageRequest().repositoryPage(), 
+            input.pageRequest().size()
         );
         return importRowResponseMapper.toResponsePage(rows);
     }

@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.ProctorScheduleSummary;
 import com.sep.vox.application.projection.repository.ProctorScheduleQueryRepository;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
@@ -20,17 +19,14 @@ public class ViewMyProctorSchedulesUseCase implements IUseCase<Void, List<Procto
 
     private final ProctorScheduleQueryRepository proctorScheduleQueryRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public ViewMyProctorSchedulesUseCase(
             ProctorScheduleQueryRepository proctorScheduleQueryRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.proctorScheduleQueryRepository = proctorScheduleQueryRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -39,8 +35,7 @@ public class ViewMyProctorSchedulesUseCase implements IUseCase<Void, List<Procto
     public List<ProctorScheduleSummary> execute(Void input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId()
             .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var isSchoolAdmin = userContextPort.isSchoolAdmin();
         if (isSchoolAdmin) {
             var schoolId = schoolUserRepository.findByUserId(currentUserId)
                 .map(schoolUser -> schoolUser.getSchoolId())

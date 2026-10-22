@@ -70,7 +70,7 @@ public class GraphQLAssessmentPolicyController {
         return viewSystemAssessmentPoliciesUseCase
                 .execute(new ViewSystemAssessmentPoliciesQuery(status, languageId, rubricVersionId,
                        effectiveFrom,
-                        effectiveTo, page, size));
+                        effectiveTo, pageRequest));
     }
 
     @QueryMapping(name = "viewSchoolAssessmentPolicies")
@@ -89,7 +89,7 @@ public class GraphQLAssessmentPolicyController {
                 .execute(new ViewSchoolAssessmentPoliciesQuery(schoolId, status, languageId, rubricVersionId,
                         effectiveFrom,
                         effectiveTo,
-                        page, size));
+                        pageRequest));
     }
 
     @QueryMapping(name = "viewTeacherAssessmentPolicies")
@@ -107,8 +107,7 @@ public class GraphQLAssessmentPolicyController {
                 rubricVersionId,
                 effectiveFrom,
                 effectiveTo,
-                page,
-                size));
+                pageRequest));
     }
 
     @QueryMapping(name = "viewSystemAssessmentPolicy")

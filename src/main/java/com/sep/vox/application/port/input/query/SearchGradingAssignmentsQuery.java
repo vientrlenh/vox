@@ -2,8 +2,10 @@ package com.sep.vox.application.port.input.query;
 
 import java.util.UUID;
 
+import com.sep.vox.application.shared.AppPageRequest;
+
 /**
- * Phân trang 0-based, đồng bộ với các query cùng domain assessment-appeal.
+ * Trang đếm từ 1 ({@link AppPageRequest}); use case đổi sang 0-based bằng {@code repositoryPage()} khi gọi repository.
  *
  * <p>Sau rework bảng này không còn khoá cứng ở PENDING_REVIEW nên có thêm các chiều
  * lọc của điều phối: trạng thái bài, vòng chấm, chưa gán, quá hạn, có đơn phúc khảo.
@@ -24,7 +26,6 @@ public record SearchGradingAssignmentsQuery(
     Boolean hasOpenAppeal,
     String search,
     String kind,
-    int page,
-    int size
+    AppPageRequest pageRequest
 ) {
 }

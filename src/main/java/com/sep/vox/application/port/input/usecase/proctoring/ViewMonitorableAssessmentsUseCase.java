@@ -14,7 +14,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.MonitoredAssessmentSummary;
 import com.sep.vox.application.projection.repository.MonitoredAssessmentQueryRepository;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
@@ -39,17 +38,14 @@ public class ViewMonitorableAssessmentsUseCase implements IUseCase<Void, List<Mo
 
     private final MonitoredAssessmentQueryRepository monitoredAssessmentQueryRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public ViewMonitorableAssessmentsUseCase(
             MonitoredAssessmentQueryRepository monitoredAssessmentQueryRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.monitoredAssessmentQueryRepository = monitoredAssessmentQueryRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -61,8 +57,7 @@ public class ViewMonitorableAssessmentsUseCase implements IUseCase<Void, List<Mo
         var now = Instant.now();
         var leadUntil = now.plus(LEAD_TIME);
 
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var isSchoolAdmin = userContextPort.isSchoolAdmin();
         if (isSchoolAdmin) {
             var schoolId = schoolUserRepository.findByUserId(currentUserId)
                 .map(schoolUser -> schoolUser.getSchoolId())

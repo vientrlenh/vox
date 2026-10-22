@@ -48,9 +48,9 @@ public class GradeLevelRepositoryImpl implements GradeLevelRepository {
             ? null
             : "%" + search.strip().toLowerCase() + "%";
         var statusFilter = status == null ? null : status.name();
-        var pageable = PageRequest.of(page - 1, size);
+        var pageable = PageRequest.of(page, size);
         var result = gradeLevelRepository.findAllWithFilters(searchPattern, statusFilter, pageable);
-        return new PageResult<>(
+        return PageResult.fromRepository(
             result.getContent().stream()
                 .map(GradeLevelMapper::toDomain)
                 .toList(),

@@ -14,6 +14,7 @@ import com.sep.vox.application.port.input.query.ViewAssessmentBlueprintDetailsQu
 import com.sep.vox.application.port.input.query.ViewAssessmentBlueprintsQuery;
 import com.sep.vox.application.port.input.usecase.assessmentblueprint.ViewAssessmentBlueprintDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentblueprint.ViewAssessmentBlueprintsUseCase;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.assessment.AssessmentBlueprintDto;
 import com.sep.vox.domain.dto.assessment.AssessmentBlueprintSectionDto;
@@ -48,9 +49,9 @@ public class GraphQLAssessmentBlueprintController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePage(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewAssessmentBlueprintsUseCase.execute(
-            new ViewAssessmentBlueprintsQuery(schoolId, isActive, languageId, assessmentKind, keyword, page, size)
+            new ViewAssessmentBlueprintsQuery(schoolId, isActive, languageId, assessmentKind, keyword, pageRequest)
         );
     }
 
@@ -147,11 +148,5 @@ public class GraphQLAssessmentBlueprintController {
 
     private static AssessmentBlueprintVersionDto latestVersion(List<AssessmentBlueprintVersionDto> versions) {
         return versions.stream().max(Comparator.comparingInt(blueprintVersion -> blueprintVersion.version())).orElse(null);
-    }
-
-    private void validatePage(Integer page, Integer size) {
-        if (page == null || size == null || page < 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
     }
 }

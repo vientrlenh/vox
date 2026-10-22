@@ -9,7 +9,6 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.AssessmentItemAnswer;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
@@ -32,7 +31,6 @@ public class AssessmentResultAccessService {
     private final AssessmentRepository assessmentRepository;
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public AssessmentResultAccessService(
@@ -43,7 +41,6 @@ public class AssessmentResultAccessService {
             AssessmentRepository assessmentRepository,
             AssessmentMemberRepository assessmentMemberRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.assessmentSessionRepository = assessmentSessionRepository;
         this.assessmentItemAnswerRepository = assessmentItemAnswerRepository;
@@ -52,7 +49,6 @@ public class AssessmentResultAccessService {
         this.assessmentRepository = assessmentRepository;
         this.assessmentMemberRepository = assessmentMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -144,8 +140,7 @@ public class AssessmentResultAccessService {
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var schoolAdmin = userContextPort.isSchoolAdmin();
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessment.getSchoolId())) {
             return false;
         }

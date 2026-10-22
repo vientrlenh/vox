@@ -16,7 +16,6 @@ import com.sep.vox.application.port.input.service.AssessmentStreamConfigResolver
 import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.DateMapper;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.assessment.AssessmentDto;
@@ -36,7 +35,6 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
     private final AssessmentRepository assessmentRepository;
     private final AssessmentBlueprintRepository assessmentBlueprintRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
     private final AssessmentStreamConfigResolver assessmentStreamConfigResolver;
     private final AssessmentPolicyValidator assessmentPolicyValidator;
@@ -46,7 +44,6 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
             AssessmentRepository assessmentRepository,
             AssessmentBlueprintRepository assessmentBlueprintRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort,
             AssessmentStreamConfigResolver assessmentStreamConfigResolver,
             AssessmentPolicyValidator assessmentPolicyValidator,
@@ -54,7 +51,6 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
         this.assessmentRepository = assessmentRepository;
         this.assessmentBlueprintRepository = assessmentBlueprintRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
         this.assessmentStreamConfigResolver = assessmentStreamConfigResolver;
         this.assessmentPolicyValidator = assessmentPolicyValidator;
@@ -70,8 +66,7 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var schoolAdmin = userContextPort.isSchoolAdmin();
 
         if (!schoolAdmin || currentSchoolId == null) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");

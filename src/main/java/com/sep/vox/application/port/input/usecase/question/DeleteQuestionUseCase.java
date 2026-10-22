@@ -12,7 +12,6 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.question.DeleteQuestionResponse;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionStatus;
@@ -26,19 +25,16 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
     private final QuestionRepository questionRepository;
     private final QuestionBankRepository questionBankRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public DeleteQuestionUseCase(
             QuestionRepository questionRepository,
             QuestionBankRepository questionBankRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.questionRepository = questionRepository;
         this.questionBankRepository = questionBankRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -51,8 +47,7 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
         var schoolAdmin = !userContextPort.isSystemAdmin()
-            && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-                .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+            && userContextPort.isSchoolAdmin();
 
         var question = questionRepository.findById(input.questionId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));

@@ -30,8 +30,8 @@ public class ViewSchoolSubscriptionsUseCase implements IUseCase<ViewSchoolSubscr
             input.planId(),
             input.status(),
             input.keyword(),
-            input.page(),
-            input.size()
+            input.pageRequest().repositoryPage(),
+            input.pageRequest().size()
         );
         return SchoolSubscriptionDto.toDtoPage(result);
     }

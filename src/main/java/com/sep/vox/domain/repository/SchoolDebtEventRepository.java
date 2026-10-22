@@ -14,7 +14,7 @@ public interface SchoolDebtEventRepository {
     SchoolDebtEvent save(SchoolDebtEvent event);
 
     /**
-     * Nhật ký của trường, mới nhất trước. {@code page} đếm TỪ 1 theo quy ước chung của dự án.
+     * Nhật ký của trường, mới nhất trước. {@code page} đếm TỪ 0, khớp {@code PageRequest.of}; use case đổi từ số trang 1-based của client.
      *
      * <p>Thay cho bản trả {@code List} không phân trang trước đây: sổ này thưa với phần lớn trường
      * nhưng một trường liên tục vượt hạn mức thì không, và đường đọc duy nhất của nó là một trang

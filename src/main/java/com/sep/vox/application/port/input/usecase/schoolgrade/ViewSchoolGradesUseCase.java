@@ -63,8 +63,8 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
                 query.schoolId(),
                 query.gradeLevelId(),
                 parseStatus(query.status()),
-                query.page(),
-                query.size()
+                query.pageRequest().repositoryPage(),
+                query.pageRequest().size()
         );
 
         // 2. Chuyển đổi sang DTO và trả về

@@ -15,8 +15,8 @@ import com.sep.vox.domain.shared.PageResult;
  * Chi phí một lần mở màn tỉ lệ với số bài thi cả đời của em đó, trong khi màn hình chỉ hiện 20
  * dòng. Đẩy xuống SQL thì cả bộ lọc, khoá sắp xếp lẫn {@code COUNT} chạy trên chỉ mục.
  *
- * <p>Phân trang 1-BASED: trang đầu là 1, khớp quy ước chung của dự án (xem
- * {@code PagingConventionTests}). Chỗ quy đổi sang lối đếm từ 0 của JPA nằm trong adapter.
+ * <p>Phân trang 0-BASED: trang đầu là 0, khớp offset của JPA. Use case trừ 1 khỏi số trang
+ * 1-based của client trước khi gọi.
  */
 public interface StudentAssessmentQueryRepository {
 

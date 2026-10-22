@@ -5,6 +5,7 @@ import com.sep.vox.application.port.input.query.*;
 import com.sep.vox.application.port.input.usecase.rubricschool.*;
 import com.sep.vox.application.port.input.usecase.rubricsystem.*;
 import com.sep.vox.application.port.input.usecase.rubricteacher.*;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.*;
 import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.interfaces.graphql.dto.request.*;
@@ -123,8 +124,8 @@ public class GraphQLRubricController {
             @Argument(name = "size") Integer size
     ) {
 
-        validatePageSize(page, size);
-        var query = new ViewSystemRubricsQuery(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        var query = new ViewSystemRubricsQuery(pageRequest);
 
         return viewSystemRubricsUseCase.execute(query);
     }
@@ -138,9 +139,9 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
-        var query = new ViewSchoolRubricsQuery(schoolId, page, size);
+        var query = new ViewSchoolRubricsQuery(schoolId, pageRequest);
         return viewSchoolRubricsUseCase.execute(query);
     }
 
@@ -183,10 +184,10 @@ public class GraphQLRubricController {
             @Argument(name = "status") String status,
             DataFetchingEnvironment env) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
         DataLoader<RubricVersionsKey, PageResult<RubricVersionDto>> loader = env.getDataLoader("rubricVersionsDataLoader");
-        return loader.load(new RubricVersionsKey(rubric.id(), status, page, size));
+        return loader.load(new RubricVersionsKey(rubric.id(), status, pageRequest));
     }
 
 
@@ -198,7 +199,7 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
         // Tránh NullPointerException nếu Frontend không truyền filter
         var safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
@@ -208,8 +209,7 @@ public class GraphQLRubricController {
                 safeFilter.keyword(),
                 safeFilter.frameworkId(),
                 safeFilter.languageId(),
-                page,
-                size
+                pageRequest
         );
 
         // SỬA COMMENT: Thực thi UseCase của hệ thống (chứ không phải của trường)
@@ -239,15 +239,14 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         var safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
 
         return searchSystemRubricsUseCase.execute(new SearchSystemRubricsQuery(
                 safeFilter.keyword(),
                 safeFilter.frameworkId(),
                 safeFilter.languageId(),
-                page,
-                size
+                pageRequest
         ));
     }
 
@@ -261,7 +260,7 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
         // 2. Tránh NullPointer
         var safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
@@ -272,8 +271,7 @@ public class GraphQLRubricController {
                 safeFilter.keyword(),
                 safeFilter.frameworkId(),
                 safeFilter.languageId(),
-                page,
-                size
+                pageRequest
         );
         return searchSchoolRubricsUseCase.execute(query);
     }
@@ -286,7 +284,7 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
         // 2. Tránh NullPointer
         var safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
@@ -296,8 +294,7 @@ public class GraphQLRubricController {
                 safeFilter.keyword(),
                 safeFilter.frameworkId(),
                 safeFilter.languageId(),
-                page,
-                size
+                pageRequest
         );
         return searchTeacherRubricsUseCase.execute(query);
     }
@@ -362,9 +359,9 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
-        var query = new ViewSchoolRubricVersionsQuery(schoolId, rubricId, status, page, size);
+        var query = new ViewSchoolRubricVersionsQuery(schoolId, rubricId, status, pageRequest);
         return viewSchoolRubricVersionsUseCase.execute(query);
     }
 
@@ -378,9 +375,9 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
-        var query = new ViewSystemRubricVersionsQuery(rubricId, status, page, size);
+        var query = new ViewSystemRubricVersionsQuery(rubricId, status, pageRequest);
         return viewSystemRubricVersionsUseCase.execute(query);
     }
 
@@ -392,9 +389,9 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
-        var query = new ViewTeacherRubricVersionsQuery(rubricId, page, size);
+        var query = new ViewTeacherRubricVersionsQuery(rubricId, pageRequest);
         return viewTeacherRubricVersionsUseCase.execute(query);
     }
 
@@ -407,14 +404,14 @@ public class GraphQLRubricController {
             @Argument(name = "size") Integer size,
             DataFetchingEnvironment env) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
         DataLoader<RubricCriteriaKey, PageResult<RubricCriterionDto>> loader = env.getDataLoader("rubricCriteriaDataLoader");
         if (loader == null) {
             throw new IllegalStateException("Không tìm thấy DataLoader rubricCriteriaDataLoader.");
         }
 
-        return loader.load(new RubricCriteriaKey(version.id(), page, size));
+        return loader.load(new RubricCriteriaKey(version.id(), pageRequest));
     }
 
 
@@ -427,14 +424,14 @@ public class GraphQLRubricController {
             @Argument(name = "size") Integer size,
             DataFetchingEnvironment env) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
         DataLoader<RubricResultBandsKey, PageResult<RubricResultBandDto>> loader = env.getDataLoader("rubricResultBandsDataLoader");
         if (loader == null) {
             throw new IllegalStateException("Không tìm thấy DataLoader rubricResultBandsDataLoader.");
         }
 
-        return loader.load(new RubricResultBandsKey(version.id(), page, size));
+        return loader.load(new RubricResultBandsKey(version.id(), pageRequest));
     }
 
 
@@ -447,7 +444,7 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
         // 2. Phòng hộ lỗi dữ liệu null của Filter block
         var safeFilter = (filter != null) ? filter : new SearchRubricVersionFilterRequest(null, null);
@@ -456,8 +453,7 @@ public class GraphQLRubricController {
                 rubricId,
                 safeFilter.keyword(),
                 safeFilter.status(),
-                page,
-                size
+                pageRequest
         );
 
         return searchSystemRubricVersionsUseCase.execute(query);
@@ -473,7 +469,7 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
         // Tránh NullPointer
         var safeFilter = (filter != null) ? filter : new SearchRubricVersionFilterRequest(null, null);
@@ -484,8 +480,7 @@ public class GraphQLRubricController {
                 rubricId,
                 safeFilter.keyword(),
                 safeFilter.status(),
-                page,
-                size
+                pageRequest
         );
 
         return searchSchoolRubricVersionsUseCase.execute(query);
@@ -546,9 +541,9 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
-        var query = new ViewSystemRubricCriteriaQuery(versionId, page, size);
+        var query = new ViewSystemRubricCriteriaQuery(versionId, pageRequest);
         return viewSystemRubricCriteriaUseCase.execute(query);
     }
 
@@ -562,9 +557,9 @@ public class GraphQLRubricController {
             @Argument(name = "size") Integer size
     ) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
-        var query = new ViewSchoolRubricCriteriaQuery(schoolId, versionId, page, size);
+        var query = new ViewSchoolRubricCriteriaQuery(schoolId, versionId, pageRequest);
         return viewSchoolRubricCriteriaUseCase.execute(query);
     }
 
@@ -578,11 +573,11 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         var safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterRequest(null, null);
 
         var query = new SearchSystemRubricCriteriaQuery(
-                versionId, safeFilter.keyword(), safeFilter.isRequired(), page, size
+                versionId, safeFilter.keyword(), safeFilter.isRequired(), pageRequest
         );
 
         return searchSystemRubricCriteriaUseCase.execute(query);
@@ -598,11 +593,11 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         var safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterRequest(null, null);
 
         var query = new SearchSchoolRubricCriteriaQuery(
-                schoolId, versionId, safeFilter.keyword(), safeFilter.isRequired(), page, size
+                schoolId, versionId, safeFilter.keyword(), safeFilter.isRequired(), pageRequest
         );
 
         return searchSchoolRubricCriteriaUseCase.execute(query);
@@ -662,9 +657,9 @@ public class GraphQLRubricController {
             @Argument(name = "size") Integer size
     ) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
-        var query = new ViewSystemRubricResultBandsQuery(versionId, page, size);
+        var query = new ViewSystemRubricResultBandsQuery(versionId, pageRequest);
         return viewSystemRubricResultBandsUseCase.execute(query);
     }
 
@@ -678,9 +673,9 @@ public class GraphQLRubricController {
             @Argument(name = "size") Integer size
     ) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
 
-        var query = new ViewSchoolRubricResultBandsQuery(schoolId, versionId, page, size);
+        var query = new ViewSchoolRubricResultBandsQuery(schoolId, versionId, pageRequest);
         return viewSchoolRubricResultBandsUseCase.execute(query);
     }
 
@@ -693,10 +688,10 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         var safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterRequest(null);
 
-        var query = new SearchSystemRubricResultBandsQuery(versionId, safeFilter.keyword(), page, size);
+        var query = new SearchSystemRubricResultBandsQuery(versionId, safeFilter.keyword(), pageRequest);
         return searchSystemRubricResultBandsUseCase.execute(query);
     }
 
@@ -710,19 +705,10 @@ public class GraphQLRubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         var safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterRequest(null);
 
-        var query = new SearchSchoolRubricResultBandsQuery(schoolId, versionId, safeFilter.keyword(), page, size);
+        var query = new SearchSchoolRubricResultBandsQuery(schoolId, versionId, safeFilter.keyword(), pageRequest);
         return searchSchoolRubricResultBandsUseCase.execute(query);
-    }
-
-    private void validatePageSize(Integer page, Integer size) {
-        if (page == null || page <= 0) {
-            throw new IllegalArgumentException("Số trang yêu cầu không hợp lệ");
-        }
-        if (size == null || size <= 0) {
-            throw new IllegalArgumentException("Kích cỡ trang yêu cầu không hợp lệ");
-        }
     }
 }

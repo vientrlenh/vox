@@ -83,8 +83,8 @@ public class ViewSchoolRubricCriteriaUseCase implements IUseCase<ViewSchoolRubri
         // 5. Query danh sách phân trang (Tận dụng lại hàm đã viết ở phần System)
         var criteriaPage = rubricCriterionRepository.findAllByRubricVersionId(
                 query.versionId(),
-                query.page(),
-                query.size()
+                query.pageRequest().repositoryPage(),
+                query.pageRequest().size()
         );
 
         // 6. Map và trả về

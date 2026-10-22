@@ -20,7 +20,7 @@ public class ViewUsersUseCase implements IUseCase<ViewUsersQuery, PageResult<Use
 
     @Override
     public PageResult<UserDto> execute(ViewUsersQuery input) {
-        int page = input.pageRequest().page();
+        int page = input.pageRequest().repositoryPage();
         int size = input.pageRequest().size();
         PageResult<User> result = userRepository.findAll(page, size);
         return UserDto.toDtoPage(result);

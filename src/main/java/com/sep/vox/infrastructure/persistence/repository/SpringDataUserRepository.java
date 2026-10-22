@@ -42,4 +42,7 @@ public interface SpringDataUserRepository extends JpaRepository<UserJpaEntity, U
     boolean existsByPhone(String phone);
 
     boolean existsByRole(String role);
+
+    @Query("SELECT u.id FROM UserJpaEntity u WHERE u.role = :role AND u.status = 'ACTIVE'")
+    List<UUID> findActiveUserIdsByRole(@Param("role") String role);
 }

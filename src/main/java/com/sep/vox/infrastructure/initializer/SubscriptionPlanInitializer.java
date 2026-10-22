@@ -141,7 +141,7 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        var existingNames = subscriptionPlanRepository.findAll(1, LOOKUP_PAGE_SIZE).content().stream()
+        var existingNames = subscriptionPlanRepository.findAll(0, LOOKUP_PAGE_SIZE).content().stream()
             .map(plan -> plan.getName())
             .collect(Collectors.toSet());
 

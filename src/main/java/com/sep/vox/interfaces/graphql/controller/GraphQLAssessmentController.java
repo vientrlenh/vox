@@ -32,6 +32,7 @@ import com.sep.vox.application.port.input.usecase.assessmentpaper.ViewAssessment
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.AssessmentStatusCountsDto;
 import com.sep.vox.application.response.input.assessment.AssessmentTokenEstimateResponse;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.dto.assessment.AssessmentBlueprintDto;
@@ -72,8 +73,8 @@ public class GraphQLAssessmentController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePage(page, size);
-        return viewAssessmentsUseCase.execute(new ViewAssessmentsQuery(kind, status, schoolId, null, keyword, page, size));
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return viewAssessmentsUseCase.execute(new ViewAssessmentsQuery(kind, status, schoolId, null, keyword, pageRequest));
     }
 
     @QueryMapping(name = "classTests")
@@ -83,9 +84,9 @@ public class GraphQLAssessmentController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePage(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewAssessmentsUseCase.execute(
-            new ViewAssessmentsQuery(AssessmentKind.CLASS_TEST, status, null, schoolClassId, keyword, page, size)
+            new ViewAssessmentsQuery(AssessmentKind.CLASS_TEST, status, null, schoolClassId, keyword, pageRequest)
         );
     }
 
@@ -258,11 +259,5 @@ public class GraphQLAssessmentController {
         DataLoader<UUID, List<AssessmentMemberDto>> loader = env.getDataLoader("assessmentMembersByAssessmentId");
         return loader.load(source.id()).thenApply(members -> members.stream()
             .anyMatch(member -> member.userId().equals(currentUserId)));
-    }
-
-    private void validatePage(Integer page, Integer size) {
-        if (page == null || size == null || page < 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
     }
 }

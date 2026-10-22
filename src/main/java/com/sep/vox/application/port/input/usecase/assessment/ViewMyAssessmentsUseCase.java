@@ -81,8 +81,8 @@ public class ViewMyAssessmentsUseCase implements IUseCase<ViewMyAssessmentsQuery
             input.kind() == null ? null : input.kind().name(),
             input.status(),
             input.sortDescending(),
-            input.page(),
-            input.size(),
+            input.pageRequest().repositoryPage(),
+            input.pageRequest().size(),
             now);
 
         return new PageResult<>(

@@ -39,9 +39,9 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
 
     @Override
     public PageResult<RegisterForm> findAll(int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
+        var pageable = PageRequest.of(pageNumber, size);
         var page = springDataRegisterFormRepository.findAll(pageable);
-        return new PageResult<>(
+        return PageResult.fromRepository(
             page.getContent().stream()
                 .map(RegisterFormMapper::toDomain)
                 .toList(),

@@ -67,8 +67,8 @@ public class ViewSystemRubricCriteriaUseCase implements IUseCase<ViewSystemRubri
         // 4. Query danh sách phân trang (Đã có sẵn Sort order dưới DB)
         var criteriaPage = rubricCriterionRepository.findAllByRubricVersionId(
                 query.versionId(),
-                query.page(),
-                query.size()
+                query.pageRequest().repositoryPage(),
+                query.pageRequest().size()
         );
 
         // 5. Sử dụng hàm toPage đã viết sẵn để trả về

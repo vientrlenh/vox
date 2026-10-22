@@ -2,6 +2,8 @@ package com.sep.vox.application.port.input.query;
 
 import java.util.UUID;
 
+import com.sep.vox.application.shared.AppPageRequest;
+
 /**
  * Lọc danh sách bài AI chấm lỗi chưa ai xử lý của trường đang đăng nhập.
  *
@@ -15,7 +17,6 @@ import java.util.UUID;
 public record SearchSchoolGradingFailuresQuery(
     UUID assessmentId,
     Boolean retryLeft,
-    int page,
-    int size
+    AppPageRequest pageRequest
 ) {
 }

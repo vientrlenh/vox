@@ -18,7 +18,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.FileProcessingPort;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.importfile.PreviewQuestionImportResponse;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
@@ -45,7 +44,6 @@ public class PreviewQuestionImportFromFileUseCase
     private final JsonSerializationPort jsonSerializationPort;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final QuestionBankRepository questionBankRepository;
     private final QuestionTopicRepository questionTopicRepository;
 
@@ -56,7 +54,6 @@ public class PreviewQuestionImportFromFileUseCase
             JsonSerializationPort jsonSerializationPort,
             UserContextPort userContextPort,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             QuestionBankRepository questionBankRepository,
             QuestionTopicRepository questionTopicRepository) {
         this.fileProcessingPort = fileProcessingPort;
@@ -65,7 +62,6 @@ public class PreviewQuestionImportFromFileUseCase
         this.jsonSerializationPort = jsonSerializationPort;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.questionBankRepository = questionBankRepository;
         this.questionTopicRepository = questionTopicRepository;
     }
@@ -90,8 +86,7 @@ public class PreviewQuestionImportFromFileUseCase
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var teacher = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "TEACHER".equals(role.roleCode()));
+        var teacher = userContextPort.isTeacher();
 
         UUID sessionSchoolId;
         if (bulkMode) {

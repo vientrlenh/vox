@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.query;
 import java.time.Instant;
 
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformOperationalHealthUseCase;
+import com.sep.vox.application.shared.AppPageRequest;
 
 /**
  * @param dateFrom  mốc đầu BAO GỒM; bỏ trống = lùi
@@ -15,7 +16,6 @@ public record ViewGradingFailureSessionsQuery(
     Instant dateFrom,
     Instant dateTo,
     String signature,
-    int page,
-    int size
+    AppPageRequest pageRequest
 ) {
 }

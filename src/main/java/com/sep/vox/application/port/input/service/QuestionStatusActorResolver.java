@@ -6,8 +6,6 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
-import com.sep.vox.application.shared.RoleConstant;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.service.question.QuestionStatusTransition;
 
@@ -26,15 +24,12 @@ public class QuestionStatusActorResolver {
 
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public QuestionStatusActorResolver(
             UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     public QuestionStatusTransition.Actor resolve() {
@@ -45,8 +40,7 @@ public class QuestionStatusActorResolver {
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
         var schoolAdmin = !systemAdmin
-            && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-                .anyMatch(role -> RoleConstant.SCHOOL_ADMIN_ROLE.equals(role.roleCode()));
+            && userContextPort.isSchoolAdmin();
 
         return new QuestionStatusTransition.Actor(currentUserId, currentSchoolId, systemAdmin, schoolAdmin);
     }

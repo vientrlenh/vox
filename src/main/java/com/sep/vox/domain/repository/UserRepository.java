@@ -32,4 +32,5 @@ public interface UserRepository {
     boolean existsByPhone(String phone);
     PageResult<User> findAll(int page, int size);
     boolean existsByRole(UserRole role); 
+    List<UUID> findActiveUserIdsByRole(UserRole role);
 }

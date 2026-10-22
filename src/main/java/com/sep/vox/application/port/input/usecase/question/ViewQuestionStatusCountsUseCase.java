@@ -15,7 +15,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.QuestionStatusCountInfo;
 import com.sep.vox.application.projection.repository.QuestionQueryRepository;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -34,17 +33,14 @@ public class ViewQuestionStatusCountsUseCase
     private final QuestionQueryRepository questionQueryRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public ViewQuestionStatusCountsUseCase(
             QuestionQueryRepository questionQueryRepository,
             UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.questionQueryRepository = questionQueryRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -56,8 +52,7 @@ public class ViewQuestionStatusCountsUseCase
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var schoolAdmin = !systemAdmin && userContextPort.isSchoolAdmin();
 
         if (!systemAdmin && currentSchoolId == null) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");

@@ -74,8 +74,8 @@ public class ViewSchoolRubricsUseCase implements IUseCase<ViewSchoolRubricsQuery
         var rubricPage = rubricRepository.findAllByOwnerTypeAndSchoolId(
                 RubricOwnerType.SCHOOL,
                 query.schoolId(),
-                query.page(),
-                query.size()
+                query.pageRequest().repositoryPage(),
+                query.pageRequest().size()
         );
 
         // 5. Map sang DTO

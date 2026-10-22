@@ -10,6 +10,7 @@ import com.sep.vox.application.port.input.query.ViewQuestionTopicDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionTopicsQuery;
 import com.sep.vox.application.port.input.usecase.questiontopic.ViewQuestionTopicDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.questiontopic.ViewQuestionTopicsUseCase;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.QuestionTopicDto;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.shared.PageResult;
@@ -30,8 +31,8 @@ public class GraphQLQuestionTopicController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePage(page, size);
-        var query = new ViewQuestionTopicsQuery(questionBankId, status, keyword, page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        var query = new ViewQuestionTopicsQuery(questionBankId, status, keyword, pageRequest);
         return viewQuestionTopicsUseCase.execute(query);
     }
 
@@ -39,13 +40,5 @@ public class GraphQLQuestionTopicController {
     public QuestionTopicDto questionTopic(@Argument(name = "id") UUID id) {
         var query = new ViewQuestionTopicDetailsQuery(id);
         return viewQuestionTopicDetailsUseCase.execute(query);
-    }
-
-    private void validatePage(Integer page, Integer size) {
-        // page <= 0 chứ không phải < 0: trang đầu là 1. Nhận 0 rồi trừ đi 1 ở adapter sẽ ra
-        // PageRequest.of(-1, size) và ném IllegalArgumentException từ tận trong Spring Data.
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
     }
 }

@@ -9,7 +9,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.projection.dto.AssessmentDirectoryUserInfo;
 import com.sep.vox.application.projection.repository.AssessmentDirectoryQueryRepository;
 import com.sep.vox.application.shared.StringNormalization;
-import com.sep.vox.domain.model.user.SchoolRoleCodes;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.shared.PageResult;
 
 /**
@@ -40,11 +40,11 @@ public class ViewAssessmentDirectoryProctorsUseCase
 
         return assessmentDirectoryQueryRepository.findUsersBySchoolId(
             scope.schoolId(),
-            SchoolRoleCodes.TEACHER,
+            SchoolUserRole.TEACHER.name(),
             StringNormalization.trimAndCollapseSpaces(input.search()),
             input.excludeUserIds(),
-            input.page(),
-            input.size()
+            input.pageRequest().repositoryPage(),
+            input.pageRequest().size()
         );
     }
 }

@@ -35,9 +35,7 @@ public class ViewSchoolDebtEventsUseCase
     public PageResult<SchoolDebtEventDto> execute(ViewSchoolDebtEventsQuery input) {
         schoolScopedReadGuard.requireCanRead(input.schoolId());
 
-        // page đi vào repository theo lối 1-BASED; adapter là chỗ DUY NHẤT trừ 1 trước khi giao cho
-        // Spring Data -- xem PagingConventionTests.
-        var page = schoolDebtEventRepository.findBySchoolId(input.schoolId(), input.page(), input.size());
+        var page = schoolDebtEventRepository.findBySchoolId(input.schoolId(), input.pageRequest().repositoryPage(), input.pageRequest().size());
 
         return new PageResult<>(
             page.content().stream().map(SchoolDebtEventDto::toDto).toList(),

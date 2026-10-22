@@ -10,7 +10,6 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewAssessmentBlueprintsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentBlueprintRepository;
 import com.sep.vox.domain.dto.assessment.AssessmentBlueprintDto;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -22,17 +21,14 @@ public class ViewAssessmentBlueprintsUseCase implements IUseCase<ViewAssessmentB
     private final AssessmentBlueprintRepository assessmentBlueprintRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public ViewAssessmentBlueprintsUseCase(
             AssessmentBlueprintRepository assessmentBlueprintRepository,
             UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.assessmentBlueprintRepository = assessmentBlueprintRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -44,8 +40,7 @@ public class ViewAssessmentBlueprintsUseCase implements IUseCase<ViewAssessmentB
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var schoolAdmin = !systemAdmin && userContextPort.isSchoolAdmin();
 
         if (!systemAdmin && currentSchoolId == null) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
@@ -61,8 +56,8 @@ public class ViewAssessmentBlueprintsUseCase implements IUseCase<ViewAssessmentB
             input.languageId(),
             input.assessmentKind(),
             input.keyword(),
-            input.page(),
-            input.size()
+            input.pageRequest().repositoryPage(),
+            input.pageRequest().size()
         );
         return AssessmentBlueprintDto.toDtoPage(result);
     }

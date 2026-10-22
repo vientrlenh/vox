@@ -69,7 +69,7 @@ public class ViewTeacherAssessmentPoliciesUseCase implements IUseCase<ViewTeache
 
         // Teacher chỉ được xem các chính sách đã PUBLISHED
         var policyPage = assessmentPolicyRepository.findAllBySchoolId(schoolUser.getSchoolId(), AssessmentPolicyStatus.PUBLISHED.name(),
-                query.languageId(), query.rubricVersionId(), query.effectiveFrom(), query.effectiveTo(), query.page(), query.size());
+                query.languageId(), query.rubricVersionId(), query.effectiveFrom(), query.effectiveTo(), query.pageRequest().repositoryPage(), query.pageRequest().size());
         return AssessmentPolicyDto.toDtoPage(policyPage);
     }
 }

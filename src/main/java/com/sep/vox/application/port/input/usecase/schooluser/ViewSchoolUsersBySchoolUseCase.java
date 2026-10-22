@@ -1,23 +1,20 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
 
-import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.shared.RoleConstant;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.SchoolUserDto;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.shared.PageResult;
@@ -25,23 +22,17 @@ import com.sep.vox.domain.shared.PageResult;
 @Service
 public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersBySchoolQuery, PageResult<SchoolUserDto>> {
 
-    private static final Set<String> ADMIN_ROLE_CODES =
-        Set.of(RoleConstant.SCHOOL_ADMIN_ROLE, RoleConstant.SYSTEM_ADMIN_ROLE);
-
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final RoleRepository roleRepository;
 
     public ViewSchoolUsersBySchoolUseCase(
             UserContextPort userContextPort,
             UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            RoleRepository roleRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.roleRepository = roleRepository;
     }
 
     @Override
@@ -63,17 +54,16 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
         }
 
         var status = validateStatus(input.status());
-        var roleId = resolveRoleId(input.roleId(), input.roleCode());
 
         var schoolUsersPage = schoolUserRepository.findBySchoolId(
             input.schoolId(),
             StringNormalization.trimAndCollapseSpaces(input.search()),
-            roleId,
+            input.role(),
             status,
             input.excludeClassId(),
-            !isAdminRoleFilter(roleId),
-            input.page(),
-            input.size()
+            !isAdminRoleFilter(input.role()),
+            input.pageRequest().repositoryPage(),
+            input.pageRequest().size()
         );
 
         return SchoolUserDto.toDtoPage(schoolUsersPage);
@@ -84,32 +74,8 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
      * chọn giáo viên/học sinh — không thao tác trên quản trị viên). Chỉ khi client lọc đúng vai trò
      * quản trị thì mới trả về họ.
      */
-    private boolean isAdminRoleFilter(UUID roleId) {
-        if (roleId == null) {
-            return false;
-        }
-        return roleRepository.findById(roleId)
-            .map(role -> ADMIN_ROLE_CODES.contains(role.getCode().value()))
-            .orElse(false);
-    }
-
-    /**
-     * Cho phép lọc theo mã vai trò (STUDENT/TEACHER) vì client của trường không truy vấn được
-     * danh sách vai trò để lấy UUID. {@code roleId} truyền thẳng vẫn được ưu tiên nếu có.
-     */
-    private UUID resolveRoleId(UUID roleId, String roleCode) {
-        if (roleId != null) {
-            return roleId;
-        }
-
-        var normalized = StringNormalization.trimAndCollapseSpaces(roleCode);
-        if (normalized == null) {
-            return null;
-        }
-
-        return roleRepository.findByCode(normalized.toUpperCase())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò"))
-            .getId();
+    private boolean isAdminRoleFilter(SchoolUserRole role) {
+        return role == SchoolUserRole.SCHOOL_ADMIN;
     }
 
     private String validateStatus(String status) {

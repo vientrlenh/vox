@@ -37,6 +37,7 @@ import com.sep.vox.application.port.input.usecase.assessment.ViewMyAssessmentsUs
 import com.sep.vox.application.port.input.usecase.assessmentschedule.GetAssessmentScheduleOtpUseCase;
 import com.sep.vox.application.response.input.assessment.DeleteAssessmentResponse;
 import com.sep.vox.application.response.input.assessmentschedule.GetAssessmentScheduleOtpResponse;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.assessment.AssessmentDto;
 import com.sep.vox.domain.dto.assessment.AssessmentMemberDto;
 import com.sep.vox.domain.dto.assessment.AssessmentSecurePoolDto;
@@ -84,10 +85,10 @@ public class RestApiAssessmentController {
             @RequestParam(name = "sort", defaultValue = "assessmentDate,desc") String sort) {
         // Trang đếm từ 1, như mọi entry point khác. `Integer` chứ không phải `int` để một tham số
         // rỗng (`?page=`) vào đây thành null và bị guard từ chối, thay vì nổ ở tầng bind với thông
-        // báo khó hiểu. Kiểm ngay tại biên: repository bên dưới chỉ còn trừ 1 để đổi sang offset.
-        PageArguments.validate(page, size);
+        // báo khó hiểu. Kiểm ngay tại biên: use case bên dưới đổi sang chỉ số trang đếm từ 0 bằng repositoryPage().
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         var data = viewMyAssessmentsUseCase.execute(
-            ViewMyAssessmentsQueryMapper.fromRequest(kind, status, page, size, sort));
+            ViewMyAssessmentsQueryMapper.fromRequest(kind, status, pageRequest, sort));
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách bài thi thành công", data));
     }
 

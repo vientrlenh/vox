@@ -52,7 +52,7 @@ public class SearchSystemRubricResultBandsUseCase implements IUseCase<SearchSyst
             throw new ForbiddenException("BẢO MẬT: Dữ liệu thuộc về Trường học. Bạn không có quyền truy cập.");
         }
 
-        var pageResult = rubricResultBandRepository.searchRubricResultBands(query.versionId(), query.keyword(), query.page(), query.size());
+        var pageResult = rubricResultBandRepository.searchRubricResultBands(query.versionId(), query.keyword(), query.pageRequest().repositoryPage(), query.pageRequest().size());
 
         return new PageResult<>(
                 pageResult.content().stream()

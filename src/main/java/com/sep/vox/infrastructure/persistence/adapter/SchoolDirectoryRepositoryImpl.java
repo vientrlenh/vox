@@ -76,9 +76,9 @@ public class SchoolDirectoryRepositoryImpl implements SchoolDirectoryRepository 
 
     @Override
     public PageResult<SchoolDirectory> findAll(int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
+        var pageable = PageRequest.of(pageNumber, size);
         var page = springDataSchoolDirectoryRepository.findAllByOrderByIdDesc(pageable);
-        return new PageResult<>(
+        return PageResult.fromRepository(
             page.stream()
                 .map(SchoolDirectoryMapper::toDomain)
                 .toList(), 

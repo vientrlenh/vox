@@ -13,7 +13,6 @@ import com.sep.vox.application.mapper.importfile.ImportSessionResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportSessionQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.importfile.ImportSessionDetailsResponse;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.school.SchoolUser;
@@ -33,7 +32,6 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
     private final UserContextPort userContextPort;
     private final ImportSessionResponseMapper importSessionResponseMapper;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public ViewImportSessionUseCase(
             ImportSessionRepository importSessionRepository,
@@ -41,15 +39,13 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
             SchoolRepository schoolRepository,
             UserContextPort userContextPort,
             ImportSessionResponseMapper importSessionResponseMapper,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.importSessionRepository = importSessionRepository;
         this.userRepository = userRepository;
         this.schoolRepository = schoolRepository;
         this.userContextPort = userContextPort;
         this.importSessionResponseMapper = importSessionResponseMapper;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -67,8 +63,7 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
         // SCHOOL_ADMIN giữ nguyên hành vi cũ: xem được mọi phiên import trong trường mình (không chỉ phiên
         // tự tạo) để giám sát import hàng loạt. Caller khác (TEACHER/SYSTEM_ADMIN, vd import Question) chỉ
         // xem được đúng phiên do chính mình tạo - không cần thuộc trường nào (System Admin không có trường).
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var isSchoolAdmin = userContextPort.isSchoolAdmin();
         if (isSchoolAdmin) {
             var schoolId = getSchoolId(currentUser);
             validateSchool(schoolId);

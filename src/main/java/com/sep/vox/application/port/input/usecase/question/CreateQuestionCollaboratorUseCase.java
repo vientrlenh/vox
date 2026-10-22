@@ -12,13 +12,13 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateQuestionCollaboratorCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionCollaboratorDto;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionCollaborator;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionStatus;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
@@ -31,7 +31,6 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
     private final QuestionBankRepository questionBankRepository;
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public CreateQuestionCollaboratorUseCase(
@@ -39,13 +38,11 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
             QuestionBankRepository questionBankRepository,
             QuestionCollaboratorRepository questionCollaboratorRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.questionRepository = questionRepository;
         this.questionBankRepository = questionBankRepository;
         this.questionCollaboratorRepository = questionCollaboratorRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -78,8 +75,7 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
             throw new ForbiddenException("Người cộng tác phải thuộc cùng trường");
         }
 
-        var isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(command.userId()).stream()
-            .anyMatch(role -> "TEACHER".equals(role.roleCode()));
+        var isTeacher = schoolUserRepository.hasRole(command.userId(), SchoolUserRole.TEACHER);
         if (!isTeacher) {
             throw new IllegalStateException("Chỉ có thể chia sẻ câu hỏi cho giáo viên");
         }

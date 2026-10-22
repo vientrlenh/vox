@@ -110,7 +110,7 @@ public class JpaSchoolAiCostQueryRepository implements SchoolAiCostQueryReposito
             """), schoolId, from, to, quotaType).getSingleResult());
 
         if (total == 0) {
-            return new PageResult<>(List.of(), page, size, 0, 0);
+            return PageResult.fromRepository(List.of(), page, size, 0, 0);
         }
 
         List<Object[]> rows = bind(em.createNativeQuery("""
@@ -132,7 +132,7 @@ public class JpaSchoolAiCostQueryRepository implements SchoolAiCostQueryReposito
             LIMIT :pageSize OFFSET :offset
             """), schoolId, from, to, quotaType)
             .setParameter("pageSize", size)
-            .setParameter("offset", (long) (page - 1) * size)
+            .setParameter("offset", (long) page * size)
             .getResultList();
 
         var content = rows.stream()
@@ -144,7 +144,7 @@ public class JpaSchoolAiCostQueryRepository implements SchoolAiCostQueryReposito
                 row[4] == null ? null : new BigDecimal(row[4].toString())))
             .toList();
 
-        return new PageResult<>(content, page, size, total, (int) Math.ceil((double) total / size));
+        return PageResult.fromRepository(content, page, size, total, (int) Math.ceil((double) total / size));
     }
 
     @Override

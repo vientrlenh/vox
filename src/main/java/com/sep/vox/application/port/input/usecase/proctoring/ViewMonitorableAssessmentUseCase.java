@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.projection.dto.MonitoredAssessmentSummary;
 import com.sep.vox.application.projection.repository.MonitoredAssessmentQueryRepository;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
@@ -30,17 +29,14 @@ public class ViewMonitorableAssessmentUseCase implements IUseCase<UUID, Monitore
 
     private final MonitoredAssessmentQueryRepository monitoredAssessmentQueryRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public ViewMonitorableAssessmentUseCase(
             MonitoredAssessmentQueryRepository monitoredAssessmentQueryRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.monitoredAssessmentQueryRepository = monitoredAssessmentQueryRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -51,8 +47,7 @@ public class ViewMonitorableAssessmentUseCase implements IUseCase<UUID, Monitore
             .orElseThrow(() -> new UnauthorizedException("User is not logged in"));
         var now = Instant.now();
 
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var isSchoolAdmin = userContextPort.isSchoolAdmin();
         var found = isSchoolAdmin
             ? monitoredAssessmentQueryRepository.findMonitorableBySchool(requireSchoolId(currentUserId), assessmentId, now, null)
             : monitoredAssessmentQueryRepository.findMonitorableByTeacher(currentUserId, assessmentId, now, null);

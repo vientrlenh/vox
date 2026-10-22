@@ -120,7 +120,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
             """ + WHERE_CLAUSE + """
             ORDER BY cr.updatedAt DESC, cr.id ASC
         """, Tuple.class), filter, now)
-            .setFirstResult((page - 1) * size)
+            .setFirstResult(page * size)
             .setMaxResults(size)
             .getResultList();
 
@@ -172,7 +172,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
             .getSingleResult();
 
         var totalPages = (int) Math.ceil((double) total / size);
-        return new PageResult<>(content, page, size, total, totalPages);
+        return PageResult.fromRepository(content, page, size, total, totalPages);
     }
 
     /**
@@ -570,7 +570,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
             .setParameter("assessmentId", assessmentId)
             .setParameter("status", status)
             .setParameter("roundType", roundType)
-            .setFirstResult((page - 1) * size)
+            .setFirstResult(page * size)
             .setMaxResults(size)
             .getResultList();
 
@@ -636,7 +636,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
             .getSingleResult();
 
         var totalPages = (int) Math.ceil((double) total / size);
-        return new PageResult<>(content, page, size, total, totalPages);
+        return PageResult.fromRepository(content, page, size, total, totalPages);
     }
 
     /**

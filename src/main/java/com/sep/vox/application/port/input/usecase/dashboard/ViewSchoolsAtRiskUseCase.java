@@ -45,7 +45,7 @@ public class ViewSchoolsAtRiskUseCase implements IUseCase<ViewSchoolsAtRiskQuery
         );
 
         var schools = schoolsAtRiskQueryRepository.findByBucket(
-            input.bucket(), now, expiringThrough, input.keyword(), input.page(), input.size());
+            input.bucket(), now, expiringThrough, input.keyword(), input.pageRequest().repositoryPage(), input.pageRequest().size());
 
         return new SchoolsAtRiskResponse(input.bucket(), counts, schools);
     }

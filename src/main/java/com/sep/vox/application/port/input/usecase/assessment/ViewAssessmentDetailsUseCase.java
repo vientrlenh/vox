@@ -11,7 +11,6 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewAssessmentDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.assessment.AssessmentDto;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
@@ -26,19 +25,16 @@ public class ViewAssessmentDetailsUseCase implements IUseCase<ViewAssessmentDeta
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public ViewAssessmentDetailsUseCase(
             AssessmentRepository assessmentRepository,
             AssessmentMemberRepository assessmentMemberRepository,
             UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.assessmentRepository = assessmentRepository;
         this.assessmentMemberRepository = assessmentMemberRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -50,8 +46,7 @@ public class ViewAssessmentDetailsUseCase implements IUseCase<ViewAssessmentDeta
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
         var schoolAdmin = !userContextPort.isSystemAdmin()
-            && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-                .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+            && userContextPort.isSchoolAdmin();
 
         var assessment = assessmentRepository.findById(input.id())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));

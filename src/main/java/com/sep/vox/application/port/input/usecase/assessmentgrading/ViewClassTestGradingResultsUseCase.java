@@ -61,6 +61,6 @@ public class ViewClassTestGradingResultsUseCase
             // Khoá loại bài dù assessmentId đã thu hẹp phạm vi: quyền ở trên chỉ chấp nhận bài
             // trên lớp, nên đây là hàng rào thứ hai cho cùng một luật.
             AssessmentKind.CLASS_TEST.name()
-        ), input.page(), input.size());
+        ), input.pageRequest().repositoryPage(), input.pageRequest().size());
     }
 }

@@ -21,7 +21,7 @@ public class ViewSchoolDirectoryPageUseCase implements IUseCase<ViewSchoolDirect
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolDirectoryDto> execute(ViewSchoolDirectoryPageQuery input) {
-        var result = schoolDirectoryRepository.findAll(input.page(), input.size());
+        var result = schoolDirectoryRepository.findAll(input.pageRequest().repositoryPage(), input.pageRequest().size());
         return SchoolDirectoryDto.toDtoPage(result);
     }
     

@@ -36,7 +36,7 @@ public class ImportRowRepositoryImpl implements ImportRowRepository {
     public PageResult<ImportRow> findBySessionId(UUID sessionId, ImportRowStatus status, int pageNumber, int size) {
         var sort = Sort.by(Sort.Order.asc((ImportRowJpaEntity row) -> row.getRowNumber()));
         var pageable = PageRequest.of(
-            pageNumber - 1,
+            pageNumber,
             size,
             sort
         );
@@ -49,7 +49,7 @@ public class ImportRowRepositoryImpl implements ImportRowRepository {
             .stream()
             .map(ImportRowMapper::toDomain)
             .toList();
-        return new PageResult<>(
+        return PageResult.fromRepository(
             content,
             pageNumber,
             size,

@@ -67,7 +67,7 @@ public class SearchSystemRubricCriteriaUseCase implements IUseCase<SearchSystemR
 
         // Gọi DB tìm kiếm
         var pageResult = rubricCriterionRepository.searchRubricCriteria(
-                query.versionId(), query.keyword(), query.isRequired(), query.page(), query.size()
+                query.versionId(), query.keyword(), query.isRequired(), query.pageRequest().repositoryPage(), query.pageRequest().size()
         );
 
         return new PageResult<>(

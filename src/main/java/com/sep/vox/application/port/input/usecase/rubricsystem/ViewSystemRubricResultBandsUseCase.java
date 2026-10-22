@@ -67,8 +67,8 @@ public class ViewSystemRubricResultBandsUseCase implements IUseCase<ViewSystemRu
         // 4. Query danh sách Result Band phân trang từ Database (Đã sort tăng dần theo order)
         var resultBandsPage = rubricResultBandRepository.findAllByRubricVersionId(
                 query.versionId(),
-                query.page(),
-                query.size()
+                query.pageRequest().repositoryPage(),
+                query.pageRequest().size()
         );
 
         // 5. Sử dụng Mapper toPage trả về cho Frontend (Có đủ 4 trường Audit)

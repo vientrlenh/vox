@@ -58,9 +58,9 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
 
     @Override
     public PageResult<QuestionBank> findAll(int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
+        var pageable = PageRequest.of(pageNumber, size);
         var page = springDataQuestionBankRepository.findAll(pageable);
-        return new PageResult<>(
+        return PageResult.fromRepository(
             page.getContent().stream()
                 .map(QuestionBankMapper::toDomain)
                 .toList(),
@@ -85,7 +85,7 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
     public PageResult<QuestionBank> findAccessible(UUID currentSchoolId, boolean systemAdmin, boolean schoolAdmin,
             QuestionBankOwnerType ownerType, QuestionBankStatus status, UUID languageId, UUID schoolId,
             UUID schoolGradeId, String keyword, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
+        var pageable = PageRequest.of(pageNumber, size);
         var page = springDataQuestionBankRepository.findAccessible(
             currentSchoolId,
             systemAdmin,
@@ -98,7 +98,7 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
             StringNormalization.toLikePattern(keyword),
             pageable
         );
-        return new PageResult<>(
+        return PageResult.fromRepository(
             page.getContent().stream()
                 .map(QuestionBankMapper::toDomain)
                 .toList(),

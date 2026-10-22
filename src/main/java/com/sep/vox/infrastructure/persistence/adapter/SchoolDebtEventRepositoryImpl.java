@@ -30,11 +30,9 @@ public class SchoolDebtEventRepositoryImpl implements SchoolDebtEventRepository 
     @Override
     public PageResult<SchoolDebtEvent> findBySchoolId(UUID schoolId, int page, int size) {
         var result = springDataSchoolDebtEventRepository
-            // page vào theo lối 1-BASED như mọi repository khác trong dự án, PageRequest đếm từ 0 --
-            // xem SchoolBalanceEntryRepositoryImpl.findBySchoolId.
-            .findBySchoolIdOrderByOccurredAtDescIdDesc(schoolId, PageRequest.of(page - 1, size));
+            .findBySchoolIdOrderByOccurredAtDescIdDesc(schoolId, PageRequest.of(page, size));
 
-        return new PageResult<>(
+        return PageResult.fromRepository(
             result.getContent().stream().map(SchoolDebtEventMapper::toDomain).toList(),
             page,
             size,

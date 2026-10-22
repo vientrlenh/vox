@@ -8,10 +8,14 @@ public enum QuotaType {
     /** Học sinh tự luyện nói. */
     PRACTICE;
 
-    public String allocationRoleCode() {
+    public SchoolUserRole allocationRole() {
         return switch (this) {
-            case ASSESSMENT -> SchoolUserRole.TEACHER.name();
-            case PRACTICE -> SchoolUserRole.STUDENT.name();
+            case ASSESSMENT -> SchoolUserRole.TEACHER;
+            case PRACTICE -> SchoolUserRole.STUDENT;
         };
+    }
+
+    public String allocationRoleCode() {
+        return allocationRole().name();
     }
 }

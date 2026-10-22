@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.query;
 
 import java.time.Instant;
 
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.model.metering.QuotaType;
 
 /**
@@ -17,7 +18,6 @@ public record SearchSchoolAiSpendByUserQuery(
     Instant from,
     Instant to,
     QuotaType quotaType,
-    int page,
-    int size
+    AppPageRequest pageRequest
 ) {
 }

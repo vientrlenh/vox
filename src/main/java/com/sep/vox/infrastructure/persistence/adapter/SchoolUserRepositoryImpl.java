@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolUserMapper;
@@ -49,8 +50,8 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
 
     @Override
     public List<SchoolUser> findBySchoolIdIn(Collection<UUID> schoolIds, int pageNumber, int size) {
-        var fromRow = (pageNumber - 1) * size + 1;
-        var toRow = pageNumber * size;
+        var fromRow = pageNumber * size + 1;
+        var toRow = (pageNumber + 1) * size;
         return springDataSchoolUserRepository.findBySchoolIdIn(schoolIds, fromRow, toRow)
             .stream()
             .map(SchoolUserMapper::toDomain)
@@ -58,16 +59,16 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
     }
 
     @Override
-    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, UUID roleId, String status,
+    public PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, SchoolUserRole role, String status,
             UUID excludeClassId, boolean excludeAdminRoles, int page, int size) {
         var searchPattern = (search == null || search.isBlank())
             ? null
             : "%" + search.strip().toLowerCase() + "%";
         var statusFilter = (status == null || status.isBlank()) ? null : status;
-        var pageRequest = PageRequest.of(page - 1, size);
+        var pageRequest = PageRequest.of(page, size);
         var pageable = springDataSchoolUserRepository.searchBySchoolId(
-            schoolId, null, searchPattern, roleId, statusFilter, excludeClassId, excludeAdminRoles, pageRequest);
-        return new PageResult<>(
+            schoolId, null, searchPattern, SchoolUserRole.value(role), statusFilter, excludeClassId, excludeAdminRoles, pageRequest);
+        return PageResult.fromRepository(
             pageable.getContent()
                 .stream()
                 .map(SchoolUserMapper::toDomain)
@@ -81,15 +82,15 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
 
     @Override
     public PageResult<SchoolUser> searchBySchoolId(UUID schoolId, UUID excludeUserId, String search,
-            UUID roleId, String status, int page, int size) {
+            SchoolUserRole role, String status, int page, int size) {
         var searchPattern = (search == null || search.isBlank())
             ? null
             : "%" + search.strip().toLowerCase() + "%";
         var statusFilter = (status == null || status.isBlank()) ? null : status;
-        var pageRequest = PageRequest.of(page - 1, size);
+        var pageRequest = PageRequest.of(page, size);
         var pageable = springDataSchoolUserRepository.searchBySchoolId(
-            schoolId, excludeUserId, searchPattern, roleId, statusFilter, null, false, pageRequest);
-        return new PageResult<>(
+            schoolId, excludeUserId, searchPattern, SchoolUserRole.value(role), statusFilter, null, false, pageRequest);
+        return PageResult.fromRepository(
             pageable.getContent()
                 .stream()
                 .map(SchoolUserMapper::toDomain)
@@ -119,8 +120,13 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
     }
 
     @Override
-    public List<SchoolUser> findBySchoolIdWithRole(UUID schoolId, String roleCode) {
-        return springDataSchoolUserRepository.findBySchoolIdWithRole(schoolId, roleCode)
+    public long countByRole(SchoolUserRole role) {
+        return springDataSchoolUserRepository.countByRole(SchoolUserRole.value(role));
+    }
+
+    @Override
+    public List<SchoolUser> findBySchoolIdWithRole(UUID schoolId, SchoolUserRole role) {
+        return springDataSchoolUserRepository.findBySchoolIdWithRole(schoolId, SchoolUserRole.value(role))
             .stream()
             .map(SchoolUserMapper::toDomain)
             .toList();

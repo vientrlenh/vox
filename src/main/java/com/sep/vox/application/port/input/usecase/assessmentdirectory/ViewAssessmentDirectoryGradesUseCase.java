@@ -46,8 +46,8 @@ public class ViewAssessmentDirectoryGradesUseCase
         return assessmentDirectoryQueryRepository.findGradesBySchoolId(
             scope.schoolId(),
             StringNormalization.trimAndCollapseSpaces(input.search()),
-            input.page(),
-            input.size()
+            input.pageRequest().repositoryPage(),
+            input.pageRequest().size()
         );
     }
 }

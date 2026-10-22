@@ -54,7 +54,7 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
     public PageResult<Assessment> findAccessible(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
             boolean schoolAdmin, UUID schoolId, UUID schoolClassId, AssessmentKind kind, AssessmentStatus status, String keyword,
             int page, int size) {
-        var pageable = PageRequest.of(page - 1, size);
+        var pageable = PageRequest.of(page, size);
         var result = springDataAssessmentRepository.findAccessible(
             currentUserId,
             currentSchoolId,
@@ -67,7 +67,7 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
             StringNormalization.toLikePattern(keyword),
             pageable
         );
-        return new PageResult<>(
+        return PageResult.fromRepository(
             result.getContent().stream().map(AssessmentMapper::toDomain).toList(),
             page,
             size,

@@ -16,7 +16,6 @@ import com.sep.vox.application.port.input.service.AssessmentScheduleRoomValidato
 import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
@@ -38,7 +37,6 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
     private final AssessmentScheduleCandidateConflictValidator assessmentScheduleCandidateConflictValidator;
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final SubscriptionPeriodGuardService subscriptionPeriodGuardService;
     private final UserContextPort userContextPort;
 
@@ -50,7 +48,6 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
             AssessmentScheduleCandidateConflictValidator assessmentScheduleCandidateConflictValidator,
             AssessmentMemberRepository assessmentMemberRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             SubscriptionPeriodGuardService subscriptionPeriodGuardService,
             UserContextPort userContextPort) {
         this.subscriptionPeriodGuardService = subscriptionPeriodGuardService;
@@ -61,7 +58,6 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
         this.assessmentScheduleCandidateConflictValidator = assessmentScheduleCandidateConflictValidator;
         this.assessmentMemberRepository = assessmentMemberRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -162,8 +158,7 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var schoolAdmin = userContextPort.isSchoolAdmin();
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessment.getSchoolId())) {
             return currentUserId;
         }

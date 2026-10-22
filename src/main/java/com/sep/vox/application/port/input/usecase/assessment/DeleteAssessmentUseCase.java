@@ -14,7 +14,6 @@ import com.sep.vox.application.port.input.command.DeleteAssessmentCommand;
 import com.sep.vox.application.port.input.service.AssessmentScheduleClosureService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.assessment.DeleteAssessmentResponse;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
@@ -53,7 +52,6 @@ public class DeleteAssessmentUseCase implements IUseCase<DeleteAssessmentCommand
     private final AssessmentQuestionSecureLockService assessmentQuestionSecureLockService;
     private final AssessmentScheduleClosureService assessmentScheduleClosureService;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public DeleteAssessmentUseCase(
@@ -68,7 +66,6 @@ public class DeleteAssessmentUseCase implements IUseCase<DeleteAssessmentCommand
             AssessmentQuestionSecureLockService assessmentQuestionSecureLockService,
             AssessmentScheduleClosureService assessmentScheduleClosureService,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.assessmentRepository = assessmentRepository;
         this.assessmentScheduleRepository = assessmentScheduleRepository;
@@ -81,7 +78,6 @@ public class DeleteAssessmentUseCase implements IUseCase<DeleteAssessmentCommand
         this.assessmentQuestionSecureLockService = assessmentQuestionSecureLockService;
         this.assessmentScheduleClosureService = assessmentScheduleClosureService;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -93,8 +89,7 @@ public class DeleteAssessmentUseCase implements IUseCase<DeleteAssessmentCommand
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var schoolAdmin = userContextPort.isSchoolAdmin();
 
         var assessment = assessmentRepository.findById(input.assessmentId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));

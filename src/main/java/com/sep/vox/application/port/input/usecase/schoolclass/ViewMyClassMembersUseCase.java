@@ -32,8 +32,8 @@ public class ViewMyClassMembersUseCase implements IUseCase<ViewMyClassMembersQue
             input.schoolClassId(),
             normalizeRoleCode(input.roleCode()),
             StringNormalization.trimAndCollapseSpaces(input.search()),
-            input.page(),
-            input.size()
+            input.pageRequest().repositoryPage(),
+            input.pageRequest().size()
         );
 
         return SchoolClassUserDto.toDtoPage(membersPage);

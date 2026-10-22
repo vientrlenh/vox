@@ -49,7 +49,7 @@ public class JpaSchoolUserProjectionRepository implements SchoolUserProjectionRe
         """, SchoolUserInfo.class)
             .setParameter("schoolId", schoolId)
             .setParameter("roleCodes", roleCodes)
-            .setFirstResult((page - 1) * size)
+            .setFirstResult(page * size)
             .setMaxResults(size)
             .getResultList();
 
@@ -71,7 +71,7 @@ public class JpaSchoolUserProjectionRepository implements SchoolUserProjectionRe
             ? 0
             : (int) Math.ceil((double) totalElements / size);
 
-        return new PageResult<>(content, page, size, totalElements, totalPages);
+        return PageResult.fromRepository(content, page, size, totalElements, totalPages);
     }
 
     @Override

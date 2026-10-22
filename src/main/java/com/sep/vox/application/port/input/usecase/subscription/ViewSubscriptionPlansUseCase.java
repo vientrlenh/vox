@@ -51,8 +51,8 @@ public class ViewSubscriptionPlansUseCase implements IUseCase<ViewSubscriptionPl
         }
 
         var page = isSystemAdmin
-            ? subscriptionPlanRepository.findAll(input.page(), input.size())
-            : subscriptionPlanRepository.findByStatus(SubscriptionPlanStatus.ACTIVE, input.page(), input.size());
+            ? subscriptionPlanRepository.findAll(input.pageRequest().repositoryPage(), input.pageRequest().size())
+            : subscriptionPlanRepository.findByStatus(SubscriptionPlanStatus.ACTIVE, input.pageRequest().repositoryPage(), input.pageRequest().size());
 
         // Tính một lần cho cả trang, và tính TOÀN CỤC chứ không phải trong phạm vi trang -- xem
         // SubscriptionPlanQueryRepository#findMostPopularPlanId. Rỗng nghĩa là chưa trường nào đăng

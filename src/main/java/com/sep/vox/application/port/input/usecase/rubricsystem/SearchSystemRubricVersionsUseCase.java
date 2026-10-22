@@ -66,8 +66,8 @@ public class SearchSystemRubricVersionsUseCase implements IUseCase<SearchSystemR
                 query.rubricId(),
                 query.keyword(),
                 query.status(),
-                query.page(),
-                query.size()
+                query.pageRequest().repositoryPage(),
+                query.pageRequest().size()
         );
 
         // 4. Đóng gói map ngược sang DTO trả ra bên ngoài

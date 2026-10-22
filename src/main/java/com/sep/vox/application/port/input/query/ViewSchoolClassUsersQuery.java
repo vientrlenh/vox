@@ -2,5 +2,7 @@ package com.sep.vox.application.port.input.query;
 
 import java.util.UUID;
 
-public record ViewSchoolClassUsersQuery(UUID schoolClassId, int page, int size) {
+import com.sep.vox.application.shared.AppPageRequest;
+
+public record ViewSchoolClassUsersQuery(UUID schoolClassId, AppPageRequest pageRequest) {
 }

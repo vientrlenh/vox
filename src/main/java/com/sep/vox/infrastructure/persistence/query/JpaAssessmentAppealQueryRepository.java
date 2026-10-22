@@ -67,7 +67,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
             .setParameter("assessmentId", assessmentId)
             .setParameter("status", status)
             .setParameter("keyword", normalizedKeyword)
-            .setFirstResult((page - 1) * size)
+            .setFirstResult(page * size)
             .setMaxResults(size);
 
         var rows = query.getResultList();
@@ -117,7 +117,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
             .getSingleResult();
 
         var totalPages = (int) Math.ceil((double) total / size);
-        return new PageResult<>(content, page, size, total, totalPages);
+        return PageResult.fromRepository(content, page, size, total, totalPages);
     }
 
     /**
@@ -143,7 +143,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
         """, Tuple.class)
             .setParameter("studentId", studentId)
             .setParameter("status", status)
-            .setFirstResult((page - 1) * size)
+            .setFirstResult(page * size)
             .setMaxResults(size)
             .getResultList();
 
@@ -185,7 +185,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
             .setParameter("status", status)
             .getSingleResult();
         var totalPages = (int) Math.ceil((double) total / size);
-        return new PageResult<>(content, page, size, total, totalPages);
+        return PageResult.fromRepository(content, page, size, total, totalPages);
     }
 
     private Map<UUID, AppealReviewerInfo> reviewersByAppealIds(List<UUID> appealIds) {

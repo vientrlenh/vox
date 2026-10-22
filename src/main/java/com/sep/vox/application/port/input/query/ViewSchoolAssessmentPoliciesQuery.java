@@ -3,6 +3,8 @@ package com.sep.vox.application.port.input.query;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.application.shared.AppPageRequest;
+
 public record ViewSchoolAssessmentPoliciesQuery(
         UUID schoolId,
         String status,
@@ -10,6 +12,5 @@ public record ViewSchoolAssessmentPoliciesQuery(
         UUID rubricVersionId,
         Instant effectiveFrom,
         Instant effectiveTo,
-        int page,
-        int size
+        AppPageRequest pageRequest
 ) {}

@@ -54,8 +54,8 @@ public class ViewGradeLevelsUseCase implements IUseCase<ViewGradeLevelsQuery, Pa
         var result = gradeLevelRepository.findAll(
             StringNormalization.trimAndCollapseSpaces(input.search()),
             effectiveStatus,
-            input.page(),
-            input.size()
+            input.pageRequest().repositoryPage(),
+            input.pageRequest().size()
         );
         return new PageResult<>(
             result.content().stream().map(GradeLevelDto::toDto).toList(),

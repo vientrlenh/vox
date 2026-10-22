@@ -17,6 +17,7 @@ import com.sep.vox.application.port.input.query.ViewMyClassesQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassMembersUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassesUseCase;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
@@ -50,7 +51,8 @@ public class MyClassController {
             @Argument(name = "status") String status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        return viewMyClassesUseCase.execute(new ViewMyClassesQuery(schoolId, search, status, page, size));
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return viewMyClassesUseCase.execute(new ViewMyClassesQuery(schoolId, search, status, pageRequest));
     }
 
     @QueryMapping(name = "myClass")
@@ -67,8 +69,9 @@ public class MyClassController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewMyClassMembersUseCase.execute(
-            new ViewMyClassMembersQuery(schoolClassId, roleCode, search, page, size));
+            new ViewMyClassMembersQuery(schoolClassId, roleCode, search, pageRequest));
     }
 
     @SchemaMapping(typeName = "MyClass", field = "schoolGrade")

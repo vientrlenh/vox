@@ -38,8 +38,8 @@ public class ViewMyAppealsUseCase
         return assessmentAppealQueryRepository.searchAppealsByStudentId(
             studentId,
             input.status(),
-            input.page(),
-            input.size()
+            input.pageRequest().repositoryPage(),
+            input.pageRequest().size()
         );
     }
 }

@@ -9,10 +9,10 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
 import com.sep.vox.domain.model.assessment.AssessmentResultAppeal;
 import com.sep.vox.domain.model.assessment.AssessmentSession;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -41,7 +41,6 @@ public class AssessmentAppealAccessService {
     private final AssessmentRepository assessmentRepository;
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
 
@@ -53,7 +52,6 @@ public class AssessmentAppealAccessService {
             AssessmentRepository assessmentRepository,
             UserRepository userRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort,
             AssessmentGradingAccessService assessmentGradingAccessService) {
         this.assessmentResultAppealRepository = assessmentResultAppealRepository;
@@ -63,7 +61,6 @@ public class AssessmentAppealAccessService {
         this.assessmentRepository = assessmentRepository;
         this.userRepository = userRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
         this.assessmentGradingAccessService = assessmentGradingAccessService;
     }
@@ -120,8 +117,7 @@ public class AssessmentAppealAccessService {
         if (userContextPort.isSystemAdmin()) {
             return;
         }
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var isSchoolAdmin = schoolUserRepository.hasRole(currentUserId, SchoolUserRole.SCHOOL_ADMIN);
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
@@ -159,8 +155,7 @@ public class AssessmentAppealAccessService {
 
     /** Giáo viên cùng trường — dùng khi kiểm tra ứng viên được phân công. */
     public boolean isTeacherOfSchool(UUID userId, UUID schoolId) {
-        var isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(userId).stream()
-            .anyMatch(role -> "TEACHER".equals(role.roleCode()));
+        var isTeacher = schoolUserRepository.hasRole(userId, SchoolUserRole.TEACHER);
         if (!isTeacher) {
             return false;
         }

@@ -69,7 +69,7 @@ public class ViewSystemAssessmentPoliciesUseCase implements IUseCase<ViewSystemA
         }
 
         var policyPage = assessmentPolicyRepository.findAllSystemWide(safeStatus, query.languageId(), query.rubricVersionId(),
-                query.effectiveFrom(), query.effectiveTo(), query.page(), query.size());
+                query.effectiveFrom(), query.effectiveTo(), query.pageRequest().repositoryPage(), query.pageRequest().size());
         return AssessmentPolicyDto.toDtoPage(policyPage);
     }
 }

@@ -9,7 +9,6 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
@@ -29,7 +28,6 @@ public class AssessmentDirectoryAccessService {
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolClassRepository schoolClassRepository;
     private final AssessmentMemberRepository assessmentMemberRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
     public AssessmentDirectoryAccessService(
@@ -37,13 +35,11 @@ public class AssessmentDirectoryAccessService {
             SchoolUserRepository schoolUserRepository,
             SchoolClassRepository schoolClassRepository,
             AssessmentMemberRepository assessmentMemberRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             UserContextPort userContextPort) {
         this.assessmentRepository = assessmentRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.schoolClassRepository = schoolClassRepository;
         this.assessmentMemberRepository = assessmentMemberRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.userContextPort = userContextPort;
     }
 
@@ -69,8 +65,7 @@ public class AssessmentDirectoryAccessService {
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var schoolAdmin = userContextPort.isSchoolAdmin();
 
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessment.getSchoolId())) {
             return new AssessmentDirectoryScope(currentUserId, assessment.getSchoolId(), true);
@@ -87,9 +82,8 @@ public class AssessmentDirectoryAccessService {
      * Chỉ có nghĩa khi {@code scope.schoolWide()} là false.
      */
     public List<UUID> callerClassIds(AssessmentDirectoryScope scope) {
-        // findByUserId là 1-based (PageRequest.of(page - 1, size)) → trang đầu là 1, KHÔNG phải 0.
         return schoolClassRepository
-            .findByUserId(scope.schoolId(), scope.callerId(), null, SchoolClassStatus.ACTIVE, 1, MAX_CLASSES)
+            .findByUserId(scope.schoolId(), scope.callerId(), null, SchoolClassStatus.ACTIVE, 0, MAX_CLASSES)
             .content()
             .stream()
             .map(schoolClass -> schoolClass.getId())

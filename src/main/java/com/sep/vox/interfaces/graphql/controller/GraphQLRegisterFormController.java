@@ -16,6 +16,7 @@ import com.sep.vox.application.port.input.query.ViewRegisterFormDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewRegisterFormsQuery;
 import com.sep.vox.application.port.input.usecase.registration.ViewRegisterFormDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.registration.ViewRegisterFormsUseCase;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.RegisterFormDocumentDto;
 import com.sep.vox.domain.dto.RegisterFormDto;
 import com.sep.vox.domain.shared.PageResult;
@@ -33,10 +34,8 @@ public class GraphQLRegisterFormController {
     @QueryMapping(name = "registerForms")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RegisterFormDto> registerForms(@Argument(name = "page") int page, @Argument(name = "size") int size) {
-        if (page <= 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
-        var query = new ViewRegisterFormsQuery(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        var query = new ViewRegisterFormsQuery(pageRequest);
         return viewRegisterFormsUseCase.execute(query);
     }
 

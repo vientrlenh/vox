@@ -79,8 +79,8 @@ public class ViewTeacherRubricVersionsUseCase implements IUseCase<ViewTeacherRub
         var versionPage = rubricVersionRepository.findAllByRubricIdAndStatus(
                 query.rubricId(),
                 RubricStatus.PUBLISHED.name(),
-                query.page(),
-                query.size()
+                query.pageRequest().repositoryPage(),
+                query.pageRequest().size()
         );
 
         return RubricVersionDto.toDtoPage(versionPage);

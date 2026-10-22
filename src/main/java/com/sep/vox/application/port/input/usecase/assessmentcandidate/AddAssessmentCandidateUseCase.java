@@ -14,11 +14,10 @@ import com.sep.vox.application.port.input.command.AddAssessmentCandidateCommand;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.assessment.AssessmentCandidateDto;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
-import com.sep.vox.domain.model.user.SchoolRoleCodes;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentCandidateRepository;
@@ -32,7 +31,6 @@ public class AddAssessmentCandidateUseCase implements IUseCase<AddAssessmentCand
     private final AssessmentCandidateRepository assessmentCandidateRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolClassUserRepository schoolClassUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final AssessmentDirectoryAccessService assessmentDirectoryAccessService;
     private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
 
@@ -41,14 +39,12 @@ public class AddAssessmentCandidateUseCase implements IUseCase<AddAssessmentCand
             AssessmentCandidateRepository assessmentCandidateRepository,
             SchoolUserRepository schoolUserRepository,
             SchoolClassUserRepository schoolClassUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             AssessmentDirectoryAccessService assessmentDirectoryAccessService,
             ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService) {
         this.assessmentRepository = assessmentRepository;
         this.assessmentCandidateRepository = assessmentCandidateRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.assessmentDirectoryAccessService = assessmentDirectoryAccessService;
         this.classTestTokenQuotaGuardService = classTestTokenQuotaGuardService;
     }
@@ -71,8 +67,7 @@ public class AddAssessmentCandidateUseCase implements IUseCase<AddAssessmentCand
         if (!scope.schoolWide() && !isInCallerClasses(scope, input.studentId())) {
             throw new ForbiddenException("Học sinh không thuộc lớp bạn phụ trách");
         }
-        var isStudent = userRoleQueryRepository.findByUserIdWithRoleInfo(input.studentId()).stream()
-            .anyMatch(role -> SchoolRoleCodes.STUDENT.equals(role.roleCode()));
+        var isStudent = schoolUserRepository.hasRole(input.studentId(), SchoolUserRole.STUDENT);
         if (!isStudent) {
             throw new IllegalArgumentException("Người dùng không phải là học sinh");
         }

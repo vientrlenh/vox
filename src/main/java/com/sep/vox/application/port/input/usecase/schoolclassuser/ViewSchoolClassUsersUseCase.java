@@ -58,7 +58,7 @@ public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUser
         validateSchool(schoolId);
         validateSchoolClass(input.schoolClassId(), schoolId);
 
-        var result = schoolClassUserRepository.findBySchoolClassId(input.schoolClassId(), input.page(), input.size());
+        var result = schoolClassUserRepository.findBySchoolClassId(input.schoolClassId(), input.pageRequest().repositoryPage(), input.pageRequest().size());
 
         return SchoolClassUserDto.toDtoPage(result);
     }

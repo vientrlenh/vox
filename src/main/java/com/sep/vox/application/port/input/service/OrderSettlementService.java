@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.event.InvoicePaidPayloadV1;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.application.shared.RoleConstant;
 import com.sep.vox.domain.model.invoice.Invoice;
 import com.sep.vox.domain.model.invoice.InvoiceSourceType;
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -29,13 +28,13 @@ import com.sep.vox.domain.model.order.OrderType;
 import com.sep.vox.domain.model.payment.PaymentRecord;
 import com.sep.vox.domain.model.payment.PaymentStatus;
 import com.sep.vox.domain.model.school.SchoolBalanceEntry;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.InvoiceRepository;
-import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.OrderItemRepository;
 import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.PaymentRecordRepository;
@@ -84,7 +83,6 @@ public class OrderSettlementService {
     private final SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository;
     private final SchoolDebtNotificationService schoolDebtNotificationService;
     private final SchoolUserRepository schoolUserRepository;
-    private final RoleRepository roleRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
 
@@ -109,7 +107,6 @@ public class OrderSettlementService {
             SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository,
             SchoolDebtNotificationService schoolDebtNotificationService,
             SchoolUserRepository schoolUserRepository,
-            RoleRepository roleRepository,
             OutboxRepository outboxRepository,
             JsonSerializationPort jsonSerializationPort) {
         this.orderRepository = orderRepository;
@@ -125,7 +122,6 @@ public class OrderSettlementService {
         this.subscriptionPlanQuotaRepository = subscriptionPlanQuotaRepository;
         this.schoolDebtNotificationService = schoolDebtNotificationService;
         this.schoolUserRepository = schoolUserRepository;
-        this.roleRepository = roleRepository;
         this.outboxRepository = outboxRepository;
         this.jsonSerializationPort = jsonSerializationPort;
     }
@@ -600,23 +596,16 @@ public class OrderSettlementService {
      * trò. Cùng ba điều kiện mà {@code sumAllocatedForEligibleUsers} dùng để tính "đã chia", và cùng
      * lời gọi mà {@code DistributeQuotaToUsersService.fetchEligibleUserIds} dùng để dựng danh sách.
      *
-     * <p><b>Optional rỗng nghĩa là KHÔNG XÁC ĐỊNH ĐƯỢC, và chỗ gọi phải chép TẤT CẢ.</b> Hai lối
-     * hỏng ở đây đều dẫn tới một tập thiếu người chứ không phải một tập rỗng rõ ràng, mà lọc theo một
+     * <p><b>Optional rỗng nghĩa là KHÔNG XÁC ĐỊNH ĐƯỢC, và chỗ gọi phải chép TẤT CẢ.</b> Lối hỏng
+     * ở đây (trường có nhiều người đủ điều kiện hơn số đọc được) dẫn tới một tập thiếu người chứ
+     * không phải một tập rỗng rõ ràng, mà lọc theo một
      * tập thiếu là LẤY MẤT trần của người thật -- đúng thảm hoạ Q-2, chỉ khác là lần này do chính
      * đoạn sửa Q-2 gây ra. Giữ nhầm một dòng đáng bỏ chỉ làm bảng phình thêm một kỳ; hai cái giá đó
      * không cùng hạng.
      */
     private Optional<Set<UUID>> eligibleUserIds(UUID schoolId, QuotaType quotaType) {
-        var roleCode = quotaType.allocationRoleCode();
-        var role = roleRepository.findByCode(roleCode);
-        if (role.isEmpty()) {
-            LOGGER.error("Không tìm thấy vai trò {} -- chép TOÀN BỘ trần {} sang kỳ mới thay vì lọc,"
-                + " để không lấy mất trần của người còn đang dạy/học.", roleCode, quotaType);
-            return Optional.empty();
-        }
-
-        var page = schoolUserRepository.findBySchoolId(schoolId, null, role.get().getId(),
-            UserStatus.ACTIVE.name(), null, false, 1, MAX_CARRY_FORWARD_USERS);
+        var page = schoolUserRepository.findBySchoolId(schoolId, null, quotaType.allocationRole(),
+            UserStatus.ACTIVE.name(), null, false, 0, MAX_CARRY_FORWARD_USERS);
         if (page.totalElements() > page.content().size()) {
             LOGGER.error("Trường {} có {} người đủ điều kiện nhận trần {} nhưng chỉ đọc được {} --"
                 + " chép TOÀN BỘ thay vì lọc, vì lọc theo một tập thiếu sẽ xoá trần của phần dôi ra.",
@@ -697,7 +686,7 @@ public class OrderSettlementService {
      */
     private void publishInvoicePaid(Order order, Invoice invoice, Instant now, UUID subscriptionId) {
         var schoolAdminIds = schoolUserRepository
-            .findBySchoolIdWithRole(order.getSchoolId(), RoleConstant.SCHOOL_ADMIN_ROLE)
+            .findBySchoolIdWithRole(order.getSchoolId(), SchoolUserRole.SCHOOL_ADMIN)
             .stream()
             .map(schoolUser -> schoolUser.getUserId())
             .toList();

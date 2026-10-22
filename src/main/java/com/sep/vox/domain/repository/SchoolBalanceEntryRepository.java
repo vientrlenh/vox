@@ -22,7 +22,7 @@ public interface SchoolBalanceEntryRepository {
 
     /**
      * Sao kê của trường, mới nhất trước (khớp idx_school_balance_entries_school_occurred).
-     * {@code page} đếm TỪ 1 theo quy ước chung của dự án.
+     * {@code page} đếm TỪ 0, khớp {@code PageRequest.of}; use case đổi từ số trang 1-based của client.
      *
      * @param entryType null = không lọc theo loại bút toán
      * @param from bao gồm, {@code to} KHÔNG bao gồm. Cả hai BẮT BUỘC khác null -- người gọi muốn

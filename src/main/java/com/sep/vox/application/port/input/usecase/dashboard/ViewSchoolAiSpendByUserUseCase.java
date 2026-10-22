@@ -41,7 +41,7 @@ public class ViewSchoolAiSpendByUserUseCase
         var quotaType = input.quotaType() == null ? null : input.quotaType().name();
 
         var page = schoolAiCostQueryRepository.findSpendByUser(
-            schoolId, from, to, quotaType, input.page(), input.size());
+            schoolId, from, to, quotaType, input.pageRequest().repositoryPage(), input.pageRequest().size());
         var schoolWide = schoolAiCostQueryRepository.sumSchoolWideCost(schoolId, from, to, quotaType);
 
         return new SchoolAiSpendByUserPageResponse(

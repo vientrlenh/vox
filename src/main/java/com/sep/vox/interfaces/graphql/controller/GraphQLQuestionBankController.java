@@ -17,6 +17,7 @@ import com.sep.vox.application.port.input.query.ViewQuestionBankDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionBanksQuery;
 import com.sep.vox.application.port.input.usecase.questionbank.ViewQuestionBankDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.questionbank.ViewQuestionBanksUseCase;
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.dto.QuestionBankDto;
 import com.sep.vox.domain.dto.QuestionBankGradeDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
@@ -41,8 +42,8 @@ public class GraphQLQuestionBankController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
-        validatePage(page, size);
-        var query = new ViewQuestionBanksQuery(ownerType, status, languageId, schoolId, schoolGradeId, keyword, page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        var query = new ViewQuestionBanksQuery(ownerType, status, languageId, schoolId, schoolGradeId, keyword, pageRequest);
         return viewQuestionBanksUseCase.execute(query);
     }
 
@@ -62,11 +63,5 @@ public class GraphQLQuestionBankController {
     public CompletableFuture<SchoolGradeDto> schoolGrade(QuestionBankGradeDto source, DataFetchingEnvironment env) {
         DataLoader<UUID, SchoolGradeDto> loader = env.getDataLoader("schoolGradeById");
         return loader.load(source.schoolGradeId());
-    }
-
-    private void validatePage(int page, int size) {
-        if (page < 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
     }
 }

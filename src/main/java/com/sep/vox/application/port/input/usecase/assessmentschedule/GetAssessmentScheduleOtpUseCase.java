@@ -14,9 +14,9 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.OneTimePasswordPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.assessmentschedule.GetAssessmentScheduleOtpResponse;
 import com.sep.vox.application.shared.CacheKey;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentScheduleProctorRepository;
@@ -32,7 +32,6 @@ public class GetAssessmentScheduleOtpUseCase implements IUseCase<GetAssessmentSc
     private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
     private final AssessmentRepository assessmentRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final OneTimePasswordPort oneTimePasswordPort;
     private final CacheManagerPort cacheManagerPort;
     private final UserContextPort userContextPort;
@@ -42,7 +41,6 @@ public class GetAssessmentScheduleOtpUseCase implements IUseCase<GetAssessmentSc
             AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
             AssessmentRepository assessmentRepository,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
             OneTimePasswordPort oneTimePasswordPort,
             CacheManagerPort cacheManagerPort,
             UserContextPort userContextPort) {
@@ -50,7 +48,6 @@ public class GetAssessmentScheduleOtpUseCase implements IUseCase<GetAssessmentSc
         this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
         this.assessmentRepository = assessmentRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
         this.oneTimePasswordPort = oneTimePasswordPort;
         this.cacheManagerPort = cacheManagerPort;
         this.userContextPort = userContextPort;
@@ -90,8 +87,7 @@ public class GetAssessmentScheduleOtpUseCase implements IUseCase<GetAssessmentSc
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var isSchoolAdmin = schoolUserRepository.hasRole(currentUserId, SchoolUserRole.SCHOOL_ADMIN);
         return isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessmentSchoolId);
     }
 }

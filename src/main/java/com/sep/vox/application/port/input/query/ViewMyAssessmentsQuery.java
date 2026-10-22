@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.query;
 
+import com.sep.vox.application.shared.AppPageRequest;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 
 /**
@@ -7,13 +8,12 @@ import com.sep.vox.domain.model.assessment.AssessmentKind;
  * ({@code upcoming}/{@code in_progress}/{@code completed}) chứ không phải {@code AssessmentStatus} --
  * đúng với chuỗi mà {@code StudentAssessmentViewSupport.statusOf} trả về cho FE.
  *
- * <p>{@code page} đánh số từ 0, khớp với {@code ViewAssessmentsQuery} và {@code PageRequest.of}.
+ * <p>{@code pageRequest.page()} đếm từ 1; use case đổi sang 0-based bằng {@code repositoryPage()} khi gọi repository.
  */
 public record ViewMyAssessmentsQuery(
     AssessmentKind kind,
     String status,
-    int page,
-    int size,
+    AppPageRequest pageRequest,
     boolean sortDescending
 ) {
 }

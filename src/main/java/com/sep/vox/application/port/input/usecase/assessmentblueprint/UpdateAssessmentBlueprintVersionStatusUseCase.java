@@ -17,7 +17,6 @@ import com.sep.vox.application.port.input.command.UpdateAssessmentBlueprintVersi
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.assessment.AssessmentBlueprintVersionDto;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
@@ -49,7 +48,6 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
     private final UserContextPort userContextPort;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public UpdateAssessmentBlueprintVersionStatusUseCase(
             AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository,
@@ -60,8 +58,7 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
             SchoolUserRepository schoolUserRepository,
             UserContextPort userContextPort,
             OutboxRepository outboxRepository, 
-            JsonSerializationPort jsonSerializationPort, 
-            UserRoleQueryRepository userRoleQueryRepository) {
+            JsonSerializationPort jsonSerializationPort) {
         this.assessmentBlueprintVersionRepository = assessmentBlueprintVersionRepository;
         this.assessmentBlueprintRepository = assessmentBlueprintRepository;
         this.assessmentBlueprintSectionRepository = assessmentBlueprintSectionRepository;
@@ -71,7 +68,6 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
         this.userContextPort = userContextPort;
         this.outboxRepository = outboxRepository;
         this.jsonSerializationPort = jsonSerializationPort;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -157,8 +153,7 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
         // REVIEWER: KHÔNG. Họ tồn tại đúng để làm người thứ hai, cho tự duyệt là xoá luôn vai
         // trò của mình. Đây là lý do phải hỏi isChairOfAssessmentUsingBlueprint chứ không dùng lại
         // canChangeVersionStatus ở trên -- câu đó gộp CHAIR với REVIEWER.
-        var isAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()) || "SYSTEM_ADMIN".equals(role.roleCode()));
+        var isAdmin = userContextPort.isSchoolAdmin() || userContextPort.isSystemAdmin();
         var isChair = assessmentBlueprintRepository.isChairOfAssessmentUsingBlueprint(
             blueprint.getId(), currentUserId, currentSchoolId
         );

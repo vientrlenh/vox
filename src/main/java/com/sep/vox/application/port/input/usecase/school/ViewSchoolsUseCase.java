@@ -20,7 +20,7 @@ public class ViewSchoolsUseCase implements IUseCase<ViewSchoolsQuery, PageResult
 
     @Override
     public PageResult<SchoolDto> execute(ViewSchoolsQuery input) {
-        int page = input.pageRequest().page();
+        int page = input.pageRequest().repositoryPage();
         int size = input.pageRequest().size();
         PageResult<School> schools = schoolRepository.findAll(page, size, input.search(), input.isActive());
         return SchoolDto.toDtoPage(schools);

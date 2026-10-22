@@ -45,9 +45,9 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     @Override
     public PageResult<AssessmentPolicy> findAllSystemWide(String status, UUID languageId, UUID rubricVersionId,
             Instant effectiveFrom, Instant effectiveTo, int page, int size) {
-        var pageable = PageRequest.of(page - 1, size);
+        var pageable = PageRequest.of(page, size);
         var result = springDataAssessmentPolicyRepository.findBySchoolIdIsNullAndStatus(status, languageId, rubricVersionId, effectiveFrom, effectiveTo, pageable);
-        return new PageResult<>(
+        return PageResult.fromRepository(
                 result.getContent().stream().map(AssessmentPolicyMapper::toDomain).toList(),
                 page,
                 size,
@@ -59,9 +59,9 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     @Override
     public PageResult<AssessmentPolicy> findAllBySchoolId(UUID schoolId, String status, UUID languageId, UUID rubricVersionId,
             Instant effectiveFrom, Instant effectiveTo, int page, int size) {
-        var pageable = PageRequest.of(page - 1, size);
+        var pageable = PageRequest.of(page, size);
         var result = springDataAssessmentPolicyRepository.findBySchoolIdAndStatus(schoolId, status, languageId, rubricVersionId, effectiveFrom, effectiveTo, pageable);
-        return new PageResult<>(
+        return PageResult.fromRepository(
                 result.getContent().stream().map(AssessmentPolicyMapper::toDomain).toList(),
                 page,
                 size,

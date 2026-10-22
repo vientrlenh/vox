@@ -12,7 +12,6 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateQuestionTopicCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.questiontopic.CreateQuestionTopicResponse;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
@@ -29,16 +28,14 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
     private final QuestionBankRepository questionBankRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public CreateQuestionTopicUseCase(QuestionTopicRepository questionTopicRepository,
             QuestionBankRepository questionBankRepository, UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository, UserRoleQueryRepository userRoleQueryRepository) {
+            SchoolUserRepository schoolUserRepository) {
         this.questionTopicRepository = questionTopicRepository;
         this.questionBankRepository = questionBankRepository;
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -50,8 +47,7 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        var schoolAdmin = userContextPort.isSchoolAdmin();
 
         var questionBank = questionBankRepository.findById(command.questionBankId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));

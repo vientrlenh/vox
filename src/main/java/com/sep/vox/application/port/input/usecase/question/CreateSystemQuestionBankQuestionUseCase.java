@@ -16,7 +16,6 @@ import com.sep.vox.application.port.input.command.CreateQuestionEvaluationGuideC
 import com.sep.vox.application.port.input.command.CreateSystemQuestionBankQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.projection.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.question.CreateQuestionResponse;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.QuestionAssetDto;
@@ -48,7 +47,6 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
     private final QuestionTopicRepository questionTopicRepository;
     private final QuestionBankRepository questionBankRepository;
     private final UserContextPort userContextPort;
-    private final UserRoleQueryRepository userRoleQueryRepository;
 
     public CreateSystemQuestionBankQuestionUseCase(
             SchoolUserRepository schoolUserRepository,
@@ -57,8 +55,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
             QuestionTopicRepository questionTopicRepository,
             QuestionBankRepository questionBankRepository,
-            UserContextPort userContextPort,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            UserContextPort userContextPort) {
         this.schoolUserRepository = schoolUserRepository;
         this.questionRepository = questionRepository;
         this.questionAssetRepository = questionAssetRepository;
@@ -66,7 +63,6 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         this.questionTopicRepository = questionTopicRepository;
         this.questionBankRepository = questionBankRepository;
         this.userContextPort = userContextPort;
-        this.userRoleQueryRepository = userRoleQueryRepository;
     }
 
     @Override
@@ -79,8 +75,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var teacher = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "TEACHER".equals(role.roleCode()));
+        var teacher = userContextPort.isTeacher();
 
         var questionBank = questionBankRepository.findById(command.questionBankId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));

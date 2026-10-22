@@ -1,8 +1,9 @@
 package com.sep.vox.application.port.input.query;
 
+import com.sep.vox.application.shared.AppPageRequest;
+
 public record ViewSchoolDirectoryPageQuery(
-    int page, 
-    int size
+    AppPageRequest pageRequest
 ) {
     
 }

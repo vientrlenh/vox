@@ -63,6 +63,7 @@ import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersForR
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
 import com.sep.vox.application.response.input.schooluser.UpdateSchoolUserResponse;
 import com.sep.vox.application.shared.AppPageRequest;
+import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.dto.SchoolDirectoryDto;
@@ -72,6 +73,7 @@ import com.sep.vox.domain.dto.GradeLevelDto;
 import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.shared.CursorPage;
 import com.sep.vox.domain.shared.PageResult;
 import com.sep.vox.interfaces.graphql.dto.key.SchoolClassPageKey;
@@ -161,13 +163,12 @@ public class GraphQLSchoolController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
-            @Argument(name = "roleId") UUID roleId,
             @Argument(name = "roleCode") String roleCode,
             @Argument(name = "status") String status,
             @Argument(name = "excludeClassId") UUID excludeClassId) {
         AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
         return viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(
-            schoolId, page, size, search, roleId, roleCode, status, excludeClassId));
+            schoolId, pageRequest, search, parseSchoolUserRole(roleCode), status, excludeClassId));
     }
 
     @QueryMapping(name = "schoolUsersForRequester")
@@ -177,12 +178,24 @@ public class GraphQLSchoolController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
-            @Argument(name = "roleId") UUID roleId,
+            @Argument(name = "roleCode") String roleCode,
             @Argument(name = "status") String status) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return viewSchoolUsersForRequesterUseCase.execute(
+            new ViewSchoolUsersBySchoolQuery(schoolId, pageRequest, search, parseSchoolUserRole(roleCode), status));
+    }
+
+    /** Client lọc theo mã vai trò (STUDENT/TEACHER/SCHOOL_ADMIN); null hoặc rỗng = không lọc. */
+    private static SchoolUserRole parseSchoolUserRole(String roleCode) {
+        var normalized = StringNormalization.trimAndCollapseSpaces(roleCode);
+        if (normalized == null) {
+            return null;
         }
-        return viewSchoolUsersForRequesterUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, page, size, search, roleId, status));
+        try {
+            return SchoolUserRole.valueOf(normalized.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Vai trò không hợp lệ");
+        }
     }
 
     @QueryMapping(name = "schoolStudentsBySchool")
@@ -193,10 +206,8 @@ public class GraphQLSchoolController {
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
             @Argument(name = "status") String status) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
-        return viewSchoolStudentsBySchoolUseCase.execute(new ViewSchoolStudentsBySchoolQuery(schoolId, page, size, search, status));
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return viewSchoolStudentsBySchoolUseCase.execute(new ViewSchoolStudentsBySchoolQuery(schoolId, pageRequest, search, status));
     }
 
     @QueryMapping(name = "schoolTeachersBySchool")
@@ -207,10 +218,8 @@ public class GraphQLSchoolController {
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
             @Argument(name = "status") String status) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
-        return viewSchoolTeachersBySchoolUseCase.execute(new ViewSchoolTeachersBySchoolQuery(schoolId, page, size, search, status));
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return viewSchoolTeachersBySchoolUseCase.execute(new ViewSchoolTeachersBySchoolQuery(schoolId, pageRequest, search, status));
     }
 
     @QueryMapping(name = "schoolUser")
@@ -228,10 +237,8 @@ public class GraphQLSchoolController {
             @Argument(name = "status") String status,
             @Argument(name = "languageId") UUID languageId,
             @Argument(name = "schoolGradeId") UUID schoolGradeId) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
-        }
-        var query = new ViewSchoolClassesQuery(page, size, search, status, languageId, schoolGradeId);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        var query = new ViewSchoolClassesQuery(pageRequest, search, status, languageId, schoolGradeId);
         return viewSchoolClassesUseCase.execute(query);
     }
 
@@ -262,10 +269,8 @@ public class GraphQLSchoolController {
             @Argument(name = "schoolClassId") UUID schoolClassId,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
-        }
-        return viewSchoolClassUsersUseCase.execute(new ViewSchoolClassUsersQuery(schoolClassId, page, size));
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return viewSchoolClassUsersUseCase.execute(new ViewSchoolClassUsersQuery(schoolClassId, pageRequest));
     }
 
     @QueryMapping(name = "schoolClassesByUser")
@@ -276,10 +281,8 @@ public class GraphQLSchoolController {
             @Argument(name = "status") String status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
-        }
-        return viewSchoolClassesByUserUseCase.execute(new ViewSchoolClassesByUserQuery(schoolId, userId, status, page, size));
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return viewSchoolClassesByUserUseCase.execute(new ViewSchoolClassesByUserQuery(schoolId, userId, status, pageRequest));
     }
 
     @QueryMapping(name = "mySchoolClasses")
@@ -289,10 +292,8 @@ public class GraphQLSchoolController {
             @Argument(name = "status") String status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
-        }
-        return viewMySchoolClassesUseCase.execute(new ViewMySchoolClassesQuery(schoolId, status, page, size));
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        return viewMySchoolClassesUseCase.execute(new ViewMySchoolClassesQuery(schoolId, status, pageRequest));
     }
 
     @SchemaMapping(typeName = "SchoolClassUser", field = "user")
@@ -359,11 +360,8 @@ public class GraphQLSchoolController {
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-
-        int pageNumber = (page != null && page > 0) ? page : 1;
-        int pageSize = (size != null && size > 0) ? size : 10;
-
-        var query = new ViewSchoolRoomsQuery(schoolId, pageNumber, pageSize);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        var query = new ViewSchoolRoomsQuery(schoolId, pageRequest);
         return viewSchoolRoomsUseCase.execute(query);
     }
 
@@ -408,12 +406,8 @@ public class GraphQLSchoolController {
             @Argument(name = "status") String status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-
-        int pageNumber = (page != null && page > 0) ? page : 1;
-        int pageSize = (size != null && size > 0) ? size : 10;
-
-        var query = new ViewSchoolGradesQuery(schoolId, gradeLevelId, status, pageNumber, pageSize);
-
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        var query = new ViewSchoolGradesQuery(schoolId, gradeLevelId, status, pageRequest);
         return viewSchoolGradesUseCase.execute(query);
     }
 
@@ -425,10 +419,8 @@ public class GraphQLSchoolController {
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
             @Argument(name = "status") String status) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
-        }
-        var query = new ViewGradeLevelsQuery(page, size, search, status);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        var query = new ViewGradeLevelsQuery(pageRequest, search, status);
         return viewGradeLevelsUseCase.execute(query);
     }
 
@@ -457,10 +449,8 @@ public class GraphQLSchoolController {
 
     @QueryMapping(name = "schoolDirectoryPage")
     public PageResult<SchoolDirectoryDto> schoolDirectoryPage(@Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích thước yêu cầu không hợp lệ");
-        }
-        var query = new ViewSchoolDirectoryPageQuery(page, size);
+        AppPageRequest pageRequest = AppPageRequest.pageRequest(page, size);
+        var query = new ViewSchoolDirectoryPageQuery(pageRequest);
         return viewSchoolDirectoryPageUseCase.execute(query);
     }
 

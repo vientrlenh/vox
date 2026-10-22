@@ -46,7 +46,7 @@ public class ViewMyGradingTasksUseCase
             AssessmentKind.CENTRALIZED.name(),
             input.status(),
             input.roundType(),
-            input.page(),
-            input.size());
+            input.pageRequest().repositoryPage(),
+            input.pageRequest().size());
     }
 }

@@ -59,8 +59,8 @@ public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery
             parseStatus(input.status()),
             input.languageId(),
             input.schoolGradeId(),
-            input.page(), 
-            input.size()
+            input.pageRequest().repositoryPage(), 
+            input.pageRequest().size()
         );
         return SchoolClassDto.toDtoPage(result);
     }

@@ -52,8 +52,8 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
     @Override
     @Transactional(readOnly = true)
     public PageResult<ImportSessionSummaryResponse> execute(ViewImportSessionsQuery input) {
-        if (input == null || input.page() <= 0 || input.size() <= 0) {
-            throw new IllegalArgumentException("Số trang và kích thước trang không hợp lệ");
+        if (input == null) {
+            throw new IllegalArgumentException("Yêu cầu không được để trống");
         }
         var type = parseType(input.type());
         var status = parseStatus(input.status());
@@ -68,8 +68,8 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
             schoolId,
             type,
             status,
-            input.page(), 
-            input.size()
+            input.pageRequest().repositoryPage(), 
+            input.pageRequest().size()
         );
         return importSessionResponseMapper.toSummaryPage(result);
     }

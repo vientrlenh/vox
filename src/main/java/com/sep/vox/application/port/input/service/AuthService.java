@@ -17,8 +17,6 @@ import com.sep.vox.domain.model.refreshtoken.RefreshToken;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
 import com.sep.vox.domain.repository.RefreshTokenRepository;
 
-import jakarta.servlet.http.HttpServletResponse;
-
 @Service 
 public class AuthService {
     
@@ -66,9 +64,9 @@ public class AuthService {
 
 
     public SessionToken createSessionToken() {
-        SessionToken token = sessionTokenManagerPort.generateToken(res);
+        SessionToken token = sessionTokenManagerPort.generateToken();
         while (refreshTokenRepository.existsByTokenHash(token.hashedToken())) {
-            token = sessionTokenManagerPort.generateToken(res);
+            token = sessionTokenManagerPort.generateToken();
         }
         return token;
     }

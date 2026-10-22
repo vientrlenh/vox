@@ -12,12 +12,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.assessment.AssessmentHumanGradingRequiredPayload;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.application.shared.RoleConstant;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.model.outbox.Outbox;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.assessment.AssessmentCandidateResultRepository;
@@ -150,7 +150,7 @@ public class AssessmentHumanGradingNotificationService {
         }
 
         var schoolAdminIds = schoolUserRepository
-            .findBySchoolIdWithRole(assessment.getSchoolId(), RoleConstant.SCHOOL_ADMIN_ROLE)
+            .findBySchoolIdWithRole(assessment.getSchoolId(), SchoolUserRole.SCHOOL_ADMIN)
             .stream()
             .map(schoolUser -> schoolUser.getUserId());
 

@@ -9,7 +9,7 @@ import java.util.UUID;
  * là mọi SCHOOL_ADMIN của trường -- CHỐT NGAY lúc phát sự kiện, cùng lý do với
  * SchoolLockedDueToDebtPayloadV1.schoolAdminIds.
  */
-public record SchoolSubscriptionSuspendedPayloadV1(
+public record SchoolSubscriptionSuspendedPayload(
     List<UUID> schoolAdminIds,
     UUID schoolId,
     UUID subscriptionId,

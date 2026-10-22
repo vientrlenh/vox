@@ -37,50 +37,14 @@ import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.service.rubric.RubricScoringConsistencyValidator;
 
-/**
- * Dựng sẵn ba bộ tiêu chí MẪU của hệ thống (khối 10, 11, 12) để trường có cái mà sao về ngay từ lần
- * khởi động đầu.
- *
- * <p>Khác {@link FrameworkInitializer} ở chỗ đây KHÔNG phải dữ liệu bắt buộc: thiếu nó hệ thống vẫn
- * chạy, trường vẫn tự soạn bộ tiêu chí từ đầu được. Nó tồn tại để chức năng sao chép có nội dung, và
- * để trường mới có một điểm khởi đầu hợp lý thay vì một trang trắng.
- *
- * <h2>Ba bản mẫu, không phải ba bản × hai cách tính</h2>
- *
- * <p>Cả ba đều khai ở dạng PHÂN BỔ ({@code SUM}). Không dựng thêm bản Trung bình song song, vì Trung
- * bình suy được từ Phân bổ lúc sao chép -- {@code RubricCloneService} san mọi trọng số về 1 khi
- * trường chọn cách tính đó -- còn chiều ngược lại thì không: từ trạng thái mọi tiêu chí bằng nhau
- * không có cách nào tái tạo tỉ lệ mà bản mẫu định ra. Bản Phân bổ mang nhiều thông tin hơn, nên nó
- * là dạng đáng lưu.
- *
- * <h2>Chính sách đánh giá đi kèm nằm ở initializer khác</h2>
- *
- * <p>{@link SystemAssessmentPolicyInitializer} chạy sau ({@code @Order(9)}) và dựng cho mỗi khối một
- * chính sách mẫu trỏ vào đúng bản mẫu cùng khối ở đây. Hai bên nối với nhau bằng MÃ PHIÊN BẢN
- * ({@code SYS-ENG-K10-V1}...), tức là quy ước {@code code + "-V1"} bên dưới là thứ đi ra ngoài file
- * này -- đổi nó thì phải đổi cả bảng tra bên đó.
- *
- * <p>Ghi chú lịch sử: trước đây chỗ này giải thích là cố ý KHÔNG dựng chính sách hệ thống, vì
- * {@code findCandidatePolicies} lọc {@code WHERE p.schoolId = :schoolId} nên chính sách không thuộc
- * trường nào sẽ không bao giờ được chọn. Lý do đó không còn mô tả đúng hệ thống đang chạy: hai hàm
- * phân giải phạm vi ấy nay là mã chết (đường chấm thật đọc {@code assessments.assessment_policy_id}), và
- * quan trọng hơn, chính sách mẫu của hệ thống không tồn tại để chấm -- nó tồn tại để trường SAO VỀ
- * kèm bộ tiêu chí qua {@code CloneSystemRubricToSchoolUseCase}. Bản sao mới là bản đi chấm.
- *
- * <h2>Ghi thẳng qua repository</h2>
- *
- * <p>Đi vòng qua {@code CreateSystemRubricUseCase} và {@code ChangeSystemRubricVersionStatusUseCase}
- * vì lúc khởi động chưa có người dùng nào đăng nhập để các use case đó lấy danh tính. Đổi lại, các
- * bất biến mà đường publish bắt buộc phải được giữ bằng tay ở đây: khung gốc còn hoạt động, phiên
- * bản có tiêu chí, và trọng số/thang điểm nhất quán. Điều kiện cuối được kiểm bằng chính
- * {@link RubricScoringConsistencyValidator} của đường publish thật, nên sai số liệu trong file này
- * làm hỏng lúc khởi động chứ không âm thầm sinh ra bản mẫu không ban hành lại được.
- */
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 @Component
 @Order(6)
+@RequiredArgsConstructor 
+@Slf4j 
 public class SystemRubricTemplateInitializer implements ApplicationRunner {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SystemRubricTemplateInitializer.class);
 
     /** Bản mẫu bám vào ngôn ngữ và khung do hai initializer chạy trước dựng ra. */
     private static final String LANGUAGE_CODE = "ENG";
@@ -191,25 +155,6 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
 
-    public SystemRubricTemplateInitializer(
-            RubricRepository rubricRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricCriterionRepository rubricCriterionRepository,
-            RubricResultBandRepository rubricResultBandRepository,
-            SupportedLanguageRepository supportedLanguageRepository,
-            FrameworkRepository frameworkRepository,
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository) {
-        this.rubricRepository = rubricRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricResultBandRepository = rubricResultBandRepository;
-        this.supportedLanguageRepository = supportedLanguageRepository;
-        this.frameworkRepository = frameworkRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkCriterionRepository = frameworkCriterionRepository;
-    }
-
     /**
      * {@code @Transactional} vì đây là một đồ thị có khoá ngoại (rubric -> version -> tiêu chí + dải
      * kết quả). Chết giữa chừng mà không cuộn lại thì phép kiểm "đã có bản mẫu chưa" ở lần khởi động
@@ -220,7 +165,7 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         var language = supportedLanguageRepository.findByCode(LANGUAGE_CODE).orElse(null);
         if (language == null) {
-            LOGGER.warn("Chưa có ngôn ngữ {}. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống", LANGUAGE_CODE);
+            log.warn("Chưa có ngôn ngữ {}. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống", LANGUAGE_CODE);
             return;
         }
 
@@ -229,21 +174,21 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
         // cho tiếng Anh, seed này sẽ không chạy nữa -- muốn có bản mẫu thì tạo tay, giống
         // FrameworkInitializer.
         if (rubricRepository.existsByOwnerTypeAndLanguageId(RubricOwnerType.SYSTEM.name(), language.getId())) {
-            LOGGER.info("Hệ thống đã có bộ tiêu chí cho ngôn ngữ {}. Bỏ qua khởi tạo bộ tiêu chí mẫu",
+            log.info("Hệ thống đã có bộ tiêu chí cho ngôn ngữ {}. Bỏ qua khởi tạo bộ tiêu chí mẫu",
                 LANGUAGE_CODE);
             return;
         }
 
         var framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
         if (framework == null || !framework.isActive()) {
-            LOGGER.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống",
+            log.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống",
                 FRAMEWORK_CODE);
             return;
         }
 
         var frameworkVersion = latestPublishedVersion(framework.getId());
         if (frameworkVersion == null) {
-            LOGGER.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo bộ tiêu chí mẫu",
+            log.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo bộ tiêu chí mẫu",
                 FRAMEWORK_CODE);
             return;
         }
@@ -260,7 +205,7 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
             .filter(code -> !criterionByCode.containsKey(code))
             .toList();
         if (!missingCodes.isEmpty()) {
-            LOGGER.warn("Khung {} thiếu các tiêu chí {}. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống",
+            log.warn("Khung {} thiếu các tiêu chí {}. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống",
                 FRAMEWORK_CODE, missingCodes);
             return;
         }
@@ -270,7 +215,7 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
             createTemplate(template, language.getId(), framework.getId(), criterionByCode, now);
         }
 
-        LOGGER.info("Đã khởi tạo {} bộ tiêu chí mẫu của hệ thống cho ngôn ngữ {}", TEMPLATES.size(), LANGUAGE_CODE);
+        log.info("Đã khởi tạo {} bộ tiêu chí mẫu của hệ thống cho ngôn ngữ {}", TEMPLATES.size(), LANGUAGE_CODE);
     }
 
     private FrameworkVersion latestPublishedVersion(UUID frameworkId) {

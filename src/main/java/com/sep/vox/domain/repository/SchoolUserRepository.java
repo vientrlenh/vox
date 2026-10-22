@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.shared.PageResult;
 
 public interface SchoolUserRepository {
@@ -18,7 +19,7 @@ public interface SchoolUserRepository {
 
     List<SchoolUser> findBySchoolIdIn(Collection<UUID> schoolIds, int pageNumber, int size);
 
-    PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, UUID roleId, String status,
+    PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, SchoolUserRole role, String status,
         UUID excludeClassId, boolean excludeAdminRoles, int pageNumber, int size);
     
     PageResult<SchoolUser> searchBySchoolId(UUID schoolId, UUID excludeUserId, String search, UUID roleId,
@@ -30,5 +31,5 @@ public interface SchoolUserRepository {
 
     boolean existsBySchoolIdAndUserId(UUID schoolId, UUID userId);
 
-    List<SchoolUser> findBySchoolIdWithRole(UUID schoolId, String roleCode);
+    List<SchoolUser> findBySchoolIdWithRole(UUID schoolId, SchoolUserRole role);
 }

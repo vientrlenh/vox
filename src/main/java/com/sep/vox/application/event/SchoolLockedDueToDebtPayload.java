@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Trường vừa CHUYỂN từ bị khóa sang hết nợ (mua thêm token đủ để usedQuantity trở lại trong hạn mức).
+ * Trường vừa CHUYỂN sang trạng thái bị khóa vì nợ hạn mức AI (xem SchoolSubscriptionDebtGuardService).
  * Người nhận là mọi SCHOOL_ADMIN của trường -- CHỐT NGAY lúc phát sự kiện, cùng lý do với
  * InvoicePaidPayloadV1.schoolAdminIds.
  */
-public record SchoolDebtClearedPayloadV1(
+public record SchoolLockedDueToDebtPayload(
     List<UUID> schoolAdminIds,
     UUID schoolId,
     UUID subscriptionId,

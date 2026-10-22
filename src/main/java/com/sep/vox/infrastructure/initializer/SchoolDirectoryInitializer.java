@@ -20,30 +20,28 @@ import com.sep.vox.domain.model.school.SchoolDirectory;
 import com.sep.vox.domain.model.school.SchoolDirectoryOrigin;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
 @Order(5)
+@RequiredArgsConstructor 
+@Slf4j 
 public class SchoolDirectoryInitializer implements ApplicationRunner {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SchoolDirectoryInitializer.class);
 
     private static final String SEED_PATH = "school/school-directory-seed.json";
 
     private final SchoolDirectoryRepository schoolDirectoryRepository;
     private final JsonMapper jsonMapper = new JsonMapper();
 
-    public SchoolDirectoryInitializer(SchoolDirectoryRepository schoolDirectoryRepository) {
-        this.schoolDirectoryRepository = schoolDirectoryRepository;
-    }
-
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws IOException {
         var seeds = readSeeds();
         if (seeds.isEmpty()) {
-            LOGGER.info("[school-directory] File seed rỗng, bỏ qua khởi tạo danh mục trường");
+            log.info("[school-directory] File seed rỗng, bỏ qua khởi tạo danh mục trường");
             return;
         }
 
@@ -63,7 +61,7 @@ public class SchoolDirectoryInitializer implements ApplicationRunner {
             inserted++;
         }
 
-        LOGGER.info("[school-directory] Đã nạp {} danh mục trường mới, bỏ qua {} mã đã có",
+        log.info("[school-directory] Đã nạp {} danh mục trường mới, bỏ qua {} mã đã có",
             inserted, seeds.size() - inserted);
     }
 

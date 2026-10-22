@@ -7,7 +7,7 @@ package com.sep.vox.application.event;
  * Consumer sinh mã, ghi bản hash vào dòng cache đăng ký (đã được use case tạo sẵn với
  * {@code otpHash} rỗng) rồi mới gửi mail.
  */
-public record RegisterVerificationOtpRequestedPayloadV1(
+public record RegisterVerificationOtpRequestedPayload(
     String to
 ) {
 }

@@ -29,70 +29,14 @@ import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 
-/**
- * Dựng sẵn sáu chính sách chấm MẪU của hệ thống: mỗi bộ tiêu chí mẫu THPT do
- * {@link SystemRubricTemplateInitializer} tạo ra có một bản chuẩn (Bậc 3, khai theo Khối) và một bản
- * cho lớp chuyên (Bậc 4, không khai phạm vi).
- *
- * <p>Đây là thứ làm cho {@code CloneSystemRubricToSchoolUseCase} có chính sách để sao kèm bộ tiêu
- * chí. Trước khi có file này, trường muốn dùng bản mẫu phải sao rubric rồi tự gõ lại toàn bộ thông
- * số chính sách -- chính là bước thủ công mà đường sao chép sinh ra để bỏ đi.
- *
- * <h2>PUBLISHED ngay, và vì sao phải đi vòng qua use case</h2>
- *
- * <p>{@code CloneSystemRubricToSchoolUseCase} từ chối mọi bản mẫu chưa ban hành, nên chính sách mẫu
- * ở trạng thái nháp là chính sách không ai sao được.
- *
- * <p>Không gọi {@code CreateSystemAssessmentPolicyUseCase} được vì hai lẽ. Một, lúc khởi động chưa có
- * phiên đăng nhập nào để use case đó lấy danh tính system admin. Hai, use case đó bắt phiên bản rubric
- * phải còn DRAFT ("Chỉ được gán Policy khi Phiên bản Rubric còn ở trạng thái DRAFT") vì luồng thật là
- * tạo chính sách nháp trên rubric nháp rồi ban hành cả hai cùng lúc; còn bộ tiêu chí mẫu ở đây do
- * {@link SystemRubricTemplateInitializer} dựng thẳng ở trạng thái PUBLISHED. Trạng thái cuối mà file
- * này ghi ra -- chính sách PUBLISHED trỏ vào rubric PUBLISHED -- đúng bằng kết quả của luồng thật, chỉ
- * bỏ qua bước trung gian.
- *
- * <p>Đổi lại, các bất biến của đường tạo thật phải giữ bằng tay ở đây: khung còn PUBLISHED, bậc mục
- * tiêu thuộc đúng phiên bản khung, rubric thuộc sở hữu SYSTEM và cùng khung với chính sách.
- *
- * <h2>Bản chuẩn khai theo Khối, bản chuyên để trống phạm vi</h2>
- *
- * <p>Khối lớp là catalog toàn cục và không gắn với niên khóa nào, nên chính sách mẫu khai theo Khối
- * vẫn đúng khi trường mở niên khóa năm sau -- không phải khai lại hằng năm. Đó cũng là lý do
- * {@code resolveScope} của use case sao chép bắt bản sao GIỮ NGUYÊN khối của bản mẫu: đổi khối là
- * giữ nguyên thông số soạn cho Khối 10 rồi dán nhãn Khối 12.
- *
- * <p>Chính điều đó khiến bản CHUYÊN không được khai Khối: bản sao sẽ bị ghim vào cả khối, trong khi
- * thứ trường cần là áp riêng cho lớp chuyên. Thêm nữa mỗi phạm vi chỉ được một chính sách còn hiệu
- * lực, nên bản chuẩn và bản chuyên không cùng tồn tại ở phạm vi Khối được. Để trống phạm vi là cách
- * duy nhất để trường sao bản chuẩn cho Khối/Niên khóa và bản chuyên cho đúng lớp chuyên.
- *
- * <h2>Hai bậc mục tiêu, không phải ba khối ba bậc</h2>
- *
- * <p>Bản chuẩn của cả ba khối cùng {@code BAC_3}. Theo Thông tư 32/2018/TT-BGDĐT thì chuẩn đầu ra là
- * hết THPT đạt Bậc 3, không phân theo từng lớp. Xem {@link GradeLevelBandScopeInitializer} để biết vì
- * sao khung 6 bậc nguyên không diễn đạt được khác biệt 3.1/3.2/3.3 giữa ba khối.
- *
- * <p>Bản chuyên nhắm {@code BAC_4} (CEFR B2) -- đúng bằng TRẦN CỨNG mà bảng trần đặt cho cả ba khối,
- * nên bản sao luôn lọt {@code GradeLevelBandScopeGuardService}. B2 là thông lệ của trường chuyên chứ
- * không phải quy định (Thông tư 05/2023/TT-BGDĐT không đặt chuẩn ngoại ngữ nào cho lớp chuyên), nên
- * nó ở đây dưới dạng bản mẫu tuỳ chọn: trường nào không có lớp chuyên thì không sao bản này.
- *
- * <p>Bậc mục tiêu quyết định bộ mô tả nào được gửi sang AI chấm
- * ({@code SubmitAssessmentSessionUseCase.buildCriteriaFrameworks}), nên hai bậc nghĩa là hai thước đo khác
- * nhau -- điểm thô của lớp chuyên và lớp thường không so trực tiếp được. Đó là chủ đích: đây là hai
- * nhóm học sinh có đích cần đạt khác nhau.
- *
- * <h2>Không đặt điểm đạt</h2>
- *
- * <p>{@code passingScore} để null (nghĩa là không kiểm điểm đạt). Văn bản chính thức quy định BẬC cần
- * đạt chứ không quy định ngưỡng điểm; đặt sẵn một con số ở đây là phần duy nhất của bộ seed không có
- * căn cứ nào đứng sau. Trường tự đặt sau khi sao về.
- */
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 @Component
 @Order(9)
+@RequiredArgsConstructor 
+@Slf4j 
 public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SystemAssessmentPolicyInitializer.class);
 
     private static final String LANGUAGE_CODE = "ENG";
     private static final String FRAMEWORK_CODE = "KNLNNVN";
@@ -143,25 +87,6 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
     private final RubricRepository rubricRepository;
     private final RubricVersionRepository rubricVersionRepository;
 
-    public SystemAssessmentPolicyInitializer(
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            GradeLevelRepository gradeLevelRepository,
-            SupportedLanguageRepository supportedLanguageRepository,
-            FrameworkRepository frameworkRepository,
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            RubricRepository rubricRepository,
-            RubricVersionRepository rubricVersionRepository) {
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.supportedLanguageRepository = supportedLanguageRepository;
-        this.frameworkRepository = frameworkRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.rubricRepository = rubricRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-    }
-
     /**
      * Idempotent theo từng BẢN MẪU, khoá là cặp (phiên bản bộ tiêu chí, bậc mục tiêu) -- xem
      * {@link #createPolicy}. Nghĩa là bản nào đã có thì bỏ qua, các bản còn lại vẫn được dựng, và
@@ -172,19 +97,19 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         var language = supportedLanguageRepository.findByCode(LANGUAGE_CODE).orElse(null);
         if (language == null) {
-            LOGGER.warn("Chưa có ngôn ngữ {}. Bỏ qua khởi tạo chính sách chấm mẫu của hệ thống", LANGUAGE_CODE);
+            log.warn("Chưa có ngôn ngữ {}. Bỏ qua khởi tạo chính sách chấm mẫu của hệ thống", LANGUAGE_CODE);
             return;
         }
 
         var framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
         if (framework == null || !framework.isActive()) {
-            LOGGER.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo chính sách chấm mẫu", FRAMEWORK_CODE);
+            log.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo chính sách chấm mẫu", FRAMEWORK_CODE);
             return;
         }
 
         var frameworkVersion = latestPublishedVersion(framework.getId());
         if (frameworkVersion == null) {
-            LOGGER.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo chính sách chấm mẫu",
+            log.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo chính sách chấm mẫu",
                 FRAMEWORK_CODE);
             return;
         }
@@ -198,10 +123,10 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
         }
 
         if (created == 0) {
-            LOGGER.info("Chính sách chấm mẫu của hệ thống đã đầy đủ. Bỏ qua khởi tạo");
+            log.info("Chính sách chấm mẫu của hệ thống đã đầy đủ. Bỏ qua khởi tạo");
             return;
         }
-        LOGGER.info("Đã khởi tạo {} chính sách chấm mẫu của hệ thống (ngôn ngữ {}, khung {})",
+        log.info("Đã khởi tạo {} chính sách chấm mẫu của hệ thống (ngôn ngữ {}, khung {})",
             created, LANGUAGE_CODE, frameworkVersion.getCode());
     }
 
@@ -216,7 +141,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
         var targetBand = frameworkResultBandRepository
             .findByVersionIdAndCode(frameworkVersion.getId(), seed.targetBandCode()).orElse(null);
         if (targetBand == null) {
-            LOGGER.warn("Phiên bản khung {} thiếu bậc {}. Bỏ qua chính sách chấm mẫu tương ứng",
+            log.warn("Phiên bản khung {} thiếu bậc {}. Bỏ qua chính sách chấm mẫu tương ứng",
                 frameworkVersion.getCode(), seed.targetBandCode());
             return false;
         }
@@ -226,7 +151,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
         if (seed.gradeLevelCode() != null) {
             gradeLevel = gradeLevelRepository.findByCode(seed.gradeLevelCode()).orElse(null);
             if (gradeLevel == null) {
-                LOGGER.warn("Không tìm thấy khối {}. Bỏ qua chính sách chấm mẫu cho khối này",
+                log.warn("Không tìm thấy khối {}. Bỏ qua chính sách chấm mẫu cho khối này",
                     seed.gradeLevelCode());
                 return false;
             }
@@ -235,20 +160,20 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
 
         var rubricVersion = rubricVersionRepository.findByCode(seed.rubricVersionCode()).orElse(null);
         if (rubricVersion == null) {
-            LOGGER.warn("Không tìm thấy phiên bản bộ tiêu chí mẫu {}. Bỏ qua chính sách chấm mẫu bậc {}",
+            log.warn("Không tìm thấy phiên bản bộ tiêu chí mẫu {}. Bỏ qua chính sách chấm mẫu bậc {}",
                 seed.rubricVersionCode(), seed.targetBandCode());
             return false;
         }
         var rubric = rubricRepository.findById(rubricVersion.getRubricId()).orElse(null);
         if (rubric == null || rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            LOGGER.warn("Bộ tiêu chí của phiên bản {} không thuộc sở hữu SYSTEM. Bỏ qua chính sách chấm mẫu"
+            log.warn("Bộ tiêu chí của phiên bản {} không thuộc sở hữu SYSTEM. Bỏ qua chính sách chấm mẫu"
                 + " bậc {}", seed.rubricVersionCode(), seed.targetBandCode());
             return false;
         }
         // Cùng phép kiểm CreateSystemAssessmentPolicyUseCase áp: rubric gắn với FRAMEWORK (không
         // phải phiên bản khung), nên so với getFrameworkId của phiên bản đang dùng.
         if (!rubric.getFrameworkId().equals(frameworkId)) {
-            LOGGER.warn("Bộ tiêu chí {} không cùng khung với chính sách. Bỏ qua chính sách chấm mẫu bậc {}",
+            log.warn("Bộ tiêu chí {} không cùng khung với chính sách. Bỏ qua chính sách chấm mẫu bậc {}",
                 seed.rubricVersionCode(), seed.targetBandCode());
             return false;
         }

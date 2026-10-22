@@ -22,11 +22,14 @@ import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import com.sep.vox.domain.repository.GradeLevelBandScopeRepository;
 import com.sep.vox.domain.repository.GradeLevelRepository;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 @Component
 @Order(8)
+@RequiredArgsConstructor 
+@Slf4j 
 public class GradeLevelBandScopeInitializer implements ApplicationRunner {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GradeLevelBandScopeInitializer.class);
 
     private static final String FRAMEWORK_CODE = "KNLNNVN";
 
@@ -45,18 +48,6 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
 
-    public GradeLevelBandScopeInitializer(
-            GradeLevelRepository gradeLevelRepository,
-            GradeLevelBandScopeRepository gradeLevelBandScopeRepository,
-            FrameworkRepository frameworkRepository,
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository) {
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.gradeLevelBandScopeRepository = gradeLevelBandScopeRepository;
-        this.frameworkRepository = frameworkRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-    }
 
 
     @Override
@@ -64,13 +55,13 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         var framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
         if (framework == null || !framework.isActive()) {
-            LOGGER.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo trần bậc theo khối", FRAMEWORK_CODE);
+            log.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo trần bậc theo khối", FRAMEWORK_CODE);
             return;
         }
 
         var frameworkVersion = latestPublishedVersion(framework.getId());
         if (frameworkVersion == null) {
-            LOGGER.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo trần bậc theo khối",
+            log.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo trần bậc theo khối",
                 FRAMEWORK_CODE);
             return;
         }
@@ -80,15 +71,12 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
         var hardMaxBand = frameworkResultBandRepository
             .findByVersionIdAndCode(frameworkVersion.getId(), BAND_CODE_HARD_MAX).orElse(null);
         if (defaultTargetBand == null || hardMaxBand == null) {
-            LOGGER.warn("Phiên bản khung {} thiếu bậc {} hoặc {}. Bỏ qua khởi tạo trần bậc theo khối",
+            log.warn("Phiên bản khung {} thiếu bậc {} hoặc {}. Bỏ qua khởi tạo trần bậc theo khối",
                 frameworkVersion.getCode(), BAND_CODE_DEFAULT_TARGET, BAND_CODE_HARD_MAX);
             return;
         }
 
-        // Bất biến mà DB không diễn đạt được (cần join sang framework_result_bands) và
-        // GradeLevelBandScopeGuardService canh lúc chạy. Kiểm luôn ở đây để sai hằng số phía trên
-        // làm hỏng lúc khởi động, thay vì sinh ra cấu hình trần ngược đời rồi mới lộ ra khi
-        // trường tạo chính sách.
+
         if (defaultTargetBand.getOrder() > hardMaxBand.getOrder()) {
             throw new IllegalStateException("Bậc mặc định " + BAND_CODE_DEFAULT_TARGET
                 + " đang cao hơn bậc trần " + BAND_CODE_HARD_MAX + " trong khung " + FRAMEWORK_CODE + ".");
@@ -122,10 +110,10 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
         }
 
         if (created == 0) {
-            LOGGER.info("Trần bậc theo khối trên phiên bản khung {} đã đầy đủ. Bỏ qua", frameworkVersion.getCode());
+            log.info("Trần bậc theo khối trên phiên bản khung {} đã đầy đủ. Bỏ qua", frameworkVersion.getCode());
             return;
         }
-        LOGGER.info("Đã khởi tạo {} trần bậc theo khối trên phiên bản khung {} (CENTRALIZE {}, CLASS_TEST {})",
+        log.info("Đã khởi tạo {} trần bậc theo khối trên phiên bản khung {} (CENTRALIZE {}, CLASS_TEST {})",
             created, frameworkVersion.getCode(), BAND_CODE_DEFAULT_TARGET, BAND_CODE_HARD_MAX);
     }
 

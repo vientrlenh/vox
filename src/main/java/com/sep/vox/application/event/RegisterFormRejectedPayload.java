@@ -1,6 +1,6 @@
 package com.sep.vox.application.event;
 
-public record RegisterFormRejectedPayloadV1(
+public record RegisterFormRejectedPayload(
     String to,
     String reason
 ) {

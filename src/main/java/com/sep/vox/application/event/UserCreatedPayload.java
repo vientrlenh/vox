@@ -9,7 +9,7 @@ import java.util.UUID;
  * tồn tại plaintext trong bảng outboxes và trong topic Kafka (retention thường dài hơn
  * tuổi thọ 48h của token). Consumer tự sinh token ngay trước khi gửi mail.
  */
-public record UserCreatedPayloadV1(
+public record UserCreatedPayload(
     UUID userId,
     String to,
     String fullName,

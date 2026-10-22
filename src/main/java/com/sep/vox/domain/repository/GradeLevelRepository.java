@@ -10,11 +10,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Catalog khối lớp dùng chung toàn hệ thống. Trước đây mỗi trường tự khai một bộ riêng
- * (SchoolGradeLevelRepository, mọi truy vấn đều kèm schoolId) -- nay khối lớp là dữ liệu
- * toàn cục nên schoolId đã bị bỏ khỏi toàn bộ chữ ký.
- */
 public interface GradeLevelRepository {
     Optional<GradeLevel> findById(UUID id);
     Optional<GradeLevel> findByCode(String code);
@@ -29,4 +24,5 @@ public interface GradeLevelRepository {
     boolean existsByCode(String code);
     boolean existsByOrder(int order);
     void deleteById(UUID id);
+    List<GradeLevel> saveAll(Collection<GradeLevel> gradeLevels);
 }

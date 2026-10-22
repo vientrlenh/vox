@@ -1,10 +1,8 @@
 package com.sep.vox.infrastructure.initializer;
 
-import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -14,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.repository.GradeLevelRepository;
+import com.sep.vox.domain.shared.PageResult;
+import com.sep.vox.domain.valueobject.Code;
+import com.sep.vox.domain.valueobject.PositiveInteger;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j 
 public class GradeLevelInitializer implements ApplicationRunner {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GradeLevelInitializer.class);
     static final String GRADE_10 = "GRADE_10";
     static final String GRADE_11 = "GRADE_11";
     static final String GRADE_12 = "GRADE_12";
@@ -42,33 +42,26 @@ public class GradeLevelInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
-        // findAll nhận page theo lối 1-based (GradeLevelRepositoryImpl gọi PageRequest.of(page - 1,
-        // size)), nên trang đầu là 1 chứ không phải 0. Lấy size 1 vì chỉ cần totalElements.
-        var existing = gradeLevelRepository.findAll(null, null, 1, 1);
+        PageResult<GradeLevel> existing = gradeLevelRepository.findAll(null, null, 1, 1);
         if (existing.totalElements() > 0) {
-            LOGGER.info("Catalog khối lớp đã có {} bản ghi. Bỏ qua khởi tạo khối lớp mặc định",
+            log.info("Catalog khối lớp đã có {} bản ghi. Bỏ qua khởi tạo khối lớp mặc định",
                 existing.totalElements());
             return;
         }
 
-        var now = Instant.now();
-        for (var seed : GRADE_LEVELS) {
-            gradeLevelRepository.save(new GradeLevel(
-                seed.code(),
-                seed.name(),
-                seed.description(),
-                seed.order(),
-                GradeLevelStatus.ACTIVE,
-                now,
-                now,
-                // Lúc khởi động chưa có phiên đăng nhập nào nên không có danh tính để ghi vào
-                // created_by/updated_by. Null ở đây đọc đúng nghĩa: do hệ thống dựng.
-                null,
-                null
-            ));
+        List<GradeLevel> models = new ArrayList<>();
+        for (GradeLevelSeed seed : GRADE_LEVELS) {
+            GradeLevel gradeLevel = GradeLevel.builder()
+                .code(Code.from(seed.code))
+                .name(seed.name)
+                .description(seed.description)
+                .order(PositiveInteger.from(seed.order))
+                .status(GradeLevelStatus.ACTIVE)
+                .build();
+            models.add(gradeLevel);
         }
-
-        LOGGER.info("Đã khởi tạo {} khối lớp mặc định bậc THPT", GRADE_LEVELS.size());
+        gradeLevelRepository.saveAll(models);
+        log.info("Đã khởi tạo {} khối lớp mặc định bậc THPT", GRADE_LEVELS.size());
     }
 
     private record GradeLevelSeed(String code, String name, String description, int order) {}

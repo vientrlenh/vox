@@ -3,6 +3,8 @@ package com.sep.vox.interfaces.rest.dto.request;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.sep.vox.application.port.input.command.CreateSubscriptionPlanCommand;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
@@ -42,5 +44,17 @@ public record CreateSubscriptionPlanRequest(
     List<CreateSubscriptionPlanQuotaRequest> quotas
 ) {
 
-    
+    public static CreateSubscriptionPlanCommand toCommand(CreateSubscriptionPlanRequest request) {
+        return new CreateSubscriptionPlanCommand(
+            request.name, 
+            request.tagline, 
+            request.priceVnd, 
+            request.periodType, 
+            request.periodCount, 
+            request.maxTimePerAttemptMin, 
+            request.quotas.stream()
+                .map(CreateSubscriptionPlanQuotaRequest::toCommand)
+                .toList()
+        );
+    }
 }

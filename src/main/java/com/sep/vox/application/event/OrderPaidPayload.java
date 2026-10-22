@@ -18,7 +18,7 @@ import com.sep.vox.domain.model.invoice.InvoiceSourceType;
  * <p>Phần chi tiết hạn mức đã mua KHÔNG nằm ở đây: chỉ mail cần tới nó, và nó cần vài lượt
  * truy vấn để dựng. Consumer mail tự lấy từ {@code subscriptionId}/{@code sourceId}.
  */
-public record InvoicePaidPayloadV1(
+public record OrderPaidPayload(
     List<UUID> schoolAdminIds,
     UUID schoolId,
     UUID subscriptionId,

@@ -7,7 +7,7 @@ package com.sep.vox.application.event;
  * Mã được sinh ở consumer ngay trước lúc gửi mail, nên nó không bao giờ tồn tại trong
  * {@code outboxes.payload} hay trong topic Kafka.
  */
-public record ResetPasswordOtpRequestedPayloadV1(
+public record ResetPasswordOtpRequestedPayload(
     String to
 ) {
 }

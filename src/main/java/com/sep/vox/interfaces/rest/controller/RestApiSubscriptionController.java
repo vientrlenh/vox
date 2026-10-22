@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.ArchiveSubscriptionPlanCommand;
+import com.sep.vox.application.port.input.command.CreateSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.CreateSubscriptionPlanReplacementCommand;
 import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanReplacementCommand;
 import com.sep.vox.application.port.input.command.ForceSuspendSubscriptionCommand;
@@ -74,7 +75,8 @@ public class RestApiSubscriptionController {
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createPlan(@Valid @RequestBody CreateSubscriptionPlanRequest request) {
-        var data = createSubscriptionPlanUseCase.execute(CreatePlanCommandMapper.fromRequest(request));
+        CreateSubscriptionPlanCommand command = CreateSubscriptionPlanRequest.toCommand(request);
+        UUID data = createSubscriptionPlanUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo gói đăng ký thành công", data));
     }
 
@@ -89,8 +91,9 @@ public class RestApiSubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> createPlanReplacement(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody CreateSubscriptionPlanRequest request) {
-        var data = createSubscriptionPlanReplacementUseCase.execute(
-            new CreateSubscriptionPlanReplacementCommand(id, CreatePlanCommandMapper.fromRequest(request)));
+        CreateSubscriptionPlanCommand command = CreateSubscriptionPlanRequest.toCommand(request);
+        UUID data = createSubscriptionPlanReplacementUseCase.execute(
+            new CreateSubscriptionPlanReplacementCommand(id, command));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo gói thay thế thành công", data));
     }
 

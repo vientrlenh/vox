@@ -12,7 +12,7 @@ import com.sep.vox.domain.model.metering.QuotaType;
  * Người nhận là mọi SYSTEM_ADMIN -- CHỐT NGAY lúc phát sự kiện, không truy vấn lại ở consumer, cùng lý
  * do với InvoicePaidPayloadV1.systemAdminIds.
  */
-public record SchoolDebtCapExceededPayloadV1(
+public record SchoolDebtCapExceededPayload(
     List<UUID> systemAdminIds,
     UUID schoolId,
     UUID subscriptionId,

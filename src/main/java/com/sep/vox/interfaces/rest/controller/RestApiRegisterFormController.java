@@ -29,7 +29,7 @@ public class RestApiRegisterFormController {
 
     @PostMapping("/approve")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> approve(@PathVariable("id") UUID id, @Valid @RequestBody ApproveRegisterFormRequest request) {
+    public ResponseEntity<ApiResponse<Void>> approve(@PathVariable("id") UUID id, @Valid @RequestBody ApproveRegisterFormRequest request) {
         var command = ApproveRegisterFormRequest.toCommand(id, request);
         approveRegisterFormUseCase.execute(command);
         var response = ApiResponse.success("Đơn đăng ký đã được phê duyệt");
@@ -39,7 +39,7 @@ public class RestApiRegisterFormController {
 
     @PostMapping("/reject")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> reject(@PathVariable("id") UUID id, @Valid @RequestBody RejectRegisterFormRequest request) {
+    public ResponseEntity<ApiResponse<Void>> reject(@PathVariable("id") UUID id, @Valid @RequestBody RejectRegisterFormRequest request) {
         var command = RejectRegisterFormRequest.toCommand(id, request);
         rejectRegisterFormUseCase.execute(command);
         var response = ApiResponse.success("Đơn đăng ký đã từ chối thành công");

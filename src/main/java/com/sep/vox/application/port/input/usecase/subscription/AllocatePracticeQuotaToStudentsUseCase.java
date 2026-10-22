@@ -8,7 +8,7 @@ import com.sep.vox.application.port.input.service.DistributeQuotaToUsersService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;
 import com.sep.vox.domain.model.metering.QuotaType;
-import com.sep.vox.domain.model.user.SchoolRoleCodes;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.shared.DistributionMode;
 
 @Service
@@ -24,7 +24,7 @@ public class AllocatePracticeQuotaToStudentsUseCase implements IUseCase<Allocate
     @Transactional
     public QuotaUserAllocationSummaryResponse execute(AllocatePracticeQuotaCommand input) {
         return distributeQuotaToUsersService.distribute(
-            input.schoolId(), QuotaType.PRACTICE, SchoolRoleCodes.STUDENT, fromString(input.mode()),
+            input.schoolId(), QuotaType.PRACTICE, SchoolUserRole.STUDENT, fromString(input.mode()),
             input.allocations(), input.confirmWalletDraw()
         );
     }

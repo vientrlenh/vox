@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.sep.vox.application.port.input.command.AcceptQuestionImportCommand;
 import com.sep.vox.application.port.input.command.CloneQuestionCommand;
 import com.sep.vox.application.port.input.command.DeleteQuestionAssetCommand;
 import com.sep.vox.application.port.input.command.DeleteQuestionCollaboratorCommand;
@@ -128,12 +129,12 @@ public class RestApiQuestionController {
 
     @PostMapping("/import/{sessionId}/accept")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
-    public ResponseEntity<ApiResponse<Object>> acceptImport(
+    public ResponseEntity<ApiResponse<Void>> acceptImport(
             @PathVariable(name = "sessionId") UUID sessionId,
             @Valid @RequestBody AcceptQuestionImportRequest request) {
-        var command = AcceptQuestionImportRequest.toCommand(sessionId, request);
+        AcceptQuestionImportCommand command = AcceptQuestionImportRequest.toCommand(sessionId, request);
         acceptQuestionImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Yeu cau import cau hoi da duoc tiep nhan, dang xu ly"));
+        return ResponseEntity.ok(ApiResponse.success("Import requested successfully"));
     }
 
     @GetMapping("/export")

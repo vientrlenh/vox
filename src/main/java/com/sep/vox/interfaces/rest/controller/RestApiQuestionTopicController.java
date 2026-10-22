@@ -77,7 +77,7 @@ public class RestApiQuestionTopicController {
 
     @PostMapping("/import/{sessionId}/accept")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> acceptImport(
+    public ResponseEntity<ApiResponse<Void>> acceptImport(
             @PathVariable(name = "sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
         acceptQuestionTopicImportUseCase.execute(

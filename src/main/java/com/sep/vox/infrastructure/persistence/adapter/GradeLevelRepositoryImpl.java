@@ -4,8 +4,12 @@ import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.shared.PageResult;
+import com.sep.vox.infrastructure.persistence.entity.GradeLevelJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.GradeLevelMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataGradeLevelRepository;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -18,13 +22,10 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Repository
+@RequiredArgsConstructor 
 public class GradeLevelRepositoryImpl implements GradeLevelRepository {
 
     private final SpringDataGradeLevelRepository gradeLevelRepository;
-
-    public GradeLevelRepositoryImpl(SpringDataGradeLevelRepository gradeLevelRepository) {
-        this.gradeLevelRepository = gradeLevelRepository;
-    }
 
     @Override
     public Optional<GradeLevel> findById(UUID id) {
@@ -120,5 +121,16 @@ public class GradeLevelRepositoryImpl implements GradeLevelRepository {
     @Override
     public void deleteById(UUID id) {
         gradeLevelRepository.deleteById(id);
+    }
+
+    @Override
+    public List<GradeLevel> saveAll(Collection<GradeLevel> gradeLevels) {
+        List<GradeLevelJpaEntity> entities = gradeLevels.stream()
+                                                .map(GradeLevelMapper::toJpa)
+                                                .toList();
+        List<GradeLevelJpaEntity> saved = gradeLevelRepository.saveAll(entities);
+        return saved.stream()
+            .map(GradeLevelMapper::toDomain)
+            .toList();
     }
 }

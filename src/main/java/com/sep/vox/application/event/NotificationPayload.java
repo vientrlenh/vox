@@ -2,7 +2,7 @@ package com.sep.vox.application.event;
 
 import java.util.UUID;
 
-public record NotificationPayloadV1(
+public record NotificationPayload(
     UUID userId, 
     String title, 
     String body, 

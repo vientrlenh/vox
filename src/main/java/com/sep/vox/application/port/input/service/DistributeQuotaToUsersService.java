@@ -21,12 +21,11 @@ import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSu
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
 import com.sep.vox.domain.model.metering.QuotaType;
+import com.sep.vox.domain.model.school.SchoolUserRole;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation;
-import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.repository.SchoolBalanceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -50,7 +49,6 @@ public class DistributeQuotaToUsersService {
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private final SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
-    private final RoleRepository roleRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolQuotaPolicyRepository schoolQuotaPolicyRepository;
     private final SchoolBalanceRepository schoolBalanceRepository;
@@ -60,7 +58,6 @@ public class DistributeQuotaToUsersService {
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
             SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
-            RoleRepository roleRepository,
             SchoolUserRepository schoolUserRepository,
             SchoolQuotaPolicyRepository schoolQuotaPolicyRepository,
             SchoolBalanceRepository schoolBalanceRepository) {
@@ -68,20 +65,18 @@ public class DistributeQuotaToUsersService {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
-        this.roleRepository = roleRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.schoolQuotaPolicyRepository = schoolQuotaPolicyRepository;
         this.schoolBalanceRepository = schoolBalanceRepository;
     }
 
-    public QuotaUserAllocationSummaryResponse distribute(UUID schoolId, QuotaType quotaType, String roleCode,
+    public QuotaUserAllocationSummaryResponse distribute(UUID schoolId, QuotaType quotaType, SchoolUserRole role,
             DistributionMode mode, List<AllocateUserQuotaAmountCommand> allocations, boolean confirmWalletDraw) {
         requireSchoolAdminAccess(schoolId);
 
         var subscription = findActiveSubscription(schoolId);
         var pool = findPool(subscription.getId(), quotaType);
-        var role = findRole(roleCode);
-        var eligibleUserIds = fetchEligibleUserIds(schoolId, role.getId());
+        var eligibleUserIds = fetchEligibleUserIds(schoolId, role);
         if (eligibleUserIds.isEmpty()) {
             throw new IllegalArgumentException("Trường chưa có giáo viên/học sinh phù hợp để phân bổ hạn mức");
         }
@@ -131,15 +126,14 @@ public class DistributeQuotaToUsersService {
      * tầng Java vẫn phải đọc đủ mọi người trước đã, tức là không tiết kiệm được gì.
      */
     public QuotaUserAllocationPageResponse viewPage(
-            UUID schoolId, QuotaType quotaType, String roleCode, String search, int page, int size) {
+            UUID schoolId, QuotaType quotaType, SchoolUserRole role, String search, int page, int size) {
         requireSchoolAdminAccess(schoolId);
 
         var subscription = findActiveSubscription(schoolId);
         var pool = findPool(subscription.getId(), quotaType);
-        var role = findRole(roleCode);
 
         var userPage = schoolUserRepository.findBySchoolId(
-            schoolId, blankToNull(search), role.getId(), UserStatus.ACTIVE.name(), null, false, page, size);
+            schoolId, blankToNull(search), role, UserStatus.ACTIVE.name(), null, false, page, size);
 
         var existing = fetchExistingAllocationsByUserId(subscription.getId(), quotaType);
 
@@ -165,7 +159,7 @@ public class DistributeQuotaToUsersService {
         // toàn bộ danh sách người đủ điều kiện của trường -- đúng cái mà việc phân trang màn này sinh
         // ra để tránh.
         var distributed = subscriptionQuotaUserAllocationRepository.sumAllocatedForEligibleUsers(
-            subscription.getId(), quotaType, schoolId, role.getId(), UserStatus.ACTIVE.name());
+            subscription.getId(), quotaType, schoolId, role, UserStatus.ACTIVE.name());
         var orphaned = subscriptionQuotaUserAllocationRepository
             .sumAllocated(subscription.getId(), quotaType)
             .subtract(distributed)
@@ -347,9 +341,9 @@ public class DistributeQuotaToUsersService {
             .collect(Collectors.toMap(allocation -> allocation.getUserId(), allocation -> allocation));
     }
 
-    private List<UUID> fetchEligibleUserIds(UUID schoolId, UUID roleId) {
+    private List<UUID> fetchEligibleUserIds(UUID schoolId, SchoolUserRole role) {
         var page = schoolUserRepository.findBySchoolId(
-            schoolId, null, roleId, UserStatus.ACTIVE.name(), null, false, 1, MAX_ELIGIBLE_USERS_PAGE_SIZE);
+            schoolId, null, role, UserStatus.ACTIVE.name(), null, false, 1, MAX_ELIGIBLE_USERS_PAGE_SIZE);
         return page.content().stream().map(schoolUser -> schoolUser.getUserId()).sorted().toList();
     }
 
@@ -368,9 +362,5 @@ public class DistributeQuotaToUsersService {
         return subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, quotaType)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
     }
-
-    private Role findRole(String roleCode) {
-        return roleRepository.findByCode(roleCode)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò: " + roleCode));
-    }
+ 
 }

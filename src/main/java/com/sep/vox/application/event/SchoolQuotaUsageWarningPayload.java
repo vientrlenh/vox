@@ -13,7 +13,7 @@ import com.sep.vox.domain.model.metering.QuotaType;
  * cạn, chỉ là báo trước để trường cân nhắc gia hạn/nạp thêm. Người nhận là mọi SCHOOL_ADMIN của
  * trường -- CHỐT NGAY lúc phát sự kiện, cùng lý do với SchoolLockedDueToDebtPayloadV1.schoolAdminIds.
  */
-public record SchoolQuotaUsageWarningPayloadV1(
+public record SchoolQuotaUsageWarningPayload(
     List<UUID> schoolAdminIds,
     UUID schoolId,
     UUID subscriptionId,

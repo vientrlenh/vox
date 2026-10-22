@@ -27,6 +27,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -46,8 +48,6 @@ import com.sep.vox.infrastructure.filter.JwtAuthenticationFilter;
 import com.sep.vox.infrastructure.properties.AdminConsoleProperties;
 import com.sep.vox.infrastructure.properties.CorsProperties;
 import com.sep.vox.infrastructure.security.CustomOidcUserService;
-import com.sep.vox.infrastructure.security.OAuth2AuthenticationFailureHandler;
-import com.sep.vox.interfaces.handler.OAuth2AuthenticationSuccessHandler;
 
 @Configuration
 @EnableWebSecurity
@@ -55,17 +55,23 @@ import com.sep.vox.interfaces.handler.OAuth2AuthenticationSuccessHandler;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
-    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+    private final AuthenticationSuccessHandler authenticationSuccessHandler;
+    private final AuthenticationFailureHandler authenticationFailureHandler;
     private final CustomOidcUserService customOidcUserService;
     private final CorsProperties corsProperties;
     private final AdminConsoleProperties adminConsoleProperties;
     private final String cookieDomain;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler, OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler, CustomOidcUserService customOidcUserService, CorsProperties corsProperties, AdminConsoleProperties adminConsoleProperties, @Value("${app.cookie.domain:}") String cookieDomain) {
+    public SecurityConfig(
+        JwtAuthenticationFilter jwtAuthenticationFilter, 
+        AuthenticationSuccessHandler authenticationSuccessHandler, 
+        AuthenticationFailureHandler authenticationFailureHandler, CustomOidcUserService customOidcUserService, 
+        CorsProperties corsProperties, 
+        AdminConsoleProperties adminConsoleProperties, 
+        @Value("${app.cookie.domain:}") String cookieDomain) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.oAuth2AuthenticationSuccessHandler = oAuth2AuthenticationSuccessHandler;
-        this.oAuth2AuthenticationFailureHandler = oAuth2AuthenticationFailureHandler;
+        this.authenticationSuccessHandler = authenticationSuccessHandler;
+        this.authenticationFailureHandler = authenticationFailureHandler;
         this.customOidcUserService = customOidcUserService;
         this.corsProperties = corsProperties;
         this.adminConsoleProperties = adminConsoleProperties;
@@ -389,8 +395,8 @@ public class SecurityConfig {
             )
             .oauth2Login(oauth2 -> oauth2
                 .userInfoEndpoint(u -> u.oidcUserService(customOidcUserService))
-                .successHandler(oAuth2AuthenticationSuccessHandler)
-                .failureHandler(oAuth2AuthenticationFailureHandler)
+                .successHandler(authenticationSuccessHandler)
+                .failureHandler(authenticationFailureHandler)
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

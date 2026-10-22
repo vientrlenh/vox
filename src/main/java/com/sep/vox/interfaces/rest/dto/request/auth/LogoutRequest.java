@@ -2,8 +2,6 @@ package com.sep.vox.interfaces.rest.dto.request.auth;
 
 import com.sep.vox.application.port.input.command.LogoutCommand;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -13,11 +11,10 @@ public record LogoutRequest(
     String deviceId
 ) {
     
-    public static LogoutCommand toCommand(LogoutRequest request, HttpServletRequest req, HttpServletResponse res) {
+    public static LogoutCommand toCommand(LogoutRequest request, String refreshToken) {
         return new LogoutCommand(
             request.deviceId, 
-            req, 
-            res
+            refreshToken
         );
     }
 }

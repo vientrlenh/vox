@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,6 +37,8 @@ import com.sep.vox.application.port.input.usecase.registration.VerifyRegisterFor
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.application.response.input.registration.RegisterFromSchoolDirectoryResponse;
+import com.sep.vox.interfaces.manager.HttpServletRequestManager;
+import com.sep.vox.interfaces.manager.HttpServletResponseManager;
 import com.sep.vox.interfaces.rest.dto.request.GoogleTokenLoginRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterBySelfDeclaredRequest;
 import com.sep.vox.interfaces.rest.dto.request.RegisterFromSchoolDirectoryRequest;
@@ -48,6 +51,8 @@ import com.sep.vox.interfaces.rest.dto.request.auth.RefreshRequest;
 import com.sep.vox.interfaces.rest.dto.request.auth.ResetPasswordRequest;
 import com.sep.vox.interfaces.rest.dto.request.auth.SendResetPasswordOtpRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
+
+import com.sep.vox.application.exception.UnauthorizedException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -69,13 +74,21 @@ public class RestApiAuthController {
     private final RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase;
     private final VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase;
     private final GoogleTokenLoginUseCase googleTokenLoginUseCase;
+    private final HttpServletRequestManager httpServletRequestManager;
+    private final HttpServletResponseManager httpServletResponseManager;
+
+    private static final String REFRESH_TOKEN_COOKIE_KEY = "refresh_token";
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request, HttpServletRequest req, HttpServletResponse res) {
-        LoginCommand command = LoginRequest.toCommand(request, req, res);
-        LoginResponse data = loginUseCase.execute(command);
+    public ResponseEntity<ApiResponse<ApiLoginResponse>> login(@Valid @RequestBody LoginRequest request, HttpServletRequest req, HttpServletResponse res) {
+        String ipAddress = httpServletRequestManager.getIpAddress(req);
+        String userAgent = httpServletRequestManager.getUserAgent(req);
 
-        ApiResponse<LoginResponse> response = ApiResponse.success("Login successfully", data);
+        LoginCommand command = LoginRequest.toCommand(request, ipAddress, userAgent);
+        LoginResponse data = loginUseCase.execute(command);
+        storeRefreshToken(res, data.refreshToken(), data.refreshTokenExpirationMs());
+
+        ApiResponse<ApiLoginResponse> response = ApiResponse.success("Login successfully", new ApiLoginResponse(data.email(), data.accessToken()));
         return ResponseEntity.ok(response);
     }
 
@@ -115,10 +128,12 @@ public class RestApiAuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<RefreshResponse>> refresh(@Valid @RequestBody RefreshRequest request, HttpServletRequest req, HttpServletResponse res) {
-        RefreshCommand command = RefreshRequest.toCommand(request, req, res);
+    public ResponseEntity<ApiResponse<ApiRefreshResponse>> refresh(@Valid @RequestBody RefreshRequest request, @CookieValue(name = REFRESH_TOKEN_COOKIE_KEY) String refreshToken, HttpServletResponse res) {
+        validateRefreshTokenToRefresh(refreshToken);
+        RefreshCommand command = RefreshRequest.toCommand(request, refreshToken);
         RefreshResponse data = refreshUseCase.execute(command);
-        ApiResponse<RefreshResponse> response = ApiResponse.success("Refresh successfully", data);
+        storeRefreshToken(res, data.refreshToken(), data.refreshTokenExpirationMs());
+        ApiResponse<ApiRefreshResponse> response = ApiResponse.success("Refresh successfully", new ApiRefreshResponse(data.accessToken()));
         return ResponseEntity.ok(response);
     }
 
@@ -139,15 +154,18 @@ public class RestApiAuthController {
         return ResponseEntity.ok(response);
     }
     @PostMapping("/oauth2/google/token")
-    public ResponseEntity<ApiResponse<LoginResponse>> googleTokenLogin(
+    public ResponseEntity<ApiResponse<ApiLoginResponse>> googleTokenLogin(
         @Valid @RequestBody GoogleTokenLoginRequest request,
         HttpServletRequest req,
         HttpServletResponse res
     ) {
-        GoogleTokenLoginCommand command = GoogleTokenLoginRequest.toCommand(request, req, res);
+        String ipAddress = httpServletRequestManager.getIpAddress(req);
+        String userAgent = httpServletRequestManager.getUserAgent(req);
+        GoogleTokenLoginCommand command = GoogleTokenLoginRequest.toCommand(request, ipAddress, userAgent);
         LoginResponse data = googleTokenLoginUseCase.execute(command);
+        storeRefreshToken(res, data.refreshToken(), data.refreshTokenExpirationMs());
 
-        ApiResponse<LoginResponse> response = ApiResponse.success("Login successfully", data);
+        ApiResponse<ApiLoginResponse> response = ApiResponse.success("Login successfully", new ApiLoginResponse(data.email(), data.accessToken()));
         return ResponseEntity.ok(response);
     }
 
@@ -168,11 +186,31 @@ public class RestApiAuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody LogoutRequest request, HttpServletRequest req, HttpServletResponse res) {
-        LogoutCommand command = LogoutRequest.toCommand(request, req, res);
+    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody LogoutRequest request, @CookieValue(name = REFRESH_TOKEN_COOKIE_KEY) String refreshToken) {
+        LogoutCommand command = LogoutRequest.toCommand(request, refreshToken);
         logoutUseCase.execute(command);
         ApiResponse<Void> response = ApiResponse.success("User logged out successfully");
 
         return ResponseEntity.ok(response);
     }
+
+    private void storeRefreshToken(HttpServletResponse response, String rawToken, long tokenExpirationMs) {
+        long ttlSeconds = tokenExpirationMs * 1000;
+        httpServletResponseManager.setHttpOnlyCookie(response, "refresh_token", rawToken, ttlSeconds);
+    }
+
+    private void validateRefreshTokenToRefresh(String refreshToken) {
+        if (refreshToken == null || refreshToken.strip().isBlank()) {
+            throw new UnauthorizedException("Session expired");
+        }
+    }
+
+    private record ApiLoginResponse(
+        String email, 
+        String accessToken
+    ){}
+
+    private record ApiRefreshResponse(
+        String accessToken
+    ){}
 }

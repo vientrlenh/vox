@@ -5,12 +5,13 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ResetPasswordOtpRequestedPayloadV1;
+import com.sep.vox.application.event.ResetPasswordOtpRequestedPayload;
 import com.sep.vox.application.port.input.command.SendResetPasswordOtpCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.shared.StringNormalization;
 import com.sep.vox.domain.model.outbox.Outbox;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -33,25 +34,18 @@ public class SendResetPasswordOtpUseCase implements IUseCase<SendResetPasswordOt
         this.jsonSerializationPort = jsonSerializationPort;
     }
 
-    /**
-     * Use case này KHÔNG còn sinh OTP. Mã được sinh ở
-     * {@code ResetPasswordOtpEmailConsumer} ngay trước lúc gửi mail, để nó không bao giờ
-     * nằm trong outboxes.payload hay trong topic Kafka.
-     */
     @Override
     @Transactional
     public Void execute(SendResetPasswordOtpCommand input) {
-        var command = normalize(input);
+        SendResetPasswordOtpCommand command = normalize(input);
 
-        // Email lạ vẫn trả về như bình thường: khác biệt phản hồi ở đây là một kênh dò xem
-        // địa chỉ nào có tài khoản.
-        var user = userRepository.findByEmailAndStatus(command.email(), UserStatus.ACTIVE).orElse(null);
+        User user = userRepository.findByEmailAndStatus(command.email(), UserStatus.ACTIVE).orElse(null);
         if (user == null) {
             return null;
         }
 
-        var payload = jsonSerializationPort.toJson(
-            new ResetPasswordOtpRequestedPayloadV1(command.email()));
+        String payload = jsonSerializationPort.toJson(
+            new ResetPasswordOtpRequestedPayload(command.email()));
 
         outboxRepository.save(Outbox.create(
             AggregateTypeConstant.USER,

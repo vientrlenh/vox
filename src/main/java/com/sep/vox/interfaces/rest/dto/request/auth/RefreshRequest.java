@@ -2,8 +2,6 @@ package com.sep.vox.interfaces.rest.dto.request.auth;
 
 import com.sep.vox.application.port.input.command.RefreshCommand;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -13,11 +11,10 @@ public record RefreshRequest(
     String deviceId
 ) {
     
-    public static RefreshCommand toCommand(RefreshRequest request, HttpServletRequest req, HttpServletResponse res) {
+    public static RefreshCommand toCommand(RefreshRequest request, String refreshToken) {
         return new RefreshCommand(
             request.deviceId, 
-            req, 
-            res
+            refreshToken
         );
     }
 }

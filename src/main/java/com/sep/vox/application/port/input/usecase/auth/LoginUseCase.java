@@ -12,7 +12,6 @@ import com.sep.vox.application.port.input.service.AuthService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.AuthTokenPort;
 import com.sep.vox.application.port.output.AuthenticationManagerPort;
-import com.sep.vox.application.port.output.ServletRequestManagerPort;
 import com.sep.vox.application.projection.repository.SchoolUserProjectionRepository;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.output.AuthenticatedInfo;
@@ -31,21 +30,18 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
     private final SchoolUserProjectionRepository schoolUserProjectionRepository;
     private final AuthenticationManagerPort authenticationManagerPort;
     private final AuthTokenPort authTokenPort;
-    private final ServletRequestManagerPort servletRequestManagerPort;
     private final AuthService authService;
 
     public LoginUseCase(UserRepository userRepository,  
                         SchoolUserProjectionRepository schoolUserProjectionRepository,
                         AuthenticationManagerPort authenticationManagerPort, 
                         AuthTokenPort authTokenPort, 
-                        ServletRequestManagerPort servletRequestManagerPort, 
                         AuthService authService
                     ) {
         this.userRepository = userRepository;
         this.schoolUserProjectionRepository = schoolUserProjectionRepository;
         this.authenticationManagerPort = authenticationManagerPort;
         this.authTokenPort = authTokenPort;
-        this.servletRequestManagerPort = servletRequestManagerPort;
         this.authService = authService;
     }
 
@@ -54,9 +50,6 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
     public LoginResponse execute(LoginCommand input) {
         LoginCommand command = normalize(input);
         Instant now = Instant.now();
-
-        String ipAddress = servletRequestManagerPort.getContextIpAddress(command.req());
-        String userAgent = servletRequestManagerPort.getUserAgent(command.req());
 
         AuthenticatedInfo userInfo = authenticationManagerPort.setAuthenticationAndGetInfo(command.login(), command.password());
         User user = userRepository.findById(userInfo.userId())
@@ -67,8 +60,8 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
             command.deviceId(), 
             command.deviceName(), 
             command.platform(), 
-            ipAddress, 
-            userAgent
+            command.ipAddress(), 
+            command.userAgent()
         );
         UUID schoolId = null;
         if (!user.isSystemAdmin()) {
@@ -81,10 +74,10 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
             Email.valueOf(user.getEmail()), 
             user.roleStrs()
         );
-        SessionToken sessionToken = authService.createSessionToken(command.res());
+        SessionToken sessionToken = authService.createSessionToken();
         authService.createRefreshToken(sessionToken, deviceSession, null, now);
 
-        return LoginResponse.toResponse(Email.valueOf(user.getEmail()), accessToken);
+        return LoginResponse.toResponse(Email.valueOf(user.getEmail()), accessToken, sessionToken.rawToken(), sessionToken.expirationMs());
     }
 
     private LoginCommand normalize(LoginCommand input) {
@@ -94,8 +87,8 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
             StringNormalization.trimAndCollapseSpaces(input.deviceId()),
             StringNormalization.trimAndCollapseSpaces(input.deviceName()),
             input.platform(), 
-            input.req(),
-            input.res()
+            input.ipAddress() == null ? null : input.ipAddress(), 
+            input.userAgent() == null ? null : input.userAgent()
         );
     }
 

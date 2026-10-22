@@ -71,8 +71,8 @@ public class GoogleTokenLoginUseCase implements IUseCase<GoogleTokenLoginCommand
             input.deviceId(), 
             input.deviceName(), 
             input.platform(), 
-            input.req(), 
-            input.res()
+            input.ipAddress(), 
+            input.userAgent()
         ));
     }
 }

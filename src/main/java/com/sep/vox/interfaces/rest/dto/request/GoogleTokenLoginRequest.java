@@ -3,8 +3,6 @@ package com.sep.vox.interfaces.rest.dto.request;
 import com.sep.vox.application.port.input.command.GoogleTokenLoginCommand;
 import com.sep.vox.domain.model.platform.Platform;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -33,14 +31,14 @@ public record GoogleTokenLoginRequest(
     Platform platform
 ) {
 
-    public static GoogleTokenLoginCommand toCommand(GoogleTokenLoginRequest request, HttpServletRequest req, HttpServletResponse res) {
+    public static GoogleTokenLoginCommand toCommand(GoogleTokenLoginRequest request, String ipAddress, String userAgent) {
         return new GoogleTokenLoginCommand(
             request.idToken, 
             request.deviceId, 
             request.deviceName, 
             request.platform, 
-            req, 
-            res
+            ipAddress, 
+            userAgent
         );
     }
 }

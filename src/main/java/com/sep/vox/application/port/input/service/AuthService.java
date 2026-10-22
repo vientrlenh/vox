@@ -65,7 +65,7 @@ public class AuthService {
     }
 
 
-    public SessionToken createSessionToken(HttpServletResponse res) {
+    public SessionToken createSessionToken() {
         SessionToken token = sessionTokenManagerPort.generateToken(res);
         while (refreshTokenRepository.existsByTokenHash(token.hashedToken())) {
             token = sessionTokenManagerPort.generateToken(res);

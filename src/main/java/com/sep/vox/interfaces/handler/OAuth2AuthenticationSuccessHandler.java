@@ -1,4 +1,4 @@
-package com.sep.vox.infrastructure.security;
+package com.sep.vox.interfaces.handler;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -16,6 +16,7 @@ import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.domain.model.platform.Platform;
+import com.sep.vox.interfaces.manager.HttpServletRequestManager;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,13 +28,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j 
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
+    private final HttpServletRequestManager httpServletRequestManager;
     private final OAuth2LoginUseCase oAuth2LoginUseCase;
     private final String returnUrl;
 
     public OAuth2AuthenticationSuccessHandler(
+        HttpServletRequestManager httpServletRequestManager, 
         OAuth2LoginUseCase oAuth2LoginUseCase, 
         @Value("${app.frontend.oauth2-url}") String returnUrl
     ) {
+        this.httpServletRequestManager = httpServletRequestManager;
         this.oAuth2LoginUseCase = oAuth2LoginUseCase;
         this.returnUrl = returnUrl;
     }
@@ -54,7 +58,10 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             }
             String deviceId = (String) session.getAttribute("oauth2_device_id");
             String deviceName = (String) session.getAttribute("oauth2_device_name");
-            Platform platform = (Platform) session.getAttribute("oauth2_platform");
+            String platform = (String) session.getAttribute("oauth2_platform");
+
+            String ipAddress = httpServletRequestManager.getIpAddress(request);
+            String userAgent = httpServletRequestManager.getUserAgent(request);
 
             OAuth2LoginCommand command = new OAuth2LoginCommand(
                 provider, 
@@ -65,13 +72,13 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 user.getAttribute("picture"), 
                 deviceId, 
                 deviceName, 
-                platform, 
-                request, 
-                response
+                Platform.from(platform), 
+                ipAddress, 
+                userAgent
             );
 
             LoginResponse data = oAuth2LoginUseCase.execute(command);
-            clearSession(session);
+            httpServletRequestManager.clearOAuth2Session(session);
             redirect(response, returnUrl, "token", data.accessToken());
         } catch (IllegalArgumentException e) {
             redirect(response, returnUrl, "error", "unsupported_platform");
@@ -79,13 +86,6 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             log.error("OAuth2 login failed: ", e);
             redirect(response, returnUrl, "error", "login_failed");
         } 
-    }
-
-    private void clearSession(HttpSession session) {
-        session.removeAttribute("oauth2_device_id");
-        session.removeAttribute("oauth2_device_name");
-        session.removeAttribute("oauth2_platform");
-        session.invalidate();
     }
 
     private void redirect(HttpServletResponse response, String baseUrl, String param, String value) throws IOException {

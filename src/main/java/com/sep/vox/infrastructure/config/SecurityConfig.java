@@ -47,7 +47,7 @@ import com.sep.vox.infrastructure.properties.AdminConsoleProperties;
 import com.sep.vox.infrastructure.properties.CorsProperties;
 import com.sep.vox.infrastructure.security.CustomOidcUserService;
 import com.sep.vox.infrastructure.security.OAuth2AuthenticationFailureHandler;
-import com.sep.vox.infrastructure.security.OAuth2AuthenticationSuccessHandler;
+import com.sep.vox.interfaces.handler.OAuth2AuthenticationSuccessHandler;
 
 @Configuration
 @EnableWebSecurity

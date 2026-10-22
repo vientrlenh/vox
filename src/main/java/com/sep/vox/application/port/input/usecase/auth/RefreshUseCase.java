@@ -62,8 +62,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
     public RefreshResponse execute(RefreshCommand input) {
         RefreshCommand command = normalize(input);
 
-        String rawToken = sessionTokenManagerPort.getRawFromCookie(command.req());
-        String hashedToken = sessionTokenManagerPort.hash(rawToken);
+        String hashedToken = sessionTokenManagerPort.hash(command.refreshToken());
         RefreshToken refreshToken = refreshTokenRepository.findByTokenHashForUpdate(hashedToken)
             .orElseThrow(() -> new UnauthorizedException(INVALID_REFRESH_TOKEN_MSG));
         
@@ -73,7 +72,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
 
         validateValidRequest(refreshToken, deviceSession, now, command);
         
-        SessionToken newSessionToken = sessionTokenManagerPort.generateToken(command.res());
+        SessionToken newSessionToken = sessionTokenManagerPort.generateToken();
         RefreshToken newRefreshToken = authService.createRefreshToken(newSessionToken, deviceSession, refreshToken, now);
         markOldTokenAsUsed(refreshToken.getId(), newRefreshToken.getId(), deviceSession.getId(), now);
 
@@ -90,14 +89,13 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
             Email.valueOf(user.getEmail()), 
             user.roleStrs()
         );
-        return RefreshResponse.toResponse(accessToken, newSessionToken.rawToken());
+        return RefreshResponse.toResponse(accessToken, newSessionToken.rawToken(), newSessionToken.expirationMs());
     }
     
     private RefreshCommand normalize(RefreshCommand input) {
         return new RefreshCommand(
             StringNormalization.trimAndCollapseSpaces(input.deviceId()), 
-            input.req(), 
-            input.res()
+            input.refreshToken()
         );
     }
 

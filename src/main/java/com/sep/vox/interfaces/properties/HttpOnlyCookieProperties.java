@@ -1,4 +1,4 @@
-package com.sep.vox.infrastructure.properties;
+package com.sep.vox.interfaces.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

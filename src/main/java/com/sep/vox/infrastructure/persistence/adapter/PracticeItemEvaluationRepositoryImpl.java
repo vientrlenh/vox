@@ -28,10 +28,10 @@ public class PracticeItemEvaluationRepositoryImpl implements PracticeItemEvaluat
             double itemScore,
             boolean markedInvalid,
             Instant evaluatedAt) {
-        var existing = repository.findByPracticeResponseId(practiceResponseId).orElse(null);
-        var scoreValue = BigDecimal.valueOf(itemScore);
+        PracticeItemEvaluationJpaEntity existing = repository.findByPracticeResponseId(practiceResponseId).orElse(null);
+        BigDecimal scoreValue = BigDecimal.valueOf(itemScore);
         if (existing == null) {
-            var saved = repository.save(new PracticeItemEvaluationJpaEntity(
+            PracticeItemEvaluationJpaEntity saved = repository.save(new PracticeItemEvaluationJpaEntity(
                 UUID.randomUUID(),
                 practiceResponseId,
                 scoreValue,

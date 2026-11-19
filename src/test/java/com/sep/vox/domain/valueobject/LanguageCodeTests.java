@@ -9,13 +9,13 @@ public class LanguageCodeTests {
     
     @Test
     void should_accept_all_uppercase_characters() {
-        var code = new LanguageCode("JPN");
+        LanguageCode code = new LanguageCode("JPN");
         assertThat(code.value()).isEqualTo("JPN");
     }
 
     @Test
     void should_accept_null_language_code() {
-        var code = new LanguageCode(null);
+        LanguageCode code = new LanguageCode(null);
 
         assertThat(code.value()).isNull();
     }

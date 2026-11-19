@@ -62,10 +62,10 @@ public class ApproveRejectExamAppealUseCaseTests {
     }
 
     private AppealContext context(ExamAppealStatus status) {
-        var appeal = new ExamResultAppeal();
+        ExamResultAppeal appeal = new ExamResultAppeal();
         appeal.setId(appealId);
         appeal.setStatus(status);
-        var candidateResult = new ExamCandidateResult();
+        ExamCandidateResult candidateResult = new ExamCandidateResult();
         candidateResult.setStatus(ExamCandidateResultStatus.APPEALED);
         return new AppealContext(appeal, candidateResult, new ExamSession(),
             UUID.randomUUID(), studentId, "IELTS Speaking Mock");
@@ -75,9 +75,9 @@ public class ApproveRejectExamAppealUseCaseTests {
 
     @Test
     void should_approve_and_set_deadline_and_approved_at() {
-        var context = context(ExamAppealStatus.PENDING);
+        ExamAppealAccessService.AppealContext context = context(ExamAppealStatus.PENDING);
         when(examAppealAccessService.load(appealId)).thenReturn(context);
-        var deadline = Instant.now().plus(7, ChronoUnit.DAYS);
+        Instant deadline = Instant.now().plus(7, ChronoUnit.DAYS);
 
         approveUseCase.execute(new ApproveExamAppealCommand(appealId, deadline));
 
@@ -111,7 +111,7 @@ public class ApproveRejectExamAppealUseCaseTests {
 
     @Test
     void should_reject_appeal_and_restore_result_to_released() {
-        var context = context(ExamAppealStatus.PENDING);
+        ExamAppealAccessService.AppealContext context = context(ExamAppealStatus.PENDING);
         when(examAppealAccessService.load(appealId)).thenReturn(context);
 
         rejectUseCase.execute(new RejectExamAppealCommand(appealId, "Không đủ căn cứ"));
@@ -129,7 +129,7 @@ public class ApproveRejectExamAppealUseCaseTests {
 
         rejectUseCase.execute(new RejectExamAppealCommand(appealId, "Không đủ căn cứ"));
 
-        var payload = OutboxTestSupport.capturePayload(
+        ExamAppealRejectedPayloadV1 payload = OutboxTestSupport.capturePayload(
             outboxRepository, EventTypeConstant.EXAM_APPEAL_REJECTED, ExamAppealRejectedPayloadV1.class);
         assertThat(payload.studentId()).isEqualTo(studentId);
         assertThat(payload.reason()).isEqualTo("Không đủ căn cứ");

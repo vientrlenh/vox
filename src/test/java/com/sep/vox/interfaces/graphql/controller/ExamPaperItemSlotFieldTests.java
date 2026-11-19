@@ -65,7 +65,7 @@ class ExamPaperItemSlotFieldTests {
         when(env.<UUID, ExamBlueprintSlotDto>getDataLoader("examBlueprintSlotById")).thenReturn(loader);
         when(loader.load(SLOT_ID)).thenReturn(CompletableFuture.completedFuture(slot("SELECTION", null)));
 
-        var result = controller.examPaperItemSlotType(item(SLOT_ID), env);
+        CompletableFuture<String> result = controller.examPaperItemSlotType(item(SLOT_ID), env);
 
         assertThat(result.join()).isEqualTo("SELECTION");
     }
@@ -73,29 +73,35 @@ class ExamPaperItemSlotFieldTests {
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     void should_expose_the_selection_criteria_of_a_selection_slot() {
-        var spec = new QuestionSelectionSpecDto("READ_ALOUD", null, null, null, UUID.randomUUID());
+        QuestionSelectionSpecDto spec = new QuestionSelectionSpecDto("READ_ALOUD", null, null, null, UUID.randomUUID());
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, ExamBlueprintSlotDto>getDataLoader("examBlueprintSlotById")).thenReturn(loader);
         when(loader.load(SLOT_ID)).thenReturn(CompletableFuture.completedFuture(slot("SELECTION", spec)));
 
-        var result = controller.examPaperItemSelectionSpec(item(SLOT_ID), env);
+        CompletableFuture<QuestionSelectionSpecDto> result = controller.examPaperItemSelectionSpec(item(SLOT_ID), env);
 
         assertThat(result.join()).isSameAs(spec);
     }
 
-    /** Câu soạn tay không sinh từ blueprint — không được tốn thêm một lượt query slot. */
+    /**
+     * A hand-written question is not generated from a blueprint -- it must not cost an extra slot
+     * query.
+     */
     @Test
     void should_return_null_slot_type_for_an_item_without_a_blueprint_slot() {
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
 
-        var result = controller.examPaperItemSlotType(item(null), env);
+        CompletableFuture<String> result = controller.examPaperItemSlotType(item(null), env);
 
         assertThat(result.join()).isNull();
         verify(env, never()).getDataLoader(any());
     }
 
-    /** Slot đã bị xoá: mapped loader trả null, và trang vẫn phải cho gán câu (fail-open). */
+    /**
+     * A slot that has been deleted: the mapped loader returns null, and the page must still allow
+     * assigning a question (fail-open).
+     */
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     void should_return_null_slot_type_when_the_slot_row_is_missing() {
@@ -104,7 +110,7 @@ class ExamPaperItemSlotFieldTests {
         when(env.<UUID, ExamBlueprintSlotDto>getDataLoader("examBlueprintSlotById")).thenReturn(loader);
         when(loader.load(SLOT_ID)).thenReturn(CompletableFuture.completedFuture(null));
 
-        var result = controller.examPaperItemSlotType(item(SLOT_ID), env);
+        CompletableFuture<String> result = controller.examPaperItemSlotType(item(SLOT_ID), env);
 
         assertThat(result.join()).isNull();
     }

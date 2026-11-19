@@ -8,19 +8,19 @@
   :root {
     --bg: #fafaf8; --surface: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --border: #e2e1dc;
     --accent: #1f5fbf; --accent-soft: #e8f0fc; --warn: #8a5a00; --warn-soft: #fdf3dc;
-    --ok: #17673a; --ok-soft: #e3f4ea; --code-bg: #f3f2ee;
+    --ok: #17673a; --ok-soft: #e3f4ea; --bad: #9b1c1c; --bad-soft: #fbe6e6; --code-bg: #f3f2ee;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
       --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
-      --ok: #7fd3a0; --ok-soft: #14301f; --code-bg: #262623;
+      --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
     }
   }
   :root[data-theme="dark"] {
     --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
     --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
-    --ok: #7fd3a0; --ok-soft: #14301f; --code-bg: #262623;
+    --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
@@ -31,12 +31,16 @@
   h3 { font-size: 1.05rem; margin: 28px 0 8px; }
   p, li { max-width: 72ch; }
   .meta { color: var(--muted); font-size: .92rem; margin-bottom: 20px; }
-  .status { display: inline-block; background: var(--warn-soft); color: var(--warn);
-    border-radius: 999px; padding: 2px 12px; font-size: .85rem; font-weight: 600; }
+  .status { display: inline-block; border-radius: 999px; padding: 2px 12px; font-size: .8rem;
+    font-weight: 600; white-space: nowrap; background: var(--code-bg); color: var(--muted); }
+  .status.draft, .status.open { background: var(--warn-soft); color: var(--warn); }
+  .status.approved, .status.progress { background: var(--accent-soft); color: var(--accent); }
+  .status.done, .status.answered { background: var(--ok-soft); color: var(--ok); }
+  .status.blocked { background: var(--bad-soft); color: var(--bad); }
   nav { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
     padding: 12px 18px; margin: 20px 0; }
   nav ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
-  nav a { color: var(--accent); text-decoration: none; }
+  nav a, td a { color: var(--accent); text-decoration: none; }
   code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px;
     font: .88em ui-monospace, "SF Mono", Menlo, monospace; }
   pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
@@ -47,24 +51,25 @@
     border: 1px solid var(--border); font-size: .92rem; }
   th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
   th { background: var(--code-bg); font-weight: 600; white-space: nowrap; }
+  td.indent { padding-left: 32px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .callout { border-left: 4px solid var(--accent); background: var(--accent-soft);
     padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
   .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
   .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
   .callout p { margin: 4px 0; }
-  .decision { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-    padding: 4px 18px 12px; margin: 14px 0; }
-  .decision h3 { margin-top: 14px; }
+  .decision, .phase { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 4px 18px 14px; margin: 14px 0; }
+  .decision h3, .phase h3 { margin-top: 14px; }
   .rec { color: var(--ok); font-weight: 600; }
-  .phase { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-    padding: 4px 18px 14px; margin: 16px 0; }
-  .phase h3 { margin-top: 14px; }
-  .tag { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
-    color: var(--muted); }
-  .checks { list-style: none; padding: 0; }
-  .checks li { padding: 6px 0; }
-  .checks label { cursor: pointer; }
-  .checks input { margin-right: 8px; }
+  .answer { background: var(--code-bg); border-radius: 8px; padding: 8px 12px; margin: 10px 0 0; color: var(--muted); }
+  .decision[data-decision-state="answered"] .answer { background: var(--ok-soft); color: var(--text); }
+  .tag { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .jobs { list-style: none; padding: 0; margin: 10px 0; }
+  .job { border-top: 1px solid var(--border); padding: 10px 0; }
+  .job > .title { font-weight: 600; }
+  .status-log { font-size: .85rem; color: var(--muted); margin: 8px 0 0; padding-left: 20px; }
+  .status-log:empty { display: none; }
   @media (max-width: 600px) { nav ol { columns: 1; } h1 { font-size: 1.5rem; } }
 </style>
 </head>
@@ -74,7 +79,7 @@
 <h1>Test restructuring plan</h1>
 <div class="meta">
   Repository: <code>vox</code> &middot; Branch: <code>refactor/rewritten</code> &middot; Written 2026-11-19 &middot;
-  <span class="status">Draft &ndash; awaiting your review</span>
+  Plan status: <span class="status progress" id="plan-status" data-plan-status="in-progress">In progress</span> &ndash; phases 4 and 5 are partly done (section 11)
 </div>
 
 <p>
@@ -84,14 +89,14 @@
   The structure is modelled on the sibling repository <code>tsoft</code>, which already runs this setup.
 </p>
 
-<div class="callout warn">
-  <p><strong>Nothing has been implemented.</strong> This document is a proposal. Section 3 lists the decisions I need from you.
-  <code>AGENTS.md</code> does not currently cover a unit/integration split or controller slice tests, so each phase
-  needs your confirmation before I start it.</p>
+<div class="callout ok">
+  <p><strong>Implemented</strong> in commit <code>57764f02</code>. The sections below are the original proposal, kept as written.
+  Where the result differs from it, or an item is only partly done, section 11 says so.</p>
 </div>
 
 <nav aria-label="Contents">
   <ol>
+    <li><a href="#progress">Progress</a></li>
     <li><a href="#current">Current state</a></li>
     <li><a href="#target">Target state</a></li>
     <li><a href="#decisions">Decisions for you</a></li>
@@ -100,9 +105,18 @@
     <li><a href="#agents">AGENTS.md changes</a></li>
     <li><a href="#risks">Risks</a></li>
     <li><a href="#scope">Out of scope</a></li>
-    <li><a href="#verify">Verification checklist</a></li>
+    <li><a href="#verify">Verification</a></li>
+    <li><a href="#changelog">Change log</a></li>
+    <li><a href="#notes">Implementation notes</a></li>
   </ol>
 </nav>
+
+<h2 id="progress">Progress</h2>
+<p id="overview-summary" class="meta"></p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Phase / job</th><th>Status</th></tr></thead>
+  <tbody id="overview-body"></tbody>
+</table></div>
 
 <h2 id="current">1. Current state (measured)</h2>
 
@@ -151,53 +165,60 @@
 
 <h2 id="decisions">3. Decisions for you</h2>
 
-<div class="decision">
-  <h3>D1. How to separate the suites</h3>
+<div class="decision" id="d1" data-decision-state="answered">
+  <h3>D1. How to separate the suites <span class="status answered">Answered</span></h3>
   <p><strong>A. JUnit tag</strong> (<span class="rec">recommended</span>): <code>@Tag("integration")</code> via two composed annotations; <code>test</code> excludes the tag, a new <code>integrationTest</code> task includes it. This is what <code>tsoft</code> does. One source set, trivial to adopt.</p>
   <p><strong>B. Separate source set</strong> (<code>src/integrationTest/java</code>): the boundary is physical and cannot be forgotten, but it moves ~50 files, needs shared test-support code on both classpaths, and fights IDE defaults.</p>
   <p>Weakness of A: a test that forgets the tag silently runs in the fast suite. I propose an ArchUnit rule to close that gap (see Phase 3).</p>
+  <div class="answer"><strong>Answer:</strong> A, the JUnit tag. <code>@RepositoryTest</code> and <code>@IntegrationTest</code> carry the <code>integration</code> tag and <code>TestSuiteSeparationTests</code> guards it. Resolved by the implementation in commit <code>57764f02</code>; the original answer was not recorded.</div>
 </div>
 
-<div class="decision">
-  <h3>D2. Replace <code>ContainerTestConfig</code> with a <code>@ServiceConnection</code> bean?</h3>
+<div class="decision" id="d2" data-decision-state="answered">
+  <h3>D2. Replace <code>ContainerTestConfig</code> with a <code>@ServiceConnection</code> bean? <span class="status answered">Answered</span></h3>
   <p><strong>Yes</strong> (<span class="rec">recommended</span>): a <code>@TestConfiguration</code> with a <code>PostgreSQLContainer</code> bean. No inheritance, no static initializer, and the same bean can power a local dev launcher. Need to confirm in Phase 2 whether <code>@DataJpaTest</code> also needs <code>@AutoConfigureTestDatabase(replace = NONE)</code> with Spring Boot 4.1.</p>
   <p><strong>No:</strong> keep the abstract base class and only add tags. Smaller change, but 48 test classes keep depending on inheritance.</p>
+  <div class="answer"><strong>Answer:</strong> Yes, but implemented differently: <code>ContainerTestConfig</code> is gone and <code>TestcontainersConfiguration</code> starts the container in a static initializer with a <code>DynamicPropertyRegistrar</code>, not as a <code>@ServiceConnection</code> bean (see section 11). Resolved by the implementation in commit <code>57764f02</code>; the original answer was not recorded.</div>
 </div>
 
-<div class="decision">
-  <h3>D3. Fix the Testcontainers version mix?</h3>
+<div class="decision" id="d3" data-decision-state="answered">
+  <h3>D3. Fix the Testcontainers version mix? <span class="status answered">Answered</span></h3>
   <p><span class="rec">Yes</span>: replace the pinned <code>postgresql:1.21.4</code> and <code>junit-jupiter:2.0.5</code> with the 2.x artifacts (<code>testcontainers-postgresql</code>, <code>testcontainers-junit-jupiter</code>) and let the Spring Boot BOM manage the version. <code>AGENTS.md</code> requires approval before changing pinned versions, so this is an explicit ask. Keep the image pinned to <code>postgres:18</code> (<code>tsoft</code>'s <code>postgres:latest</code> is a flaw I do not want to copy).</p>
+  <div class="answer"><strong>Answer:</strong> Yes. <code>build.gradle</code> uses <code>testcontainers-postgresql</code> and <code>testcontainers-junit-jupiter</code> with no pinned version. Resolved by the implementation in commit <code>57764f02</code>; the original answer was not recorded.</div>
 </div>
 
-<div class="decision">
-  <h3>D4. Security in controller slices</h3>
+<div class="decision" id="d4" data-decision-state="answered">
+  <h3>D4. Security in controller slices <span class="status answered">Answered</span></h3>
   <p>Testing <code>@PreAuthorize</code> means importing <code>SecurityConfig</code> (or a test security config) and probably adding <code>spring-boot-starter-security-test</code> for <code>@WithMockUser</code>. Both touch security configuration or dependencies, which <code>AGENTS.md</code> lists under "ask first".</p>
   <p><span class="rec">Recommended:</span> add a test-only security configuration inside <code>src/test</code> and do not modify <code>SecurityConfig</code> itself. Add the security test starter only if needed, with your approval.</p>
+  <div class="answer"><strong>Answer:</strong> The recommended approach: test-only <code>WebMvcTestSecurityConfiguration</code> and <code>GraphQlTestSecurityConfiguration</code> under <code>src/test</code>. Resolved by the implementation in commit <code>57764f02</code>; the original answer was not recorded.</div>
 </div>
 
-<div class="decision">
-  <h3>D5. GraphQL controllers</h3>
+<div class="decision" id="d5" data-decision-state="answered">
+  <h3>D5. GraphQL controllers <span class="status answered">Answered</span></h3>
   <p><code>@WebMvcTest</code> does not apply to GraphQL. Options:</p>
   <p><strong>A.</strong> (<span class="rec">recommended</span>) Leave the 12 direct-call tests as unit tests and add <code>@GraphQlTest</code> only where schema binding or authorization matters (<code>GradingSchemaBindingTests</code>, the <code>*AuthorizationBoundaryTests</code>).</p>
   <p><strong>B.</strong> Convert all 12 to <code>@GraphQlTest</code>. More coverage of schema binding, more effort, slower.</p>
+  <div class="answer"><strong>Answer:</strong> A. Eight <code>*AuthorizationGraphQlTests</code> classes use <code>@GraphQlControllerTest</code>; <code>GradingSchemaBindingTests</code> was not converted (see section 11). Resolved by the implementation in commit <code>57764f02</code>; the original answer was not recorded.</div>
 </div>
 
-<div class="decision">
-  <h3>D6. Migration strategy for existing tests</h3>
+<div class="decision" id="d6" data-decision-state="answered">
+  <h3>D6. Migration strategy for existing tests <span class="status answered">Answered</span></h3>
   <p><strong>A. Phased, by category</strong> (<span class="rec">recommended</span>): tag the Docker-dependent tests once (about 50 files, mechanical), convert controllers by priority, migrate use cases to <code>MockitoExtension</code> only when a file is otherwise being edited.</p>
   <p><strong>B. Big bang:</strong> convert all 168 use case tests at once. Strict stubs will fail tests that stub things they never use, so this risks a large, noisy diff and many unrelated fixes. Not recommended.</p>
+  <div class="answer"><strong>Answer:</strong> A, phased. Only <code>usecase/auth</code> is converted so far, 8 of 9 tests. Resolved by the implementation in commit <code>57764f02</code>; the original answer was not recorded.</div>
 </div>
 
-<div class="decision">
-  <h3>D7. AGENTS.md update</h3>
+<div class="decision" id="d7" data-decision-state="answered">
+  <h3>D7. AGENTS.md update <span class="status answered">Answered</span></h3>
   <p><span class="rec">Update it in the same change</span> as Phase 1 so the rules and the repository never disagree. Proposed wording is in section 6.</p>
+  <div class="answer"><strong>Answer:</strong> Yes. <code>AGENTS.md</code> has the new Commands and Testing sections. Resolved by the implementation in commit <code>57764f02</code>; the original answer was not recorded.</div>
 </div>
 
 <h2 id="phases">4. Phases</h2>
 <p>Each phase is independently reviewable and leaves the build green. I would stop after each one for your approval.</p>
 
-<div class="phase">
-  <h3>Phase 1 &ndash; Split the Gradle tasks <span class="tag">small &middot; low risk</span></h3>
+<div class="phase" id="phase-1" data-status="done">
+  <h3><span class="title">Phase 1 &ndash; Split the Gradle tasks</span> <span class="tag">small &middot; low risk</span> <span class="status done">Done</span></h3>
   <ul>
     <li>Change <code>tasks.named('test')</code> to exclude the <code>integration</code> tag; register <code>integrationTest</code>; make <code>check</code> depend on it (snippet in section 5).</li>
     <li>Keep the timezone and heap settings on both tasks via <code>tasks.withType(Test).configureEach</code>.</li>
@@ -205,10 +226,13 @@
   </ul>
   <p><strong>Files:</strong> <code>build.gradle</code>, <code>AGENTS.md</code>. <strong>Note:</strong> with nothing tagged yet, <code>test</code> still runs everything, so behaviour is unchanged until Phase 3.</p>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew tasks --group verification</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>.</p>
+  <ul class="status-log">
+      <li>2026-11-19 &middot; Done &middot; Implemented in commit <code>57764f02</code>. Status recorded when this plan was converted to the tracked format.</li>
+  </ul>
 </div>
 
-<div class="phase">
-  <h3>Phase 2 &ndash; Shared test support <span class="tag">small &middot; needs D2, D3</span></h3>
+<div class="phase" id="phase-2" data-status="done">
+  <h3><span class="title">Phase 2 &ndash; Shared test support</span> <span class="tag">small &middot; needs D2, D3</span> <span class="status done">Done</span></h3>
   <ul>
     <li>Add <code>support/TestcontainersConfiguration</code> (<code>@ServiceConnection</code>, image <code>postgres:18</code>).</li>
     <li>Add composed annotations <code>@RepositoryTest</code> (<code>@DataJpaTest</code> + tag + import + <code>@ActiveProfiles("test")</code>) and <code>@IntegrationTest</code> (<code>@SpringBootTest</code> + tag + import + <code>@ActiveProfiles("test")</code>).</li>
@@ -217,10 +241,13 @@
     <li>Read the Spring Boot 4.1 / Framework 7 docs first; imports for the modular test starters differ from older tutorials.</li>
   </ul>
   <p><strong>Verify:</strong> convert one repository test and one <code>@SpringBootTest</code> test, run both with <code>--tests</code> (needs Docker).</p>
+  <ul class="status-log">
+      <li>2026-11-19 &middot; Done &middot; Implemented in commit <code>57764f02</code>. Differences from the proposal are in section 11 (static initializer instead of a <code>@ServiceConnection</code> bean, <code>@AutoConfigureTestDatabase(replace = NONE)</code>). Status recorded when this plan was converted to the tracked format.</li>
+  </ul>
 </div>
 
-<div class="phase">
-  <h3>Phase 3 &ndash; Tag existing Docker-dependent tests <span class="tag">mechanical &middot; ~50 files</span></h3>
+<div class="phase" id="phase-3" data-status="done">
+  <h3><span class="title">Phase 3 &ndash; Tag existing Docker-dependent tests</span> <span class="tag">mechanical &middot; ~50 files</span> <span class="status done">Done</span></h3>
   <ul>
     <li>Replace <code>extends ContainerTestConfig</code> + <code>@DataJpaTest</code> / <code>@SpringBootTest</code> + <code>@ActiveProfiles</code> with the composed annotations in the 24 + 24 files.</li>
     <li>Add an ArchUnit guardrail: any class annotated <code>@SpringBootTest</code> or <code>@DataJpaTest</code> directly must carry the integration tag, so a forgotten tag fails the build.</li>
@@ -228,36 +255,76 @@
     <li>Decide per file for the 26 <code>@SpringBootTest</code> classes whether <code>@DataJpaTest</code> is enough (query and adapter tests likely are; initializers and the migration test likely are not). Each downgrade is its own commit so it can be reverted.</li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew test</code> runs with Docker stopped and passes; <code>./gradlew integrationTest</code> runs the tagged set; the sum of executed tests equals today's total.</p>
+  <ul class="status-log">
+      <li>2026-11-19 &middot; Done &middot; Implemented in commit <code>57764f02</code>. <code>TestSuiteSeparationTests</code> is the guardrail and <code>ContainerTestConfig</code> no longer exists. The per-downgrade commits do not exist because everything landed in one commit. Status recorded when this plan was converted to the tracked format.</li>
+  </ul>
 </div>
 
-<div class="phase">
-  <h3>Phase 4 &ndash; Controller slices <span class="tag">medium &middot; needs D4, D5</span></h3>
-  <ul>
-    <li>Start with <code>AuthController</code> as the pilot: <code>@WebMvcTest(AuthController.class)</code>, <code>MockMvcTester</code>, <code>@MockitoBean</code> for use cases and ports. Assert status, body envelope (<code>ApiResponse</code>) and error mapping through <code>GlobalExceptionHandler</code>.</li>
-    <li>Add one authorization test per role-protected endpoint group (401 without a user, 403 with the wrong role, 2xx with the right one).</li>
-    <li>Then convert the remaining REST controller tests (<code>SchoolController</code> has the largest, 31 mocks).</li>
-    <li>GraphQL per D5.</li>
-    <li>Share request-building helpers and common assertions in a <code>support</code> class instead of repeating them per test (a duplication seen in <code>tsoft</code>).</li>
+<div class="phase" id="phase-4" data-status="progress">
+  <h3><span class="title">Phase 4 &ndash; Controller slices</span> <span class="tag">medium &middot; needs D4, D5</span> <span class="status progress">In progress</span></h3>
+  <ul class="jobs">
+    <li class="job" id="job-4-1" data-status="done">
+      <span class="title">4.1 Pilot <code>AuthController</code> slice</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>@WebMvcTest(AuthController.class)</code> with <code>MockMvcTester</code> and <code>@MockitoBean</code> use cases and ports asserts status, the <code>ApiResponse</code> envelope and error mapping through <code>GlobalExceptionHandler</code>. <strong>Files:</strong> <code>AuthControllerTests</code></p>
+      <ul class="status-log">
+      <li>2026-11-19 &middot; Done &middot; <code>interfaces/rest/controller/AuthControllerTests.java</code> exists. Status recorded when this plan was converted to the tracked format.</li>
+      </ul>
+    </li>
+    <li class="job" id="job-4-2" data-status="progress">
+      <span class="title">4.2 Authorization tests and remaining REST controller slices</span> <span class="status progress">In progress</span>
+      <p><strong>Done when:</strong> every role-protected endpoint group has a 401 test (no user), a 403 test (wrong role) and a success test (right role), and the remaining REST controller tests are converted (<code>SchoolController</code> has the largest, 31 mocks). <strong>Files:</strong> <code>interfaces/rest/controller/*Tests</code></p>
+      <ul class="status-log">
+      <li>2026-11-19 &middot; In progress &middot; Six REST controller test classes exist. <code>ExamResultControllerTests</code> has 403 tests for export and preview, but no 401 test, and no 403 test for <code>finalize</code> or the Excel export (section 11). Status recorded when this plan was converted to the tracked format.</li>
+      </ul>
+    </li>
+    <li class="job" id="job-4-3" data-status="progress">
+      <span class="title">4.3 GraphQL slices (D5, option A)</span> <span class="status progress">In progress</span>
+      <p><strong>Done when:</strong> the direct-call tests stay as unit tests and <code>@GraphQlControllerTest</code> covers schema binding and authorization where it matters, including <code>GradingSchemaBindingTests</code>. <strong>Files:</strong> <code>interfaces/graphql/controller/*GraphQlTests</code></p>
+      <ul class="status-log">
+      <li>2026-11-19 &middot; In progress &middot; Eight <code>*AuthorizationGraphQlTests</code> classes use the slice. <code>GradingSchemaBindingTests</code> is not converted, and whether the two <code>*AuthorizationBoundaryTests</code> now duplicate coverage is unchecked (section 11). Status recorded when this plan was converted to the tracked format.</li>
+      </ul>
+    </li>
+    <li class="job" id="job-4-4" data-status="todo">
+      <span class="title">4.4 Shared request helpers in <code>support</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> request builders and common assertions live in a <code>support</code> class instead of being repeated per REST controller test (a duplication seen in <code>tsoft</code>). <strong>Files:</strong> <code>support/</code></p>
+      <ul class="status-log">
+      <li>2026-11-19 &middot; Not started &middot; <code>support/</code> holds only the annotations, so the six REST controller tests still repeat their request builders and assertions (section 11). Status recorded when this plan was converted to the tracked format.</li>
+      </ul>
+    </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew test --tests '*AuthController*'</code>, then the full <code>test</code> task without Docker.</p>
+  <ul class="status-log"></ul>
 </div>
 
-<div class="phase">
-  <h3>Phase 5 &ndash; Use cases to MockitoExtension <span class="tag">gradual &middot; opportunistic</span></h3>
+<div class="phase" id="phase-5" data-status="progress">
+  <h3><span class="title">Phase 5 &ndash; Use cases to MockitoExtension</span> <span class="tag">gradual &middot; opportunistic</span> <span class="status progress">In progress</span></h3>
   <ul>
     <li>Convert a test when you are already changing it, or in small per-feature batches (for example <code>usecase/auth</code> first).</li>
     <li>Replace <code>mock(...)</code> + manual construction with <code>@Mock</code> + <code>@InjectMocks</code>. If a constructor is awkward for <code>@InjectMocks</code>, keep explicit construction; the goal is strict stubs, not the annotation.</li>
     <li>Fix or remove any unnecessary stubbing that strict mode reports. Report, do not hide, tests that were stubbing things they never used.</li>
   </ul>
+  <ul class="jobs">
+    <li class="job" id="job-5-1" data-status="progress">
+      <span class="title">5.1 Convert <code>usecase/auth</code></span> <span class="status progress">In progress</span>
+      <p><strong>Done when:</strong> all 9 tests in <code>usecase/auth</code> use <code>MockitoExtension</code> with strict stubs. <strong>Files:</strong> <code>application/usecase/auth/*Tests</code></p>
+      <ul class="status-log">
+      <li>2026-11-19 &middot; In progress &middot; 8 of 9 converted. <code>LogoutNotificationDeviceCleanUpTests</code> is not (section 11). Further packages are opportunistic and have no job yet. Status recorded when this plan was converted to the tracked format.</li>
+      </ul>
+    </li>
+  </ul>
   <p><strong>Verify:</strong> run the feature's tests with <code>--tests '*usecase.auth*'</code> per batch.</p>
+  <ul class="status-log"></ul>
 </div>
 
-<div class="phase">
-  <h3>Phase 6 &ndash; CI <span class="tag">optional</span></h3>
+<div class="phase" id="phase-6" data-status="skipped">
+  <h3><span class="title">Phase 6 &ndash; CI</span> <span class="tag">optional</span> <span class="status skipped">Deferred</span></h3>
   <ul>
     <li>No change is required: <code>./gradlew clean build</code> runs <code>check</code>, which now includes both suites.</li>
     <li>Optional: run <code>test</code> and <code>integrationTest</code> as separate steps so a unit failure is reported before Docker work starts.</li>
     <li>The <code>postgres:18</code> service in <code>ci-build.yml</code> appears unused by the tests. I will report it, not remove it, unless you ask.</li>
+  </ul>
+  <ul class="status-log">
+      <li>2026-11-19 &middot; Deferred &middot; No change was required. <code>ci-build.yml</code> still has one <code>./gradlew clean build --no-daemon</code> step and the <code>postgres:18</code> service, so the optional separate steps were not made. Status recorded when this plan was converted to the tracked format.</li>
   </ul>
 </div>
 
@@ -356,37 +423,86 @@ public class TestcontainersConfiguration {
   <li>Code coverage tooling (JaCoCo) &ndash; separate decision.</li>
 </ul>
 
-<h2 id="verify">9. Verification checklist</h2>
-<p>Tick items as you review. Your ticks stay in this browser only.</p>
-<ul class="checks" id="checks">
-  <li><label><input type="checkbox" data-k="d1"> D1: tag-based split is acceptable (or choose source set)</label></li>
-  <li><label><input type="checkbox" data-k="d2"> D2: replace <code>ContainerTestConfig</code> with a <code>@ServiceConnection</code> bean</label></li>
-  <li><label><input type="checkbox" data-k="d3"> D3: approve fixing the Testcontainers versions in <code>build.gradle</code></label></li>
-  <li><label><input type="checkbox" data-k="d4"> D4: test-only security configuration approach</label></li>
-  <li><label><input type="checkbox" data-k="d5"> D5: GraphQL option A or B</label></li>
-  <li><label><input type="checkbox" data-k="d6"> D6: phased migration</label></li>
-  <li><label><input type="checkbox" data-k="d7"> D7: update <code>AGENTS.md</code> in Phase 1</label></li>
-  <li><label><input type="checkbox" data-k="p1"> Phase order and stop-points are right</label></li>
-  <li><label><input type="checkbox" data-k="naming"> Suffix convention (<code>Tests</code> / <code>IntegrationTests</code>) confirmed or dropped</label></li>
-  <li><label><input type="checkbox" data-k="go"> Approved to start Phase 1</label></li>
-</ul>
+<h2 id="verify">9. Verification</h2>
+<p>Review progress in the Progress table at the top and the decision answers in section 3. They replace the old
+browser-only checklist.</p>
 
 <div class="callout ok">
   <p><strong>After Phase 1</strong> the commands that must pass: <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>. I will state plainly anything I could not run (for example integration tests when Docker is unavailable).</p>
 </div>
 
+<h2 id="changelog">10. Change log</h2>
+<div class="table-scroll"><table>
+  <thead><tr><th>Date</th><th>Change</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>2026-11-19</td><td>Plan written (Draft)</td><td>First version.</td></tr>
+    <tr><td>2026-11-19</td><td>Plan implemented in commit <code>57764f02</code></td><td>See section 11 for what differs and what is only partly done.</td></tr>
+    <tr><td>2026-11-19</td><td>Converted to the tracked format: status on the plan, phases and jobs; answers recorded on D1&ndash;D7; browser-only checklist removed. Plan status set to In progress, not Done, because phases 4 and 5 are partly done.</td><td>So <code>implement-plan</code> can track the remaining work.</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="notes">11. Implementation notes</h2>
+<p>Verified on 2026-11-19: <code>./gradlew test</code> ran 2350 tests and <code>./gradlew integrationTest</code> ran 324 tests of
+those, with no failures. The baseline before the change was 2228 tests, and no test class was removed.</p>
+
+<h3>GraphQL tests (D5, option A)</h3>
+<ul>
+  <li>Eight <code>*AuthorizationGraphQlTests</code> classes use the new <code>@GraphQlControllerTest</code> slice (real schema,
+    <code>GlobalExceptionResolver</code> and <code>@PreAuthorize</code>, no Docker): exam appeal, exam candidate, exam directory,
+    exam schedule, import, my class, school and supported language.</li>
+  <li>The existing direct-call tests were left as they are, as option A says.</li>
+  <li><strong>Partial:</strong> <code>GradingSchemaBindingTests</code> was not converted to a slice.</li>
+  <li><strong>Open question:</strong> <code>ExamDirectoryAuthorizationBoundaryTests</code> and <code>MyClassAuthorizationBoundaryTests</code>
+    were kept next to the new slice tests for the same controllers. Whether they now duplicate coverage has not been checked.</li>
+</ul>
+
+<h3>Other items that are only partly done</h3>
+<ul>
+  <li><strong>REST authorization tests:</strong> <code>ExamResultControllerTests</code> has 403 tests for export and preview, but no 401 test,
+    and no 403 test for <code>finalize</code> or the Excel export.</li>
+  <li><strong>Use cases to <code>MockitoExtension</code>:</strong> 8 of the 9 tests in <code>usecase/auth</code> are converted.
+    <code>LogoutNotificationDeviceCleanUpTests</code> is not.</li>
+  <li><strong>Shared request helpers (Phase 4):</strong> not done. <code>support/</code> holds only the annotations, so the six REST
+    controller tests still repeat their request builders and assertions.</li>
+</ul>
+
+<h3>Differences from the proposal</h3>
+<ul>
+  <li><code>TestcontainersConfiguration</code> starts the container in a static initializer and registers the connection with a
+    <code>DynamicPropertyRegistrar</code>. It is not a <code>@ServiceConnection</code> bean, because Spring closes container beans when a
+    cached context is destroyed and that would stop the database under the other contexts. The consequence is that all contexts
+    share one database, so a test that commits data must clean up after itself.</li>
+  <li><code>@RepositoryTest</code> also sets <code>@AutoConfigureTestDatabase(replace = NONE)</code>.</li>
+  <li>All phases landed in one commit, so the per-downgrade commits proposed in Phase 3 do not exist.</li>
+  <li>The <code>XxxIntegrationTests</code> suffix was dropped; every test class is still named <code>XxxTests</code>.</li>
+</ul>
+
 </div>
 <script>
-(function () {
-  var boxes = document.querySelectorAll('#checks input[type="checkbox"]');
-  var prefix = 'vox-test-plan:';
-  boxes.forEach(function (box) {
-    try { box.checked = localStorage.getItem(prefix + box.dataset.k) === '1'; } catch (e) {}
-    box.addEventListener('change', function () {
-      try { localStorage.setItem(prefix + box.dataset.k, box.checked ? '1' : '0'); } catch (e) {}
+  (function () {
+    var labels = { todo: "Not started", progress: "In progress", done: "Done", blocked: "Blocked", skipped: "Deferred" };
+    var body = document.getElementById("overview-body");
+    var summary = document.getElementById("overview-summary");
+    var phaseCounts = {};
+    document.querySelectorAll(".phase[data-status], .job[data-status]").forEach(function (element) {
+      var status = element.getAttribute("data-status");
+      if (element.classList.contains("phase")) { phaseCounts[status] = (phaseCounts[status] || 0) + 1; }
+      var row = body.insertRow();
+      var nameCell = row.insertCell();
+      if (element.classList.contains("job")) { nameCell.className = "indent"; }
+      var link = document.createElement("a");
+      link.href = "#" + element.id;
+      link.textContent = element.querySelector(".title").textContent;
+      nameCell.appendChild(link);
+      var pill = document.createElement("span");
+      pill.className = "status " + status;
+      pill.textContent = labels[status] || status;
+      row.insertCell().appendChild(pill);
     });
-  });
-})();
+    var parts = Object.keys(labels).filter(function (key) { return phaseCounts[key]; })
+      .map(function (key) { return phaseCounts[key] + " " + labels[key].toLowerCase(); });
+    summary.textContent = parts.length ? "Phases: " + parts.join(" · ") : "";
+  })();
 </script>
 </body>
 </html>

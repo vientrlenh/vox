@@ -60,9 +60,9 @@ class ViewSchoolClassUsersUseCaseTests {
 
     @Test
     void execute_should_throw_when_class_not_found() {
-        var currentUserId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var classId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID classId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
@@ -77,9 +77,9 @@ class ViewSchoolClassUsersUseCaseTests {
 
     @Test
     void execute_should_throw_when_class_belongs_to_other_school() {
-        var currentUserId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var classId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID classId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
@@ -94,7 +94,7 @@ class ViewSchoolClassUsersUseCaseTests {
 
     @Test
     void execute_should_throw_when_current_user_is_inactive() {
-        var currentUserId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(false);
@@ -107,7 +107,7 @@ class ViewSchoolClassUsersUseCaseTests {
 
     @Test
     void execute_should_throw_when_current_user_has_no_school() {
-        var currentUserId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
@@ -120,9 +120,9 @@ class ViewSchoolClassUsersUseCaseTests {
 
     @Test
     void execute_should_throw_when_school_is_inactive() {
-        var currentUserId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var school = activeSchool(schoolId);
+        UUID currentUserId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        School school = activeSchool(schoolId);
         school.setActive(false);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
@@ -142,14 +142,14 @@ class ViewSchoolClassUsersUseCaseTests {
     }
 
     private static School activeSchool(UUID id) {
-        var school = new School();
+        School school = new School();
         school.setId(id);
         school.setActive(true);
         return school;
     }
 
     private static SchoolClass activeSchoolClass(UUID id, UUID schoolId) {
-        var schoolClass = new SchoolClass();
+        SchoolClass schoolClass = new SchoolClass();
         schoolClass.setId(id);
         schoolClass.setSchoolId(schoolId);
         schoolClass.setCode(new ClassCode("ENG-01"));

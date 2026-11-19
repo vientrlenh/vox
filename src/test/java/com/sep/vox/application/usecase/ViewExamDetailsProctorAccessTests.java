@@ -62,13 +62,14 @@ class ViewExamDetailsProctorAccessTests {
             userRoleQueryRepository
         );
 
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(EXAM_ID);
         exam.setSchoolId(SCHOOL_ID);
-        // Đang diễn ra: nhánh CLOSED/RESULTS_PUBLISHED chưa mở, nên kết quả nói đúng về nhánh đang xét.
+        // In progress: the CLOSED/RESULTS_PUBLISHED branches are not open yet, so the result speaks
+        // exactly about the branch under test.
         exam.setStatus(ExamStatus.IN_PROGRESS);
-        // ExamDtoMapper đọc thẳng .getKind().name(); thiếu là NPE, tức test hỏng chứ không phải
-        // khẳng định sai.
+        // ExamDtoMapper reads .getKind().name() directly; if it is missing, an NPE breaks the test
+        // rather than making a wrong assertion.
         exam.setKind(ExamKind.CENTRALIZED);
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(exam));
 

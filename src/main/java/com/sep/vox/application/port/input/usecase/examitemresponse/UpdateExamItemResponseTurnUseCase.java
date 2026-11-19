@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examitemresponse;
 
+import com.sep.vox.domain.model.exam.ExamItemResponseTurn;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Locale;
@@ -37,7 +38,7 @@ public class UpdateExamItemResponseTurnUseCase
             throw new NotFoundException("Không tìm thấy câu trả lời của thí sinh");
         }
 
-        var turn = examItemResponseTurnRepository.findByExamItemResponseIdAndTurnOrder(input.answerId(), input.turnOrder())
+        ExamItemResponseTurn turn = examItemResponseTurnRepository.findByExamItemResponseIdAndTurnOrder(input.answerId(), input.turnOrder())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy turn cần cập nhật"));
 
         if (input.turnType() != null) {
@@ -62,7 +63,7 @@ public class UpdateExamItemResponseTurnUseCase
             turn.setAnsweredAt(input.answeredAt());
         }
 
-        var saved = examItemResponseTurnRepository.upsert(turn);
+        ExamItemResponseTurn saved = examItemResponseTurnRepository.upsert(turn);
         return ExamItemResponseResponseMapper.toTurnResponse(saved);
     }
 
@@ -86,7 +87,7 @@ public class UpdateExamItemResponseTurnUseCase
             throw new IllegalArgumentException("turnType không được để trống");
         }
 
-        var normalized = turnType.trim().toUpperCase(Locale.ROOT);
+        String normalized = turnType.trim().toUpperCase(Locale.ROOT);
         try {
             return TurnType.valueOf(normalized);
         } catch (IllegalArgumentException ex) {

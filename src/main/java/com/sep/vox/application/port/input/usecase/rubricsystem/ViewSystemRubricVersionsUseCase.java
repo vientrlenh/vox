@@ -9,12 +9,15 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RubricVersionDto;
 import com.sep.vox.domain.mapper.RubricVersionDtoMapper;
+import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
+import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,13 +44,13 @@ public class ViewSystemRubricVersionsUseCase implements IUseCase<ViewSystemRubri
     @Transactional(readOnly = true)
     public PageResult<RubricVersionDto> execute(ViewSystemRubricVersionsQuery query) {
         // 1. Xác thực User
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }
 
         // 2. Lấy Rubric gốc và kiểm tra quyền SYSTEM
-        var rubric = rubricRepository.findById(query.rubricId())
+        Rubric rubric = rubricRepository.findById(query.rubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
@@ -66,7 +69,7 @@ public class ViewSystemRubricVersionsUseCase implements IUseCase<ViewSystemRubri
         }
 
         // 3. Lấy danh sách Version phân trang từ Database (Hàm này đã có sẵn sort giảm dần ở bài trước)
-        var versionPage = rubricVersionRepository.findAllByRubricIdAndStatus(
+        PageResult<RubricVersion> versionPage = rubricVersionRepository.findAllByRubricIdAndStatus(
                 query.rubricId(),
                 safeStatus,
                 query.page(),

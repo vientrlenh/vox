@@ -73,7 +73,7 @@ class RecordAiUsageUseCaseTests {
 
     @Test
     void rejectsMissingUsageEventId() {
-        var command = new RecordAiUsageCommand(
+        RecordAiUsageCommand command = new RecordAiUsageCommand(
             examSessionId, turnId, null, AiUsageType.DURATION,
             "azure_stt", null, null, null, null, null,
             4200L, "{\"amount\":0.006}", new BigDecimal("0.0252"), Instant.now()
@@ -87,7 +87,7 @@ class RecordAiUsageUseCaseTests {
 
     @Test
     void rejectsMissingExamSessionId() {
-        var command = new RecordAiUsageCommand(
+        RecordAiUsageCommand command = new RecordAiUsageCommand(
             null, turnId, usageEventId, AiUsageType.LLM_TOKEN,
             "anthropic", "claude-opus-4-8", 100, 50, 0, 0,
             null, "{}", new BigDecimal("0.01"), Instant.now()

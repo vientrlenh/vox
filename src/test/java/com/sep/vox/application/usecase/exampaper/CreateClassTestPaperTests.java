@@ -90,8 +90,8 @@ class CreateClassTestPaperTests {
         examBlueprintVersionRepository = mock(ExamBlueprintVersionRepository.class);
         examBlueprintSectionRepository = mock(ExamBlueprintSectionRepository.class);
         examBlueprintSlotRepository = mock(ExamBlueprintSlotRepository.class);
-        var questionRepository = mock(QuestionRepository.class);
-        var userContextPort = mock(UserContextPort.class);
+        QuestionRepository questionRepository = mock(QuestionRepository.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
 
         useCase = new CreateExamPaperUseCase(
             examRepository,
@@ -137,20 +137,23 @@ class CreateClassTestPaperTests {
     void should_create_a_paper_from_directly_authored_questions() {
         useCase.execute(questionsCommand());
 
-        var captor = ArgumentCaptor.forClass(ExamPaperItem.class);
+        ArgumentCaptor<ExamPaperItem> captor = ArgumentCaptor.forClass(ExamPaperItem.class);
         verify(examPaperItemRepository).save(captor.capture());
         assertThat(captor.getValue().getQuestionId()).isEqualTo(QUESTION_ID);
         assertThat(captor.getValue().getBlueprintSlotId()).isNull();
     }
 
-    /** Mã đề thứ hai phải lấy số hiệu kế tiếp, không đè "-P1" như luồng tạo bài cũ. */
+    /**
+     * The second paper variant must take the next number and must not overwrite "-P1" as the old
+     * creation flow did.
+     */
     @Test
     void should_number_the_next_paper_variant() {
         when(examPaperRepository.nextVariant(EXAM_ID)).thenReturn(2);
 
         useCase.execute(questionsCommand());
 
-        var captor = ArgumentCaptor.forClass(ExamPaper.class);
+        ArgumentCaptor<ExamPaper> captor = ArgumentCaptor.forClass(ExamPaper.class);
         verify(examPaperRepository).save(captor.capture());
         assertThat(captor.getValue().getCode()).endsWith("-P2");
     }
@@ -166,7 +169,7 @@ class CreateClassTestPaperTests {
 
     @Test
     void should_reject_direct_questions_for_centralized_exam() {
-        var centralized = new Exam();
+        Exam centralized = new Exam();
         centralized.setId(EXAM_ID);
         centralized.setKind(ExamKind.CENTRALIZED);
         centralized.setSchoolId(SCHOOL_ID);
@@ -191,7 +194,7 @@ class CreateClassTestPaperTests {
 
     @Test
     void should_reject_the_same_question_twice_in_one_paper() {
-        var command = new CreateExamPaperCommand(EXAM_ID, "questions", null, List.of(
+        CreateExamPaperCommand command = new CreateExamPaperCommand(EXAM_ID, "questions", null, List.of(
             section("Phần 1", QUESTION_ID),
             section("Phần 2", QUESTION_ID)
         ));
@@ -212,7 +215,7 @@ class CreateClassTestPaperTests {
 
     @Test
     void should_reject_empty_sections() {
-        var command = new CreateExamPaperCommand(EXAM_ID, "questions", null, List.of());
+        CreateExamPaperCommand command = new CreateExamPaperCommand(EXAM_ID, "questions", null, List.of());
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalStateException.class)
@@ -220,26 +223,27 @@ class CreateClassTestPaperTests {
     }
 
     /**
-     * Hợp đồng có chủ đích cho ô "chọn ngẫu nhiên": sinh ra item RỖNG nhưng vẫn gắn
-     * {@code blueprintSlotId}, để người ra đề có chỗ gán câu và UpdateExamPaperItemUseCase nhận ra
-     * đây là ô SELECTION (được sửa) chứ không phải FIXED (bị khoá).
+     * A deliberate contract for the "pick randomly" slot: it produces an EMPTY item but still
+     * attaches {@code blueprintSlotId}, so the author has a place to assign a question and
+     * UpdateExamPaperItemUseCase recognizes it as a SELECTION slot (editable) rather than FIXED
+     * (locked).
      */
     @Test
     void should_materialize_selection_slots_as_empty_items_bound_to_the_blueprint_slot() {
-        var versionId = UUID.randomUUID();
-        var sectionId = UUID.randomUUID();
-        var slotId = UUID.randomUUID();
-        var exam = classTest(UUID.randomUUID());
+        UUID versionId = UUID.randomUUID();
+        UUID sectionId = UUID.randomUUID();
+        UUID slotId = UUID.randomUUID();
+        Exam exam = classTest(UUID.randomUUID());
         exam.setBlueprintVersionId(versionId);
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(exam));
 
-        var version = new ExamBlueprintVersion();
+        ExamBlueprintVersion version = new ExamBlueprintVersion();
         version.setId(versionId);
         version.setCode("BP-V1");
         version.setTotalTimeLimitSeconds(0);
         when(examBlueprintVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
 
-        var section = new ExamBlueprintSection();
+        ExamBlueprintSection section = new ExamBlueprintSection();
         section.setId(sectionId);
         section.setBlueprintVersionId(versionId);
         section.setOrder(1);
@@ -247,7 +251,7 @@ class CreateClassTestPaperTests {
         section.setSectionWeight(BigDecimal.ONE);
         when(examBlueprintSectionRepository.findByBlueprintVersionId(versionId)).thenReturn(List.of(section));
 
-        var slot = new ExamBlueprintSlot();
+        ExamBlueprintSlot slot = new ExamBlueprintSlot();
         slot.setId(slotId);
         slot.setSectionId(sectionId);
         slot.setBlueprintVersionId(versionId);
@@ -258,7 +262,7 @@ class CreateClassTestPaperTests {
 
         useCase.execute(new CreateExamPaperCommand(EXAM_ID, "blueprint", null, null));
 
-        var captor = ArgumentCaptor.forClass(ExamPaperItem.class);
+        ArgumentCaptor<ExamPaperItem> captor = ArgumentCaptor.forClass(ExamPaperItem.class);
         verify(examPaperItemRepository).save(captor.capture());
         assertThat(captor.getValue().getQuestionId()).isNull();
         assertThat(captor.getValue().getBlueprintSlotId()).isEqualTo(slotId);
@@ -278,7 +282,7 @@ class CreateClassTestPaperTests {
     }
 
     private Exam classTest(UUID blueprintId) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(EXAM_ID);
         exam.setKind(ExamKind.CLASS_TEST);
         exam.setSchoolId(SCHOOL_ID);
@@ -288,7 +292,7 @@ class CreateClassTestPaperTests {
     }
 
     private Question question() {
-        var question = new Question();
+        Question question = new Question();
         question.setId(QUESTION_ID);
         question.setCreatedBy(TEACHER_ID);
         question.setSharing(QuestionSharing.SCHOOL_SHARED);

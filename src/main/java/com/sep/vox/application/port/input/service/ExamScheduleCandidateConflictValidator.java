@@ -1,10 +1,12 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -68,7 +70,7 @@ public class ExamScheduleCandidateConflictValidator {
 
         // Thí sinh đã miễn thi hoặc đã huỷ không vào phòng nên không chiếm chỗ, và vì thế cũng
         // không thể bị xếp trùng — dùng chung cách phân loại với ExamCandidateStatus.
-        var occupying = candidates.stream()
+        List<ExamCandidate> occupying = candidates.stream()
             .filter(candidate -> !ExamCandidateStatus.isNonScorable(candidate.getStatus()))
             .toList();
         if (occupying.isEmpty()) {
@@ -76,12 +78,12 @@ public class ExamScheduleCandidateConflictValidator {
         }
 
         // Giá trị nullable nên phải dùng HashMap.put; Collectors.toMap ném NPE khi value là null.
-        var currentScheduleByStudent = new HashMap<UUID, UUID>();
-        for (var candidate : occupying) {
+        Map<UUID, UUID> currentScheduleByStudent = new HashMap<UUID, UUID>();
+        for (ExamCandidate candidate : occupying) {
             currentScheduleByStudent.put(candidate.getStudentId(), candidate.getScheduleId());
         }
 
-        var conflictingStudentIds = examCandidateRepository
+        List<UUID> conflictingStudentIds = examCandidateRepository
             .findConflictsForStudents(currentScheduleByStudent.keySet(), start, end, null).stream()
             .filter(conflict -> !Objects.equals(
                 conflict.scheduleId(), currentScheduleByStudent.get(conflict.studentId())))
@@ -112,12 +114,12 @@ public class ExamScheduleCandidateConflictValidator {
      * {@code studentBusySlots} dành cho màn hình.
      */
     private String buildMessage(List<UUID> conflictingStudentIds) {
-        var names = resolveNames(conflictingStudentIds);
+        List<String> names = resolveNames(conflictingStudentIds);
         if (names.size() == 1) {
             return "Học sinh " + names.getFirst() + " đã có ca thi khác trong khoảng thời gian này";
         }
-        var shown = names.stream().limit(MAX_NAMES_IN_MESSAGE).toList();
-        var message = new StringBuilder()
+        List<String> shown = names.stream().limit(MAX_NAMES_IN_MESSAGE).toList();
+        StringBuilder message = new StringBuilder()
             .append(names.size())
             .append(" học sinh đã có ca thi khác trong khoảng thời gian này: ")
             .append(String.join(", ", shown));
@@ -132,14 +134,14 @@ public class ExamScheduleCandidateConflictValidator {
      * thì lùi về id: dựng message tuyệt đối không được ném và che mất lỗi thật.
      */
     private List<String> resolveNames(List<UUID> studentIds) {
-        var nameById = new HashMap<UUID, String>();
-        for (var user : userRepository.findByIdIn(studentIds)) {
+        Map<UUID, String> nameById = new HashMap<UUID, String>();
+        for (User user : userRepository.findByIdIn(studentIds)) {
             if (user.getFullName() != null && user.getFullName().value() != null) {
                 nameById.put(user.getId(), user.getFullName().value());
             }
         }
-        var names = new ArrayList<String>(studentIds.size());
-        for (var studentId : studentIds) {
+        List<String> names = new ArrayList<String>(studentIds.size());
+        for (UUID studentId : studentIds) {
             names.add(nameById.getOrDefault(studentId, studentId.toString()));
         }
         return names;

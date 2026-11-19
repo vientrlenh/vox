@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -57,33 +58,33 @@ public class ForceSuspendSubscriptionUseCase implements IUseCase<ForceSuspendSub
         // Quyền đã chặn ở @PreAuthorize("hasRole('SYSTEM_ADMIN')"). Không kiểm lại isSystemAdmin() ở
         // đây: System Admin không thuộc trường nào nên không có "trường của mình" để đối chiếu, và
         // vai trò thì controller đã trả lời xong.
-        var reason = StringNormalization.trimAndCollapseSpaces(input.reason());
+        String reason = StringNormalization.trimAndCollapseSpaces(input.reason());
         if (reason == null || reason.isBlank()) {
             throw new IllegalArgumentException("Phải nêu lý do đình chỉ gói đăng ký.");
         }
 
-        var subscription = schoolSubscriptionRepository.findById(input.subscriptionId())
+        SchoolSubscription subscription = schoolSubscriptionRepository.findById(input.subscriptionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
         if (subscription.getStatus() != SchoolSubscriptionStatus.ACTIVE) {
             throw new IllegalStateException("Chỉ đình chỉ được gói đang ở trạng thái đang hoạt động");
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         // Cắt quyền giữa ca thi là làm hỏng bài của học sinh đang ngồi trong phòng -- lỗi không thuộc
         // về các em. Bắt đợi hết ca rồi đình chỉ: chậm vài tiếng, đổi lại không ai mất bài.
-        var hasOngoingExam = examScheduleRepository.findBySchoolId(subscription.getSchoolId()).stream()
+        boolean hasOngoingExam = examScheduleRepository.findBySchoolId(subscription.getSchoolId()).stream()
             .anyMatch(schedule -> schedule.isOngoingAt(now));
         if (hasOngoingExam) {
             throw new IllegalStateException(
                 "Trường đang có ca thi diễn ra, không thể đình chỉ ngay bây giờ. Vui lòng thử lại sau khi ca thi kết thúc.");
         }
 
-        var actorId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID actorId = userContextPort.getCurrentAuthenticatedUserId();
         subscription.setStatus(SchoolSubscriptionStatus.SUSPENDED);
         subscription.setSuspendedAt(now);
         subscription.setSuspendedReason(reason);
         subscription.setSuspendedBy(actorId);
-        var saved = schoolSubscriptionRepository.save(subscription);
+        SchoolSubscription saved = schoolSubscriptionRepository.save(subscription);
 
         schoolSubscriptionEventRepository.save(SchoolSubscriptionEvent.suspended(
             saved.getSchoolId(), saved.getId(), actorId, reason, now));

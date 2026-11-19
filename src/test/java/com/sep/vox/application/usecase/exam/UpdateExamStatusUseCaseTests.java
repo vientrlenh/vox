@@ -34,6 +34,7 @@ import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -139,8 +140,8 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_reject_schedule_action_when_class_test_window_shorter_than_exam_time() {
-        // Khung mở/đóng 30 phút, thời gian làm bài đã tính ra 60 phút.
-        var exam = classTest(3600, open, open.plus(30, ChronoUnit.MINUTES));
+        // An open/close window of 30 minutes, with the computed exam duration being 60 minutes.
+        Exam exam = classTest(3600, open, open.plus(30, ChronoUnit.MINUTES));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
@@ -150,30 +151,31 @@ class UpdateExamStatusUseCaseTests {
     }
 
     /**
-     * Lên lịch bài trên lớp KHÔNG còn tự công bố ca thi: ca phải đã được công bố tay từ trước
-     * (UpdateExamScheduleStatusUseCase), và action này không ghi gì lên ca — giống kỳ thi tập trung.
+     * Scheduling a class test NO LONGER publishes its sessions automatically: the session must
+     * already have been published by hand beforehand (UpdateExamScheduleStatusUseCase), and this
+     * action writes nothing to the session -- same as a centralized exam.
      */
     @Test
     void should_schedule_class_test_when_all_schedules_published() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule schedule = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         givenScheduleReady(schedule);
 
-        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+        ExamDto result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
 
         assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
         assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.PUBLISHED);
         verify(examScheduleRepository, never()).save(any());
     }
 
-    /** Bản song sinh của should_reject_schedule_when_centralized_exam_has_draft_schedule. */
+    /** Twin of should_reject_schedule_when_centralized_exam_has_draft_schedule. */
     @Test
     void should_reject_schedule_when_class_test_has_draft_schedule() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         givenScheduleReady(schedule);
 
@@ -187,9 +189,9 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_reject_schedule_when_token_quota_exceeded() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         givenScheduleReady(schedule);
         doThrow(new PlanLimitExceededException("Đã vượt quá hạn mức"))
@@ -203,9 +205,9 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_reject_schedule_when_class_test_schedule_has_no_room() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
         schedule.setSchoolRoomId(null);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
 
@@ -216,9 +218,9 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_reject_schedule_when_class_test_schedule_has_no_proctor() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         when(examScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(0L);
 
@@ -229,12 +231,12 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_reject_schedule_when_class_test_candidate_has_no_schedule() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         when(examScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(1L);
-        var unassigned = assignedCandidate(schedule.getId());
+        ExamCandidate unassigned = assignedCandidate(schedule.getId());
         unassigned.setScheduleId(null);
         when(examCandidateRepository.findByExamId(examId)).thenReturn(List.of(unassigned));
 
@@ -245,12 +247,12 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_reject_schedule_when_class_test_candidate_has_no_paper() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         when(examScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(1L);
-        var withoutPaper = assignedCandidate(schedule.getId());
+        ExamCandidate withoutPaper = assignedCandidate(schedule.getId());
         withoutPaper.setAssignedPaperId(null);
         when(examCandidateRepository.findByExamId(examId)).thenReturn(List.of(withoutPaper));
 
@@ -274,7 +276,7 @@ class UpdateExamStatusUseCaseTests {
     @Test
     void should_reject_schedule_when_centralized_exam_has_no_candidate() {
         givenCentralizedExam();
-        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         when(examScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(1L);
         when(examCandidateRepository.countByExamId(examId)).thenReturn(0L);
@@ -287,7 +289,7 @@ class UpdateExamStatusUseCaseTests {
     @Test
     void should_reject_schedule_when_centralized_exam_has_no_paper() {
         givenCentralizedExam();
-        var schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule schedule = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         when(examScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(1L);
         when(examPaperRepository.findByExamId(examId)).thenReturn(List.of());
@@ -298,14 +300,15 @@ class UpdateExamStatusUseCaseTests {
     }
 
     /**
-     * Ca thi còn DRAFT thì học sinh và giám thị chưa nhìn thấy — kỳ thi "đã lên lịch" mà có ca
-     * không ai vào được. Công bố từng ca là thao tác riêng nên phải làm xong trước khi lên lịch.
+     * A DRAFT session is invisible to students and proctors -- an exam that is "scheduled" with a
+     * session nobody can enter. Publishing each session is a separate action, so it must be done
+     * before scheduling.
      */
     @Test
     void should_reject_schedule_when_centralized_exam_has_draft_schedule() {
         givenCentralizedExam();
-        var draft = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
-        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule draft = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(draft, published));
         when(examScheduleProctorRepository.countByScheduleId(draft.getId())).thenReturn(1L);
         when(examScheduleProctorRepository.countByScheduleId(published.getId())).thenReturn(1L);
@@ -320,31 +323,31 @@ class UpdateExamStatusUseCaseTests {
     @Test
     void should_schedule_centralized_exam_when_ready() {
         givenCentralizedExam();
-        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule schedule = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         when(examScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(1L);
         when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(new ExamPaper()));
 
-        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+        ExamDto result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
 
         assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
     }
 
     /**
-     * Chủ tịch hội đồng chạy trọn quy trình kỳ thi tập trung nên cũng là người bấm lên lịch. Trước
-     * đây nhánh CENTRALIZED chỉ nhận quản trị trường, khiến giáo viên chủ tịch làm xong mọi bước rồi
-     * đứng lại ở nút cuối cùng.
+     * The council chair runs the whole centralized-exam workflow, so they are also the one who
+     * clicks schedule. Previously the CENTRALIZED branch only accepted the school admin, so the
+     * chair teacher finished every step and was then stuck at the last button.
      */
     @Test
     void should_schedule_centralized_exam_when_caller_is_the_chair() {
         givenCentralizedExam();
         givenCallerIsChairInsteadOfSchoolAdmin();
-        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule schedule = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         when(examScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(1L);
         when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(new ExamPaper()));
 
-        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+        ExamDto result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
 
         assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
     }
@@ -365,21 +368,23 @@ class UpdateExamStatusUseCaseTests {
     // --- Ca đã huỷ/dời không còn diễn ra, nên không được tham gia bất kỳ điều kiện lên lịch nào ---
 
     /**
-     * Ca huỷ được ngay từ DRAFT, lúc chưa gán phòng lẫn giám thị. Nếu vẫn soi phòng/giám thị của nó
-     * thì kỳ thi bị chặn bởi một ca sẽ không bao giờ diễn ra, kèm thông báo không nói rõ ca nào — mà
-     * lối thoát duy nhất là đi gán phòng cho ca đã huỷ, hoặc gỡ hết giám thị rồi xoá ca.
+     * A session can be cancelled straight from DRAFT, before any room or proctor is assigned. If
+     * its room/proctors were still inspected, the exam would be blocked by a session that will
+     * never take place, with a message that does not say which session -- and the only way out
+     * would be assigning a room to the cancelled session, or removing all proctors and then
+     * deleting the session.
      */
     @Test
     void should_ignore_cancelled_schedule_when_checking_room_and_proctor() {
         givenCentralizedExam();
-        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
-        var cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
         cancelled.setSchoolRoomId(null);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(published, cancelled));
         when(examScheduleProctorRepository.countByScheduleId(published.getId())).thenReturn(1L);
         when(examScheduleProctorRepository.countByScheduleId(cancelled.getId())).thenReturn(0L);
 
-        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+        ExamDto result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
 
         assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
     }
@@ -387,23 +392,26 @@ class UpdateExamStatusUseCaseTests {
     @Test
     void should_ignore_moved_schedule_when_checking_room_and_proctor() {
         givenCentralizedExam();
-        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
-        var moved = schedule(ExamScheduleStatus.MOVED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule moved = schedule(ExamScheduleStatus.MOVED, open, open.plus(2, ChronoUnit.HOURS));
         moved.setSchoolRoomId(null);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(published, moved));
         when(examScheduleProctorRepository.countByScheduleId(published.getId())).thenReturn(1L);
         when(examScheduleProctorRepository.countByScheduleId(moved.getId())).thenReturn(0L);
 
-        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+        ExamDto result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
 
         assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
     }
 
-    /** Bỏ ca huỷ ra rồi không còn ca nào thì kỳ thi rỗng, không phải "đã đủ điều kiện". */
+    /**
+     * If the cancelled sessions are set aside and no session remains, the exam is empty, not
+     * "ready".
+     */
     @Test
     void should_reject_schedule_when_every_centralized_schedule_is_cancelled() {
         givenCentralizedExam();
-        var cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(cancelled));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
@@ -414,25 +422,25 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_ignore_cancelled_schedule_when_class_test_schedule_ready() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
-        var cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
         cancelled.setSchoolRoomId(null);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(published, cancelled));
         when(examScheduleProctorRepository.countByScheduleId(cancelled.getId())).thenReturn(0L);
         givenScheduleReady(published);
 
-        var result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
+        ExamDto result = useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null));
 
         assertThat(result.status()).isEqualTo(ExamStatus.SCHEDULED.name());
     }
 
     @Test
     void should_reject_schedule_when_every_class_test_schedule_is_cancelled() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        var cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule cancelled = schedule(ExamScheduleStatus.CANCELLED, open, open.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(cancelled));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateExamStatusCommand(examId, "SCHEDULE", null)))
@@ -442,12 +450,12 @@ class UpdateExamStatusUseCaseTests {
     }
 
     /**
-     * Trạng thái phải được kiểm trước hạn mức gói: bấm SCHEDULE trên bài không còn DRAFT mà báo lỗi
-     * "vượt quá giới hạn gói" thì người dùng đi sửa nhầm chỗ.
+     * The status must be checked before the plan quota: pressing SCHEDULE on a test that is no
+     * longer DRAFT and getting "plan limit exceeded" would send the user to fix the wrong thing.
      */
     @Test
     void should_report_invalid_status_before_plan_limit_when_exam_not_draft() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         exam.setStatus(ExamStatus.IN_PROGRESS);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.empty());
@@ -459,7 +467,7 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_reject_cancel_when_exam_already_published_results() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         exam.setStatus(ExamStatus.RESULTS_PUBLISHED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
@@ -472,7 +480,7 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_reject_cancel_when_exam_already_cancelled() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         exam.setStatus(ExamStatus.CANCELLED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
@@ -484,10 +492,10 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_allow_cancel_from_draft() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
-        var result = useCase.execute(new UpdateExamStatusCommand(examId, "CANCEL", null));
+        ExamDto result = useCase.execute(new UpdateExamStatusCommand(examId, "CANCEL", null));
 
         assertThat(result).isNotNull();
         assertThat(exam.getStatus()).isEqualTo(ExamStatus.CANCELLED);
@@ -495,7 +503,7 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_allow_cancel_from_in_progress() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         exam.setStatus(ExamStatus.IN_PROGRESS);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
@@ -505,17 +513,17 @@ class UpdateExamStatusUseCaseTests {
     }
 
     /**
-     * Đóng bài mà bỏ ca lại là ca ở PUBLISHED vĩnh viễn — không đường nào chuyển nó sang COMPLETED
-     * trừ khi có người bấm tay từng ca.
+     * Closing the test but leaving its sessions behind means a session stays PUBLISHED forever --
+     * there is no way to move it to COMPLETED unless someone clicks each session by hand.
      */
     @Test
     void should_close_schedules_when_exam_is_closed() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         exam.setStatus(ExamStatus.IN_PROGRESS);
-        // Ca đã kết thúc từ hôm qua và ca của tuần sau chưa tới giờ.
-        var ended = schedule(ExamScheduleStatus.PUBLISHED,
+        // A session that ended yesterday and a session next week that has not started yet.
+        ExamSchedule ended = schedule(ExamScheduleStatus.PUBLISHED,
             open.minus(1, ChronoUnit.DAYS), open.minus(22, ChronoUnit.HOURS));
-        var notStarted = schedule(ExamScheduleStatus.PUBLISHED,
+        ExamSchedule notStarted = schedule(ExamScheduleStatus.PUBLISHED,
             Instant.now().plus(7, ChronoUnit.DAYS), Instant.now().plus(8, ChronoUnit.DAYS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(ended, notStarted));
@@ -531,9 +539,9 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_reject_close_when_ongoing_schedule_still_has_active_session() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         exam.setStatus(ExamStatus.IN_PROGRESS);
-        var ongoing = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule ongoing = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examScheduleRepository.findByExamIdAndInSchedule(any(), any())).thenReturn(List.of(ongoing));
         when(examSessionRepository.countActiveByExamId(examId)).thenReturn(2L);
@@ -545,12 +553,15 @@ class UpdateExamStatusUseCaseTests {
         verify(examScheduleRepository, never()).save(any());
     }
 
-    /** Cả lớp nộp xong thì vẫn phải đóng sớm được — đây là lý do không chặn cứng theo khung giờ. */
+    /**
+     * Even when the whole class has submitted, the teacher must still be able to close early --
+     * this is why there is no hard block by time window.
+     */
     @Test
     void should_allow_close_while_schedule_is_ongoing_but_nobody_is_working() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         exam.setStatus(ExamStatus.IN_PROGRESS);
-        var ongoing = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule ongoing = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examScheduleRepository.findByExamIdAndInSchedule(any(), any())).thenReturn(List.of(ongoing));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(ongoing));
@@ -563,15 +574,16 @@ class UpdateExamStatusUseCaseTests {
     }
 
     /**
-     * Ca thi còn PUBLISHED thì vẫn lọt qua isVisibleToStudent()/allowsAttendance() và các truy vấn
-     * hard-code status = 'PUBLISHED' — huỷ kỳ thi mà không kéo theo ca là để lại ca "sẵn sàng".
+     * A PUBLISHED session still slips through isVisibleToStudent()/allowsAttendance() and the
+     * queries that hard-code status = 'PUBLISHED' -- cancelling the exam without taking its
+     * sessions along leaves a session "ready".
      */
     @Test
     void should_cancel_schedules_when_exam_is_cancelled() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         exam.setStatus(ExamStatus.SCHEDULED);
-        var draft = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
-        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule draft = schedule(ExamScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(draft, published));
 
@@ -586,10 +598,10 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_not_cancel_completed_or_moved_schedules() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         exam.setStatus(ExamStatus.CLOSED);
-        var completed = schedule(ExamScheduleStatus.COMPLETED, open, open.plus(2, ChronoUnit.HOURS));
-        var moved = schedule(ExamScheduleStatus.MOVED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule completed = schedule(ExamScheduleStatus.COMPLETED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule moved = schedule(ExamScheduleStatus.MOVED, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(completed, moved));
 
@@ -602,9 +614,9 @@ class UpdateExamStatusUseCaseTests {
 
     @Test
     void should_not_change_schedules_when_cancel_transition_is_rejected() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         exam.setStatus(ExamStatus.RESULTS_PUBLISHED);
-        var published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
+        ExamSchedule published = schedule(ExamScheduleStatus.PUBLISHED, open, open.plus(2, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(published));
 
@@ -615,16 +627,17 @@ class UpdateExamStatusUseCaseTests {
     }
 
     /**
-     * Kỳ thi tập trung dựng ở DRAFT, người gọi là SCHOOL_ADMIN cùng trường, và mặc định đã đủ thí
-     * sinh + mã đề — từng test tự làm hỏng đúng một điều kiện. Nhánh chủ tịch hội đồng xem
+     * The centralized exam is built in DRAFT, the caller is a SCHOOL_ADMIN of the same school, and
+     * by default it already has enough candidates + paper variants -- each test breaks exactly one
+     * condition itself. For the council chair branch see
      * {@link #givenCallerIsChairInsteadOfSchoolAdmin()}.
      */
     private void givenCentralizedExam() {
-        var exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
+        Exam exam = classTest(3600, open, open.plus(2, ChronoUnit.HOURS));
         exam.setKind(ExamKind.CENTRALIZED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
-        var schoolUser = mock(SchoolUser.class);
+        SchoolUser schoolUser = mock(SchoolUser.class);
         when(schoolUser.getSchoolId()).thenReturn(schoolId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(schoolUser));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(
@@ -646,24 +659,26 @@ class UpdateExamStatusUseCaseTests {
     }
 
     private void givenGenerousPlan() {
-        var subscription = mock(SchoolSubscription.class);
+        SchoolSubscription subscription = mock(SchoolSubscription.class);
         when(subscription.getId()).thenReturn(subscriptionId);
         when(subscription.getSubscriptionPlanId()).thenReturn(planId);
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(subscription));
 
-        var plan = mock(SubscriptionPlan.class);
+        SubscriptionPlan plan = mock(SubscriptionPlan.class);
         when(plan.getMaxTimePerAttemptMin()).thenReturn(null);
         when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
 
         when(examCandidateRepository.countByExamId(examId)).thenReturn(1L);
-        // classTestTokenQuotaGuardService is a plain mock: requireWithinTokenQuota() no-ops by default,
-        // i.e. "đủ hạn mức". Chi tiết tính toán GRADING/CLASS_TEST/hạn mức cá nhân được test riêng ở
-        // ClassTestTokenQuotaGuardServiceTests; ở đây chỉ cần xác nhận UpdateExamStatusUseCase có gọi
-        // guard và tôn trọng exception mà guard ném ra (xem should_reject_schedule_when_token_quota_exceeded).
+        // classTestTokenQuotaGuardService is a plain mock: requireWithinTokenQuota() no-ops by
+        // default, i.e. "quota is sufficient". The calculation details for
+        // GRADING/CLASS_TEST/personal quota are tested separately in
+        // ClassTestTokenQuotaGuardServiceTests; here it is enough to confirm that
+        // UpdateExamStatusUseCase calls the guard and respects the exception the guard throws (see
+        // should_reject_schedule_when_token_quota_exceeded).
     }
 
     private Exam classTest(Integer examTimeDurationSecond, Instant openAt, Instant closeAt) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         exam.setKind(ExamKind.CLASS_TEST);
@@ -676,7 +691,7 @@ class UpdateExamStatusUseCaseTests {
     }
 
     private ExamSchedule schedule(ExamScheduleStatus status, Instant from, Instant to) {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(UUID.randomUUID());
         schedule.setExamId(examId);
         schedule.setSchoolRoomId(roomId);
@@ -693,7 +708,7 @@ class UpdateExamStatusUseCaseTests {
     }
 
     private ExamCandidate assignedCandidate(UUID scheduleId) {
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(UUID.randomUUID());
         candidate.setExamId(examId);
         candidate.setScheduleId(scheduleId);

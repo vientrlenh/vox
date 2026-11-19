@@ -15,6 +15,7 @@ import com.sep.vox.application.port.input.usecase.recording.RecordRecordingPartC
 import com.sep.vox.interfaces.kafka.dto.RecordingPartChangedEventDto;
 import com.sep.vox.interfaces.kafka.mapper.RecordingPartChangedCommandMapper;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
@@ -48,8 +49,8 @@ public class RecordingPartChangedConsumer {
             record.partition(), record.offset(), record.key()
         );
         try {
-            var payload = jsonMapper.valueToTree(record.value());
-            var dto = jsonMapper.treeToValue(payload, RecordingPartChangedEventDto.class);
+            JsonNode payload = jsonMapper.valueToTree(record.value());
+            RecordingPartChangedEventDto dto = jsonMapper.treeToValue(payload, RecordingPartChangedEventDto.class);
             recordRecordingPartChangedUseCase.execute(RecordingPartChangedCommandMapper.toCommand(dto));
 
             LOGGER.info(

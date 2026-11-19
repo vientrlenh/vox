@@ -15,7 +15,11 @@ import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTra
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.query.dto.GradingAssignmentFilter;
+import com.sep.vox.application.query.dto.GradingAssignmentRowInfo;
+import com.sep.vox.application.query.dto.GradingStatsInfo;
+import com.sep.vox.application.query.dto.GradingTaskInfo;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamGradingAssignmentJpaEntity;
@@ -57,7 +61,7 @@ class GradingExamKindFilterQueryTests {
     @BeforeEach
     void seed() {
         schoolId = UUID.randomUUID();
-        var studentId = persist(new UserJpaEntity(null, "hs-" + UUID.randomUUID() + "@vox.test", "hash",
+        UUID studentId = persist(new UserJpaEntity(null, "hs-" + UUID.randomUUID() + "@vox.test", "hash",
             null, "Trần Quang Thiên", null, LocalDate.of(2008, 1, 1), null, null, "ACTIVE",
             now, now, null, null)).getId();
 
@@ -70,17 +74,18 @@ class GradingExamKindFilterQueryTests {
 
     @Test
     void should_list_only_centralized_rows_on_the_coordination_board() {
-        var page = examGradingQueryRepository.searchAssignments(filter("CENTRALIZED"), 1, 20);
+        PageResult<GradingAssignmentRowInfo> page = examGradingQueryRepository.searchAssignments(filter("CENTRALIZED"), 1, 20);
 
         assertThat(page.content()).singleElement()
             .satisfies(row -> assertThat(row.examName()).isEqualTo("Kỳ thi cuối kỳ"));
-        // Tổng phải đi cùng nội dung, nếu không FE dựng ra trang rỗng không bấm được.
+        // The total must go together with the content, otherwise the FE builds an empty page that
+        // cannot be clicked.
         assertThat(page.totalElements()).isEqualTo(1);
     }
 
     @Test
     void should_list_only_class_test_rows_when_asked_for_class_tests() {
-        var page = examGradingQueryRepository.searchAssignments(filter("CLASS_TEST"), 1, 20);
+        PageResult<GradingAssignmentRowInfo> page = examGradingQueryRepository.searchAssignments(filter("CLASS_TEST"), 1, 20);
 
         assertThat(page.content()).singleElement()
             .satisfies(row -> assertThat(row.examName()).isEqualTo("Kiểm tra 15 phút"));
@@ -96,8 +101,8 @@ class GradingExamKindFilterQueryTests {
 
     @Test
     void should_count_only_the_asked_kind_in_stats() {
-        var centralized = examGradingQueryRepository.stats(schoolId, null, null, "CENTRALIZED");
-        var classTest = examGradingQueryRepository.stats(schoolId, null, null, "CLASS_TEST");
+        GradingStatsInfo centralized = examGradingQueryRepository.stats(schoolId, null, null, "CENTRALIZED");
+        GradingStatsInfo classTest = examGradingQueryRepository.stats(schoolId, null, null, "CLASS_TEST");
 
         assertThat(centralized.total()).isEqualTo(1);
         assertThat(centralized.assigned()).isEqualTo(1);
@@ -108,7 +113,7 @@ class GradingExamKindFilterQueryTests {
 
     @Test
     void should_keep_class_test_assignments_out_of_the_centralized_teacher_queue() {
-        var page = examGradingQueryRepository
+        PageResult<GradingTaskInfo> page = examGradingQueryRepository
             .findTasksByTeacherId(teacherId, "CENTRALIZED", null, null, 1, 20);
 
         assertThat(page.content()).singleElement()
@@ -118,7 +123,7 @@ class GradingExamKindFilterQueryTests {
 
     @Test
     void should_keep_centralized_assignments_out_of_the_class_test_queue() {
-        var page = examGradingQueryRepository
+        PageResult<GradingTaskInfo> page = examGradingQueryRepository
             .findTasksByTeacherId(teacherId, "CLASS_TEST", null, null, 1, 20);
 
         assertThat(page.content()).singleElement()
@@ -127,14 +132,15 @@ class GradingExamKindFilterQueryTests {
     }
 
     /**
-     * Auto-assign là hành động của nhà trường; bài trên lớp lọt vào đây là mỗi lần chạy
-     * lại gắp lên một mớ bài rồi bị chặn ở tầng dưới.
+     * Auto-assign is an action of the school; if class-test submissions slip in here, every run
+     * picks up a bunch of submissions and then gets blocked at a lower layer.
      */
     @Test
     void should_never_offer_class_test_results_to_auto_assign() {
-        // Bài đã có phân công đang mở nên tập trả về rỗng; điều cần chốt là bài trên lớp
-        // không xuất hiện kể cả khi trạng thái của nó hợp lệ với vòng chấm.
-        var assignable = examGradingQueryRepository.findAssignableResultIds(
+        // The submission already has an open assignment, so the returned set is empty; what has to
+        // be pinned is that the class-test submission does not appear even when its status is valid
+        // for the grading round.
+        List<UUID> assignable = examGradingQueryRepository.findAssignableResultIds(
             schoolId, null, null, List.of("PENDING_REVIEW", "RELEASED"));
 
         assertThat(assignable).isEmpty();
@@ -146,16 +152,16 @@ class GradingExamKindFilterQueryTests {
     }
 
     private void seedExam(String kind, String name, UUID studentId) {
-        var paperId = UUID.randomUUID();
-        var examId = persist(new ExamJpaEntity(null, null, null, "EX-" + UUID.randomUUID(), name,
+        UUID paperId = UUID.randomUUID();
+        UUID examId = persist(new ExamJpaEntity(null, null, null, "EX-" + UUID.randomUUID(), name,
             null, schoolId, UUID.randomUUID(), kind, "STUDENT_DEVICE", "CLOSED",
             1, 900, "HIGHEST", null, null, null, null, UUID.randomUUID(), false,
             now, now, null, null)).getId();
-        var candidateId = persist(new ExamCandidateJpaEntity(null, examId, studentId, paperId, null,
+        UUID candidateId = persist(new ExamCandidateJpaEntity(null, examId, studentId, paperId, null,
             "COMPLETED", now, now, null, null, null)).getId();
-        var sessionId = persist(new ExamSessionJpaEntity(null, examId, candidateId, paperId, now, now,
+        UUID sessionId = persist(new ExamSessionJpaEntity(null, examId, candidateId, paperId, now, now,
             "GRADED", false, null)).getId();
-        var candidateResultId = persist(new ExamCandidateResultJpaEntity(null, examId, candidateId, sessionId,
+        UUID candidateResultId = persist(new ExamCandidateResultJpaEntity(null, examId, candidateId, sessionId,
             UUID.randomUUID(), 1, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
             new BigDecimal("6.50"), "PENDING_REVIEW", null, null, now, now, null, null)).getId();
         persist(new ExamGradingAssignmentJpaEntity(null, candidateResultId, teacherId,

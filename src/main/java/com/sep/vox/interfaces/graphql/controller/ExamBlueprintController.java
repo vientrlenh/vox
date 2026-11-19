@@ -76,18 +76,18 @@ public class ExamBlueprintController {
 
     @QueryMapping(name = "examBlueprint")
     public ExamBlueprintDto examBlueprint(@Argument(name = "id") UUID id) {
-        var startedAt = System.nanoTime();
+        long startedAt = System.nanoTime();
         LOGGER.info("[blueprint-perf] query examBlueprint start id={}", id);
-        var dto = viewExamBlueprintDetailsUseCase.execute(new ViewExamBlueprintDetailsQuery(id));
+        ExamBlueprintDto dto = viewExamBlueprintDetailsUseCase.execute(new ViewExamBlueprintDetailsQuery(id));
         LOGGER.info("[blueprint-perf] query examBlueprint done id={} tookMs={}", id, (System.nanoTime() - startedAt) / 1_000_000);
         return dto;
     }
 
     @QueryMapping(name = "examBlueprintVersion")
     public ExamBlueprintVersionDto examBlueprintVersion(@Argument(name = "id") UUID id) {
-        var startedAt = System.nanoTime();
+        long startedAt = System.nanoTime();
         LOGGER.info("[blueprint-perf] query examBlueprintVersion start id={}", id);
-        var dto = examBlueprintVersionRepository.findById(id)
+        ExamBlueprintVersionDto dto = examBlueprintVersionRepository.findById(id)
             .map(version -> {
                 viewExamBlueprintDetailsUseCase.execute(new ViewExamBlueprintDetailsQuery(version.getBlueprintId()));
                 return ExamBlueprintVersionDtoMapper.toDto(version);
@@ -101,7 +101,7 @@ public class ExamBlueprintController {
     public List<ExamBlueprintVersionDto> versions(
             ExamBlueprintDto source,
             @Argument(name = "status") ExamBlueprintVersionStatus status) {
-        var versions = examBlueprintVersionRepository.findByBlueprintId(source.id()).stream()
+        List<ExamBlueprintVersionDto> versions = examBlueprintVersionRepository.findByBlueprintId(source.id()).stream()
             .map(ExamBlueprintVersionDtoMapper::toDto)
             .toList();
         return status == null
@@ -123,7 +123,7 @@ public class ExamBlueprintController {
 
     @SchemaMapping(typeName = "ExamBlueprint", field = "sectionCount")
     public int blueprintSectionCount(ExamBlueprintDto source) {
-        var current = currentVersion(source);
+        ExamBlueprintVersionDto current = currentVersion(source);
         return current == null
             ? 0
             : examBlueprintSectionRepository.findByBlueprintVersionId(current.id()).size();

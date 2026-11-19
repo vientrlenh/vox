@@ -65,9 +65,9 @@ class ExamScheduleCandidateConflictValidatorTests {
 
     @Test
     void should_pass_when_the_only_overlap_is_the_candidate_own_current_schedule() {
-        // Học sinh đang ở chính ca busyScheduleId; xếp họ sang ca khác là THAY THẾ chỗ cũ, nên
-        // dòng xung đột trỏ về ca cũ không phải là trùng giờ.
-        var candidate = candidate(busyScheduleId);
+        // The student is currently in busyScheduleId itself; moving them to another session
+        // REPLACES the old spot, so a conflict row pointing at the old session is not an overlap.
+        ExamCandidate candidate = candidate(busyScheduleId);
         givenConflicts(new StudentScheduleConflict(candidate.getStudentId(), busyScheduleId, start, end));
 
         assertThatCode(() -> validator.requireCandidatesFree(List.of(candidate), start, end))
@@ -76,7 +76,7 @@ class ExamScheduleCandidateConflictValidatorTests {
 
     @Test
     void should_reject_when_a_student_has_an_overlapping_schedule_in_another_exam() {
-        var candidate = candidate(null);
+        ExamCandidate candidate = candidate(null);
         givenConflicts(new StudentScheduleConflict(candidate.getStudentId(), busyScheduleId, start, end));
         givenNames(candidate.getStudentId(), "Nguyễn Văn An");
 
@@ -88,10 +88,10 @@ class ExamScheduleCandidateConflictValidatorTests {
 
     @Test
     void should_ignore_each_candidate_own_current_schedule_when_checking_a_batch() {
-        // Hai thí sinh đang ở HAI ca hiện tại khác nhau, cả hai ca đều chồng khung giờ đích.
-        // Cả hai dòng xung đột đều là dòng của chính họ nên không ai bị chặn.
-        var first = candidate(UUID.randomUUID());
-        var second = candidate(UUID.randomUUID());
+        // Two candidates are in TWO different current sessions, and both sessions overlap the
+        // target time window. Both conflict rows are their own rows, so nobody is blocked.
+        ExamCandidate first = candidate(UUID.randomUUID());
+        ExamCandidate second = candidate(UUID.randomUUID());
         givenConflicts(
             new StudentScheduleConflict(first.getStudentId(), first.getScheduleId(), start, end),
             new StudentScheduleConflict(second.getStudentId(), second.getScheduleId(), start, end));
@@ -110,9 +110,9 @@ class ExamScheduleCandidateConflictValidatorTests {
 
     @Test
     void should_ignore_exempted_and_cancelled_candidates() {
-        var exempted = candidate(null);
+        ExamCandidate exempted = candidate(null);
         exempted.setStatus(ExamCandidateStatus.EXEMPTED);
-        var cancelled = candidate(null);
+        ExamCandidate cancelled = candidate(null);
         cancelled.setStatus(ExamCandidateStatus.CANCELLED);
 
         validator.requireCandidatesFree(List.of(exempted, cancelled), start, end);
@@ -122,7 +122,7 @@ class ExamScheduleCandidateConflictValidatorTests {
 
     @Test
     void should_still_check_blocked_candidates() {
-        var blocked = candidate(null);
+        ExamCandidate blocked = candidate(null);
         blocked.setBlockedAt(start);
         givenConflicts(new StudentScheduleConflict(blocked.getStudentId(), busyScheduleId, start, end));
 
@@ -139,8 +139,8 @@ class ExamScheduleCandidateConflictValidatorTests {
 
     @Test
     void should_name_the_conflicting_students_in_the_message() {
-        var first = candidate(null);
-        var second = candidate(null);
+        ExamCandidate first = candidate(null);
+        ExamCandidate second = candidate(null);
         givenConflicts(
             new StudentScheduleConflict(first.getStudentId(), busyScheduleId, start, end),
             new StudentScheduleConflict(second.getStudentId(), busyScheduleId, start, end));
@@ -155,10 +155,10 @@ class ExamScheduleCandidateConflictValidatorTests {
 
     @Test
     void should_summarise_when_more_than_five_students_conflict() {
-        var candidates = new ArrayList<ExamCandidate>();
-        var conflicts = new ArrayList<StudentScheduleConflict>();
+        List<ExamCandidate> candidates = new ArrayList<ExamCandidate>();
+        List<ExamCandidateRepository.StudentScheduleConflict> conflicts = new ArrayList<StudentScheduleConflict>();
         for (int i = 0; i < 8; i++) {
-            var candidate = candidate(null);
+            ExamCandidate candidate = candidate(null);
             candidates.add(candidate);
             conflicts.add(new StudentScheduleConflict(candidate.getStudentId(), busyScheduleId, start, end));
         }
@@ -172,7 +172,7 @@ class ExamScheduleCandidateConflictValidatorTests {
 
     @Test
     void should_load_the_candidates_of_the_schedule_when_checking_a_new_window() {
-        var candidate = candidate(scheduleId);
+        ExamCandidate candidate = candidate(scheduleId);
         when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(candidate));
         givenConflicts(new StudentScheduleConflict(candidate.getStudentId(), busyScheduleId, start, end));
         givenNames(candidate.getStudentId(), "Phạm Thị Dung");
@@ -184,8 +184,9 @@ class ExamScheduleCandidateConflictValidatorTests {
 
     @Test
     void should_ignore_the_schedule_being_moved_when_checking_a_new_window() {
-        // Thí sinh của chính ca đang đổi giờ dĩ nhiên "bận" ở ca đó — không được tự chặn mình.
-        var candidate = candidate(scheduleId);
+        // A candidate of the very session whose time is being changed is of course "busy" in that
+        // session -- it must not block itself.
+        ExamCandidate candidate = candidate(scheduleId);
         when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(candidate));
         givenConflicts(new StudentScheduleConflict(candidate.getStudentId(), scheduleId, start, end));
 
@@ -199,9 +200,9 @@ class ExamScheduleCandidateConflictValidatorTests {
     }
 
     private void givenNames(Object... idThenName) {
-        var users = new ArrayList<User>();
+        List<User> users = new ArrayList<User>();
         for (int i = 0; i < idThenName.length; i += 2) {
-            var user = new User();
+            User user = new User();
             user.setId((UUID) idThenName[i]);
             user.setFullName(new FullName((String) idThenName[i + 1]));
             users.add(user);
@@ -210,7 +211,7 @@ class ExamScheduleCandidateConflictValidatorTests {
     }
 
     private ExamCandidate candidate(UUID currentScheduleId) {
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(UUID.randomUUID());
         candidate.setExamId(UUID.randomUUID());
         candidate.setStudentId(UUID.randomUUID());

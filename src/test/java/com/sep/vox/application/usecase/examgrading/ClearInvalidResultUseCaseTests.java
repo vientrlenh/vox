@@ -15,13 +15,16 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import com.sep.vox.application.event.ExamResultInvalidClearedPayloadV1;
 import com.sep.vox.application.port.input.command.GradingDecisionCommand;
+import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.service.GradingActionSupport.PreparedAction;
 import com.sep.vox.application.port.input.usecase.examgrading.ClearInvalidResultUseCase;
+import com.sep.vox.application.response.input.examgrading.GradingActionResponse;
 import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamCandidate;
@@ -77,17 +80,17 @@ class ClearInvalidResultUseCaseTests {
         candidate.setBlockedAt(Instant.now().minus(1, ChronoUnit.DAYS));
         when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate));
 
-        var assignment = ExamGradingAssignment.open(candidateResultId, teacherId,
+        ExamGradingAssignment assignment = ExamGradingAssignment.open(candidateResultId, teacherId,
             GradingRoundType.REMEDIATION, null, null, Instant.now(), UUID.randomUUID(), null);
         assignment.setId(assignmentId);
-        var context = new GradingContext(
+        ExamGradingAccessService.GradingContext context = new GradingContext(
             assignment, result, new ExamSession(), UUID.randomUUID(), "IELTS Mock", ExamKind.CENTRALIZED);
         when(gradingActionSupport.prepare(any(), any(), any())).thenReturn(new PreparedAction(
             context, teacherId, GradingRoundType.REMEDIATION, GradingOutcome.CLEARED_INVALID,
             "Xem lại video, không có vi phạm", null));
         when(gradingActionSupport.resolveStudentId(any())).thenReturn(studentId);
         when(examGradingAssignmentRepository.save(any())).thenAnswer(invocation -> {
-            var saved = (ExamGradingAssignment) invocation.getArgument(0);
+            ExamGradingAssignment saved = (ExamGradingAssignment) invocation.getArgument(0);
             saved.setId(UUID.randomUUID());
             return saved;
         });
@@ -98,7 +101,7 @@ class ClearInvalidResultUseCaseTests {
     }
 
     private ExamGradingAssignment captureReopened() {
-        var captor = ArgumentCaptor.forClass(ExamGradingAssignment.class);
+        ArgumentCaptor<ExamGradingAssignment> captor = ArgumentCaptor.forClass(ExamGradingAssignment.class);
         verify(examGradingAssignmentRepository).save(captor.capture());
         return captor.getValue();
     }
@@ -115,13 +118,14 @@ class ClearInvalidResultUseCaseTests {
 
     @Test
     void should_open_exactly_one_initial_round_for_the_same_teacher() {
-        var response = useCase.execute(command());
+        GradingActionResponse response = useCase.execute(command());
 
-        var reopened = captureReopened();
+        ExamGradingAssignment reopened = captureReopened();
         assertThat(reopened.getRoundType()).isEqualTo(GradingRoundType.INITIAL);
         assertThat(reopened.getTeacherId()).isEqualTo(teacherId);
         assertThat(reopened.getCandidateResultId()).isEqualTo(candidateResultId);
-        // Bài không rơi vào pool auto-assign trống chủ -> bịt kịch bản review BE-1.
+        // The submission does not fall into the auto-assign pool without an owner -> closes the
+        // BE-1 review scenario.
         assertThat(reopened.getActiveResultId()).isEqualTo(candidateResultId);
         assertThat(response.nextAssignmentId()).isEqualTo(reopened.getId());
     }
@@ -130,9 +134,9 @@ class ClearInvalidResultUseCaseTests {
     void should_close_the_remediation_round_before_opening_the_next_one() {
         useCase.execute(command());
 
-        // Thứ tự bắt buộc: finish() nhả active_result_id của dòng cũ, rồi mới chèn
-        // dòng mới — ngược lại là vi phạm unique index.
-        var inOrder = org.mockito.Mockito.inOrder(gradingActionSupport, examGradingAssignmentRepository);
+        // Mandatory order: finish() releases the old row's active_result_id first, and only then is
+        // the new row inserted -- the reverse violates the unique index.
+        InOrder inOrder = org.mockito.Mockito.inOrder(gradingActionSupport, examGradingAssignmentRepository);
         inOrder.verify(gradingActionSupport).finish(any(), any());
         inOrder.verify(examGradingAssignmentRepository).save(any());
     }
@@ -141,7 +145,7 @@ class ClearInvalidResultUseCaseTests {
     void should_notify_the_student_that_the_paper_is_restored() {
         useCase.execute(command());
 
-        var payload = OutboxTestSupport.capturePayload(outboxRepository,
+        ExamResultInvalidClearedPayloadV1 payload = OutboxTestSupport.capturePayload(outboxRepository,
             EventTypeConstant.EXAM_RESULT_INVALID_CLEARED, ExamResultInvalidClearedPayloadV1.class);
         assertThat(payload.studentId()).isEqualTo(studentId);
         assertThat(payload.reason()).isEqualTo("Xem lại video, không có vi phạm");

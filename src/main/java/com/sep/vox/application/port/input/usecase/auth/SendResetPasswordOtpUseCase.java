@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
+import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 
 import org.springframework.stereotype.Service;
@@ -41,16 +42,16 @@ public class SendResetPasswordOtpUseCase implements IUseCase<SendResetPasswordOt
     @Override
     @Transactional
     public Void execute(SendResetPasswordOtpCommand input) {
-        var command = normalize(input);
+        SendResetPasswordOtpCommand command = normalize(input);
 
         // Email lạ vẫn trả về như bình thường: khác biệt phản hồi ở đây là một kênh dò xem
         // địa chỉ nào có tài khoản.
-        var user = userRepository.findByEmailAndStatus(command.email(), UserStatus.ACTIVE).orElse(null);
+        User user = userRepository.findByEmailAndStatus(command.email(), UserStatus.ACTIVE).orElse(null);
         if (user == null) {
             return null;
         }
 
-        var payload = jsonSerializationPort.toJson(
+        String payload = jsonSerializationPort.toJson(
             new ResetPasswordOtpRequestedPayloadV1(command.email()));
 
         outboxRepository.save(Outbox.create(

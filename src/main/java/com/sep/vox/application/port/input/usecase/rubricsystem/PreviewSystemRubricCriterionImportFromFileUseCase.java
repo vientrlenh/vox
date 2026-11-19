@@ -15,7 +15,11 @@ import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
+import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
@@ -65,19 +69,19 @@ public class PreviewSystemRubricCriterionImportFromFileUseCase implements IUseCa
     @Transactional
     public PreviewRubricCriterionImportResponse execute(PreviewRubricCriterionImportCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
         //  Phân luồng bảo mật School vs System
         if (command.schoolId() != null) {
-            var schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
+            SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
             if (!schoolUser.getSchoolId().equals(command.schoolId())) throw new ForbiddenException("Xâm nhập dữ liệu trường khác bị từ chối.");
         }
 
         //  Dò ngược từ Version -> Rubric
-        var version = rubricVersionRepository.findById(command.rubricVersionId())
+        RubricVersion version = rubricVersionRepository.findById(command.rubricVersionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản (Version) yêu cầu."));
-        var rubric = rubricRepository.findById(version.getRubricId())
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         //  Chốt chặn Owner Type

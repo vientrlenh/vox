@@ -1,5 +1,9 @@
 package com.sep.vox.application.port.input.usecase.exampaper;
 
+import com.sep.vox.application.port.input.command.ClassTestQuestionCommand;
+import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
+import com.sep.vox.domain.model.question.QuestionAsset;
+import com.sep.vox.domain.model.question.QuestionCollaborator;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -7,6 +11,8 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -107,13 +113,13 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
     @Override
     @Transactional
     public ExamPaperDto execute(CreateExamPaperCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var exam = examRepository.findById(input.examId())
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         examPaperAuthoringAccessService.requireCanAuthor(exam, currentUserId);
 
-        var source = input.source() == null ? "blueprint" : input.source();
+        String source = input.source() == null ? "blueprint" : input.source();
         return switch (source) {
             case "blueprint" -> createFromBlueprint(exam, currentUserId);
             case "copy" -> createFromCopy(exam, input.copyFromPaperId(), currentUserId);
@@ -139,7 +145,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             throw new IllegalStateException("CHAIR chưa chốt version blueprint cho kỳ thi này");
         }
 
-        var version = examBlueprintVersionRepository.findById(exam.getBlueprintVersionId())
+        ExamBlueprintVersion version = examBlueprintVersionRepository.findById(exam.getBlueprintVersionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint đã chốt"));
         examTimeQuotaGuardService.requireWithinPlan(
             exam.getSchoolId(),
@@ -153,14 +159,14 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
 
-        var slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
+        Map<UUID, List<ExamBlueprintSlot>> slotsBySectionId = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
             .collect(Collectors.groupingBy(slot -> slot.getSectionId()));
 
         validateVersionWeights(sections, slotsBySectionId);
 
-        var now = Instant.now();
-        var variant = examPaperRepository.nextVariant(exam.getId());
-        var paper = examPaperRepository.save(new ExamPaper(
+        Instant now = Instant.now();
+        int variant = examPaperRepository.nextVariant(exam.getId());
+        ExamPaper paper = examPaperRepository.save(new ExamPaper(
             exam.getId(),
             exam.getBlueprintVersionId(),
             exam.getCode() + "-P" + variant,
@@ -173,8 +179,8 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             currentUserId
         ));
 
-        for (var section : sections) {
-            var savedSection = examPaperSectionRepository.save(new ExamPaperSection(
+        for (ExamBlueprintSection section : sections) {
+            ExamPaperSection savedSection = examPaperSectionRepository.save(new ExamPaperSection(
                 paper.getId(),
                 section.getOrder(),
                 section.getTitle(),
@@ -187,14 +193,14 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
                 currentUserId
             ));
 
-            var slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
+            List<ExamBlueprintSlot> slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
                 .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
                 .toList();
 
-            for (var slot : slots) {
-                var questionId = slot.getSlotType() == ExamBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
+            for (ExamBlueprintSlot slot : slots) {
+                UUID questionId = slot.getSlotType() == ExamBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
                 if (questionId != null) {
-                    var fixedQuestion = questionRepository.findById(questionId)
+                    Question fixedQuestion = questionRepository.findById(questionId)
                         .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong slot"));
                     if (fixedQuestion.getStatus() != QuestionStatus.PUBLISHED) {
                         if (exam.getKind() != ExamKind.CLASS_TEST) {
@@ -256,18 +262,18 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             throw new IllegalStateException("Phải có ít nhất một phần trong đề");
         }
 
-        var seenQuestionIds = new HashSet<UUID>();
-        var questionsBySection = new ArrayList<List<Question>>();
-        for (var section : sections) {
+        Set<UUID> seenQuestionIds = new HashSet<UUID>();
+        List<List<Question>> questionsBySection = new ArrayList<List<Question>>();
+        for (ClassTestSectionCommand section : sections) {
             if (section.questions() == null || section.questions().isEmpty()) {
                 throw new IllegalStateException("Mỗi phần phải có ít nhất 1 câu hỏi");
             }
-            var questions = new ArrayList<Question>();
-            for (var questionCommand : section.questions()) {
+            List<Question> questions = new ArrayList<Question>();
+            for (ClassTestQuestionCommand questionCommand : section.questions()) {
                 if (!seenQuestionIds.add(questionCommand.questionId())) {
                     throw new IllegalStateException("Một câu hỏi không thể xuất hiện nhiều lần trong cùng 1 mã đề");
                 }
-                var question = questionRepository
+                Question question = questionRepository
                     .findAccessibleById(questionCommand.questionId(), currentUserId, exam.getSchoolId(), false, false)
                     .orElseThrow(() -> new ForbiddenException(
                         "Bạn không có quyền sử dụng câu hỏi " + questionCommand.questionId()));
@@ -279,13 +285,13 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         // Chiếu thời lượng TRƯỚC khi ghi để từ chối sớm -- mã đề chưa tồn tại nên không dùng lại được
         // RecalculateExamTimeDurationService. Phải là totalSeconds (đã gồm media) vì đây là thước đo
         // ĐỘ DÀI bài thi so với gói, xem PaperTimeCalculator.
-        var totalSeconds = paperTotalSeconds(questionsBySection.stream().flatMap(l -> l.stream()).toList());
+        int totalSeconds = paperTotalSeconds(questionsBySection.stream().flatMap(l -> l.stream()).toList());
         examTimeQuotaGuardService.requireWithinPlan(exam.getSchoolId(), totalSeconds, "Bài kiểm tra trên lớp");
 
-        var sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(sections);
-        var now = Instant.now();
-        var variant = examPaperRepository.nextVariant(exam.getId());
-        var paper = examPaperRepository.save(new ExamPaper(
+        List<BigDecimal> sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(sections);
+        Instant now = Instant.now();
+        int variant = examPaperRepository.nextVariant(exam.getId());
+        ExamPaper paper = examPaperRepository.save(new ExamPaper(
             exam.getId(),
             null,
             exam.getCode() + "-P" + variant,
@@ -299,9 +305,9 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         ));
 
         for (int i = 0; i < sections.size(); i++) {
-            var sectionCommand = sections.get(i);
-            var questionWeights = ClassTestSectionWeightPolicy.resolveQuestionWeights(sectionCommand.questions());
-            var savedSection = examPaperSectionRepository.save(new ExamPaperSection(
+            ClassTestSectionCommand sectionCommand = sections.get(i);
+            List<BigDecimal> questionWeights = ClassTestSectionWeightPolicy.resolveQuestionWeights(sectionCommand.questions());
+            ExamPaperSection savedSection = examPaperSectionRepository.save(new ExamPaperSection(
                 paper.getId(),
                 i + 1,
                 sectionCommand.title(),
@@ -314,7 +320,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
                 currentUserId
             ));
 
-            var questions = questionsBySection.get(i);
+            List<Question> questions = questionsBySection.get(i);
             for (int j = 0; j < questions.size(); j++) {
                 examPaperItemRepository.save(new ExamPaperItem(
                     null,
@@ -339,7 +345,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
 
     /** Thời gian thật của mã đề, gồm cả thời lượng phát AUDIO/VIDEO -- xem {@link PaperTimeCalculator}. */
     private int paperTotalSeconds(List<Question> questions) {
-        var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
+        Map<UUID, QuestionAsset> assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
             .findByQuestionIdIn(questions.stream().map(q -> q.getId()).distinct().toList()));
         return PaperTimeCalculator.breakdownOf(questions, assetByQuestionId).totalSeconds();
     }
@@ -350,7 +356,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         if (isOwner || isSchoolShared) {
             return;
         }
-        var collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
+        Optional<QuestionCollaborator> collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
         if (collaborator.isEmpty() || collaborator.get().getPermission() == QuestionCollaboratorPermission.READ_ONLY) {
             throw new ForbiddenException("Quyền READ_ONLY không được phép dùng câu hỏi trong bài kiểm tra");
         }
@@ -359,16 +365,16 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
     private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
 
     private void validateVersionWeights(List<ExamBlueprintSection> sections, Map<UUID, List<ExamBlueprintSlot>> slotsBySectionId) {
-        var sectionWeightSum = sections.stream()
+        BigDecimal sectionWeightSum = sections.stream()
             .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
             throw new IllegalStateException(
                 "Blueprint version đã chốt có tổng trọng số section không hợp lệ, không thể sinh đề thi");
         }
-        for (var section : sections) {
-            var slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
-            var slotWeightSum = slots.stream()
+        for (ExamBlueprintSection section : sections) {
+            List<ExamBlueprintSlot> slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
+            BigDecimal slotWeightSum = slots.stream()
                 .map(slot -> slot.getWeight() == null ? BigDecimal.ZERO : slot.getWeight())
                 .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
             if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
@@ -382,7 +388,7 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
         if (copyFromPaperId == null) {
             throw new IllegalStateException("Phải cung cấp copyFromPaperId khi source là copy");
         }
-        var sourcePaper = examPaperRepository.findById(copyFromPaperId)
+        ExamPaper sourcePaper = examPaperRepository.findById(copyFromPaperId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi nguồn để sao chép"));
         if (!sourcePaper.getExamId().equals(exam.getId())) {
             throw new IllegalStateException("Đề thi nguồn không thuộc cùng bài kiểm tra");
@@ -393,9 +399,9 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             "Mã đề sao chép " + sourcePaper.getCode()
         );
 
-        var now = Instant.now();
-        var variant = examPaperRepository.nextVariant(exam.getId());
-        var paper = examPaperRepository.save(new ExamPaper(
+        Instant now = Instant.now();
+        int variant = examPaperRepository.nextVariant(exam.getId());
+        ExamPaper paper = examPaperRepository.save(new ExamPaper(
             exam.getId(),
             sourcePaper.getBlueprintVersionId(),
             exam.getCode() + "-P" + variant,
@@ -408,12 +414,12 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
             currentUserId
         ));
 
-        var sourceSections = examPaperSectionRepository.findByPaperId(sourcePaper.getId()).stream()
+        List<ExamPaperSection> sourceSections = examPaperSectionRepository.findByPaperId(sourcePaper.getId()).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
 
-        for (var section : sourceSections) {
-            var savedSection = examPaperSectionRepository.save(new ExamPaperSection(
+        for (ExamPaperSection section : sourceSections) {
+            ExamPaperSection savedSection = examPaperSectionRepository.save(new ExamPaperSection(
                 paper.getId(),
                 section.getOrder(),
                 section.getTitle(),
@@ -426,11 +432,11 @@ public class CreateExamPaperUseCase implements IUseCase<CreateExamPaperCommand, 
                 currentUserId
             ));
 
-            var items = examPaperItemRepository.findBySectionId(section.getId()).stream()
+            List<ExamPaperItem> items = examPaperItemRepository.findBySectionId(section.getId()).stream()
                 .sorted(Comparator.comparingInt(item -> item.getOrder()))
                 .toList();
 
-            for (var item : items) {
+            for (ExamPaperItem item : items) {
                 examPaperItemRepository.save(new ExamPaperItem(
                     item.getBlueprintSlotId(),
                     savedSection.getId(),

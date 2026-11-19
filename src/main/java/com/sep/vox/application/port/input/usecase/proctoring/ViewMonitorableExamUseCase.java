@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.proctoring;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -46,12 +47,12 @@ public class ViewMonitorableExamUseCase implements IUseCase<UUID, MonitoredExamS
     @Override
     @Transactional(readOnly = true)
     public MonitoredExamSummary execute(UUID examId) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var now = Instant.now();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        Instant now = Instant.now();
 
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        var found = isSchoolAdmin
+        List<MonitoredExamSummary> found = isSchoolAdmin
             ? monitoredExamQueryRepository.findMonitorableBySchool(requireSchoolId(currentUserId), examId, now, null)
             : monitoredExamQueryRepository.findMonitorableByTeacher(currentUserId, examId, now, null);
 

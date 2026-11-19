@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examevaluation;
 
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamSession;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -43,12 +45,12 @@ public class UpsertExamCandidateResultUseCase {
     }
 
     private ExamCandidateResultStatus resolveDefaultStatus(UUID sessionId, UUID candidateId, boolean anyRequiresHumanReview) {
-        var candidate = examCandidateRepository.findById(candidateId)
+        ExamCandidate candidate = examCandidateRepository.findById(candidateId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh"));
         if (candidate.getBlockedAt() != null) {
             return ExamCandidateResultStatus.INVALID;
         }
-        var session = examSessionRepository.findById(sessionId)
+        ExamSession session = examSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
         if (session.isFlagged() || anyRequiresHumanReview) {
             return ExamCandidateResultStatus.PENDING_REVIEW;
@@ -64,11 +66,11 @@ public class UpsertExamCandidateResultUseCase {
      */
     @Transactional
     public ExamCandidateResult execute(UUID sessionId, ExamCandidateResultStatus status) {
-        var calculated = examSessionResultCalculator.calculate(sessionId);
-        var existing = examCandidateResultRepository.findBySessionId(sessionId).orElse(null);
-        var result = existing == null ? new ExamCandidateResult() : existing;
-        var now = Instant.now();
-        var resolvedStatus = status != null
+        ExamSessionResultCalculator.CalculatedExamSessionResult calculated = examSessionResultCalculator.calculate(sessionId);
+        ExamCandidateResult existing = examCandidateResultRepository.findBySessionId(sessionId).orElse(null);
+        ExamCandidateResult result = existing == null ? new ExamCandidateResult() : existing;
+        Instant now = Instant.now();
+        ExamCandidateResultStatus resolvedStatus = status != null
             ? status
             : resolveDefaultStatus(sessionId, calculated.candidateId(), calculated.anyRequiresHumanReview());
 

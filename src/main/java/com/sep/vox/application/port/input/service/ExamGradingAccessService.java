@@ -1,6 +1,9 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.user.User;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -90,8 +93,8 @@ public class ExamGradingAccessService {
     }
 
     public UUID requireActiveUserId() {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
             .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản bị khóa.");
@@ -101,7 +104,7 @@ public class ExamGradingAccessService {
 
     @Transactional(readOnly = true)
     public GradingContext load(UUID assignmentId) {
-        var assignment = examGradingAssignmentRepository.findById(assignmentId)
+        ExamGradingAssignment assignment = examGradingAssignmentRepository.findById(assignmentId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phân công chấm bài."));
         return loadFromCandidateResult(assignment, assignment.getCandidateResultId());
     }
@@ -120,24 +123,24 @@ public class ExamGradingAccessService {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public GradingContext loadForUpdate(UUID assignmentId) {
-        var assignment = examGradingAssignmentRepository.findByIdForUpdate(assignmentId)
+        ExamGradingAssignment assignment = examGradingAssignmentRepository.findByIdForUpdate(assignmentId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phân công chấm bài."));
         return loadFromCandidateResult(assignment, assignment.getCandidateResultId());
     }
 
     @Transactional(readOnly = true)
     public GradingContext loadByCandidateResultId(UUID candidateResultId) {
-        var assignment = examGradingAssignmentRepository.findOpenByCandidateResultId(candidateResultId)
+        ExamGradingAssignment assignment = examGradingAssignmentRepository.findOpenByCandidateResultId(candidateResultId)
             .orElse(null);
         return loadFromCandidateResult(assignment, candidateResultId);
     }
 
     private GradingContext loadFromCandidateResult(ExamGradingAssignment assignment, UUID candidateResultId) {
-        var candidateResult = examCandidateResultRepository.findById(candidateResultId)
+        ExamCandidateResult candidateResult = examCandidateResultRepository.findById(candidateResultId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kết quả bài thi."));
-        var session = examSessionRepository.findById(candidateResult.getSessionId())
+        ExamSession session = examSessionRepository.findById(candidateResult.getSessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi."));
-        var exam = examRepository.findById(candidateResult.getExamId())
+        Exam exam = examRepository.findById(candidateResult.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
         return new GradingContext(
             assignment, candidateResult, session, exam.getSchoolId(), exam.getName(), exam.getKind());
@@ -161,7 +164,7 @@ public class ExamGradingAccessService {
      * gán qua {@code authorizeSchoolAdmin}, để lại một dòng phân công có vòng rõ ràng.
      */
     public void authorizeAssignedTeacher(GradingContext context, UUID currentUserId) {
-        var assignment = context.assignment();
+        ExamGradingAssignment assignment = context.assignment();
         if (assignment == null || !currentUserId.equals(assignment.getTeacherId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không được phân công chấm bài thi này.");
         }
@@ -179,7 +182,7 @@ public class ExamGradingAccessService {
         if (examId == null || currentUserId == null) {
             return false;
         }
-        var exam = examRepository.findById(examId).orElse(null);
+        Exam exam = examRepository.findById(examId).orElse(null);
         if (exam == null || exam.getKind() != ExamKind.CLASS_TEST) {
             return false;
         }
@@ -252,8 +255,8 @@ public class ExamGradingAccessService {
         if (candidateResultIds == null || candidateResultIds.isEmpty()) {
             return Set.of();
         }
-        var results = examCandidateResultRepository.findByIdIn(candidateResultIds);
-        var classTestExamIds = examRepository
+        List<ExamCandidateResult> results = examCandidateResultRepository.findByIdIn(candidateResultIds);
+        Set<UUID> classTestExamIds = examRepository
             .findByIdIn(results.stream().map(result -> result.getExamId()).distinct().toList()).stream()
             .filter(exam -> exam.getKind() == ExamKind.CLASS_TEST)
             .map(exam -> exam.getId())
@@ -298,9 +301,9 @@ public class ExamGradingAccessService {
         if (userContextPort.isSystemAdmin()) {
             return true;
         }
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
         return isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(schoolId);
@@ -315,7 +318,7 @@ public class ExamGradingAccessService {
 
     /** Giáo viên cùng trường — kiểm tra trước khi gán bài cho họ. */
     public boolean isTeacherOfSchool(UUID userId, UUID schoolId) {
-        var isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(userId).stream()
+        boolean isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(userId).stream()
             .anyMatch(role -> "TEACHER".equals(role.roleCode()));
         if (!isTeacher) {
             return false;

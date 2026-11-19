@@ -128,7 +128,7 @@ class JpaProctorScheduleQuerySmokeTests {
     // Chèn thẳng bằng SQL: entity ở đây có constructor rất dài, và test này chỉ cần đúng những cột mà
     // câu truy vấn đọc. Baseline không khai foreign key nào nên id trường/giáo viên tự do.
     private void seed(String examStatus, String scheduleStatus) {
-        var scheduleId = UUID.randomUUID();
+        UUID scheduleId = UUID.randomUUID();
         em.createNativeQuery("""
             INSERT INTO exams (id, code, name, kind, status, language_id, school_id, requires_otp,
                                created_at, updated_at)

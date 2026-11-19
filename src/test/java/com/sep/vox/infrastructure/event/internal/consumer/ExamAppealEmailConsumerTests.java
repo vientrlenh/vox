@@ -65,11 +65,11 @@ class ExamAppealEmailConsumerTests {
 
     @Test
     void should_send_appeal_published_mail_to_student() throws Exception {
-        var studentId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
         when(userRepository.findById(studentId)).thenReturn(Optional.of(student(studentId)));
         when(mailTemplatePort.renderAppealPublishedEmail(anyString(), anyString(), anyString()))
             .thenReturn("<html></html>");
-        var payload = new ExamAppealPublishedPayloadV1(
+        ExamAppealPublishedPayloadV1 payload = new ExamAppealPublishedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", new BigDecimal("5.5"), new BigDecimal("7.0"));
 
         consumer.consume(record(EventTypeConstant.EXAM_APPEAL_PUBLISHED, payload), ack);
@@ -83,10 +83,10 @@ class ExamAppealEmailConsumerTests {
 
     @Test
     void should_send_appeal_rejected_mail_to_student() throws Exception {
-        var studentId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
         when(userRepository.findById(studentId)).thenReturn(Optional.of(student(studentId)));
         when(mailTemplatePort.renderAppealRejectedEmail(anyString(), anyString())).thenReturn("<html></html>");
-        var payload = new ExamAppealRejectedPayloadV1(
+        ExamAppealRejectedPayloadV1 payload = new ExamAppealRejectedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", "Nộp quá hạn");
 
         consumer.consume(record(EventTypeConstant.EXAM_APPEAL_REJECTED, payload), ack);
@@ -99,26 +99,26 @@ class ExamAppealEmailConsumerTests {
 
     @Test
     void should_send_appeal_approved_mail_with_deadline_in_app_zone() {
-        var studentId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
         when(userRepository.findById(studentId)).thenReturn(Optional.of(student(studentId)));
         when(mailTemplatePort.renderAppealApprovedEmail(anyString(), anyString())).thenReturn("<html></html>");
-        var payload = new ExamAppealApprovedPayloadV1(
+        ExamAppealApprovedPayloadV1 payload = new ExamAppealApprovedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", Instant.parse("2026-08-01T03:00:00Z"));
 
         consumer.consume(record(EventTypeConstant.EXAM_APPEAL_APPROVED, payload), ack);
 
-        // 03:00 UTC là 10:00 giờ Việt Nam — format phải theo DateMapper.DEFAULT_INPUT_ZONE,
-        // không phải giờ UTC của container.
+        // 03:00 UTC is 10:00 Vietnam time -- the format must follow DateMapper.DEFAULT_INPUT_ZONE,
+        // not the container's UTC time.
         verify(mailTemplatePort).renderAppealApprovedEmail("Kỳ thi giữa kỳ", "10:00 01/08/2026");
         verify(ack).acknowledge();
     }
 
     @Test
     void should_use_placeholder_when_approved_deadline_is_null() {
-        var studentId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
         when(userRepository.findById(studentId)).thenReturn(Optional.of(student(studentId)));
         when(mailTemplatePort.renderAppealApprovedEmail(anyString(), anyString())).thenReturn("<html></html>");
-        var payload = new ExamAppealApprovedPayloadV1(
+        ExamAppealApprovedPayloadV1 payload = new ExamAppealApprovedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", null);
 
         consumer.consume(record(EventTypeConstant.EXAM_APPEAL_APPROVED, payload), ack);
@@ -130,7 +130,7 @@ class ExamAppealEmailConsumerTests {
     void should_skip_when_event_already_processed() {
         when(processedEventRepository.existsByEventIdAndConsumerGroup(any(UUID.class), anyString()))
             .thenReturn(true);
-        var payload = new ExamAppealRejectedPayloadV1(
+        ExamAppealRejectedPayloadV1 payload = new ExamAppealRejectedPayloadV1(
             UUID.randomUUID(), UUID.randomUUID(), "Kỳ thi giữa kỳ", "Nộp quá hạn");
 
         consumer.consume(record(EventTypeConstant.EXAM_APPEAL_REJECTED, payload), ack);
@@ -142,13 +142,13 @@ class ExamAppealEmailConsumerTests {
 
     @Test
     void should_skip_when_student_not_found() {
-        var studentId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
         when(userRepository.findById(studentId)).thenReturn(Optional.empty());
-        var payload = new ExamAppealRejectedPayloadV1(
+        ExamAppealRejectedPayloadV1 payload = new ExamAppealRejectedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", "Nộp quá hạn");
 
-        // Học sinh đã bị xoá thì retry bao nhiêu lần cũng vô ích: đánh dấu xong và bỏ qua,
-        // đừng đẩy message vào DLT.
+        // A student who has been deleted will never succeed however many times it is retried: mark
+        // it done and skip it, do not push the message into the DLT.
         assertThatCode(() -> consumer.consume(record(EventTypeConstant.EXAM_APPEAL_REJECTED, payload), ack))
             .doesNotThrowAnyException();
         verifyNoInteractions(mailSendingPort);
@@ -158,7 +158,7 @@ class ExamAppealEmailConsumerTests {
 
     @Test
     void should_throw_when_event_type_is_unknown() {
-        var payload = new ExamAppealRejectedPayloadV1(
+        ExamAppealRejectedPayloadV1 payload = new ExamAppealRejectedPayloadV1(
             UUID.randomUUID(), UUID.randomUUID(), "Kỳ thi giữa kỳ", "Nộp quá hạn");
 
         assertThatThrownBy(() -> consumer.consume(record("KhongTonTai", payload), ack))
@@ -169,7 +169,7 @@ class ExamAppealEmailConsumerTests {
 
     @Test
     void should_throw_when_payload_is_invalid() {
-        var record = rawRecord(EventTypeConstant.EXAM_APPEAL_REJECTED, "{khong-phai-json}");
+        ConsumerRecord<String, String> record = rawRecord(EventTypeConstant.EXAM_APPEAL_REJECTED, "{khong-phai-json}");
 
         assertThatThrownBy(() -> consumer.consume(record, ack))
             .isInstanceOf(IllegalStateException.class);
@@ -178,15 +178,15 @@ class ExamAppealEmailConsumerTests {
 
     @Test
     void should_throw_when_mail_sending_fails() throws Exception {
-        var studentId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
         when(userRepository.findById(studentId)).thenReturn(Optional.of(student(studentId)));
         when(mailTemplatePort.renderAppealRejectedEmail(anyString(), anyString())).thenReturn("<html></html>");
         doThrow(new RejectedExecutionException("mail queue full"))
             .when(mailSendingPort).sendHtml(anyString(), anyString(), anyString());
-        var payload = new ExamAppealRejectedPayloadV1(
+        ExamAppealRejectedPayloadV1 payload = new ExamAppealRejectedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", "Nộp quá hạn");
 
-        // Ném ra ngoài là cách duy nhất để @RetryableTopic biết mà thử lại.
+        // Throwing it out is the only way for @RetryableTopic to know it should retry.
         assertThatThrownBy(() -> consumer.consume(record(EventTypeConstant.EXAM_APPEAL_REJECTED, payload), ack))
             .isInstanceOf(IllegalStateException.class);
         verify(processedEventRepository, never()).save(any(ProcessedEvent.class));
@@ -198,14 +198,14 @@ class ExamAppealEmailConsumerTests {
     }
 
     private ConsumerRecord<String, String> rawRecord(String eventType, String value) {
-        var record = new ConsumerRecord<>("vox.exam-appeal.v1", 0, 0L, "key", value);
+        ConsumerRecord<String, String> record = new ConsumerRecord<>("vox.exam-appeal.v1", 0, 0L, "key", value);
         record.headers().add("eventId", UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
         record.headers().add("eventType", eventType.getBytes(StandardCharsets.UTF_8));
         return record;
     }
 
     private User student(UUID id) {
-        var user = new User();
+        User user = new User();
         user.setId(id);
         user.setEmail(new Email("student@example.com"));
         user.setFullName(new FullName("Nguyễn Văn A"));

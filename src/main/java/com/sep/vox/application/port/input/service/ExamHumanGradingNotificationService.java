@@ -89,7 +89,7 @@ public class ExamHumanGradingNotificationService {
             return;
         }
 
-        var pendingCount = examCandidateResultRepository.findByExamId(exam.getId()).stream()
+        long pendingCount = examCandidateResultRepository.findByExamId(exam.getId()).stream()
             .filter(result -> result.getStatus() == ExamCandidateResultStatus.PENDING_REVIEW)
             .count();
 
@@ -99,7 +99,7 @@ public class ExamHumanGradingNotificationService {
             return;
         }
 
-        var recipientIds = recipientsOf(exam);
+        List<UUID> recipientIds = recipientsOf(exam);
         if (recipientIds.isEmpty()) {
             // Bài trên lớp không có CHAIR, hoặc trường không còn admin nào đang hoạt động.
             // Bài vẫn nằm trong hàng đợi chấm, chỉ là không có ai để đánh động.
@@ -108,7 +108,7 @@ public class ExamHumanGradingNotificationService {
             return;
         }
 
-        var payload = jsonSerializationPort.toJson(new ExamHumanGradingRequiredPayloadV1(
+        String payload = jsonSerializationPort.toJson(new ExamHumanGradingRequiredPayloadV1(
             recipientIds,
             exam.getId(),
             exam.getName(),
@@ -141,7 +141,7 @@ public class ExamHumanGradingNotificationService {
      * {@code distinct} vì một người có thể vừa là chair vừa là school admin.
      */
     private List<UUID> recipientsOf(Exam exam) {
-        var chairIds = examMemberRepository.findByExamId(exam.getId()).stream()
+        Stream<UUID> chairIds = examMemberRepository.findByExamId(exam.getId()).stream()
             .filter(member -> member.getRole() == ExamMemberRole.CHAIR)
             .map(member -> member.getUserId());
 
@@ -149,7 +149,7 @@ public class ExamHumanGradingNotificationService {
             return chairIds.filter(userId -> userId != null).distinct().toList();
         }
 
-        var schoolAdminIds = schoolUserRepository
+        Stream<UUID> schoolAdminIds = schoolUserRepository
             .findBySchoolIdWithRole(exam.getSchoolId(), RoleConstant.SCHOOL_ADMIN_ROLE)
             .stream()
             .map(schoolUser -> schoolUser.getUserId());

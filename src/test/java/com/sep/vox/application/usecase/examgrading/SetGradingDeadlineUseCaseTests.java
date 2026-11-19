@@ -57,7 +57,7 @@ class SetGradingDeadlineUseCaseTests {
     }
 
     private ExamGradingAssignment given(UUID assignmentSchoolId) {
-        var assignment = ExamGradingAssignment.open(UUID.randomUUID(), UUID.randomUUID(),
+        ExamGradingAssignment assignment = ExamGradingAssignment.open(UUID.randomUUID(), UUID.randomUUID(),
             GradingRoundType.INITIAL, null, null, Instant.now().minus(2, ChronoUnit.DAYS),
             adminId, Instant.now().minus(1, ChronoUnit.DAYS));
         assignment.setId(UUID.randomUUID());
@@ -73,19 +73,20 @@ class SetGradingDeadlineUseCaseTests {
 
     @Test
     void should_set_the_deadline_and_reset_the_reminder_mark() {
-        var assignment = given(schoolId);
-        var newDeadline = Instant.now().plus(3, ChronoUnit.DAYS);
+        ExamGradingAssignment assignment = given(schoolId);
+        Instant newDeadline = Instant.now().plus(3, ChronoUnit.DAYS);
 
         useCase.execute(command(List.of(assignment.getId()), newDeadline));
 
         assertThat(assignment.getDeadlineAt()).isEqualTo(newDeadline);
-        // Hạn mới là một cam kết mới; giữ dấu cũ là giáo viên không bao giờ được nhắc lại.
+        // A new deadline is a new commitment; keeping the old stamp means the teacher is never
+        // reminded again.
         assertThat(assignment.getRemindedAt()).isNull();
     }
 
     @Test
     void should_allow_clearing_the_deadline() {
-        var assignment = given(schoolId);
+        ExamGradingAssignment assignment = given(schoolId);
 
         useCase.execute(command(List.of(assignment.getId()), null));
 
@@ -95,7 +96,7 @@ class SetGradingDeadlineUseCaseTests {
 
     @Test
     void should_reject_a_deadline_in_the_past() {
-        var assignment = given(schoolId);
+        ExamGradingAssignment assignment = given(schoolId);
 
         assertThatThrownBy(() -> useCase.execute(
             command(List.of(assignment.getId()), Instant.now().minus(1, ChronoUnit.HOURS))))
@@ -114,8 +115,8 @@ class SetGradingDeadlineUseCaseTests {
 
     @Test
     void should_validate_every_row_before_writing_any_of_them() {
-        var open = given(schoolId);
-        var closed = given(schoolId);
+        ExamGradingAssignment open = given(schoolId);
+        ExamGradingAssignment closed = given(schoolId);
         closed.complete(GradingOutcome.UPHELD, null, Instant.now());
 
         assertThatThrownBy(() -> useCase.execute(
@@ -123,15 +124,16 @@ class SetGradingDeadlineUseCaseTests {
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("đã chốt");
 
-        // Không ghi dòng nào: một lô hỏng một phần khó dọn hơn là lô bị từ chối cả.
+        // No row is written: a partly broken batch is harder to clean up than a batch that is
+        // rejected entirely.
         verify(examGradingAssignmentRepository, never()).saveAll(anyList());
         assertThat(open.getRemindedAt()).isNotNull();
     }
 
     @Test
     void should_authorize_once_per_distinct_school() {
-        var first = given(schoolId);
-        var second = given(schoolId);
+        ExamGradingAssignment first = given(schoolId);
+        ExamGradingAssignment second = given(schoolId);
 
         useCase.execute(command(List.of(first.getId(), second.getId()), Instant.now().plus(2, ChronoUnit.DAYS)));
 
@@ -140,8 +142,8 @@ class SetGradingDeadlineUseCaseTests {
 
     @Test
     void should_refuse_a_row_belonging_to_another_school() {
-        var otherSchoolId = UUID.randomUUID();
-        var assignment = given(otherSchoolId);
+        UUID otherSchoolId = UUID.randomUUID();
+        ExamGradingAssignment assignment = given(otherSchoolId);
         doThrow(new ForbiddenException("BẢO MẬT")).when(examGradingAccessService)
             .authorizeSchoolAdmin(any(), any());
 

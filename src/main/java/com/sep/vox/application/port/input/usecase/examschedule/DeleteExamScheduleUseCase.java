@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -56,14 +57,14 @@ public class DeleteExamScheduleUseCase implements IUseCase<DeleteExamScheduleCom
     @Override
     @Transactional
     public UUID execute(DeleteExamScheduleCommand input) {
-        var schedule = examScheduleRepository.findById(input.scheduleId())
+        ExamSchedule schedule = examScheduleRepository.findById(input.scheduleId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
         if (!schedule.getExamId().equals(input.examId())) {
             throw new NotFoundException("Không tìm thấy ca thi");
         }
-        var exam = examRepository.findById(schedule.getExamId())
+        Exam exam = examRepository.findById(schedule.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var currentUserId = authorize(exam);
+        UUID currentUserId = authorize(exam);
 
         if (examCandidateRepository.countByScheduleId(schedule.getId()) > 0) {
             throw new IllegalStateException("Không thể xoá ca thi đang có thí sinh");
@@ -85,11 +86,11 @@ public class DeleteExamScheduleUseCase implements IUseCase<DeleteExamScheduleCom
     }
 
     private UUID authorize(Exam exam) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId())) {
             return currentUserId;

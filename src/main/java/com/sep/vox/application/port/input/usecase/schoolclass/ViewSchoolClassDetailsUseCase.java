@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
+import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolClass;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -45,12 +47,12 @@ public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDe
     @Override
     @Transactional(readOnly = true)
     public SchoolClassDto execute(ViewSchoolClassDetailsQuery input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = findCurrentUser(currentUserId);
-        var schoolId = getSchoolId(currentUser);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = findCurrentUser(currentUserId);
+        UUID schoolId = getSchoolId(currentUser);
         validateSchool(schoolId);
 
-        var schoolClass = schoolClassRepository.findById(input.id())
+        SchoolClass schoolClass = schoolClassRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
             throw new NotFoundException("Không tìm thấy lớp học");
@@ -59,7 +61,7 @@ public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDe
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        var user = userRepository.findByIdAndStatus(currentUserId, UserStatus.ACTIVE)
+        User user = userRepository.findByIdAndStatus(currentUserId, UserStatus.ACTIVE)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         return user;
     }
@@ -72,7 +74,7 @@ public class ViewSchoolClassDetailsUseCase implements IUseCase<ViewSchoolClassDe
     }
 
     private void validateSchool(UUID schoolId) {
-        var school = schoolRepository.findById(schoolId)
+        School school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");

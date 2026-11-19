@@ -103,7 +103,7 @@ public class SubscriptionController {
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createPlan(@Valid @RequestBody CreateSubscriptionPlanRequest request) {
-        var data = createSubscriptionPlanUseCase.execute(CreatePlanCommandMapper.fromRequest(request));
+        UUID data = createSubscriptionPlanUseCase.execute(CreatePlanCommandMapper.fromRequest(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo gói đăng ký thành công", data));
     }
 
@@ -118,7 +118,7 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> createPlanReplacement(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody CreateSubscriptionPlanRequest request) {
-        var data = createSubscriptionPlanReplacementUseCase.execute(
+        UUID data = createSubscriptionPlanReplacementUseCase.execute(
             new CreateSubscriptionPlanReplacementCommand(id, CreatePlanCommandMapper.fromRequest(request)));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo gói thay thế thành công", data));
     }
@@ -128,7 +128,7 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> archivePlan(
             @PathVariable(name = "id") UUID id,
             @RequestParam(name = "replacedByPlanId", required = false) UUID replacedByPlanId) {
-        var data = archiveSubscriptionPlanUseCase.execute(new ArchiveSubscriptionPlanCommand(id, replacedByPlanId));
+        UUID data = archiveSubscriptionPlanUseCase.execute(new ArchiveSubscriptionPlanCommand(id, replacedByPlanId));
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ gói đăng ký thành công", data));
     }
 
@@ -144,7 +144,7 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> updatePlanReplacement(
             @PathVariable(name = "id") UUID id,
             @RequestParam(name = "replacedByPlanId") UUID replacedByPlanId) {
-        var data = updateSubscriptionPlanReplacementUseCase.execute(
+        UUID data = updateSubscriptionPlanReplacementUseCase.execute(
             new UpdateSubscriptionPlanReplacementCommand(id, replacedByPlanId));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật gói thay thế thành công", data));
     }
@@ -155,7 +155,7 @@ public class SubscriptionController {
     @PatchMapping("/{id}/publish")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> publishPlan(@PathVariable(name = "id") UUID id) {
-        var data = publishSubscriptionPlanUseCase.execute(new PublishSubscriptionPlanCommand(id));
+        UUID data = publishSubscriptionPlanUseCase.execute(new PublishSubscriptionPlanCommand(id));
         return ResponseEntity.ok(ApiResponse.success("Xuất bản gói đăng ký thành công", data));
     }
 
@@ -174,7 +174,7 @@ public class SubscriptionController {
     @PatchMapping("/cancellation")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> cancelSubscription() {
-        var data = cancelSchoolSubscriptionUseCase.execute(null);
+        UUID data = cancelSchoolSubscriptionUseCase.execute(null);
         return ResponseEntity.ok(ApiResponse.success("Đã ghi nhận yêu cầu không gia hạn gói", data));
     }
 
@@ -188,7 +188,7 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> suspendSubscription(
             @PathVariable(name = "id") UUID id,
             @RequestBody @Valid SuspendSubscriptionRequest request) {
-        var data = forceSuspendSubscriptionUseCase.execute(
+        UUID data = forceSuspendSubscriptionUseCase.execute(
             new ForceSuspendSubscriptionCommand(id, request.reason()));
         return ResponseEntity.ok(ApiResponse.success("Đình chỉ gói đăng ký thành công", data));
     }
@@ -198,7 +198,7 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> unsuspendSubscription(
             @PathVariable(name = "id") UUID id,
             @RequestBody @Valid UnsuspendSubscriptionRequest request) {
-        var data = unsuspendSubscriptionUseCase.execute(
+        UUID data = unsuspendSubscriptionUseCase.execute(
             new UnsuspendSubscriptionCommand(id, request.note()));
         return ResponseEntity.ok(ApiResponse.success("Gỡ đình chỉ gói đăng ký thành công", data));
     }
@@ -213,7 +213,7 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> allocateExamQuotaToTeachers(
             @PathVariable(name = "schoolId") UUID schoolId,
             @Valid @RequestBody AllocateQuotaRequest request) {
-        var data = allocateExamQuotaToTeachersUseCase.execute(
+        QuotaUserAllocationSummaryResponse data = allocateExamQuotaToTeachersUseCase.execute(
             AllocateQuotaCommandMapper.toExamCommand(schoolId, request));
         return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức thi cho giáo viên thành công", data));
     }
@@ -223,7 +223,7 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> allocatePracticeQuotaToStudents(
             @PathVariable(name = "schoolId") UUID schoolId,
             @Valid @RequestBody AllocateQuotaRequest request) {
-        var data = allocatePracticeQuotaToStudentsUseCase.execute(
+        QuotaUserAllocationSummaryResponse data = allocatePracticeQuotaToStudentsUseCase.execute(
             AllocateQuotaCommandMapper.toPracticeCommand(schoolId, request));
         return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức luyện tập cho học sinh thành công", data));
     }
@@ -252,7 +252,7 @@ public class SubscriptionController {
             @PathVariable(name = "schoolId") UUID schoolId,
             @PathVariable(name = "quotaType") String quotaType,
             @Valid @RequestBody FundQuotaFromBalanceRequest request) {
-        var data = fundQuotaFromBalanceUseCase.execute(
+        QuotaFundingResponse data = fundQuotaFromBalanceUseCase.execute(
             new FundQuotaFromBalanceCommand(schoolId, quotaType, request.amountVnd(), request.reason()));
         return ResponseEntity.ok(ApiResponse.success("Nạp tiền vào hạn mức thành công", data));
     }
@@ -263,7 +263,7 @@ public class SubscriptionController {
             @PathVariable(name = "schoolId") UUID schoolId,
             @PathVariable(name = "quotaType") String quotaType,
             @Valid @RequestBody SetQuotaDistributionPolicyRequest request) {
-        var data = setQuotaDistributionPolicyUseCase.execute(
+        BigDecimal data = setQuotaDistributionPolicyUseCase.execute(
             new SetQuotaDistributionPolicyCommand(schoolId, quotaType, request.distributableRatio()));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trần phân phối hạn mức thành công", data));
     }

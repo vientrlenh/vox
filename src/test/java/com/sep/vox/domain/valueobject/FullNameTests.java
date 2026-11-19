@@ -9,14 +9,14 @@ public class FullNameTests {
     
     @Test
     void should_accept_valid_fullName() {
-        var fullName = new FullName("Nguyễn Văn A");
+        FullName fullName = new FullName("Nguyễn Văn A");
 
         assertThat(fullName.value()).isEqualTo("Nguyễn Văn A");
     }
 
     @Test
     void should_accept_null_fullName() {
-        var nullFullName = new FullName(null);
+        FullName nullFullName = new FullName(null);
         assertThat(nullFullName.value()).isNull();
     }
 

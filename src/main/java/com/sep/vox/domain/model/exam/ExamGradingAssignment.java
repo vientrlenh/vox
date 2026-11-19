@@ -69,7 +69,7 @@ public class ExamGradingAssignment {
     public static ExamGradingAssignment open(UUID candidateResultId, UUID teacherId, GradingRoundType roundType,
             UUID appealId, BigDecimal scoreBefore, Instant assignedAt, UUID assignedBy,
             Instant deadlineAt) {
-        var assignment = new ExamGradingAssignment();
+        ExamGradingAssignment assignment = new ExamGradingAssignment();
         assignment.candidateResultId = candidateResultId;
         assignment.teacherId = teacherId;
         assignment.roundType = roundType;

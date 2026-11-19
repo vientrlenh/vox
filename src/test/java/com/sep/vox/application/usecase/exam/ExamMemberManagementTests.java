@@ -27,6 +27,7 @@ import com.sep.vox.application.port.input.usecase.exam.UpdateExamMemberUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.dto.ExamMemberDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMember;
@@ -67,9 +68,9 @@ class ExamMemberManagementTests {
         examMemberRepository = mock(ExamMemberRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
-        var userContextPort = mock(UserContextPort.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
 
-        var accessService = new ExamMemberManageAccessService(
+        ExamMemberManageAccessService accessService = new ExamMemberManageAccessService(
             examMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort);
         createUseCase = new CreateExamMemberUseCase(
             examRepository, examMemberRepository, schoolUserRepository, accessService);
@@ -87,7 +88,7 @@ class ExamMemberManagementTests {
 
     @Test
     void should_let_the_chair_add_an_author() {
-        var result = createUseCase.execute(new CreateExamMemberCommand(EXAM_ID, TARGET_USER_ID, "AUTHOR"));
+        ExamMemberDto result = createUseCase.execute(new CreateExamMemberCommand(EXAM_ID, TARGET_USER_ID, "AUTHOR"));
 
         assertThat(result.role()).isEqualTo(ExamMemberRole.AUTHOR.name());
         verify(examMemberRepository).save(any(ExamMember.class));
@@ -95,7 +96,7 @@ class ExamMemberManagementTests {
 
     @Test
     void should_let_the_chair_add_a_reviewer() {
-        var result = createUseCase.execute(new CreateExamMemberCommand(EXAM_ID, TARGET_USER_ID, "REVIEWER"));
+        ExamMemberDto result = createUseCase.execute(new CreateExamMemberCommand(EXAM_ID, TARGET_USER_ID, "REVIEWER"));
 
         assertThat(result.role()).isEqualTo(ExamMemberRole.REVIEWER.name());
     }
@@ -112,7 +113,7 @@ class ExamMemberManagementTests {
     void should_let_the_chair_swap_an_author_to_reviewer() {
         givenExistingMember(ExamMemberRole.AUTHOR);
 
-        var result = updateUseCase.execute(new UpdateExamMemberCommand(EXAM_ID, MEMBER_ID, "REVIEWER"));
+        ExamMemberDto result = updateUseCase.execute(new UpdateExamMemberCommand(EXAM_ID, MEMBER_ID, "REVIEWER"));
 
         assertThat(result.role()).isEqualTo(ExamMemberRole.REVIEWER.name());
     }
@@ -152,7 +153,7 @@ class ExamMemberManagementTests {
     void should_let_the_school_admin_appoint_a_chair() {
         givenCallerIsSchoolAdmin();
 
-        var result = createUseCase.execute(new CreateExamMemberCommand(EXAM_ID, TARGET_USER_ID, "CHAIR"));
+        ExamMemberDto result = createUseCase.execute(new CreateExamMemberCommand(EXAM_ID, TARGET_USER_ID, "CHAIR"));
 
         assertThat(result.role()).isEqualTo(ExamMemberRole.CHAIR.name());
     }
@@ -179,11 +180,11 @@ class ExamMemberManagementTests {
             .hasMessageContaining("Quyền truy cập bị từ chối");
     }
 
-    /** Quản trị trường khác trường không được đụng vào hội đồng của trường này. */
+    /** A school admin from another school must not touch the council of this school. */
     @Test
     void should_reject_a_school_admin_from_another_school() {
         givenCallerIsSchoolAdmin();
-        var otherSchool = mock(SchoolUser.class);
+        SchoolUser otherSchool = mock(SchoolUser.class);
         when(otherSchool.getSchoolId()).thenReturn(UUID.randomUUID());
         when(schoolUserRepository.findByUserId(CALLER_ID)).thenReturn(Optional.of(otherSchool));
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(EXAM_ID, CALLER_ID, ExamMemberRole.CHAIR))
@@ -193,10 +194,13 @@ class ExamMemberManagementTests {
             .isInstanceOf(ForbiddenException.class);
     }
 
-    /** Bài trên lớp không có hội đồng: một CHAIR duy nhất do use case tạo bài tự gán. */
+    /**
+     * A class test has no council: a single CHAIR, assigned automatically by the use case that
+     * creates the test.
+     */
     @Test
     void should_reject_managing_members_of_a_class_test() {
-        var classTest = centralizedExam();
+        Exam classTest = centralizedExam();
         classTest.setKind(ExamKind.CLASS_TEST);
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(classTest));
 
@@ -214,7 +218,7 @@ class ExamMemberManagementTests {
     }
 
     private void givenCallerIsSchoolAdmin() {
-        var schoolUser = mock(SchoolUser.class);
+        SchoolUser schoolUser = mock(SchoolUser.class);
         when(schoolUser.getSchoolId()).thenReturn(SCHOOL_ID);
         when(schoolUserRepository.findByUserId(CALLER_ID)).thenReturn(Optional.of(schoolUser));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(CALLER_ID)).thenReturn(List.of(
@@ -224,13 +228,13 @@ class ExamMemberManagementTests {
     }
 
     private void givenExistingMember(ExamMemberRole role) {
-        var member = new ExamMember(EXAM_ID, TARGET_USER_ID, role, Instant.now(), CALLER_ID);
+        ExamMember member = new ExamMember(EXAM_ID, TARGET_USER_ID, role, Instant.now(), CALLER_ID);
         member.setId(MEMBER_ID);
         when(examMemberRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
     }
 
     private Exam centralizedExam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(EXAM_ID);
         exam.setSchoolId(SCHOOL_ID);
         exam.setKind(ExamKind.CENTRALIZED);

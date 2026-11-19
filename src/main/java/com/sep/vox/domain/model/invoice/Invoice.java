@@ -103,8 +103,8 @@ public class Invoice {
      * trong khi cắt từ nửa cao sẽ dính 4 bit cố định.
      */
     public static Invoice issueFor(UUID orderId, UUID paymentId, Instant issuedAt) {
-        var year = issuedAt.atZone(ZoneConstant.BUSINESS_ZONE).getYear();
-        var suffix = "%012X".formatted(UUID.randomUUID().getLeastSignificantBits() & 0xFFFF_FFFF_FFFFL);
+        int year = issuedAt.atZone(ZoneConstant.BUSINESS_ZONE).getYear();
+        String suffix = "%012X".formatted(UUID.randomUUID().getLeastSignificantBits() & 0xFFFF_FFFF_FFFFL);
         return new Invoice(orderId, paymentId, "INV-" + year + "-" + suffix, issuedAt);
     }
 }

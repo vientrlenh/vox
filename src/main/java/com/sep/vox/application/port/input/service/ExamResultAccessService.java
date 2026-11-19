@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -68,15 +70,15 @@ public class ExamResultAccessService {
 
     @Transactional(readOnly = true)
     public SessionAccess authorizeSession(UUID sessionId) {
-        var session = examSessionRepository.findById(sessionId)
+        ExamSession session = examSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
-        var candidateOwner = authorize(session.getExamId(), session.getCandidateId());
+        boolean candidateOwner = authorize(session.getExamId(), session.getCandidateId());
         return new SessionAccess(session, candidateOwner);
     }
 
     @Transactional(readOnly = true)
     public ResponseAccess authorizeResponse(UUID answerId) {
-        var response = examItemResponseRepository.findById(answerId)
+        ExamItemResponse response = examItemResponseRepository.findById(answerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu trả lời của thí sinh"));
         return new ResponseAccess(response, authorizeSession(response.getSessionId()));
     }
@@ -98,14 +100,14 @@ public class ExamResultAccessService {
      */
     @Transactional(readOnly = true)
     public SessionAccess requireCandidateVisibleSession(UUID sessionId) {
-        var access = authorizeSession(sessionId);
+        SessionAccess access = authorizeSession(sessionId);
         requireVisibleToCaller(access);
         return access;
     }
 
     @Transactional(readOnly = true)
     public ResponseAccess requireCandidateVisibleResponse(UUID answerId) {
-        var access = authorizeResponse(answerId);
+        ResponseAccess access = authorizeResponse(answerId);
         requireVisibleToCaller(access.sessionAccess());
         return access;
     }
@@ -116,7 +118,7 @@ public class ExamResultAccessService {
             // điểm chưa công bố để có căn cứ mà chấm.
             return;
         }
-        var status = examCandidateResultRepository.findBySessionId(access.session().getId())
+        ExamCandidateResultStatus status = examCandidateResultRepository.findBySessionId(access.session().getId())
             .map(result -> result.getStatus())
             .orElse(null);
         if (!ExamCandidateResultStatus.isVisibleToCandidate(status)) {
@@ -126,28 +128,28 @@ public class ExamResultAccessService {
 
     /** @return true khi người gọi chính là thí sinh của bài — mọi nhánh khác đều false. */
     private boolean authorize(UUID examId, UUID candidateId) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (userContextPort.isSystemAdmin()) {
             return false;
         }
 
-        var candidate = examCandidateRepository.findById(candidateId)
+        ExamCandidate candidate = examCandidateRepository.findById(candidateId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của phiên thi"));
         if (candidate.getStudentId().equals(currentUserId)) {
             return true;
         }
 
-        var exam = examRepository.findById(examId)
+        Exam exam = examRepository.findById(examId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId())) {
             return false;
         }
-        var isExamMemberWithAccess = examMemberRepository.findByExamIdAndUserId(examId, currentUserId)
+        Boolean isExamMemberWithAccess = examMemberRepository.findByExamIdAndUserId(examId, currentUserId)
             .map(member -> member.getRole() == ExamMemberRole.CHAIR
                 || member.getRole() == ExamMemberRole.AUTHOR
                 || member.getRole() == ExamMemberRole.REVIEWER)

@@ -1,11 +1,16 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.application.port.input.command.ClassTestQuestionCommand;
+import com.sep.vox.domain.model.exam.ExamPaper;
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionCollaborator;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -76,8 +81,8 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
     @Override
     @Transactional
     public ExamDto execute(CreateClassTestSectionCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var exam = examRepository.findById(input.examId())
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         if (exam.getKind() != ExamKind.CLASS_TEST) {
@@ -97,31 +102,31 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
             throw new IllegalStateException("Section phải có ít nhất 1 câu hỏi");
         }
 
-        for (var questionCommand : input.questions()) {
-            var question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, exam.getSchoolId(), false, false)
+        for (ClassTestQuestionCommand questionCommand : input.questions()) {
+            Question question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, exam.getSchoolId(), false, false)
                 .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionCommand.questionId()));
             boolean isOwner = currentUserId.equals(question.getCreatedBy());
             boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
             if (!isOwner && !isSchoolShared) {
-                var collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
+                Optional<QuestionCollaborator> collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
                 if (collaborator.isEmpty() || collaborator.get().getPermission() == QuestionCollaboratorPermission.READ_ONLY) {
                     throw new ForbiddenException("Quyền READ_ONLY không được phép dùng câu hỏi trong bài kiểm tra");
                 }
             }
         }
 
-        var paper = classTestPaperResolver.resolve(exam.getId(), input.paperId());
-        var order = examPaperSectionRepository.findByPaperId(paper.getId()).size() + 1;
+        ExamPaper paper = classTestPaperResolver.resolve(exam.getId(), input.paperId());
+        int order = examPaperSectionRepository.findByPaperId(paper.getId()).size() + 1;
 
-        var now = Instant.now();
-        var paperSection = examPaperSectionRepository.save(new ExamPaperSection(
+        Instant now = Instant.now();
+        ExamPaperSection paperSection = examPaperSectionRepository.save(new ExamPaperSection(
             paper.getId(), order, input.title(), input.instruction(), null, input.weight(), now, now, currentUserId, currentUserId
         ));
 
-        var questions = input.questions();
-        var weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
+        List<ClassTestQuestionCommand> questions = input.questions();
+        List<BigDecimal> weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
         for (int i = 0; i < questions.size(); i++) {
-            var questionId = questions.get(i).questionId();
+            UUID questionId = questions.get(i).questionId();
             examPaperItemRepository.save(new ExamPaperItem(
                 null,
                 paperSection.getId(),
@@ -137,7 +142,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         if (input.weight() == null) {
             rebalanceSectionWeights(paper.getId(), now, currentUserId);
         } else {
-            var sections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
+            List<ExamPaperSection> sections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
                 .sorted(Comparator.comparingInt(section -> section.getOrder()))
                 .toList();
             ClassTestSectionWeightPolicy.validateStoredWeights(sections, "Tổng trọng số section phải bằng 1.00");
@@ -145,7 +150,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
 
         exam.setUpdatedAt(now);
         exam.setUpdatedBy(currentUserId);
-        var saved = examRepository.save(exam);
+        Exam saved = examRepository.save(exam);
         recalculateExamTimeDurationService.recalculate(exam.getId());
         return ExamDtoMapper.toDto(saved);
     }
@@ -158,9 +163,9 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
     }
 
     private List<BigDecimal> distributeEqualWeights(int count) {
-        var weights = new ArrayList<BigDecimal>();
-        var perItem = BigDecimal.ONE.divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
-        var runningSum = BigDecimal.ZERO;
+        List<BigDecimal> weights = new ArrayList<BigDecimal>();
+        BigDecimal perItem = BigDecimal.ONE.divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
+        BigDecimal runningSum = BigDecimal.ZERO;
         for (int i = 0; i < count - 1; i++) {
             weights.add(perItem);
             runningSum = runningSum.add(perItem);
@@ -170,12 +175,12 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
     }
 
     private void rebalanceSectionWeights(UUID paperId, Instant now, UUID currentUserId) {
-        var sections = examPaperSectionRepository.findByPaperId(paperId).stream()
+        List<ExamPaperSection> sections = examPaperSectionRepository.findByPaperId(paperId).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
-        var weights = distributeEqualWeights(sections.size());
+        List<BigDecimal> weights = distributeEqualWeights(sections.size());
         for (int i = 0; i < sections.size(); i++) {
-            var section = sections.get(i);
+            ExamPaperSection section = sections.get(i);
             section.setWeight(weights.get(i));
             section.setUpdatedAt(now);
             section.setUpdatedBy(currentUserId);

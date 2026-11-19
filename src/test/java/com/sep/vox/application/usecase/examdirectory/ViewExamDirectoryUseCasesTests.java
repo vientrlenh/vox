@@ -28,6 +28,7 @@ import com.sep.vox.application.port.input.usecase.examdirectory.ViewExamDirector
 import com.sep.vox.application.query.dto.ExamDirectoryUserInfo;
 import com.sep.vox.application.query.repository.ExamDirectoryQueryRepository;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
@@ -62,12 +63,12 @@ class ViewExamDirectoryUseCasesTests {
     @Test
     void should_list_all_school_classes_when_scope_is_school_wide() {
         givenScope(true);
-        var useCase = new ViewExamDirectoryClassesUseCase(accessService, schoolClassRepository);
+        ViewExamDirectoryClassesUseCase useCase = new ViewExamDirectoryClassesUseCase(accessService, schoolClassRepository);
         when(schoolClassRepository.findBySchoolId(
                 any(), any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(new PageResult<>(List.of(schoolClass()), 2, 20, 1, 1));
 
-        var result = useCase.execute(query);
+        PageResult<SchoolClassDto> result = useCase.execute(query);
 
         assertThat(result.content()).hasSize(1);
         verify(schoolClassRepository)
@@ -79,7 +80,7 @@ class ViewExamDirectoryUseCasesTests {
     @Test
     void should_list_only_caller_classes_when_scope_is_class_test() {
         givenScope(false);
-        var useCase = new ViewExamDirectoryClassesUseCase(accessService, schoolClassRepository);
+        ViewExamDirectoryClassesUseCase useCase = new ViewExamDirectoryClassesUseCase(accessService, schoolClassRepository);
         when(schoolClassRepository.findByUserId(any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(new PageResult<>(List.of(), 2, 20, 0, 0));
 
@@ -96,7 +97,7 @@ class ViewExamDirectoryUseCasesTests {
     @Test
     void should_list_grades_when_scope_is_school_wide() {
         givenScope(true);
-        var useCase = new ViewExamDirectoryGradesUseCase(accessService, queryRepository);
+        ViewExamDirectoryGradesUseCase useCase = new ViewExamDirectoryGradesUseCase(accessService, queryRepository);
         when(queryRepository.findGradesBySchoolId(any(), any(), anyInt(), anyInt()))
             .thenReturn(new PageResult<>(List.of(), 2, 20, 0, 0));
 
@@ -108,9 +109,9 @@ class ViewExamDirectoryUseCasesTests {
     @Test
     void should_reject_grades_for_class_test_chair() {
         givenScope(false);
-        var useCase = new ViewExamDirectoryGradesUseCase(accessService, queryRepository);
+        ViewExamDirectoryGradesUseCase useCase = new ViewExamDirectoryGradesUseCase(accessService, queryRepository);
 
-        var exception = assertThrows(ForbiddenException.class, () -> useCase.execute(query));
+        ForbiddenException exception = assertThrows(ForbiddenException.class, () -> useCase.execute(query));
 
         assertThat(exception.getMessage())
             .isEqualTo("Bài kiểm tra trên lớp không hỗ trợ nhập thí sinh theo niên khóa");
@@ -122,11 +123,11 @@ class ViewExamDirectoryUseCasesTests {
     @Test
     void should_list_all_school_students_when_scope_is_school_wide() {
         givenScope(true);
-        var useCase = new ViewExamDirectoryStudentsUseCase(accessService, queryRepository);
+        ViewExamDirectoryStudentsUseCase useCase = new ViewExamDirectoryStudentsUseCase(accessService, queryRepository);
         when(queryRepository.findUsersBySchoolId(any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(new PageResult<>(List.of(user()), 2, 20, 1, 1));
 
-        var result = useCase.execute(query);
+        PageResult<ExamDirectoryUserInfo> result = useCase.execute(query);
 
         assertThat(result.content()).hasSize(1);
         verify(queryRepository)
@@ -136,10 +137,10 @@ class ViewExamDirectoryUseCasesTests {
 
     @Test
     void should_list_only_students_of_caller_classes_when_scope_is_class_test() {
-        var scope = givenScope(false);
-        var classId = UUID.randomUUID();
+        ExamDirectoryAccessService.ExamDirectoryScope scope = givenScope(false);
+        UUID classId = UUID.randomUUID();
         when(accessService.callerClassIds(scope)).thenReturn(List.of(classId));
-        var useCase = new ViewExamDirectoryStudentsUseCase(accessService, queryRepository);
+        ViewExamDirectoryStudentsUseCase useCase = new ViewExamDirectoryStudentsUseCase(accessService, queryRepository);
         when(queryRepository.findUsersByClassIds(any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(new PageResult<>(List.of(), 2, 20, 0, 0));
 
@@ -154,9 +155,9 @@ class ViewExamDirectoryUseCasesTests {
 
     @Test
     void should_always_list_school_teachers_for_proctors() {
-        // Không phân nhánh theo kind: giám thị luôn là giáo viên toàn trường.
+        // No branching by kind: a proctor is always a school-wide teacher.
         givenScope(false);
-        var useCase = new ViewExamDirectoryProctorsUseCase(accessService, queryRepository);
+        ViewExamDirectoryProctorsUseCase useCase = new ViewExamDirectoryProctorsUseCase(accessService, queryRepository);
         when(queryRepository.findUsersBySchoolId(any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(new PageResult<>(List.of(), 2, 20, 0, 0));
 
@@ -167,13 +168,13 @@ class ViewExamDirectoryUseCasesTests {
     }
 
     private ExamDirectoryScope givenScope(boolean schoolWide) {
-        var scope = new ExamDirectoryScope(callerId, schoolId, schoolWide);
+        ExamDirectoryAccessService.ExamDirectoryScope scope = new ExamDirectoryScope(callerId, schoolId, schoolWide);
         when(accessService.resolveByExamId(eq(examId))).thenReturn(scope);
         return scope;
     }
 
     private SchoolClass schoolClass() {
-        var schoolClass = SchoolClass.create(
+        SchoolClass schoolClass = SchoolClass.create(
             schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-01", "English 01", null,
             UUID.randomUUID(), Instant.now());
         schoolClass.setId(UUID.randomUUID());

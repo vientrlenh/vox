@@ -1,5 +1,9 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
+import com.sep.vox.domain.model.rubric.Rubric;
+import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
@@ -71,7 +75,7 @@ public class UpdateSchoolRubricVersionUseCase
         }
 
         // 2. Kiểm tra user thuộc đúng trường
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() ->
                         new ForbiddenException("Tài khoản chưa được liên kết với trường học.")
                 );
@@ -82,7 +86,7 @@ public class UpdateSchoolRubricVersionUseCase
             );
         }
 
-        var school = schoolRepository.findById(command.schoolId())
+        School school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() ->
                         new NotFoundException("Không tìm thấy trường học.")
                 );
@@ -92,7 +96,7 @@ public class UpdateSchoolRubricVersionUseCase
         }
 
         // 3. Lấy Rubric Version
-        var version = rubricVersionRepository.findById(command.versionId())
+        RubricVersion version = rubricVersionRepository.findById(command.versionId())
                 .orElseThrow(() ->
                         new NotFoundException("Không tìm thấy Rubric Version.")
                 );
@@ -104,7 +108,7 @@ public class UpdateSchoolRubricVersionUseCase
         }
 
         // 4. Kiểm tra Rubric thuộc đúng trường
-        var rubric = rubricRepository.findById(version.getRubricId())
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() ->
                         new NotFoundException("Không tìm thấy bộ Rubric gốc.")
                 );

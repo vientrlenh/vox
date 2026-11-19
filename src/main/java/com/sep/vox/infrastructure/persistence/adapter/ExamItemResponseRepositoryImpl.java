@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamItemResponseJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -40,7 +41,7 @@ public class ExamItemResponseRepositoryImpl implements ExamItemResponseRepositor
 
     @Override
     public ExamItemResponse save(ExamItemResponse response) {
-        var saved = springDataExamItemResponseRepository.save(ExamItemResponseMapper.toJpa(response));
+        ExamItemResponseJpaEntity saved = springDataExamItemResponseRepository.save(ExamItemResponseMapper.toJpa(response));
         return ExamItemResponseMapper.toDomain(saved);
     }
 

@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -66,8 +68,8 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
             throw new IllegalStateException("Chỉ được cung cấp blueprintId hoặc newBlueprint, không được cung cấp cả hai");
         }
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var exam = examRepository.findById(input.examId())
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         if (exam.getKind() != ExamKind.CENTRALIZED) {
@@ -84,7 +86,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
                 throw new ForbiddenException("Quyền truy cập bị từ chối");
             }
 
-            var blueprint = examBlueprintRepository.findById(input.blueprintId())
+            ExamBlueprint blueprint = examBlueprintRepository.findById(input.blueprintId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
             if (!exam.getSchoolId().equals(blueprint.getSchoolId())) {
                 throw new IllegalStateException("Blueprint không thuộc cùng trường với bài kiểm tra");
@@ -102,7 +104,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
                 throw new ForbiddenException("Quyền truy cập bị từ chối");
             }
             requireNoExistingPapers(exam.getId());
-            var createdBlueprint = createInlineBlueprint(input.newBlueprint(), exam.getSchoolId(), exam.getLanguageId(), currentUserId);
+            ExamBlueprint createdBlueprint = createInlineBlueprint(input.newBlueprint(), exam.getSchoolId(), exam.getLanguageId(), currentUserId);
             exam.setBlueprintId(createdBlueprint.getId());
             exam.setBlueprintVersionId(null);
         }
@@ -115,7 +117,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
                 throw new IllegalStateException("Bài kiểm tra chưa gắn blueprint");
             }
 
-            var version = examBlueprintVersionRepository.findById(input.blueprintVersionId())
+            ExamBlueprintVersion version = examBlueprintVersionRepository.findById(input.blueprintVersionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
             if (!version.getBlueprintId().equals(exam.getBlueprintId())) {
                 throw new IllegalStateException("Version không thuộc blueprint đang gắn vào exam");
@@ -152,8 +154,8 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
             UUID schoolId,
             UUID examLanguageId,
             UUID currentUserId) {
-        var now = Instant.now();
-        var name = StringNormalization.trimAndCollapseSpaces(command.name());
+        Instant now = Instant.now();
+        String name = StringNormalization.trimAndCollapseSpaces(command.name());
         if (name == null || name.isBlank()) {
             throw new IllegalStateException("Tên blueprint là bắt buộc");
         }
@@ -162,7 +164,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
                 && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
             throw new NotFoundException("Không tìm thấy khối lớp");
         }
-        var blueprint = new ExamBlueprint(
+        ExamBlueprint blueprint = new ExamBlueprint(
             schoolId,
             command.languageId() == null ? examLanguageId : command.languageId(),
             command.gradeLevelId(),
@@ -179,7 +181,7 @@ public class AttachExamBlueprintUseCase implements IUseCase<AttachExamBlueprintC
     }
 
     private String blueprintCodeOf(String code) {
-        var normalized = StringNormalization.normalizeCode(code);
+        String normalized = StringNormalization.normalizeCode(code);
         if (normalized != null && !normalized.isBlank()) {
             return normalized;
         }

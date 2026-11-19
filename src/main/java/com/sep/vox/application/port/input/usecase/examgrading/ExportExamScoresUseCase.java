@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,9 +49,9 @@ public class ExportExamScoresUseCase implements IUseCase<ExportExamScoresQuery, 
     @Override
     @Transactional(readOnly = true)
     public String execute(ExportExamScoresQuery input) {
-        var rows = examScoreExportSupport.loadRows(input);
-        var csv = new StringBuilder(UTF8_BOM).append(HEADER).append(LINE_BREAK);
-        for (var row : rows) {
+        List<ExamScoreRowInfo> rows = examScoreExportSupport.loadRows(input);
+        StringBuilder csv = new StringBuilder(UTF8_BOM).append(HEADER).append(LINE_BREAK);
+        for (ExamScoreRowInfo row : rows) {
             csv.append(line(row)).append(LINE_BREAK);
         }
         return csv.toString();
@@ -107,7 +108,7 @@ public class ExportExamScoresUseCase implements IUseCase<ExportExamScoresQuery, 
         if (value == null) {
             return "\"\"";
         }
-        var safe = value;
+        String safe = value;
         if (!safe.isEmpty() && FORMULA_TRIGGERS.indexOf(safe.charAt(0)) >= 0) {
             safe = "'" + safe;
         }

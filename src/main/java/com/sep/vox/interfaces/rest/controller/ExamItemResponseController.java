@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.controller;
 
+import com.sep.vox.application.response.input.examitemresponse.ExamItemResponseTurnResponse;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -32,7 +33,7 @@ public class ExamItemResponseController {
             @PathVariable("answerId") UUID answerId,
             @PathVariable("turnOrder") int turnOrder,
             @RequestBody UpdateExamItemResponseTurnRequest request) {
-        var data = updateExamItemResponseTurnUseCase.execute(new UpdateExamItemResponseTurnCommand(
+        ExamItemResponseTurnResponse data = updateExamItemResponseTurnUseCase.execute(new UpdateExamItemResponseTurnCommand(
             answerId,
             turnOrder,
             request.turnType(),

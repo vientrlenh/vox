@@ -22,7 +22,7 @@ public final class VnSearchKey {
         if (value == null) {
             return null;
         }
-        var decomposed = Normalizer.normalize(value, Normalizer.Form.NFD)
+        String decomposed = Normalizer.normalize(value, Normalizer.Form.NFD)
             .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
         return decomposed
             .replace('đ', 'd')

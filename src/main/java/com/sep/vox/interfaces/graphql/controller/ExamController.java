@@ -268,7 +268,7 @@ public class ExamController {
             return CompletableFuture.completedFuture(true);
         }
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         DataLoader<UUID, List<ExamMemberDto>> loader = env.getDataLoader("examMembersByExamId");
         return loader.load(source.id()).thenApply(members -> members.stream()
             .anyMatch(member -> member.userId().equals(currentUserId)));

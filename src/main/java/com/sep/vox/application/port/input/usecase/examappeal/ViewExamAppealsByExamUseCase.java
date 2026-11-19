@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
+import com.sep.vox.domain.model.exam.Exam;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,8 +59,8 @@ public class ViewExamAppealsByExamUseCase
     @Override
     @Transactional(readOnly = true)
     public PageResult<AppealSummaryInfo> execute(SearchAppealsByExamQuery input) {
-        var currentUserId = examAppealAccessService.requireActiveUserId();
-        var exam = examRepository.findById(input.examId())
+        UUID currentUserId = examAppealAccessService.requireActiveUserId();
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
         examGradingAccessService.authorizeSchoolAdminOrExamChair(
             exam.getSchoolId(), exam.getId(), currentUserId);
@@ -67,7 +69,7 @@ public class ViewExamAppealsByExamUseCase
         // không gắn với trường nào — đó là system admin, và họ đã qua được cửa phân quyền
         // ở trên. Cùng cách xử lý với ViewExamAppealDetailUseCase; ném ForbiddenException
         // ở đây sẽ chặn đúng người vừa được cho phép.
-        var schoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID schoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(exam.getSchoolId());
         return examAppealQueryRepository.searchAppeals(

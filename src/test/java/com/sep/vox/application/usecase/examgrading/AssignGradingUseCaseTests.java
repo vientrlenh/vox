@@ -79,14 +79,14 @@ public class AssignGradingUseCaseTests {
             .thenReturn(Set.of(teacherId));
         when(examGradingAssignmentRepository.saveAll(anyList())).thenAnswer(invocation -> {
             @SuppressWarnings("unchecked")
-            var assignments = (List<ExamGradingAssignment>) invocation.getArgument(0);
+            List<ExamGradingAssignment> assignments = (List<ExamGradingAssignment>) invocation.getArgument(0);
             assignments.forEach(assignment -> assignment.setId(UUID.randomUUID()));
             return assignments;
         });
     }
 
     private ExamCandidateResult result(UUID candidateResultId, ExamCandidateResultStatus status) {
-        var candidateResult = new ExamCandidateResult();
+        ExamCandidateResult candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);
         candidateResult.setExamId(examId);
         candidateResult.setStatus(status);
@@ -94,14 +94,14 @@ public class AssignGradingUseCaseTests {
     }
 
     private Exam exam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         return exam;
     }
 
     private ExamGradingAssignment existingAssignment(UUID candidateResultId) {
-        var assignment = ExamGradingAssignment.open(candidateResultId, UUID.randomUUID(),
+        ExamGradingAssignment assignment = ExamGradingAssignment.open(candidateResultId, UUID.randomUUID(),
             GradingRoundType.INITIAL, null, null, Instant.now(), adminId, null);
         assignment.setId(UUID.randomUUID());
         return assignment;
@@ -119,7 +119,7 @@ public class AssignGradingUseCaseTests {
 
     @SuppressWarnings("unchecked")
     private List<ExamGradingAssignment> captureSaved() {
-        var captor = (ArgumentCaptor<List<ExamGradingAssignment>>) (ArgumentCaptor<?>)
+        ArgumentCaptor<List<ExamGradingAssignment>> captor = (ArgumentCaptor<List<ExamGradingAssignment>>) (ArgumentCaptor<?>)
             ArgumentCaptor.forClass(List.class);
         verify(examGradingAssignmentRepository).saveAll(captor.capture());
         return captor.getValue();
@@ -127,10 +127,10 @@ public class AssignGradingUseCaseTests {
 
     @Test
     void should_assign_every_selected_result_to_the_chosen_teacher() {
-        var assignmentIds = useCase.execute(command(firstResultId, secondResultId));
+        List<UUID> assignmentIds = useCase.execute(command(firstResultId, secondResultId));
 
         assertThat(assignmentIds).hasSize(2);
-        var saved = captureSaved();
+        List<ExamGradingAssignment> saved = captureSaved();
         assertThat(saved).extracting(grading -> grading.getCandidateResultId())
             .containsExactlyInAnyOrder(firstResultId, secondResultId);
         assertThat(saved).allSatisfy(assignment -> {
@@ -217,13 +217,14 @@ public class AssignGradingUseCaseTests {
 
     @Test
     void should_snapshot_the_current_score_when_assigning() {
-        var released = result(firstResultId, ExamCandidateResultStatus.RELEASED);
+        ExamCandidateResult released = result(firstResultId, ExamCandidateResultStatus.RELEASED);
         released.setTotalScore(new java.math.BigDecimal("6.50"));
         when(examCandidateResultRepository.findByIdIn(anyCollection())).thenReturn(List.of(released));
 
         useCase.execute(command(GradingRoundType.SPOT_CHECK, firstResultId));
 
-        // scoreBefore chụp lúc GIAO: lấy sau thì chính giáo viên đã sửa mất mốc so lệch.
+        // scoreBefore is captured at ASSIGNMENT time: if taken later, the teacher has already
+        // edited it and the deviation reference point is lost.
         assertThat(captureSaved()).singleElement()
             .satisfies(assignment ->
                 assertThat(assignment.getScoreBefore()).isEqualByComparingTo("6.50"));
@@ -231,8 +232,8 @@ public class AssignGradingUseCaseTests {
 
     @Test
     void should_reject_a_grader_who_is_not_a_teacher_of_the_same_school() {
-        var outsider = UUID.randomUUID();
-        // Query lọc giáo viên trả tập rỗng cho người ngoài trường.
+        UUID outsider = UUID.randomUUID();
+        // The teacher-filtering query returns an empty set for someone outside the school.
         when(examGradingQueryRepository.findTeacherIdsInSchool(eq(schoolId), anyCollection()))
             .thenReturn(Set.of());
         when(examCandidateResultRepository.findByIdIn(anyCollection()))

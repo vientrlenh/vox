@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.Instant;
@@ -78,11 +79,11 @@ public class TopicSuggestionService {
     // same fix + rationale (HikariCP connection-pool starvation under load). Each repository
     // call here self-transacts via Spring Data's proxy.
     public TopicFromKeywordResult generateFromKeyword(UUID studentId, String keyword) {
-        var normalized = normalize(keyword);
+        String normalized = normalize(keyword);
         if (normalized.isBlank()) {
             return new TopicFromKeywordResult(null, "REJECTED_UNSUITABLE");
         }
-        var existingTopic = findNearExistingTopic(normalized);
+        TopicNameCard existingTopic = findNearExistingTopic(normalized);
         if (existingTopic != null) {
             recordKeywordRequest(studentId, keyword, "MATCHED_EXISTING");
             return new TopicFromKeywordResult(
@@ -108,7 +109,7 @@ public class TopicSuggestionService {
             recordKeywordRequest(studentId, keyword, "REJECTED_UNSUITABLE");
             return new TopicFromKeywordResult(null, "REJECTED_UNSUITABLE");
         }
-        var goal = currentGoal(studentId);
+        String goal = currentGoal(studentId);
         if ("EXAM_PREP".equals(goal)) {
             // EXAM_PREP chỉ luyện trên topic lấy từ ngân hàng câu hỏi (question_bank/
             // question_topic) của đúng trường + khối -- không cho AI tự sinh topic mới từ
@@ -116,7 +117,7 @@ public class TopicSuggestionService {
             recordKeywordRequest(studentId, keyword, "OUT_OF_EXAM_SCOPE");
             return new TopicFromKeywordResult(null, "OUT_OF_EXAM_SCOPE");
         }
-        var proposals = topicGenerationPort.propose(
+        List<TopicGenerationPort.TopicProposal> proposals = topicGenerationPort.propose(
             studentId,
             List.of(new KeywordEvidence(keyword, 1)),
             interestScores(studentId),
@@ -130,8 +131,8 @@ public class TopicSuggestionService {
             recordKeywordRequest(studentId, keyword, "REJECTED_UNSUITABLE");
             return new TopicFromKeywordResult(null, "REJECTED_UNSUITABLE");
         }
-        var proposal = proposals.get(0);
-        var duplicateTopic = findNearExistingTopic(normalize(proposal.name()));
+        TopicGenerationPort.TopicProposal proposal = proposals.get(0);
+        TopicNameCard duplicateTopic = findNearExistingTopic(normalize(proposal.name()));
         if (duplicateTopic != null) {
             recordKeywordRequest(studentId, keyword, "MATCHED_EXISTING");
             return new TopicFromKeywordResult(
@@ -146,7 +147,7 @@ public class TopicSuggestionService {
         // riêng có @Transactional (xem KeywordTopicPersistenceService), KHÔNG bọc
         // transaction quanh cả hàm này vì generationClient.propose() ở trên là
         // cuộc gọi LLM chậm.
-        var topicId = keywordTopicPersistenceService.createTopicAndRecordRequest(
+        UUID topicId = keywordTopicPersistenceService.createTopicAndRecordRequest(
             studentId,
             keyword,
             proposal.name(),
@@ -193,7 +194,7 @@ public class TopicSuggestionService {
         if (requestedCount <= 0 || "EXAM_PREP".equals(currentGoal(studentId))) {
             return List.of();
         }
-        var proposals = topicGenerationPort.propose(
+        List<TopicGenerationPort.TopicProposal> proposals = topicGenerationPort.propose(
             studentId,
             List.of(),
             interestScores(studentId),
@@ -217,25 +218,25 @@ public class TopicSuggestionService {
             requestedCount,
             dimensionCodes()
         );
-        var result = new ArrayList<PracticeTopicOffer>();
+        List<PracticePlanningResponses.PracticeTopicOffer> result = new ArrayList<PracticeTopicOffer>();
         // Nạp ứng viên MỘT lần cho cả vòng lặp. Bản cũ gọi findNearExistingTopic() ngay trong
         // vòng, mà hàm đó tự nạp toàn bộ bảng -- tức tối đa MAX_PROPOSALS_PER_RUN lượt nạp + tokenize
         // lại mọi tên chủ đề, mỗi lượt sinh.
-        var candidates = activeNameCards();
+        List<TopicNameCard> candidates = activeNameCards();
         // Sổ kế toán một lượt sinh -- xem log cuối hàm để biết vì sao cần.
-        var collidedWith = new ArrayList<String>();
-        var skippedOverQuota = 0;
-        for (var proposal : proposals) {
+        List<String> collidedWith = new ArrayList<String>();
+        int skippedOverQuota = 0;
+        for (TopicGenerationPort.TopicProposal proposal : proposals) {
             if (result.size() >= requestedCount) {
                 skippedOverQuota++;
                 continue;
             }
-            var duplicate = findNearExistingTopic(normalize(proposal.name()), candidates);
+            TopicNameCard duplicate = findNearExistingTopic(normalize(proposal.name()), candidates);
             if (duplicate != null) {
                 collidedWith.add(proposal.name() + " ~ " + duplicate.name());
                 continue;
             }
-            var topicId = createTopic(
+            UUID topicId = createTopic(
                 proposal.name(), proposal.interestDimension(), proposal.curriculumGroup(),
                 "AI_SUGGESTED", proposal.temporalAffordance()
             );
@@ -291,7 +292,7 @@ public class TopicSuggestionService {
         if (value == null) {
             return "";
         }
-        var decomposed = Normalizer.normalize(
+        String decomposed = Normalizer.normalize(
             value.toLowerCase(Locale.ROOT).strip().replace('đ', 'd'),
             Normalizer.Form.NFD
         );
@@ -302,14 +303,14 @@ public class TopicSuggestionService {
     }
 
     static double tokenSimilarity(String left, String right) {
-        var leftTokens = new HashSet<>(List.of(normalize(left).split(" ")));
-        var rightTokens = new HashSet<>(List.of(normalize(right).split(" ")));
+        Set<String> leftTokens = new HashSet<>(List.of(normalize(left).split(" ")));
+        Set<String> rightTokens = new HashSet<>(List.of(normalize(right).split(" ")));
         if (leftTokens.isEmpty() || rightTokens.isEmpty()) {
             return 0;
         }
-        var intersection = new HashSet<>(leftTokens);
+        Set<String> intersection = new HashSet<>(leftTokens);
         intersection.retainAll(rightTokens);
-        var union = new HashSet<>(leftTokens);
+        Set<String> union = new HashSet<>(leftTokens);
         union.addAll(rightTokens);
         return (double) intersection.size() / union.size();
     }
@@ -366,7 +367,7 @@ public class TopicSuggestionService {
             String curriculumGroup,
             String source,
             String temporalAffordance) {
-        var saved = practiceTopicRepository.save(new PracticeTopic(
+        PracticeTopic saved = practiceTopicRepository.save(new PracticeTopic(
             null,
             name,
             normalize(name),

@@ -41,21 +41,21 @@ public class ExamSessionModerationAccessService {
     }
 
     public void authorize(Exam exam, ExamCandidate candidate) {
-        var currentUserId = getCurrentUserId();
+        UUID currentUserId = getCurrentUserId();
         if (userContextPort.isSystemAdmin()) {
             return;
         }
 
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId())) {
             return;
         }
 
-        var allowedExamRole = examMemberRepository.findByExamIdAndUserId(exam.getId(), currentUserId)
+        Boolean allowedExamRole = examMemberRepository.findByExamIdAndUserId(exam.getId(), currentUserId)
             .map(member -> member.getRole() == ExamMemberRole.CHAIR
                 || member.getRole() == ExamMemberRole.AUTHOR
                 || member.getRole() == ExamMemberRole.REVIEWER)

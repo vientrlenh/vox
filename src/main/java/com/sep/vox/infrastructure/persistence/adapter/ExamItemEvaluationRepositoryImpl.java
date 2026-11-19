@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamItemEvaluationJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -24,7 +25,7 @@ public class ExamItemEvaluationRepositoryImpl implements ExamItemEvaluationRepos
 
     @Override
     public ExamItemEvaluation save(ExamItemEvaluation evaluation) {
-        var saved = springDataExamItemEvaluationRepository.save(ExamItemEvaluationMapper.toJpa(evaluation));
+        ExamItemEvaluationJpaEntity saved = springDataExamItemEvaluationRepository.save(ExamItemEvaluationMapper.toJpa(evaluation));
         return ExamItemEvaluationMapper.toDomain(saved);
     }
 

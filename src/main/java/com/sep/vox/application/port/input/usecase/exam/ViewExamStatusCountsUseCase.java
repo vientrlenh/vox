@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,12 +35,12 @@ public class ViewExamStatusCountsUseCase implements IUseCase<ViewExamStatusCount
     @Override
     @Transactional(readOnly = true)
     public ExamStatusCountsDto execute(ViewExamStatusCountsQuery input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var systemAdmin = userContextPort.isSystemAdmin();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        boolean systemAdmin = userContextPort.isSystemAdmin();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         if (!systemAdmin && currentSchoolId == null) {

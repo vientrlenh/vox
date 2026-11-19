@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.GradeLevelBandScopeJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -51,7 +52,7 @@ public class GradeLevelBandScopeRepositoryImpl implements GradeLevelBandScopeRep
 
     @Override
     public GradeLevelBandScope save(GradeLevelBandScope bandScope) {
-        var saved = bandScopeRepository.save(GradeLevelBandScopeMapper.toEntity(bandScope));
+        GradeLevelBandScopeJpaEntity saved = bandScopeRepository.save(GradeLevelBandScopeMapper.toEntity(bandScope));
         return GradeLevelBandScopeMapper.toDomain(saved);
     }
 

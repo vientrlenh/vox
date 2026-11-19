@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.order;
 
+import com.sep.vox.domain.model.order.Order;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -23,7 +24,7 @@ public class ViewOrderDetailsUseCase implements IUseCase<ViewOrderDetailsQuery, 
 
     @Override
     public OrderDto execute(ViewOrderDetailsQuery input) {
-        var order = orderRepository.findById(input.id())
+        Order order = orderRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thông tin của đơn hàng yêu cầu"));
         if (!userContextPort.isSystemAdmin() && !order.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
             throw new ForbiddenException("Bạn không có quyền truy cập vào đơn hàng này");

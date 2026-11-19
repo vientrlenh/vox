@@ -38,7 +38,7 @@ public class ViewExamDirectoryGradesUseCase
     @Override
     @Transactional(readOnly = true)
     public PageResult<ExamDirectoryGradeInfo> execute(ViewExamDirectoryQuery input) {
-        var scope = examDirectoryAccessService.resolveByExamId(input.examId());
+        ExamDirectoryAccessService.ExamDirectoryScope scope = examDirectoryAccessService.resolveByExamId(input.examId());
         if (!scope.schoolWide()) {
             throw new ForbiddenException(CLASS_TEST_REJECTION);
         }

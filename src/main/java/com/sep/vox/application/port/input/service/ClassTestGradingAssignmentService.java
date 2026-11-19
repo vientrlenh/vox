@@ -1,6 +1,9 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.exam.Exam;
 import java.time.Instant;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -67,7 +70,7 @@ public class ClassTestGradingAssignmentService {
         if (result == null || result.getStatus() != ExamCandidateResultStatus.PENDING_REVIEW) {
             return;
         }
-        var chairId = findClassTestChairId(result.getExamId());
+        UUID chairId = findClassTestChairId(result.getExamId());
         if (chairId == null) {
             return;
         }
@@ -96,11 +99,11 @@ public class ClassTestGradingAssignmentService {
         if (examId == null) {
             return 0;
         }
-        var chairId = findClassTestChairId(examId);
+        UUID chairId = findClassTestChairId(examId);
         if (chairId == null) {
             return 0;
         }
-        var pending = examCandidateResultRepository.findByExamId(examId).stream()
+        List<ExamCandidateResult> pending = examCandidateResultRepository.findByExamId(examId).stream()
             .filter(result -> result.getStatus() == ExamCandidateResultStatus.PENDING_REVIEW)
             .toList();
         if (pending.isEmpty()) {
@@ -108,13 +111,13 @@ public class ClassTestGradingAssignmentService {
         }
 
         // Một query cho cả lô thay vì hỏi từng bài — số bài bằng sĩ số lớp.
-        var alreadyOpen = examGradingAssignmentRepository
+        Set<UUID> alreadyOpen = examGradingAssignmentRepository
             .findOpenByCandidateResultIdIn(pending.stream().map(result -> result.getId()).toList()).stream()
             .map(assignment -> assignment.getCandidateResultId())
             .collect(Collectors.toSet());
 
-        var now = Instant.now();
-        var toOpen = pending.stream()
+        Instant now = Instant.now();
+        List<ExamGradingAssignment> toOpen = pending.stream()
             .filter(result -> !alreadyOpen.contains(result.getId()))
             .map(result -> open(result, chairId, now))
             .toList();
@@ -126,7 +129,7 @@ public class ClassTestGradingAssignmentService {
 
     /** {@code null} = không phải bài trên lớp, hoặc bài không có CHAIR. */
     private UUID findClassTestChairId(UUID examId) {
-        var exam = examRepository.findById(examId).orElse(null);
+        Exam exam = examRepository.findById(examId).orElse(null);
         if (exam == null || exam.getKind() != ExamKind.CLASS_TEST) {
             return null;
         }

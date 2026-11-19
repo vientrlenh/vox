@@ -12,7 +12,7 @@ import com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity;
 public final class ExamMapper {
 
     public static Exam toDomain(ExamJpaEntity jpa) {
-        var exam = new Exam(
+        Exam exam = new Exam(
             jpa.getId(),
             jpa.getBlueprintId(),
             jpa.getBlueprintVersionId(),
@@ -39,15 +39,15 @@ public final class ExamMapper {
             jpa.getUpdatedBy()
         );
         exam.setExamTimeDurationSecond(jpa.getExamTimeDurationSecond());
-        // Đặt qua setter chứ không nhét vào constructor: constructor của Exam đã dài và có nhiều
-        // biến thể, thêm tham số vào là sửa mọi nơi gọi chỉ để mang một trường tuỳ chọn.
+        // Set through a setter instead of the constructor: the Exam constructor is already long and has many
+        // variants, and adding a parameter would mean editing every caller just to carry one optional field.
         exam.setAiConfidenceThresholdPercent(jpa.getAiConfidenceThresholdPercent());
         exam.setHumanGradingNotifiedAt(jpa.getHumanGradingNotifiedAt());
         return exam;
     }
 
     public static ExamJpaEntity toJpa(Exam exam) {
-        var jpa = new ExamJpaEntity(
+        ExamJpaEntity jpa = new ExamJpaEntity(
             exam.getId(),
             exam.getBlueprintId(),
             exam.getBlueprintVersionId(),

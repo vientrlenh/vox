@@ -1,7 +1,10 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import java.time.Instant;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,13 +67,13 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
     @Override
     @Transactional
     public GradingActionResponse execute(GradingDecisionCommand command) {
-        var prepared = gradingActionSupport.prepare(
+        GradingActionSupport.PreparedAction prepared = gradingActionSupport.prepare(
             command.assignmentId(), GradingOutcome.CLEARED_INVALID, command.reason());
 
-        var result = prepared.context().candidateResult();
-        var now = Instant.now();
+        ExamCandidateResult result = prepared.context().candidateResult();
+        Instant now = Instant.now();
 
-        var candidate = examCandidateRepository.findById(result.getCandidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(result.getCandidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của bài thi."));
         if (candidate.getBlockedAt() != null) {
             candidate.setBlockedAt(null);
@@ -88,7 +91,7 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
         // trôi qua — đỏ "quá hạn" ngay lúc tạo, job nhắc bắn ngay lượt sau, và lọt vào
         // danh sách thu hồi dù giáo viên chưa có một phút nào để chấm. Để trống, admin
         // đặt hạn sau qua PUT /grading-assignments/{id}/deadline.
-        var next = examGradingAssignmentRepository.save(ExamGradingAssignment.open(
+        ExamGradingAssignment next = examGradingAssignmentRepository.save(ExamGradingAssignment.open(
             result.getId(),
             prepared.currentUserId(),
             GradingRoundType.INITIAL,
@@ -99,9 +102,9 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
             null
         ));
 
-        var studentId = gradingActionSupport.resolveStudentId(result);
+        UUID studentId = gradingActionSupport.resolveStudentId(result);
         if (studentId != null) {
-            var payload = new ExamResultInvalidClearedPayloadV1(
+            ExamResultInvalidClearedPayloadV1 payload = new ExamResultInvalidClearedPayloadV1(
                 result.getId(), studentId, prepared.context().examName(), prepared.reason(),
                 result.getSessionId(), prepared.context().examKind());
             outboxRepository.save(Outbox.create(

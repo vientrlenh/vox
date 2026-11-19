@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.exam.Exam;
 import java.time.Instant;
 
 import org.springframework.stereotype.Service;
@@ -40,16 +41,16 @@ public class CreateExamMemberUseCase implements IUseCase<CreateExamMemberCommand
     @Override
     @Transactional
     public ExamMemberDto execute(CreateExamMemberCommand input) {
-        var command = new CreateExamMemberCommand(
+        CreateExamMemberCommand command = new CreateExamMemberCommand(
             input.examId(),
             input.userId(),
             StringNormalization.normalizeCode(input.role())
         );
-        var exam = examRepository.findById(command.examId())
+        Exam exam = examRepository.findById(command.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
-        var actor = examMemberManageAccessService.requireCanManage(exam);
-        var role = ExamMemberRole.valueOf(command.role());
+        ExamMemberManageAccessService.ExamMemberActor actor = examMemberManageAccessService.requireCanManage(exam);
+        ExamMemberRole role = ExamMemberRole.valueOf(command.role());
         examMemberManageAccessService.requireCanTouchRole(actor, role);
 
         if (!schoolUserRepository.existsBySchoolIdAndUserId(exam.getSchoolId(), command.userId())) {
@@ -59,7 +60,7 @@ public class CreateExamMemberUseCase implements IUseCase<CreateExamMemberCommand
             throw new IllegalStateException("Người dùng đã có vai trò này trong bài kiểm tra");
         }
 
-        var member = new ExamMember(
+        ExamMember member = new ExamMember(
             exam.getId(),
             command.userId(),
             role,

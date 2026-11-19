@@ -59,7 +59,7 @@ class ClaimClassTestGradingUseCaseTests {
         when(examGradingAssignmentRepository.findOpenByCandidateResultIdIn(anyCollection())).thenReturn(List.of());
         when(examGradingAssignmentRepository.saveAll(anyList())).thenAnswer(call -> {
             @SuppressWarnings("unchecked")
-            var assignments = (List<ExamGradingAssignment>) call.getArgument(0);
+            List<ExamGradingAssignment> assignments = (List<ExamGradingAssignment>) call.getArgument(0);
             assignments.forEach(assignment -> assignment.setId(UUID.randomUUID()));
             return assignments;
         });
@@ -67,10 +67,10 @@ class ClaimClassTestGradingUseCaseTests {
 
     @Test
     void should_open_spot_check_assignment_for_the_chair_themselves() {
-        var ids = useCase.execute(command(GradingRoundType.SPOT_CHECK, RESULT_ID));
+        List<UUID> ids = useCase.execute(command(GradingRoundType.SPOT_CHECK, RESULT_ID));
 
         assertThat(ids).hasSize(1);
-        var captor = captureSaved();
+        List<ExamGradingAssignment> captor = captureSaved();
         assertThat(captor).singleElement().satisfies(assignment -> {
             assertThat(assignment.getTeacherId()).isEqualTo(CHAIR_ID);
             assertThat(assignment.getAssignedBy()).isEqualTo(CHAIR_ID);
@@ -81,7 +81,7 @@ class ClaimClassTestGradingUseCaseTests {
 
     @Test
     void should_capture_score_before_at_claim_time() {
-        var result = result(RESULT_ID, EXAM_ID, ExamCandidateResultStatus.RELEASED);
+        ExamCandidateResult result = result(RESULT_ID, EXAM_ID, ExamCandidateResultStatus.RELEASED);
         result.setTotalScore(new BigDecimal("7.50"));
         when(examCandidateResultRepository.findByIdIn(anyCollection())).thenReturn(List.of(result));
 
@@ -182,7 +182,7 @@ class ClaimClassTestGradingUseCaseTests {
     }
 
     private ExamCandidateResult result(UUID id, UUID examId, ExamCandidateResultStatus status) {
-        var result = new ExamCandidateResult();
+        ExamCandidateResult result = new ExamCandidateResult();
         result.setId(id);
         result.setExamId(examId);
         result.setStatus(status);

@@ -1,6 +1,8 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
+import com.sep.vox.domain.model.exam.ExamCandidate;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -69,17 +71,17 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
     @Override
     @Transactional
     public ExamScheduleDto execute(UpdateExamScheduleStatusCommand input) {
-        var schedule = examScheduleRepository.findById(input.scheduleId())
+        ExamSchedule schedule = examScheduleRepository.findById(input.scheduleId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
         if (!schedule.getExamId().equals(input.examId())) {
             throw new NotFoundException("Không tìm thấy ca thi");
         }
-        var exam = examRepository.findById(schedule.getExamId())
+        Exam exam = examRepository.findById(schedule.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var currentUserId = authorize(exam);
+        UUID currentUserId = authorize(exam);
 
-        var now = Instant.now();
-        var action = input.action() == null ? "" : input.action().trim().toUpperCase();
+        Instant now = Instant.now();
+        String action = input.action() == null ? "" : input.action().trim().toUpperCase();
         switch (action) {
             case "PUBLISH" -> publish(schedule);
             // Dời ca là thao tác xếp lịch nên bị khoá khi kỳ thi đã bắt đầu; publish/complete/cancel
@@ -122,13 +124,13 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
      * dùng chung cách phân loại với {@link ExamCandidateStatus}.
      */
     private void requireEveryCandidateHasPaper(ExamSchedule schedule) {
-        var candidates = examCandidateRepository.findByScheduleId(schedule.getId()).stream()
+        List<ExamCandidate> candidates = examCandidateRepository.findByScheduleId(schedule.getId()).stream()
             .filter(candidate -> !ExamCandidateStatus.isNonScorable(candidate.getStatus()))
             .toList();
         if (candidates.isEmpty()) {
             throw new IllegalStateException("Ca thi chưa có thí sinh nào, không thể công bố");
         }
-        var withoutPaper = candidates.stream()
+        long withoutPaper = candidates.stream()
             .filter(candidate -> candidate.getAssignedPaperId() == null)
             .count();
         if (withoutPaper > 0) {
@@ -154,7 +156,7 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
             throw new IllegalStateException("Ca thi đích phải khác ca thi hiện tại");
         }
         // Khoá hàng ca đích để không chạy song song với thao tác xếp thí sinh vào đúng ca đó.
-        var target = examScheduleRepository.findByIdForUpdate(targetScheduleId)
+        ExamSchedule target = examScheduleRepository.findByIdForUpdate(targetScheduleId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi đích"));
         if (!target.getExamId().equals(schedule.getExamId())) {
             throw new IllegalStateException("Ca thi đích không thuộc cùng bài kiểm tra");
@@ -171,7 +173,7 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
     }
 
     private void moveCandidates(UUID sourceScheduleId, ExamSchedule target, UUID currentUserId, Instant now) {
-        var candidates = examCandidateRepository.findByScheduleId(sourceScheduleId);
+        List<ExamCandidate> candidates = examCandidateRepository.findByScheduleId(sourceScheduleId);
         if (candidates.isEmpty()) {
             return;
         }
@@ -187,7 +189,7 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
     }
 
     private void moveProctors(UUID sourceScheduleId, ExamSchedule target) {
-        for (var proctor : examScheduleProctorRepository.findByScheduleId(sourceScheduleId)) {
+        for (ExamScheduleProctor proctor : examScheduleProctorRepository.findByScheduleId(sourceScheduleId)) {
             // Bảng có unique (schedule_id, teacher_id) nên bỏ qua giám thị đã có sẵn ở ca đích,
             // nhưng vẫn phải xoá dòng cũ để ca nguồn không còn giám thị nào.
             if (!examScheduleProctorRepository.existsByScheduleIdAndTeacherId(target.getId(), proctor.getTeacherId())) {
@@ -216,11 +218,11 @@ public class UpdateExamScheduleStatusUseCase implements IUseCase<UpdateExamSched
     }
 
     private UUID authorize(Exam exam) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId())) {
             return currentUserId;

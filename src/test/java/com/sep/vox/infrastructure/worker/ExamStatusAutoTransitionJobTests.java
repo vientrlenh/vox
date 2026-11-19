@@ -65,8 +65,8 @@ class ExamStatusAutoTransitionJobTests {
 
     @Test
     void should_close_schedules_when_auto_closing_a_class_test() {
-        var exam = classTest();
-        var ended = schedule(ExamScheduleStatus.PUBLISHED,
+        Exam exam = classTest();
+        ExamSchedule ended = schedule(ExamScheduleStatus.PUBLISHED,
             Instant.now().minus(3, ChronoUnit.HOURS), Instant.now().minus(1, ChronoUnit.HOURS));
         when(examRepository.findByStatusAndCloseAtBefore(eq(ExamStatus.IN_PROGRESS), any())).thenReturn(List.of(exam));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(ended));
@@ -79,13 +79,13 @@ class ExamStatusAutoTransitionJobTests {
     }
 
     /**
-     * Nhánh phòng thủ: dữ liệu lệch khiến closeAt tới trước khi ca thi kết thúc. Job bỏ qua lượt này
-     * chứ không cắt ngang buổi thi — tick sau (60s) thử lại.
+     * A defensive branch: skewed data makes closeAt arrive before the session ends. The job skips
+     * this round instead of cutting the exam off in the middle -- the next tick (60s) tries again.
      */
     @Test
     void should_defer_closing_when_a_student_is_still_working() {
-        var exam = classTest();
-        var ongoing = schedule(ExamScheduleStatus.PUBLISHED,
+        Exam exam = classTest();
+        ExamSchedule ongoing = schedule(ExamScheduleStatus.PUBLISHED,
             Instant.now().minus(1, ChronoUnit.HOURS), Instant.now().plus(1, ChronoUnit.HOURS));
         when(examRepository.findByStatusAndCloseAtBefore(eq(ExamStatus.IN_PROGRESS), any())).thenReturn(List.of(exam));
         when(examScheduleRepository.findByExamIdAndInSchedule(any(), any())).thenReturn(List.of(ongoing));
@@ -98,10 +98,12 @@ class ExamStatusAutoTransitionJobTests {
         verify(examScheduleRepository, never()).save(any());
     }
 
-    /** Kỳ thi tập trung không tự đóng — job này cố ý chỉ nhận bài trên lớp. */
+    /**
+     * A centralized exam does not close itself -- this job deliberately only accepts class tests.
+     */
     @Test
     void should_skip_centralized_exam() {
-        var exam = classTest();
+        Exam exam = classTest();
         exam.setKind(ExamKind.CENTRALIZED);
         when(examRepository.findByStatusAndCloseAtBefore(eq(ExamStatus.IN_PROGRESS), any())).thenReturn(List.of(exam));
 
@@ -112,7 +114,7 @@ class ExamStatusAutoTransitionJobTests {
     }
 
     private Exam classTest() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setKind(ExamKind.CLASS_TEST);
         exam.setStatus(ExamStatus.IN_PROGRESS);
@@ -120,7 +122,7 @@ class ExamStatusAutoTransitionJobTests {
     }
 
     private ExamSchedule schedule(ExamScheduleStatus status, Instant from, Instant to) {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(UUID.randomUUID());
         schedule.setExamId(examId);
         schedule.setStartDate(from);

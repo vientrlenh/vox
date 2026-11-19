@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.exam.ExamScheduleProctor;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -45,7 +46,7 @@ public class ExamScheduleProctorConflictValidator {
      * dời giờ cho chúng chồng lên.
      */
     public void requireProctorsFreeForNewWindow(UUID scheduleId, Instant start, Instant end) {
-        for (var proctor : examScheduleProctorRepository.findByScheduleId(scheduleId)) {
+        for (ExamScheduleProctor proctor : examScheduleProctorRepository.findByScheduleId(scheduleId)) {
             requireTeacherFree(proctor.getTeacherId(), start, end, scheduleId);
         }
     }

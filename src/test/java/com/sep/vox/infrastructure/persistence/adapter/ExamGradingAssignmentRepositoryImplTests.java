@@ -63,9 +63,9 @@ class ExamGradingAssignmentRepositoryImplTests {
 
     @Test
     void should_reopen_a_result_in_the_same_transaction_that_closed_the_previous_round() {
-        var previous = givenOpenRound(GradingRoundType.REMEDIATION);
+        ExamGradingAssignment previous = givenOpenRound(GradingRoundType.REMEDIATION);
 
-        // Đúng thứ tự của ClearInvalidResultUseCase, không flush ở giữa.
+        // Exactly the order of ClearInvalidResultUseCase, with no flush in between.
         previous.complete(GradingOutcome.CLEARED_INVALID, "Không vi phạm.", now);
         repository.save(previous);
         repository.save(ExamGradingAssignment.open(
@@ -74,16 +74,16 @@ class ExamGradingAssignmentRepositoryImplTests {
         entityManager.flush();
         entityManager.clear();
 
-        var reopened = repository.findOpenByCandidateResultId(candidateResultId).orElseThrow();
+        ExamGradingAssignment reopened = repository.findOpenByCandidateResultId(candidateResultId).orElseThrow();
         assertThat(reopened.getRoundType()).isEqualTo(GradingRoundType.INITIAL);
         assertThat(repository.findByCandidateResultIdOrderByAssignedAtDesc(candidateResultId)).hasSize(2);
     }
 
     @Test
     void should_reopen_a_result_through_save_all_in_the_same_transaction() {
-        var previous = givenOpenRound(GradingRoundType.APPEAL);
+        ExamGradingAssignment previous = givenOpenRound(GradingRoundType.APPEAL);
 
-        // Hình dạng của ReclaimOverdueAssignmentsUseCase: đóng lẻ, mở theo lô.
+        // The shape of ReclaimOverdueAssignmentsUseCase: close one by one, open in a batch.
         previous.complete(GradingOutcome.DECLINED, "Thu hồi do quá hạn chấm.", now);
         repository.save(previous);
         repository.saveAll(List.of(ExamGradingAssignment.open(

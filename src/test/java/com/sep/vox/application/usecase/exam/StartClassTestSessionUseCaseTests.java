@@ -26,6 +26,7 @@ import com.sep.vox.application.port.input.usecase.examsession.CreateExamSessionU
 import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionStatusUseCase;
 import com.sep.vox.application.port.output.HealthCheckPort;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.exam.ExamEntryTicketResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
@@ -69,7 +70,7 @@ class StartClassTestSessionUseCaseTests {
         examScheduleRepository = mock(ExamScheduleRepository.class);
         examSessionRepository = mock(ExamSessionRepository.class);
         healthCheckPort = mock(HealthCheckPort.class);
-        var userContextPort = mock(UserContextPort.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
 
         useCase = new StartClassTestSessionUseCase(
             examCandidateRepository,
@@ -97,26 +98,26 @@ class StartClassTestSessionUseCaseTests {
 
     @Test
     void should_issue_entry_ticket_when_candidate_is_attended_and_scheduled() {
-        var result = useCase.execute(new StartClassTestSessionCommand(EXAM_ID));
+        ExamEntryTicketResponse result = useCase.execute(new StartClassTestSessionCommand(EXAM_ID));
 
         assertThat(result.attemptId()).isNotNull();
         assertThat(result.scheduleEndAt()).isNotNull();
     }
 
     /**
-     * Ứng dụng thi phải biết bài có giám sát hay không NGAY TỪ ticket: nếu nó cứ gọi
-     * /streams/student/token cho một bài không cấu hình stream thì
-     * {@code IssueStudentStreamTokenUseCase} trả 400 và học sinh đứng ngoài cửa, dù mọi điều kiện
-     * vào thi đều đã đạt.
+     * The exam app must know whether the test is proctored RIGHT FROM the ticket: if it calls
+     * /streams/student/token for a test with no stream configured,
+     * {@code IssueStudentStreamTokenUseCase} returns 400 and the student is left standing at the
+     * door, even though every entry condition has been met.
      */
     @Test
     void should_expose_stream_config_so_client_knows_a_token_is_needed() {
-        var exam = exam(false);
+        Exam exam = exam(false);
         exam.setRequiredStreamType(ExamRequiredStreamType.CAMERA_AND_SCREEN);
         exam.setStreamTypePermission(ExamStreamTypePermission.ANY);
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(exam));
 
-        var result = useCase.execute(new StartClassTestSessionCommand(EXAM_ID));
+        ExamEntryTicketResponse result = useCase.execute(new StartClassTestSessionCommand(EXAM_ID));
 
         assertThat(result.requiredStreamType()).isEqualTo("CAMERA_AND_SCREEN");
         assertThat(result.streamTypePermission()).isEqualTo("ANY");
@@ -124,7 +125,7 @@ class StartClassTestSessionUseCaseTests {
 
     @Test
     void should_expose_empty_stream_config_when_class_test_is_not_monitored() {
-        var result = useCase.execute(new StartClassTestSessionCommand(EXAM_ID));
+        ExamEntryTicketResponse result = useCase.execute(new StartClassTestSessionCommand(EXAM_ID));
 
         assertThat(result.attemptId()).isNotNull();
         assertThat(result.requiredStreamType()).isNull();
@@ -163,13 +164,13 @@ class StartClassTestSessionUseCaseTests {
             .hasMessageContaining("Streaming service");
     }
 
-    /** Bài không giám sát không được vạ lây khi streaming chết. */
+    /** A non-proctored test must not be dragged down when streaming is dead. */
     @Test
     void should_still_issue_entry_ticket_for_unmonitored_class_test_when_streaming_is_down() {
         doThrow(new ServiceUnavailableException("Streaming service hiện không hoạt động"))
             .when(healthCheckPort).checkStreamingOk();
 
-        var result = useCase.execute(new StartClassTestSessionCommand(EXAM_ID));
+        ExamEntryTicketResponse result = useCase.execute(new StartClassTestSessionCommand(EXAM_ID));
 
         assertThat(result.attemptId()).isNotNull();
     }
@@ -186,7 +187,7 @@ class StartClassTestSessionUseCaseTests {
 
     @Test
     void should_reject_when_candidate_is_not_assigned_to_any_schedule() {
-        var candidate = candidate(ExamCandidateStatus.ATTENDED);
+        ExamCandidate candidate = candidate(ExamCandidateStatus.ATTENDED);
         candidate.setScheduleId(null);
         when(examCandidateRepository.findByExamIdAndStudentId(EXAM_ID, STUDENT_ID))
             .thenReturn(Optional.of(candidate));
@@ -218,7 +219,7 @@ class StartClassTestSessionUseCaseTests {
 
     @Test
     void should_reject_when_candidate_was_blocked() {
-        var candidate = candidate(ExamCandidateStatus.ATTENDED);
+        ExamCandidate candidate = candidate(ExamCandidateStatus.ATTENDED);
         candidate.setBlockedAt(Instant.now());
         when(examCandidateRepository.findByExamIdAndStudentId(EXAM_ID, STUDENT_ID))
             .thenReturn(Optional.of(candidate));
@@ -229,7 +230,7 @@ class StartClassTestSessionUseCaseTests {
     }
 
     private ExamCandidate candidate(ExamCandidateStatus status) {
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(CANDIDATE_ID);
         candidate.setExamId(EXAM_ID);
         candidate.setStudentId(STUDENT_ID);
@@ -240,7 +241,7 @@ class StartClassTestSessionUseCaseTests {
     }
 
     private Exam exam(boolean requiresOtp) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(EXAM_ID);
         exam.setKind(ExamKind.CLASS_TEST);
         exam.setStatus(ExamStatus.IN_PROGRESS);
@@ -251,14 +252,14 @@ class StartClassTestSessionUseCaseTests {
     }
 
     private Exam monitoredExam() {
-        var exam = exam(false);
+        Exam exam = exam(false);
         exam.setRequiredStreamType(ExamRequiredStreamType.CAMERA);
         exam.setStreamTypePermission(ExamStreamTypePermission.ANY);
         return exam;
     }
 
     private ExamSchedule schedule() {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(SCHEDULE_ID);
         schedule.setExamId(EXAM_ID);
         schedule.setStartDate(Instant.now().minusSeconds(600));
@@ -267,7 +268,7 @@ class StartClassTestSessionUseCaseTests {
     }
 
     private ExamSession inProgressSession() {
-        var session = new ExamSession();
+        ExamSession session = new ExamSession();
         session.setId(UUID.randomUUID());
         session.setExamId(EXAM_ID);
         session.setCandidateId(CANDIDATE_ID);

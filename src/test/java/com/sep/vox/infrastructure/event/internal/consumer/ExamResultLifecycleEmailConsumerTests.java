@@ -72,7 +72,7 @@ class ExamResultLifecycleEmailConsumerTests {
     @Test
     void should_send_released_mail_to_student() throws Exception {
         when(mailTemplatePort.renderResultReleasedEmail(anyString(), anyString())).thenReturn("<html></html>");
-        var payload = new ExamResultReleasedPayloadV1(
+        ExamResultReleasedPayloadV1 payload = new ExamResultReleasedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", new BigDecimal("8.5"), UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, payload), ack);
@@ -87,7 +87,7 @@ class ExamResultLifecycleEmailConsumerTests {
     void should_send_regraded_mail_with_round_label() throws Exception {
         when(mailTemplatePort.renderResultRegradedEmail(anyString(), anyString(), anyString(), anyString()))
             .thenReturn("<html></html>");
-        var payload = new ExamResultRegradedPayloadV1(
+        ExamResultRegradedPayloadV1 payload = new ExamResultRegradedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ",
             GradingRoundType.SPOT_CHECK.name(), new BigDecimal("8.5"), new BigDecimal("7.0"), UUID.randomUUID(), ExamKind.CENTRALIZED);
 
@@ -102,11 +102,12 @@ class ExamResultLifecycleEmailConsumerTests {
     void should_use_fallback_label_when_round_type_is_unknown() throws Exception {
         when(mailTemplatePort.renderResultRegradedEmail(anyString(), anyString(), anyString(), anyString()))
             .thenReturn("<html></html>");
-        var payload = new ExamResultRegradedPayloadV1(
+        ExamResultRegradedPayloadV1 payload = new ExamResultRegradedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", "VONG_LA", null, new BigDecimal("7.0"), UUID.randomUUID(), ExamKind.CENTRALIZED);
 
-        // Message cũ còn nằm trong topic có thể mang tên vòng đã bị đổi/xoá. Đẩy cả message
-        // vào DLT chỉ vì cái nhãn hiển thị là đánh đổi sai.
+        // An old message still in the topic may carry a round name that has been renamed/deleted.
+        // Pushing the whole message into the DLT just because of a display label is the wrong
+        // trade-off.
         assertThatCode(() -> consumer.consume(record(EventTypeConstant.EXAM_RESULT_REGRADED, payload), ack))
             .doesNotThrowAnyException();
         verify(mailTemplatePort).renderResultRegradedEmail("Kỳ thi giữa kỳ", "chấm lại", "-", "7.0");
@@ -115,7 +116,7 @@ class ExamResultLifecycleEmailConsumerTests {
     @Test
     void should_send_invalidated_mail_to_student() throws Exception {
         when(mailTemplatePort.renderResultInvalidatedEmail(anyString(), anyString())).thenReturn("<html></html>");
-        var payload = new ExamResultInvalidatedPayloadV1(
+        ExamResultInvalidatedPayloadV1 payload = new ExamResultInvalidatedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", "Sử dụng tài liệu", UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.EXAM_RESULT_INVALIDATED, payload), ack);
@@ -129,7 +130,7 @@ class ExamResultLifecycleEmailConsumerTests {
     void should_send_invalid_cleared_mail_to_student() throws Exception {
         when(mailTemplatePort.renderResultInvalidClearedEmail(anyString(), anyString()))
             .thenReturn("<html></html>");
-        var payload = new ExamResultInvalidClearedPayloadV1(
+        ExamResultInvalidClearedPayloadV1 payload = new ExamResultInvalidClearedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", "Xem lại video không có vi phạm", UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.EXAM_RESULT_INVALID_CLEARED, payload), ack);
@@ -142,7 +143,7 @@ class ExamResultLifecycleEmailConsumerTests {
     void should_send_outcome_decided_mail_with_vietnamese_label() throws Exception {
         when(mailTemplatePort.renderResultOutcomeDecidedEmail(anyString(), anyString(), anyString()))
             .thenReturn("<html></html>");
-        var payload = new ExamResultOutcomeDecidedPayloadV1(
+        ExamResultOutcomeDecidedPayloadV1 payload = new ExamResultOutcomeDecidedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", "PASSED", new BigDecimal("8.5"), UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.EXAM_RESULT_OUTCOME_DECIDED, payload), ack);
@@ -155,7 +156,7 @@ class ExamResultLifecycleEmailConsumerTests {
     void should_label_outcome_as_not_passed_when_not_passed() throws Exception {
         when(mailTemplatePort.renderResultOutcomeDecidedEmail(anyString(), anyString(), anyString()))
             .thenReturn("<html></html>");
-        var payload = new ExamResultOutcomeDecidedPayloadV1(
+        ExamResultOutcomeDecidedPayloadV1 payload = new ExamResultOutcomeDecidedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", "FAILED", null, UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.EXAM_RESULT_OUTCOME_DECIDED, payload), ack);
@@ -167,7 +168,7 @@ class ExamResultLifecycleEmailConsumerTests {
     void should_skip_when_event_already_processed() {
         when(processedEventRepository.existsByEventIdAndConsumerGroup(any(UUID.class), anyString()))
             .thenReturn(true);
-        var payload = new ExamResultReleasedPayloadV1(
+        ExamResultReleasedPayloadV1 payload = new ExamResultReleasedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", new BigDecimal("8.5"), UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, payload), ack);
@@ -179,9 +180,9 @@ class ExamResultLifecycleEmailConsumerTests {
 
     @Test
     void should_skip_when_student_not_found() {
-        var unknownStudentId = UUID.randomUUID();
+        UUID unknownStudentId = UUID.randomUUID();
         when(userRepository.findById(unknownStudentId)).thenReturn(Optional.empty());
-        var payload = new ExamResultReleasedPayloadV1(
+        ExamResultReleasedPayloadV1 payload = new ExamResultReleasedPayloadV1(
             UUID.randomUUID(), unknownStudentId, "Kỳ thi giữa kỳ", new BigDecimal("8.5"), UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         assertThatCode(() -> consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, payload), ack))
@@ -193,7 +194,7 @@ class ExamResultLifecycleEmailConsumerTests {
 
     @Test
     void should_throw_when_event_type_is_unknown() {
-        var payload = new ExamResultReleasedPayloadV1(
+        ExamResultReleasedPayloadV1 payload = new ExamResultReleasedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", new BigDecimal("8.5"), UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         assertThatThrownBy(() -> consumer.consume(record("KhongTonTai", payload), ack))
@@ -207,7 +208,7 @@ class ExamResultLifecycleEmailConsumerTests {
         when(mailTemplatePort.renderResultReleasedEmail(anyString(), anyString())).thenReturn("<html></html>");
         doThrow(new RejectedExecutionException("mail queue full"))
             .when(mailSendingPort).sendHtml(anyString(), anyString(), anyString());
-        var payload = new ExamResultReleasedPayloadV1(
+        ExamResultReleasedPayloadV1 payload = new ExamResultReleasedPayloadV1(
             UUID.randomUUID(), studentId, "Kỳ thi giữa kỳ", new BigDecimal("8.5"), UUID.randomUUID(), ExamKind.CENTRALIZED);
 
         assertThatThrownBy(() -> consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, payload), ack))
@@ -217,7 +218,7 @@ class ExamResultLifecycleEmailConsumerTests {
     }
 
     private ConsumerRecord<String, String> record(String eventType, Object payload) {
-        var record = new ConsumerRecord<>(
+        ConsumerRecord<String, String> record = new ConsumerRecord<>(
             "vox.exam-result-lifecycle.v1", 0, 0L, "key", jsonMapper.writeValueAsString(payload));
         record.headers().add("eventId", UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
         record.headers().add("eventType", eventType.getBytes(StandardCharsets.UTF_8));
@@ -225,7 +226,7 @@ class ExamResultLifecycleEmailConsumerTests {
     }
 
     private User student(UUID id) {
-        var user = new User();
+        User user = new User();
         user.setId(id);
         user.setEmail(new Email("student@example.com"));
         user.setFullName(new FullName("Nguyễn Văn A"));

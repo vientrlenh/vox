@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.application.port.input.command.UpdateProfileCommand;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -59,7 +60,7 @@ public class UserController {
     @QueryMapping(name = "user")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UserDto user(@Argument(name = "id") UUID id) {
-        var query = new ViewUserDetailsQuery(id);
+        ViewUserDetailsQuery query = new ViewUserDetailsQuery(id);
         return viewUserDetailsUseCase.execute(query);
     }
 
@@ -69,7 +70,7 @@ public class UserController {
         if (page == null || size == null || page <= 0  || size <= 0) {
             throw new IllegalArgumentException("Số trang hoặc kích cỡ yêu cầu không hợp lệ");
         }
-        var query = new ViewUsersQuery(page, size);
+        ViewUsersQuery query = new ViewUsersQuery(page, size);
         return viewUsersUseCase.execute(query);
     }
 
@@ -88,7 +89,7 @@ public class UserController {
     @MutationMapping(name = "updateProfile")
     @PreAuthorize("isAuthenticated()")
     public UserDto updateProfile(@Argument(name = "input") Map<String, Object> input) {
-        var command = UpdateProfileCommandMapper.fromInput(input);
+        UpdateProfileCommand command = UpdateProfileCommandMapper.fromInput(input);
         return updateProfileUseCase.execute(command);
     }
 

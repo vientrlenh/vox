@@ -51,7 +51,7 @@ public class CreateFrameworkCriteriaUseCase
         validateRequest(command, version);
 
         List<FrameworkCriterion> criteriaToSave = new ArrayList<>(command.criteria().size());
-        for (var criterionCmd : command.criteria()) {
+        for (CreateFrameworkCriteriaCommand.CriterionItemCommand criterionCmd : command.criteria()) {
             criteriaToSave.add(new FrameworkCriterion(
                     command.versionId(),
                     StringNormalization.normalizeCode(criterionCmd.code()),
@@ -86,7 +86,7 @@ public class CreateFrameworkCriteriaUseCase
         Set<String> requestCodes = new HashSet<>();
         Set<Integer> allOrders = frameworkCriterionRepository.findByFrameworkVersionId(command.versionId())
                 .stream().map(fc ->fc.getOrder()).collect(Collectors.toCollection(HashSet::new));
-        for (var criterionCmd : command.criteria()) {
+        for (CreateFrameworkCriteriaCommand.CriterionItemCommand criterionCmd : command.criteria()) {
             String safeCode = StringNormalization.normalizeCode(criterionCmd.code());
             if (!FrameworkCriterionCode.ALLOWED_CODES.contains(safeCode)) {
                 throw new IllegalArgumentException("Mã tiêu chí không hợp lệ: " + safeCode);

@@ -92,7 +92,7 @@ class ExamRecordingAccessServiceTests {
         when(examGradingAssignmentRepository
             .existsByCandidateResultIdAndTeacherId(candidateResultId, userId)).thenReturn(true);
 
-        var session = accessService.requireCanViewRecordings(sessionId);
+        ExamSession session = accessService.requireCanViewRecordings(sessionId);
 
         assertThat(session.getId()).isEqualTo(sessionId);
     }
@@ -193,7 +193,7 @@ class ExamRecordingAccessServiceTests {
     }
 
     private ExamSession session() {
-        var session = new ExamSession();
+        ExamSession session = new ExamSession();
         session.setId(sessionId);
         session.setExamId(examId);
         session.setCandidateId(candidateId);
@@ -201,14 +201,14 @@ class ExamRecordingAccessServiceTests {
     }
 
     private Exam exam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         return exam;
     }
 
     private ExamCandidate candidate() {
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(candidateId);
         candidate.setExamId(examId);
         candidate.setScheduleId(scheduleId);
@@ -216,7 +216,7 @@ class ExamRecordingAccessServiceTests {
     }
 
     private ExamCandidateResult candidateResult() {
-        var result = new ExamCandidateResult();
+        ExamCandidateResult result = new ExamCandidateResult();
         result.setId(candidateResultId);
         result.setExamId(examId);
         result.setCandidateId(candidateId);

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.exam.ExamResultAppeal;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -40,12 +41,12 @@ public class ExamCandidateResultFinalizationService {
      */
     @Transactional
     public void invalidateNow(UUID sessionId, UUID actingUserId) {
-        var result = examCandidateResultRepository.findBySessionId(sessionId).orElse(null);
+        ExamCandidateResult result = examCandidateResultRepository.findBySessionId(sessionId).orElse(null);
         if (result == null) {
             return;
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         result.setStatus(ExamCandidateResultStatus.INVALID);
         result.setTotalScore(BigDecimal.ZERO.setScale(2));
         result.setUpdatedAt(now);
@@ -65,7 +66,7 @@ public class ExamCandidateResultFinalizationService {
         if (candidateResultId == null) {
             return;
         }
-        for (var appeal : examResultAppealRepository.findByCandidateResultId(candidateResultId)) {
+        for (ExamResultAppeal appeal : examResultAppealRepository.findByCandidateResultId(candidateResultId)) {
             if (appeal.getStatus() == ExamAppealStatus.PUBLISHED
                     || appeal.getStatus() == ExamAppealStatus.REJECTED) {
                 continue;
@@ -104,7 +105,7 @@ public class ExamCandidateResultFinalizationService {
                 result.setStatus(ExamCandidateResultStatus.FINAL);
                 return true;
             }
-            var passed = result.getTotalScore() != null
+            boolean passed = result.getTotalScore() != null
                 && result.getTotalScore().compareTo(passingScore) >= 0;
             result.setStatus(passed ? ExamCandidateResultStatus.PASSED : ExamCandidateResultStatus.FAILED);
             return true;

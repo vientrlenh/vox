@@ -1,8 +1,14 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
+import com.sep.vox.domain.model.exam.ExamBlueprint;
+import com.sep.vox.domain.model.exam.ExamBlueprintSection;
+import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
+import com.sep.vox.domain.model.question.Question;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import java.util.List;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,17 +70,17 @@ public class CreateExamBlueprintSlotUseCase implements IUseCase<CreateExamBluepr
     @Override
     @Transactional
     public ExamBlueprintSlotDto execute(CreateExamBlueprintSlotItemCommand input) {
-        var command = normalize(input);
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        CreateExamBlueprintSlotItemCommand command = normalize(input);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
-        var section = examBlueprintSectionRepository.findById(command.sectionId())
+        ExamBlueprintSection section = examBlueprintSectionRepository.findById(command.sectionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
-        var version = examBlueprintVersionRepository.findById(section.getBlueprintVersionId())
+        ExamBlueprintVersion version = examBlueprintVersionRepository.findById(section.getBlueprintVersionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
-        var blueprint = examBlueprintRepository.findById(version.getBlueprintId())
+        ExamBlueprint blueprint = examBlueprintRepository.findById(version.getBlueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
         if (!examBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
@@ -84,14 +90,14 @@ public class CreateExamBlueprintSlotUseCase implements IUseCase<CreateExamBluepr
             throw new IllegalStateException("Chỉ được thêm slot khi version đang DRAFT");
         }
 
-        var siblings = examBlueprintSlotRepository.findBySectionId(section.getId());
+        List<ExamBlueprintSlot> siblings = examBlueprintSlotRepository.findBySectionId(section.getId());
         if (siblings.stream().anyMatch(s -> s.getOrder() == command.order())) {
             throw new IllegalStateException("Thứ tự slot đã tồn tại trong section này");
         }
         validateSlot(command);
 
-        var now = Instant.now();
-        var slot = new ExamBlueprintSlot(
+        Instant now = Instant.now();
+        ExamBlueprintSlot slot = new ExamBlueprintSlot(
             section.getId(),
             version.getId(),
             command.order(),
@@ -106,13 +112,13 @@ public class CreateExamBlueprintSlotUseCase implements IUseCase<CreateExamBluepr
             currentUserId,
             currentUserId
         );
-        var savedSlot = examBlueprintSlotRepository.save(slot);
+        ExamBlueprintSlot savedSlot = examBlueprintSlotRepository.save(slot);
         recalculateBlueprintVersionTimeLimitService.recalculate(version.getId());
         return ExamBlueprintSlotDtoMapper.toDto(savedSlot);
     }
 
     private void validateSlot(CreateExamBlueprintSlotItemCommand command) {
-        var slotType = ExamBlueprintSlotType.valueOf(command.slotType());
+        ExamBlueprintSlotType slotType = ExamBlueprintSlotType.valueOf(command.slotType());
         if (slotType == ExamBlueprintSlotType.FIXED) {
             if (command.fixedQuestionId() == null) {
                 throw new IllegalStateException("Slot FIXED bắt buộc phải có fixedQuestionId");
@@ -120,7 +126,7 @@ public class CreateExamBlueprintSlotUseCase implements IUseCase<CreateExamBluepr
             if (command.selectionSpec() != null) {
                 throw new IllegalStateException("Slot FIXED không được có selectionSpec");
             }
-            var question = questionRepository.findById(command.fixedQuestionId())
+            Question question = questionRepository.findById(command.fixedQuestionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi fixed cho slot"));
             if (question.getStatus() != QuestionStatus.PUBLISHED) {
                 throw new IllegalStateException("Câu hỏi fixed cho slot phải ở trạng thái PUBLISHED");

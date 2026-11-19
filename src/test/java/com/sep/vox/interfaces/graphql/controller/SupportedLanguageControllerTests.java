@@ -39,11 +39,11 @@ class SupportedLanguageControllerTests {
 
     @Test
     void supported_languages_should_keep_is_active_filter_for_system_admin() {
-        var expected = new PageResult<SupportedLanguageDto>(List.of(), 1, 20, 0, 0);
-        var query = new ViewSupportedLanguagesQuery(1, 20, "eng", false);
+        PageResult<SupportedLanguageDto> expected = new PageResult<SupportedLanguageDto>(List.of(), 1, 20, 0, 0);
+        ViewSupportedLanguagesQuery query = new ViewSupportedLanguagesQuery(1, 20, "eng", false);
         when(viewSupportedLanguagesUseCase.execute(query)).thenReturn(expected);
 
-        var result = supportedLanguageController.supportedLanguages(1, 20, "eng", false);
+        PageResult<SupportedLanguageDto> result = supportedLanguageController.supportedLanguages(1, 20, "eng", false);
 
         assertThat(result).isEqualTo(expected);
         verify(viewSupportedLanguagesUseCase).execute(query);
@@ -51,15 +51,15 @@ class SupportedLanguageControllerTests {
 
     @Test
     void supported_language_should_use_full_access_for_system_admin() {
-        var listUseCase = mock(ViewSupportedLanguagesUseCase.class);
-        var detailsUseCase = mock(ViewSupportedLanguageDetailsUseCase.class);
-        var updateUseCase = mock(UpdateSupportedLanguageUseCase.class);
-        var controller = new SupportedLanguageController(listUseCase, detailsUseCase, updateUseCase);
-        var id = UUID.randomUUID();
-        var expected = new SupportedLanguageDto(id, "EN", "English", null, false, null, null);
+        ViewSupportedLanguagesUseCase listUseCase = mock(ViewSupportedLanguagesUseCase.class);
+        ViewSupportedLanguageDetailsUseCase detailsUseCase = mock(ViewSupportedLanguageDetailsUseCase.class);
+        UpdateSupportedLanguageUseCase updateUseCase = mock(UpdateSupportedLanguageUseCase.class);
+        SupportedLanguageController controller = new SupportedLanguageController(listUseCase, detailsUseCase, updateUseCase);
+        UUID id = UUID.randomUUID();
+        SupportedLanguageDto expected = new SupportedLanguageDto(id, "EN", "English", null, false, null, null);
         when(detailsUseCase.execute(new ViewSupportedLanguageDetailsQuery(id))).thenReturn(expected);
 
-        var result = controller.supportedLanguage(id);
+        SupportedLanguageDto result = controller.supportedLanguage(id);
 
         assertThat(result).isEqualTo(expected);
         verify(detailsUseCase).execute(new ViewSupportedLanguageDetailsQuery(id));
@@ -67,11 +67,11 @@ class SupportedLanguageControllerTests {
 
     @Test
     void supported_language_should_use_active_only_for_school_admin() {
-        var id = UUID.randomUUID();
-        var expected = new SupportedLanguageDto(id, "EN", "English", null, true, null, null);
+        UUID id = UUID.randomUUID();
+        SupportedLanguageDto expected = new SupportedLanguageDto(id, "EN", "English", null, true, null, null);
         when(viewSupportedLanguageDetailsUseCase.execute(new ViewSupportedLanguageDetailsQuery(id))).thenReturn(expected);
 
-        var result = supportedLanguageController.supportedLanguage(id);
+        SupportedLanguageDto result = supportedLanguageController.supportedLanguage(id);
 
         assertThat(result).isEqualTo(expected);
         verify(viewSupportedLanguageDetailsUseCase).execute(new ViewSupportedLanguageDetailsQuery(id));
@@ -79,13 +79,13 @@ class SupportedLanguageControllerTests {
 
     @Test
     void update_supported_language_should_map_input_presence_and_return_response() {
-        var id = UUID.randomUUID();
-        var input = new HashMap<String, Object>();
+        UUID id = UUID.randomUUID();
+        Map<String, Object> input = new HashMap<String, Object>();
         input.put("code", "fr");
         input.put("name", "French");
         input.put("description", null);
         input.put("isActive", false);
-        var command = new UpdateSupportedLanguageCommand(
+        UpdateSupportedLanguageCommand command = new UpdateSupportedLanguageCommand(
             id,
             "fr",
             true,
@@ -96,10 +96,10 @@ class SupportedLanguageControllerTests {
             false,
             true
         );
-        var expected = new UpdateSupportedLanguageResponse(id);
+        UpdateSupportedLanguageResponse expected = new UpdateSupportedLanguageResponse(id);
         when(updateSupportedLanguageUseCase.execute(command)).thenReturn(expected);
 
-        var result = supportedLanguageController.updateSupportedLanguage(id, input);
+        UpdateSupportedLanguageResponse result = supportedLanguageController.updateSupportedLanguage(id, input);
 
         assertThat(result).isEqualTo(expected);
         verify(updateSupportedLanguageUseCase).execute(command);
@@ -107,9 +107,9 @@ class SupportedLanguageControllerTests {
 
     @Test
     void update_supported_language_should_keep_absent_fields_unprovided() {
-        var id = UUID.randomUUID();
-        var input = Map.<String, Object>of("name", "French");
-        var command = new UpdateSupportedLanguageCommand(
+        UUID id = UUID.randomUUID();
+        Map<String, Object> input = Map.<String, Object>of("name", "French");
+        UpdateSupportedLanguageCommand command = new UpdateSupportedLanguageCommand(
             id,
             null,
             false,
@@ -120,10 +120,10 @@ class SupportedLanguageControllerTests {
             null,
             false
         );
-        var expected = new UpdateSupportedLanguageResponse(id);
+        UpdateSupportedLanguageResponse expected = new UpdateSupportedLanguageResponse(id);
         when(updateSupportedLanguageUseCase.execute(command)).thenReturn(expected);
 
-        var result = supportedLanguageController.updateSupportedLanguage(id, input);
+        UpdateSupportedLanguageResponse result = supportedLanguageController.updateSupportedLanguage(id, input);
 
         assertThat(result).isEqualTo(expected);
         verify(updateSupportedLanguageUseCase).execute(command);

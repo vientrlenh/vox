@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,15 +40,15 @@ public class CanViewExamBlueprintDataUseCase implements IUseCase<CanViewExamBlue
             return true;
         }
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
         if (currentSchoolId == null || !currentSchoolId.equals(input.examSchoolId())) {
             return false;
         }
 
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (schoolAdmin) {
             return true;

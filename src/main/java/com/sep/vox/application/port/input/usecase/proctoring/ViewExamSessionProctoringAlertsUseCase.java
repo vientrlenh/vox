@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.proctoring;
 
+import com.sep.vox.domain.model.exam.ExamSession;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,7 +45,7 @@ public class ViewExamSessionProctoringAlertsUseCase implements IUseCase<UUID, Li
     @Override
     @Transactional(readOnly = true)
     public List<ExamProctoringAlertDto> execute(UUID examSessionId) {
-        var session = accessService.requireCanViewRecordings(examSessionId);
+        ExamSession session = accessService.requireCanViewRecordings(examSessionId);
         return examProctoringAlertRepository.findByExamSessionIdOrderByCapturedAt(session.getId())
             .stream()
             .map(ExamProctoringAlertDtoMapper::toDto)

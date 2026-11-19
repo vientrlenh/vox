@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
+import com.sep.vox.domain.model.exam.ExamSchedule;
+import com.sep.vox.domain.model.exam.ExamScheduleProctor;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -51,17 +53,17 @@ public class RemoveExamScheduleProctorUseCase implements IUseCase<DeleteExamSche
     @Override
     @Transactional
     public UUID execute(DeleteExamScheduleProctorCommand input) {
-        var schedule = examScheduleRepository.findById(input.scheduleId())
+        ExamSchedule schedule = examScheduleRepository.findById(input.scheduleId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
         if (!schedule.getExamId().equals(input.examId())) {
             throw new NotFoundException("Không tìm thấy ca thi");
         }
-        var exam = examRepository.findById(schedule.getExamId())
+        Exam exam = examRepository.findById(schedule.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         authorize(exam);
         ExamEditingGuard.requireScheduleEditable(exam);
 
-        var proctor = examScheduleProctorRepository.findById(input.proctorId())
+        ExamScheduleProctor proctor = examScheduleProctorRepository.findById(input.proctorId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy giám thị"));
         if (!proctor.getScheduleId().equals(schedule.getId())) {
             throw new NotFoundException("Không tìm thấy giám thị");
@@ -72,11 +74,11 @@ public class RemoveExamScheduleProctorUseCase implements IUseCase<DeleteExamSche
     }
 
     private UUID authorize(Exam exam) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId())) {
             return currentUserId;

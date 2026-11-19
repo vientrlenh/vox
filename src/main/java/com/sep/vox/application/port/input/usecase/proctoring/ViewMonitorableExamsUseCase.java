@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,14 +55,14 @@ public class ViewMonitorableExamsUseCase implements IUseCase<Void, List<Monitore
     @Override
     @Transactional(readOnly = true)
     public List<MonitoredExamSummary> execute(Void input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var now = Instant.now();
-        var leadUntil = now.plus(LEAD_TIME);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        Instant now = Instant.now();
+        Instant leadUntil = now.plus(LEAD_TIME);
 
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (isSchoolAdmin) {
-            var schoolId = schoolUserRepository.findByUserId(currentUserId)
+            UUID schoolId = schoolUserRepository.findByUserId(currentUserId)
                 .map(schoolUser -> schoolUser.getSchoolId())
                 .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
             return monitoredExamQueryRepository.findMonitorableBySchool(schoolId, null, now, leadUntil);

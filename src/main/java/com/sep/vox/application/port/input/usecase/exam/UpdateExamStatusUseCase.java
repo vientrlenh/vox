@@ -1,5 +1,11 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamPaper;
+import com.sep.vox.domain.model.subscription.SchoolSubscription;
+import com.sep.vox.domain.model.subscription.SubscriptionPlan;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
@@ -134,24 +140,24 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     @Override
     @Transactional
     public ExamDto execute(UpdateExamStatusCommand input) {
-        var command = new UpdateExamStatusCommand(
+        UpdateExamStatusCommand command = new UpdateExamStatusCommand(
             input.examId(),
             StringNormalization.normalizeCode(input.action()),
             StringNormalization.trimAndCollapseSpaces(input.note())
         );
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(user -> user.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
-        var exam = examRepository.findById(command.examId())
+        Exam exam = examRepository.findById(command.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         authorizeMutation(exam.getId(), exam.getSchoolId(), exam.getKind(), currentUserId, currentSchoolId, schoolAdmin);
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         switch (command.action()) {
             case "SCHEDULE" -> {
                 // Trạng thái kiểm TRƯỚC hạn mức gói: bấm SCHEDULE trên bài không còn DRAFT mà báo lỗi
@@ -247,10 +253,10 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     }
 
     private void validatePlanLimits(Exam exam) {
-        var activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId())
+        SchoolSubscription activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId())
             .orElseThrow(() -> new PlanLimitExceededException(
                 "Trường chưa có gói subscription đang hoạt động, không thể lên lịch kỳ thi"));
-        var plan = subscriptionPlanRepository.findById(activeSubscription.getSubscriptionPlanId())
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(activeSubscription.getSubscriptionPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói subscription"));
 
         if (exam.getExamTimeDurationSecond() != null && plan.getMaxTimePerAttemptMin() != null
@@ -279,15 +285,15 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
             List<ExamSchedule> schedules) {
         requireSchedulesHaveRoomAndProctor(schedules);
 
-        var candidates = examCandidateRepository.findByExamId(exam.getId());
-        var withoutSchedule = candidates.stream()
+        List<ExamCandidate> candidates = examCandidateRepository.findByExamId(exam.getId());
+        long withoutSchedule = candidates.stream()
             .filter(candidate -> candidate.getScheduleId() == null)
             .count();
         if (withoutSchedule > 0) {
             throw new IllegalStateException(
                 "Còn " + withoutSchedule + " học sinh chưa được xếp vào ca thi");
         }
-        var withoutPaper = candidates.stream()
+        long withoutPaper = candidates.stream()
             .filter(candidate -> candidate.getAssignedPaperId() == null)
             .count();
         if (withoutPaper > 0) {
@@ -310,7 +316,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     /** Ca thi còn hiệu lực nào cũng phải có phòng và ít nhất một giám khảo — đúng cho cả hai loại bài. */
     private void requireSchedulesHaveRoomAndProctor(
             List<ExamSchedule> schedules) {
-        for (var schedule : schedules) {
+        for (ExamSchedule schedule : schedules) {
             if (schedule.getSchoolRoomId() == null) {
                 throw new IllegalStateException("Ca thi chưa được chọn phòng");
             }
@@ -335,7 +341,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
      * thấy, kỳ thi "đã lên lịch" mà có ca không ai vào được.
      */
     private void requireCentralizedScheduleReadiness(Exam exam) {
-        var schedules = effectiveSchedules(exam.getId());
+        List<ExamSchedule> schedules = effectiveSchedules(exam.getId());
         if (schedules.isEmpty()) {
             throw new IllegalStateException("Kỳ thi chưa có ca thi nào, không thể lên lịch");
         }
@@ -348,7 +354,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
         }
         // Công bố từng ca là thao tác riêng (UpdateExamScheduleStatusUseCase) và không đòi trạng thái
         // kỳ thi, nên chặn ở đây không khoá luồng: công bố hết ca xong mới lên lịch được kỳ thi.
-        var draftScheduleCount = schedules.stream()
+        long draftScheduleCount = schedules.stream()
             .filter(schedule -> schedule.getStatus() == ExamScheduleStatus.DRAFT)
             .count();
         if (draftScheduleCount > 0) {
@@ -366,12 +372,12 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
      */
     private void requireClassTestScheduleReady(Exam exam) {
         requireClassTestScheduleWindow(exam);
-        var schedules = effectiveSchedules(exam.getId());
+        List<ExamSchedule> schedules = effectiveSchedules(exam.getId());
         if (schedules.isEmpty()) {
             throw new IllegalStateException("Bài kiểm tra trên lớp chưa có lịch");
         }
         requireClassTestScheduleReadiness(exam, schedules);
-        var draftScheduleCount = schedules.stream()
+        long draftScheduleCount = schedules.stream()
             .filter(schedule -> schedule.getStatus() == ExamScheduleStatus.DRAFT)
             .count();
         if (draftScheduleCount > 0) {
@@ -396,7 +402,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     }
 
     private void requireClassTestCanStart(Exam exam) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         if (exam.getCloseAt() != null && !now.isBefore(exam.getCloseAt())) {
             throw new IllegalStateException("Bài kiểm tra trên lớp đã quá thời gian đóng bài");
         }
@@ -419,7 +425,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
      * nào đang treo thật sự -- phiên thay thế đã chấm xong, chỉ có phiên CŨ đã xoá là đứng yên.
      */
     private void requirePublishReadiness(UUID examId) {
-        var missingResultCount = examCandidateRepository.findByExamId(examId).stream()
+        long missingResultCount = examCandidateRepository.findByExamId(examId).stream()
             .filter(candidate -> !ExamCandidateStatus.isNonScorable(candidate.getStatus()))
             .flatMap(candidate -> examSessionRepository.findByCandidateId(candidate.getId()).stream())
             .filter(session -> examId.equals(session.getExamId()))
@@ -436,7 +442,7 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
                 "Còn " + missingResultCount + " phiên thi chưa có kết quả, không thể công bố kết quả");
         }
 
-        var notReadyCount = examCandidateResultRepository.findByExamId(examId).stream()
+        long notReadyCount = examCandidateResultRepository.findByExamId(examId).stream()
             .filter(result -> result.getStatus() != ExamCandidateResultStatus.RELEASED
                 && result.getStatus() != ExamCandidateResultStatus.INVALID
                 && result.getStatus() != ExamCandidateResultStatus.DELETED)
@@ -455,13 +461,13 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
      * ExamCandidateResultFinalizationService.finalizeForPublish.
      */
     private void finalizePassFailForExam(Exam exam) {
-        var passingScore = exam.getAssessmentPolicyId() == null
+        BigDecimal passingScore = exam.getAssessmentPolicyId() == null
             ? null
             : assessmentPolicyRepository.findById(exam.getAssessmentPolicyId())
                 .map(policy -> policy.getPassingScore())
                 .orElse(null);
 
-        for (var result : examCandidateResultRepository.findByExamId(exam.getId())) {
+        for (ExamCandidateResult result : examCandidateResultRepository.findByExamId(exam.getId())) {
             if (examCandidateResultFinalizationService.finalizeForPublish(result, passingScore)) {
                 examCandidateResultRepository.save(result);
             }
@@ -469,8 +475,8 @@ public class UpdateExamStatusUseCase implements IUseCase<UpdateExamStatusCommand
     }
 
     private void lockClassTestPapers(UUID examId, UUID currentUserId) {
-        var now = Instant.now();
-        for (var paper : examPaperRepository.findByExamId(examId)) {
+        Instant now = Instant.now();
+        for (ExamPaper paper : examPaperRepository.findByExamId(examId)) {
             if (paper.getStatus() != ExamPaperStatus.LOCKED) {
                 paper.setStatus(ExamPaperStatus.LOCKED);
                 paper.setUpdatedAt(now);

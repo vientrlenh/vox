@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
+import com.sep.vox.domain.model.exam.ExamBlueprint;
 import java.time.Instant;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,17 +43,17 @@ public class UpdateExamBlueprintUseCase implements IUseCase<UpdateExamBlueprintC
     @Override
     @Transactional
     public ExamBlueprintDto execute(UpdateExamBlueprintCommand input) {
-        var command = new UpdateExamBlueprintCommand(
+        UpdateExamBlueprintCommand command = new UpdateExamBlueprintCommand(
             input.blueprintId(),
             StringNormalization.trimAndCollapseSpaces(input.name()),
             StringNormalization.trimAndCollapseSpaces(input.description())
         );
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
-        var blueprint = examBlueprintRepository.findById(command.blueprintId())
+        ExamBlueprint blueprint = examBlueprintRepository.findById(command.blueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
         if (!examBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");

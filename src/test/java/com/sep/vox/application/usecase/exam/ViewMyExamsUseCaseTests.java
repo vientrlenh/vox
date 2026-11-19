@@ -25,6 +25,7 @@ import com.sep.vox.application.query.dto.ExamAttemptSummary;
 import com.sep.vox.application.query.dto.StudentExamRowInfo;
 import com.sep.vox.application.query.repository.ExamCandidateAttemptsQueryRepository;
 import com.sep.vox.application.query.repository.StudentExamQueryRepository;
+import com.sep.vox.application.response.input.exam.StudentExamSummaryResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
@@ -58,8 +59,8 @@ class ViewMyExamsUseCaseTests {
         studentExamQueryRepository = mock(StudentExamQueryRepository.class);
         examScheduleRepository = mock(ExamScheduleRepository.class);
         attemptsQueryRepository = mock(ExamCandidateAttemptsQueryRepository.class);
-        var examPaperRepository = mock(ExamPaperRepository.class);
-        var userContextPort = mock(UserContextPort.class);
+        ExamPaperRepository examPaperRepository = mock(ExamPaperRepository.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
 
         useCase = new ViewMyExamsUseCase(
             studentExamQueryRepository,
@@ -72,7 +73,7 @@ class ViewMyExamsUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(STUDENT_ID);
         when(examPaperRepository.findByIdIn(anyCollection())).thenReturn(List.of());
         when(attemptsQueryRepository.findByCandidateIds(anyCollection())).thenReturn(List.of());
-        // Ca thi còn hiệu lực -- các ca kiểm tra riêng sẽ ghi đè khi cần.
+        // A session that is still valid -- dedicated session checks override it when needed.
         when(examScheduleRepository.findByIdAndInSchedule(any(), any()))
             .thenReturn(Optional.of(new ExamSchedule()));
     }
@@ -81,7 +82,7 @@ class ViewMyExamsUseCaseTests {
     void should_pass_the_paging_envelope_through_untouched() {
         givenRows(new PageResult<>(List.of(row().build()), 2, 20, 41, 3));
 
-        var result = useCase.execute(new ViewMyExamsQuery(null, null, 2, 20, true));
+        PageResult<StudentExamSummaryResponse> result = useCase.execute(new ViewMyExamsQuery(null, null, 2, 20, true));
 
         assertThat(result.page()).isEqualTo(2);
         assertThat(result.size()).isEqualTo(20);
@@ -103,7 +104,7 @@ class ViewMyExamsUseCaseTests {
     void should_let_an_attended_student_of_a_running_exam_enter() {
         givenRows(row().candidateStatus(ExamCandidateStatus.ATTENDED).examStatus(ExamStatus.IN_PROGRESS).build());
 
-        var response = firstResponse();
+        StudentExamSummaryResponse response = firstResponse();
 
         assertThat(response.canEnter()).isTrue();
         assertThat(response.entryMessage()).isNull();
@@ -147,18 +148,19 @@ class ViewMyExamsUseCaseTests {
     }
 
     /**
-     * Session còn dở (IN_PROGRESS/INTERRUPTED) là phiên vào lại được, không phải một lượt đã tiêu.
-     * Đếm nhầm thì học sinh bị báo "hết lượt" ngay ở màn danh sách, trước khi kịp vào lại phiên dở.
+     * An unfinished session (IN_PROGRESS/INTERRUPTED) is one that can be re-entered, not an attempt
+     * already used up. Counting it wrongly would tell the student "no attempts left" on the list
+     * screen, before they get to re-enter the unfinished session.
      */
     @Test
     void should_not_count_an_unfinished_session_as_a_used_attempt() {
-        var candidateId = UUID.randomUUID();
+        UUID candidateId = UUID.randomUUID();
         givenRows(row().candidateId(candidateId).candidateStatus(ExamCandidateStatus.ATTENDED)
             .examStatus(ExamStatus.IN_PROGRESS).maxAttempt(1).build());
         when(attemptsQueryRepository.findByCandidateIds(anyCollection()))
             .thenReturn(List.of(attempt(candidateId, ExamSessionStatus.IN_PROGRESS)));
 
-        var response = firstResponse();
+        StudentExamSummaryResponse response = firstResponse();
 
         assertThat(response.attemptsUsed()).isZero();
         assertThat(response.canEnter()).isTrue();
@@ -166,13 +168,13 @@ class ViewMyExamsUseCaseTests {
 
     @Test
     void should_block_once_every_attempt_is_used_up() {
-        var candidateId = UUID.randomUUID();
+        UUID candidateId = UUID.randomUUID();
         givenRows(row().candidateId(candidateId).candidateStatus(ExamCandidateStatus.ATTENDED)
             .examStatus(ExamStatus.IN_PROGRESS).maxAttempt(1).build());
         when(attemptsQueryRepository.findByCandidateIds(anyCollection()))
             .thenReturn(List.of(attempt(candidateId, ExamSessionStatus.SUBMITTED)));
 
-        var response = firstResponse();
+        StudentExamSummaryResponse response = firstResponse();
 
         assertThat(response.attemptsUsed()).isEqualTo(1);
         assertThat(response.entryMessage()).contains("hết số lượt");

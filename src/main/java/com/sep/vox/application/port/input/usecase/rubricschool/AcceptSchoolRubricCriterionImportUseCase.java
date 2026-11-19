@@ -8,9 +8,14 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.AcceptRubricCriterionImportResponse;
+import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
+import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
@@ -60,14 +65,14 @@ public class AcceptSchoolRubricCriterionImportUseCase implements IUseCase<Accept
 
         // Bước 1: Xác thực trạng thái tài khoản đang đăng nhập
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản bị khóa.");
         }
 
         // Bước 2: Bảo mật tài khoản School Admin
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Bạn không thuộc trường học nào để thực hiện chức năng này."));
 
         // Chống hack: Gửi mã trường trên URL khác với id trường thực tế của tài khoản
@@ -76,7 +81,7 @@ public class AcceptSchoolRubricCriterionImportUseCase implements IUseCase<Accept
         }
 
         // Bước 3: Kiểm tra thông tin phiên làm việc (ImportSession)
-        var session = importSessionRepository.findById(command.sessionId())
+        ImportSession session = importSessionRepository.findById(command.sessionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import tương ứng."));
 
         if (session.getType() != ImportType.RUBRIC_CRITERION || session.getImportedEntityId() == null) {
@@ -95,9 +100,9 @@ public class AcceptSchoolRubricCriterionImportUseCase implements IUseCase<Accept
 
         // Bước 4: Kiểm tra tính hợp lệ và quyền sở hữu đích đến (Bộ Rubric gốc)
         UUID versionId = session.getImportedEntityId();
-        var version = rubricVersionRepository.findById(versionId)
+        RubricVersion version = rubricVersionRepository.findById(versionId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric đích."));
-        var rubric = rubricRepository.findById(version.getRubricId())
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc cần bổ sung tiêu chí."));
 
         // Chống hack: Chặn tuyệt đối School Admin can thiệp dữ liệu vào bộ Rubric hệ thống hoặc trường bạn

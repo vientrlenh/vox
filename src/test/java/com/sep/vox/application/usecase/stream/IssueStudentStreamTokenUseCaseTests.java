@@ -22,6 +22,7 @@ import com.sep.vox.application.port.input.command.IssueStudentStreamTokenCommand
 import com.sep.vox.application.port.input.usecase.stream.IssueStudentStreamTokenUseCase;
 import com.sep.vox.application.port.output.StreamTokenProvider;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.stream.IssueStudentStreamTokenResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
@@ -80,13 +81,13 @@ class IssueStudentStreamTokenUseCaseTests {
         session.setCandidateId(candidateId);
         session.setStatus(ExamSessionStatus.IN_PROGRESS);
 
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(candidateId);
         candidate.setStudentId(userId);
         candidate.setScheduleId(scheduleId);
 
-        var now = Instant.now();
-        var schedule = new ExamSchedule();
+        Instant now = Instant.now();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(scheduleId);
         schedule.setStartDate(now.minus(1, ChronoUnit.HOURS));
         schedule.setEndDate(now.plus(1, ChronoUnit.HOURS));
@@ -107,7 +108,7 @@ class IssueStudentStreamTokenUseCaseTests {
 
     @Test
     void should_fall_back_to_exam_required_stream_type_when_request_omits_it() {
-        var response = useCase.execute(command(null));
+        IssueStudentStreamTokenResponse response = useCase.execute(command(null));
 
         assertThat(response.streamTypes()).containsExactly("camera", "screen");
         verify(examSessionRepository).lockChosenStreamType(sessionId, ExamRequiredStreamType.CAMERA_AND_SCREEN);
@@ -117,7 +118,7 @@ class IssueStudentStreamTokenUseCaseTests {
     void should_let_student_pick_a_single_stream_when_permission_is_any() {
         exam.setStreamTypePermission(ExamStreamTypePermission.ANY);
 
-        var response = useCase.execute(command("SCREEN"));
+        IssueStudentStreamTokenResponse response = useCase.execute(command("SCREEN"));
 
         assertThat(response.streamTypes()).containsExactly("screen");
         verify(examSessionRepository).lockChosenStreamType(sessionId, ExamRequiredStreamType.SCREEN);
@@ -133,14 +134,14 @@ class IssueStudentStreamTokenUseCaseTests {
     }
 
     /**
-     * vox-streaming và WPF đều dùng "camera"/"screen" chữ thường cho cùng những giá trị này, nên
-     * việc phát lại token từ phía client không được fail chỉ vì kiểu chữ.
+     * vox-streaming and WPF both use lowercase "camera"/"screen" for these same values, so
+     * reissuing the token from the client side must not fail just because of letter case.
      */
     @Test
     void should_accept_a_lowercase_stream_type() {
         exam.setStreamTypePermission(ExamStreamTypePermission.ANY);
 
-        var response = useCase.execute(command("camera"));
+        IssueStudentStreamTokenResponse response = useCase.execute(command("camera"));
 
         assertThat(response.streamTypes()).containsExactly("camera");
         verify(examSessionRepository).lockChosenStreamType(sessionId, ExamRequiredStreamType.CAMERA);
@@ -151,7 +152,7 @@ class IssueStudentStreamTokenUseCaseTests {
         exam.setStreamTypePermission(ExamStreamTypePermission.ANY);
         session.setChosenStreamType(ExamRequiredStreamType.SCREEN);
 
-        var response = useCase.execute(command(null));
+        IssueStudentStreamTokenResponse response = useCase.execute(command(null));
 
         assertThat(response.streamTypes()).containsExactly("screen");
         verify(examSessionRepository, never()).lockChosenStreamType(any(), any());
@@ -173,13 +174,13 @@ class IssueStudentStreamTokenUseCaseTests {
     @Test
     void should_follow_the_winner_when_it_loses_the_lock_race() {
         exam.setStreamTypePermission(ExamStreamTypePermission.ANY);
-        var winner = new ExamSession();
+        ExamSession winner = new ExamSession();
         winner.setId(sessionId);
         winner.setChosenStreamType(ExamRequiredStreamType.SCREEN);
         when(examSessionRepository.lockChosenStreamType(eq(sessionId), any())).thenReturn(0);
         when(examSessionRepository.findById(sessionId)).thenReturn(Optional.of(winner));
 
-        var response = useCase.execute(command(null));
+        IssueStudentStreamTokenResponse response = useCase.execute(command(null));
 
         assertThat(response.streamTypes()).containsExactly("screen");
     }

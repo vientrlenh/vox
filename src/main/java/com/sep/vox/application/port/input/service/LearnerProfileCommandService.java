@@ -1,8 +1,10 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -39,19 +41,19 @@ public class LearnerProfileCommandService {
                 "Quiz sở thích phải có từ 5 đến 7 câu trả lời"
             );
         }
-        var raw = new HashMap<String, Integer>();
-        for (var answer : answers) {
+        Map<String, Integer> raw = new HashMap<String, Integer>();
+        for (QuizAnswer answer : answers) {
             if (answer.getMostStatementIndex()
                     == answer.getLeastStatementIndex()) {
                 throw new IllegalArgumentException(
                     "Lựa chọn giống nhất và ít giống nhất phải khác nhau"
                 );
             }
-            var item = quizItemRepository.findActiveQuizItem(answer.getItemId())
+            InterestQuizSeedItem item = quizItemRepository.findActiveQuizItem(answer.getItemId())
                 .orElseThrow(() -> new NotFoundException(
                     "Không tìm thấy item quiz sở thích"
                 ));
-            var dimensions = item.getDimensionPerStatement();
+            List<String> dimensions = item.getDimensionPerStatement();
             if (dimensions.size() != 3
                     || dimensions.stream().distinct().count() != 3) {
                 throw new IllegalStateException(
@@ -69,7 +71,7 @@ public class LearnerProfileCommandService {
                 (current, delta) -> current + delta
             );
         }
-        var saved = upsertProfile(studentId, null, null, Instant.now());
+        LearnerProfile saved = upsertProfile(studentId, null, null, Instant.now());
         dimensionScoreRepository.replaceScores(
             saved.getId(),
             interestQuizScorer.normalize(raw)
@@ -101,7 +103,7 @@ public class LearnerProfileCommandService {
             String goalType,
             Boolean autoUpdate,
             Instant quizCompletedAt) {
-        var profile = repository.findCurrentForUpdate(studentId)
+        LearnerProfile profile = repository.findCurrentForUpdate(studentId)
             .orElseGet(() -> LearnerProfile.forStudent(studentId));
         profile.applyChanges(goalType, autoUpdate, quizCompletedAt);
         return repository.save(profile);

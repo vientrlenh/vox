@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.config;
 
 import java.util.HashMap;
 
+import java.util.Map;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -30,19 +31,19 @@ public class KafkaTemplateConfig {
     
     @Bean
     KafkaTemplate<String, String> outboxKafkaTemplate(KafkaProperties properties) {
-        var configs = new HashMap<>(properties.buildProducerProperties());
+        Map<String, Object> configs = new HashMap<>(properties.buildProducerProperties());
         configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         return new KafkaTemplate<>(new DefaultKafkaProducerFactory<>(configs));
     }
 
     @Bean
     ConcurrentKafkaListenerContainerFactory<String, String> stringKafkaListenerContainerFactory(KafkaProperties properties) {
-        var configs = new HashMap<>(properties.buildConsumerProperties());
+        Map<String, Object> configs = new HashMap<>(properties.buildConsumerProperties());
         configs.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         configs.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
         configs.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, StringDeserializer.class.getName());
 
-        var factory = new ConcurrentKafkaListenerContainerFactory<String, String>();
+        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<String, String>();
         factory.setConsumerFactory(new DefaultKafkaConsumerFactory<>(configs));
         factory.getContainerProperties().setAckMode(AckMode.MANUAL);
         return factory;

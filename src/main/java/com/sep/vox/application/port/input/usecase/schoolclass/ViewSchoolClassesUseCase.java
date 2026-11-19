@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
+import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolClass;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -47,12 +49,12 @@ public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolClassDto> execute(ViewSchoolClassesQuery input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = findCurrentUser(currentUserId);
-        var schoolId = getSchoolId(currentUser);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = findCurrentUser(currentUserId);
+        UUID schoolId = getSchoolId(currentUser);
         validateSchool(schoolId);
 
-        var result = schoolClassRepository.findBySchoolId(
+        PageResult<SchoolClass> result = schoolClassRepository.findBySchoolId(
             schoolId,
             StringNormalization.trimAndCollapseSpaces(input.search()),
             parseStatus(input.status()),
@@ -65,7 +67,7 @@ public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        var user = userRepository.findById(currentUserId)
+        User user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         validateCurrentUserIsActive(user);
         return user;
@@ -84,7 +86,7 @@ public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery
     }
 
     private void validateSchool(UUID schoolId) {
-        var school = schoolRepository.findById(schoolId)
+        School school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
@@ -92,7 +94,7 @@ public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery
     }
 
     private SchoolClassStatus parseStatus(String status) {
-        var normalized = StringNormalization.trimAndCollapseSpaces(status);
+        String normalized = StringNormalization.trimAndCollapseSpaces(status);
         if (normalized == null) {
             return null;
         }

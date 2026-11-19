@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamSession;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -87,10 +90,10 @@ public class DeleteExamSessionUseCase implements IUseCase<DeleteExamSessionComma
     @Override
     @Transactional
     public Void execute(DeleteExamSessionCommand input) {
-        var sessionId = input.sessionId();
-        var session = examSessionRepository.findById(sessionId)
+        UUID sessionId = input.sessionId();
+        ExamSession session = examSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
-        var exam = examRepository.findById(session.getExamId())
+        Exam exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra của phiên thi này"));
 
         authorizeDelete(exam.getId(), exam.getSchoolId());
@@ -105,19 +108,19 @@ public class DeleteExamSessionUseCase implements IUseCase<DeleteExamSessionComma
         // trả), nhưng nó canh vòng đời của KỲ THI còn đơn thì bám vào TỪNG bài — hai vòng đời khác
         // nhau, đừng để cái này ngầm suy ra cái kia. Nhánh chủ tịch vừa mở rộng làm số người bấm
         // được nút này đông hơn, nên chốt tường minh rẻ hơn là đi chứng minh nó bất khả thi.
-        var candidateResult = examCandidateResultRepository.findBySessionId(sessionId).orElse(null);
+        ExamCandidateResult candidateResult = examCandidateResultRepository.findBySessionId(sessionId).orElse(null);
         if (candidateResult != null
                 && examResultAppealRepository.existsOpenByCandidateResultId(candidateResult.getId())) {
             throw new IllegalStateException(
                 "Bài thi này đang có đơn phúc khảo chưa xử lý xong. Hãy xử lý hoặc từ chối đơn trước khi xoá.");
         }
 
-        var reason = input.reason() == null ? "" : input.reason().strip();
+        String reason = input.reason() == null ? "" : input.reason().strip();
         if (reason.isEmpty()) {
             throw new IllegalArgumentException("Phải nhập lý do xóa bài thi");
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         // Idempotent: hai người cùng bấm xoá thì lần sau nhận 0 dòng, và lý do/mốc thời gian của lần
         // đầu — thứ phải giữ nguyên để giải trình — không bị ghi đè.
         if (examSessionRepository.softDelete(sessionId, now, reason) == 0) {
@@ -129,11 +132,11 @@ public class DeleteExamSessionUseCase implements IUseCase<DeleteExamSessionComma
     }
 
     private void authorizeDelete(UUID examId, UUID examSchoolId) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(examSchoolId)) {

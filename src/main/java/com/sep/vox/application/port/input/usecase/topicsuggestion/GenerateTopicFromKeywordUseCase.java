@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.topicsuggestion;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.command.GenerateTopicFromKeywordCommand;
@@ -45,7 +46,7 @@ public class GenerateTopicFromKeywordUseCase implements IUseCase<GenerateTopicFr
      */
     @Override
     public TopicFromKeywordResult execute(GenerateTopicFromKeywordCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         return topicSuggestionRepository.generateFromKeyword(studentId, input.keyword());
     }
 }

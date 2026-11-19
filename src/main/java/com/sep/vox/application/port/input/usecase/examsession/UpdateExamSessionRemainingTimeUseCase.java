@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,14 +56,14 @@ public class UpdateExamSessionRemainingTimeUseCase
     @Override
     @Transactional
     public Integer execute(UpdateExamSessionRemainingTimeCommand input) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
 
         // RESUMABLE chứ không phải findById: checkpoint cho một phiên đã nộp hoặc đã chấm là vô
         // nghĩa, và nhận nó vào sẽ làm bẩn dữ liệu của lần chấm.
-        var session = examSessionRepository.findByIdAndResumable(input.sessionId())
+        ExamSession session = examSessionRepository.findByIdAndResumable(input.sessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi hoặc phiên thi đã kết thúc"));
 
-        var candidate = examCandidateRepository.findById(session.getCandidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy học viên thi"));
 
         if (!candidate.getStudentId().equals(userId)) {
@@ -80,8 +82,8 @@ public class UpdateExamSessionRemainingTimeUseCase
      * session, không phải thời lượng lớn nhất của toàn kỳ thi vì một exam có thể có nhiều paper.
      */
     private int clamp(ExamSession session, int remainingSeconds) {
-        var value = Math.max(0, remainingSeconds);
-        var ceiling = examPaperRepository.findById(session.getPaperId())
+        int value = Math.max(0, remainingSeconds);
+        Integer ceiling = examPaperRepository.findById(session.getPaperId())
             .map(paper -> paper.getTimeDurationSeconds())
             .orElse(null);
         if (ceiling != null && value > ceiling) {

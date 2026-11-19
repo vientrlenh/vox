@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.event.internal.consumer;
 
+import com.sep.vox.domain.model.user.User;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -86,7 +87,7 @@ public class ExamAppealEmailConsumer {
         containerFactory = "stringKafkaListenerContainerFactory"
     )
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        var eventId = KafkaEventHeaders.readEventId(record);
+        UUID eventId = KafkaEventHeaders.readEventId(record);
 
         LOGGER.info("Receive event exam-appeal: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
@@ -97,11 +98,11 @@ public class ExamAppealEmailConsumer {
             return;
         }
 
-        var eventType = KafkaEventHeaders.readEventType(record);
-        var mail = renderMail(eventType, eventId, record.value());
+        String eventType = KafkaEventHeaders.readEventType(record);
+        Mail mail = renderMail(eventType, eventId, record.value());
 
-        // Học sinh đã bị xoá thì gửi lại bao nhiêu lần cũng không có người nhận: đánh dấu
-        // đã xử lý rồi bỏ qua, đừng để message chạy hết vòng retry rồi rơi vào DLT.
+        // If the student has been deleted, resending any number of times will never find a recipient: mark
+        // it processed and skip, do not let the message run the whole retry cycle and end up in the DLT.
         if (mail == null) {
             markProcessed(eventId);
             LOGGER.warn("Skip mail, recipient not found: eventId={}, eventType={}", eventId, eventType);
@@ -122,21 +123,21 @@ public class ExamAppealEmailConsumer {
         ack.acknowledge();
     }
 
-    /** @return {@code null} khi không tìm được người nhận */
+    /** @return {@code null} when no recipient can be found */
     private Mail renderMail(String eventType, UUID eventId, String value) {
         return switch (eventType) {
             case EventTypeConstant.EXAM_APPEAL_PUBLISHED -> {
-                var payload = parse(value, ExamAppealPublishedPayloadV1.class, eventType, eventId);
+                ExamAppealPublishedPayloadV1 payload = parse(value, ExamAppealPublishedPayloadV1.class, eventType, eventId);
                 yield mail(payload.studentId(), SUBJECT_PUBLISHED, () -> mailTemplatePort.renderAppealPublishedEmail(
                     payload.examName(), formatScore(payload.scoreBefore()), formatScore(payload.scoreAfter())));
             }
             case EventTypeConstant.EXAM_APPEAL_REJECTED -> {
-                var payload = parse(value, ExamAppealRejectedPayloadV1.class, eventType, eventId);
+                ExamAppealRejectedPayloadV1 payload = parse(value, ExamAppealRejectedPayloadV1.class, eventType, eventId);
                 yield mail(payload.studentId(), SUBJECT_REJECTED,
                     () -> mailTemplatePort.renderAppealRejectedEmail(payload.examName(), payload.reason()));
             }
             case EventTypeConstant.EXAM_APPEAL_APPROVED -> {
-                var payload = parse(value, ExamAppealApprovedPayloadV1.class, eventType, eventId);
+                ExamAppealApprovedPayloadV1 payload = parse(value, ExamAppealApprovedPayloadV1.class, eventType, eventId);
                 yield mail(payload.studentId(), SUBJECT_APPROVED, () -> mailTemplatePort.renderAppealApprovedEmail(
                     payload.examName(), formatDeadline(payload.deadline())));
             }
@@ -145,12 +146,12 @@ public class ExamAppealEmailConsumer {
         };
     }
 
-    /** Hoãn render tới khi đã chắc chắn có người nhận, khỏi dựng HTML để rồi vứt đi. */
+    /** Defer rendering until a recipient is certain, so we do not build HTML just to throw it away. */
     private Mail mail(UUID recipientId, String subject, Supplier<String> html) {
         if (recipientId == null) {
             return null;
         }
-        var recipient = userRepository.findById(recipientId).orElse(null);
+        User recipient = userRepository.findById(recipientId).orElse(null);
         if (recipient == null) {
             return null;
         }
@@ -177,7 +178,7 @@ public class ExamAppealEmailConsumer {
 
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
-        var eventId = KafkaEventHeaders.readEventIdOrNull(record);
+        UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         LOGGER.error("exam-appeal event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
             eventId, record.topic(), record.partition(), record.offset(), record.value());
     }

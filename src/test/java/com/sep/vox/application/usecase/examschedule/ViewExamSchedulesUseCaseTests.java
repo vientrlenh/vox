@@ -22,6 +22,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewExamSchedulesQuery;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewExamSchedulesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;
@@ -69,7 +70,7 @@ class ViewExamSchedulesUseCaseTests {
     void should_return_all_schedules_when_no_filter() {
         givenTeacherChair();
 
-        var result = useCase.execute(new ViewExamSchedulesQuery(examId, null, null, null));
+        List<ExamScheduleDto> result = useCase.execute(new ViewExamSchedulesQuery(examId, null, null, null));
 
         assertThat(result).hasSize(3);
     }
@@ -78,7 +79,7 @@ class ViewExamSchedulesUseCaseTests {
     void should_filter_by_status() {
         givenTeacherChair();
 
-        var result = useCase.execute(new ViewExamSchedulesQuery(examId, ExamScheduleStatus.DRAFT, null, null));
+        List<ExamScheduleDto> result = useCase.execute(new ViewExamSchedulesQuery(examId, ExamScheduleStatus.DRAFT, null, null));
 
         assertThat(result).hasSize(2);
         assertThat(result).allMatch(s -> "DRAFT".equals(s.status()));
@@ -88,7 +89,7 @@ class ViewExamSchedulesUseCaseTests {
     void should_filter_by_start_date_lower_bound() {
         givenTeacherChair();
 
-        var result = useCase.execute(new ViewExamSchedulesQuery(examId, null, base.plus(2, ChronoUnit.DAYS), null));
+        List<ExamScheduleDto> result = useCase.execute(new ViewExamSchedulesQuery(examId, null, base.plus(2, ChronoUnit.DAYS), null));
 
         assertThat(result).hasSize(2);
     }
@@ -97,7 +98,7 @@ class ViewExamSchedulesUseCaseTests {
     void should_filter_by_end_date_upper_bound() {
         givenTeacherChair();
 
-        var result = useCase.execute(new ViewExamSchedulesQuery(examId, null, null, base.plus(2, ChronoUnit.DAYS)));
+        List<ExamScheduleDto> result = useCase.execute(new ViewExamSchedulesQuery(examId, null, null, base.plus(2, ChronoUnit.DAYS)));
 
         assertThat(result).hasSize(2);
     }
@@ -106,7 +107,7 @@ class ViewExamSchedulesUseCaseTests {
     void should_filter_by_start_and_end_window() {
         givenTeacherChair();
 
-        var result = useCase.execute(
+        List<ExamScheduleDto> result = useCase.execute(
             new ViewExamSchedulesQuery(examId, null, base.plus(2, ChronoUnit.DAYS), base.plus(2, ChronoUnit.DAYS)));
 
         assertThat(result).hasSize(1);
@@ -120,7 +121,7 @@ class ViewExamSchedulesUseCaseTests {
             schedule(base.plus(2, ChronoUnit.DAYS), ExamScheduleStatus.PUBLISHED)
         ));
 
-        var result = useCase.execute(
+        List<ExamScheduleDto> result = useCase.execute(
             new ViewExamSchedulesQuery(null, ExamScheduleStatus.DRAFT, null, null));
 
         assertThat(result).hasSize(1);
@@ -145,7 +146,7 @@ class ViewExamSchedulesUseCaseTests {
     }
 
     private ExamSchedule schedule(Instant startDate, ExamScheduleStatus status) {
-        var s = new ExamSchedule();
+        ExamSchedule s = new ExamSchedule();
         s.setId(UUID.randomUUID());
         s.setExamId(examId);
         s.setSchoolRoomId(UUID.randomUUID());
@@ -156,7 +157,7 @@ class ViewExamSchedulesUseCaseTests {
     }
 
     private Exam exam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         return exam;

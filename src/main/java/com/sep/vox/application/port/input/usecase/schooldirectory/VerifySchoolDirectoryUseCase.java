@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schooldirectory;
 
+import com.sep.vox.domain.model.school.SchoolDirectory;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -26,9 +27,9 @@ public class VerifySchoolDirectoryUseCase implements IUseCase<VerifySchoolDirect
     @Override
     @Transactional
     public UUID execute(VerifySchoolDirectoryCommand input) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var directory = schoolDirectoryRepository.findById(input.id())
+        SchoolDirectory directory = schoolDirectoryRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục truờng"));
 
         if (directory.isVerified()) {
@@ -36,7 +37,7 @@ public class VerifySchoolDirectoryUseCase implements IUseCase<VerifySchoolDirect
         }
 
         directory.verify(userId, Instant.now());
-        var updated = schoolDirectoryRepository.save(directory);
+        SchoolDirectory updated = schoolDirectoryRepository.save(directory);
         return updated.getId();
     }
 

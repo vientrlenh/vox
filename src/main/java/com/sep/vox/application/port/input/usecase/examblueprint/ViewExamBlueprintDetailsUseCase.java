@@ -33,12 +33,12 @@ public class ViewExamBlueprintDetailsUseCase implements IUseCase<ViewExamBluepri
 
     @Override
     public ExamBlueprintDto execute(ViewExamBlueprintDetailsQuery input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
 
-        var blueprint = examBlueprintRepository.findById(input.id())
+        ExamBlueprint blueprint = examBlueprintRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi với id: " + input.id()));
         if (!hasAccess(blueprint, currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối: không có quyền truy cập blueprint đề thi này");

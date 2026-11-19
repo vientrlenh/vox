@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
+import com.sep.vox.domain.model.framework.FrameworkCriterion;
+import com.sep.vox.domain.model.framework.FrameworkVersion;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +41,7 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
     @Override
     @Transactional
     public Void execute(DeleteFrameworkVersionCommand input) {
-        var version = frameworkVersionRepository.findByIdForUpdate(input.versionId())
+        FrameworkVersion version = frameworkVersionRepository.findByIdForUpdate(input.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
 
         if (!version.getFrameworkId().equals(input.frameworkId())) {
@@ -58,7 +61,7 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
     }
 
     private void deleteVersionAndChildren(java.util.UUID versionId) {
-        var criteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
+        List<FrameworkCriterion> criteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
         if (!criteria.isEmpty()) {
             frameworkCriterionBandRepository.deleteByFrameworkCriterionIdIn(
                 criteria.stream().map(c -> c.getId()).toList());

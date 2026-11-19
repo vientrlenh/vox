@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.order;
 
+import com.sep.vox.domain.model.order.Order;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +32,7 @@ public class ViewOrdersUseCase implements IUseCase<ViewOrdersQuery, PageResult<O
     @Override
     @Transactional(readOnly = true)
     public PageResult<OrderDto> execute(ViewOrdersQuery input) {
-        var page = orderRepository.findForAdmin(
+        PageResult<Order> page = orderRepository.findForAdmin(
             input.schoolId(),
             statusOf(input.status()),
             typeOf(input.type()),
@@ -52,7 +53,7 @@ public class ViewOrdersUseCase implements IUseCase<ViewOrdersQuery, PageResult<O
     // null/rỗng = không lọc theo tiêu chí này. Chuẩn hóa CHỮ HOA vì đằng sau là Enum.valueOf phân biệt
     // hoa thường: "pending" trên query string sẽ ném lỗi dù người dùng không sai gì.
     private static OrderStatus statusOf(String status) {
-        var normalized = StringNormalization.normalizeCode(status);
+        String normalized = StringNormalization.normalizeCode(status);
         if (normalized == null || normalized.isEmpty()) {
             return null;
         }
@@ -64,7 +65,7 @@ public class ViewOrdersUseCase implements IUseCase<ViewOrdersQuery, PageResult<O
     }
 
     private static OrderType typeOf(String type) {
-        var normalized = StringNormalization.normalizeCode(type);
+        String normalized = StringNormalization.normalizeCode(type);
         if (normalized == null || normalized.isEmpty()) {
             return null;
         }

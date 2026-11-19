@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.exam.ExamBlueprint;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -64,12 +65,12 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
     @Override
     @Transactional
     public ExamDto execute(CreateExamCommand input) {
-        var command = normalize(input);
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        CreateExamCommand command = normalize(input);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         if (!schoolAdmin || currentSchoolId == null) {
@@ -77,7 +78,7 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
         }
 
         if (command.blueprintId() != null) {
-            var blueprint = examBlueprintRepository.findById(command.blueprintId())
+            ExamBlueprint blueprint = examBlueprintRepository.findById(command.blueprintId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
             if (!currentSchoolId.equals(blueprint.getSchoolId())) {
                 throw new ForbiddenException("Blueprint không thuộc trường hiện tại");
@@ -89,13 +90,13 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
         // sinh được kết quả nào để chấm.
         examAssessmentPolicyValidator.validateIfPresent(command.assessmentPolicyId(), currentSchoolId);
 
-        var streamConfig = examStreamConfigResolver.resolve(
+        ExamStreamConfigResolver.StreamConfig streamConfig = examStreamConfigResolver.resolve(
             command.requiredStreamTypes(), command.streamTypePermission());
 
         validateOpenClose(command.openAt(), command.closeAt(), currentSchoolId);
 
-        var now = Instant.now();
-        var exam = new Exam(
+        Instant now = Instant.now();
+        Exam exam = new Exam(
             command.blueprintId(),
             null,
             examCodeOf(command.code()),
@@ -156,8 +157,8 @@ public class CreateExamUseCase implements IUseCase<CreateExamCommand, ExamDto> {
      * bất cứ mốc nào -- kể cả hạn gói dịch vụ mà {@code SubscriptionPeriodGuardService} vừa áp.
      */
     private void validateOpenClose(String openAt, String closeAt, UUID schoolId) {
-        var open = DateMapper.toInstant(openAt);
-        var close = DateMapper.toInstant(closeAt);
+        Instant open = DateMapper.toInstant(openAt);
+        Instant close = DateMapper.toInstant(closeAt);
         if (open == null || close == null) {
             throw new IllegalStateException("Kỳ thi phải có thời gian mở bài và đóng bài");
         }

@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamSession;
+import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -54,12 +57,12 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
     @Override
     @Transactional
     public Void execute(CompleteExamSessionGradingCommand input) {
-        var session = examSessionRepository.findById(input.examSessionId())
+        ExamSession session = examSessionRepository.findById(input.examSessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
 
-        var exam = examRepository.findById(session.getExamId())
+        Exam exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var subscription = schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId())
+        SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId())
             .orElseThrow(() -> new NotFoundException("Trường chưa có gói subscription đang hoạt động"));
 
         // Chuyển trạng thái có điều kiện (atomic UPDATE ... WHERE status = GRADING) để giữ row lock
@@ -87,14 +90,14 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
         // Chốt chặn "một dòng chỉ thu một lần" nằm ở chính cột charged_at, KHÔNG phải ở một ràng buộc
         // duy nhất trên school_balance_entries(exam_session_id): ràng buộc đó sẽ chặn nhầm đúng khoản
         // trừ hợp lệ của lần chấm lại.
-        var now = Instant.now();
-        var claimedRows = aiUsageRecordRepository.markChargedByExamSessionId(session.getId(), now);
+        Instant now = Instant.now();
+        int claimedRows = aiUsageRecordRepository.markChargedByExamSessionId(session.getId(), now);
         // Vẫn lấy thêm tổng USD vì school_balance_entries.cost_usd giữ nguyên tệ gốc để đối soát ngược
         // với hóa đơn nhà cung cấp (V2 mục 7) -- cùng mốc chargedAt để hai cột của một bút toán mô tả
         // đúng cùng một tập dòng.
-        var totalCostVnd = claimedRows == 0 ? BigDecimal.ZERO : aiUsageRecordRepository
+        BigDecimal totalCostVnd = claimedRows == 0 ? BigDecimal.ZERO : aiUsageRecordRepository
             .sumCostVndByExamSessionIdAndChargedAt(session.getId(), now);
-        var totalCostUsd = claimedRows == 0 ? BigDecimal.ZERO : aiUsageRecordRepository
+        BigDecimal totalCostUsd = claimedRows == 0 ? BigDecimal.ZERO : aiUsageRecordRepository
             .sumCostUsdByExamSessionIdAndChargedAt(session.getId(), now);
         if (totalCostVnd.compareTo(BigDecimal.ZERO) > 0) {
             // allowDebt=true: chi phí AI thật đã phát sinh, phải ghi nhận đủ dù vượt hạn mức --
@@ -110,7 +113,7 @@ public class CompleteExamSessionGradingUseCase implements IUseCase<CompleteExamS
             // mà nhà trường cấp cho chính giáo viên ra đề. Kỳ thi tập trung do nhà trường tổ chức,
             // không thuộc túi riêng của ai nên để null -- ConsumeQuotaService sẽ bỏ qua bước trừ
             // hạn mức cá nhân.
-            var chargedUserId = exam.getKind() == ExamKind.CLASS_TEST ? exam.getCreatedBy() : null;
+            UUID chargedUserId = exam.getKind() == ExamKind.CLASS_TEST ? exam.getCreatedBy() : null;
             checkAndReportLockTransition(subscription.getId(), exam.getSchoolId(), QuotaType.EXAM,
                 session.getId(), totalCostVnd, totalCostUsd, chargedUserId, now);
         }

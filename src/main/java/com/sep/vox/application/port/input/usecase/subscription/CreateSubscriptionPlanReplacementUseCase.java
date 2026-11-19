@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -43,7 +44,7 @@ public class CreateSubscriptionPlanReplacementUseCase
     @Override
     @Transactional
     public UUID execute(CreateSubscriptionPlanReplacementCommand input) {
-        var replacedPlan = subscriptionPlanRepository.findById(input.replacedPlanId())
+        SubscriptionPlan replacedPlan = subscriptionPlanRepository.findById(input.replacedPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
         // Chỉ cho gói ĐANG BÁN: gói đã ARCHIVED cần sửa gói thay thế thì đi qua
@@ -52,7 +53,7 @@ public class CreateSubscriptionPlanReplacementUseCase
             throw new IllegalStateException("Chỉ tạo được gói thay thế cho gói đang bán.");
         }
 
-        var newPlanId = createSubscriptionPlanUseCase.execute(input.newPlan());
+        UUID newPlanId = createSubscriptionPlanUseCase.execute(input.newPlan());
 
         replacedPlan.setReplacedByPlanId(newPlanId);
         replacedPlan.setStatus(SubscriptionPlanStatus.ARCHIVED);

@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.application.port.input.command.UpdateSupportedLanguageCommand;
 import java.util.UUID;
 import java.util.Map;
 
@@ -57,7 +58,7 @@ public class SupportedLanguageController {
     public UpdateSupportedLanguageResponse updateSupportedLanguage(
             @Argument(name = "id") UUID id,
             @Argument(name = "input") Map<String, Object> input) {
-        var command = UpdateSupportedLanguageCommandMapper.fromInput(id, input);
+        UpdateSupportedLanguageCommand command = UpdateSupportedLanguageCommandMapper.fromInput(id, input);
         return updateSupportedLanguageUseCase.execute(command);
     }
 

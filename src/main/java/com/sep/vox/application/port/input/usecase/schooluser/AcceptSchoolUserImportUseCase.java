@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
+import com.sep.vox.domain.model.school.School;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -62,23 +64,23 @@ public class AcceptSchoolUserImportUseCase
     public Void execute(AcceptSchoolUserImportCommand input) {
         validateCommand(input);
 
-        var now = Instant.now();
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = findCurrentUser(currentUserId);
-        var schoolId = getSchoolId(currentUser);
+        Instant now = Instant.now();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = findCurrentUser(currentUserId);
+        UUID schoolId = getSchoolId(currentUser);
         validateRequestedSchool(input.schoolId(), schoolId);
-        var school = schoolRepository.findById(schoolId)
+        School school = schoolRepository.findById(schoolId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
         }
 
-        var session = findSession(input.importSessionId());
+        ImportSession session = findSession(input.importSessionId());
         validateSession(session, schoolId, now);
         validateRequiredMapping(input.confirmedMapping());
 
-        var confirmedMappingJson = jsonSerializationPort.toJson(input.confirmedMapping());
-        var queued = importSessionRepository.markQueued(
+        String confirmedMappingJson = jsonSerializationPort.toJson(input.confirmedMapping());
+        int queued = importSessionRepository.markQueued(
                 input.importSessionId(), USER_TYPE, confirmedMappingJson, now, currentUserId);
         if (queued == 0) {
             throw new IllegalStateException("Phiên import không ở trạng thái cho accept hoặc đã hết hạn");
@@ -138,12 +140,12 @@ public class AcceptSchoolUserImportUseCase
     }
 
     private void validateRequiredMapping(Map<String, String> confirmedMapping) {
-        var mappedFields = new HashSet<String>();
+        Set<String> mappedFields = new HashSet<String>();
         confirmedMapping.values().stream()
                 .filter(value -> value != null)
                 .map(value -> value.strip())
                 .forEach(mappedFields::add);
-        var missingFields = REQUIRED_FIELDS.stream()
+        List<String> missingFields = REQUIRED_FIELDS.stream()
                 .filter(field -> !mappedFields.contains(field))
                 .toList();
         if (!missingFields.isEmpty()) {

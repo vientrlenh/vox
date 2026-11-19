@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -69,40 +71,40 @@ public class ReclaimOverdueAssignmentsUseCase
     @Override
     @Transactional
     public ReclaimOverdueResponse execute(ReclaimOverdueAssignmentsCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        UUID schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
         examGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId);
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         if (command.newDeadlineAt() != null && command.newDeadlineAt().isBefore(now)) {
             throw new IllegalArgumentException("Hạn chấm mới phải ở tương lai.");
         }
 
-        var teacherIds = command.reassignToTeacherIds() == null
+        List<UUID> teacherIds = command.reassignToTeacherIds() == null
             ? List.<UUID>of() : command.reassignToTeacherIds();
         if (!teacherIds.isEmpty()) {
             if (new HashSet<>(teacherIds).size() != teacherIds.size()) {
                 throw new DuplicatedException("Không được chọn trùng giáo viên.");
             }
-            var validTeachers = examGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds);
+            Set<UUID> validTeachers = examGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds);
             if (!validTeachers.containsAll(teacherIds)) {
                 throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
             }
         }
 
-        var batch = selectOverdue(command, schoolId, currentUserId, now);
-        var overdue = batch.assignments();
+        OverdueBatch batch = selectOverdue(command, schoolId, currentUserId, now);
+        List<ExamGradingAssignment> overdue = batch.assignments();
         if (overdue.isEmpty()) {
             return ReclaimOverdueResponse.empty();
         }
 
         rejectConflictedReplacements(overdue, teacherIds);
 
-        for (var assignment : overdue) {
+        for (ExamGradingAssignment assignment : overdue) {
             assignment.complete(GradingOutcome.DECLINED, RECLAIM_REASON, now);
             examGradingAssignmentRepository.save(assignment);
         }
-        var reclaimedIds = overdue.stream().map(assignment -> assignment.getId()).toList();
+        List<UUID> reclaimedIds = overdue.stream().map(assignment -> assignment.getId()).toList();
         if (teacherIds.isEmpty()) {
             // Không có người thay: đơn phúc khảo phải được nhả ra, nếu không nó kẹt ở
             // GRADING mà chẳng còn phân công nào đang mở để chấm tiếp.
@@ -112,13 +114,13 @@ public class ReclaimOverdueAssignmentsUseCase
 
         // Tải được đọc SAU khi đóng dòng cũ, nên người vừa bị thu hồi không còn bị tính
         // là đang giữ những bài đó — chia lại mới công bằng.
-        var loads = examGradingQueryRepository.assignedLoadByTeacherIds(teacherIds);
-        var workItems = overdue.stream().map(assignment -> assignment.getCandidateResultId()).toList();
-        var picked = roundRobinLoadBalancer.distribute(workItems, teacherIds, loads);
+        Map<UUID, Long> loads = examGradingQueryRepository.assignedLoadByTeacherIds(teacherIds);
+        List<UUID> workItems = overdue.stream().map(assignment -> assignment.getCandidateResultId()).toList();
+        List<UUID> picked = roundRobinLoadBalancer.distribute(workItems, teacherIds, loads);
 
-        var reopened = new ArrayList<ExamGradingAssignment>();
-        for (var index = 0; index < overdue.size(); index++) {
-            var previous = overdue.get(index);
+        List<ExamGradingAssignment> reopened = new ArrayList<ExamGradingAssignment>();
+        for (int index = 0; index < overdue.size(); index++) {
+            ExamGradingAssignment previous = overdue.get(index);
             reopened.add(ExamGradingAssignment.open(
                 previous.getCandidateResultId(),
                 picked.get(index),
@@ -130,7 +132,7 @@ public class ReclaimOverdueAssignmentsUseCase
                 command.newDeadlineAt()
             ));
         }
-        var reassignedIds = examGradingAssignmentRepository.saveAll(reopened).stream()
+        List<UUID> reassignedIds = examGradingAssignmentRepository.saveAll(reopened).stream()
             .map(assignment -> assignment.getId())
             .toList();
         return new ReclaimOverdueResponse(reclaimedIds, reassignedIds, batch.hasMore());
@@ -161,13 +163,13 @@ public class ReclaimOverdueAssignmentsUseCase
         if (teacherIds.isEmpty()) {
             return;
         }
-        var appealResultIds = overdue.stream()
+        List<UUID> appealResultIds = overdue.stream()
             .filter(assignment -> assignment.getRoundType() == GradingRoundType.APPEAL)
             .map(assignment -> assignment.getCandidateResultId())
             .distinct()
             .toList();
-        for (var candidateResultId : appealResultIds) {
-            var conflicted = examGradingQueryRepository.findTeacherIdsWithHumanEvaluation(candidateResultId);
+        for (UUID candidateResultId : appealResultIds) {
+            Set<UUID> conflicted = examGradingQueryRepository.findTeacherIdsWithHumanEvaluation(candidateResultId);
             if (conflicted.stream().anyMatch(teacherIds::contains)) {
                 throw new IllegalArgumentException(
                     "Danh sách giáo viên thay thế có người đã từng chấm một bài đang phúc khảo "
@@ -212,7 +214,7 @@ public class ReclaimOverdueAssignmentsUseCase
         if (assignments.isEmpty()) {
             return assignments;
         }
-        var classTestResultIds = examGradingAccessService.classTestResultIds(
+        Set<UUID> classTestResultIds = examGradingAccessService.classTestResultIds(
             assignments.stream().map(assignment -> assignment.getCandidateResultId()).toList());
         if (classTestResultIds.isEmpty()) {
             return assignments;
@@ -224,9 +226,9 @@ public class ReclaimOverdueAssignmentsUseCase
 
     private OverdueBatch selectOverdue(
             ReclaimOverdueAssignmentsCommand command, UUID schoolId, UUID currentUserId, Instant now) {
-        var assignmentIds = command.assignmentIds() == null ? List.<UUID>of() : command.assignmentIds();
+        List<UUID> assignmentIds = command.assignmentIds() == null ? List.<UUID>of() : command.assignmentIds();
         if (assignmentIds.isEmpty()) {
-            var found = examGradingAssignmentRepository.findOverdueInSchool(
+            List<ExamGradingAssignment> found = examGradingAssignmentRepository.findOverdueInSchool(
                 now, schoolId, command.examId(), MAX_RECLAIM_BATCH + 1);
             // Nhánh "thu hồi cả trường": LỌC BỎ bài trên lớp chứ không ném. Ném ở đây là
             // một bài trên lớp quá hạn chặn đứng nút thu hồi của cả trường.
@@ -236,9 +238,9 @@ public class ReclaimOverdueAssignmentsUseCase
                 : new OverdueBatch(found, false);
         }
 
-        var selected = new ArrayList<ExamGradingAssignment>();
-        for (var assignmentId : assignmentIds) {
-            var context = examGradingAccessService.load(assignmentId);
+        List<ExamGradingAssignment> selected = new ArrayList<ExamGradingAssignment>();
+        for (UUID assignmentId : assignmentIds) {
+            ExamGradingAccessService.GradingContext context = examGradingAccessService.load(assignmentId);
             examGradingAccessService.authorizeSchoolAdmin(context.schoolId(), currentUserId);
             if (!context.assignment().isOverdue(now)) {
                 throw new IllegalStateException("Chỉ thu hồi được phân công đang mở và đã quá hạn.");

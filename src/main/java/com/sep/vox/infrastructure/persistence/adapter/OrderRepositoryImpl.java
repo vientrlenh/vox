@@ -1,11 +1,13 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.OrderJpaEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -39,8 +41,8 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     @Override
     public Order save(Order order) {
-        var entity = OrderMapper.toJpa(order);
-        var saved = springDataOrderRepository.save(entity);
+        OrderJpaEntity entity = OrderMapper.toJpa(order);
+        OrderJpaEntity saved = springDataOrderRepository.save(entity);
         return OrderMapper.toDomain(saved);
     }
 
@@ -53,9 +55,9 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     @Override
     public PageResult<Order> findBySchoolId(UUID schoolId, int page, int size) {
-        var result = springDataOrderRepository
-            // page vào theo lối 1-BASED (trang đầu = 1) như mọi repository khác trong dự án, còn
-            // PageRequest đếm từ 0 -- thiếu phép trừ này thì trang đầu tiên không cách nào lấy được.
+        Page<OrderJpaEntity> result = springDataOrderRepository
+            // The page arrives 1-BASED (first page = 1) like every other repository in the project, while
+            // PageRequest counts from 0 -- without this subtraction the first page can never be fetched.
             .findBySchoolIdOrderByCreatedAtDesc(schoolId, PageRequest.of(page - 1, size));
         return new PageResult<>(
             result.getContent().stream().map(OrderMapper::toDomain).toList(),
@@ -69,12 +71,12 @@ public class OrderRepositoryImpl implements OrderRepository {
     @Override
     public PageResult<Order> findForAdmin(
             UUID schoolId, OrderStatus status, OrderType type, String keyword, int page, int size) {
-        var result = springDataOrderRepository.findForAdmin(
+        Page<OrderJpaEntity> result = springDataOrderRepository.findForAdmin(
             schoolId,
             status == null ? null : status.name(),
             type == null ? null : type.name(),
             StringNormalization.toLikePattern(keyword),
-            // 1-based vào, 0-based xuống PageRequest -- xem findBySchoolId.
+            // 1-based in, 0-based down to PageRequest -- see findBySchoolId.
             PageRequest.of(page - 1, size)
         );
         return new PageResult<>(

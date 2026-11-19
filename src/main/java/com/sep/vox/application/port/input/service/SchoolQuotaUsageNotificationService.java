@@ -45,9 +45,9 @@ public class SchoolQuotaUsageNotificationService {
     public void publishQuotaUsageWarning(
             UUID subscriptionId, UUID schoolId, QuotaType quotaType,
             BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, Instant now) {
-        var schoolAdminIds = schoolAdminIdsOf(schoolId);
+        List<UUID> schoolAdminIds = schoolAdminIdsOf(schoolId);
 
-        var payload = jsonSerializationPort.toJson(new SchoolQuotaUsageWarningPayloadV1(
+        String payload = jsonSerializationPort.toJson(new SchoolQuotaUsageWarningPayloadV1(
             schoolAdminIds, schoolId, subscriptionId, quotaType, totalAllocatedVnd, usedAmountVnd, now
         ));
 

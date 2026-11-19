@@ -65,7 +65,7 @@ class RemoveGradingAssignmentUseCaseTests {
     }
 
     private UUID given(ExamGradingAssignment assignment) {
-        var candidateResult = new ExamCandidateResult();
+        ExamCandidateResult candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);
         when(examGradingAccessService.load(assignment.getId())).thenReturn(new GradingContext(
             assignment, candidateResult, new ExamSession(), schoolId, "IELTS Mock", ExamKind.CENTRALIZED));
@@ -73,7 +73,7 @@ class RemoveGradingAssignmentUseCaseTests {
     }
 
     private ExamGradingAssignment assignment(GradingRoundType roundType, UUID linkedAppealId) {
-        var open = ExamGradingAssignment.open(
+        ExamGradingAssignment open = ExamGradingAssignment.open(
             candidateResultId, UUID.randomUUID(), roundType, linkedAppealId, null,
             Instant.now(), adminId, null);
         open.setId(UUID.randomUUID());
@@ -82,7 +82,7 @@ class RemoveGradingAssignmentUseCaseTests {
 
     @Test
     void should_release_the_appeal_before_deleting_the_assignment() {
-        var assignmentId = given(assignment(GradingRoundType.APPEAL, appealId));
+        UUID assignmentId = given(assignment(GradingRoundType.APPEAL, appealId));
 
         useCase.execute(new RemoveGradingAssignmentCommand(assignmentId));
 
@@ -93,7 +93,7 @@ class RemoveGradingAssignmentUseCaseTests {
 
     @Test
     void should_leave_appeals_alone_for_the_other_three_rounds() {
-        var assignmentId = given(assignment(GradingRoundType.SPOT_CHECK, null));
+        UUID assignmentId = given(assignment(GradingRoundType.SPOT_CHECK, null));
 
         useCase.execute(new RemoveGradingAssignmentCommand(assignmentId));
 
@@ -104,7 +104,7 @@ class RemoveGradingAssignmentUseCaseTests {
     @Test
     void should_not_touch_an_appeal_that_is_no_longer_being_graded() {
         appeal.setStatus(ExamAppealStatus.PUBLISHED);
-        var assignmentId = given(assignment(GradingRoundType.APPEAL, appealId));
+        UUID assignmentId = given(assignment(GradingRoundType.APPEAL, appealId));
 
         useCase.execute(new RemoveGradingAssignmentCommand(assignmentId));
 
@@ -114,9 +114,9 @@ class RemoveGradingAssignmentUseCaseTests {
 
     @Test
     void should_refuse_removing_an_assignment_that_is_already_completed() {
-        var completed = assignment(GradingRoundType.APPEAL, appealId);
+        ExamGradingAssignment completed = assignment(GradingRoundType.APPEAL, appealId);
         completed.complete(GradingOutcome.UPHELD, null, Instant.now());
-        var assignmentId = given(completed);
+        UUID assignmentId = given(completed);
 
         assertThatThrownBy(() -> useCase.execute(new RemoveGradingAssignmentCommand(assignmentId)))
             .isInstanceOf(IllegalStateException.class)

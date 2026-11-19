@@ -56,7 +56,7 @@ public class RejectRegisterFormEventConsumer {
         containerFactory= "stringKafkaListenerContainerFactory"
     )
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        var eventId = KafkaEventHeaders.readEventId(record);
+        UUID eventId = KafkaEventHeaders.readEventId(record);
 
         LOGGER.info("Receive event register-form-rejected: eventId={}, parition={}, offset={}", eventId, record.partition(), record.offset());
 
@@ -75,7 +75,7 @@ public class RejectRegisterFormEventConsumer {
         }
 
         try {
-            var html = mailTemplatePort.renderRejectRegisterFormEmail(payload.reason());
+            String html = mailTemplatePort.renderRejectRegisterFormEmail(payload.reason());
             mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
         } catch (Exception e) {
             LOGGER.error("Send mail error: eventId={}, to={}", eventId, payload.to());
@@ -90,13 +90,13 @@ public class RejectRegisterFormEventConsumer {
 
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
-        var eventId = KafkaEventHeaders.readEventIdOrNull(record);
+        UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         LOGGER.error("register-form-reject event sent to DLT: eventId={}, topic={}, payload={}", eventId, record.topic(), record.value());
     }
 
     private void markProcessed(UUID eventId) {
         try {
-            var event = new ProcessedEvent(eventId, CONSUMER_GROUP, Instant.now());
+            ProcessedEvent event = new ProcessedEvent(eventId, CONSUMER_GROUP, Instant.now());
             processedEventRepository.save(event);
         } catch (DataIntegrityViolationException e) {
             LOGGER.warn("This event was already marked by another instance: eventId={}", eventId);

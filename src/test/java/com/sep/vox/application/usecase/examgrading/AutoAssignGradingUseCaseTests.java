@@ -56,8 +56,9 @@ public class AutoAssignGradingUseCaseTests {
         examGradingQueryRepository = mock(ExamGradingQueryRepository.class);
         examGradingAccessService = mock(ExamGradingAccessService.class);
         examCandidateResultRepository = mock(ExamCandidateResultRepository.class);
-        // Selector và balancer là service thuần, dùng bản THẬT: luật chia tải chính là
-        // thứ những test dưới đây kiểm, mock chúng đi thì không còn gì để kiểm.
+        // The selector and the balancer are pure services, so the REAL ones are used: the
+        // load-balancing rule is exactly what the tests below check, and mocking them would leave
+        // nothing to check.
         useCase = new AutoAssignGradingUseCase(
             examGradingAssignmentRepository, examCandidateResultRepository, examGradingQueryRepository,
             examGradingAccessService, new GradingSampleSelector(new java.util.Random(42)),
@@ -71,15 +72,15 @@ public class AutoAssignGradingUseCaseTests {
         when(examGradingQueryRepository.assignedLoadByTeacherIds(anyCollection())).thenReturn(Map.of());
         when(examGradingAssignmentRepository.saveAll(anyList())).thenAnswer(invocation -> {
             @SuppressWarnings("unchecked")
-            var assignments = (List<ExamGradingAssignment>) invocation.getArgument(0);
+            List<ExamGradingAssignment> assignments = (List<ExamGradingAssignment>) invocation.getArgument(0);
             assignments.forEach(assignment -> assignment.setId(UUID.randomUUID()));
             return assignments;
         });
     }
 
     private void givenUnassignedResults(int count) {
-        var ids = new ArrayList<UUID>();
-        for (var index = 0; index < count; index++) {
+        List<UUID> ids = new ArrayList<UUID>();
+        for (int index = 0; index < count; index++) {
             ids.add(UUID.randomUUID());
         }
         when(examGradingQueryRepository.findAssignableResultIds(eq(schoolId), eq(examId), eq(null), anyCollection()))
@@ -94,14 +95,14 @@ public class AutoAssignGradingUseCaseTests {
 
     @SuppressWarnings("unchecked")
     private List<ExamGradingAssignment> captureSaved() {
-        var captor = (ArgumentCaptor<List<ExamGradingAssignment>>) (ArgumentCaptor<?>)
+        ArgumentCaptor<List<ExamGradingAssignment>> captor = (ArgumentCaptor<List<ExamGradingAssignment>>) (ArgumentCaptor<?>)
             ArgumentCaptor.forClass(List.class);
         verify(examGradingAssignmentRepository).saveAll(captor.capture());
         return captor.getValue();
     }
 
     private Map<UUID, Long> countByTeacher(List<ExamGradingAssignment> assignments) {
-        var counts = new java.util.HashMap<UUID, Long>();
+        Map<UUID, Long> counts = new java.util.HashMap<UUID, Long>();
         assignments.forEach(assignment ->
             counts.merge(
                 assignment.getTeacherId(), 
@@ -116,7 +117,7 @@ public class AutoAssignGradingUseCaseTests {
 
         useCase.execute(command(anh, binh, chi));
 
-        var counts = countByTeacher(captureSaved());
+        Map<UUID, Long> counts = countByTeacher(captureSaved());
         assertThat(counts).containsOnlyKeys(anh, binh, chi);
         assertThat(counts.values()).containsExactly(2L, 2L, 2L);
     }
@@ -127,8 +128,8 @@ public class AutoAssignGradingUseCaseTests {
 
         useCase.execute(command(anh, binh, chi));
 
-        // 7 bài / 3 người: hoà thì người đứng trước thắng, nên dư rơi vào Anh.
-        var counts = countByTeacher(captureSaved());
+        // 7 submissions / 3 people: ties go to whoever comes first, so the remainder falls to Anh.
+        Map<UUID, Long> counts = countByTeacher(captureSaved());
         assertThat(counts.get(anh)).isEqualTo(3L);
         assertThat(counts.get(binh)).isEqualTo(2L);
         assertThat(counts.get(chi)).isEqualTo(2L);
@@ -137,13 +138,13 @@ public class AutoAssignGradingUseCaseTests {
     @Test
     void should_start_from_current_load_instead_of_zero() {
         givenUnassignedResults(3);
-        // Anh đang giữ 5 bài, Bình 0, Chi 0 -> vòng này Anh không nên nhận thêm.
+        // Anh is holding 5 submissions, Binh 0, Chi 0 -> Anh should not receive more in this round.
         when(examGradingQueryRepository.assignedLoadByTeacherIds(anyCollection()))
             .thenReturn(Map.of(anh, 5L, binh, 0L, chi, 0L));
 
         useCase.execute(command(anh, binh, chi));
 
-        var counts = countByTeacher(captureSaved());
+        Map<UUID, Long> counts = countByTeacher(captureSaved());
         assertThat(counts).doesNotContainKey(anh);
         assertThat(counts.get(binh)).isEqualTo(2L);
         assertThat(counts.get(chi)).isEqualTo(1L);

@@ -90,7 +90,7 @@ public class QuestionController {
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
-        var query = new ViewQuestionsQuery(
+        ViewQuestionsQuery query = new ViewQuestionsQuery(
             questionBankId,
             questionTopicId,
             topicName,
@@ -120,7 +120,7 @@ public class QuestionController {
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
-        var query = new ViewQuestionsQuery(
+        ViewQuestionsQuery query = new ViewQuestionsQuery(
             questionBankId,
             questionTopicId,
             topicName,
@@ -182,7 +182,7 @@ public class QuestionController {
 
     @SchemaMapping(typeName = "Question", field = "usableInExam")
     public CompletableFuture<Boolean> usableInExam(QuestionDto source, DataFetchingEnvironment env) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (currentUserId.equals(source.createdBy()) || QuestionSharing.SCHOOL_SHARED.name().equals(source.sharing())) {
             return CompletableFuture.completedFuture(true);
         }

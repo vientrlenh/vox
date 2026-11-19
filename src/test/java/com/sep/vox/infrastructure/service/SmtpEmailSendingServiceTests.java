@@ -46,10 +46,10 @@ class SmtpEmailSendingServiceTests {
     void sendHtml_phai_set_dia_chi_nguoi_gui() throws Exception {
         service.sendHtml(TO, "Thiết lập mật khẩu", "<p>xin chào</p>");
 
-        var captor = ArgumentCaptor.forClass(MimeMessage.class);
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(javaMailSender).send(captor.capture());
 
-        var sent = captor.getValue();
+        MimeMessage sent = captor.getValue();
         assertThat(sent.getFrom())
             .as("thiếu From là JavaMail ném can't determine local email address")
             .isNotNull()
@@ -62,20 +62,20 @@ class SmtpEmailSendingServiceTests {
     void sendHtml_gan_ten_hien_thi_vao_dia_chi_nguoi_gui() throws Exception {
         service.sendHtml(TO, "Thiết lập mật khẩu", "<p>xin chào</p>");
 
-        var captor = ArgumentCaptor.forClass(MimeMessage.class);
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(javaMailSender).send(captor.capture());
 
         assertThat(captor.getValue().getFrom()[0].toString()).contains(DISPLAY_NAME);
     }
 
-    /** Không có tên hiển thị vẫn phải gửi được -- tên chỉ là phần trang trí. */
+    /** It must still be possible to send without a display name -- the name is only decoration. */
     @Test
     void sendHtml_khong_co_ten_hien_thi_van_gui_duoc() throws Exception {
-        var withoutDisplayName = new SmtpEmailSendingService(javaMailSender, FROM, "  ");
+        SmtpEmailSendingService withoutDisplayName = new SmtpEmailSendingService(javaMailSender, FROM, "  ");
 
         withoutDisplayName.sendHtml(TO, "Thiết lập mật khẩu", "<p>xin chào</p>");
 
-        var captor = ArgumentCaptor.forClass(MimeMessage.class);
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(javaMailSender).send(captor.capture());
         assertThat(captor.getValue().getFrom()[0].toString()).isEqualTo(FROM);
     }
@@ -84,7 +84,7 @@ class SmtpEmailSendingServiceTests {
     void send_phai_set_dia_chi_nguoi_gui() {
         service.send(TO, "Thông báo", "nội dung");
 
-        var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(javaMailSender).send(captor.capture());
         assertThat(captor.getValue().getFrom()).isEqualTo(FROM);
     }

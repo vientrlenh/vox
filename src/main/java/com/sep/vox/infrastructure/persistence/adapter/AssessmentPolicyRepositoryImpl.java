@@ -1,10 +1,12 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.AssessmentPolicyJpaEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -30,14 +32,14 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
 
     @Override
     public AssessmentPolicy save(AssessmentPolicy policy) {
-        var entity = AssessmentPolicyMapper.toJpa(policy);
-        var saved = springDataAssessmentPolicyRepository.save(entity);
+        AssessmentPolicyJpaEntity entity = AssessmentPolicyMapper.toJpa(policy);
+        AssessmentPolicyJpaEntity saved = springDataAssessmentPolicyRepository.save(entity);
         return AssessmentPolicyMapper.toDomain(saved);
     }
 
     @Override
     public List<AssessmentPolicy> saveAll(List<AssessmentPolicy> policies) {
-        var entities = policies.stream().map(AssessmentPolicyMapper::toJpa).toList();
+        List<AssessmentPolicyJpaEntity> entities = policies.stream().map(AssessmentPolicyMapper::toJpa).toList();
         return springDataAssessmentPolicyRepository.saveAll(entities)
                 .stream().map(AssessmentPolicyMapper::toDomain).toList();
     }
@@ -45,8 +47,8 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     @Override
     public PageResult<AssessmentPolicy> findAllSystemWide(String status, UUID languageId, UUID rubricVersionId,
             Instant effectiveFrom, Instant effectiveTo, int page, int size) {
-        var pageable = PageRequest.of(page - 1, size);
-        var result = springDataAssessmentPolicyRepository.findBySchoolIdIsNullAndStatus(status, languageId, rubricVersionId, effectiveFrom, effectiveTo, pageable);
+        PageRequest pageable = PageRequest.of(page - 1, size);
+        Page<AssessmentPolicyJpaEntity> result = springDataAssessmentPolicyRepository.findBySchoolIdIsNullAndStatus(status, languageId, rubricVersionId, effectiveFrom, effectiveTo, pageable);
         return new PageResult<>(
                 result.getContent().stream().map(AssessmentPolicyMapper::toDomain).toList(),
                 page,
@@ -59,8 +61,8 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     @Override
     public PageResult<AssessmentPolicy> findAllBySchoolId(UUID schoolId, String status, UUID languageId, UUID rubricVersionId,
             Instant effectiveFrom, Instant effectiveTo, int page, int size) {
-        var pageable = PageRequest.of(page - 1, size);
-        var result = springDataAssessmentPolicyRepository.findBySchoolIdAndStatus(schoolId, status, languageId, rubricVersionId, effectiveFrom, effectiveTo, pageable);
+        PageRequest pageable = PageRequest.of(page - 1, size);
+        Page<AssessmentPolicyJpaEntity> result = springDataAssessmentPolicyRepository.findBySchoolIdAndStatus(schoolId, status, languageId, rubricVersionId, effectiveFrom, effectiveTo, pageable);
         return new PageResult<>(
                 result.getContent().stream().map(AssessmentPolicyMapper::toDomain).toList(),
                 page,

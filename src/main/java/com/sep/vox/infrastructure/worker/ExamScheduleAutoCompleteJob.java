@@ -35,7 +35,7 @@ public class ExamScheduleAutoCompleteJob {
 
     @Scheduled(fixedDelay = 60000)
     public void run() {
-        var completed = examScheduleClosureService.completeEndedSchedules(Instant.now(), BATCH_SIZE);
+        int completed = examScheduleClosureService.completeEndedSchedules(Instant.now(), BATCH_SIZE);
         if (completed > 0) {
             log.info("Tự đóng {} ca thi đã qua giờ kết thúc", completed);
         }

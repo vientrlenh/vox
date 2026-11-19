@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.port.input.query.ViewMyExamsQuery;
 import com.sep.vox.domain.model.exam.ExamKind;
 
 /**
@@ -15,7 +16,7 @@ class ViewMyExamsQueryMapperTests {
 
     @Test
     void should_default_to_examdate_desc() {
-        var query = ViewMyExamsQueryMapper.fromRequest(null, null, 1, 20, "examDate,desc");
+        ViewMyExamsQuery query = ViewMyExamsQueryMapper.fromRequest(null, null, 1, 20, "examDate,desc");
 
         assertThat(query.sortDescending()).isTrue();
         assertThat(query.status()).isNull();
@@ -24,17 +25,17 @@ class ViewMyExamsQueryMapperTests {
 
     @Test
     void should_accept_ascending_sort() {
-        var query = ViewMyExamsQueryMapper.fromRequest(ExamKind.CLASS_TEST, "upcoming", 1, 10, "examDate,asc");
+        ViewMyExamsQuery query = ViewMyExamsQueryMapper.fromRequest(ExamKind.CLASS_TEST, "upcoming", 1, 10, "examDate,asc");
 
         assertThat(query.sortDescending()).isFalse();
         assertThat(query.status()).isEqualTo("upcoming");
         assertThat(query.page()).isEqualTo(1);
     }
 
-    /** Trang đi thẳng qua mapper: trang đầu là 1 và không bị quy đổi ở đây. */
+    /** The page goes straight through the mapper: the first page is 1 and is not converted here. */
     @Test
     void should_carry_the_page_through_untouched() {
-        var query = ViewMyExamsQueryMapper.fromRequest(null, null, 3, 20, "examDate,desc");
+        ViewMyExamsQuery query = ViewMyExamsQueryMapper.fromRequest(null, null, 3, 20, "examDate,desc");
 
         assertThat(query.page()).isEqualTo(3);
         assertThat(query.size()).isEqualTo(20);

@@ -43,18 +43,18 @@ public class SendResetPasswordOtpUseCaseTests {
 
     @Test
     void send_reset_password_otp_should_write_outbox_event_when_email_exists() {
-        var command = new SendResetPasswordOtpCommand(" Admin@Example.COM ");
-        var normalizedEmail = "admin@example.com";
+        SendResetPasswordOtpCommand command = new SendResetPasswordOtpCommand(" Admin@Example.COM ");
+        String normalizedEmail = "admin@example.com";
 
         when(userRepository.findByEmailAndStatus(normalizedEmail, UserStatus.ACTIVE))
             .thenReturn(Optional.of(user()));
         givenPayloadSerializesToJson();
 
-        var result = sendResetPasswordOtpUseCase.execute(command);
+        Void result = sendResetPasswordOtpUseCase.execute(command);
 
         assertThat(result).isNull();
 
-        var captor = ArgumentCaptor.forClass(Outbox.class);
+        ArgumentCaptor<Outbox> captor = ArgumentCaptor.forClass(Outbox.class);
         verify(outboxRepository).save(captor.capture());
         assertThat(captor.getValue().getEventType())
             .isEqualTo(EventTypeConstant.RESET_PASSWORD_OTP_REQUESTED);
@@ -69,7 +69,7 @@ public class SendResetPasswordOtpUseCaseTests {
      */
     @Test
     void send_reset_password_otp_payload_must_carry_only_the_recipient_address() {
-        var command = new SendResetPasswordOtpCommand("admin@example.com");
+        SendResetPasswordOtpCommand command = new SendResetPasswordOtpCommand("admin@example.com");
 
         when(userRepository.findByEmailAndStatus("admin@example.com", UserStatus.ACTIVE))
             .thenReturn(Optional.of(user()));
@@ -77,7 +77,7 @@ public class SendResetPasswordOtpUseCaseTests {
 
         sendResetPasswordOtpUseCase.execute(command);
 
-        var captor = ArgumentCaptor.forClass(ResetPasswordOtpRequestedPayloadV1.class);
+        ArgumentCaptor<ResetPasswordOtpRequestedPayloadV1> captor = ArgumentCaptor.forClass(ResetPasswordOtpRequestedPayloadV1.class);
         verify(jsonSerializationPort).toJson(captor.capture());
         assertThat(captor.getValue()).isEqualTo(
             new ResetPasswordOtpRequestedPayloadV1("admin@example.com"));
@@ -88,12 +88,12 @@ public class SendResetPasswordOtpUseCaseTests {
 
     @Test
     void send_reset_password_otp_should_do_nothing_when_email_does_not_exist() {
-        var command = new SendResetPasswordOtpCommand(" Missing@Example.COM ");
+        SendResetPasswordOtpCommand command = new SendResetPasswordOtpCommand(" Missing@Example.COM ");
 
         when(userRepository.findByEmailAndStatus("missing@example.com", UserStatus.ACTIVE))
             .thenReturn(Optional.empty());
 
-        var result = sendResetPasswordOtpUseCase.execute(command);
+        Void result = sendResetPasswordOtpUseCase.execute(command);
 
         assertThat(result).isNull();
         verify(userRepository).findByEmailAndStatus("missing@example.com", UserStatus.ACTIVE);
@@ -105,7 +105,7 @@ public class SendResetPasswordOtpUseCaseTests {
     }
 
     private User user() {
-        var user = new User();
+        User user = new User();
         user.setId(userId);
         return user;
     }

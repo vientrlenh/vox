@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.mapper;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.application.common.DateMapper;
@@ -12,8 +13,8 @@ public final class UpdateFrameworkVersionCommandMapper {
     }
 
     public static UpdateFrameworkVersionCommand fromInput(UUID frameworkId, UUID versionId, UpdateFrameworkVersionInput input) {
-        var effectiveFrom = DateMapper.toInstant(input.effectiveFrom());
-        var effectiveTo = DateMapper.toInstant(input.effectiveTo());
+        Instant effectiveFrom = DateMapper.toInstant(input.effectiveFrom());
+        Instant effectiveTo = DateMapper.toInstant(input.effectiveTo());
         if (effectiveFrom != null && effectiveTo != null && effectiveTo.isBefore(effectiveFrom))
             throw new IllegalArgumentException("Ngày kết thúc hiệu lực phải sau ngày bắt đầu hiệu lực");
 

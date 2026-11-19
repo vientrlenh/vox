@@ -57,11 +57,11 @@ public class ExamPaperAutoAssigner {
      * gọi tự lưu, vì các use case xếp ca đều đã có sẵn một lượt {@code saveAll} ở cuối.
      */
     public void assignPapersIfNeeded(Exam exam, Collection<ExamCandidate> candidates, Instant now, UUID updatedBy) {
-        var pending = pendingOf(candidates);
+        List<ExamCandidate> pending = pendingOf(candidates);
         if (pending.isEmpty()) {
             return;
         }
-        var paperIds = resolveAssignablePaperIds(exam);
+        List<UUID> paperIds = resolveAssignablePaperIds(exam);
         if (paperIds.isEmpty()) {
             return;
         }
@@ -77,12 +77,12 @@ public class ExamPaperAutoAssigner {
      * @return số thí sinh vừa được gán đề
      */
     public int backfillExam(Exam exam, Instant now, UUID updatedBy) {
-        var paperIds = resolveAssignablePaperIds(exam);
+        List<UUID> paperIds = resolveAssignablePaperIds(exam);
         if (paperIds.isEmpty()) {
             return 0;
         }
-        var all = examCandidateRepository.findByExamId(exam.getId());
-        var pending = pendingOf(all);
+        List<ExamCandidate> all = examCandidateRepository.findByExamId(exam.getId());
+        List<ExamCandidate> pending = pendingOf(all);
         if (pending.isEmpty()) {
             return 0;
         }
@@ -96,7 +96,7 @@ public class ExamPaperAutoAssigner {
      * nào hoặc còn mã đề chưa khoá.
      */
     public List<UUID> resolveAssignablePaperIds(Exam exam) {
-        var papers = examPaperRepository.findByExamId(exam.getId());
+        List<ExamPaper> papers = examPaperRepository.findByExamId(exam.getId());
         if (papers.isEmpty() || papers.stream().anyMatch(paper -> paper.getStatus() != ExamPaperStatus.LOCKED)) {
             return List.of();
         }
@@ -115,10 +115,10 @@ public class ExamPaperAutoAssigner {
     }
 
     private Map<UUID, Long> usageOf(Collection<ExamCandidate> candidates, List<UUID> paperIds) {
-        var usage = new HashMap<UUID, Long>();
+        Map<UUID, Long> usage = new HashMap<UUID, Long>();
         paperIds.forEach(paperId -> usage.put(paperId, 0L));
-        for (var candidate : candidates) {
-            var paperId = candidate.getAssignedPaperId();
+        for (ExamCandidate candidate : candidates) {
+            UUID paperId = candidate.getAssignedPaperId();
             if (paperId != null && usage.containsKey(paperId)) {
                 increment(usage, paperId);
             }
@@ -128,7 +128,7 @@ public class ExamPaperAutoAssigner {
 
     /** Số lần một mã đề đã được dùng; mã đề chưa có mặt trong bảng đếm coi như 0. */
     private static long countOf(Map<UUID, Long> usage, UUID paperId) {
-        var count = usage.get(paperId);
+        Long count = usage.get(paperId);
         return count == null ? 0L : count;
     }
 
@@ -148,14 +148,14 @@ public class ExamPaperAutoAssigner {
             Collection<ExamCandidate> examCandidates,
             Instant now,
             UUID updatedBy) {
-        var usageBySchedule = new HashMap<UUID, Map<UUID, Long>>();
+        Map<UUID, Map<UUID, Long>> usageBySchedule = new HashMap<UUID, Map<UUID, Long>>();
         groupBySchedule(examCandidates)
             .forEach((scheduleId, group) -> usageBySchedule.put(scheduleId, usageOf(group, paperIds)));
 
         groupBySchedule(pending).forEach((scheduleId, group) -> {
-            var usage = usageBySchedule.computeIfAbsent(scheduleId, key -> usageOf(List.of(), paperIds));
-            for (var candidate : group) {
-                var paperId = leastUsed(paperIds, usage);
+            Map<UUID, Long> usage = usageBySchedule.computeIfAbsent(scheduleId, key -> usageOf(List.of(), paperIds));
+            for (ExamCandidate candidate : group) {
+                UUID paperId = leastUsed(paperIds, usage);
                 candidate.assignPaper(paperId, now, updatedBy);
                 increment(usage, paperId);
             }
@@ -164,8 +164,8 @@ public class ExamPaperAutoAssigner {
 
     /** Thí sinh chưa xếp ca gom chung một nhóm (khoá {@code null}) -- rải đều giữa họ với nhau. */
     private Map<UUID, List<ExamCandidate>> groupBySchedule(Collection<ExamCandidate> candidates) {
-        var grouped = new LinkedHashMap<UUID, List<ExamCandidate>>();
-        for (var candidate : candidates) {
+        Map<UUID, List<ExamCandidate>> grouped = new LinkedHashMap<UUID, List<ExamCandidate>>();
+        for (ExamCandidate candidate : candidates) {
             grouped.computeIfAbsent(candidate.getScheduleId(), key -> new ArrayList<>()).add(candidate);
         }
         return grouped;
@@ -173,10 +173,10 @@ public class ExamPaperAutoAssigner {
 
     /** Mã đề đang được dùng ít nhất; hoà thì lấy mã đề đứng trước trong thứ tự ổn định. */
     private UUID leastUsed(List<UUID> paperIds, Map<UUID, Long> usage) {
-        var chosen = paperIds.get(0);
-        var chosenCount = countOf(usage, chosen);
-        for (var paperId : paperIds) {
-            var count = countOf(usage, paperId);
+        UUID chosen = paperIds.get(0);
+        long chosenCount = countOf(usage, chosen);
+        for (UUID paperId : paperIds) {
+            long count = countOf(usage, paperId);
             if (count < chosenCount) {
                 chosen = paperId;
                 chosenCount = count;

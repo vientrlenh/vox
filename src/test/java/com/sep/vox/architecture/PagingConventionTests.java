@@ -7,6 +7,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -63,18 +65,18 @@ class PagingConventionTests {
     @Test
     @DisplayName("mọi adapter phân trang đều tự trừ 1 trước khi giao cho Spring Data")
     void adapters_must_convert_one_based_page_to_spring_data() throws IOException {
-        var offenders = new ArrayList<String>();
-        var scanned = 0;
+        List<String> offenders = new ArrayList<String>();
+        int scanned = 0;
 
         try (Stream<Path> files = Files.list(ADAPTER_DIR)) {
             for (Path file : files.filter(p -> p.toString().endsWith(".java")).toList()) {
-                var source = Files.readString(file, StandardCharsets.UTF_8);
-                var matcher = PAGED_METHOD.matcher(source);
+                String source = Files.readString(file, StandardCharsets.UTF_8);
+                Matcher matcher = PAGED_METHOD.matcher(source);
                 while (matcher.find()) {
                     if (!PAGE_PARAM.matcher(matcher.group(2)).find()) {
                         continue;
                     }
-                    var body = bodyOf(source, matcher.end());
+                    String body = bodyOf(source, matcher.end());
                     if (!body.contains("PageRequest.of(")) {
                         continue;
                     }
@@ -86,8 +88,8 @@ class PagingConventionTests {
             }
         }
 
-        // Chốt chặn cho chính phép kiểm này: regex hỏng thì danh sách rỗng và khẳng định dưới đây
-        // đúng một cách vô nghĩa.
+        // Guard for this check itself: if the regex is broken the list is empty, and the assertion
+        // below would be true in a meaningless way.
         assertThat(scanned)
             .as("số method phân trang quét được -- 0 nghĩa là phép kiểm đang tự lừa mình")
             .isGreaterThan(30);
@@ -98,29 +100,31 @@ class PagingConventionTests {
     }
 
     /**
-     * Cùng một luật, nhưng cho nhánh đọc: query repository không đi qua {@code PageRequest} mà tự
-     * tính offset bằng {@code setFirstResult}, nên phép kiểm adapter ở trên KHÔNG nhìn thấy chúng.
+     * The same rule, but for the read side: query repositories do not go through
+     * {@code PageRequest}; they compute the offset themselves with {@code setFirstResult}, so the
+     * adapter check above does NOT see them.
      *
-     * <p>Đó từng là một điểm mù thật: chỗ này nhận page 1-based từ controller (guard
-     * {@code validatePageSize} chặn page <= 0, schema mặc định 1) nhưng lại nhân thẳng
-     * {@code page * size}, nên client xin trang đầu thì nhận trang thứ hai còn trang đầu không có
-     * đường nào tới. Bảng điều phối chấm, hàng đợi giáo viên và danh sách phúc khảo đều dính.
+     * <p>That was a real blind spot: this code received a 1-based page from the controller (the
+     * {@code validatePageSize} guard rejects page <= 0, the schema default is 1) but multiplied
+     * {@code page * size} directly, so a client asking for the first page got the second one, and
+     * the first page was unreachable. The grading dispatch board, the teacher queue and the appeal
+     * list were all affected.
      */
     @Test
     @DisplayName("mọi query repository phân trang đều tự trừ 1 trước khi tính offset")
     void query_repositories_must_convert_one_based_page_to_offset() throws IOException {
-        var offenders = new ArrayList<String>();
-        var scanned = 0;
+        List<String> offenders = new ArrayList<String>();
+        int scanned = 0;
 
         try (Stream<Path> files = Files.list(QUERY_DIR)) {
             for (Path file : files.filter(p -> p.toString().endsWith(".java")).toList()) {
-                var source = Files.readString(file, StandardCharsets.UTF_8);
-                var matcher = PAGED_QUERY_METHOD.matcher(source);
+                String source = Files.readString(file, StandardCharsets.UTF_8);
+                Matcher matcher = PAGED_QUERY_METHOD.matcher(source);
                 while (matcher.find()) {
                     if (!PAGE_PARAM.matcher(matcher.group(2)).find()) {
                         continue;
                     }
-                    var body = bodyOf(source, matcher.end());
+                    String body = bodyOf(source, matcher.end());
                     if (!body.contains("setFirstResult(")) {
                         continue;
                     }
@@ -132,7 +136,7 @@ class PagingConventionTests {
             }
         }
 
-        // Chốt chặn cho chính phép kiểm này, như ở trên.
+        // Guard for this check itself, as above.
         assertThat(scanned)
             .as("số method phân trang quét được trong query repository")
             .isGreaterThan(4);
@@ -145,22 +149,24 @@ class PagingConventionTests {
     @Test
     @DisplayName("mọi tham số page trên schema GraphQL đều mặc định là 1")
     void graphql_page_arguments_must_default_to_one() throws IOException {
-        var offenders = new ArrayList<String>();
-        var scanned = 0;
+        List<String> offenders = new ArrayList<String>();
+        int scanned = 0;
 
         try (Stream<Path> files = Files.list(GRAPHQL_DIR)) {
             for (Path file : files.filter(p -> p.toString().endsWith(".graphqls")).toList()) {
-                var source = stripComments(Files.readString(file, StandardCharsets.UTF_8));
-                var field = Pattern.compile("([a-zA-Z_]\\w*)\\s*\\(([^)]*)\\)\\s*:").matcher(source);
+                String source = stripComments(Files.readString(file, StandardCharsets.UTF_8));
+                Matcher field = Pattern.compile("([a-zA-Z_]\\w*)\\s*\\(([^)]*)\\)\\s*:").matcher(source);
                 while (field.find()) {
-                    var page = Pattern.compile("\\bpage\\s*:\\s*Int!?\\s*(?:=\\s*(\\d+))?")
+                    Matcher page = Pattern.compile("\\bpage\\s*:\\s*Int!?\\s*(?:=\\s*(\\d+))?")
                         .matcher(field.group(2));
                     if (!page.find()) {
                         continue;
                     }
                     scanned++;
-                    // Không mặc định cũng chấp nhận: client buộc phải truyền, không có lối hiểu nhầm.
-                    // Chỉ cấm mặc định 0 -- đó mới là thứ tuyên bố sai quy ước.
+                    // Having no default is also accepted: the client is forced to pass the value,
+                    // so there is no room for a misunderstanding.
+                    // Only a default of 0 is forbidden -- that is what declares the wrong
+                    // convention.
                     if ("0".equals(page.group(1))) {
                         offenders.add(file.getFileName() + ":" + field.group(1));
                     }
@@ -174,12 +180,12 @@ class PagingConventionTests {
             .isEmpty();
     }
 
-    /** Cắt lấy thân method bắt đầu ngay sau dấu { mở. */
+    /** Cuts out the method body that starts right after the opening brace. */
     private static String bodyOf(String source, int openBraceEnd) {
-        var depth = 1;
-        var i = openBraceEnd;
+        int depth = 1;
+        int i = openBraceEnd;
         while (i < source.length() && depth > 0) {
-            var c = source.charAt(i);
+            char c = source.charAt(i);
             if (c == '{') {
                 depth++;
             } else if (c == '}') {

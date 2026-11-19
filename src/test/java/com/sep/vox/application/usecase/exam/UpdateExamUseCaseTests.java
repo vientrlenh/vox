@@ -28,6 +28,7 @@ import com.sep.vox.application.port.input.usecase.exam.UpdateExamUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
@@ -124,10 +125,10 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_reject_class_test_window_shorter_than_exam_time() {
-        var exam = classTest(3 * 3600);
+        Exam exam = classTest(3 * 3600);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
-        // Thu khung xuống 1 tiếng trong khi thời gian làm bài là 3 tiếng.
+        // Shrinks the window to 1 hour while the exam duration is 3 hours.
         assertThatThrownBy(() -> useCase.execute(command(open.toString(), open.plus(1, ChronoUnit.HOURS).toString())))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("thời gian đóng bài");
@@ -137,9 +138,10 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_allow_renaming_class_test_without_revalidating_window() {
-        // Guard chỉ được chạy khi thao tác thực sự đụng tới thời gian; đổi tên trên một bài đang có
-        // khung quá ngắn không được phép bị chặn (nhất quán với nhánh kỳ thi thường).
-        var exam = classTest(3 * 3600);
+        // The guard may only run when the operation really touches time; renaming a test whose
+        // window is already too short must not be blocked (consistent with the regular exam
+        // branch).
+        Exam exam = classTest(3 * 3600);
         exam.setOpenAt(open);
         exam.setCloseAt(open.plus(1, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
@@ -153,9 +155,9 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_sync_class_test_schedules_when_window_valid() {
-        var exam = classTest(3600);
+        Exam exam = classTest(3600);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, close);
+        ExamSchedule schedule = schedule(ExamScheduleStatus.PUBLISHED, open, close);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
 
         useCase.execute(command(open.toString(), close.plus(1, ChronoUnit.HOURS).toString()));
@@ -169,11 +171,11 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_reject_class_test_window_change_when_a_student_is_busy_in_the_new_window() {
-        var exam = classTest(3600);
+        Exam exam = classTest(3600);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, close);
+        ExamSchedule schedule = schedule(ExamScheduleStatus.PUBLISHED, open, close);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
-        var studentId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
         when(examCandidateRepository.findByScheduleId(schedule.getId())).thenReturn(List.of(candidate(schedule.getId(), studentId)));
         when(examCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
             .thenReturn(List.of(new StudentScheduleConflict(studentId, UUID.randomUUID(), open, close)));
@@ -186,11 +188,11 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_reject_class_test_window_change_when_a_proctor_is_busy_in_the_new_window() {
-        var exam = classTest(3600);
+        Exam exam = classTest(3600);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, close);
+        ExamSchedule schedule = schedule(ExamScheduleStatus.PUBLISHED, open, close);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
-        var teacherId = UUID.randomUUID();
+        UUID teacherId = UUID.randomUUID();
         when(examScheduleProctorRepository.findByScheduleId(schedule.getId()))
             .thenReturn(List.of(new ExamScheduleProctor(schedule.getId(), teacherId)));
         when(examScheduleProctorRepository.existsOverlappingAssignment(
@@ -204,10 +206,10 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_reject_class_test_window_change_when_the_room_is_taken() {
-        var exam = classTest(3600);
+        Exam exam = classTest(3600);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        var schedule = schedule(ExamScheduleStatus.PUBLISHED, open, close);
-        var roomId = UUID.randomUUID();
+        ExamSchedule schedule = schedule(ExamScheduleStatus.PUBLISHED, open, close);
+        UUID roomId = UUID.randomUUID();
         schedule.setSchoolRoomId(roomId);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
         when(examScheduleRepository.existsOverlapping(
@@ -220,7 +222,7 @@ class UpdateExamUseCaseTests {
     }
 
     private ExamCandidate candidate(UUID scheduleId, UUID studentId) {
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(UUID.randomUUID());
         candidate.setExamId(examId);
         candidate.setStudentId(studentId);
@@ -232,13 +234,13 @@ class UpdateExamUseCaseTests {
     // --- Khung mở/đóng phải nằm trong hạn gói dịch vụ của trường ---
 
     /**
-     * Soi theo trường của CHÍNH bài kiểm tra chứ không phải trường người gọi: bài đã tồn tại nên
-     * schoolId của nó mới là phạm vi đúng (SCHOOL_ADMIN của trường khác không được mượn hạn gói
-     * trường mình để nới khung cho bài của trường kia).
+     * Look at the school of the test ITSELF, not the caller's school: the test already exists, so
+     * its schoolId is the right scope (a SCHOOL_ADMIN of another school must not borrow their own
+     * school's plan allowance to widen the window of the other school's test).
      */
     @Test
     void should_check_subscription_period_against_school_of_the_exam() {
-        var exam = classTest(3600);
+        Exam exam = classTest(3600);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         useCase.execute(command(open.toString(), close.toString()));
@@ -248,7 +250,7 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_reject_when_new_window_falls_outside_subscription_period() {
-        var exam = classTest(3600);
+        Exam exam = classTest(3600);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         doThrow(new IllegalStateException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
             .when(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(any(), any(), any());
@@ -256,16 +258,19 @@ class UpdateExamUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(command(open.toString(), close.toString())))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("hạn gói dịch vụ");
-        // Chặn TRƯỚC khi ghi: ca thi của bài trên lớp được đồng bộ theo khung này, để lọt là ca thi
-        // cũng lệch ra ngoài hạn gói theo.
+        // Block BEFORE writing: the sessions of a class test are synchronized to this window, so
+        // letting it through would push the sessions beyond the plan limit as well.
         verify(examRepository, never()).save(any());
         verify(examScheduleRepository, never()).save(any());
     }
 
-    /** Kỳ thi tập trung cũ còn thiếu mốc thì phải nhập đủ mới lưu được, không lặng lẽ bỏ qua. */
+    /**
+     * An old centralized exam that is still missing time points must have them filled in before it
+     * can be saved, rather than silently skipped.
+     */
     @Test
     void should_reject_updating_centralized_exam_without_window() {
-        var exam = centralized(3600);
+        Exam exam = centralized(3600);
         exam.setOpenAt(null);
         exam.setCloseAt(null);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
@@ -281,7 +286,7 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_reject_editing_scheduled_class_test_when_token_quota_exceeded() {
-        var exam = classTest(3600);
+        Exam exam = classTest(3600);
         exam.setStatus(ExamStatus.SCHEDULED);
         exam.setOpenAt(open);
         exam.setCloseAt(close);
@@ -298,8 +303,9 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_not_revalidate_quota_when_editing_draft_class_test() {
-        // Chưa publish thì chưa có ước lượng cũ nào cần soi lại -- publish sau này sẽ tự kiểm.
-        var exam = classTest(3 * 3600);
+        // Not published yet, so there is no old estimate to re-check -- publishing will check it
+        // later.
+        Exam exam = classTest(3 * 3600);
         exam.setOpenAt(open);
         exam.setCloseAt(open.plus(6, ChronoUnit.HOURS));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
@@ -313,7 +319,7 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_not_revalidate_quota_when_scheduled_class_test_edit_does_not_touch_duration_or_attempt() {
-        var exam = classTest(3600);
+        Exam exam = classTest(3600);
         exam.setStatus(ExamStatus.SCHEDULED);
         exam.setOpenAt(open);
         exam.setCloseAt(close);
@@ -330,12 +336,12 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_reject_when_new_exam_window_leaves_schedules_outside() {
-        var exam = centralized(null);
+        Exam exam = centralized(null);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examScheduleRepository.findByExamId(examId))
             .thenReturn(List.of(schedule(ExamScheduleStatus.PUBLISHED, open, close)));
 
-        // Dời khung kỳ thi sang ngày hôm sau, ca thi cũ rơi ra ngoài.
+        // Moves the exam window to the next day, so the old session falls outside.
         assertThatThrownBy(() -> useCase.execute(
                 command(open.plus(1, ChronoUnit.DAYS).toString(), close.plus(1, ChronoUnit.DAYS).toString())))
             .isInstanceOf(IllegalStateException.class)
@@ -345,11 +351,11 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_reject_when_new_exam_time_duration_exceeds_existing_schedules() {
-        var exam = centralized(null);
+        Exam exam = centralized(null);
         exam.setOpenAt(open);
         exam.setCloseAt(close);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
-        // Ca thi dài 1 tiếng, đặt thời gian làm bài thành 2 tiếng.
+        // The session lasts 1 hour; sets the exam duration to 2 hours.
         when(examScheduleRepository.findByExamId(examId))
             .thenReturn(List.of(schedule(ExamScheduleStatus.DRAFT, open, open.plus(1, ChronoUnit.HOURS))));
 
@@ -362,14 +368,14 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_ignore_completed_and_cancelled_schedules() {
-        var exam = centralized(null);
+        Exam exam = centralized(null);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(
             schedule(ExamScheduleStatus.COMPLETED, open, close),
             schedule(ExamScheduleStatus.CANCELLED, open, close),
             schedule(ExamScheduleStatus.MOVED, open, close)));
 
-        var result = useCase.execute(command(open.plus(1, ChronoUnit.DAYS).toString(), close.plus(1, ChronoUnit.DAYS).toString()));
+        ExamDto result = useCase.execute(command(open.plus(1, ChronoUnit.DAYS).toString(), close.plus(1, ChronoUnit.DAYS).toString()));
 
         assertThat(result).isNotNull();
         verify(examRepository).save(any(Exam.class));
@@ -377,13 +383,13 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_allow_updating_name_only_without_touching_schedules() {
-        var exam = centralized(null);
+        Exam exam = centralized(null);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         useCase.execute(new UpdateExamCommand(
             examId, "Tên mới", null, null, null, null, null, null, null, null, null, null, null));
 
-        // Không gửi field thời gian nào -> không cần truy vấn ca thi.
+        // No time field is sent -> no need to query the sessions.
         verify(examScheduleRepository, never()).findByExamId(any());
         verify(examRepository).save(any(Exam.class));
     }
@@ -392,7 +398,7 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_reject_updating_centralized_exam_after_it_started() {
-        var exam = centralized(null);
+        Exam exam = centralized(null);
         exam.setStatus(ExamStatus.IN_PROGRESS);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
@@ -405,7 +411,7 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_reject_updating_centralized_exam_after_results_published() {
-        var exam = centralized(null);
+        Exam exam = centralized(null);
         exam.setStatus(ExamStatus.RESULTS_PUBLISHED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
@@ -417,7 +423,7 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_allow_updating_centralized_exam_while_scheduled() {
-        var exam = centralized(null);
+        Exam exam = centralized(null);
         exam.setStatus(ExamStatus.SCHEDULED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
@@ -431,7 +437,7 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_update_stream_config_when_types_provided() {
-        var exam = centralized(null);
+        Exam exam = centralized(null);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         useCase.execute(streamCommand(List.of("CAMERA", "SCREEN"), "ANY"));
@@ -443,8 +449,9 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_keep_stream_config_when_types_null() {
-        // Sửa tên không được làm mất cấu hình giám sát: null = "không đụng tới", không phải "tắt".
-        var exam = centralized(null);
+        // Renaming must not lose the proctoring configuration: null = "do not touch", not "turn
+        // off".
+        Exam exam = centralized(null);
         exam.setRequiredStreamType(ExamRequiredStreamType.CAMERA);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
@@ -456,7 +463,7 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_disable_monitoring_when_stream_types_empty() {
-        var exam = centralized(null);
+        Exam exam = centralized(null);
         exam.setRequiredStreamType(ExamRequiredStreamType.CAMERA_AND_SCREEN);
         exam.setStreamTypePermission(ExamStreamTypePermission.ALL);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
@@ -469,7 +476,7 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_reject_permission_without_two_stream_types() {
-        var exam = centralized(null);
+        Exam exam = centralized(null);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
         assertThatThrownBy(() -> useCase.execute(streamCommand(List.of("CAMERA"), "ALL")))
@@ -479,7 +486,7 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_reject_stream_update_after_exam_started() {
-        var exam = centralized(null);
+        Exam exam = centralized(null);
         exam.setStatus(ExamStatus.IN_PROGRESS);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
@@ -493,7 +500,7 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_allow_the_chair_to_update_a_centralized_exam() {
-        var exam = centralized(null);
+        Exam exam = centralized(null);
         exam.setName("Cũ");
         givenCallerIsChairInsteadOfSchoolAdmin();
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
@@ -507,7 +514,7 @@ class UpdateExamUseCaseTests {
 
     @Test
     void should_reject_updating_centralized_exam_when_caller_is_neither_school_admin_nor_chair() {
-        var exam = centralized(null);
+        Exam exam = centralized(null);
         givenCallerIsChairInsteadOfSchoolAdmin();
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
             .thenReturn(false);
@@ -538,38 +545,38 @@ class UpdateExamUseCaseTests {
     }
 
     private Exam classTest(Integer examTimeDurationSecond) {
-        var exam = baseExam(ExamKind.CLASS_TEST, examTimeDurationSecond);
+        Exam exam = baseExam(ExamKind.CLASS_TEST, examTimeDurationSecond);
         exam.setStatus(ExamStatus.DRAFT);
         return exam;
     }
 
     private Exam centralized(Integer examTimeDurationSecond) {
-        var exam = baseExam(ExamKind.CENTRALIZED, examTimeDurationSecond);
+        Exam exam = baseExam(ExamKind.CENTRALIZED, examTimeDurationSecond);
         exam.setStatus(ExamStatus.DRAFT);
-        var schoolUser = mock(SchoolUser.class);
+        SchoolUser schoolUser = mock(SchoolUser.class);
         when(schoolUser.getSchoolId()).thenReturn(schoolId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(schoolUser));
-        var role = new UserRoleInfo(
+        UserRoleInfo role = new UserRoleInfo(
             UUID.randomUUID(), userId, UUID.randomUUID(), Instant.now(), "SCHOOL_ADMIN", "Quản trị trường");
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(role));
         return exam;
     }
 
     private Exam baseExam(ExamKind kind, Integer examTimeDurationSecond) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         exam.setKind(kind);
         exam.setExamTimeDurationSecond(examTimeDurationSecond);
-        // Cả hai kind đều bắt buộc có khung mở/đóng, nên bài nào cũng phải có sẵn -- test nào cần
-        // khung khác thì tự ghi đè bằng setOpenAt/setCloseAt.
+        // Both kinds require an open/close window, so every test must already have one -- a test
+        // that needs a different window overrides it with setOpenAt/setCloseAt.
         exam.setOpenAt(open);
         exam.setCloseAt(close);
         return exam;
     }
 
     private ExamSchedule schedule(ExamScheduleStatus status, Instant start, Instant end) {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(UUID.randomUUID());
         schedule.setExamId(examId);
         schedule.setStartDate(start);

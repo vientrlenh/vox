@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.FrameworkResultBandJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -97,14 +98,14 @@ public class FrameworkResultBandRepositoryImpl implements FrameworkResultBandRep
 
     @Override
     public FrameworkResultBand save(FrameworkResultBand band) {
-        var entity = FrameworkResultBandMapper.toJpa(band);
-        var saved = springDataFrameworkResultBandRepository.save(entity);
+        FrameworkResultBandJpaEntity entity = FrameworkResultBandMapper.toJpa(band);
+        FrameworkResultBandJpaEntity saved = springDataFrameworkResultBandRepository.save(entity);
         return FrameworkResultBandMapper.toDomain(saved);
     }
 
     @Override
     public List<FrameworkResultBand> saveAll(List<FrameworkResultBand> bands) {
-        var entities = bands.stream().map(FrameworkResultBandMapper::toJpa).toList();
+        List<FrameworkResultBandJpaEntity> entities = bands.stream().map(FrameworkResultBandMapper::toJpa).toList();
         return springDataFrameworkResultBandRepository.saveAll(entities)
                 .stream().map(FrameworkResultBandMapper::toDomain).toList();
     }

@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
+import com.sep.vox.domain.model.exam.ExamCandidate;
 import java.util.List;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,11 +54,11 @@ public class ViewExamCandidatesUseCase implements IUseCase<ViewExamCandidatesQue
     @Override
     @Transactional(readOnly = true)
     public List<ExamCandidateDto> execute(ViewExamCandidatesQuery input) {
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         authorize(exam, input.scheduleId());
 
-        var candidates = examCandidateRepository.findByExamId(exam.getId()).stream()
+        List<ExamCandidate> candidates = examCandidateRepository.findByExamId(exam.getId()).stream()
             .filter(candidate -> input.scheduleId() == null
                 || input.scheduleId().equals(candidate.getScheduleId()))
             .filter(candidate -> input.status() == null
@@ -70,11 +72,11 @@ public class ViewExamCandidatesUseCase implements IUseCase<ViewExamCandidatesQue
     // bắt buộc phải truyền scheduleId, không cho xem toàn bộ candidate của cả kỳ thi qua
     // đường này (tránh giám thị 1 ca nhìn thấy dữ liệu của ca khác).
     private void authorize(Exam exam, java.util.UUID scheduleId) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId())) {
             return;

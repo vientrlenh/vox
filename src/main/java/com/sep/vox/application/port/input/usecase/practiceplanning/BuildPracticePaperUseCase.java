@@ -1,8 +1,13 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
+import com.sep.vox.application.query.dto.PracticeFocusInfo;
+import com.sep.vox.domain.model.framework.FrameworkResultBand;
+import com.sep.vox.domain.model.personalization.PracticeQuestion;
+import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -73,13 +78,13 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
 
     @Override
     public PracticePaper execute(BuildPracticePaperCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         schoolSubscriptionActiveGuardService.requireActiveForStudent(studentId, "bắt đầu buổi luyện tập cá nhân hóa AI");
-        var topic = requireTopic(input.topicId());
-        var spendableFundsVnd = spendablePracticeFundsVnd(studentId);
-        var focus = selectionService.resolveFocus(studentId, input.fromSubAttribute());
-        var chosen = chosenBand(input.targetFrameworkBandId());
-        var chosenBandOrder = chosen.order();
+        PracticeTopic topic = requireTopic(input.topicId());
+        BigDecimal spendableFundsVnd = spendablePracticeFundsVnd(studentId);
+        PracticeFocusInfo focus = selectionService.resolveFocus(studentId, input.fromSubAttribute());
+        ChosenBand chosen = chosenBand(input.targetFrameworkBandId());
+        int chosenBandOrder = chosen.order();
         // Deliberately NOT wrapped in a Spring transaction: resolveNextQuestion can call out
         // to the Python agents service (diversity check, and -- on a thin/new topic -- live
         // LLM question generation, which alone can take 10+ seconds). Holding a HikariCP
@@ -90,11 +95,11 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         // write (persistenceService.persist, a separate bean so @Transactional actually applies
         // -- self-invocation within this class would bypass the AOP proxy) needs a real
         // transaction, scoped separately there.
-        var selection = selectionService
+        PracticeQuestionSelectionService.NextQuestionSelection selection = selectionService
             .resolveNextQuestion(topic, studentId, focus, chosenBandOrder, chosen.bandCount(),
                 chosen.frameworkVersionId(), List.of())
             .orElseThrow(() -> new NotFoundException("Chủ đề chưa có câu luyện phù hợp."));
-        var question = selection.question();
+        PracticeQuestion question = selection.question();
         // Ước lượng worst-case (giây x giá/giây calibrate) -- không phải chi phí thật, cùng tinh
         // thần Công thức 1 của ClassTestTokenQuotaGuardService (xem AI_USAGE_QUOTA_USD_MIGRATION.md
         // mục 5/6), nhưng dùng rate calibrate RIÊNG cho PRACTICE (currentEstimatedCostPerPracticeSecondUsd,
@@ -105,15 +110,15 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         // Quy sang VND ngay tại đây: giá/giây niêm yết bằng USD nhưng ví hạn mức lẫn ví tự nạp đều là
         // cột VND, và đây đúng là con số ConsumeQuotaService sẽ trừ thật ở từng lượt nói. Lấy GIÁ VỐN,
         // KHÔNG cộng phí dịch vụ -- phí đã thu một lần lúc trường đặt đơn, xem ServiceFeePort.
-        var reservedSeconds = paperRepository.sumReservedQuotaSeconds(studentId);
-        var estimatedCostVnd = BigDecimal.valueOf((long) reservedSeconds + question.spokenSeconds())
+        int reservedSeconds = paperRepository.sumReservedQuotaSeconds(studentId);
+        BigDecimal estimatedCostVnd = BigDecimal.valueOf((long) reservedSeconds + question.spokenSeconds())
             .multiply(quotaPricingPort.currentEstimatedCostPerPracticeSecondUsd())
             .multiply(quotaPricingPort.usdToVndRate())
             .setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
         if (spendableFundsVnd.compareTo(estimatedCostVnd) < 0) {
             throw new QuotaExceededException("Không còn đủ hạn mức hoặc số dư cho một câu luyện trọn vẹn.");
         }
-        var paper = persistenceService.persist(
+        com.sep.vox.domain.model.personalization.PracticePaper paper = persistenceService.persist(
             studentId,
             input.topicId(),
             input.targetFrameworkBandId(),
@@ -151,8 +156,8 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
      * ViewPracticeTopicOffersUseCase.isOutsideTopRanked để biết vì sao không dùng cache.
      */
     private String resolveOrigin(UUID studentId, BuildPracticePaperCommand input) {
-        var origin = input.origin() == null ? "SELECTED" : input.origin();
-        var cameFromOfferBatch = input.offeredTopicIds() != null
+        String origin = input.origin() == null ? "SELECTED" : input.origin();
+        boolean cameFromOfferBatch = input.offeredTopicIds() != null
             && input.offeredTopicIds().contains(input.topicId());
         if (!"SELECTED".equals(origin) || !cameFromOfferBatch) {
             return origin;
@@ -200,8 +205,8 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         if (bandId == null) {
             throw new NotFoundException("Chưa chọn bậc muốn luyện.");
         }
-        for (var framework : enrichmentService.activeFrameworks()) {
-            var match = enrichmentService.frameworkBandLadder(framework.versionId()).stream()
+        for (FrameworkVersionRepository.ActiveFramework framework : enrichmentService.activeFrameworks()) {
+            Optional<FrameworkResultBand> match = enrichmentService.frameworkBandLadder(framework.versionId()).stream()
                 .filter(band -> bandId.equals(band.getId()))
                 .findFirst();
             if (match.isPresent()) {

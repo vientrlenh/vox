@@ -102,10 +102,10 @@ public final class QuestionStatusTransition {
             return invalidAction();
         }
 
-        var owner = Objects.equals(actor.userId(), question.getCreatedBy());
-        var systemAdminOnSystemBank = actor.systemAdmin()
+        boolean owner = Objects.equals(actor.userId(), question.getCreatedBy());
+        boolean systemAdminOnSystemBank = actor.systemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
-        var schoolAdminOnSchoolBank = bank.getOwnerType() == QuestionBankOwnerType.SCHOOL
+        boolean schoolAdminOnSchoolBank = bank.getOwnerType() == QuestionBankOwnerType.SCHOOL
             && actor.schoolAdmin()
             && actor.schoolId() != null
             && actor.schoolId().equals(bank.getSchoolId());
@@ -130,12 +130,12 @@ public final class QuestionStatusTransition {
                 requireStatus(question.getStatus(), action, QuestionStatus.SUBMITTED_FOR_REVIEW),
                 requireNote(note, action));
             case "PUBLISH" -> {
-                // Xuất bản lại một câu đã lưu trữ là thao tác của admin; xuất bản lần đầu thì
-                // người sở hữu / collaborator cũng làm được, miễn câu đã được duyệt.
+                // Re-publishing an archived question is an admin action; for a first publication the
+                // owner / a collaborator can also do it, as long as the question has been approved.
                 if (question.getStatus() == QuestionStatus.ARCHIVED) {
                     yield adminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank, action);
                 }
-                var statusRejection = requireStatus(question.getStatus(), action, QuestionStatus.APPROVED);
+                Rejection statusRejection = requireStatus(question.getStatus(), action, QuestionStatus.APPROVED);
                 if (statusRejection != null) {
                     yield statusRejection;
                 }
@@ -150,7 +150,7 @@ public final class QuestionStatusTransition {
                 adminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank, action),
                 requireStatus(question.getStatus(), action, QuestionStatus.ARCHIVED));
             case "LOCK" -> {
-                var permission = adminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank, action);
+                Rejection permission = adminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank, action);
                 if (permission != null) {
                     yield permission;
                 }
@@ -160,7 +160,7 @@ public final class QuestionStatusTransition {
                     : null;
             }
             case "UNLOCK" -> {
-                var permission = adminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank, action);
+                Rejection permission = adminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank, action);
                 if (permission != null) {
                     yield permission;
                 }
@@ -206,7 +206,7 @@ public final class QuestionStatusTransition {
     }
 
     private static Rejection firstRejection(Rejection... rejections) {
-        for (var rejection : rejections) {
+        for (Rejection rejection : rejections) {
             if (rejection != null) {
                 return rejection;
             }
@@ -246,7 +246,7 @@ public final class QuestionStatusTransition {
     }
 
     private static Rejection requireStatus(QuestionStatus actual, String action, QuestionStatus... allowed) {
-        for (var status : allowed) {
+        for (QuestionStatus status : allowed) {
             if (actual == status) {
                 return null;
             }
@@ -291,8 +291,8 @@ public final class QuestionStatusTransition {
     }
 
     private static String allowedLabels(QuestionStatus... allowed) {
-        var labels = new StringBuilder();
-        for (var index = 0; index < allowed.length; index++) {
+        StringBuilder labels = new StringBuilder();
+        for (int index = 0; index < allowed.length; index++) {
             if (index > 0) {
                 labels.append(index == allowed.length - 1 ? " hoặc " : ", ");
             }

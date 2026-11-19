@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -96,7 +97,7 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
         completeExamSessionGradingUseCase = mock(CompleteExamSessionGradingUseCase.class);
         jsonSerializationPort = mock(JsonSerializationPort.class);
 
-        var transactionManager = mock(PlatformTransactionManager.class);
+        PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
         when(transactionManager.getTransaction(any())).thenAnswer(
             invocation -> (TransactionStatus) new SimpleTransactionStatus());
 
@@ -108,28 +109,29 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
             transactionManager, jsonSerializationPort, new ConfidenceReviewCalculator(),
             mock(ClassTestGradingAssignmentService.class), examProctoringAlertRepository);
 
-        // Mặc định: KHÔNG có cảnh báo giám sát nghiêm trọng. Các test ở đây kiểm luật chặn ghi đè
-        // và luật tin cậy, nên phải loại hẳn biến giám sát ra khỏi kết quả -- để mock trả false
-        // theo mặc định của Mockito cũng ra kết quả này, nhưng nói rõ thì đọc test không phải đoán.
+        // Default: NO serious proctoring alert. The tests here check the override-blocking rule and
+        // the confidence rule, so the proctoring variable must be removed from the result entirely
+        // -- a mock that returns false by Mockito's default gives the same outcome, but saying it
+        // explicitly spares the reader from guessing.
         when(examProctoringAlertRepository.hasIntegrityAlert(any())).thenReturn(false);
 
         when(examItemResponseRepository.findById(responseId)).thenReturn(Optional.of(
             new ExamItemResponse(responseId, sessionId, paperItemId, null, null, null, null, null)));
         when(examItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of());
 
-        // Chuỗi session -> exam -> policy -> rubric chỉ cần thiết cho các nhánh KHÔNG
-        // bị chặn; nhánh bị chặn phải thoát trước khi chạm tới nó.
-        var session = new ExamSession();
+        // The session -> exam -> policy -> rubric chain is only needed for the branches that are
+        // NOT blocked; a blocked branch must exit before touching it.
+        ExamSession session = new ExamSession();
         session.setId(sessionId);
         session.setExamId(examId);
         when(examSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
 
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setAssessmentPolicyId(policyId);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
-        var policy = new AssessmentPolicy();
+        AssessmentPolicy policy = new AssessmentPolicy();
         policy.setId(policyId);
         policy.setRubricVersionId(rubricVersionId);
         when(assessmentPolicyRepository.findById(policyId)).thenReturn(Optional.of(policy));
@@ -139,16 +141,16 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
     }
 
     private RecordExamAttemptEvaluationCommand command() {
-        var payload = new ExamAttemptEvaluationCompletedPayloadDto(
+        ExamAttemptEvaluationCompletedPayloadDto payload = new ExamAttemptEvaluationCompletedPayloadDto(
             List.of(), Map.of(), null, null, "Khá", List.of(), "gpt-4o", "v1", null);
-        var event = new ExamAttemptEvaluationCompletedEventDto(
+        ExamAttemptEvaluationCompletedEventDto event = new ExamAttemptEvaluationCompletedEventDto(
             "exam.attempt.evaluation.completed", 1, null, responseId.toString(), null, payload);
         return RecordExamAttemptEvaluationCommandMapper.toCommand(event);
     }
 
     private void givenLatestEvaluation(
             ExamEvaluationEngineType engineType, ExamItemEvaluationStatus status) {
-        var evaluation = new ExamItemEvaluation();
+        ExamItemEvaluation evaluation = new ExamItemEvaluation();
         evaluation.setId(UUID.randomUUID());
         evaluation.setResponseId(responseId);
         evaluation.setEngineType(engineType);
@@ -184,7 +186,7 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
     void should_still_record_the_first_ai_evaluation() {
         when(examItemEvaluationRepository.findLatestByResponseId(responseId)).thenReturn(Optional.empty());
         when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> {
-            var evaluation = (ExamItemEvaluation) invocation.getArgument(0);
+            ExamItemEvaluation evaluation = (ExamItemEvaluation) invocation.getArgument(0);
             evaluation.setId(UUID.randomUUID());
             return evaluation;
         });
@@ -200,29 +202,32 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
 
         useCase.execute(command());
 
-        var stored = examItemEvaluationRepository.findLatestByResponseId(responseId).orElseThrow();
+        ExamItemEvaluation stored = examItemEvaluationRepository.findLatestByResponseId(responseId).orElseThrow();
         assertThat(stored.getItemScore()).isEqualByComparingTo("8.00");
         assertThat(stored.getStatus()).isEqualTo(ExamItemEvaluationStatus.FINALIZED);
     }
 
     /**
-     * Cảnh báo giám sát đặt nghi vấn liêm chính đẩy bài sang người soát, KHÔNG phụ thuộc điểm tin cậy.
+     * A proctoring alert that raises an integrity suspicion pushes the submission to a reviewer,
+     * regardless of the confidence score.
      *
-     * <p>Payload dùng ở đây là payload bình thường -- không cờ validity, không tín hiệu xấu -- nên
-     * nếu thiếu luật giám sát thì {@code requiresHumanReview} phải là {@code false}. Đó chính là
-     * điều kiện làm cho test này chứng minh được luật mới, thay vì đúng nhờ một lý do khác.
+     * <p>The payload used here is a normal payload -- no validity flag, no bad signal -- so without
+     * the proctoring rule {@code requiresHumanReview} would be {@code false}. That is exactly the
+     * condition that lets this test prove the new rule, instead of being right for some other
+     * reason.
      *
-     * <p>Test này mock thẳng repository nên nó KHÔNG chốt được loại cảnh báo nào thuộc nhóm liêm
-     * chính -- và đó đúng là lý do việc hạ mức MULTIPLE_PERSONS đi qua đây mà không làm đỏ gì cả.
-     * Phần đó nằm ở {@code ExamProctoringAlertIntegrityTypesTests}.
+     * <p>This test mocks the repository directly, so it does NOT pin down which alert types belong
+     * to the integrity group -- and that is exactly why lowering the level of MULTIPLE_PERSONS
+     * passes through here without turning anything red. That part lives in
+     * {@code ExamProctoringAlertIntegrityTypesTests}.
      */
     @Test
     void should_require_human_review_when_the_session_has_an_integrity_proctoring_alert() {
         when(examProctoringAlertRepository.hasIntegrityAlert(sessionId)).thenReturn(true);
         when(examItemEvaluationRepository.findLatestByResponseId(responseId)).thenReturn(Optional.empty());
-        var saved = new java.util.concurrent.atomic.AtomicReference<ExamItemEvaluation>();
+        AtomicReference<ExamItemEvaluation> saved = new java.util.concurrent.atomic.AtomicReference<ExamItemEvaluation>();
         when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> {
-            var evaluation = (ExamItemEvaluation) invocation.getArgument(0);
+            ExamItemEvaluation evaluation = (ExamItemEvaluation) invocation.getArgument(0);
             evaluation.setId(UUID.randomUUID());
             saved.set(evaluation);
             return evaluation;
@@ -234,14 +239,14 @@ public class RecordExamAttemptEvaluationHumanGuardTests {
         assertThat(saved.get().getReviewReasonCode()).isEqualTo("PROCTORING_INTEGRITY");
     }
 
-    /** Không có cảnh báo liêm chính thì luật này không được tự ý bật lên. */
+    /** Without an integrity alert, this rule must not switch itself on. */
     @Test
     void should_not_require_human_review_when_there_is_no_integrity_proctoring_alert() {
         when(examProctoringAlertRepository.hasIntegrityAlert(sessionId)).thenReturn(false);
         when(examItemEvaluationRepository.findLatestByResponseId(responseId)).thenReturn(Optional.empty());
-        var saved = new java.util.concurrent.atomic.AtomicReference<ExamItemEvaluation>();
+        AtomicReference<ExamItemEvaluation> saved = new java.util.concurrent.atomic.AtomicReference<ExamItemEvaluation>();
         when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> {
-            var evaluation = (ExamItemEvaluation) invocation.getArgument(0);
+            ExamItemEvaluation evaluation = (ExamItemEvaluation) invocation.getArgument(0);
             evaluation.setId(UUID.randomUUID());
             saved.set(evaluation);
             return evaluation;

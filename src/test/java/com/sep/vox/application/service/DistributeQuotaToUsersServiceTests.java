@@ -25,6 +25,7 @@ import com.sep.vox.application.exception.WalletDrawConfirmationRequiredException
 import com.sep.vox.application.port.input.command.AllocateUserQuotaAmountCommand;
 import com.sep.vox.application.port.input.service.DistributeQuotaToUsersService;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPageResponse;
 import com.sep.vox.domain.common.DistributionMode;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -88,7 +89,7 @@ class DistributeQuotaToUsersServiceTests {
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         subscriptionQuotaRepository = mock(SchoolSubscriptionQuotaRecordRepository.class);
         allocationRepository = mock(SchoolSubscriptionQuotaUserAllocationRepository.class);
-        var roleRepository = mock(RoleRepository.class);
+        RoleRepository roleRepository = mock(RoleRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         schoolQuotaPolicyRepository = mock(SchoolQuotaPolicyRepository.class);
         schoolBalanceRepository = mock(SchoolBalanceRepository.class);
@@ -106,7 +107,7 @@ class DistributeQuotaToUsersServiceTests {
         when(userContextPort.isSystemAdmin()).thenReturn(false);
         when(userContextPort.getCurrentSchoolId()).thenReturn(schoolId);
 
-        var subscription = new SchoolSubscription();
+        SchoolSubscription subscription = new SchoolSubscription();
         subscription.setId(subscriptionId);
         subscription.setSchoolId(schoolId);
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(subscription));
@@ -155,12 +156,13 @@ class DistributeQuotaToUsersServiceTests {
 
     @Test
     void view_page_reports_orphaned_allocation_separately_from_distributed() {
-        // 6,5 triệu nằm trên sổ, nhưng chỉ 4 triệu thuộc về người còn đủ điều kiện. Phần chênh phải
-        // được gọi tên: nếu lặng lẽ bỏ đi thì "đã chia" trên màn hình không khớp với DB, còn nếu cộng
-        // vào thì nó ăn mất trần của những người đang thật sự cần.
+        // 6.5 million is on the ledger, but only 4 million belongs to users who are still eligible.
+        // The difference must be named: if it is silently dropped, "already distributed" on screen
+        // does not match the DB, and if it is added in, it eats the ceiling of the people who
+        // actually need it.
         givenAllocationSums(4_000_000, 6_500_000);
 
-        var page = service.viewPage(schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, null, 1, 20);
+        QuotaUserAllocationPageResponse page = service.viewPage(schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, null, 1, 20);
 
         assertThat(page.distributedAmountVnd()).isEqualByComparingTo("4000000");
         assertThat(page.orphanedAmountVnd()).isEqualByComparingTo("2500000");
@@ -172,10 +174,11 @@ class DistributeQuotaToUsersServiceTests {
 
     @Test
     void auto_split_distributes_exactly_the_distributable_amount() {
-        var teacherC = UUID.randomUUID();
+        UUID teacherC = UUID.randomUUID();
         givenEligible(teacherA, teacherB, teacherC);
-        // 10.000.000 / 3 không chia hết -- phần dư phải được rải nốt, không được bốc hơi.
-        var amounts = captureAutoSplitAmounts(3);
+        // 10,000,000 / 3 does not divide evenly -- the remainder must still be spread out and must
+        // not evaporate.
+        List<BigDecimal> amounts = captureAutoSplitAmounts(3);
 
         assertThat(amounts.stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b)))
             .isEqualByComparingTo("10000000");
@@ -204,14 +207,14 @@ class DistributeQuotaToUsersServiceTests {
 
     @Test
     void view_page_distinguishes_never_allocated_from_explicit_zero() {
-        // Cùng hiện "0" thì quản trị trường không thể biết nửa số giáo viên của mình đang KHÔNG có
-        // trần chi nào -- xem javadoc của QuotaUserAllocationPageResponse.Row.
+        // If both show "0", the school admin cannot tell that half of their teachers have NO
+        // spending ceiling at all -- see the javadoc of QuotaUserAllocationPageResponse.Row.
         givenExistingAllocations(allocation(teacherB, 0, 0));
 
-        var page = service.viewPage(schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, null, 1, 20);
+        QuotaUserAllocationPageResponse page = service.viewPage(schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, null, 1, 20);
 
-        var rowA = page.content().stream().filter(row -> row.userId().equals(teacherA)).findFirst().orElseThrow();
-        var rowB = page.content().stream().filter(row -> row.userId().equals(teacherB)).findFirst().orElseThrow();
+        QuotaUserAllocationPageResponse.Row rowA = page.content().stream().filter(row -> row.userId().equals(teacherA)).findFirst().orElseThrow();
+        QuotaUserAllocationPageResponse.Row rowB = page.content().stream().filter(row -> row.userId().equals(teacherB)).findFirst().orElseThrow();
 
         assertThat(rowA.allocatedAmountVnd()).isNull();
         assertThat(rowA.usedAmountVnd()).isEqualByComparingTo("0");
@@ -224,12 +227,14 @@ class DistributeQuotaToUsersServiceTests {
 
     @Test
     void distributable_cap_ignores_pool_consumption_while_spendable_funds_do_not() {
-        // Ví đã tiêu 7/10 triệu. Trần vẫn là 10 triệu -- CỐ Ý: trần chi cá nhân phải ổn định suốt kỳ,
-        // nếu co lại theo mỗi lần có người tiêu thì quản trị trường phải chia lại liên tục. Nhưng số
-        // tiền thật sự còn trả được thì chỉ còn 3 triệu, và đó là con số màn hình phải cảnh báo.
+        // The wallet has spent 7 of 10 million. The ceiling is still 10 million -- ON PURPOSE: a
+        // personal spending ceiling must stay stable for the whole period; if it shrank every time
+        // someone spent, the school admin would have to redistribute constantly. But the amount
+        // that can really still be paid is only 3 million, and that is the number the screen must
+        // warn about.
         givenPool(10_000_000, 7_000_000);
 
-        var page = service.viewPage(schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, null, 1, 20);
+        QuotaUserAllocationPageResponse page = service.viewPage(schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, null, 1, 20);
 
         assertThat(page.distributableAmountVnd()).isEqualByComparingTo("10000000");
         assertThat(page.spendableFundsVnd()).isEqualByComparingTo("3000000");
@@ -237,12 +242,13 @@ class DistributeQuotaToUsersServiceTests {
 
     @Test
     void spendable_funds_add_wallet_balance_but_never_subtract_debt() {
-        // Số dư âm là NỢ, và nợ đã bị chặn ở một cửa riêng với thông báo riêng. Trừ nó ở đây sẽ biến
-        // một trường đang bị khoá thành một trường "hết hạn mức" -- báo sai lý do, chỉ sai cách sửa.
+        // A negative balance is DEBT, and debt is already blocked at a separate gate with its own
+        // message. Subtracting it here would turn a locked school into a school that has "run out
+        // of quota" -- reporting the wrong reason, which only points to the wrong fix.
         givenPool(10_000_000, 7_000_000);
         givenWallet(-5_000_000);
 
-        var page = service.viewPage(schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, null, 1, 20);
+        QuotaUserAllocationPageResponse page = service.viewPage(schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, null, 1, 20);
 
         assertThat(page.spendableFundsVnd()).isEqualByComparingTo("3000000");
         assertThat(page.walletBalanceVnd()).isEqualByComparingTo("0");
@@ -296,18 +302,21 @@ class DistributeQuotaToUsersServiceTests {
             List.of(new AllocateUserQuotaAmountCommand(userId, BigDecimal.valueOf(amountVnd))), false);
     }
 
-    /** Chạy chia đều rồi trả về các khoản đã ghi -- dùng để cộng lại và đối chiếu với trần. */
+    /**
+     * Runs the even distribution and returns the amounts that were written -- used to add them back
+     * up and check against the ceiling.
+     */
     private List<BigDecimal> captureAutoSplitAmounts(int expectedUsers) {
         service.distribute(schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, DistributionMode.AUTO, null, false);
 
-        var amountCaptor = ArgumentCaptor.forClass(BigDecimal.class);
+        ArgumentCaptor<BigDecimal> amountCaptor = ArgumentCaptor.forClass(BigDecimal.class);
         verify(allocationRepository, times(expectedUsers)).upsertAllocation(
             eq(subscriptionId), eq(QuotaType.EXAM), any(), amountCaptor.capture());
         return amountCaptor.getAllValues();
     }
 
     private void givenPool(long totalVnd, long usedVnd) {
-        var pool = new SchoolSubscriptionQuotaRecord(
+        SchoolSubscriptionQuotaRecord pool = new SchoolSubscriptionQuotaRecord(
             subscriptionId, QuotaType.EXAM, BigDecimal.valueOf(totalVnd), BigDecimal.valueOf(usedVnd));
         pool.setId(UUID.randomUUID());
         when(subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.EXAM))
@@ -315,7 +324,7 @@ class DistributeQuotaToUsersServiceTests {
     }
 
     private void givenEligible(UUID... userIds) {
-        var content = java.util.Arrays.stream(userIds)
+        List<SchoolUser> content = java.util.Arrays.stream(userIds)
             .map(userId -> new SchoolUser(schoolId, userId, null, null))
             .toList();
         when(schoolUserRepository.findBySchoolId(

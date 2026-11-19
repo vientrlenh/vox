@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,12 +53,12 @@ public class AddExamScheduleProctorUseCase implements IUseCase<AddExamSchedulePr
     @Override
     @Transactional
     public ExamScheduleProctorDto execute(AddExamScheduleProctorCommand input) {
-        var schedule = examScheduleRepository.findById(input.scheduleId())
+        ExamSchedule schedule = examScheduleRepository.findById(input.scheduleId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
         if (!schedule.getExamId().equals(input.examId())) {
             throw new NotFoundException("Không tìm thấy ca thi");
         }
-        var exam = examRepository.findById(schedule.getExamId())
+        Exam exam = examRepository.findById(schedule.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         examScheduleManageAccessService.requireCanManage(exam);
         ExamEditingGuard.requireScheduleEditable(exam);
@@ -65,7 +67,7 @@ public class AddExamScheduleProctorUseCase implements IUseCase<AddExamSchedulePr
         if (!schoolUserRepository.existsBySchoolIdAndUserId(exam.getSchoolId(), input.teacherId())) {
             throw new IllegalArgumentException("Giáo viên không thuộc trường của bài kiểm tra");
         }
-        var isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(input.teacherId()).stream()
+        boolean isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(input.teacherId()).stream()
             .anyMatch(role -> SchoolRoleCodes.TEACHER.equals(role.roleCode()));
         if (!isTeacher) {
             throw new IllegalArgumentException("Người dùng không phải là giáo viên");
@@ -80,7 +82,7 @@ public class AddExamScheduleProctorUseCase implements IUseCase<AddExamSchedulePr
         examScheduleProctorConflictValidator.requireTeacherFree(
             input.teacherId(), schedule.getStartDate(), schedule.getEndDate(), schedule.getId());
 
-        var proctor = new ExamScheduleProctor(schedule.getId(), input.teacherId());
+        ExamScheduleProctor proctor = new ExamScheduleProctor(schedule.getId(), input.teacherId());
         return ExamScheduleProctorDtoMapper.toDto(examScheduleProctorRepository.save(proctor));
     }
 }

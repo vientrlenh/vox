@@ -13,9 +13,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 
+import com.sep.vox.application.query.dto.SchoolAtRiskDto;
 import com.sep.vox.application.query.dto.SchoolRiskBucket;
+import com.sep.vox.application.query.dto.SchoolSubscriptionHealthDto;
 import com.sep.vox.application.query.repository.PlatformBusinessHealthQueryRepository;
 import com.sep.vox.application.query.repository.SchoolsAtRiskQueryRepository;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
@@ -46,40 +49,43 @@ class JpaSchoolsAtRiskQueryRepositoryTests {
     private EntityManager em;
 
     /**
-     * Cái bẫy chính của màn hình này: một trường có kỳ 2024 đã hết VÀ kỳ 2025 đang chạy thì màn
-     * "Trường &amp; gói" xếp nó vào danh sách status=EXPIRED, nhưng nó KHÔNG thuộc nhóm "đã hết hạn"
-     * — vì nhóm đếm theo TRƯỜNG, không theo dòng thuê bao.
+     * The main trap of this screen: a school with an expired 2024 period AND a running 2025 period
+     * is placed by the "Schools & plans" screen in the status=EXPIRED list, but it does NOT belong
+     * to the "expired" group -- because that group counts by SCHOOL, not by subscription row.
      */
     @Test
     void shouldNotListASchoolAsLapsedWhenAnOlderTermExpiredButANewerOneCovers() {
-        var school = insertSchool("THPT Nguyễn Huệ");
+        UUID school = insertSchool("THPT Nguyễn Huệ");
         insertSubscription(school, "EXPIRED", NOW.minus(700, ChronoUnit.DAYS), NOW.minus(335, ChronoUnit.DAYS));
         insertSubscription(school, "ACTIVE", NOW.minus(300, ChronoUnit.DAYS), NOW.plus(65, ChronoUnit.DAYS));
 
-        var lapsed = repository.findByBucket(SchoolRiskBucket.LAPSED, NOW, EXPIRING_THROUGH, null, 1, 20);
+        PageResult<SchoolAtRiskDto> lapsed = repository.findByBucket(SchoolRiskBucket.LAPSED, NOW, EXPIRING_THROUGH, null, 1, 20);
 
         assertThat(lapsed.totalElements()).isZero();
         assertThat(countRepository.countSchoolSubscriptionHealth(NOW, EXPIRING_THROUGH).lapsedSchools()).isZero();
     }
 
-    /** Bốn nhóm phải đếm ra ĐÚNG con số của thẻ trên trang tổng quan — cùng vị từ, cùng mốc. */
+    /**
+     * The four groups must count EXACTLY the numbers on the card of the overview page -- the same
+     * predicate, the same boundary.
+     */
     @Test
     void shouldMatchTheDashboardCountForEveryBucket() {
-        var expiring = insertSchool("Sắp hết hạn");
+        UUID expiring = insertSchool("Sắp hết hạn");
         insertSubscription(expiring, "ACTIVE", NOW.minus(300, ChronoUnit.DAYS), NOW.plus(10, ChronoUnit.DAYS));
 
-        var lapsed = insertSchool("Đã hết hạn");
+        UUID lapsed = insertSchool("Đã hết hạn");
         insertSubscription(lapsed, "EXPIRED", NOW.minus(400, ChronoUnit.DAYS), NOW.minus(35, ChronoUnit.DAYS));
 
-        var suspended = insertSchool("Bị đình chỉ");
+        UUID suspended = insertSchool("Bị đình chỉ");
         insertSuspendedSubscription(suspended, NOW.minus(300, ChronoUnit.DAYS), NOW.plus(65, ChronoUnit.DAYS),
             "Vi phạm điều khoản sử dụng");
 
-        var indebt = insertSchool("Đang nợ");
+        UUID indebt = insertSchool("Đang nợ");
         insertSubscription(indebt, "ACTIVE", NOW.minus(300, ChronoUnit.DAYS), NOW.plus(200, ChronoUnit.DAYS));
         insertBalance(indebt, new BigDecimal("-2450000"));
 
-        var health = countRepository.countSchoolSubscriptionHealth(NOW, EXPIRING_THROUGH);
+        SchoolSubscriptionHealthDto health = countRepository.countSchoolSubscriptionHealth(NOW, EXPIRING_THROUGH);
 
         assertThat(repository.findByBucket(SchoolRiskBucket.EXPIRING_SOON, NOW, EXPIRING_THROUGH, null, 1, 20)
             .totalElements()).isEqualTo(health.expiringSoonSchools());
@@ -92,51 +98,56 @@ class JpaSchoolsAtRiskQueryRepositoryTests {
     }
 
     /**
-     * "Đang nợ" CẮT NGANG ba nhóm kia: nó đọc từ ví, không từ trạng thái thuê bao. Một trường còn gói
-     * mà ví âm phải xuất hiện ở CẢ hai danh sách.
+     * "In debt" CUTS ACROSS the other three groups: it reads from the wallet, not from the
+     * subscription status. A school that still has a plan but a negative wallet must appear in BOTH
+     * lists.
      */
     @Test
     void shouldListASubscribedSchoolInDebtInBothBuckets() {
-        var school = insertSchool("THPT Nguyễn Huệ");
+        UUID school = insertSchool("THPT Nguyễn Huệ");
         insertSubscription(school, "ACTIVE", NOW.minus(300, ChronoUnit.DAYS), NOW.plus(10, ChronoUnit.DAYS));
         insertBalance(school, new BigDecimal("-2450000"));
 
         assertThat(repository.findByBucket(SchoolRiskBucket.EXPIRING_SOON, NOW, EXPIRING_THROUGH, null, 1, 20)
             .totalElements()).isEqualTo(1L);
 
-        var debt = repository.findByBucket(SchoolRiskBucket.IN_DEBT, NOW, EXPIRING_THROUGH, null, 1, 20);
+        PageResult<SchoolAtRiskDto> debt = repository.findByBucket(SchoolRiskBucket.IN_DEBT, NOW, EXPIRING_THROUGH, null, 1, 20);
         assertThat(debt.totalElements()).isEqualTo(1L);
         assertThat(debt.content().get(0).balanceVnd()).isEqualByComparingTo("-2450000");
     }
 
     /**
-     * Tên gói và ngày hết hạn phải thuộc CÙNG MỘT kỳ — kỳ đang phủ sớm hết nhất, đúng kỳ mà
-     * {@code MIN(end_date)} dùng để xét "sắp hết hạn". Lấy tên gói của kỳ này ghép với ngày của kỳ
-     * kia thì màn hình nói một điều không có thật.
+     * The plan name and the expiry date must belong to the SAME period -- the period that covers
+     * the earliest end, exactly the period {@code MIN(end_date)} uses to decide "about to expire".
+     * Taking one period's plan name and pairing it with another period's date would make the screen
+     * say something untrue.
      */
     @Test
     void shouldTakeThePlanNameAndEndDateFromTheSameCoveringTerm() {
-        var school = insertSchool("THPT Nguyễn Huệ");
+        UUID school = insertSchool("THPT Nguyễn Huệ");
         insertSubscription(school, "EXPIRED", NOW.minus(700, ChronoUnit.DAYS), NOW.minus(335, ChronoUnit.DAYS),
             insertPlan("Gói Cơ bản"));
         insertSubscription(school, "ACTIVE", NOW.minus(300, ChronoUnit.DAYS), NOW.plus(10, ChronoUnit.DAYS),
             insertPlan("Gói Chuẩn"));
 
-        var page = repository.findByBucket(SchoolRiskBucket.EXPIRING_SOON, NOW, EXPIRING_THROUGH, null, 1, 20);
+        PageResult<SchoolAtRiskDto> page = repository.findByBucket(SchoolRiskBucket.EXPIRING_SOON, NOW, EXPIRING_THROUGH, null, 1, 20);
 
         assertThat(page.content()).hasSize(1);
         assertThat(page.content().get(0).planName()).isEqualTo("Gói Chuẩn");
         assertThat(page.content().get(0).relevantEndDate()).isEqualTo(NOW.plus(10, ChronoUnit.DAYS));
     }
 
-    /** Lý do đình chỉ là thông tin đáng giá nhất của nhóm đó — không mang được thì tab gần như vô dụng. */
+    /**
+     * The suspension reason is the most valuable information of that group -- if it cannot be
+     * carried, the tab is almost useless.
+     */
     @Test
     void shouldCarryTheSuspensionReason() {
-        var school = insertSchool("THPT Trần Phú");
+        UUID school = insertSchool("THPT Trần Phú");
         insertSuspendedSubscription(school, NOW.minus(300, ChronoUnit.DAYS), NOW.plus(65, ChronoUnit.DAYS),
             "Chậm thanh toán quá 60 ngày");
 
-        var page = repository.findByBucket(SchoolRiskBucket.SUSPENDED, NOW, EXPIRING_THROUGH, null, 1, 20);
+        PageResult<SchoolAtRiskDto> page = repository.findByBucket(SchoolRiskBucket.SUSPENDED, NOW, EXPIRING_THROUGH, null, 1, 20);
 
         assertThat(page.content()).hasSize(1);
         assertThat(page.content().get(0).suspendedReason()).isEqualTo("Chậm thanh toán quá 60 ngày");
@@ -155,39 +166,45 @@ class JpaSchoolsAtRiskQueryRepositoryTests {
         assertThat(countRepository.countSchoolSubscriptionHealth(NOW, EXPIRING_THROUGH).lapsedSchools()).isZero();
     }
 
-    /** Trường chưa từng nạp ví có số dư 0, không phải null — cùng quy ước với SchoolBalance.emptyFor. */
+    /**
+     * A school that has never topped up its wallet has a balance of 0, not null -- the same
+     * convention as SchoolBalance.emptyFor.
+     */
     @Test
     void shouldReportZeroBalanceForSchoolsThatNeverToppedUp() {
-        var school = insertSchool("THPT Lê Quý Đôn");
+        UUID school = insertSchool("THPT Lê Quý Đôn");
         insertSubscription(school, "ACTIVE", NOW.minus(300, ChronoUnit.DAYS), NOW.plus(10, ChronoUnit.DAYS));
 
-        var page = repository.findByBucket(SchoolRiskBucket.EXPIRING_SOON, NOW, EXPIRING_THROUGH, null, 1, 20);
+        PageResult<SchoolAtRiskDto> page = repository.findByBucket(SchoolRiskBucket.EXPIRING_SOON, NOW, EXPIRING_THROUGH, null, 1, 20);
 
         assertThat(page.content().get(0).balanceVnd()).isEqualByComparingTo("0");
     }
 
     @Test
     void shouldSearchByNameOrCode() {
-        var huong = insertSchool("THPT Nguyễn Huệ");
+        UUID huong = insertSchool("THPT Nguyễn Huệ");
         insertSubscription(huong, "ACTIVE", NOW.minus(300, ChronoUnit.DAYS), NOW.plus(10, ChronoUnit.DAYS));
-        var phu = insertSchool("THPT Trần Phú");
+        UUID phu = insertSchool("THPT Trần Phú");
         insertSubscription(phu, "ACTIVE", NOW.minus(300, ChronoUnit.DAYS), NOW.plus(10, ChronoUnit.DAYS));
 
-        var byName = repository.findByBucket(SchoolRiskBucket.EXPIRING_SOON, NOW, EXPIRING_THROUGH, "trần", 1, 20);
+        PageResult<SchoolAtRiskDto> byName = repository.findByBucket(SchoolRiskBucket.EXPIRING_SOON, NOW, EXPIRING_THROUGH, "trần", 1, 20);
 
         assertThat(byName.totalElements()).isEqualTo(1L);
         assertThat(byName.content().get(0).schoolName()).isEqualTo("THPT Trần Phú");
     }
 
-    /** Sắp hết hạn xếp theo ngày rụng GẦN NHẤT trước — đó là thứ tự người vận hành gọi điện. */
+    /**
+     * About-to-expire is ordered by the NEAREST expiry date first -- that is the order in which the
+     * operator makes calls.
+     */
     @Test
     void shouldOrderExpiringSoonByNearestEndDateFirst() {
-        var later = insertSchool("Rụng sau");
+        UUID later = insertSchool("Rụng sau");
         insertSubscription(later, "ACTIVE", NOW.minus(300, ChronoUnit.DAYS), NOW.plus(25, ChronoUnit.DAYS));
-        var sooner = insertSchool("Rụng trước");
+        UUID sooner = insertSchool("Rụng trước");
         insertSubscription(sooner, "ACTIVE", NOW.minus(300, ChronoUnit.DAYS), NOW.plus(3, ChronoUnit.DAYS));
 
-        var page = repository.findByBucket(SchoolRiskBucket.EXPIRING_SOON, NOW, EXPIRING_THROUGH, null, 1, 20);
+        PageResult<SchoolAtRiskDto> page = repository.findByBucket(SchoolRiskBucket.EXPIRING_SOON, NOW, EXPIRING_THROUGH, null, 1, 20);
 
         assertThat(page.content()).extracting(dto -> dto.schoolName())
             .containsExactly("Rụng trước", "Rụng sau");
@@ -196,9 +213,9 @@ class JpaSchoolsAtRiskQueryRepositoryTests {
     // ---------- fixtures ----------
 
     private UUID insertSchool(String name) {
-        var id = UUID.randomUUID();
-        var actor = UUID.randomUUID();
-        var now = OffsetDateTime.now(ZoneOffset.UTC);
+        UUID id = UUID.randomUUID();
+        UUID actor = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
             INSERT INTO schools (id, code, name, address, contact_email, contact_phone,
                                  is_active, student_count, created_at, updated_at, created_by, updated_by)
@@ -215,8 +232,8 @@ class JpaSchoolsAtRiskQueryRepositoryTests {
     }
 
     private UUID insertPlan(String name) {
-        var id = UUID.randomUUID();
-        var now = OffsetDateTime.now(ZoneOffset.UTC);
+        UUID id = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
             INSERT INTO subscription_plans (id, name, tagline, status, price_vnd, period_type, period_count,
                                             version, max_time_per_attempt_min, created_at, updated_at)
@@ -268,7 +285,7 @@ class JpaSchoolsAtRiskQueryRepositoryTests {
     }
 
     private void insertBalance(UUID schoolId, BigDecimal balanceVnd) {
-        var now = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
             INSERT INTO school_balances (id, school_id, balance_vnd, created_at, updated_at, version)
             VALUES (:id, :schoolId, :balance, :now, :now, 0)

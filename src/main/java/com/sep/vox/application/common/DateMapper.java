@@ -69,8 +69,8 @@ public final class DateMapper {
         if (localDateString == null || localDateString.isBlank()) {
             return null;
         }
-        var stripped = localDateString.strip();
-        for (var formatter : INPUT_LOCALDATE_FORMATTERS) {
+        String stripped = localDateString.strip();
+        for (DateTimeFormatter formatter : INPUT_LOCALDATE_FORMATTERS) {
             try {
                 return LocalDate.parse(stripped, formatter);
             } catch (DateTimeParseException e) {
@@ -104,7 +104,7 @@ public final class DateMapper {
         if (dateTimeString == null || dateTimeString.isBlank()) {
             return null;
         }
-        var raw = dateTimeString.strip();
+        String raw = dateTimeString.strip();
 
         try {
             return OffsetDateTime.parse(raw).toInstant();
@@ -122,7 +122,7 @@ public final class DateMapper {
         // XÓA nhánh này khi log cảnh báo dưới đây đã sạch: lúc đó input không mang offset sẽ bị từ
         // chối thẳng, và DEFAULT_INPUT_ZONE chỉ còn được dùng ở đường import file.
         // ------------------------------------------------------------------
-        var fallback = resolveWithoutOffset(raw, DEFAULT_INPUT_ZONE);
+        Instant fallback = resolveWithoutOffset(raw, DEFAULT_INPUT_ZONE);
         if (fallback == null) {
             throw new IllegalArgumentException(
                     "Thời gian phải kèm múi giờ, ví dụ 2026-07-28T09:30:00+07:00 hoặc 2026-07-28T02:30:00Z");
@@ -154,7 +154,7 @@ public final class DateMapper {
         if (dateTimeString == null || dateTimeString.isBlank()) {
             return null;
         }
-        var raw = dateTimeString.strip();
+        String raw = dateTimeString.strip();
 
         try {
             return OffsetDateTime.parse(raw).toInstant();
@@ -162,7 +162,7 @@ public final class DateMapper {
             // Ô không mang offset -> giải nghĩa theo zone được truyền vào.
         }
 
-        var resolved = resolveWithoutOffset(raw, zone);
+        Instant resolved = resolveWithoutOffset(raw, zone);
         if (resolved == null) {
             throw new IllegalArgumentException("Định dạng ngày yêu cầu không hợp lệ");
         }
@@ -200,7 +200,7 @@ public final class DateMapper {
             // Thử dạng chỉ có ngày.
         }
         try {
-            var date = toLocalDate(raw);
+            LocalDate date = toLocalDate(raw);
             return date == null ? null : date.atStartOfDay(zone).toInstant();
         } catch (IllegalArgumentException e) {
             return null;

@@ -10,9 +10,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.query.dto.AiQualityReportInfo;
+import com.sep.vox.application.query.dto.BulkFinalizePreviewInfo;
 import com.sep.vox.application.query.dto.GradingAssignmentFilter;
+import com.sep.vox.application.query.dto.GradingAssignmentRowInfo;
+import com.sep.vox.application.query.dto.GradingStatsInfo;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
 import com.sep.vox.application.query.repository.ExamResultAuditQueryRepository;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.support.IntegrationTest;
 
 /**
@@ -43,7 +48,7 @@ class GradingQueryRepositorySmokeTests {
 
     @Test
     void should_run_the_bulk_finalize_preview() {
-        var preview = examGradingQueryRepository.previewBulkFinalize(schoolId, examId);
+        BulkFinalizePreviewInfo preview = examGradingQueryRepository.previewBulkFinalize(schoolId, examId);
 
         assertThat(preview.total()).isZero();
         assertThat(preview.readyToFinalize()).isZero();
@@ -57,17 +62,17 @@ class GradingQueryRepositorySmokeTests {
 
     @Test
     void should_run_the_coordination_board_query() {
-        var filter = new GradingAssignmentFilter(
+        GradingAssignmentFilter filter = new GradingAssignmentFilter(
             schoolId, null, null, null, null, null, null, false, false, null, null, null);
 
-        var page = examGradingQueryRepository.searchAssignments(filter, 1, 20);
+        PageResult<GradingAssignmentRowInfo> page = examGradingQueryRepository.searchAssignments(filter, 1, 20);
 
         assertThat(page.content()).isEmpty();
     }
 
     @Test
     void should_run_the_coordination_board_query_with_every_filter_on() {
-        var filter = new GradingAssignmentFilter(
+        GradingAssignmentFilter filter = new GradingAssignmentFilter(
             schoolId, examId, scheduleId, someId, "PENDING_REVIEW", "APPEAL", "ASSIGNED",
             true, true, Boolean.TRUE, "nguyen", "CENTRALIZED");
 
@@ -76,7 +81,7 @@ class GradingQueryRepositorySmokeTests {
 
     @Test
     void should_run_the_stats_query() {
-        var stats = examGradingQueryRepository.stats(schoolId, examId, scheduleId, "CENTRALIZED");
+        GradingStatsInfo stats = examGradingQueryRepository.stats(schoolId, examId, scheduleId, "CENTRALIZED");
 
         assertThat(stats.total()).isZero();
         assertThat(stats.unassigned()).isZero();
@@ -147,7 +152,7 @@ class GradingQueryRepositorySmokeTests {
     void should_run_the_audit_queries() {
         assertThat(examResultAuditQueryRepository.findHistory(someId)).isEmpty();
 
-        var report = examResultAuditQueryRepository.aiQualityReport(schoolId, examId);
+        AiQualityReportInfo report = examResultAuditQueryRepository.aiQualityReport(schoolId, examId);
 
         assertThat(report.reviewed()).isZero();
         assertThat(report.byTeacher()).isEmpty();

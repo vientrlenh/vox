@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.util.ResourceUtils;
 
@@ -41,17 +42,17 @@ public class FirebaseConfig {
 
     @Bean
     FirebaseApp firebaseApp(FirebaseProperties properties, ResourceLoader resourceLoader) throws IOException {
-        try (var in = openCredentials(properties, resourceLoader)) {
-            var options = FirebaseOptions.builder()
+        try (InputStream in = openCredentials(properties, resourceLoader)) {
+            FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(in))
                 .setConnectTimeout(5_000)
                 .setReadTimeout(10_000)
                 .build();
 
-            // getApps() rỗng hay không quyết định initialize hay lấy lại instance cũ:
-            // FirebaseApp giữ state tĩnh toàn JVM, nên devtools restart hoặc context
-            // được dựng lại trong test sẽ ném IllegalStateException nếu gọi thẳng
-            // initializeApp lần hai.
+            // Whether getApps() is empty decides between initializing and reusing the old instance:
+            // FirebaseApp keeps JVM-wide static state, so a devtools restart or a context
+            // rebuilt in tests would throw IllegalStateException if initializeApp were called
+            // directly a second time.
             if (FirebaseApp.getApps().isEmpty()) {
                 LOGGER.info("Initializing FirebaseApp for push notifications");
                 return FirebaseApp.initializeApp(options);
@@ -78,8 +79,8 @@ public class FirebaseConfig {
             );
         }
 
-        var location = resolveLocation(properties.credentials().path());
-        var resource = resourceLoader.getResource(location);
+        String location = resolveLocation(properties.credentials().path());
+        Resource resource = resourceLoader.getResource(location);
         if (!resource.exists()) {
             throw new IllegalStateException(
                 "Không tìm thấy Firebase service account tại: " + location
@@ -87,9 +88,9 @@ public class FirebaseConfig {
             );
         }
 
-        // Thư mục cũng thoả exists() và mở được InputStream, nên nếu không chặn ở đây
-        // thì lỗi sẽ nổ muộn hơn trong GoogleCredentials.fromStream dưới dạng lỗi parse
-        // JSON khó hiểu. Trỏ nhầm vào thư mục chứa file là nhầm lẫn rất dễ mắc.
+        // A directory also satisfies exists() and can be opened as an InputStream, so if it is not blocked here
+        // the error blows up later in GoogleCredentials.fromStream as a confusing JSON parse
+        // error. Pointing at the folder that contains the file by mistake is very easy to do.
         if (resource.isFile() && resource.getFile().isDirectory()) {
             throw new IllegalStateException(
                 "firebase.credentials.path đang trỏ vào một thư mục: " + location
@@ -101,26 +102,26 @@ public class FirebaseConfig {
     }
 
     /**
-     * Đường dẫn trần kiểu {@code C:\...} hay {@code /etc/...} bị Spring hiểu là
-     * classpath resource và luôn ném FileNotFoundException, nên thêm sẵn scheme
-     * {@code file:} khi giá trị chưa có scheme nào.
+     * A bare path like {@code C:\...} or {@code /etc/...} is understood by Spring as a
+     * classpath resource and always throws FileNotFoundException, so the {@code file:}
+     * scheme is prepended when the value has no scheme yet.
      *
-     * <p>Scheme phải dài từ 2 ký tự trở lên -- đó là cách phân biệt {@code file:} hay
-     * {@code classpath:} với ký tự ổ đĩa Windows {@code C:}, vốn chỉ có một ký tự.
+     * <p>The scheme must be 2 or more characters long -- that is how {@code file:} or
+     * {@code classpath:} is told apart from a Windows drive letter {@code C:}, which has only one character.
      */
     private String resolveLocation(String path) {
-        var trimmed = path.trim();
+        String trimmed = path.trim();
         if (URL_SCHEME.matcher(trimmed).find()) {
             return trimmed;
         }
-        // Spring resolve URL bằng java.net.URL nên dấu \ của Windows không dùng được
-        // trong phần path; đổi sang / cho đồng nhất.
+        // Spring resolves the URL with java.net.URL so the Windows \ cannot be used
+        // in the path part; switch to / for consistency.
         return ResourceUtils.FILE_URL_PREFIX + trimmed.replace('\\', '/');
     }
 
-    /** Nhận cả JSON thô lẫn base64 -- biến môi trường nhiều nền tảng không cho xuống dòng. */
+    /** Accepts both raw JSON and base64 -- the environment variables of many platforms do not allow line breaks. */
     private byte[] decodeInlineJson(String value) {
-        var trimmed = value.trim();
+        String trimmed = value.trim();
         if (trimmed.startsWith("{")) {
             return trimmed.getBytes(StandardCharsets.UTF_8);
         }

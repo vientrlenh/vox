@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import com.sep.vox.domain.model.subscription.SchoolSubscription;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,13 +40,13 @@ public class ViewMyExamQuotaAllocationUseCase implements IUseCase<Void, SchoolSu
     @Override
     @Transactional(readOnly = true)
     public SchoolSubscriptionQuotaUserAllocationDto execute(Void input) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID schoolId = userContextPort.getCurrentSchoolId();
         if (schoolId == null) {
             return null;
         }
 
-        var subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).orElse(null);
+        SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).orElse(null);
         if (subscription == null) {
             return null;
         }

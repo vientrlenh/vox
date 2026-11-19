@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamPaperSectionJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +24,7 @@ public class ExamPaperSectionRepositoryImpl implements ExamPaperSectionRepositor
 
     @Override
     public ExamPaperSection save(ExamPaperSection section) {
-        var saved = springDataExamPaperSectionRepository.save(ExamPaperSectionMapper.toJpa(section));
+        ExamPaperSectionJpaEntity saved = springDataExamPaperSectionRepository.save(ExamPaperSectionMapper.toJpa(section));
         return ExamPaperSectionMapper.toDomain(saved);
     }
 

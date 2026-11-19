@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamBlueprintSlotJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +28,7 @@ public class ExamBlueprintSlotRepositoryImpl implements ExamBlueprintSlotReposit
 
     @Override
     public ExamBlueprintSlot save(ExamBlueprintSlot slot) {
-        var saved = springDataExamBlueprintSlotRepository.save(ExamBlueprintSlotMapper.toJpa(slot));
+        ExamBlueprintSlotJpaEntity saved = springDataExamBlueprintSlotRepository.save(ExamBlueprintSlotMapper.toJpa(slot));
         return ExamBlueprintSlotMapper.toDomain(saved);
     }
 
@@ -59,8 +60,8 @@ public class ExamBlueprintSlotRepositoryImpl implements ExamBlueprintSlotReposit
         if (blueprintVersionIds.isEmpty()) {
             return List.of();
         }
-        var startedAt = System.nanoTime();
-        var result = springDataExamBlueprintSlotRepository.findByBlueprintVersionIdInOrderByOrderAsc(blueprintVersionIds).stream()
+        long startedAt = System.nanoTime();
+        List<ExamBlueprintSlot> result = springDataExamBlueprintSlotRepository.findByBlueprintVersionIdInOrderByOrderAsc(blueprintVersionIds).stream()
             .map(ExamBlueprintSlotMapper::toDomain)
             .toList();
         LOGGER.info("[blueprint-perf] repo ExamBlueprintSlotRepositoryImpl.findByBlueprintVersionIdIn versionIds={} tookMs={}",
@@ -80,8 +81,8 @@ public class ExamBlueprintSlotRepositoryImpl implements ExamBlueprintSlotReposit
         if (sectionIds.isEmpty()) {
             return List.of();
         }
-        var startedAt = System.nanoTime();
-        var result = springDataExamBlueprintSlotRepository.findBySectionIdInOrderByOrderAsc(sectionIds).stream()
+        long startedAt = System.nanoTime();
+        List<ExamBlueprintSlot> result = springDataExamBlueprintSlotRepository.findBySectionIdInOrderByOrderAsc(sectionIds).stream()
             .map(ExamBlueprintSlotMapper::toDomain)
             .toList();
         LOGGER.info("[blueprint-perf] repo ExamBlueprintSlotRepositoryImpl.findBySectionIdIn sectionIds={} tookMs={}",

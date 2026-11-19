@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -37,7 +38,7 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
     @Override
     @Transactional
     public UUID execute(ArchiveSubscriptionPlanCommand input) {
-        var plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
         if (plan.getStatus() == SubscriptionPlanStatus.DRAFT) {
@@ -68,20 +69,20 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
         }
 
         if (input.replacedByPlanId() != null) {
-            var replacement = subscriptionPlanRepository.findById(input.replacedByPlanId())
+            SubscriptionPlan replacement = subscriptionPlanRepository.findById(input.replacedByPlanId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy gói thay thế"));
             // Trường bị ép đổi gói khi gia hạn (SubscriptionPlanResolver.resolveActivePlan) không có
             // cơ hội từ chối -- xem SubscriptionPlanReplacementValidator cho bộ luật đầy đủ.
             replacementValidator.requireValidReplacement(replacement, plan);
             plan.setReplacedByPlanId(replacement.getId());
         }
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
-        var now = Instant.now();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
+        Instant now = Instant.now();
 
         plan.setStatus(SubscriptionPlanStatus.ARCHIVED);
         plan.setUpdatedAt(now);
         plan.setUpdatedBy(userId);
-        var savedPlan = subscriptionPlanRepository.save(plan);
+        SubscriptionPlan savedPlan = subscriptionPlanRepository.save(plan);
 
         return savedPlan.getId();
     }

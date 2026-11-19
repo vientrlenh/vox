@@ -16,7 +16,9 @@ import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTra
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.query.dto.GradingExamOptionInfo;
+import com.sep.vox.application.query.dto.GradingTaskInfo;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamGradingAssignmentJpaEntity;
@@ -141,7 +143,7 @@ class TeacherGradingExamPickerQueryTests {
 
     @Test
     void should_filter_the_teacher_queue_by_exam_id() {
-        var page = examGradingQueryRepository.findTasksByTeacherIdAndExamId(
+        PageResult<GradingTaskInfo> page = examGradingQueryRepository.findTasksByTeacherIdAndExamId(
             teacherId, midtermExamId, "CENTRALIZED", null, null, 1, 20);
 
         assertThat(page.content()).hasSize(3)
@@ -150,25 +152,27 @@ class TeacherGradingExamPickerQueryTests {
     }
 
     /**
-     * {@code examId} là bộ lọc, KHÔNG phải cổng: điều kiện teacherId vẫn đứng cạnh nó,
-     * nên đoán được id kỳ thi của người khác cũng không mở ra được gì.
+     * {@code examId} is a filter, NOT a gate: the teacherId condition still stands next to it, so
+     * guessing another person's exam id opens nothing.
      *
-     * <p>Chốt cả {@code totalElements}: bộ lọc thu hẹp nội dung mà không thu hẹp số đếm
-     * thì FE dựng ra những trang rỗng không bấm được.
+     * <p>It also pins {@code totalElements}: a filter that narrows the content without narrowing
+     * the count makes the FE build empty pages that cannot be clicked.
      */
     @Test
     void should_not_leak_another_teachers_tasks_when_filtering_by_exam_id() {
-        var page = examGradingQueryRepository.findTasksByTeacherIdAndExamId(
+        PageResult<GradingTaskInfo> page = examGradingQueryRepository.findTasksByTeacherIdAndExamId(
             teacherId, otherTeacherExamId, "CENTRALIZED", null, null, 1, 20);
 
         assertThat(page.content()).isEmpty();
         assertThat(page.totalElements()).isZero();
     }
 
-    /** Bỏ trống examId = mọi kỳ thi tập trung của người gọi, như trước khi có bộ lọc. */
+    /**
+     * Leaving examId empty = every centralized exam of the caller, as before the filter existed.
+     */
     @Test
     void should_return_every_centralized_task_when_no_exam_id_is_given() {
-        var page = examGradingQueryRepository.findTasksByTeacherIdAndExamId(
+        PageResult<GradingTaskInfo> page = examGradingQueryRepository.findTasksByTeacherIdAndExamId(
             teacherId, null, "CENTRALIZED", null, null, 1, 20);
 
         assertThat(page.totalElements()).isEqualTo(4);
@@ -192,27 +196,27 @@ class TeacherGradingExamPickerQueryTests {
     }
 
     /**
-     * Mỗi phân công cần một bài riêng, và mỗi bài cần một HỌC SINH riêng: một em chỉ dự
-     * một kỳ thi được một lần ({@code uq_exam_candidates_exam_student}), còn
-     * {@code active_result_id} có unique index bán phần nên một bài chỉ được có tối đa
-     * MỘT phân công đang mở.
+     * Each assignment needs its own submission, and each submission needs its own STUDENT: a
+     * student can take an exam only once ({@code uq_exam_candidates_exam_student}), and
+     * {@code active_result_id} has a partial unique index, so a submission can have at most ONE
+     * open assignment.
      */
     private void seedAssignment(UUID examId, UUID assignedTo, String status, Instant assignedAt) {
-        var paperId = UUID.randomUUID();
-        var studentId = seedStudent();
-        var candidateId = persist(new ExamCandidateJpaEntity(null, examId, studentId, paperId, null,
+        UUID paperId = UUID.randomUUID();
+        UUID studentId = seedStudent();
+        UUID candidateId = persist(new ExamCandidateJpaEntity(null, examId, studentId, paperId, null,
             "COMPLETED", now, now, null, null, null)).getId();
-        var sessionId = persist(new ExamSessionJpaEntity(null, examId, candidateId, paperId, now, now,
+        UUID sessionId = persist(new ExamSessionJpaEntity(null, examId, candidateId, paperId, now, now,
             "GRADED", false, null)).getId();
-        var candidateResultId = persist(new ExamCandidateResultJpaEntity(null, examId, candidateId,
+        UUID candidateResultId = persist(new ExamCandidateResultJpaEntity(null, examId, candidateId,
             sessionId, UUID.randomUUID(), 1, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
             null, new BigDecimal("6.50"), "PENDING_REVIEW", null, null, now, now, null, null)).getId();
 
-        var completed = "COMPLETED".equals(status);
+        boolean completed = "COMPLETED".equals(status);
         persist(new ExamGradingAssignmentJpaEntity(null, candidateResultId, assignedTo,
             "INITIAL", null, status, completed ? "UPHELD" : null, new BigDecimal("6.50"),
             assignedAt, assignedTo, completed ? assignedAt : null, null, null, null,
-            // Dòng đã đóng thì activeResultId là null — đó là cách index bán phần hoạt động.
+            // A closed row has a null activeResultId -- that is how the partial index works.
             completed ? null : candidateResultId));
     }
 

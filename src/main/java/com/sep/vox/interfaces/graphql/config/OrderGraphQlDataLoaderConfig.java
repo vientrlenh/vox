@@ -26,14 +26,15 @@ public class OrderGraphQlDataLoaderConfig {
         registry.<UUID, List<OrderItemDto>>forName("itemsByOrderId")
             .registerMappedBatchLoader((Set<UUID> orderIds, BatchLoaderEnvironment env) ->
                 Mono.fromSupplier(() -> {
-                    // Mồi sẵn List.of() cho MỌI id được hỏi. Bắt buộc: đơn TOPUP không có dòng nào, và
-                    // mapped batch loader thiếu key nào thì DataLoader trả null cho key đó -- schema
-                    // khai items: [OrderItem!] nên null còn đọc được, nhưng "đơn không có món" và "chưa
-                    // nạp được" là hai chuyện khác nhau, đừng để client phải đoán.
+                    // Pre-fill List.of() for EVERY requested id. Required: a TOPUP order has no item rows, and
+                    // for any key a mapped batch loader misses, the DataLoader returns null for that key -- the
+                    // schema declares items: [OrderItem!], so null is still readable, but "the order has no
+                    // items" and "the items could not be loaded" are two different things, so do not make the
+                    // client guess.
                     Map<UUID, List<OrderItemDto>> result = new HashMap<>();
                     orderIds.forEach(id -> result.put(id, List.of()));
 
-                    var itemsByOrderId = orderItemRepository.findByOrderIdIn(orderIds).stream()
+                    Map<UUID, List<OrderItemDto>> itemsByOrderId = orderItemRepository.findByOrderIdIn(orderIds).stream()
                         .map(OrderItemDto::toDto)
                         .collect(Collectors.groupingBy(item -> item.orderId()));
 

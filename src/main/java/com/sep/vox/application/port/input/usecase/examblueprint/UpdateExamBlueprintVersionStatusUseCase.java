@@ -1,8 +1,12 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
+import com.sep.vox.domain.model.exam.ExamBlueprintSection;
+import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
+import com.sep.vox.domain.model.question.Question;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -77,23 +81,23 @@ public class UpdateExamBlueprintVersionStatusUseCase
     @Override
     @Transactional
     public ExamBlueprintVersionDto execute(UpdateExamBlueprintVersionStatusCommand input) {
-        var command = new UpdateExamBlueprintVersionStatusCommand(
+        UpdateExamBlueprintVersionStatusCommand command = new UpdateExamBlueprintVersionStatusCommand(
             input.versionId(),
             StringNormalization.normalizeCode(input.action()),
             StringNormalization.trimAndCollapseSpaces(input.note())
         );
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
-        var version = examBlueprintVersionRepository.findById(command.versionId())
+        ExamBlueprintVersion version = examBlueprintVersionRepository.findById(command.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
-        var blueprint = examBlueprintRepository.findById(version.getBlueprintId())
+        ExamBlueprint blueprint = examBlueprintRepository.findById(version.getBlueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
 
         requireStatusActor(version, blueprint, currentUserId, currentSchoolId);
-        var now = Instant.now();
+        Instant now = Instant.now();
 
         switch (command.action()) {
             case "PUBLISH" -> {
@@ -114,22 +118,22 @@ public class UpdateExamBlueprintVersionStatusUseCase
 
         version.setUpdatedAt(Instant.now());
         version.setUpdatedBy(currentUserId);
-        var saved = examBlueprintVersionRepository.save(version);
+        ExamBlueprintVersion saved = examBlueprintVersionRepository.save(version);
 
         if (command.action().equals("PUBLISH")) {
-            var schoolAdminIds = schoolUserRepository.findBySchoolIdWithRole(blueprint.getSchoolId(), "SCHOOL_ADMIN")
+            List<UUID> schoolAdminIds = schoolUserRepository.findBySchoolIdWithRole(blueprint.getSchoolId(), "SCHOOL_ADMIN")
                 .stream()
                 .map(su -> su.getUserId())
                 .toList();
-            var event = new ExamBlueprintVersionPublishedEvent(
+            ExamBlueprintVersionPublishedEvent event = new ExamBlueprintVersionPublishedEvent(
                 schoolAdminIds,
                 blueprint.getCode(),
                 blueprint.getName(),
                 blueprint.getId(),
                 saved.getId()
             );
-            var payload = jsonSerializationPort.toJson(event);
-            var outbox = Outbox.create(AggregateTypeConstant.EXAM_BLUEPRINT_VERSION, version.getId(), EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED, payload, now);
+            String payload = jsonSerializationPort.toJson(event);
+            Outbox outbox = Outbox.create(AggregateTypeConstant.EXAM_BLUEPRINT_VERSION, version.getId(), EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED, payload, now);
             outboxRepository.save(outbox);
         }
 
@@ -156,9 +160,9 @@ public class UpdateExamBlueprintVersionStatusUseCase
         // REVIEWER: KHÔNG. Họ tồn tại đúng để làm người thứ hai, cho tự duyệt là xoá luôn vai
         // trò của mình. Đây là lý do phải hỏi isChairOfExamUsingBlueprint chứ không dùng lại
         // canChangeVersionStatus ở trên -- câu đó gộp CHAIR với REVIEWER.
-        var isAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean isAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()) || "SYSTEM_ADMIN".equals(role.roleCode()));
-        var isChair = examBlueprintRepository.isChairOfExamUsingBlueprint(
+        boolean isChair = examBlueprintRepository.isChairOfExamUsingBlueprint(
             blueprint.getId(), currentUserId, currentSchoolId
         );
         if (!isAdmin && !isChair && currentUserId.equals(version.getCreatedBy())) {
@@ -169,22 +173,22 @@ public class UpdateExamBlueprintVersionStatusUseCase
     private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
 
     private void validatePublishable(ExamBlueprintVersion version) {
-        var sections = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId());
+        List<ExamBlueprintSection> sections = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId());
         if (sections.isEmpty()) {
             throw new IllegalStateException("Blueprint version phải có ít nhất một section trước khi publish");
         }
-        var weightSum = sections.stream()
+        BigDecimal weightSum = sections.stream()
             .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (weightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
             throw new IllegalStateException("Tổng trọng số section phải bằng 1.00 trước khi publish");
         }
 
-        var allSlots = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId());
+        List<ExamBlueprintSlot> allSlots = examBlueprintSlotRepository.findByBlueprintVersionId(version.getId());
         allSlots.stream()
             .filter(slot -> slot.getSlotType() == ExamBlueprintSlotType.FIXED)
             .forEach(slot -> {
-                var question = slot.getFixedQuestionId() == null
+                Question question = slot.getFixedQuestionId() == null
                     ? null
                     : questionRepository.findById(slot.getFixedQuestionId()).orElse(null);
                 if (question == null || question.getStatus() != QuestionStatus.PUBLISHED) {
@@ -192,11 +196,11 @@ public class UpdateExamBlueprintVersionStatusUseCase
                 }
             });
 
-        var slotsBySectionId = allSlots.stream()
+        Map<UUID, List<ExamBlueprintSlot>> slotsBySectionId = allSlots.stream()
             .collect(Collectors.groupingBy(slot -> slot.getSectionId()));
-        for (var section : sections) {
-            var slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
-            var slotWeightSum = slots.stream()
+        for (ExamBlueprintSection section : sections) {
+            List<ExamBlueprintSlot> slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
+            BigDecimal slotWeightSum = slots.stream()
                 .map(slot -> slot.getWeight() == null ? BigDecimal.ZERO : slot.getWeight())
                 .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
             if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {

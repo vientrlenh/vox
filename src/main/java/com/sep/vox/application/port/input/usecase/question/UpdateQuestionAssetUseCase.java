@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.question;
 
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionBank;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -51,31 +53,31 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
     @Override
     @Transactional
     public QuestionAssetDto execute(UpdateQuestionAssetCommand input) {
-        var command = normalize(input);
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UpdateQuestionAssetCommand command = normalize(input);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var question = questionRepository.findById(command.questionId())
+        Question question = questionRepository.findById(command.questionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
-        var sourceAsset = questionAssetRepository.findById(command.assetId())
+        QuestionAsset sourceAsset = questionAssetRepository.findById(command.assetId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy tài nguyên câu hỏi"));
         if (!sourceAsset.getQuestionId().equals(question.getId())) {
             throw new ForbiddenException("Tài nguyên không thuộc câu hỏi này");
         }
 
-        var bank = questionBankRepository.findById(question.getQuestionBankId())
+        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        var owner = currentUserId.equals(question.getCreatedBy());
-        var editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
+        boolean owner = currentUserId.equals(question.getCreatedBy());
+        boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
             .isPresent();
-        var systemAdminOnSystemBank = userContextPort.isSystemAdmin()
+        boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
         if (!systemAdminOnSystemBank && !owner && !editorCollaborator) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var immutable = question.getStatus() == QuestionStatus.PUBLISHED
+        boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED
             || question.isLocked()
             || questionRepository.existsUsedInExam(question.getId());
         if (!systemAdminOnSystemBank
@@ -86,10 +88,10 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
             throw new ForbiddenException("Chỉ được sửa câu hỏi của mình khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
         }
 
-        var targetQuestion = immutable
+        Question targetQuestion = immutable
             ? questionCloneService.cloneAsDraftWithDetails(question, currentUserId)
             : question;
-        var targetAsset = immutable
+        QuestionAsset targetAsset = immutable
             ? resolveClonedAsset(targetQuestion.getId(), sourceAsset.getOrder())
             : sourceAsset;
 
@@ -130,7 +132,7 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
         // File/type replace no longer auto-clears transcript/description -- per the simplified
         // rule, existing content (whether AI-written or manually typed) always sticks unless the
         // teacher explicitly blanks the field or uses "Tạo lại bằng AI" to force regeneration.
-        var saved = questionAssetRepository.save(targetAsset);
+        QuestionAsset saved = questionAssetRepository.save(targetAsset);
         // Tạm thời bỏ auto-publish yêu cầu AI phân tích asset để luồng lưu asset
         // luôn độc lập và ổn định. Sẽ bật lại ở task riêng về AI update asset sau.
         // questionAssetAnalysisRequestPublisher.publishIfNeeded(targetQuestion, saved);
@@ -145,7 +147,7 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
     }
 
     private void validateAssetOrder(UUID questionId, int order, UUID currentAssetId) {
-        var duplicated = questionAssetRepository.findByQuestionId(questionId).stream()
+        boolean duplicated = questionAssetRepository.findByQuestionId(questionId).stream()
             .anyMatch(asset -> asset.getOrder() == order && !asset.getId().equals(currentAssetId));
         if (duplicated) {
             throw new IllegalStateException("Thứ tự tài nguyên câu hỏi không được trùng lặp");

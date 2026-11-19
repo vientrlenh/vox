@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.query.dto.GradingAssignmentFilter;
 import com.sep.vox.application.query.dto.GradingAssignmentRowInfo;
+import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
+import com.sep.vox.application.query.dto.GradingTaskInfo;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntity;
@@ -64,18 +66,18 @@ class GradingAttemptQueryTests {
     @BeforeEach
     void seed() {
         schoolId = UUID.randomUUID();
-        var retakingStudentId = persist(user(RETAKING_STUDENT)).getId();
-        var singleAttemptStudentId = persist(user(SINGLE_ATTEMPT_STUDENT)).getId();
+        UUID retakingStudentId = persist(user(RETAKING_STUDENT)).getId();
+        UUID singleAttemptStudentId = persist(user(SINGLE_ATTEMPT_STUDENT)).getId();
 
         examId = seedExam("Kiểm tra 15 phút");
 
-        var retakingCandidateId = seedCandidate(examId, retakingStudentId);
-        // Hai lượt CÁCH NHAU về thời gian: thứ tự lượt suy từ startedAt, trùng mốc thì
-        // không còn thứ tự để suy.
+        UUID retakingCandidateId = seedCandidate(examId, retakingStudentId);
+        // The two attempts are SEPARATED in time: the attempt order is derived from startedAt, and
+        // with the same instant there is no order left to derive.
         seedAttempt(examId, retakingCandidateId, now.minus(2, ChronoUnit.HOURS));
         seedAttempt(examId, retakingCandidateId, now.minus(1, ChronoUnit.HOURS));
 
-        var singleCandidateId = seedCandidate(examId, singleAttemptStudentId);
+        UUID singleCandidateId = seedCandidate(examId, singleAttemptStudentId);
         seedAttempt(examId, singleCandidateId, now.minus(2, ChronoUnit.HOURS));
 
         em.flush();
@@ -84,7 +86,7 @@ class GradingAttemptQueryTests {
 
     @Test
     void should_number_both_attempts_of_the_same_student_on_the_board() {
-        var rows = boardRowsOf(RETAKING_STUDENT);
+        List<GradingAssignmentRowInfo> rows = boardRowsOf(RETAKING_STUDENT);
 
         assertThat(rows).hasSize(2);
         assertThat(rows).extracting(row -> row.attemptNo()).containsExactlyInAnyOrder(1, 2);
@@ -92,8 +94,8 @@ class GradingAttemptQueryTests {
             assertThat(row.attemptCount()).isEqualTo(2);
             assertThat(row.sessionId()).isNotNull();
         });
-        // Mỗi dòng phải trỏ về đúng phiên của mình — trùng sessionId nghĩa là đang lấy
-        // nhầm một phiên cho cả hai lượt.
+        // Each row must point back to its own session -- the same sessionId means one session was
+        // picked for both attempts by mistake.
         assertThat(rows.get(0).sessionId()).isNotEqualTo(rows.get(1).sessionId());
     }
 
@@ -115,7 +117,7 @@ class GradingAttemptQueryTests {
 
     @Test
     void should_number_attempts_in_the_teacher_queue() {
-        var tasks = examGradingQueryRepository
+        List<GradingTaskInfo> tasks = examGradingQueryRepository
             .findTasksByTeacherIdAndExamId(teacherId, examId, null, null, null, 1, 20).content();
 
         assertThat(tasks).hasSize(3);
@@ -126,13 +128,13 @@ class GradingAttemptQueryTests {
 
     @Test
     void should_number_the_attempt_on_the_grading_detail() {
-        var secondAttempt = examGradingQueryRepository
+        GradingTaskInfo secondAttempt = examGradingQueryRepository
             .findTasksByTeacherIdAndExamId(teacherId, examId, null, null, null, 1, 20).content().stream()
             .filter(task -> task.attemptNo() == 2)
             .findFirst()
             .orElseThrow();
 
-        var detail = examGradingQueryRepository
+        GradingTaskDetailInfo detail = examGradingQueryRepository
             .findTaskDetail(secondAttempt.assignmentId(), teacherId).orElseThrow();
 
         assertThat(detail.attemptNo()).isEqualTo(2);
@@ -159,9 +161,9 @@ class GradingAttemptQueryTests {
     }
 
     private void seedAttempt(UUID examId, UUID candidateId, Instant startedAt) {
-        var sessionId = persist(new ExamSessionJpaEntity(null, examId, candidateId, UUID.randomUUID(),
+        UUID sessionId = persist(new ExamSessionJpaEntity(null, examId, candidateId, UUID.randomUUID(),
             startedAt, startedAt, "GRADED", false, null)).getId();
-        var candidateResultId = persist(new ExamCandidateResultJpaEntity(null, examId, candidateId, sessionId,
+        UUID candidateResultId = persist(new ExamCandidateResultJpaEntity(null, examId, candidateId, sessionId,
             UUID.randomUUID(), 1, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
             new BigDecimal("6.50"), "PENDING_REVIEW", null, null, now, now, null, null)).getId();
         persist(new ExamGradingAssignmentJpaEntity(null, candidateResultId, teacherId,

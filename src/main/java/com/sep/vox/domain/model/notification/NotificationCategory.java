@@ -59,7 +59,7 @@ public enum NotificationCategory {
      *         nhóm đó vẫn bị làm phiền, còn lập trình viên thì không hề hay biết.
      */
     public static NotificationCategory of(String eventType) {
-        var category = BY_EVENT_TYPE.get(eventType);
+        NotificationCategory category = BY_EVENT_TYPE.get(eventType);
         if (category == null) {
             throw new IllegalArgumentException("Chưa ánh xạ NotificationCategory cho eventType=" + eventType);
         }

@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.exam.Exam;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,19 +38,19 @@ public class ViewExamsUseCase implements IUseCase<ViewExamsQuery, PageResult<Exa
     @Override
     @Transactional(readOnly = true)
     public PageResult<ExamDto> execute(ViewExamsQuery input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var systemAdmin = userContextPort.isSystemAdmin();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        boolean systemAdmin = userContextPort.isSystemAdmin();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         if (!systemAdmin && currentSchoolId == null) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var result = examRepository.findAccessible(
+        PageResult<Exam> result = examRepository.findAccessible(
             currentUserId,
             currentSchoolId,
             systemAdmin,

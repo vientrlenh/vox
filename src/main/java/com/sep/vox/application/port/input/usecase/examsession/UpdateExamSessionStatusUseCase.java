@@ -43,7 +43,7 @@ public class UpdateExamSessionStatusUseCase implements IUseCase<UpdateExamSessio
     @Override
     @Transactional
     public ExamSessionResponse execute(UpdateExamSessionStatusCommand input) {
-        var session = examSessionRepository.findById(input.sessionId())
+        ExamSession session = examSessionRepository.findById(input.sessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
 
         // B.4: race - job hết-ca-thi vừa set EXPIRED ngay trước khi client kịp gửi SUBMITTED.
@@ -110,7 +110,7 @@ public class UpdateExamSessionStatusUseCase implements IUseCase<UpdateExamSessio
      * {@code charged_at} và phải giữ nguyên: miễn đè lên chúng là hoàn tiền cho phần việc đã giao đủ.
      */
     private void waiveFailedRoundCost(UUID sessionId) {
-        var waived = aiUsageRecordRepository.markWaivedByExamSessionId(sessionId, Instant.now());
+        int waived = aiUsageRecordRepository.markWaivedByExamSessionId(sessionId, Instant.now());
         if (waived > 0) {
             LOGGER.info("Miễn {} dòng chi phí AI của lượt chấm hỏng ở phiên {}", waived, sessionId);
         }

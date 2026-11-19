@@ -18,6 +18,7 @@ import com.sep.vox.application.port.input.query.ViewExamCandidatesQuery;
 import com.sep.vox.application.port.input.usecase.examcandidate.ViewExamCandidatesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
@@ -76,7 +77,7 @@ class ViewExamCandidatesUseCaseTests {
             .thenReturn(false);
         when(examScheduleProctorRepository.existsByScheduleIdAndTeacherId(scheduleId, userId)).thenReturn(true);
 
-        var result = useCase.execute(new ViewExamCandidatesQuery(examId, scheduleId, null));
+        List<ExamCandidateDto> result = useCase.execute(new ViewExamCandidatesQuery(examId, scheduleId, null));
 
         assertThat(result).hasSize(2);
         assertThat(result).allMatch(c -> scheduleId.equals(c.scheduleId()));
@@ -87,7 +88,7 @@ class ViewExamCandidatesUseCaseTests {
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
             .thenReturn(false);
 
-        var query = new ViewExamCandidatesQuery(examId, null, null);
+        ViewExamCandidatesQuery query = new ViewExamCandidatesQuery(examId, null, null);
         assertThatThrownBy(() -> useCase.execute(query)).isInstanceOf(ForbiddenException.class);
     }
 
@@ -97,38 +98,38 @@ class ViewExamCandidatesUseCaseTests {
             .thenReturn(false);
         when(examScheduleProctorRepository.existsByScheduleIdAndTeacherId(scheduleId, userId)).thenReturn(false);
 
-        var query = new ViewExamCandidatesQuery(examId, scheduleId, null);
+        ViewExamCandidatesQuery query = new ViewExamCandidatesQuery(examId, scheduleId, null);
         assertThatThrownBy(() -> useCase.execute(query)).isInstanceOf(ForbiddenException.class);
     }
 
     @Test
     void should_return_all_candidates_when_no_filter() {
-        var result = useCase.execute(new ViewExamCandidatesQuery(examId, null, null));
+        List<ExamCandidateDto> result = useCase.execute(new ViewExamCandidatesQuery(examId, null, null));
         assertThat(result).hasSize(3);
     }
 
     @Test
     void should_filter_by_schedule_id() {
-        var result = useCase.execute(new ViewExamCandidatesQuery(examId, scheduleId, null));
+        List<ExamCandidateDto> result = useCase.execute(new ViewExamCandidatesQuery(examId, scheduleId, null));
         assertThat(result).hasSize(2);
         assertThat(result).allMatch(c -> scheduleId.equals(c.scheduleId()));
     }
 
     @Test
     void should_filter_by_status() {
-        var result = useCase.execute(new ViewExamCandidatesQuery(examId, null, ExamCandidateStatus.ABSENT));
+        List<ExamCandidateDto> result = useCase.execute(new ViewExamCandidatesQuery(examId, null, ExamCandidateStatus.ABSENT));
         assertThat(result).hasSize(2);
         assertThat(result).allMatch(c -> "ABSENT".equals(c.status()));
     }
 
     @Test
     void should_filter_by_schedule_and_status() {
-        var result = useCase.execute(new ViewExamCandidatesQuery(examId, scheduleId, ExamCandidateStatus.ABSENT));
+        List<ExamCandidateDto> result = useCase.execute(new ViewExamCandidatesQuery(examId, scheduleId, ExamCandidateStatus.ABSENT));
         assertThat(result).hasSize(1);
     }
 
     private ExamCandidate candidate(UUID scheduleId, ExamCandidateStatus status) {
-        var c = new ExamCandidate();
+        ExamCandidate c = new ExamCandidate();
         c.setId(UUID.randomUUID());
         c.setExamId(examId);
         c.setStudentId(UUID.randomUUID());
@@ -140,7 +141,7 @@ class ViewExamCandidatesUseCaseTests {
     }
 
     private Exam exam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         return exam;

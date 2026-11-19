@@ -49,8 +49,8 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
             throw new NotFoundException("Không tìm thấy phiên thi cho turn đã ghi nhận");
         }
 
-        var answeredAt = input.answeredAt() == null ? Instant.now() : input.answeredAt();
-        var response = examItemResponseRepository.findById(input.answerId())
+        Instant answeredAt = input.answeredAt() == null ? Instant.now() : input.answeredAt();
+        ExamItemResponse response = examItemResponseRepository.findById(input.answerId())
             .orElseGet(() -> new ExamItemResponse(
                 input.answerId(),
                 input.sessionId(),
@@ -93,11 +93,11 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
         // createdAt của bản cũ), nên phải trộn Ở ĐÂY trước khi gọi. Không sửa ngữ nghĩa của
         // upsert vì UpdateExamItemResponseTurnUseCase là đường giáo viên sửa tay, nơi xoá trắng
         // một trường là chủ ý.
-        var existingTurn = examItemResponseTurnRepository
+        ExamItemResponseTurn existingTurn = examItemResponseTurnRepository
             .findByExamItemResponseIdAndTurnOrder(response.getId(), input.turnOrder())
             .orElse(null);
 
-        var turn = new ExamItemResponseTurn(
+        ExamItemResponseTurn turn = new ExamItemResponseTurn(
             response.getId(),
             input.turnOrder(),
             // normalizeTurnType trả MAIN khi thiếu, nên một pha không gửi turnType sẽ hạ cấp
@@ -138,7 +138,7 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
             return TurnType.MAIN;
         }
 
-        var normalized = turnType.trim().toUpperCase(Locale.ROOT);
+        String normalized = turnType.trim().toUpperCase(Locale.ROOT);
         try {
             return TurnType.valueOf(normalized);
         } catch (IllegalArgumentException ex) {

@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.dashboard;
 
 import java.util.Optional;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +28,7 @@ public class ViewNearestCentralizedExamUseCase implements IUseCase<Void, Optiona
     @Override
     @Transactional(readOnly = true)
     public Optional<NearestCentralizedExamDto> execute(Void input) {
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID schoolId = userContextPort.getCurrentSchoolId();
         return nearestCentralizedExamQueryRepository.findNearestForSchool(schoolId);
     }
 }

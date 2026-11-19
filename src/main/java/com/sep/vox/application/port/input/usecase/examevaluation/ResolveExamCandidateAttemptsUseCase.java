@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examevaluation;
 
+import com.sep.vox.domain.model.exam.Exam;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Collection;
@@ -43,22 +44,22 @@ public class ResolveExamCandidateAttemptsUseCase {
         // Kèm cả lượt đã xoá mềm: đây là đường của màn kết quả kỳ thi, đã chặn quyền ở quản trị
         // trường / chủ tịch hội đồng (ViewExamCandidatesUseCase), và họ cần thấy lượt bị xoá kèm lý
         // do. Điểm của lượt đã xoá KHÔNG được chọn làm điểm chính thức — xem countsTowardOfficialScore.
-        var rows = examCandidateAttemptsQueryRepository.findByCandidateIdsIncludingDeleted(candidateIds);
-        var rowsByCandidateId = rows.stream().collect(Collectors.groupingBy((ExamAttemptSummary row) -> row.candidateId()));
+        List<ExamAttemptSummary> rows = examCandidateAttemptsQueryRepository.findByCandidateIdsIncludingDeleted(candidateIds);
+        Map<UUID, List<ExamAttemptSummary>> rowsByCandidateId = rows.stream().collect(Collectors.groupingBy((ExamAttemptSummary row) -> row.candidateId()));
 
-        var examIds = rows.stream().map(row -> row.examId()).distinct().toList();
-        var examsById = examRepository.findByIdIn(examIds).stream()
+        List<UUID> examIds = rows.stream().map(row -> row.examId()).distinct().toList();
+        Map<UUID, Exam> examsById = examRepository.findByIdIn(examIds).stream()
             .collect(Collectors.toMap(exam -> exam.getId(), Function.identity(), (left, right) -> left));
 
-        var out = new HashMap<UUID, ExamCandidateAttempts>();
-        for (var candidateId : candidateIds) {
-            var candidateRows = rowsByCandidateId.getOrDefault(candidateId, List.of());
-            var attempts = candidateRows.stream()
+        Map<UUID, ExamCandidateAttempts> out = new HashMap<UUID, ExamCandidateAttempts>();
+        for (UUID candidateId : candidateIds) {
+            List<ExamAttemptSummary> candidateRows = rowsByCandidateId.getOrDefault(candidateId, List.of());
+            List<ExamAttemptSummary> attempts = candidateRows.stream()
                 .sorted(Comparator.comparing((ExamAttemptSummary row) -> row.startedAt(), Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                 .toList();
 
-            var exam = candidateRows.isEmpty() ? null : examsById.get(candidateRows.get(0).examId());
-            var method = exam == null || exam.getResultDecisionMethod() == null
+            Exam exam = candidateRows.isEmpty() ? null : examsById.get(candidateRows.get(0).examId());
+            ResultDecisionMethod method = exam == null || exam.getResultDecisionMethod() == null
                 ? ResultDecisionMethod.LATEST
                 : exam.getResultDecisionMethod();
             out.put(candidateId, resolveOfficial(attempts, method));
@@ -67,7 +68,7 @@ public class ResolveExamCandidateAttemptsUseCase {
     }
 
     private ExamCandidateAttempts resolveOfficial(List<ExamAttemptSummary> attempts, ResultDecisionMethod method) {
-        var eligible = attempts.stream()
+        List<ExamAttemptSummary> eligible = attempts.stream()
             .filter(this::countsTowardOfficialScore)
             .toList();
 
@@ -75,7 +76,7 @@ public class ResolveExamCandidateAttemptsUseCase {
             if (eligible.isEmpty()) {
                 return new ExamCandidateAttempts(attempts, null, null);
             }
-            var average = eligible.stream()
+            BigDecimal average = eligible.stream()
                 .map(attempt -> attempt.totalScore())
                 .reduce(BigDecimal.ZERO, (left, right) -> left.add(right))
                 .divide(BigDecimal.valueOf(eligible.size()), 2, RoundingMode.HALF_UP);

@@ -1,5 +1,9 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamSession;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,11 +52,11 @@ public class RetryGradingExamSessionUseCase implements IUseCase<RetryGradingExam
     @Override
     @Transactional
     public java.util.UUID execute(RetryGradingExamSessionCommand input) {
-        var session = examSessionRepository.findById(input.sessionId())
+        ExamSession session = examSessionRepository.findById(input.sessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
-        var candidate = examCandidateRepository.findById(session.getCandidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của phiên thi"));
-        var exam = examRepository.findById(session.getExamId())
+        Exam exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của phiên thi"));
 
         moderationAccessService.authorize(exam, candidate);
@@ -63,8 +67,8 @@ public class RetryGradingExamSessionUseCase implements IUseCase<RetryGradingExam
         // session từng bị đánh dấu vi phạm oan (INVALID) - đã được dỡ cấm - và CHƯA từng có
         // ExamItemEvaluation nào (nếu đã từng có, phải recompute từ dữ liệu cũ thay vì gọi AI
         // lại, xem UnblockExamCandidateUseCase).
-        var result = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
-        var isUnblockedInvalidRetry = result != null
+        ExamCandidateResult result = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
+        boolean isUnblockedInvalidRetry = result != null
             && result.getStatus() == ExamCandidateResultStatus.INVALID
             && candidate.getBlockedAt() == null;
         if (session.getStatus() != ExamSessionStatus.GRADING_FAILED && !isUnblockedInvalidRetry) {
@@ -79,7 +83,7 @@ public class RetryGradingExamSessionUseCase implements IUseCase<RetryGradingExam
         //
         // Nhánh INVALID được dỡ cấm KHÔNG tính: đó là lần chấm AI ĐẦU TIÊN của phiên, không phải
         // chấm lại sau khi hỏng.
-        var schoolInitiated = !userContextPort.isSystemAdmin();
+        boolean schoolInitiated = !userContextPort.isSystemAdmin();
         if (schoolInitiated && session.getStatus() == ExamSessionStatus.GRADING_FAILED) {
             if (!session.canSchoolRequestAiRegrade()) {
                 throw new IllegalStateException(

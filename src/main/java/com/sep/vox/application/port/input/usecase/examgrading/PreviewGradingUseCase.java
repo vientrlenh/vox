@@ -2,6 +2,8 @@ package com.sep.vox.application.port.input.usecase.examgrading;
 
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -46,16 +48,16 @@ public class PreviewGradingUseCase implements IUseCase<SubmitGradingCommand, Gra
     @Override
     @Transactional(readOnly = true)
     public GradingPreviewResponse execute(SubmitGradingCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var context = examGradingAccessService.load(command.assignmentId());
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        ExamGradingAccessService.GradingContext context = examGradingAccessService.load(command.assignmentId());
         examGradingAccessService.authorizeAssignedTeacher(context, currentUserId);
 
         // Preview cho phép chấm dở để xem tổng chạy dần — KHÔNG bắt phủ đủ như /grade.
-        var resolvedItems = gradingItemScoreResolver.resolve(context, command, false);
-        var overrides = new LinkedHashMap<UUID, BigDecimal>();
+        List<GradingItemScoreResolver.ResolvedItem> resolvedItems = gradingItemScoreResolver.resolve(context, command, false);
+        Map<UUID, BigDecimal> overrides = new LinkedHashMap<UUID, BigDecimal>();
         resolvedItems.forEach(item -> overrides.put(item.responseId(), item.itemScore()));
 
-        var previewed = examSessionResultCalculator.preview(
+        ExamSessionResultCalculator.PreviewedExamSessionResult previewed = examSessionResultCalculator.preview(
             context.candidateResult().getSessionId(), overrides);
 
         return new GradingPreviewResponse(

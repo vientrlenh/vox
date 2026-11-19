@@ -63,7 +63,7 @@ public class RedisCacheManagerRepository implements CacheManagerPort {
 
     @Override
     public <T> T get(String key, Class<T> type) {
-        var json = redis.opsForValue().get(key);
+        String json = redis.opsForValue().get(key);
         return json == null ? null : jsonMapper.readValue(json, type);
     }
 
@@ -74,7 +74,7 @@ public class RedisCacheManagerRepository implements CacheManagerPort {
 
     @Override
     public String saveIfAbsentAndGet(String key, String value, Duration ttl) {
-        var isSaved = redis.opsForValue().setIfAbsent(key, value, ttl);
+        Boolean isSaved = redis.opsForValue().setIfAbsent(key, value, ttl);
         return Boolean.TRUE.equals(isSaved) ? value : redis.opsForValue().get(key);
     }
 

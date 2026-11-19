@@ -1,8 +1,11 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -55,11 +58,11 @@ public class ClaimClassTestGradingUseCase
     @Override
     @Transactional
     public List<UUID> execute(ClaimClassTestGradingCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
         examGradingAccessService.authorizeClassTestChair(command.examId(), currentUserId);
 
-        var roundType = parseRoundType(command.roundType());
-        var candidateResultIds = command.candidateResultIds() == null
+        GradingRoundType roundType = parseRoundType(command.roundType());
+        List<UUID> candidateResultIds = command.candidateResultIds() == null
             ? List.<UUID>of() : command.candidateResultIds();
         if (candidateResultIds.isEmpty()) {
             throw new IllegalArgumentException("Phải chọn ít nhất một bài để nhận chấm.");
@@ -68,20 +71,20 @@ public class ClaimClassTestGradingUseCase
             throw new DuplicatedException("Không được chọn trùng bài.");
         }
 
-        var resultsById = examCandidateResultRepository.findByIdIn(candidateResultIds).stream()
+        Map<UUID, ExamCandidateResult> resultsById = examCandidateResultRepository.findByIdIn(candidateResultIds).stream()
             .collect(Collectors.toMap(result -> result.getId(), Function.identity(), (left, right) -> left));
 
         // Một query cho cả lô — pre-check để báo lỗi tiếng Việt thay vì để unique index
         // ném DataIntegrityViolation; index vẫn là chốt cuối khi có race.
-        var alreadyOpen = examGradingAssignmentRepository
+        Set<UUID> alreadyOpen = examGradingAssignmentRepository
             .findOpenByCandidateResultIdIn(candidateResultIds).stream()
             .map(assignment -> assignment.getCandidateResultId())
             .collect(Collectors.toSet());
 
-        var now = Instant.now();
-        var assignments = new java.util.ArrayList<ExamGradingAssignment>();
-        for (var candidateResultId : candidateResultIds) {
-            var result = resultsById.get(candidateResultId);
+        Instant now = Instant.now();
+        List<ExamGradingAssignment> assignments = new java.util.ArrayList<ExamGradingAssignment>();
+        for (UUID candidateResultId : candidateResultIds) {
+            ExamCandidateResult result = resultsById.get(candidateResultId);
             if (result == null) {
                 throw new NotFoundException("Không tìm thấy kết quả bài thi.");
             }

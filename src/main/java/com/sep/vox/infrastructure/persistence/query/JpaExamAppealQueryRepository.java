@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.query;
 
+import jakarta.persistence.TypedQuery;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -46,11 +47,11 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
     @Override
     public PageResult<AppealSummaryInfo> searchAppeals(
             UUID schoolId, UUID examId, String status, String keyword, int page, int size) {
-        var normalizedKeyword = keyword == null || keyword.isBlank() ? null : "%" + keyword.trim().toLowerCase() + "%";
+        String normalizedKeyword = keyword == null || keyword.isBlank() ? null : "%" + keyword.trim().toLowerCase() + "%";
 
-        // KHÔNG join sang phần thi ở đây: một đơn có N phần, join to-many sẽ nhân dòng
-        // và làm sai phân trang (một đơn ăn nhiều slot) lẫn lệch với query COUNT bên dưới.
-        var query = em.createQuery("""
+        // Do NOT join to the exam slots here: one appeal has N slots, and a to-many join would multiply rows
+        // and break pagination (one appeal taking several slots) as well as drift from the COUNT query below.
+        TypedQuery<Tuple> query = em.createQuery("""
             SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline
             FROM ExamResultAppealJpaEntity a
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
@@ -70,19 +71,19 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             .setFirstResult((page - 1) * size)
             .setMaxResults(size);
 
-        var rows = query.getResultList();
-        var appealIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
-        var reviewersByAppeal = reviewersByAppealIds(appealIds);
-        var classNamesByAppeal = classNamesByAppealIds(appealIds);
-        var partLabelsByAppeal = partLabelsByAppealIds(appealIds);
-        var now = Instant.now();
+        List<Tuple> rows = query.getResultList();
+        List<UUID> appealIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
+        Map<UUID, AppealReviewerInfo> reviewersByAppeal = reviewersByAppealIds(appealIds);
+        Map<UUID, String> classNamesByAppeal = classNamesByAppealIds(appealIds);
+        Map<UUID, List<String>> partLabelsByAppeal = partLabelsByAppealIds(appealIds);
+        Instant now = Instant.now();
 
-        var content = new ArrayList<AppealSummaryInfo>();
-        for (var row : rows) {
-            var appealId = row.get(0, UUID.class);
-            var reviewer = reviewersByAppeal.get(appealId);
-            var appealStatus = row.get(4, String.class);
-            var deadline = row.get(6, Instant.class);
+        List<AppealSummaryInfo> content = new ArrayList<AppealSummaryInfo>();
+        for (Tuple row : rows) {
+            UUID appealId = row.get(0, UUID.class);
+            AppealReviewerInfo reviewer = reviewersByAppeal.get(appealId);
+            String appealStatus = row.get(4, String.class);
+            Instant deadline = row.get(6, Instant.class);
             content.add(new AppealSummaryInfo(
                 appealId,
                 row.get(1, String.class),
@@ -99,7 +100,7 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             ));
         }
 
-        var total = em.createQuery("""
+        Long total = em.createQuery("""
             SELECT COUNT(a) FROM ExamResultAppealJpaEntity a
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
             JOIN ExamJpaEntity e ON e.id = cr.examId
@@ -116,21 +117,21 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             .setParameter("keyword", normalizedKeyword)
             .getSingleResult();
 
-        var totalPages = (int) Math.ceil((double) total / size);
+        int totalPages = (int) Math.ceil((double) total / size);
         return new PageResult<>(content, page, size, total, totalPages);
     }
 
     /**
-     * Người chấm của nhiều đơn trong 1 query. Nguồn là {@code exam_grading_assignments}
-     * vòng APPEAL — bảng {@code exam_appeal_reviewers} đã bị bỏ.
+     * The graders of many appeals in 1 query. The source is the APPEAL round of {@code exam_grading_assignments}
+     * — the {@code exam_appeal_reviewers} table has been dropped.
      *
-     * <p>Một đơn có thể có nhiều dòng qua thời gian (người đầu trả lại, admin giao
-     * người khác), nên giữ dòng MỚI NHẤT.
+     * <p>One appeal can have several rows over time (the first grader returns it, the admin assigns
+     * someone else), so the NEWEST row is kept.
      */
     @Override
     public PageResult<AppealSummaryInfo> searchAppealsByStudentId(
             UUID studentId, String status, int page, int size) {
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline
             FROM ExamResultAppealJpaEntity a
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
@@ -147,17 +148,17 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             .setMaxResults(size)
             .getResultList();
 
-        var appealIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
-        var reviewersByAppeal = reviewersByAppealIds(appealIds);
-        var classNamesByAppeal = classNamesByAppealIds(appealIds);
-        var partLabelsByAppeal = partLabelsByAppealIds(appealIds);
-        var now = Instant.now();
-        var content = new ArrayList<AppealSummaryInfo>();
-        for (var row : rows) {
-            var appealId = row.get(0, UUID.class);
-            var reviewer = reviewersByAppeal.get(appealId);
-            var appealStatus = row.get(4, String.class);
-            var deadline = row.get(6, Instant.class);
+        List<UUID> appealIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
+        Map<UUID, AppealReviewerInfo> reviewersByAppeal = reviewersByAppealIds(appealIds);
+        Map<UUID, String> classNamesByAppeal = classNamesByAppealIds(appealIds);
+        Map<UUID, List<String>> partLabelsByAppeal = partLabelsByAppealIds(appealIds);
+        Instant now = Instant.now();
+        List<AppealSummaryInfo> content = new ArrayList<AppealSummaryInfo>();
+        for (Tuple row : rows) {
+            UUID appealId = row.get(0, UUID.class);
+            AppealReviewerInfo reviewer = reviewersByAppeal.get(appealId);
+            String appealStatus = row.get(4, String.class);
+            Instant deadline = row.get(6, Instant.class);
             content.add(new AppealSummaryInfo(
                 appealId,
                 row.get(1, String.class),
@@ -174,7 +175,7 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             ));
         }
 
-        var total = em.createQuery("""
+        Long total = em.createQuery("""
             SELECT COUNT(a) FROM ExamResultAppealJpaEntity a
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
             JOIN ExamCandidateJpaEntity c ON c.id = cr.candidateId
@@ -184,7 +185,7 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             .setParameter("studentId", studentId)
             .setParameter("status", status)
             .getSingleResult();
-        var totalPages = (int) Math.ceil((double) total / size);
+        int totalPages = (int) Math.ceil((double) total / size);
         return new PageResult<>(content, page, size, total, totalPages);
     }
 
@@ -192,7 +193,7 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         if (appealIds.isEmpty()) {
             return Map.of();
         }
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT ga.appealId, ga.id, ga.teacherId, u.fullName, ga.status, ga.outcome,
                    ga.assignedAt, ga.completedAt, ga.deadlineAt
             FROM ExamGradingAssignmentJpaEntity ga
@@ -203,11 +204,11 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             .setParameter("appealIds", appealIds)
             .getResultList();
 
-        var now = Instant.now();
-        var map = new LinkedHashMap<UUID, AppealReviewerInfo>();
-        for (var row : rows) {
-            var assignmentStatus = row.get(4, String.class);
-            var deadlineAt = row.get(8, Instant.class);
+        Instant now = Instant.now();
+        Map<UUID, AppealReviewerInfo> map = new LinkedHashMap<UUID, AppealReviewerInfo>();
+        for (Tuple row : rows) {
+            String assignmentStatus = row.get(4, String.class);
+            Instant deadlineAt = row.get(8, Instant.class);
             map.putIfAbsent(row.get(0, UUID.class), new AppealReviewerInfo(
                 row.get(1, UUID.class),
                 row.get(2, UUID.class),
@@ -224,12 +225,12 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         return map;
     }
 
-    /** Tên lớp (đang hoạt động) của nhiều đơn trong 1 query; giữ giá trị đầu tiên mỗi đơn. */
+    /** The (active) class names of many appeals in 1 query; keeps the first value per appeal. */
     private Map<UUID, String> classNamesByAppealIds(List<UUID> appealIds) {
         if (appealIds.isEmpty()) {
             return Map.of();
         }
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT a.id, sc.name
             FROM ExamResultAppealJpaEntity a
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
@@ -240,8 +241,8 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         """, Tuple.class)
             .setParameter("appealIds", appealIds)
             .getResultList();
-        var map = new HashMap<UUID, String>();
-        for (var row : rows) {
+        Map<UUID, String> map = new HashMap<UUID, String>();
+        for (Tuple row : rows) {
             map.putIfAbsent(row.get(0, UUID.class), row.get(1, String.class));
         }
         return map;
@@ -252,14 +253,14 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
     }
 
     /**
-     * Nhãn phần thi của nhiều đơn trong 1 query — đơn có N phần nên tuyệt đối không
-     * được join vào query phân trang. Nhiều phần cùng một section thì nhãn trùng, khử bằng set.
+     * The exam-part labels of many appeals in 1 query — an appeal has N parts, so it must never
+     * be joined into the paginated query. Several parts in the same section give duplicate labels, removed with a set.
      */
     private Map<UUID, List<String>> partLabelsByAppealIds(List<UUID> appealIds) {
         if (appealIds.isEmpty()) {
             return Map.of();
         }
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT ai.appealId, sec.title
             FROM ExamResultAppealItemJpaEntity ai
             LEFT JOIN ExamPaperItemJpaEntity pi ON pi.id = ai.paperItemId
@@ -269,14 +270,14 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         """, Tuple.class)
             .setParameter("appealIds", appealIds)
             .getResultList();
-        var map = new LinkedHashMap<UUID, LinkedHashSet<String>>();
-        for (var row : rows) {
-            var title = row.get(1, String.class);
+        Map<UUID, LinkedHashSet<String>> map = new LinkedHashMap<UUID, LinkedHashSet<String>>();
+        for (Tuple row : rows) {
+            String title = row.get(1, String.class);
             if (title != null) {
                 map.computeIfAbsent(row.get(0, UUID.class), ignored -> new LinkedHashSet<>()).add(title);
             }
         }
-        var result = new LinkedHashMap<UUID, List<String>>();
+        Map<UUID, List<String>> result = new LinkedHashMap<UUID, List<String>>();
         map.forEach((appealId, titles) -> result.put(appealId, List.copyOf(titles)));
         return result;
     }
@@ -285,7 +286,7 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
 
     @Override
     public AppealStatsInfo countByStatus(UUID schoolId) {
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT a.status, COUNT(a)
             FROM ExamResultAppealJpaEntity a
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
@@ -296,14 +297,14 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             .setParameter("schoolId", schoolId)
             .getResultList();
 
-        var pending = 0;
-        var processing = 0;
-        var published = 0;
-        var rejected = 0;
-        var withdrawn = 0;
-        for (var row : rows) {
-            var status = row.get(0, String.class);
-            var count = row.get(1, Long.class).intValue();
+        int pending = 0;
+        int processing = 0;
+        int published = 0;
+        int rejected = 0;
+        int withdrawn = 0;
+        for (Tuple row : rows) {
+            String status = row.get(0, String.class);
+            int count = row.get(1, Long.class).intValue();
             switch (status) {
                 case "PENDING" -> pending += count;
                 case "APPROVED", "GRADING" -> processing += count;
@@ -320,7 +321,7 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
 
     @Override
     public Optional<AppealDetailInfo> findDetailById(UUID appealId, UUID schoolId) {
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline,
                    a.reason, a.notes, a.decisionNote, a.scoreAfter, a.approvedAt, a.resolvedAt,
                    rv.scoringScaleMin, rv.scoringScaleMax, a.withdrawnAt, a.reviewerOverrideReason
@@ -338,9 +339,9 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         if (rows.isEmpty()) {
             return Optional.empty();
         }
-        var row = rows.get(0);
-        var status = row.get(4, String.class);
-        var deadline = row.get(6, Instant.class);
+        Tuple row = rows.get(0);
+        String status = row.get(4, String.class);
+        Instant deadline = row.get(6, Instant.class);
 
         return Optional.of(new AppealDetailInfo(
             row.get(0, UUID.class),
@@ -368,15 +369,15 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
     }
 
     /**
-     * Các phần thi của đơn kèm dữ liệu để đối chiếu. Số query cố định (5) bất kể
-     * đơn có bao nhiêu phần.
+     * The exam parts of the appeal with the data needed for comparison. The number of queries is fixed (5) no matter
+     * how many parts the appeal has.
      *
-     * <p>Hai lookup evaluation khác nhau là cố ý: điểm đối chiếu lấy từ bản chấm
-     * đang có hiệu lực, còn lượt nói phải lấy từ bản AI vì chỉ bản AI mới có turn.
+     * <p>The two different evaluation lookups are intentional: the comparison score comes from the evaluation
+     * currently in effect, while the spoken turns must come from the AI version because only the AI version has turns.
      */
     @Override
     public Optional<AppealDetailInfo> findStudentDetailById(UUID appealId, UUID studentId) {
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline,
                    a.reason, a.notes, a.decisionNote, a.scoreAfter, a.approvedAt, a.resolvedAt,
                    rv.scoringScaleMin, rv.scoringScaleMax, a.withdrawnAt, a.reviewerOverrideReason
@@ -394,9 +395,9 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         if (rows.isEmpty()) {
             return Optional.empty();
         }
-        var row = rows.get(0);
-        var status = row.get(4, String.class);
-        var deadline = row.get(6, Instant.class);
+        Tuple row = rows.get(0);
+        String status = row.get(4, String.class);
+        Instant deadline = row.get(6, Instant.class);
         return Optional.of(new AppealDetailInfo(
             row.get(0, UUID.class),
             row.get(1, String.class),
@@ -423,7 +424,7 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
     }
 
     private List<AppealItemInfo> appealItems(UUID appealId) {
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT ai.id, ai.paperItemId, ai.responseId, sec.title, ai.finalScore
             FROM ExamResultAppealItemJpaEntity ai
             LEFT JOIN ExamPaperItemJpaEntity pi ON pi.id = ai.paperItemId
@@ -437,17 +438,17 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             return List.of();
         }
 
-        var responseIds = rows.stream().map(row -> row.get(2, UUID.class)).filter(Objects::nonNull).toList();
-        var baselineEvaluationIds = currentEvaluationIdsByResponseIds(responseIds);
-        var aiEvaluationIds = aiEvaluationIdsByResponseIds(responseIds);
-        var scoresByEvaluation = criterionScoresByEvaluationIds(List.copyOf(baselineEvaluationIds.values()));
-        var turnsByEvaluation = turnsByEvaluationIds(List.copyOf(aiEvaluationIds.values()));
+        List<UUID> responseIds = rows.stream().map(row -> row.get(2, UUID.class)).filter(Objects::nonNull).toList();
+        Map<UUID, UUID> baselineEvaluationIds = currentEvaluationIdsByResponseIds(responseIds);
+        Map<UUID, UUID> aiEvaluationIds = aiEvaluationIdsByResponseIds(responseIds);
+        Map<UUID, List<AppealCriterionScoreInfo>> scoresByEvaluation = criterionScoresByEvaluationIds(List.copyOf(baselineEvaluationIds.values()));
+        Map<UUID, List<AppealTurnInfo>> turnsByEvaluation = turnsByEvaluationIds(List.copyOf(aiEvaluationIds.values()));
 
-        var result = new ArrayList<AppealItemInfo>();
-        for (var row : rows) {
-            var responseId = row.get(2, UUID.class);
-            var baselineEvaluationId = baselineEvaluationIds.get(responseId);
-            var aiEvaluationId = aiEvaluationIds.get(responseId);
+        List<AppealItemInfo> result = new ArrayList<AppealItemInfo>();
+        for (Tuple row : rows) {
+            UUID responseId = row.get(2, UUID.class);
+            UUID baselineEvaluationId = baselineEvaluationIds.get(responseId);
+            UUID aiEvaluationId = aiEvaluationIds.get(responseId);
             result.add(new AppealItemInfo(
                 row.get(0, UUID.class),
                 row.get(1, UUID.class),
@@ -462,18 +463,18 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
     }
 
     /**
-     * Bản chấm đang có hiệu lực của mỗi response — mốc để đối chiếu. Vòng đầu rơi vào
-     * bản AI AUTO_GRADED; vòng sau rơi vào bản HUMAN FINALIZED của vòng trước, khớp
-     * với originalScore hiển thị cạnh nó thay vì điểm AI đã lỗi thời.
+     * The evaluation currently in effect for each response — the reference point for comparison. The first round falls on
+     * the AI AUTO_GRADED version; later rounds fall on the HUMAN FINALIZED version of the previous round, matching
+     * the originalScore shown next to it instead of the outdated AI score.
      *
-     * <p>Order rồi giữ dòng đầu mỗi response, không dùng MAX(evaluatedAt): hai bản
-     * trùng mốc thời gian sẽ khiến so sánh bằng trả về cả hai.
+     * <p>Order then keep the first row per response, do not use MAX(evaluatedAt): two versions
+     * with the same timestamp would make an equality comparison return both.
      */
     private Map<UUID, UUID> currentEvaluationIdsByResponseIds(List<UUID> responseIds) {
         if (responseIds.isEmpty()) {
             return Map.of();
         }
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT ev.responseId, ev.id FROM ExamItemEvaluationJpaEntity ev
             WHERE ev.responseId IN (:responseIds)
             AND ev.status IN ('AUTO_GRADED', 'FINALIZED')
@@ -481,25 +482,25 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         """, Tuple.class)
             .setParameter("responseIds", responseIds)
             .getResultList();
-        var map = new LinkedHashMap<UUID, UUID>();
-        for (var row : rows) {
+        Map<UUID, UUID> map = new LinkedHashMap<UUID, UUID>();
+        for (Tuple row : rows) {
             map.putIfAbsent(row.get(0, UUID.class), row.get(1, UUID.class));
         }
         return map;
     }
 
     /**
-     * Bản AI của mỗi response — nguồn DUY NHẤT của lượt nói (audio/transcript), vì bản
-     * chấm tay không bao giờ sinh turn. Sau khi công bố phúc khảo, bản AI mang
-     * SUPERSEDED nên query này cố tình không lọc theo status.
+     * The AI version of each response — the ONLY source of spoken turns (audio/transcript), because a
+     * manual evaluation never produces turns. After the appeal is published the AI version carries
+     * SUPERSEDED, so this query deliberately does not filter by status.
      *
-     * <p>Điểm đối chiếu KHÔNG lấy ở đây — xem {@link #currentEvaluationIdsByResponseIds}.
+     * <p>The comparison score is NOT taken here — see {@link #currentEvaluationIdsByResponseIds}.
      */
     private Map<UUID, UUID> aiEvaluationIdsByResponseIds(List<UUID> responseIds) {
         if (responseIds.isEmpty()) {
             return Map.of();
         }
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT ev.responseId, ev.id FROM ExamItemEvaluationJpaEntity ev
             WHERE ev.responseId IN (:responseIds)
             AND ev.engineType IN ('AI_SINGLE', 'AI_ENSEMBLE')
@@ -507,19 +508,19 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         """, Tuple.class)
             .setParameter("responseIds", responseIds)
             .getResultList();
-        var map = new LinkedHashMap<UUID, UUID>();
-        for (var row : rows) {
+        Map<UUID, UUID> map = new LinkedHashMap<UUID, UUID>();
+        for (Tuple row : rows) {
             map.putIfAbsent(row.get(0, UUID.class), row.get(1, UUID.class));
         }
         return map;
     }
 
-    /** Điểm tiêu chí của nhiều evaluation trong 1 query, group theo evaluationId (tránh N+1). */
+    /** Criterion scores of many evaluations in 1 query, grouped by evaluationId (avoids N+1). */
     private Map<UUID, List<AppealCriterionScoreInfo>> criterionScoresByEvaluationIds(List<UUID> evaluationIds) {
         if (evaluationIds.isEmpty()) {
             return Map.of();
         }
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT cs.evaluationId, cs.rubricCriterionId, rc.code, rc.name, cs.finalScore, cs.rationale
             FROM ExamItemCriterionScoreJpaEntity cs
             JOIN RubricCriterionJpaEntity rc ON rc.id = cs.rubricCriterionId
@@ -528,8 +529,8 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         """, Tuple.class)
             .setParameter("evaluationIds", evaluationIds)
             .getResultList();
-        var map = new LinkedHashMap<UUID, List<AppealCriterionScoreInfo>>();
-        for (var row : rows) {
+        Map<UUID, List<AppealCriterionScoreInfo>> map = new LinkedHashMap<UUID, List<AppealCriterionScoreInfo>>();
+        for (Tuple row : rows) {
             map.computeIfAbsent(row.get(0, UUID.class), ignored -> new ArrayList<>())
                 .add(new AppealCriterionScoreInfo(
                     row.get(1, UUID.class),
@@ -542,12 +543,12 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         return map;
     }
 
-    /** Lượt nói của nhiều evaluation trong 1 query, group theo evaluationId (tránh N+1). */
+    /** Spoken turns of many evaluations in 1 query, grouped by evaluationId (avoids N+1). */
     private Map<UUID, List<AppealTurnInfo>> turnsByEvaluationIds(List<UUID> evaluationIds) {
         if (evaluationIds.isEmpty()) {
             return Map.of();
         }
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT t.evaluationId, t.id, t.turnOrder, t.turnType, t.promptText, t.audioUrl,
                    t.transcript, t.durationSeconds
             FROM ExamItemEvaluationTurnJpaEntity t
@@ -556,8 +557,8 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         """, Tuple.class)
             .setParameter("evaluationIds", evaluationIds)
             .getResultList();
-        var map = new LinkedHashMap<UUID, List<AppealTurnInfo>>();
-        for (var row : rows) {
+        Map<UUID, List<AppealTurnInfo>> map = new LinkedHashMap<UUID, List<AppealTurnInfo>>();
+        for (Tuple row : rows) {
             map.computeIfAbsent(row.get(0, UUID.class), ignored -> new ArrayList<>())
                 .add(new AppealTurnInfo(
                     row.get(1, UUID.class),
@@ -575,15 +576,15 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
     // ---- picker phân công --------------------------------------------------
 
     /**
-     * Ứng viên chấm phúc khảo, kèm cờ xung đột lợi ích.
+     * Candidates for grading the appeal, with a conflict-of-interest flag.
      *
-     * <p>Người xung đột KHÔNG bị lọc bỏ mà chỉ bị đánh dấu: lọc âm thầm sẽ khiến admin
-     * trường nhỏ thấy danh sách rỗng mà không hiểu vì sao, và họ vẫn cần override được.
+     * <p>Conflicted people are NOT filtered out, only flagged: silently filtering would leave the admin of a
+     * small school looking at an empty list without understanding why, and they still need to be able to override.
      */
     @Override
     public List<AppealReviewerLiteInfo> findAssignableReviewers(UUID schoolId, UUID appealId, String keyword) {
-        var normalizedKeyword = keyword == null || keyword.isBlank() ? null : "%" + keyword.trim().toLowerCase() + "%";
-        var rows = em.createQuery("""
+        String normalizedKeyword = keyword == null || keyword.isBlank() ? null : "%" + keyword.trim().toLowerCase() + "%";
+        List<Tuple> rows = em.createQuery("""
             SELECT DISTINCT u.id, u.fullName
             FROM SchoolUserJpaEntity su
             JOIN UserJpaEntity u ON u.id = su.userId
@@ -599,13 +600,13 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             .setParameter("keyword", normalizedKeyword)
             .getResultList();
 
-        var reviewerIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
-        var loadByReviewer = openLoadByTeacherIds(reviewerIds);
-        var conflicted = appealId == null ? Set.<UUID>of() : teacherIdsWithHumanEvaluationForAppeal(appealId);
+        List<UUID> reviewerIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
+        Map<UUID, Long> loadByReviewer = openLoadByTeacherIds(reviewerIds);
+        Set<UUID> conflicted = appealId == null ? Set.<UUID>of() : teacherIdsWithHumanEvaluationForAppeal(appealId);
 
-        var result = new ArrayList<AppealReviewerLiteInfo>();
-        for (var row : rows) {
-            var reviewerId = row.get(0, UUID.class);
+        List<AppealReviewerLiteInfo> result = new ArrayList<AppealReviewerLiteInfo>();
+        for (Tuple row : rows) {
+            UUID reviewerId = row.get(0, UUID.class);
             result.add(new AppealReviewerLiteInfo(
                 reviewerId,
                 row.get(1, String.class),
@@ -636,12 +637,12 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
             .getResultList());
     }
 
-    /** Tải = số phân công đang mở, gộp cả bốn vòng — cùng công thức với màn chấm bài. */
+    /** Load = the number of open assignments, across all four rounds — the same formula as the grading screen. */
     private Map<UUID, Long> openLoadByTeacherIds(List<UUID> teacherIds) {
         if (teacherIds.isEmpty()) {
             return Map.of();
         }
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT ga.teacherId, COUNT(ga)
             FROM ExamGradingAssignmentJpaEntity ga
             WHERE ga.teacherId IN (:teacherIds) AND ga.activeResultId IS NOT NULL
@@ -649,8 +650,8 @@ public class JpaExamAppealQueryRepository implements ExamAppealQueryRepository {
         """, Tuple.class)
             .setParameter("teacherIds", teacherIds)
             .getResultList();
-        var map = new HashMap<UUID, Long>();
-        for (var row : rows) {
+        Map<UUID, Long> map = new HashMap<UUID, Long>();
+        for (Tuple row : rows) {
             map.put(row.get(0, UUID.class), row.get(1, Long.class));
         }
         return map;

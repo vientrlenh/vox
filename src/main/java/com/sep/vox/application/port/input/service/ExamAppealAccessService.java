@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.user.User;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -80,8 +83,8 @@ public class ExamAppealAccessService {
     }
 
     public UUID requireActiveUserId() {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
             .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản bị khóa.");
@@ -91,7 +94,7 @@ public class ExamAppealAccessService {
 
     @Transactional(readOnly = true)
     public AppealContext load(UUID appealId) {
-        var appeal = examResultAppealRepository.findById(appealId)
+        ExamResultAppeal appeal = examResultAppealRepository.findById(appealId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn phúc khảo."));
         return loadFromCandidateResult(appeal, appeal.getCandidateResultId());
     }
@@ -102,13 +105,13 @@ public class ExamAppealAccessService {
     }
 
     private AppealContext loadFromCandidateResult(ExamResultAppeal appeal, UUID candidateResultId) {
-        var candidateResult = examCandidateResultRepository.findById(candidateResultId)
+        ExamCandidateResult candidateResult = examCandidateResultRepository.findById(candidateResultId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kết quả bài thi."));
-        var session = examSessionRepository.findById(candidateResult.getSessionId())
+        ExamSession session = examSessionRepository.findById(candidateResult.getSessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi."));
-        var exam = examRepository.findById(candidateResult.getExamId())
+        Exam exam = examRepository.findById(candidateResult.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
-        var candidate = examCandidateRepository.findById(session.getCandidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của phiên thi."));
         return new AppealContext(
             appeal, candidateResult, session, exam.getSchoolId(), candidate.getStudentId(), exam.getName());
@@ -119,9 +122,9 @@ public class ExamAppealAccessService {
         if (userContextPort.isSystemAdmin()) {
             return;
         }
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
         if (isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(context.schoolId())) {
@@ -158,7 +161,7 @@ public class ExamAppealAccessService {
 
     /** Giáo viên cùng trường — dùng khi kiểm tra ứng viên được phân công. */
     public boolean isTeacherOfSchool(UUID userId, UUID schoolId) {
-        var isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(userId).stream()
+        boolean isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(userId).stream()
             .anyMatch(role -> "TEACHER".equals(role.roleCode()));
         if (!isTeacher) {
             return false;

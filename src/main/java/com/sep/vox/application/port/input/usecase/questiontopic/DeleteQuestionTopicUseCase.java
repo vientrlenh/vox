@@ -1,5 +1,9 @@
 package com.sep.vox.application.port.input.usecase.questiontopic;
 
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionBank;
+import com.sep.vox.domain.model.question.QuestionTopic;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -54,14 +58,14 @@ public class DeleteQuestionTopicUseCase implements IUseCase<DeleteQuestionTopicC
     @Override
     @Transactional
     public Void execute(DeleteQuestionTopicCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
 
-        var topic = questionTopicRepository.findById(input.id())
+        QuestionTopic topic = questionTopicRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
-        var bank = questionBankRepository.findById(topic.getQuestionBankId())
+        QuestionBank bank = questionBankRepository.findById(topic.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         validateAccess(bank.getOwnerType(), bank.getSchoolId(), currentSchoolId);
@@ -70,8 +74,8 @@ public class DeleteQuestionTopicUseCase implements IUseCase<DeleteQuestionTopicC
             throw new DuplicatedException("Chủ đề vẫn còn câu hỏi đã PUBLISHED và đang được dùng trong đề thi");
         }
 
-        var questions = questionRepository.findByQuestionTopicId(topic.getId());
-        for (var question : questions) {
+        List<Question> questions = questionRepository.findByQuestionTopicId(topic.getId());
+        for (Question question : questions) {
             questionAssetRepository.deleteByQuestionId(question.getId());
             questionEvaluationGuideRepository.deleteByQuestionId(question.getId());
             questionCollaboratorRepository.deleteByQuestionId(question.getId());

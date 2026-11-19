@@ -42,9 +42,9 @@ public class PracticeInternalSecretFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        var uri = request.getRequestURI();
-        var protectedPath = false;
-        for (var prefix : PROTECTED_PREFIXES) {
+        String uri = request.getRequestURI();
+        boolean protectedPath = false;
+        for (String prefix : PROTECTED_PREFIXES) {
             if (uri.startsWith(prefix)) {
                 protectedPath = true;
                 break;
@@ -54,7 +54,7 @@ public class PracticeInternalSecretFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        var provided = request.getHeader(SECRET_HEADER);
+        String provided = request.getHeader(SECRET_HEADER);
         if (expectedSecret.isBlank() || provided == null || !expectedSecret.equals(provided)) {
             LOGGER.warn("Từ chối gọi endpoint nội bộ luyện tập: {}", request.getRequestURI());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);

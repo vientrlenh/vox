@@ -1,6 +1,8 @@
 package com.sep.vox.interfaces.graphql.config;
 
 
+import com.sep.vox.domain.model.user.Role;
+import com.sep.vox.domain.model.user.UserRole;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,16 +54,16 @@ public class UserGraphQlDataLoaderConfig {
                     .map(k -> k.userId())
                     .toList();
 
-                var userRoles = userRoleRepository.findByUserIdIn(userIds);
-                var roleIds = userRoles.stream().map(ur -> ur.getRoleId()).distinct().toList();
+                List<UserRole> userRoles = userRoleRepository.findByUserIdIn(userIds);
+                List<UUID> roleIds = userRoles.stream().map(ur -> ur.getRoleId()).distinct().toList();
                 if (roleIds.isEmpty()) {
                     return result;
                 }
-                var roles = roleRepository.findByIdIn(roleIds)
+                Map<UUID, Role> roles = roleRepository.findByIdIn(roleIds)
                     .stream()
                     .collect(Collectors.toMap(r -> r.getId(), r -> r));
                 
-                var rolesByUserId = userRoles.stream()
+                Map<UUID, List<RoleDto>> rolesByUserId = userRoles.stream()
                     .filter(ur -> roles.containsKey(ur.getRoleId()))
                     .collect(Collectors.groupingBy(
                         ur -> ur.getUserId(), 

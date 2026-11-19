@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.initializer;
 
+import com.sep.vox.domain.model.framework.Framework;
+import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Comparator;
@@ -211,22 +213,22 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
     }
 
     /**
-     * {@code @Transactional} vì đây là một đồ thị có khoá ngoại (rubric -> version -> tiêu chí + dải
-     * kết quả). Chết giữa chừng mà không cuộn lại thì phép kiểm "đã có bản mẫu chưa" ở lần khởi động
-     * sau sẽ thấy có rồi và bỏ qua, để lại một bản dựng dở không bao giờ được sửa.
+     * {@code @Transactional} because this is a graph with foreign keys (rubric -> version -> criteria + result
+     * bands). Dying midway without rolling back means the "is there a template yet" check on the next startup
+     * sees one and skips, leaving a half-built version that is never fixed.
      */
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
-        var language = supportedLanguageRepository.findByCode(LANGUAGE_CODE).orElse(null);
+        SupportedLanguage language = supportedLanguageRepository.findByCode(LANGUAGE_CODE).orElse(null);
         if (language == null) {
             LOGGER.warn("Chưa có ngôn ngữ {}. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống", LANGUAGE_CODE);
             return;
         }
 
-        // Một phép kiểm duy nhất cho cả ba bản: hệ thống đã có bộ tiêu chí nào cho ngôn ngữ này thì
-        // không chèn thêm bản mẫu có sẵn ý kiến lên trên. Nghĩa là nếu system admin đã tự tạo rubric
-        // cho tiếng Anh, seed này sẽ không chạy nữa -- muốn có bản mẫu thì tạo tay, giống
+        // A single check for all three templates: if the system already has any rubric for this language, do
+        // not insert opinionated templates on top of it. That means if the system admin has already created a rubric
+        // for English by hand, this seed will no longer run -- to get the templates, create them by hand, like
         // FrameworkInitializer.
         if (rubricRepository.existsByOwnerTypeAndLanguageId(RubricOwnerType.SYSTEM.name(), language.getId())) {
             LOGGER.info("Hệ thống đã có bộ tiêu chí cho ngôn ngữ {}. Bỏ qua khởi tạo bộ tiêu chí mẫu",
@@ -234,28 +236,28 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
             return;
         }
 
-        var framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
+        Framework framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
         if (framework == null || !framework.isActive()) {
             LOGGER.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống",
                 FRAMEWORK_CODE);
             return;
         }
 
-        var frameworkVersion = latestPublishedVersion(framework.getId());
+        FrameworkVersion frameworkVersion = latestPublishedVersion(framework.getId());
         if (frameworkVersion == null) {
             LOGGER.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo bộ tiêu chí mẫu",
                 FRAMEWORK_CODE);
             return;
         }
 
-        // Tiêu chí rubric phải trỏ tới framework_criterion_id có thật, nên tra theo mã của khung thay
-        // vì đoán. Thiếu bất kỳ mã nào là khung đã bị sửa khác đi -- dừng lại còn hơn dựng ra bản mẫu
-        // khuyết tiêu chí rồi không ban hành được.
+        // A rubric criterion must point to a real framework_criterion_id, so look it up by the framework's code instead
+        // of guessing. Any missing code means the framework has been changed -- stopping is better than building a template
+        // that lacks criteria and then cannot be published.
         Map<String, FrameworkCriterion> criterionByCode = frameworkCriterionRepository
             .findByFrameworkVersionId(frameworkVersion.getId()).stream()
             .collect(Collectors.toMap(criterion -> criterion.getCode(), Function.identity(), (first, second) -> first));
 
-        var missingCodes = CRITERIA.stream()
+        List<String> missingCodes = CRITERIA.stream()
             .map(seed -> seed.frameworkCriterionCode())
             .filter(code -> !criterionByCode.containsKey(code))
             .toList();
@@ -265,8 +267,8 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
             return;
         }
 
-        var now = Instant.now();
-        for (var template : TEMPLATES) {
+        Instant now = Instant.now();
+        for (TemplateSeed template : TEMPLATES) {
             createTemplate(template, language.getId(), framework.getId(), criterionByCode, now);
         }
 
@@ -287,25 +289,25 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
             Map<String, FrameworkCriterion> criterionByCode,
             Instant now) {
 
-        var rubric = rubricRepository.save(new Rubric(
+        Rubric rubric = rubricRepository.save(new Rubric(
             languageId,
             frameworkId,
             template.code(),
             template.name(),
             template.description(),
             RubricOwnerType.SYSTEM,
-            // SYSTEM bắt buộc school_id NULL -- chk_rubrics_owner_school_valid.
+            // SYSTEM requires school_id NULL -- chk_rubrics_owner_school_valid.
             null
         ));
 
-        var version = rubricVersionRepository.save(new RubricVersion(
+        RubricVersion version = rubricVersionRepository.save(new RubricVersion(
             rubric.getId(),
             1,
             template.code() + "-V1",
             template.name(),
             template.description(),
-            // PUBLISHED ngay: bản mẫu chỉ để đọc và sao, và CloneSystemRubricToSchoolUseCase từ chối
-            // mọi phiên bản chưa ban hành. Bản mẫu ở trạng thái nháp là bản không ai dùng được.
+            // PUBLISHED right away: a template is only for reading and copying, and CloneSystemRubricToSchoolUseCase rejects
+            // every unpublished version. A template in draft state is one nobody can use.
             RubricStatus.PUBLISHED,
             now,
             null,
@@ -314,22 +316,22 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
             RubricTotalScoreMethod.SUM,
             now,
             now,
-            // Lúc khởi động không có phiên đăng nhập nào, nên không có danh tính để ghi vào
-            // created_by/updated_by. Hai cột này nullable, và null ở đây đọc đúng nghĩa: bản này do
-            // hệ thống dựng, không phải do người nào tạo.
+            // No login session exists at startup, so there is no identity to write into
+            // created_by/updated_by. Both columns are nullable, and null here reads correctly: this version was built by the
+            // system, not created by any person.
             null,
             null
         ));
 
-        var criteria = CRITERIA.stream()
+        List<RubricCriterion> criteria = CRITERIA.stream()
             .map(seed -> new RubricCriterion(
                 version.getId(),
                 criterionByCode.get(seed.frameworkCriterionCode()).getId(),
                 seed.frameworkCriterionCode(),
                 seed.name(),
                 seed.description(),
-                // Không kèm ví dụ mẫu: ví dụ là thứ gắn với đề và cách chấm của từng trường, đặt sẵn
-                // ở đây thì bản sao nào cũng mang theo một ví dụ không phải của mình.
+                // No sample examples: an example is tied to each school's own exam and grading style, and putting one in here
+                // would make every copy carry an example that is not its own.
                 null,
                 template.weights().get(seed.frameworkCriterionCode()),
                 SCORING_SCALE_MIN,
@@ -342,9 +344,9 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
                 null))
             .toList();
 
-        // Kiểm bằng đúng luật của đường publish thật, trước khi ghi. Sai số liệu trong file này sẽ làm
-        // hỏng lúc khởi động -- to và sớm -- thay vì âm thầm sinh ra bản mẫu mà trường sao về rồi
-        // không bao giờ ban hành được.
+        // Checked with exactly the rules of the real publish path, before writing. Wrong numbers in this file will break
+        // at startup -- loudly and early -- instead of silently producing a template that a school copies over and
+        // can never publish.
         RubricScoringConsistencyValidator.assertPublishable(
             RubricTotalScoreMethod.SUM, SCORING_SCALE_MIN, SCORING_SCALE_MAX, criteria);
 

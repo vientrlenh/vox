@@ -95,10 +95,10 @@ public class PracticeSessionInternalController {
     public ApiResponse<SubmitTurnResult> submitTurn(
             @PathVariable UUID sessionId,
             @RequestBody TurnRequest request) {
-        var studentId = practiceSessionRepository.findById(sessionId)
+        UUID studentId = practiceSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."))
             .getStudentId();
-        var turn = new SubmitPracticeTurn(
+        SubmitPracticeTurn turn = new SubmitPracticeTurn(
             sessionId,
             request.questionId(),
             request.turnOrder(),

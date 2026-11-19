@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
+import com.sep.vox.domain.model.school.School;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -49,17 +50,17 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
     @Override
     @Transactional
     public UpdateSchoolClassResponse execute(UpdateSchoolClassCommand input) {
-        var command = normalize(input);
+        UpdateSchoolClassCommand command = normalize(input);
         validateCommand(command);
-        var status = command.statusProvided() ? parseStatus(command.status()) : null;
+        SchoolClassStatus status = command.statusProvided() ? parseStatus(command.status()) : null;
 
-        var now = Instant.now();
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = findCurrentUser(currentUserId);
-        var schoolId = getSchoolId(currentUser);
+        Instant now = Instant.now();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = findCurrentUser(currentUserId);
+        UUID schoolId = getSchoolId(currentUser);
         validateSchool(schoolId);
 
-        var updatedRows = schoolClassRepository.updateMutableFields(
+        int updatedRows = schoolClassRepository.updateMutableFields(
             command.id(),
             schoolId,
             command.name(),
@@ -129,7 +130,7 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        var user = userRepository.findById(currentUserId)
+        User user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         validateCurrentUserIsActive(user);
         return user;
@@ -148,7 +149,7 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
     }
 
     private void validateSchool(UUID schoolId) {
-        var school = schoolRepository.findById(schoolId)
+        School school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");

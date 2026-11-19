@@ -1,10 +1,18 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamSession;
+import com.sep.vox.domain.model.rubric.RubricResultBand;
+import com.sep.vox.domain.model.rubric.RubricVersion;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,42 +57,42 @@ public class ViewMyExamResultsUseCase implements IUseCase<Void, List<StudentExam
     @Override
     @Transactional(readOnly = true)
     public List<StudentExamResultSummaryResponse> execute(Void input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
-        var candidates = examCandidateRepository.findByStudentId(studentId);
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
+        List<ExamCandidate> candidates = examCandidateRepository.findByStudentId(studentId);
         // Nhớ theo rubricVersionId trong đúng lượt gọi này. Một học sinh thường thi nhiều lượt
         // trên cùng một kỳ, tức cùng một rubric version -- tra lại từng dòng là hỏi DB đúng một
         // câu giống hệt nhau nhiều lần. (Vòng lặp này vốn đã N+1 sẵn với session/result/band;
         // không mở rộng thêm chỗ đó ở đây, chỉ không làm nó tệ hơn.)
-        var rubricVersionCache = new HashMap<java.util.UUID, com.sep.vox.domain.model.rubric.RubricVersion>();
-        var examsById = new HashMap<>(examRepository.findByIdIn(candidates.stream()
+        Map<UUID, RubricVersion> rubricVersionCache = new HashMap<java.util.UUID, com.sep.vox.domain.model.rubric.RubricVersion>();
+        Map<UUID, Exam> examsById = new HashMap<>(examRepository.findByIdIn(candidates.stream()
             .map(candidate -> candidate.getExamId())
             .distinct()
             .toList()).stream().collect(java.util.stream.Collectors.toMap(exam -> exam.getId(), exam -> exam)));
 
         return candidates.stream()
             .map(candidate -> {
-                var exam = examsById.get(candidate.getExamId());
+                Exam exam = examsById.get(candidate.getExamId());
                 if (exam == null) {
                     return null;
                 }
 
-                var session = examSessionRepository.findLatestByCandidateId(candidate.getId()).orElse(null);
+                ExamSession session = examSessionRepository.findLatestByCandidateId(candidate.getId()).orElse(null);
                 if (session == null) {
                     return null;
                 }
 
-                var result = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
+                ExamCandidateResult result = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
                 if (result == null) {
                     return null;
                 }
 
-                var rubricBand = result.getRubricResultBandId() == null
+                RubricResultBand rubricBand = result.getRubricResultBandId() == null
                     ? null
                     : rubricResultBandRepository.findById(result.getRubricResultBandId()).orElse(null);
                 // Query này gác hasRole('STUDENT') và chỉ quét candidate của chính người
                 // gọi, nên mọi dòng ở đây đều là bài của họ — không cần kiểm chính chủ.
-                var scoreVisible = ExamCandidateResultStatus.isVisibleToCandidate(result.getStatus());
-                var rubricVersion = !scoreVisible || result.getRubricVersionId() == null
+                boolean scoreVisible = ExamCandidateResultStatus.isVisibleToCandidate(result.getStatus());
+                RubricVersion rubricVersion = !scoreVisible || result.getRubricVersionId() == null
                     ? null
                     : rubricVersionCache.computeIfAbsent(
                         result.getRubricVersionId(),

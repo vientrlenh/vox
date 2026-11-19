@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.service;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 
@@ -249,8 +250,8 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
     }
 
     private String loadTemplate(String path) {
-        var resource = new ClassPathResource(path);
-        try (var inputStream = resource.getInputStream()) {
+        ClassPathResource resource = new ClassPathResource(path);
+        try (InputStream inputStream = resource.getInputStream()) {
             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot load email template: " + path, e);

@@ -89,7 +89,7 @@ public class ResetPasswordOtpEmailConsumer {
         containerFactory = "stringKafkaListenerContainerFactory"
     )
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        var eventId = KafkaEventHeaders.readEventId(record);
+        UUID eventId = KafkaEventHeaders.readEventId(record);
 
         LOGGER.info("Receive event reset-password-otp: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
@@ -104,19 +104,19 @@ public class ResetPasswordOtpEmailConsumer {
         try {
             payload = jsonMapper.readValue(record.value(), ResetPasswordOtpRequestedPayloadV1.class);
         } catch (Exception e) {
-            // Không log record.value() ở đây thì cũng không mất gì -- payload chỉ có email.
+            // Not logging record.value() here loses nothing -- the payload only has the email.
             LOGGER.error("Invalid payload: eventId={}", eventId, e);
             throw new IllegalStateException("Payload reset-password-otp không hợp lệ, eventId=" + eventId, e);
         }
 
-        var otp = oneTimePasswordPort.generate(OTP_SIZE);
+        String otp = oneTimePasswordPort.generate(OTP_SIZE);
         cacheManagerPort.save(
             CacheKey.RESET_PASSWORD_PREFIX + CacheKey.OTP_PREFIX + payload.to(),
             oneTimePasswordPort.hash(otp),
             TTL);
 
         try {
-            var html = mailTemplatePort.renderResetPasswordOtpEmail(otp, EXPIRES_IN);
+            String html = mailTemplatePort.renderResetPasswordOtpEmail(otp, EXPIRES_IN);
             mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
         } catch (Exception e) {
             LOGGER.error("Send mail error: eventId={}", eventId, e);
@@ -125,14 +125,14 @@ public class ResetPasswordOtpEmailConsumer {
 
         markProcessed(eventId);
 
-        // Tuyệt đối không log OTP hay địa chỉ nhận ở mức INFO.
+        // Never log the OTP or the recipient address at INFO level.
         LOGGER.info("Reset password OTP mail sent: eventId={}", eventId);
         ack.acknowledge();
     }
 
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
-        var eventId = KafkaEventHeaders.readEventIdOrNull(record);
+        UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         LOGGER.error("reset-password-otp event sent to DLT: eventId={}, topic={}, partition={}, offset={}",
             eventId, record.topic(), record.partition(), record.offset());
     }

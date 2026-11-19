@@ -6,6 +6,7 @@ import java.time.YearMonth;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -103,16 +104,16 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     @Override
     @Transactional(readOnly = true)
     public SchoolAdminDashboardSummaryResponse execute(Void input) {
-        var now = Instant.now();
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolId = userContextPort.getCurrentSchoolId();
+        Instant now = Instant.now();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID schoolId = userContextPort.getCurrentSchoolId();
 
-        var activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId);
-        var examQuota = activeExamQuota(activeSubscription);
-        var paidOrders = fetchPaidOrders(schoolId);
-        var quotaTotal = examQuota.map(quota -> quota.getTotalAllocatedAmountVnd()).orElse(BigDecimal.ZERO);
-        var quotaUsed = examQuota.map(quota -> quota.getUsedAmountVnd()).orElse(BigDecimal.ZERO);
-        var committedToUsers = committedToUsers(activeSubscription);
+        Optional<SchoolSubscription> activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId);
+        Optional<SchoolSubscriptionQuotaRecord> examQuota = activeExamQuota(activeSubscription);
+        List<Order> paidOrders = fetchPaidOrders(schoolId);
+        BigDecimal quotaTotal = examQuota.map(quota -> quota.getTotalAllocatedAmountVnd()).orElse(BigDecimal.ZERO);
+        BigDecimal quotaUsed = examQuota.map(quota -> quota.getUsedAmountVnd()).orElse(BigDecimal.ZERO);
+        BigDecimal committedToUsers = committedToUsers(activeSubscription);
 
         return new SchoolAdminDashboardSummaryResponse(
             buildExamStatusCounts(currentUserId, schoolId),
@@ -135,13 +136,13 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     }
 
     private ExamStatusCountResponse buildExamStatusCounts(UUID currentUserId, UUID schoolId) {
-        var draft = countExamsByStatus(currentUserId, schoolId, ExamStatus.DRAFT);
-        var scheduled = countExamsByStatus(currentUserId, schoolId, ExamStatus.SCHEDULED);
-        var inProgress = countExamsByStatus(currentUserId, schoolId, ExamStatus.IN_PROGRESS);
-        var closed = countExamsByStatus(currentUserId, schoolId, ExamStatus.CLOSED);
-        var resultsPublished = countExamsByStatus(currentUserId, schoolId, ExamStatus.RESULTS_PUBLISHED);
-        var cancelled = countExamsByStatus(currentUserId, schoolId, ExamStatus.CANCELLED);
-        var total = draft + scheduled + inProgress + closed + resultsPublished + cancelled;
+        long draft = countExamsByStatus(currentUserId, schoolId, ExamStatus.DRAFT);
+        long scheduled = countExamsByStatus(currentUserId, schoolId, ExamStatus.SCHEDULED);
+        long inProgress = countExamsByStatus(currentUserId, schoolId, ExamStatus.IN_PROGRESS);
+        long closed = countExamsByStatus(currentUserId, schoolId, ExamStatus.CLOSED);
+        long resultsPublished = countExamsByStatus(currentUserId, schoolId, ExamStatus.RESULTS_PUBLISHED);
+        long cancelled = countExamsByStatus(currentUserId, schoolId, ExamStatus.CANCELLED);
+        long total = draft + scheduled + inProgress + closed + resultsPublished + cancelled;
         return new ExamStatusCountResponse(total, draft, scheduled, inProgress, closed, resultsPublished, cancelled);
     }
 
@@ -175,7 +176,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
      * là ý định mua, còn FAILED/CANCELLED/EXPIRED thì không đồng nào về (xem OrderSettlementService).
      */
     private List<Order> fetchPaidOrders(UUID schoolId) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         // Mốc đầu = 00:00 ngày 1 của tháng CŨ NHẤT mà biểu đồ vẽ, tính theo giờ VN -- giống hệt
         // ViewSystemAdminDashboardUseCase.
         //
@@ -184,7 +185,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
         // lượt gọi. Mà kể cả nếu chạy được thì nó cũng sai: cửa sổ trượt bắt đầu từ giữa tháng sẽ cắt
         // mất phần đầu của tháng cũ nhất, trong khi buildMonthlySpending gom theo NGUYÊN tháng -- cột
         // xa nhất của biểu đồ vì thế thiếu tiền so với chính nó.
-        var from = YearMonth.now(ZoneConstant.BUSINESS_ZONE)
+        Instant from = YearMonth.now(ZoneConstant.BUSINESS_ZONE)
             .minusMonths(SPENDING_MONTHS - 1L)
             .atDay(1)
             .atStartOfDay(ZoneConstant.BUSINESS_ZONE)
@@ -221,26 +222,26 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
      * sang tháng trước -- xem ZoneConstant.
      */
     private static List<SchoolMonthlySpendingResponse> buildMonthlySpending(List<Order> orders) {
-        var currentMonth = YearMonth.now(ZoneConstant.BUSINESS_ZONE);
-        var subscriptionByMonth = new LinkedHashMap<YearMonth, BigDecimal>();
-        var topUpByMonth = new LinkedHashMap<YearMonth, BigDecimal>();
-        for (var i = SPENDING_MONTHS - 1; i >= 0; i--) {
-            var month = currentMonth.minusMonths(i);
+        YearMonth currentMonth = YearMonth.now(ZoneConstant.BUSINESS_ZONE);
+        Map<YearMonth, BigDecimal> subscriptionByMonth = new LinkedHashMap<YearMonth, BigDecimal>();
+        Map<YearMonth, BigDecimal> topUpByMonth = new LinkedHashMap<YearMonth, BigDecimal>();
+        for (int i = SPENDING_MONTHS - 1; i >= 0; i--) {
+            YearMonth month = currentMonth.minusMonths(i);
             subscriptionByMonth.put(month, BigDecimal.ZERO);
             topUpByMonth.put(month, BigDecimal.ZERO);
         }
 
-        for (var order : orders) {
-            var orderMonth = YearMonth.from(order.getCreatedAt().atZone(ZoneConstant.BUSINESS_ZONE));
-            var targetMap = order.getType() == OrderType.TOPUP ? topUpByMonth : subscriptionByMonth;
+        for (Order order : orders) {
+            YearMonth orderMonth = YearMonth.from(order.getCreatedAt().atZone(ZoneConstant.BUSINESS_ZONE));
+            Map<YearMonth, BigDecimal> targetMap = order.getType() == OrderType.TOPUP ? topUpByMonth : subscriptionByMonth;
             // computeIfPresent: đơn cũ hơn cửa sổ 12 tháng bị bỏ qua, không tự sinh thêm cột.
             targetMap.computeIfPresent(orderMonth, (month, total) -> total.add(order.getTotalAmountVnd()));
         }
 
         return subscriptionByMonth.keySet().stream()
             .map(month -> {
-                var subscriptionAmount = subscriptionByMonth.get(month);
-                var topUpAmount = topUpByMonth.get(month);
+                BigDecimal subscriptionAmount = subscriptionByMonth.get(month);
+                BigDecimal topUpAmount = topUpByMonth.get(month);
                 return new SchoolMonthlySpendingResponse(
                     month.toString(),
                     subscriptionAmount.add(topUpAmount),
@@ -278,8 +279,8 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
         if (activeSubscription.isEmpty()) {
             return null;
         }
-        var subscription = activeSubscription.get();
-        var planName = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
+        SchoolSubscription subscription = activeSubscription.get();
+        String planName = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
             .map(plan -> plan.getName())
             .orElse(null);
         return new SchoolSubscriptionRenewalResponse(

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
+import com.sep.vox.domain.model.school.SchoolClassUser;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
@@ -38,7 +39,7 @@ public class MyClassAccessGuard {
 
     /** Trả về id người gọi sau khi chắc chắn tài khoản còn hoạt động. */
     public UUID requireActiveCaller() {
-        var callerId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
         }
@@ -47,7 +48,7 @@ public class MyClassAccessGuard {
 
     /** Như trên, kèm điều kiện người gọi thuộc trường được yêu cầu. */
     public UUID requireSchoolMembership(UUID schoolId) {
-        var callerId = requireActiveCaller();
+        UUID callerId = requireActiveCaller();
         if (!schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)) {
             throw new ForbiddenException("Quyền truy cập không hợp lệ");
         }
@@ -60,8 +61,8 @@ public class MyClassAccessGuard {
      * phân biệt được "lớp không tồn tại" với "lớp tồn tại nhưng không phải của tôi".
      */
     public UUID requireClassMembership(UUID schoolClassId) {
-        var callerId = requireActiveCaller();
-        var membership = schoolClassUserRepository
+        UUID callerId = requireActiveCaller();
+        SchoolClassUser membership = schoolClassUserRepository
             .findByUserIdAndSchoolClassId(callerId, schoolClassId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
         if (!membership.isActive()) {

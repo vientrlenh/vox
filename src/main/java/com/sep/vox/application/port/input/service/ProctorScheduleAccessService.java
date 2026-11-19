@@ -54,11 +54,11 @@ public class ProctorScheduleAccessService {
      * thi.
      */
     public ExamSchedule requireCanMonitorSchedule(UUID scheduleId) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!hasAccess(scheduleId, currentUserId)) {
             throw new ForbiddenException("Bạn không phải giám thị của ca thi này");
         }
-        var schedule = examScheduleRepository.findById(scheduleId)
+        ExamSchedule schedule = examScheduleRepository.findById(scheduleId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
         if (schedule.getStatus() != null && schedule.getStatus().isRemoved()) {
             throw new NotFoundException("Không tìm thấy ca thi");
@@ -71,16 +71,16 @@ public class ProctorScheduleAccessService {
             return true;
         }
 
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (!isSchoolAdmin) {
             return false;
         }
 
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schedule = examScheduleRepository.findById(scheduleId).orElse(null);
+        ExamSchedule schedule = examScheduleRepository.findById(scheduleId).orElse(null);
         if (currentSchoolId == null || schedule == null) {
             return false;
         }

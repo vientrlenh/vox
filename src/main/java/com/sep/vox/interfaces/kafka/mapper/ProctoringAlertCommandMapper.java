@@ -19,8 +19,8 @@ public final class ProctoringAlertCommandMapper {
     }
 
     public static RecordProctoringAlertCommand toCommand(AlertRaisedEventDto dto) {
-        var capturedAt = DateMapper.toInstant(dto.capturedAt());
-        var raisedAt = DateMapper.toInstant(dto.raisedAt());
+        Instant capturedAt = DateMapper.toInstant(dto.capturedAt());
+        Instant raisedAt = DateMapper.toInstant(dto.raisedAt());
 
         return new RecordProctoringAlertCommand(
             requireEventId(dto.eventId()),
@@ -86,7 +86,7 @@ public final class ProctoringAlertCommandMapper {
         if (raw == null || raw.isNaN() || raw.isInfinite()) {
             return null;
         }
-        var value = BigDecimal.valueOf(raw).setScale(4, RoundingMode.HALF_UP);
+        BigDecimal value = BigDecimal.valueOf(raw).setScale(4, RoundingMode.HALF_UP);
         if (value.compareTo(BigDecimal.ZERO) < 0 || value.compareTo(BigDecimal.ONE) > 0) {
             return null;
         }
@@ -101,7 +101,7 @@ public final class ProctoringAlertCommandMapper {
     }
 
     private static String upperOrNull(String raw) {
-        var trimmed = trimToNull(raw);
+        String trimmed = trimToNull(raw);
         return trimmed == null ? null : trimmed.toUpperCase(Locale.ROOT);
     }
 
@@ -109,7 +109,7 @@ public final class ProctoringAlertCommandMapper {
         if (raw == null) {
             return null;
         }
-        var trimmed = raw.trim();
+        String trimmed = raw.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
 }

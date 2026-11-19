@@ -65,15 +65,15 @@ class ExamGradingAssignmentLockingTests {
 
     @Test
     void should_make_the_second_writer_wait_and_see_the_completed_assignment() throws Exception {
-        var assignmentId = givenOpenAssignment();
-        var firstHoldsLock = new CountDownLatch(1);
-        var secondStarted = new CountDownLatch(1);
+        UUID assignmentId = givenOpenAssignment();
+        CountDownLatch firstHoldsLock = new CountDownLatch(1);
+        CountDownLatch secondStarted = new CountDownLatch(1);
 
         try (ExecutorService pool = Executors.newFixedThreadPool(2)) {
             Future<?> first = pool.submit(() -> transactionTemplate.executeWithoutResult(status -> {
-                var assignment = repository.findByIdForUpdate(assignmentId).orElseThrow();
+                ExamGradingAssignment assignment = repository.findByIdForUpdate(assignmentId).orElseThrow();
                 firstHoldsLock.countDown();
-                // Giữ khoá cho tới khi luồng hai chắc chắn đã lao vào và đang bị chặn.
+                // Hold the lock until the second thread has certainly rushed in and is blocked.
                 awaitQuietly(secondStarted);
                 assignment.complete(GradingOutcome.UPHELD, null, Instant.now());
                 repository.save(assignment);
@@ -87,13 +87,13 @@ class ExamGradingAssignmentLockingTests {
             });
 
             first.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            // Chờ được nghĩa là nó đọc lại sau khi luồng một commit, chứ không phải đọc
-            // ảnh chụp cũ rồi chấm đè lên.
+            // Being able to wait means it re-reads after thread one commits, rather than reading an
+            // old snapshot and grading over it.
             assertThat(second.get(TIMEOUT_SECONDS, TimeUnit.SECONDS))
                 .isEqualTo(GradingAssignmentStatus.COMPLETED);
         }
 
-        var persisted = transactionTemplate.execute(status ->
+        ExamGradingAssignment persisted = transactionTemplate.execute(status ->
             repository.findById(assignmentId).orElseThrow());
         assertThat(persisted.getOutcome()).isEqualTo(GradingOutcome.UPHELD);
         assertThat(persisted.getActiveResultId()).isNull();
@@ -101,16 +101,17 @@ class ExamGradingAssignmentLockingTests {
 
     @Test
     void should_read_a_stale_snapshot_when_the_write_path_skips_the_lock() throws Exception {
-        // Mặt trái, để lý do dùng loadForUpdate không bị người đọc sau coi là thừa:
-        // findById thường vẫn đọc được ảnh chụp cũ trong lúc luồng khác đang chấm dở.
-        // Chính đây là ca mà @Version từng bắt, và là lý do đường GHI phải khoá.
-        var assignmentId = givenOpenAssignment();
-        var firstHoldsLock = new CountDownLatch(1);
-        var secondFinished = new CountDownLatch(1);
+        // The flip side, so that the reason for using loadForUpdate is not seen as redundant by a
+        // later reader: a plain findById can still read an old snapshot while another thread is
+        // mid-grading. This is exactly the case @Version used to catch, and the reason the WRITE
+        // path must lock.
+        UUID assignmentId = givenOpenAssignment();
+        CountDownLatch firstHoldsLock = new CountDownLatch(1);
+        CountDownLatch secondFinished = new CountDownLatch(1);
 
         try (ExecutorService pool = Executors.newFixedThreadPool(2)) {
             Future<?> first = pool.submit(() -> transactionTemplate.executeWithoutResult(status -> {
-                var assignment = repository.findByIdForUpdate(assignmentId).orElseThrow();
+                ExamGradingAssignment assignment = repository.findByIdForUpdate(assignmentId).orElseThrow();
                 assignment.complete(GradingOutcome.UPHELD, null, Instant.now());
                 repository.save(assignment);
                 firstHoldsLock.countDown();

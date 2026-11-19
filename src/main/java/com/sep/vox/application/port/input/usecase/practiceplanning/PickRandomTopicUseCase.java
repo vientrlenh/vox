@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
+import com.sep.vox.application.query.dto.TopicSearchRowInfo;
 import java.util.List;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,8 +33,8 @@ public class PickRandomTopicUseCase implements IUseCase<Void, PracticeTopicOffer
     @Override
     @Transactional(readOnly = true)
     public PracticeTopicOffer execute(Void input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
-        var row = practiceTopicQueryRepository.findRandomActiveTopic(studentId)
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
+        TopicSearchRowInfo row = practiceTopicQueryRepository.findRandomActiveTopic(studentId)
             .orElseThrow(() -> new NotFoundException("Kho chủ đề đang trống."));
         return new PracticeTopicOffer(
             row.getId(),

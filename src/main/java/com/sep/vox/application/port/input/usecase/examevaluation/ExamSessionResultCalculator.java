@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examevaluation;
 
+import com.sep.vox.domain.model.exam.Exam;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -74,12 +75,12 @@ public class ExamSessionResultCalculator {
     }
 
     public CalculatedExamSessionResult calculate(UUID sessionId) {
-        var loaded = load(sessionId);
-        var evaluationsByResponseId = evaluationsByResponseId(loaded.responses());
+        LoadedSession loaded = load(sessionId);
+        Map<UUID, ExamItemEvaluation> evaluationsByResponseId = evaluationsByResponseId(loaded.responses());
 
-        var itemScoreByResponseId = new LinkedHashMap<UUID, BigDecimal>();
-        for (var response : loaded.responses()) {
-            var evaluation = evaluationsByResponseId.get(response.getId());
+        Map<UUID, BigDecimal> itemScoreByResponseId = new LinkedHashMap<UUID, BigDecimal>();
+        for (ExamItemResponse response : loaded.responses()) {
+            ExamItemEvaluation evaluation = evaluationsByResponseId.get(response.getId());
             if (evaluation == null) {
                 throw new NotFoundException("Khong tim thay evaluation cho cau tra loi " + response.getId());
             }
@@ -87,10 +88,10 @@ public class ExamSessionResultCalculator {
                 evaluation.getItemScore() == null ? BigDecimal.ZERO : evaluation.getItemScore());
         }
 
-        var rolled = rollUp(loaded, itemScoreByResponseId);
-        var anyRequiresHumanReview = evaluationsByResponseId.values().stream()
+        RolledUpScores rolled = rollUp(loaded, itemScoreByResponseId);
+        boolean anyRequiresHumanReview = evaluationsByResponseId.values().stream()
             .anyMatch(evaluation -> evaluation.isRequiresHumanReview());
-        var targetFrameworkBand = loaded.policy().getTargetFrameworkBandId() == null
+        FrameworkResultBand targetFrameworkBand = loaded.policy().getTargetFrameworkBandId() == null
             ? null
             : frameworkResultBandRepository.findById(loaded.policy().getTargetFrameworkBandId()).orElse(null);
 
@@ -119,18 +120,18 @@ public class ExamSessionResultCalculator {
      * chấm dở vẫn preview được và phần chưa nhập giữ nguyên điểm AI.
      */
     public PreviewedExamSessionResult preview(UUID sessionId, Map<UUID, BigDecimal> overrides) {
-        var loaded = load(sessionId);
-        var safeOverrides = overrides == null ? Map.<UUID, BigDecimal>of() : overrides;
-        var evaluationsByResponseId = evaluationsByResponseId(loaded.responses());
+        LoadedSession loaded = load(sessionId);
+        Map<UUID, BigDecimal> safeOverrides = overrides == null ? Map.<UUID, BigDecimal>of() : overrides;
+        Map<UUID, ExamItemEvaluation> evaluationsByResponseId = evaluationsByResponseId(loaded.responses());
 
-        var itemScoreByResponseId = new LinkedHashMap<UUID, BigDecimal>();
-        for (var response : loaded.responses()) {
-            var override = safeOverrides.get(response.getId());
+        Map<UUID, BigDecimal> itemScoreByResponseId = new LinkedHashMap<UUID, BigDecimal>();
+        for (ExamItemResponse response : loaded.responses()) {
+            BigDecimal override = safeOverrides.get(response.getId());
             if (override != null) {
                 itemScoreByResponseId.put(response.getId(), override);
                 continue;
             }
-            var evaluation = evaluationsByResponseId.get(response.getId());
+            ExamItemEvaluation evaluation = evaluationsByResponseId.get(response.getId());
             if (evaluation == null) {
                 throw new NotFoundException("Khong tim thay evaluation cho cau tra loi " + response.getId());
             }
@@ -138,8 +139,8 @@ public class ExamSessionResultCalculator {
                 evaluation.getItemScore() == null ? BigDecimal.ZERO : evaluation.getItemScore());
         }
 
-        var rolled = rollUp(loaded, itemScoreByResponseId);
-        var band = resolveRubricResultBand(loaded.policy(), rolled.totalScore());
+        RolledUpScores rolled = rollUp(loaded, itemScoreByResponseId);
+        RubricResultBand band = resolveRubricResultBand(loaded.policy(), rolled.totalScore());
         return new PreviewedExamSessionResult(
             rolled.totalScore(),
             band == null ? null : band.getName(),
@@ -153,13 +154,13 @@ public class ExamSessionResultCalculator {
      * {@code calculate} và {@code preview} dùng chung đúng một công thức.
      */
     private RolledUpScores rollUp(LoadedSession loaded, Map<UUID, BigDecimal> itemScoreByResponseId) {
-        var sectionScores = new LinkedHashMap<UUID, BigDecimal>();
+        LinkedHashMap<UUID, BigDecimal> sectionScores = new LinkedHashMap<UUID, BigDecimal>();
         // Tổng trọng số câu THEO TỪNG PHẦN -- mẫu số của phép chuẩn hoá bên dưới.
-        var sectionWeightSums = new LinkedHashMap<UUID, BigDecimal>();
+        Map<UUID, BigDecimal> sectionWeightSums = new LinkedHashMap<UUID, BigDecimal>();
         // Tổng điểm câu KHÔNG nhân trọng số, và số câu -- chỉ dùng khi mọi trọng số trong phần đều
         // bằng 0, lúc đó lùi về trung bình cộng (xem normalizedSectionScore).
-        var sectionPlainSums = new LinkedHashMap<UUID, BigDecimal>();
-        var sectionItemCounts = new LinkedHashMap<UUID, Integer>();
+        Map<UUID, BigDecimal> sectionPlainSums = new LinkedHashMap<UUID, BigDecimal>();
+        Map<UUID, Integer> sectionItemCounts = new LinkedHashMap<UUID, Integer>();
         loaded.orderedSections().forEach(section -> {
             sectionScores.put(section.getId(), scaled(BigDecimal.ZERO));
             sectionWeightSums.put(section.getId(), BigDecimal.ZERO);
@@ -167,16 +168,16 @@ public class ExamSessionResultCalculator {
             sectionItemCounts.put(section.getId(), 0);
         });
 
-        var itemScores = new ArrayList<ItemScore>();
-        for (var response : loaded.responses()) {
-            var paperItem = loaded.paperItemsById().get(response.getPaperItemId());
+        List<ItemScore> itemScores = new ArrayList<ItemScore>();
+        for (ExamItemResponse response : loaded.responses()) {
+            ExamPaperItem paperItem = loaded.paperItemsById().get(response.getPaperItemId());
             if (paperItem == null) {
                 throw new NotFoundException("Khong tim thay paper item " + response.getPaperItemId());
             }
-            var rawScore = itemScoreByResponseId.getOrDefault(response.getId(), BigDecimal.ZERO);
-            var itemScore = scaled(rawScore == null ? BigDecimal.ZERO : rawScore);
-            var weight = paperItem.getWeight() == null ? BigDecimal.ZERO : paperItem.getWeight();
-            var weightedScore = scaled(itemScore.multiply(weight));
+            BigDecimal rawScore = itemScoreByResponseId.getOrDefault(response.getId(), BigDecimal.ZERO);
+            BigDecimal itemScore = scaled(rawScore == null ? BigDecimal.ZERO : rawScore);
+            BigDecimal weight = paperItem.getWeight() == null ? BigDecimal.ZERO : paperItem.getWeight();
+            BigDecimal weightedScore = scaled(itemScore.multiply(weight));
             sectionScores.compute(paperItem.getSectionId(), (ignored, current) ->
                 scaled((current == null ? BigDecimal.ZERO : current).add(weightedScore))
             );
@@ -208,7 +209,7 @@ public class ExamSessionResultCalculator {
             loaded.scaleFloor()
         ));
 
-        var sections = loaded.orderedSections().stream()
+        List<SectionScore> sections = loaded.orderedSections().stream()
             .map(section -> new SectionScore(
                 section.getId(),
                 section.getTitle(),
@@ -223,20 +224,20 @@ public class ExamSessionResultCalculator {
 
     /** Tất cả dữ liệu một lần chấm cần, nạp đúng một lần cho cả calculate lẫn preview. */
     private LoadedSession load(UUID sessionId) {
-        var session = examSessionRepository.findById(sessionId)
+        ExamSession session = examSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("Khong tim thay phien thi"));
-        var exam = examRepository.findById(session.getExamId())
+        Exam exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Khong tim thay bai kiem tra"));
         if (exam.getAssessmentPolicyId() == null) {
             throw new NotFoundException("Bai kiem tra chua gan assessment policy");
         }
-        var policy = assessmentPolicyRepository.findById(exam.getAssessmentPolicyId())
+        AssessmentPolicy policy = assessmentPolicyRepository.findById(exam.getAssessmentPolicyId())
             .orElseThrow(() -> new NotFoundException("Khong tim thay assessment policy"));
 
-        var orderedSections = examPaperSectionRepository.findByPaperId(session.getPaperId()).stream()
+        List<ExamPaperSection> orderedSections = examPaperSectionRepository.findByPaperId(session.getPaperId()).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
-        var paperItemsById = examPaperItemRepository.findByPaperId(session.getPaperId()).stream()
+        Map<UUID, ExamPaperItem> paperItemsById = examPaperItemRepository.findByPaperId(session.getPaperId()).stream()
             .collect(Collectors.toMap(item -> item.getId(), Function.identity(), (left, right) -> left));
 
         // Sắp NGAY TẠI ĐÂY chứ không ở chỗ dựng danh sách hiển thị: cả ba vòng lặp trong lớp này
@@ -251,20 +252,20 @@ public class ExamSessionResultCalculator {
         // Phải so SECTION TRƯỚC rồi mới tới item: đề hai phần mỗi phần một câu thì cả hai câu đều
         // có order = 1, chỉ so item là hoà và thứ tự lại thành tuỳ ý như cũ. Chốt bằng id để hai
         // lần gọi liên tiếp không ra hai thứ tự khác nhau khi dữ liệu lỗi làm hoà cả hai khoá.
-        var sectionRankById = new java.util.HashMap<UUID, Integer>();
-        for (var index = 0; index < orderedSections.size(); index++) {
+        Map<UUID, Integer> sectionRankById = new java.util.HashMap<UUID, Integer>();
+        for (int index = 0; index < orderedSections.size(); index++) {
             sectionRankById.put(orderedSections.get(index).getId(), index);
         }
-        var responses = examItemResponseRepository.findBySessionId(sessionId).stream()
+        List<ExamItemResponse> responses = examItemResponseRepository.findBySessionId(sessionId).stream()
             .sorted(Comparator
                 .<ExamItemResponse>comparingInt(response -> {
-                    var paperItem = paperItemsById.get(response.getPaperItemId());
+                    ExamPaperItem paperItem = paperItemsById.get(response.getPaperItemId());
                     return paperItem == null
                         ? Integer.MAX_VALUE
                         : sectionRankById.getOrDefault(paperItem.getSectionId(), Integer.MAX_VALUE);
                 })
                 .thenComparingInt(response -> {
-                    var paperItem = paperItemsById.get(response.getPaperItemId());
+                    ExamPaperItem paperItem = paperItemsById.get(response.getPaperItemId());
                     return paperItem == null ? Integer.MAX_VALUE : paperItem.getOrder();
                 })
                 .thenComparing(response -> response.getId()))
@@ -281,7 +282,7 @@ public class ExamSessionResultCalculator {
      * grading time).
      */
     private Map<UUID, ExamItemEvaluation> evaluationsByResponseId(List<ExamItemResponse> responses) {
-        var responseIds = responses.stream().map(response -> response.getId()).toList();
+        List<UUID> responseIds = responses.stream().map(response -> response.getId()).toList();
         return examItemEvaluationRepository.findLatestByResponseIdIn(responseIds).stream()
             .collect(Collectors.toMap(evaluation -> evaluation.getResponseId(), Function.identity(), (left, right) -> left));
     }
@@ -290,7 +291,7 @@ public class ExamSessionResultCalculator {
         if (policy.getRubricVersionId() == null) {
             return null;
         }
-        var matchingBands = rubricResultBandRepository.findByRubricVersionId(policy.getRubricVersionId()).stream()
+        List<RubricResultBand> matchingBands = rubricResultBandRepository.findByRubricVersionId(policy.getRubricVersionId()).stream()
             .sorted(Comparator.comparingInt(band -> band.getOrder()))
             .filter(band -> within(totalScore, band.getScoreMin(), band.getScoreMax()))
             .toList();
@@ -385,19 +386,19 @@ public class ExamSessionResultCalculator {
             return scaleFloor;
         }
 
-        var totalWeight = orderedSections.stream()
+        BigDecimal totalWeight = orderedSections.stream()
             .map(section -> section.getWeight() == null ? BigDecimal.ZERO : section.getWeight())
             .reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
 
         if (totalWeight.compareTo(BigDecimal.ZERO) > 0) {
-            var weightedTotal = orderedSections.stream()
+            BigDecimal weightedTotal = orderedSections.stream()
                 .map(section -> sectionScores.getOrDefault(section.getId(), scaleFloor)
                     .multiply(section.getWeight() == null ? BigDecimal.ZERO : section.getWeight()))
                 .reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
             return scaled(weightedTotal.divide(totalWeight, 2, RoundingMode.HALF_UP));
         }
 
-        var plainTotal = sectionScores.values().stream().reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
+        BigDecimal plainTotal = sectionScores.values().stream().reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
         return scaled(plainTotal.divide(BigDecimal.valueOf(sectionScores.size()), 2, RoundingMode.HALF_UP));
     }
 

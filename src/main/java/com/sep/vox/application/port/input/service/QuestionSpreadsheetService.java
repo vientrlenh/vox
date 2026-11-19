@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
@@ -11,8 +14,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.poi.ss.usermodel.DataValidation;
+import org.apache.poi.ss.usermodel.DataValidationConstraint;
+import org.apache.poi.ss.usermodel.DataValidationHelper;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellRangeAddressList;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
@@ -98,14 +107,14 @@ public class QuestionSpreadsheetService {
             QuestionSharing sharing,
             String scope,
             String keyword) {
-        var access = resolveAccess();
-        var questions = new ArrayList<QuestionDto>();
+        AccessContext access = resolveAccess();
+        List<QuestionDto> questions = new ArrayList<QuestionDto>();
         // findAccessible là 1-based (QuestionRepositoryImpl trừ 1 trước khi dựng PageRequest), nên
         // bắt đầu từ 1 chứ KHÔNG phải 0 -- số 0 thành -1 và Spring Data ném "Page index must not be
         // less than zero" ngay vòng lặp đầu, tức xuất Excel hỏng hoàn toàn.
-        var page = 1;
+        int page = 1;
         while (true) {
-            var result = questionRepository.findAccessible(
+            PageResult<Question> result = questionRepository.findAccessible(
                 access.currentUserId(),
                 access.currentSchoolId(),
                 access.systemAdmin(),
@@ -135,18 +144,18 @@ public class QuestionSpreadsheetService {
             }
         }
 
-        var workbook = new XSSFWorkbook();
+        XSSFWorkbook workbook = new XSSFWorkbook();
         try (workbook) {
-            var sheet = workbook.createSheet("Questions");
+            XSSFSheet sheet = workbook.createSheet("Questions");
             writeHeaders(sheet, fullExportHeaders());
-            var bankCache = new LinkedHashMap<UUID, String>();
-            var topicCache = new LinkedHashMap<UUID, String>();
-            var userCache = new LinkedHashMap<UUID, String>();
+            Map<UUID, String> bankCache = new LinkedHashMap<UUID, String>();
+            Map<UUID, String> topicCache = new LinkedHashMap<UUID, String>();
+            Map<UUID, String> userCache = new LinkedHashMap<UUID, String>();
 
-            var rowIndex = 1;
-            for (var question : questions) {
-                var evaluationGuide = questionEvaluationGuideRepository.findByQuestionId(question.id()).orElse(null);
-                var row = sheet.createRow(rowIndex++);
+            int rowIndex = 1;
+            for (QuestionDto question : questions) {
+                QuestionEvaluationGuide evaluationGuide = questionEvaluationGuideRepository.findByQuestionId(question.id()).orElse(null);
+                XSSFRow row = sheet.createRow(rowIndex++);
                 writeRow(row, rowValues(
                     question.code(),
                     question.type(),
@@ -179,11 +188,11 @@ public class QuestionSpreadsheetService {
     }
 
     public byte[] downloadTemplate(String type) {
-        var workbook = new XSSFWorkbook();
+        XSSFWorkbook workbook = new XSSFWorkbook();
         try (workbook) {
-            var sheet = workbook.createSheet("Questions");
+            XSSFSheet sheet = workbook.createSheet("Questions");
             writeHeaders(sheet, IMPORT_HEADERS);
-            var normalizedType = normalizeQuestionType(type);
+            String normalizedType = normalizeQuestionType(type);
 
             writeRow(sheet.createRow(1), rowValues(
                 "Q-SAMPLE-001",
@@ -257,12 +266,12 @@ public class QuestionSpreadsheetService {
     }
 
     private AccessContext resolveAccess() {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var systemAdmin = userContextPort.isSystemAdmin();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        boolean systemAdmin = userContextPort.isSystemAdmin();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (!systemAdmin && currentSchoolId == null) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
@@ -271,40 +280,40 @@ public class QuestionSpreadsheetService {
     }
 
     private void writeHeaders(Sheet sheet, List<String> headers) {
-        var row = sheet.createRow(0);
+        Row row = sheet.createRow(0);
         writeRow(row, headers);
     }
 
     private void writeRow(org.apache.poi.ss.usermodel.Row row, List<String> values) {
-        for (var index = 0; index < values.size(); index++) {
+        for (int index = 0; index < values.size(); index++) {
             row.createCell(index).setCellValue(values.get(index) == null ? "" : values.get(index));
         }
     }
 
     private void addListValidation(Sheet sheet, int columnIndex, String[] values) {
-        var helper = sheet.getDataValidationHelper();
-        var addressList = new CellRangeAddressList(1, VALIDATION_LAST_ROW, columnIndex, columnIndex);
-        var constraint = helper.createExplicitListConstraint(values);
-        var validation = helper.createValidation(constraint, addressList);
+        DataValidationHelper helper = sheet.getDataValidationHelper();
+        CellRangeAddressList addressList = new CellRangeAddressList(1, VALIDATION_LAST_ROW, columnIndex, columnIndex);
+        DataValidationConstraint constraint = helper.createExplicitListConstraint(values);
+        DataValidation validation = helper.createValidation(constraint, addressList);
         validation.setShowErrorBox(true);
         sheet.addValidationData(validation);
     }
 
     private void autoSize(Sheet sheet, int columnCount) {
-        for (var index = 0; index < columnCount; index++) {
+        for (int index = 0; index < columnCount; index++) {
             sheet.autoSizeColumn(index);
         }
     }
 
     private byte[] toBytes(XSSFWorkbook workbook) throws IOException {
-        try (var outputStream = new ByteArrayOutputStream()) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             workbook.write(outputStream);
             return outputStream.toByteArray();
         }
     }
 
     private List<String> fullExportHeaders() {
-        var headers = new ArrayList<String>(IMPORT_HEADERS);
+        List<String> headers = new ArrayList<String>(IMPORT_HEADERS);
         headers.add("Mã ngân hàng");
         headers.add("Chủ đề");
         headers.add("Trạng thái");
@@ -339,7 +348,7 @@ public class QuestionSpreadsheetService {
     }
 
     private String normalizeQuestionType(String type) {
-        var normalized = StringNormalization.normalizeCode(type);
+        String normalized = StringNormalization.normalizeCode(type);
         if (normalized == null || normalized.isBlank()) {
             return "READ_ALOUD";
         }

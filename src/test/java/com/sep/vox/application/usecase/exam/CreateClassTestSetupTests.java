@@ -34,6 +34,7 @@ import com.sep.vox.application.port.input.usecase.exam.CreateClassTestUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.response.input.exam.CreateClassTestResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
@@ -82,11 +83,11 @@ class CreateClassTestSetupTests {
 
     @BeforeEach
     void setUp() {
-        var schoolClassRepository = mock(SchoolClassRepository.class);
+        SchoolClassRepository schoolClassRepository = mock(SchoolClassRepository.class);
         schoolClassUserRepository = mock(SchoolClassUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
-        var assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
-        var userContextPort = mock(UserContextPort.class);
+        AssessmentPolicyRepository assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
         examRepository = mock(ExamRepository.class);
         examScheduleRepository = mock(ExamScheduleRepository.class);
         examScheduleProctorRepository = mock(ExamScheduleProctorRepository.class);
@@ -105,8 +106,8 @@ class CreateClassTestSetupTests {
             new ExamAssessmentPolicyValidator(assessmentPolicyRepository),
             new ExamStreamConfigResolver(),
             mock(ExamScheduleRoomValidator.class),
-            // Validator thật trên proctor repo đã mock: mặc định "giáo viên rảnh", và test riêng
-            // bên dưới bật cờ trùng lịch lên để kiểm tra luật.
+            // A real validator on a mocked proctor repo: the default is "the teacher is free", and
+            // a dedicated test below switches on the schedule-conflict flag to check the rule.
             new ExamScheduleProctorConflictValidator(examScheduleProctorRepository),
             subscriptionPeriodGuardService,
             userContextPort,
@@ -138,18 +139,19 @@ class CreateClassTestSetupTests {
             return List.copyOf(arg);
         });
 
-        // Lớp có đúng một học sinh active.
+        // The class has exactly one active student.
         when(schoolClassUserRepository.findBySchoolClassId(CLASS_ID, 1, 2000)).thenReturn(new PageResult<>(
             List.of(new SchoolClassUser(STUDENT_ID, CLASS_ID, true, Instant.now(), null, TEACHER_ID)),
             1, 2000, 1, 1));
-        // Vai trò của cả lớp được hỏi bằng MỘT query batch, không phải từng học sinh một.
+        // The roles of the whole class are asked for with ONE batch query, not one student at a
+        // time.
         when(userRoleQueryRepository.findUserIdsByRoleCode(List.of(STUDENT_ID), SchoolRoleCodes.STUDENT))
             .thenReturn(Set.of(STUDENT_ID));
     }
 
     @Test
     void should_stop_at_draft_so_teacher_can_author_papers_and_schedule() {
-        var result = useCase.execute(command(null, null, null, null));
+        CreateClassTestResponse result = useCase.execute(command(null, null, null, null));
 
         assertThat(result.exam().status()).isEqualTo(ExamStatus.DRAFT.name());
     }
@@ -182,10 +184,13 @@ class CreateClassTestSetupTests {
         verify(examCandidateRepository, never()).saveAll(anyCollection());
     }
 
-    /** Soạn đề chuyển hẳn sang trang chi tiết, nên tạo bài không sinh mã đề nào. */
+    /**
+     * Drafting the paper moves entirely to the detail page, so creating the test produces no paper
+     * variant.
+     */
     @Test
     void should_not_create_any_paper_at_creation_time() {
-        var result = useCase.execute(command(null, null, null, null));
+        CreateClassTestResponse result = useCase.execute(command(null, null, null, null));
 
         assertThat(result.exam().blueprintId()).isNull();
         assertThat(result.exam().blueprintVersionId()).isNull();
@@ -208,7 +213,7 @@ class CreateClassTestSetupTests {
     void should_register_creating_teacher_as_default_proctor() {
         useCase.execute(command(null, null, null, null));
 
-        var captor = ArgumentCaptor.forClass(ExamScheduleProctor.class);
+        ArgumentCaptor<ExamScheduleProctor> captor = ArgumentCaptor.forClass(ExamScheduleProctor.class);
         verify(examScheduleProctorRepository).save(captor.capture());
         assertThat(captor.getValue().getTeacherId()).isEqualTo(TEACHER_ID);
     }
@@ -231,7 +236,7 @@ class CreateClassTestSetupTests {
     void should_store_requested_stream_config() {
         useCase.execute(command(List.of("CAMERA", "SCREEN"), "ALL", null, null));
 
-        var exam = savedExam();
+        Exam exam = savedExam();
         assertThat(exam.getRequiredStreamType()).isEqualTo(ExamRequiredStreamType.CAMERA_AND_SCREEN);
         assertThat(exam.getStreamTypePermission()).isEqualTo(ExamStreamTypePermission.ALL);
     }
@@ -240,7 +245,7 @@ class CreateClassTestSetupTests {
     void should_leave_stream_config_empty_when_not_requested() {
         useCase.execute(command(null, null, null, null));
 
-        var exam = savedExam();
+        Exam exam = savedExam();
         assertThat(exam.getRequiredStreamType()).isNull();
         assertThat(exam.getStreamTypePermission()).isNull();
     }
@@ -284,14 +289,14 @@ class CreateClassTestSetupTests {
     void should_create_schedule_without_room_when_room_not_chosen_yet() {
         useCase.execute(command(null, null, null, null));
 
-        var captor = ArgumentCaptor.forClass(ExamSchedule.class);
+        ArgumentCaptor<ExamSchedule> captor = ArgumentCaptor.forClass(ExamSchedule.class);
         verify(examScheduleRepository).save(captor.capture());
         assertThat(captor.getValue().getSchoolRoomId()).isNull();
     }
 
     @Test
     void should_skip_non_student_class_members() {
-        var teacherOnlyMember = UUID.randomUUID();
+        UUID teacherOnlyMember = UUID.randomUUID();
         when(schoolClassUserRepository.findBySchoolClassId(CLASS_ID, 1, 2000)).thenReturn(new PageResult<>(
             List.of(new SchoolClassUser(teacherOnlyMember, CLASS_ID, true, Instant.now(), null, TEACHER_ID)),
             1, 2000, 1, 1));
@@ -299,17 +304,20 @@ class CreateClassTestSetupTests {
             new UserRoleInfo(UUID.randomUUID(), teacherOnlyMember, UUID.randomUUID(), Instant.now(), "TEACHER", "Giáo viên")
         ));
 
-        var result = useCase.execute(command(null, null, null, null));
+        CreateClassTestResponse result = useCase.execute(command(null, null, null, null));
 
         assertThat(result.candidateCount()).isZero();
     }
 
-    /** Tạo bài không được tự lên lịch nữa — giáo viên phải bấm SCHEDULE sau khi chọn phòng, xếp ca. */
+    /**
+     * Creating a test must no longer schedule it automatically -- the teacher must click SCHEDULE
+     * after choosing a room and arranging sessions.
+     */
     @Test
     void should_not_publish_schedule_at_creation_time() {
         useCase.execute(command(null, null, null, null));
 
-        var captor = ArgumentCaptor.forClass(ExamSchedule.class);
+        ArgumentCaptor<ExamSchedule> captor = ArgumentCaptor.forClass(ExamSchedule.class);
         verify(examScheduleRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus())
             .isEqualTo(com.sep.vox.domain.model.exam.ExamScheduleStatus.DRAFT);
@@ -317,7 +325,7 @@ class CreateClassTestSetupTests {
     }
 
     private Exam savedExam() {
-        var captor = ArgumentCaptor.forClass(Exam.class);
+        ArgumentCaptor<Exam> captor = ArgumentCaptor.forClass(Exam.class);
         verify(examRepository).save(captor.capture());
         return captor.getValue();
     }
@@ -354,7 +362,7 @@ class CreateClassTestSetupTests {
     }
 
     private AssessmentPolicy policy() {
-        var policy = new AssessmentPolicy();
+        AssessmentPolicy policy = new AssessmentPolicy();
         policy.setId(POLICY_ID);
         policy.setSchoolId(SCHOOL_ID);
         policy.setStatus(AssessmentPolicyStatus.PUBLISHED);

@@ -35,7 +35,7 @@ public class ViewGradingTaskDetailUseCase implements IUseCase<UUID, GradingTaskD
     @Override
     @Transactional(readOnly = true)
     public GradingTaskDetailInfo execute(UUID assignmentId) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
         return examGradingQueryRepository.findTaskDetail(assignmentId, currentUserId)
             .orElseThrow(() -> new ForbiddenException("BẢO MẬT: Bạn không được phân công chấm bài thi này."));
     }

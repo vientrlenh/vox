@@ -39,14 +39,14 @@ public class RoleController {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalArgumentException("Số trang hoặc kích cỡ yêu cầu không hợp lệ");
         }
-        var query = new ViewRolesQuery(page, size);
+        ViewRolesQuery query = new ViewRolesQuery(page, size);
         return viewRolesUseCase.execute(query);
     }
 
     @QueryMapping(name = "role")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RoleDto role(@Argument(name = "id") UUID id) {
-        var query = new ViewRoleDetailsQuery(id);
+        ViewRoleDetailsQuery query = new ViewRoleDetailsQuery(id);
         return viewRoleDetailsUseCase.execute(query);
     }
 

@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.order;
 
+import com.sep.vox.domain.model.order.Order;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,8 +38,8 @@ public class ViewMySchoolOrdersUseCase implements IUseCase<ViewMySchoolOrdersQue
     @Override
     @Transactional(readOnly = true)
     public PageResult<OrderDto> execute(ViewMySchoolOrdersQuery input) {
-        var schoolId = userContextPort.getCurrentSchoolId();
-        var page = orderRepository.findBySchoolId(schoolId, input.page(), input.size());
+        UUID schoolId = userContextPort.getCurrentSchoolId();
+        PageResult<Order> page = orderRepository.findBySchoolId(schoolId, input.page(), input.size());
 
         return new PageResult<>(
             page.content().stream().map(OrderDto::toDto).toList(),

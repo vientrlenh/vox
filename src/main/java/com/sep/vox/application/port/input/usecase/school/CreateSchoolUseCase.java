@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.school;
 
+import com.sep.vox.domain.model.school.SchoolDirectory;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -50,12 +51,12 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
     @Override
     @Transactional
     public UUID execute(CreateSchoolCommand input) {
-        var command = normalize(input);
+        CreateSchoolCommand command = normalize(input);
         validateCommand(command);
 
-        var now = Instant.now();
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var school = resolveSchoolInfo(command, currentUserId, now);
+        Instant now = Instant.now();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        SchoolInfo school = resolveSchoolInfo(command, currentUserId, now);
 
         return provisionSchoolService.provision(new ProvisionSchoolCommand(
             school.code(),
@@ -118,7 +119,7 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
             );
         }
 
-        var directory = schoolDirectoryRepository.findById(command.schoolDirectoryId())
+        SchoolDirectory directory = schoolDirectoryRepository.findById(command.schoolDirectoryId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
 
         // KHÔNG chặn khi danh mục chưa xác minh -- API này cố tình bỏ vòng duyệt, và chính việc

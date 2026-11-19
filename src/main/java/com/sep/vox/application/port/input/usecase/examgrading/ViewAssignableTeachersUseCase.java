@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.examgrading;
 
 import java.util.List;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,8 +30,8 @@ public class ViewAssignableTeachersUseCase
     @Override
     @Transactional(readOnly = true)
     public List<AssignableTeacherInfo> execute(ViewAssignableTeachersQuery input) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        UUID schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
         return examGradingQueryRepository.findAssignableTeachers(schoolId, input.search());
     }
 }

@@ -1,9 +1,14 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.school.SchoolClass;
+import com.sep.vox.domain.model.school.SchoolClassUser;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,13 +64,13 @@ public class ImportExamCandidatesFromClassUseCase
     @Override
     @Transactional
     public List<ExamCandidateDto> execute(ImportExamCandidatesFromClassCommand input) {
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var scope = examDirectoryAccessService.resolve(exam);
-        var currentUserId = scope.callerId();
+        ExamDirectoryAccessService.ExamDirectoryScope scope = examDirectoryAccessService.resolve(exam);
+        UUID currentUserId = scope.callerId();
         ExamEditingGuard.requireScheduleEditable(exam);
 
-        var schoolClass = schoolClassRepository.findById(input.schoolClassId())
+        SchoolClass schoolClass = schoolClassRepository.findById(input.schoolClassId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
         if (!schoolClass.getSchoolId().equals(exam.getSchoolId())) {
             throw new ForbiddenException("Lớp học không thuộc trường của bài kiểm tra");
@@ -77,22 +82,22 @@ public class ImportExamCandidatesFromClassUseCase
             throw new ForbiddenException("Bạn không phụ trách lớp học này");
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         // findBySchoolClassId là 1-based (PageRequest.of(page - 1, size)) → trang đầu là 1, KHÔNG phải 0.
-        var roster = schoolClassUserRepository.findBySchoolClassId(
+        List<SchoolClassUser> roster = schoolClassUserRepository.findBySchoolClassId(
             schoolClass.getId(), 1, MAX_CLASS_ROSTER_SIZE).content();
 
-        var activeUserIds = roster.stream()
+        List<UUID> activeUserIds = roster.stream()
             .filter(user -> user.isActive())
             .map(user -> user.getUserId())
             .distinct()
             .toList();
 
-        var studentIds = userRoleQueryRepository.findUserIdsByRoleCode(activeUserIds, SchoolRoleCodes.STUDENT);
-        var existingStudentIds = examCandidateRepository.findStudentIdsByExamId(exam.getId());
+        Set<UUID> studentIds = userRoleQueryRepository.findUserIdsByRoleCode(activeUserIds, SchoolRoleCodes.STUDENT);
+        Set<UUID> existingStudentIds = examCandidateRepository.findStudentIdsByExamId(exam.getId());
 
-        var newCandidates = new ArrayList<ExamCandidate>();
-        for (var userId : activeUserIds) {
+        List<ExamCandidate> newCandidates = new ArrayList<ExamCandidate>();
+        for (UUID userId : activeUserIds) {
             if (!studentIds.contains(userId)) {
                 continue;
             }
@@ -105,7 +110,7 @@ public class ImportExamCandidatesFromClassUseCase
         if (newCandidates.isEmpty()) {
             return List.of();
         }
-        var saved = examCandidateRepository.saveAll(newCandidates);
+        List<ExamCandidate> saved = examCandidateRepository.saveAll(newCandidates);
         // Xem AddExamCandidateUseCase: thêm cả loạt thí sinh vào bài đã publish thì càng phải soi lại
         // token quota ngay, không riêng CLASS_TEST, không đợi tới lúc chấm xong mới vỡ.
         if (exam.getStatus() == ExamStatus.SCHEDULED) {

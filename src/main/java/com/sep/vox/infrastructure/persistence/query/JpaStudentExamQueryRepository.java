@@ -81,10 +81,10 @@ public class JpaStudentExamQueryRepository implements StudentExamQueryRepository
             int size,
             Instant now) {
 
-        var normalizedPage = Math.max(page, 1);
-        var normalizedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        int normalizedPage = Math.max(page, 1);
+        int normalizedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
 
-        var total = em.createQuery("SELECT COUNT(c.id) " + FROM_WHERE, Long.class)
+        Long total = em.createQuery("SELECT COUNT(c.id) " + FROM_WHERE, Long.class)
             .setParameter("studentId", studentId)
             .setParameter("examKind", examKind)
             .setParameter("derivedStatus", derivedStatus)
@@ -95,11 +95,11 @@ public class JpaStudentExamQueryRepository implements StudentExamQueryRepository
             return new PageResult<>(List.of(), normalizedPage, normalizedSize, 0, 0);
         }
 
-        // Bài chưa có ngày thi luôn xếp cuối ở CẢ HAI chiều -- đảo chiều mà kéo chúng lên đầu thì
-        // danh sách mở ra toàn dòng trống. `c.id` là khoá phụ để hai bài trùng giờ không đổi chỗ
-        // giữa các trang: thiếu nó, phân trang có thể lặp hoặc bỏ sót dòng.
-        var direction = sortDescending ? "DESC" : "ASC";
-        var rows = em.createQuery("""
+        // Attempts with no exam date always sort last in BOTH directions -- if reversing the direction pulled them to the top,
+        // the list would open full of blank rows. `c.id` is the secondary key so that two attempts at the same time do not swap places
+        // between pages: without it, pagination can repeat or skip rows.
+        String direction = sortDescending ? "DESC" : "ASC";
+        List<Tuple> rows = em.createQuery("""
             SELECT c.id, c.status, c.blockedAt, c.assignedPaperId,
                    e.id, e.name, e.description, e.kind, e.status, e.requiresOtp, e.maxAttempt,
                    s.id, s.startDate, s.endDate,
@@ -118,8 +118,8 @@ public class JpaStudentExamQueryRepository implements StudentExamQueryRepository
             .setMaxResults(normalizedSize)
             .getResultList();
 
-        var content = new ArrayList<StudentExamRowInfo>(rows.size());
-        for (var row : rows) {
+        List<StudentExamRowInfo> content = new ArrayList<StudentExamRowInfo>(rows.size());
+        for (Tuple row : rows) {
             content.add(new StudentExamRowInfo(
                 row.get(0, UUID.class),
                 candidateStatusOf(row.get(1, String.class)),
@@ -139,7 +139,7 @@ public class JpaStudentExamQueryRepository implements StudentExamQueryRepository
                 row.get(15, String.class)));
         }
 
-        var totalPages = (int) Math.ceil(total / (double) normalizedSize);
+        int totalPages = (int) Math.ceil(total / (double) normalizedSize);
         return new PageResult<>(content, normalizedPage, normalizedSize, total, totalPages);
     }
 

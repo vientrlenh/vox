@@ -62,13 +62,13 @@ class ReassignGradingUseCaseTests {
     }
 
     private ExamGradingAssignment given(GradingRoundType roundType) {
-        var assignment = ExamGradingAssignment.open(
+        ExamGradingAssignment assignment = ExamGradingAssignment.open(
             candidateResultId, UUID.randomUUID(), roundType, null, null,
             Instant.now().minus(2, ChronoUnit.DAYS), adminId, Instant.now().plus(1, ChronoUnit.DAYS));
         assignment.setId(UUID.randomUUID());
         assignment.setRemindedAt(Instant.now().minus(1, ChronoUnit.DAYS));
 
-        var candidateResult = new ExamCandidateResult();
+        ExamCandidateResult candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);
         when(examGradingAccessService.loadForUpdate(assignment.getId())).thenReturn(new GradingContext(
             assignment, candidateResult, new ExamSession(), schoolId, "IELTS Mock", ExamKind.CENTRALIZED));
@@ -77,7 +77,7 @@ class ReassignGradingUseCaseTests {
 
     @Test
     void should_reject_an_appeal_reviewer_who_already_graded_this_paper() {
-        var assignment = given(GradingRoundType.APPEAL);
+        ExamGradingAssignment assignment = given(GradingRoundType.APPEAL);
         when(examGradingQueryRepository.findTeacherIdsWithHumanEvaluation(candidateResultId))
             .thenReturn(Set.of(newTeacherId));
 
@@ -91,7 +91,7 @@ class ReassignGradingUseCaseTests {
 
     @Test
     void should_allow_a_reviewer_who_never_graded_this_paper() {
-        var assignment = given(GradingRoundType.APPEAL);
+        ExamGradingAssignment assignment = given(GradingRoundType.APPEAL);
 
         useCase.execute(new ReassignGradingCommand(assignment.getId(), newTeacherId));
 
@@ -100,11 +100,12 @@ class ReassignGradingUseCaseTests {
 
     @Test
     void should_not_apply_the_conflict_rule_to_the_other_three_rounds() {
-        var assignment = given(GradingRoundType.SPOT_CHECK);
+        ExamGradingAssignment assignment = given(GradingRoundType.SPOT_CHECK);
         when(examGradingQueryRepository.findTeacherIdsWithHumanEvaluation(candidateResultId))
             .thenReturn(Set.of(newTeacherId));
 
-        // Hậu kiểm KHÔNG cấm người đã chấm: luật COI chỉ sinh ra cho vòng phúc khảo.
+        // A post-check does NOT forbid someone who already graded: the COI rule exists only for the
+        // appeal round.
         useCase.execute(new ReassignGradingCommand(assignment.getId(), newTeacherId));
 
         assertThat(assignment.getTeacherId()).isEqualTo(newTeacherId);
@@ -112,12 +113,12 @@ class ReassignGradingUseCaseTests {
 
     @Test
     void should_clear_the_reminder_mark_so_the_new_teacher_gets_reminded() {
-        var assignment = given(GradingRoundType.INITIAL);
+        ExamGradingAssignment assignment = given(GradingRoundType.INITIAL);
 
         useCase.execute(new ReassignGradingCommand(assignment.getId(), newTeacherId));
 
-        // findDueForReminder lọc reminded_at IS NULL; giữ nguyên dấu cũ là người mới
-        // không bao giờ nhận mail nhắc hạn.
+        // findDueForReminder filters reminded_at IS NULL; keeping the old stamp means the new
+        // person never receives the deadline reminder email.
         assertThat(assignment.getRemindedAt()).isNull();
     }
 }

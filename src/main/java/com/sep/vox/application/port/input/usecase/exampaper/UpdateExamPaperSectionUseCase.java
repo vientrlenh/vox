@@ -1,7 +1,11 @@
 package com.sep.vox.application.port.input.usecase.exampaper;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamPaper;
+import com.sep.vox.domain.model.exam.ExamPaperSection;
 import java.time.Instant;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,15 +48,15 @@ public class UpdateExamPaperSectionUseCase implements IUseCase<UpdateExamPaperSe
     @Override
     @Transactional
     public ExamPaperSectionDto execute(UpdateExamPaperSectionCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var section = examPaperSectionRepository.findById(input.sectionId())
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        ExamPaperSection section = examPaperSectionRepository.findById(input.sectionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phần trong đề thi"));
         if (!section.getPaperId().equals(input.paperId())) {
             throw new NotFoundException("Không tìm thấy phần trong đề thi");
         }
-        var paper = examPaperRepository.findById(input.paperId())
+        ExamPaper paper = examPaperRepository.findById(input.paperId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
-        var exam = examRepository.findById(paper.getExamId())
+        Exam exam = examRepository.findById(paper.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         if (exam.getKind() == ExamKind.CENTRALIZED && paper.getStatus() == ExamPaperStatus.LOCKED) {
             throw new IllegalStateException("Đề thi đã bị khoá, không thể sửa");
@@ -62,7 +66,7 @@ public class UpdateExamPaperSectionUseCase implements IUseCase<UpdateExamPaperSe
         }
         examPaperAuthoringAccessService.requireCanAuthor(exam, currentUserId);
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         if (input.title() != null) {
             section.setTitle(input.title());
         }
@@ -71,7 +75,7 @@ public class UpdateExamPaperSectionUseCase implements IUseCase<UpdateExamPaperSe
         }
         section.setUpdatedAt(now);
         section.setUpdatedBy(currentUserId);
-        var saved = examPaperSectionRepository.save(section);
+        ExamPaperSection saved = examPaperSectionRepository.save(section);
 
         return ExamPaperSectionDtoMapper.toDto(saved);
     }

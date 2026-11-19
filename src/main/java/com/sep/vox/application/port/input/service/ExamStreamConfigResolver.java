@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.service;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+import java.util.Set;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
@@ -30,7 +31,7 @@ public class ExamStreamConfigResolver {
             return new StreamConfig(null, null);
         }
 
-        var types = new LinkedHashSet<>(rawTypes);
+        Set<String> types = new LinkedHashSet<>(rawTypes);
         if (types.contains(null) || !PERMITTED_STREAM_TYPES.containsAll(types)) {
             throw new IllegalArgumentException("Các loại stream gửi yêu cầu không được hỗ trợ");
         }

@@ -173,14 +173,14 @@ class ExamGradingAccessClassTestTests {
     }
 
     private Exam exam(UUID id, ExamKind kind) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(id);
         exam.setKind(kind);
         return exam;
     }
 
     private ExamCandidateResult result(UUID id, UUID examId) {
-        var result = new ExamCandidateResult();
+        ExamCandidateResult result = new ExamCandidateResult();
         result.setId(id);
         result.setExamId(examId);
         return result;

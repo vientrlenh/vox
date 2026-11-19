@@ -56,10 +56,10 @@ class ExamCandidateControllerTests {
 
     @Test
     void should_delegate_query_to_use_case() {
-        var dto = candidate(null, scheduleId);
+        ExamCandidateDto dto = candidate(null, scheduleId);
         when(viewExamCandidatesUseCase.execute(any(ViewExamCandidatesQuery.class))).thenReturn(List.of(dto));
 
-        var result = controller.examCandidates(examId, scheduleId, ExamCandidateStatus.ASSIGNED);
+        List<ExamCandidateDto> result = controller.examCandidates(examId, scheduleId, ExamCandidateStatus.ASSIGNED);
 
         assertThat(result).containsExactly(dto);
         verify(viewExamCandidatesUseCase).execute(
@@ -68,11 +68,11 @@ class ExamCandidateControllerTests {
 
     @Test
     void should_return_candidate_id_when_updating_status() {
-        var dto = candidate(null, scheduleId);
+        ExamCandidateDto dto = candidate(null, scheduleId);
         when(updateExamCandidateStatusUseCase.execute(any(UpdateExamCandidateStatusCommand.class)))
             .thenReturn(dto);
 
-        var result = controller.updateExamCandidateStatus(dto.id(), ExamCandidateStatus.ABSENT);
+        UUID result = controller.updateExamCandidateStatus(dto.id(), ExamCandidateStatus.ABSENT);
 
         assertThat(result).isEqualTo(dto.id());
         verify(updateExamCandidateStatusUseCase).execute(
@@ -81,12 +81,12 @@ class ExamCandidateControllerTests {
 
     @Test
     void should_delegate_attendance_update_to_use_case() {
-        var dto = candidate(null, scheduleId);
-        var candidateIds = List.of(dto.id());
+        ExamCandidateDto dto = candidate(null, scheduleId);
+        List<UUID> candidateIds = List.of(dto.id());
         when(updateExamCandidatesAttendanceUseCase.execute(any(UpdateExamCandidatesAttendanceCommand.class)))
             .thenReturn(List.of(dto));
 
-        var result = controller.updateExamCandidatesAttendance(scheduleId, candidateIds);
+        List<ExamCandidateDto> result = controller.updateExamCandidatesAttendance(scheduleId, candidateIds);
 
         assertThat(result).containsExactly(dto);
         verify(updateExamCandidatesAttendanceUseCase).execute(
@@ -96,15 +96,15 @@ class ExamCandidateControllerTests {
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     void should_resolve_student_via_user_data_loader() {
-        var dto = candidate(null, scheduleId);
-        var user = new UserDto(studentId, "student@example.com", null, "Student",
+        ExamCandidateDto dto = candidate(null, scheduleId);
+        UserDto user = new UserDto(studentId, "student@example.com", null, "Student",
             null, null, null, null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, UserDto>getDataLoader("userById")).thenReturn(loader);
         when(loader.load(studentId)).thenReturn(CompletableFuture.completedFuture(user));
 
-        var result = controller.student(dto, env);
+        CompletableFuture<UserDto> result = controller.student(dto, env);
 
         assertThat(result.join()).isSameAs(user);
         verify(loader).load(studentId);
@@ -112,10 +112,10 @@ class ExamCandidateControllerTests {
 
     @Test
     void should_return_null_assigned_paper_when_not_assigned() {
-        var dto = candidate(null, scheduleId);
+        ExamCandidateDto dto = candidate(null, scheduleId);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
 
-        var result = controller.assignedPaper(dto, env);
+        CompletableFuture<ExamPaperDto> result = controller.assignedPaper(dto, env);
 
         assertThat(result.join()).isNull();
         verify(env, org.mockito.Mockito.never()).getDataLoader(any());
@@ -124,15 +124,15 @@ class ExamCandidateControllerTests {
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     void should_resolve_assigned_paper_via_data_loader() {
-        var paperId = UUID.randomUUID();
-        var dto = candidate(paperId, scheduleId);
-        var paper = new ExamPaperDto(paperId, examId, null, "P1", 1, "LOCKED", null, null, null, null, null);
+        UUID paperId = UUID.randomUUID();
+        ExamCandidateDto dto = candidate(paperId, scheduleId);
+        ExamPaperDto paper = new ExamPaperDto(paperId, examId, null, "P1", 1, "LOCKED", null, null, null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, ExamPaperDto>getDataLoader("examPaperById")).thenReturn(loader);
         when(loader.load(paperId)).thenReturn(CompletableFuture.completedFuture(paper));
 
-        var result = controller.assignedPaper(dto, env);
+        CompletableFuture<ExamPaperDto> result = controller.assignedPaper(dto, env);
 
         assertThat(result.join()).isSameAs(paper);
         verify(loader).load(paperId);
@@ -141,14 +141,14 @@ class ExamCandidateControllerTests {
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     void should_resolve_schedule_via_data_loader() {
-        var dto = candidate(null, scheduleId);
-        var schedule = new ExamScheduleDto(scheduleId, examId, UUID.randomUUID(), null, null, "DRAFT", null);
+        ExamCandidateDto dto = candidate(null, scheduleId);
+        ExamScheduleDto schedule = new ExamScheduleDto(scheduleId, examId, UUID.randomUUID(), null, null, "DRAFT", null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, ExamScheduleDto>getDataLoader("examScheduleById")).thenReturn(loader);
         when(loader.load(scheduleId)).thenReturn(CompletableFuture.completedFuture(schedule));
 
-        var result = controller.schedule(dto, env);
+        CompletableFuture<ExamScheduleDto> result = controller.schedule(dto, env);
 
         assertThat(result.join()).isSameAs(schedule);
         verify(loader).load(scheduleId);
@@ -156,10 +156,10 @@ class ExamCandidateControllerTests {
 
     @Test
     void should_return_null_schedule_when_not_assigned() {
-        var dto = candidate(null, null);
+        ExamCandidateDto dto = candidate(null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
 
-        var result = controller.schedule(dto, env);
+        CompletableFuture<ExamScheduleDto> result = controller.schedule(dto, env);
 
         assertThat(result.join()).isNull();
         verify(env, org.mockito.Mockito.never()).getDataLoader(any());
@@ -168,8 +168,8 @@ class ExamCandidateControllerTests {
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     void should_resolve_exam_via_data_loader() {
-        var dto = candidate(null, scheduleId);
-        var exam = new ExamDto(examId, null, null, "E1", "Exam", null, UUID.randomUUID(), UUID.randomUUID(),
+        ExamCandidateDto dto = candidate(null, scheduleId);
+        ExamDto exam = new ExamDto(examId, null, null, "E1", "Exam", null, UUID.randomUUID(), UUID.randomUUID(),
             "CENTRALIZED", "LAB", "DRAFT", null, null, null, null, null, null, false, null, null, null, null, null,
             null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
@@ -177,7 +177,7 @@ class ExamCandidateControllerTests {
         when(env.<UUID, ExamDto>getDataLoader("examById")).thenReturn(loader);
         when(loader.load(examId)).thenReturn(CompletableFuture.completedFuture(exam));
 
-        var result = controller.exam(dto, env);
+        CompletableFuture<ExamDto> result = controller.exam(dto, env);
 
         assertThat(result.join()).isSameAs(exam);
         verify(loader).load(examId);

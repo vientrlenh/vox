@@ -1,8 +1,12 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
+import com.sep.vox.application.port.input.command.ExamPaperAssignmentItem;
+import com.sep.vox.domain.model.exam.ExamPaper;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -60,9 +64,9 @@ public class AssignExamPapersUseCase implements IUseCase<AssignExamPapersCommand
     @Override
     @Transactional
     public AssignExamPapersResponse execute(AssignExamPapersCommand input) {
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var currentUserId = authorize(exam);
+        UUID currentUserId = authorize(exam);
         ExamEditingGuard.requireScheduleEditable(exam);
 
         if (input.assignments() == null || input.assignments().isEmpty()) {
@@ -70,22 +74,22 @@ public class AssignExamPapersUseCase implements IUseCase<AssignExamPapersCommand
         }
 
         // Toàn bộ mã đề của kỳ thi phải đã khoá (LOCKED) mới được phân đề.
-        var papers = examPaperRepository.findByExamId(exam.getId());
+        List<ExamPaper> papers = examPaperRepository.findByExamId(exam.getId());
         if (papers.isEmpty() || papers.stream().anyMatch(paper -> paper.getStatus() != ExamPaperStatus.LOCKED)) {
             throw new IllegalStateException("Tất cả mã đề của kỳ thi phải được khoá trước khi phân đề");
         }
-        var lockedPaperIds = papers.stream()
+        Set<UUID> lockedPaperIds = papers.stream()
             .map(paper -> paper.getId())
             .collect(Collectors.toSet());
 
-        var candidateIds = input.assignments().stream()
+        Set<UUID> candidateIds = input.assignments().stream()
             .map(assignment -> assignment.candidateId())
             .collect(Collectors.toCollection(HashSet::new));
-        var candidatesById = examCandidateRepository.findByIdInAndExamId(candidateIds, exam.getId()).stream()
+        Map<UUID, ExamCandidate> candidatesById = examCandidateRepository.findByIdInAndExamId(candidateIds, exam.getId()).stream()
             .collect(Collectors.toMap(candidate -> candidate.getId(), Function.identity()));
 
         // Validate all-or-nothing: mọi cặp phải hợp lệ trước khi ghi bất kỳ thứ gì.
-        for (var assignment : input.assignments()) {
+        for (ExamPaperAssignmentItem assignment : input.assignments()) {
             if (!candidatesById.containsKey(assignment.candidateId())) {
                 throw new IllegalStateException("Thí sinh không thuộc kỳ thi này");
             }
@@ -94,28 +98,28 @@ public class AssignExamPapersUseCase implements IUseCase<AssignExamPapersCommand
             }
         }
 
-        var now = Instant.now();
-        var toSave = new ArrayList<ExamCandidate>();
+        Instant now = Instant.now();
+        List<ExamCandidate> toSave = new ArrayList<ExamCandidate>();
         Set<UUID> handled = new HashSet<>();
-        for (var assignment : input.assignments()) {
+        for (ExamPaperAssignmentItem assignment : input.assignments()) {
             if (!handled.add(assignment.candidateId())) {
                 continue;
             }
-            var candidate = candidatesById.get(assignment.candidateId());
+            ExamCandidate candidate = candidatesById.get(assignment.candidateId());
             candidate.assignPaper(assignment.paperId(), now, currentUserId);
             toSave.add(candidate);
         }
 
-        var saved = examCandidateRepository.saveAll(toSave);
+        List<ExamCandidate> saved = examCandidateRepository.saveAll(toSave);
         return new AssignExamPapersResponse(saved.size());
     }
 
     private UUID authorize(Exam exam) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId())) {
             return currentUserId;

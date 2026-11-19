@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.application.query.dto.SessionCostDto;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -94,11 +95,11 @@ public class QuotaPricingCalibrationService {
             QuotaPricingSource source,
             Function<Collection<UUID>, List<SessionDurationAggregate>> durationLookup,
             Supplier<BigDecimal> defaultRate) {
-        var windowDays = calibrationConfig.windowDays();
-        var minSampleSessions = calibrationConfig.minSampleSessions();
-        var since = Instant.now().minus(windowDays, ChronoUnit.DAYS);
+        Integer windowDays = calibrationConfig.windowDays();
+        Integer minSampleSessions = calibrationConfig.minSampleSessions();
+        Instant since = Instant.now().minus(windowDays, ChronoUnit.DAYS);
 
-        var costs = sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(since);
+        List<SessionCostDto> costs = sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(since);
         if (costs.size() < minSampleSessions) {
             LOGGER.info(
                 "[quota-pricing-calibration] {} bỏ qua: chỉ có {} session phát sinh usage trong {} ngày gần nhất, "
@@ -108,15 +109,15 @@ public class QuotaPricingCalibrationService {
             return;
         }
 
-        var sessionIds = costs.stream().map(a -> a.sessionId()).toList();
+        List<UUID> sessionIds = costs.stream().map(a -> a.sessionId()).toList();
         Map<UUID, Long> durationsBySession = durationLookup.apply(sessionIds).stream()
             .collect(Collectors.toMap(a -> a.sessionId(), a -> a.totalDurationSeconds()));
 
-        var totalCost = BigDecimal.ZERO;
-        var totalSeconds = 0L;
-        var matchedCount = 0;
-        for (var cost : costs) {
-            var duration = durationsBySession.get(cost.sessionId());
+        BigDecimal totalCost = BigDecimal.ZERO;
+        long totalSeconds = 0L;
+        int matchedCount = 0;
+        for (SessionCostDto cost : costs) {
+            Long duration = durationsBySession.get(cost.sessionId());
             if (duration == null || duration <= 0) {
                 // Session có usage AI nhưng không khớp được giây trả lời thật ở nguồn này (vd
                 // session thuộc nguồn kia -- exam session không có row practice_response_turns và
@@ -137,25 +138,25 @@ public class QuotaPricingCalibrationService {
             return;
         }
 
-        var rawRate = totalCost.divide(BigDecimal.valueOf(totalSeconds), 6, RoundingMode.HALF_UP);
+        BigDecimal rawRate = totalCost.divide(BigDecimal.valueOf(totalSeconds), 6, RoundingMode.HALF_UP);
 
-        var previousApplied = quotaPricingCalibrationRepository.findLatest(source)
+        BigDecimal previousApplied = quotaPricingCalibrationRepository.findLatest(source)
             .map(c -> c.getAppliedRateUsdPerSecond())
             .orElseGet(defaultRate);
 
-        var maxChangeRatio = calibrationConfig.maxChangeRatio();
-        var lowerSmoothBound = previousApplied.multiply(BigDecimal.ONE.subtract(maxChangeRatio));
-        var upperSmoothBound = previousApplied.multiply(BigDecimal.ONE.add(maxChangeRatio));
-        var smoothed = clamp(rawRate, lowerSmoothBound, upperSmoothBound);
+        BigDecimal maxChangeRatio = calibrationConfig.maxChangeRatio();
+        BigDecimal lowerSmoothBound = previousApplied.multiply(BigDecimal.ONE.subtract(maxChangeRatio));
+        BigDecimal upperSmoothBound = previousApplied.multiply(BigDecimal.ONE.add(maxChangeRatio));
+        BigDecimal smoothed = clamp(rawRate, lowerSmoothBound, upperSmoothBound);
 
-        var applied = clamp(smoothed, calibrationConfig.minRateBound(), calibrationConfig.maxRateBound());
+        BigDecimal applied = clamp(smoothed, calibrationConfig.minRateBound(), calibrationConfig.maxRateBound());
 
         String note = applied.compareTo(rawRate) == 0
             ? null
             : "raw=%s bị điều chỉnh còn applied=%s (làm mượt tối đa %s%% so với lần trước %s, hoặc chặn biên an toàn)"
                 .formatted(rawRate, applied, maxChangeRatio.multiply(BigDecimal.valueOf(100)), previousApplied);
 
-        var calibration = new QuotaPricingCalibration(
+        QuotaPricingCalibration calibration = new QuotaPricingCalibration(
             Instant.now(),
             windowDays,
             matchedCount,

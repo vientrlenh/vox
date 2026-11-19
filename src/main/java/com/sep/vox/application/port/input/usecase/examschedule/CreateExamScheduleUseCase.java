@@ -56,9 +56,9 @@ public class CreateExamScheduleUseCase implements IUseCase<CreateExamScheduleCom
     @Override
     @Transactional
     public ExamScheduleDto execute(CreateExamScheduleCommand input) {
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var currentUserId = authorize(exam);
+        UUID currentUserId = authorize(exam);
         ExamEditingGuard.requireScheduleEditable(exam);
 
         if (input.startDate() == null || input.endDate() == null) {
@@ -77,18 +77,18 @@ public class CreateExamScheduleUseCase implements IUseCase<CreateExamScheduleCom
         examScheduleRoomValidator.validateForNewSchedule(
             input.schoolRoomId(), exam, input.startDate(), input.endDate());
 
-        var schedule = ExamSchedule.createFresh(
+        ExamSchedule schedule = ExamSchedule.createFresh(
             exam.getId(), input.schoolRoomId(), input.startDate(), input.endDate(),
             currentUserId, Instant.now());
         return ExamScheduleDtoMapper.toDto(examScheduleRepository.save(schedule));
     }
 
     private UUID authorize(Exam exam) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId())) {
             return currentUserId;

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.personalization.PracticeTopic;
 import java.time.Duration;
 import java.util.List;
 import java.time.Instant;
@@ -60,7 +61,7 @@ public class PracticeQuestionGenerationService {
             int bandCount,
             List<FrameworkResultBand> bandLadder,
             List<UUID> excludeQuestionIds) {
-        var generated = questionGenerationPort.generate(
+        List<PracticeQuestionGenerationPort.GeneratedQuestion> generated = questionGenerationPort.generate(
             topicDetails(topicId),
             criterionCode,
             SubAttributePolicy.plannedSubAttribute(criterionCode, subAttribute),
@@ -88,10 +89,10 @@ public class PracticeQuestionGenerationService {
                 bandCount
             );
         }
-        for (var question : generated) {
+        for (PracticeQuestionGenerationPort.GeneratedQuestion question : generated) {
             practiceQuestionRepository.saveGenerated(toPracticeQuestion(question));
         }
-        for (var question : generated) {
+        for (PracticeQuestionGenerationPort.GeneratedQuestion question : generated) {
             try {
                 questionGenerationPort.index(question);
             } catch (RuntimeException exception) {
@@ -106,7 +107,7 @@ public class PracticeQuestionGenerationService {
     }
 
     private TopicDetails topicDetails(UUID topicId) {
-        var topic = practiceTopicRepository.findTopicById(topicId)
+        PracticeTopic topic = practiceTopicRepository.findTopicById(topicId)
             .filter(candidate -> candidate.isActive())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề luyện tập."));
         return new TopicDetails(

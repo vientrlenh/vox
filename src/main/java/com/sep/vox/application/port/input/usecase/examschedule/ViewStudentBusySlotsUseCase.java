@@ -1,8 +1,10 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,9 +48,9 @@ public class ViewStudentBusySlotsUseCase
             return List.of();
         }
 
-        var slots = new ArrayList<StudentBusySlotResponse>();
-        for (var scheduleId : input.scheduleIds()) {
-            var schedule = examScheduleRepository.findById(scheduleId)
+        List<StudentBusySlotResponse> slots = new ArrayList<StudentBusySlotResponse>();
+        for (UUID scheduleId : input.scheduleIds()) {
+            ExamSchedule schedule = examScheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
             // Cùng luật quyền với danh bạ học sinh: người xem được danh sách thì cũng được biết ai
             // trong số đó đang bận.

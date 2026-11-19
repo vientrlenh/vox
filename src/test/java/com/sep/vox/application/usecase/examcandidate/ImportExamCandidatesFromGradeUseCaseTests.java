@@ -29,6 +29,7 @@ import com.sep.vox.application.port.input.service.ExamDirectoryAccessService.Exa
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromGradeUseCase;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamStatus;
@@ -87,7 +88,7 @@ class ImportExamCandidatesFromGradeUseCaseTests {
             schoolClassRepository, schoolClassUserRepository, userRoleQueryRepository,
             examDirectoryAccessService, classTestTokenQuotaGuardService);
 
-        var exam = exam();
+        Exam exam = exam();
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examDirectoryAccessService.resolve(exam))
             .thenReturn(new ExamDirectoryScope(userId, schoolId, true));
@@ -129,15 +130,15 @@ class ImportExamCandidatesFromGradeUseCaseTests {
             return arg.stream().peek(c -> c.setId(UUID.randomUUID())).toList();
         });
 
-        var result = useCase.execute(new ImportExamCandidatesFromGradeCommand(examId, gradeId));
+        List<ExamCandidateDto> result = useCase.execute(new ImportExamCandidatesFromGradeCommand(examId, gradeId));
 
-        var studentIds = result.stream().map(c -> c.studentId()).collect(Collectors.toSet());
+        Set<UUID> studentIds = result.stream().map(c -> c.studentId()).collect(Collectors.toSet());
         assertThat(studentIds).containsExactlyInAnyOrder(activeStudent, sharedStudent, student2);
     }
 
     @Test
     void should_recheck_token_quota_when_exam_already_scheduled() {
-        var scheduledExam = exam();
+        Exam scheduledExam = exam();
         scheduledExam.setStatus(ExamStatus.SCHEDULED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(scheduledExam));
         when(examDirectoryAccessService.resolve(scheduledExam))
@@ -157,8 +158,9 @@ class ImportExamCandidatesFromGradeUseCaseTests {
 
         useCase.execute(new ImportExamCandidatesFromGradeCommand(examId, gradeId));
 
-        // Nhập theo khối vào bài ĐÃ publish là đường thêm thí sinh mạnh nhất -- phải soi lại quota
-        // ngay sau khi lưu, giống hệt AddExamCandidateUseCase/ImportExamCandidatesFromClassUseCase.
+        // Importing by grade into an ALREADY published exam is the strongest way to add candidates
+        // -- the quota must be re-checked right after saving, exactly like
+        // AddExamCandidateUseCase/ImportExamCandidatesFromClassUseCase.
         verify(classTestTokenQuotaGuardService).requireWithinTokenQuota(scheduledExam);
     }
 
@@ -210,7 +212,7 @@ class ImportExamCandidatesFromGradeUseCaseTests {
             .thenReturn(Set.of(existingStudent));
         when(examCandidateRepository.findStudentIdsByExamId(examId)).thenReturn(Set.of(existingStudent));
 
-        var result = useCase.execute(new ImportExamCandidatesFromGradeCommand(examId, gradeId));
+        List<ExamCandidateDto> result = useCase.execute(new ImportExamCandidatesFromGradeCommand(examId, gradeId));
 
         assertThat(result).isEmpty();
         verify(examCandidateRepository, never()).saveAll(any());
@@ -221,14 +223,14 @@ class ImportExamCandidatesFromGradeUseCaseTests {
     }
 
     private SchoolClass schoolClass(UUID id) {
-        var schoolClass = new SchoolClass();
+        SchoolClass schoolClass = new SchoolClass();
         schoolClass.setId(id);
         schoolClass.setSchoolId(schoolId);
         return schoolClass;
     }
 
     private SchoolGrade grade(UUID levelId, UUID ownerSchoolId) {
-        var grade = new SchoolGrade();
+        SchoolGrade grade = new SchoolGrade();
         grade.setId(gradeId);
         grade.setGradeLevelId(levelId);
         grade.setSchoolId(ownerSchoolId);
@@ -237,7 +239,7 @@ class ImportExamCandidatesFromGradeUseCaseTests {
 
 
     private Exam exam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         return exam;

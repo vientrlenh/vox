@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.query.ViewExamItemResponseEvaluationQuery;
 import com.sep.vox.application.port.input.service.ExamResultAccessService;
 import com.sep.vox.application.port.input.usecase.examevaluation.ViewExamItemResponseEvaluationUseCase;
+import com.sep.vox.application.response.input.examitemresponse.ExamItemEvaluationDetailsResponse;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
 import com.sep.vox.domain.model.exam.ExamItemCriterionScore;
@@ -84,7 +85,7 @@ class ViewExamItemResponseEvaluationUseCaseTests {
     void should_keep_ai_evidence_when_latest_evaluation_is_human() {
         givenHumanRegradedOverAi();
 
-        var response = useCase.execute(new ViewExamItemResponseEvaluationQuery(RESPONSE_ID));
+        ExamItemEvaluationDetailsResponse response = useCase.execute(new ViewExamItemResponseEvaluationQuery(RESPONSE_ID));
 
         assertThat(response.ai()).isNotNull();
         assertThat(response.ai().evaluationId()).isEqualTo(AI_EVALUATION_ID);
@@ -99,9 +100,10 @@ class ViewExamItemResponseEvaluationUseCaseTests {
     void should_return_teacher_verdict_at_top_level_when_latest_evaluation_is_human() {
         givenHumanRegradedOverAi();
 
-        var response = useCase.execute(new ViewExamItemResponseEvaluationQuery(RESPONSE_ID));
+        ExamItemEvaluationDetailsResponse response = useCase.execute(new ViewExamItemResponseEvaluationQuery(RESPONSE_ID));
 
-        // Phán quyết vẫn là của giáo viên — khối ai chỉ là ngữ cảnh, không được lấn lên.
+        // The verdict still belongs to the teacher -- the AI block is only context and must not
+        // encroach on it.
         assertThat(response.engineType()).isEqualTo("HUMAN");
         assertThat(response.itemScore()).isEqualByComparingTo("8.00");
         assertThat(response.feedbackSummary()).isEqualTo("GV: đạt yêu cầu");
@@ -118,7 +120,7 @@ class ViewExamItemResponseEvaluationUseCaseTests {
             new ExamItemCriterionScore(UUID.randomUUID(), AI_EVALUATION_ID, CRITERION_ID,
                 new BigDecimal("6.00"), new BigDecimal("6.00"), "AI: còn ngập ngừng")));
 
-        var response = useCase.execute(new ViewExamItemResponseEvaluationQuery(RESPONSE_ID));
+        ExamItemEvaluationDetailsResponse response = useCase.execute(new ViewExamItemResponseEvaluationQuery(RESPONSE_ID));
 
         assertThat(response.criteria()).hasSize(1);
         assertThat(response.criteria().get(0).finalScore()).isEqualByComparingTo("8.00");
@@ -132,9 +134,10 @@ class ViewExamItemResponseEvaluationUseCaseTests {
             new ExamItemEvaluationTurn(UUID.randomUUID(), AI_EVALUATION_ID, 1, TurnType.MAIN,
                 "Describe a place you like", "https://audio", "I like...", 12, 30, 0.9, null, null)));
 
-        var response = useCase.execute(new ViewExamItemResponseEvaluationQuery(RESPONSE_ID));
+        ExamItemEvaluationDetailsResponse response = useCase.execute(new ViewExamItemResponseEvaluationQuery(RESPONSE_ID));
 
-        // Nội dung câu hỏi trên màn học sinh được suy ra từ turn — mất turn là mất câu hỏi.
+        // The question content on the student screen is derived from the turn -- losing the turn
+        // means losing the question.
         assertThat(response.turns()).hasSize(1);
         assertThat(response.turns().get(0).promptText()).isEqualTo("Describe a place you like");
         verify(examItemEvaluationTurnRepository, never()).findByEvaluationId(HUMAN_EVALUATION_ID);
@@ -142,10 +145,10 @@ class ViewExamItemResponseEvaluationUseCaseTests {
 
     @Test
     void should_not_query_ai_evaluation_when_latest_is_already_ai() {
-        var ai = aiEvaluation();
+        ExamItemEvaluation ai = aiEvaluation();
         when(examItemEvaluationRepository.findLatestByResponseId(RESPONSE_ID)).thenReturn(Optional.of(ai));
 
-        var response = useCase.execute(new ViewExamItemResponseEvaluationQuery(RESPONSE_ID));
+        ExamItemEvaluationDetailsResponse response = useCase.execute(new ViewExamItemResponseEvaluationQuery(RESPONSE_ID));
 
         verify(examItemEvaluationRepository, never()).findLatestAiByResponseId(any());
         assertThat(response.ai()).isNotNull();
@@ -158,7 +161,7 @@ class ViewExamItemResponseEvaluationUseCaseTests {
             .thenReturn(Optional.of(humanEvaluation()));
         when(examItemEvaluationRepository.findLatestAiByResponseId(RESPONSE_ID)).thenReturn(Optional.empty());
 
-        var response = useCase.execute(new ViewExamItemResponseEvaluationQuery(RESPONSE_ID));
+        ExamItemEvaluationDetailsResponse response = useCase.execute(new ViewExamItemResponseEvaluationQuery(RESPONSE_ID));
 
         assertThat(response.ai()).isNull();
         assertThat(response.turns()).isEmpty();

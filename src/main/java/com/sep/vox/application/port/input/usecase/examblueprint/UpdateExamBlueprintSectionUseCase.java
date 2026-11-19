@@ -1,8 +1,13 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
+import com.sep.vox.domain.model.exam.ExamBlueprint;
+import com.sep.vox.domain.model.exam.ExamBlueprintSection;
+import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import java.util.List;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,17 +50,17 @@ public class UpdateExamBlueprintSectionUseCase implements IUseCase<UpdateExamBlu
     @Override
     @Transactional
     public ExamBlueprintSectionDto execute(UpdateExamBlueprintSectionCommand input) {
-        var command = normalize(input);
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UpdateExamBlueprintSectionCommand command = normalize(input);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
-        var section = examBlueprintSectionRepository.findById(command.sectionId())
+        ExamBlueprintSection section = examBlueprintSectionRepository.findById(command.sectionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
-        var version = examBlueprintVersionRepository.findById(section.getBlueprintVersionId())
+        ExamBlueprintVersion version = examBlueprintVersionRepository.findById(section.getBlueprintVersionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
-        var blueprint = examBlueprintRepository.findById(version.getBlueprintId())
+        ExamBlueprint blueprint = examBlueprintRepository.findById(version.getBlueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
         if (!examBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
@@ -66,7 +71,7 @@ public class UpdateExamBlueprintSectionUseCase implements IUseCase<UpdateExamBlu
         }
 
         if (command.order() != section.getOrder()) {
-            var siblings = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId());
+            List<ExamBlueprintSection> siblings = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId());
             if (siblings.stream().anyMatch(s -> !s.getId().equals(section.getId()) && s.getOrder() == command.order())) {
                 throw new IllegalStateException("Thứ tự section đã tồn tại trong version này");
             }

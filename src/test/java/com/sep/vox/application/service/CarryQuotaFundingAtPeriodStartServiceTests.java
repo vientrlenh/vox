@@ -167,9 +167,12 @@ class CarryQuotaFundingAtPeriodStartServiceTests {
         givenDueCarry(quotaType, 0);
     }
 
-    /** Ví của kỳ mới, đã tới ngày chạy và còn hẹn. {@code alreadyFundedVnd} = trường tự nạp trong lúc chờ. */
+    /**
+     * A wallet for the new period that has reached its run date and is still scheduled.
+     * {@code alreadyFundedVnd} = what the school topped up on its own while waiting.
+     */
     private void givenDueCarry(QuotaType quotaType, long alreadyFundedVnd) {
-        var target = new SchoolSubscriptionQuotaRecord(
+        SchoolSubscriptionQuotaRecord target = new SchoolSubscriptionQuotaRecord(
             newPracticePoolId, newSubscriptionId, quotaType,
             BigDecimal.valueOf(10_000_000 + alreadyFundedVnd), BigDecimal.ZERO,
             BigDecimal.valueOf(alreadyFundedVnd));

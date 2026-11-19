@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.practicesession;
 
 import java.util.List;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,8 +30,8 @@ public class ViewMyPracticeHistoryUseCase implements IUseCase<ViewMyPracticeHist
     @Override
     @Transactional(readOnly = true)
     public List<PracticeSession> execute(ViewMyPracticeHistoryQuery input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
-        var limit = Math.max(1, Math.min(input.limit(), 100));
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
+        int limit = Math.max(1, Math.min(input.limit(), 100));
         return practiceSessionQueryRepository.findHistory(studentId, limit).stream()
             .map(SessionRowMapper::toDto)
             .map(PracticeSessionResponseMapper::toResponse)

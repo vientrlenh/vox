@@ -1,6 +1,9 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.exam.ExamDeliveryMode;
+import com.sep.vox.domain.model.exam.ExamPaper;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -56,16 +59,16 @@ public class UpdateExamDeliveryModeUseCase implements IUseCase<UpdateExamDeliver
     @Override
     @Transactional
     public ExamDto execute(UpdateExamDeliveryModeCommand input) {
-        var deliveryMode = ExamDeliveryModeSupport.parse(input.deliveryMode());
+        ExamDeliveryMode deliveryMode = ExamDeliveryModeSupport.parse(input.deliveryMode());
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         authorize(exam, currentUserId, currentSchoolId, schoolAdmin);
@@ -83,7 +86,7 @@ public class UpdateExamDeliveryModeUseCase implements IUseCase<UpdateExamDeliver
         exam.setUpdatedAt(Instant.now());
         exam.setUpdatedBy(currentUserId);
 
-        var saved = examRepository.save(exam);
+        Exam saved = examRepository.save(exam);
         return ExamDtoMapper.toDto(saved, papersLocked(saved.getId()));
     }
 
@@ -98,7 +101,7 @@ public class UpdateExamDeliveryModeUseCase implements IUseCase<UpdateExamDeliver
     }
 
     private boolean papersLocked(UUID examId) {
-        var papers = examPaperRepository.findByExamId(examId);
+        List<ExamPaper> papers = examPaperRepository.findByExamId(examId);
         return !papers.isEmpty()
             && papers.stream().allMatch(paper -> paper.getStatus() == ExamPaperStatus.LOCKED);
     }

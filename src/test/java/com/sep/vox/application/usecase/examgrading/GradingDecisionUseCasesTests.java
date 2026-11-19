@@ -32,6 +32,8 @@ import com.sep.vox.application.port.input.usecase.examgrading.ClearInvalidResult
 import com.sep.vox.application.port.input.usecase.examgrading.DeclineGradingAssignmentUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.InvalidateResultUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.UpholdResultUseCase;
+import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.response.input.examgrading.GradingActionResponse;
 import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamCandidate;
@@ -96,7 +98,7 @@ class GradingDecisionUseCasesTests {
         examGradingAssignmentRepository = mock(ExamGradingAssignmentRepository.class);
         examSessionRepository = mock(ExamSessionRepository.class);
         outboxRepository = mock(OutboxRepository.class);
-        var jsonSerializationPort = OutboxTestSupport.jsonSerializationPort();
+        JsonSerializationPort jsonSerializationPort = OutboxTestSupport.jsonSerializationPort();
 
         support = new GradingActionSupport(
             examGradingAccessService,
@@ -108,8 +110,9 @@ class GradingDecisionUseCasesTests {
             outboxRepository,
             jsonSerializationPort);
 
-        // Mặc định bài đã chấm đủ (repo trả rỗng), nên nhánh điền 0 của Uphold không chạy;
-        // ca nào cần bài còn câu chưa chấm thì gọi `givenAnsweredButUngradedItem()`.
+        // By default the submission is fully graded (the repo returns empty), so the fill-with-0
+        // branch of Uphold does not run; a case that needs a submission with ungraded items calls
+        // `givenAnsweredButUngradedItem()`.
         examItemResponseRepository = mock(ExamItemResponseRepository.class);
         examItemEvaluationRepository = mock(ExamItemEvaluationRepository.class);
         missingResponseBackfillService = mock(MissingResponseBackfillService.class);
@@ -138,14 +141,14 @@ class GradingDecisionUseCasesTests {
     }
 
     private ExamCandidateResult given(GradingRoundType roundType, ExamCandidateResultStatus status) {
-        var result = new ExamCandidateResult();
+        ExamCandidateResult result = new ExamCandidateResult();
         result.setId(candidateResultId);
         result.setCandidateId(candidateId);
         result.setSessionId(sessionId);
         result.setStatus(status);
         result.setTotalScore(new BigDecimal("6.00"));
 
-        var assignment = ExamGradingAssignment.open(candidateResultId, teacherId, roundType, null,
+        ExamGradingAssignment assignment = ExamGradingAssignment.open(candidateResultId, teacherId, roundType, null,
             result.getTotalScore(), Instant.now().minus(4, ChronoUnit.DAYS), adminId,
             Instant.now().minus(1, ChronoUnit.DAYS));
         assignment.setId(assignmentId);
@@ -159,11 +162,12 @@ class GradingDecisionUseCasesTests {
     }
 
     /**
-     * Một câu thí sinh ĐÃ nói nhưng chưa ai chấm — đúng tình trạng của bài bị buộc kết thúc
-     * ngay trong lúc thi: response còn nguyên, evaluation thì chưa bao giờ có.
+     * An item the candidate DID speak but nobody has graded -- exactly the state of a submission
+     * that was forcibly ended during the exam: the response is intact, but the evaluation never
+     * existed.
      */
     private ExamItemResponse givenAnsweredButUngradedItem() {
-        var response = new ExamItemResponse(
+        ExamItemResponse response = new ExamItemResponse(
             UUID.randomUUID(), sessionId, UUID.randomUUID(), "s3://audio", 41,
             "I usually study at the library.", null, Instant.now());
         when(examItemResponseRepository.findBySessionId(sessionId)).thenReturn(java.util.List.of(response));
@@ -180,9 +184,9 @@ class GradingDecisionUseCasesTests {
 
     @Test
     void should_release_a_first_round_paper_when_the_score_is_upheld() {
-        var result = given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
+        ExamCandidateResult result = given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
 
-        var response = uphold.execute(command("AI chấm đúng"));
+        GradingActionResponse response = uphold.execute(command("AI chấm đúng"));
 
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.RELEASED);
         assertThat(response.outcome()).isEqualTo(GradingOutcome.UPHELD.name());
@@ -201,12 +205,12 @@ class GradingDecisionUseCasesTests {
 
     @Test
     void should_keep_the_flag_when_remediation_confirms_the_violation() {
-        var result = given(GradingRoundType.REMEDIATION, ExamCandidateResultStatus.INVALID);
+        ExamCandidateResult result = given(GradingRoundType.REMEDIATION, ExamCandidateResultStatus.INVALID);
         session.setFlagged(true);
 
         uphold.execute(command("Xác nhận vi phạm"));
 
-        // Gỡ cờ ở đây sẽ nói ngược lại chính quyết định vừa ghi.
+        // Clearing the flag here would contradict the very decision that was just recorded.
         assertThat(session.isFlagged()).isTrue();
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.INVALID);
         verify(examSessionRepository, never()).save(any());
@@ -214,11 +218,12 @@ class GradingDecisionUseCasesTests {
 
     @Test
     void should_refuse_to_release_a_first_round_paper_that_still_has_answered_but_ungraded_items() {
-        var result = given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
+        ExamCandidateResult result = given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
         givenAnsweredButUngradedItem();
 
-        // Giữ nguyên ở vòng này CÔNG BỐ bài — công bố một bài còn câu chưa chấm là công bố
-        // điểm thiếu, đúng lỗi đã đo được trên phiên 01a00e64.
+        // Keeping it unchanged in this round PUBLISHES the submission -- publishing a submission
+        // that still has ungraded items means publishing an incomplete score, exactly the bug
+        // measured on session 01a00e64.
         assertThatThrownBy(() -> uphold.execute(command("AI chấm đúng")))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("chưa được chấm");
@@ -228,17 +233,17 @@ class GradingDecisionUseCasesTests {
 
     @Test
     void should_let_remediation_uphold_a_paper_whose_items_were_never_graded() {
-        var result = given(GradingRoundType.REMEDIATION, ExamCandidateResultStatus.INVALID);
+        ExamCandidateResult result = given(GradingRoundType.REMEDIATION, ExamCandidateResultStatus.INVALID);
         givenAnsweredButUngradedItem();
 
-        var response = uphold.execute(command("Xác nhận vi phạm"));
+        GradingActionResponse response = uphold.execute(command("Xác nhận vi phạm"));
 
-        // Bài bị vô hiệu ngay trong lúc thi thì KHÔNG có câu nào được chấm — mà giữ nguyên ở
-        // vòng này chỉ xác nhận vô hiệu, không công bố gì. Đòi chấm đủ trước là khoá cứng
-        // giáo viên trong một phân công không có lối đóng.
+        // A submission invalidated during the exam has NO graded item at all -- and keeping it
+        // unchanged in this round only confirms the invalidation and publishes nothing. Demanding
+        // full grading first would lock the teacher into an assignment with no way to close it.
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.INVALID);
         assertThat(response.outcome()).isEqualTo(GradingOutcome.UPHELD.name());
-        // Bài đứng yên ở INVALID nên không có gì để điền hay tính lại.
+        // The submission stays at INVALID, so there is nothing to fill in or recalculate.
         verify(missingResponseBackfillService, never()).recordSilentAnswer(any(), any());
         verify(upsertExamCandidateResultUseCase, never()).execute(any(), any());
     }
@@ -247,13 +252,13 @@ class GradingDecisionUseCasesTests {
 
     @Test
     void should_invalidate_the_result_and_tell_the_student_why() {
-        var result = given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
+        ExamCandidateResult result = given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
 
         invalidate.execute(command("Gian lận: đọc bài mẫu"));
 
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.INVALID);
         assertThat(result.getFinalizedAt()).isNotNull();
-        var payload = capturePayload(
+        ExamResultInvalidatedPayloadV1 payload = capturePayload(
             EventTypeConstant.EXAM_RESULT_INVALIDATED, ExamResultInvalidatedPayloadV1.class);
         assertThat(payload.studentId()).isEqualTo(studentId);
         assertThat(payload.reason()).isEqualTo("Gian lận: đọc bài mẫu");
@@ -261,7 +266,7 @@ class GradingDecisionUseCasesTests {
 
     @Test
     void should_refuse_to_invalidate_without_a_reason() {
-        var result = given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
+        ExamCandidateResult result = given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
 
         assertThatThrownBy(() -> invalidate.execute(command("  ")))
             .isInstanceOf(IllegalArgumentException.class)
@@ -274,13 +279,13 @@ class GradingDecisionUseCasesTests {
 
     @Test
     void should_return_the_paper_to_the_queue_without_changing_its_status() {
-        var result = given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
+        ExamCandidateResult result = given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
 
         decline.execute(command("Quen thí sinh"));
 
-        // Bài không đổi trạng thái — nó chỉ quay về hàng chưa giao.
+        // The submission does not change status -- it just returns to the unassigned row.
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.PENDING_REVIEW);
-        var assignment = examGradingAccessService.loadForUpdate(assignmentId).assignment();
+        ExamGradingAssignment assignment = examGradingAccessService.loadForUpdate(assignmentId).assignment();
         assertThat(assignment.isCompleted()).isTrue();
         assertThat(assignment.getOutcome()).isEqualTo(GradingOutcome.DECLINED);
         assertThat(assignment.getActiveResultId()).isNull();
@@ -292,7 +297,7 @@ class GradingDecisionUseCasesTests {
 
         decline.execute(command("Quá tải"));
 
-        var payload = capturePayload(
+        GradingAssignmentDeclinedPayloadV1 payload = capturePayload(
             EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, GradingAssignmentDeclinedPayloadV1.class);
         assertThat(payload.assignedBy()).isEqualTo(adminId);
         assertThat(payload.teacherId()).isEqualTo(teacherId);
@@ -303,13 +308,14 @@ class GradingDecisionUseCasesTests {
 
     @Test
     void should_unblock_the_candidate_and_reopen_a_first_round() {
-        var result = given(GradingRoundType.REMEDIATION, ExamCandidateResultStatus.INVALID);
+        ExamCandidateResult result = given(GradingRoundType.REMEDIATION, ExamCandidateResultStatus.INVALID);
         candidate.setBlockedAt(Instant.now().minus(2, ChronoUnit.DAYS));
 
         clearInvalid.execute(command("Không có vi phạm"));
 
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.PENDING_REVIEW);
-        // Không gỡ chặn thì mọi lần tính lại điểm sau này sẽ kéo bài về INVALID.
+        // If the block is not lifted, every later score recalculation would pull the submission
+        // back to INVALID.
         assertThat(candidate.getBlockedAt()).isNull();
         capturePayload(
             EventTypeConstant.EXAM_RESULT_INVALID_CLEARED, ExamResultInvalidClearedPayloadV1.class);
@@ -321,14 +327,15 @@ class GradingDecisionUseCasesTests {
 
         clearInvalid.execute(command("Không có vi phạm"));
 
-        var captor = ArgumentCaptor.forClass(ExamGradingAssignment.class);
+        ArgumentCaptor<ExamGradingAssignment> captor = ArgumentCaptor.forClass(ExamGradingAssignment.class);
         verify(examGradingAssignmentRepository, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
-        var reopened = captor.getAllValues().stream()
+        ExamGradingAssignment reopened = captor.getAllValues().stream()
             .filter(assignment -> assignment.getRoundType() == GradingRoundType.INITIAL)
             .findFirst()
             .orElseThrow();
-        // Hạn của vòng REMEDIATION đã trôi qua; kế thừa nó là phân công mới đỏ "quá hạn"
-        // ngay lúc tạo và lọt vào danh sách thu hồi trước khi ai kịp chấm.
+        // The deadline of the REMEDIATION round has already passed; inheriting it would make the
+        // new assignment show red "overdue" the moment it is created and land in the reclaim list
+        // before anyone can grade it.
         assertThat(reopened.getDeadlineAt()).isNull();
         assertThat(reopened.getTeacherId()).isEqualTo(teacherId);
         assertThat(reopened.getActiveResultId()).isEqualTo(candidateResultId);
@@ -336,7 +343,7 @@ class GradingDecisionUseCasesTests {
 
     @Test
     void should_clear_the_finalized_mark_when_the_paper_goes_back_to_pending_review() {
-        var result = given(GradingRoundType.REMEDIATION, ExamCandidateResultStatus.INVALID);
+        ExamCandidateResult result = given(GradingRoundType.REMEDIATION, ExamCandidateResultStatus.INVALID);
         result.setFinalizedAt(Instant.now().minus(2, ChronoUnit.DAYS));
 
         clearInvalid.execute(command("Không có vi phạm"));

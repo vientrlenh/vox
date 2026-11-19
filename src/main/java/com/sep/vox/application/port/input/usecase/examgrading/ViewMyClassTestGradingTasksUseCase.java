@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +34,7 @@ public class ViewMyClassTestGradingTasksUseCase
     @Override
     @Transactional(readOnly = true)
     public PageResult<GradingTaskInfo> execute(ViewMyClassTestGradingTasksQuery input) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
         return examGradingQueryRepository.findTasksByTeacherIdAndExamId(
             currentUserId,
             input.examId(),

@@ -7,6 +7,9 @@ import com.sep.vox.application.port.input.command.DeleteSchoolRubricResultBandCo
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.rubric.*;
+import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
@@ -47,7 +50,7 @@ public class DeleteSchoolRubricResultBandUseCase implements IUseCase<DeleteSchoo
     public Void execute(DeleteSchoolRubricResultBandCommand command) {
         // 1. Auth
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản bị khóa.");
@@ -64,7 +67,7 @@ public class DeleteSchoolRubricResultBandUseCase implements IUseCase<DeleteSchoo
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric gốc."));
 
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
@@ -74,7 +77,7 @@ public class DeleteSchoolRubricResultBandUseCase implements IUseCase<DeleteSchoo
         }
 
         // Kiểm tra xem trường học có đang hoạt động không
-        var school = schoolRepository.findById(command.schoolId())
+        School school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");

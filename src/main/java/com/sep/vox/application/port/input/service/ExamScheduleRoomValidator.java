@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.school.SchoolRoom;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -34,7 +35,7 @@ public class ExamScheduleRoomValidator {
 
     /** Phòng phải tồn tại và thuộc trường của bài kiểm tra. */
     public void requireRoomOfExamSchool(UUID schoolRoomId, Exam exam) {
-        var room = schoolRoomRepository.findById(schoolRoomId)
+        SchoolRoom room = schoolRoomRepository.findById(schoolRoomId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng học"));
         if (!room.getSchoolId().equals(exam.getSchoolId())) {
             throw new ForbiddenException("Phòng học không thuộc trường của bài kiểm tra");

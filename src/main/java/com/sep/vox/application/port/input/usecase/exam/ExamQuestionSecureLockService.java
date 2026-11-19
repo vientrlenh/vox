@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.exam.ExamSecurePool;
+import com.sep.vox.domain.model.question.Question;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -81,7 +83,7 @@ public class ExamQuestionSecureLockService {
 
     @Transactional
     public void unlockQuestion(UUID questionId, UUID currentUserId) {
-        var question = questionRepository.findById(questionId).orElse(null);
+        Question question = questionRepository.findById(questionId).orElse(null);
         if (question == null || !question.isLocked()) {
             return;
         }
@@ -100,12 +102,12 @@ public class ExamQuestionSecureLockService {
      */
     @Transactional
     public void releaseAllForExam(UUID examId, UUID currentUserId) {
-        var pool = examSecurePoolRepository.findByExamId(examId).orElse(null);
+        ExamSecurePool pool = examSecurePoolRepository.findByExamId(examId).orElse(null);
         if (pool == null) {
             return;
         }
-        var now = Instant.now();
-        for (var question : questionRepository.findBySecurePoolId(pool.getId())) {
+        Instant now = Instant.now();
+        for (Question question : questionRepository.findBySecurePoolId(pool.getId())) {
             question.setLocked(false);
             question.setConfidentiality(QuestionConfidentiality.RELEASED);
             question.setSecurePoolId(null);
@@ -118,19 +120,19 @@ public class ExamQuestionSecureLockService {
 
     @Transactional
     public void releaseIfAutoAfterClose(UUID examId) {
-        var pool = examSecurePoolRepository.findByExamId(examId).orElse(null);
+        ExamSecurePool pool = examSecurePoolRepository.findByExamId(examId).orElse(null);
         if (pool == null
                 || pool.getReleaseMode() != ExamSecurePoolReleaseMode.AUTO_AFTER_CLOSE
                 || pool.getStatus() != ExamSecurePoolStatus.SEALED) {
             return;
         }
-        var now = Instant.now();
+        Instant now = Instant.now();
         pool.setStatus(ExamSecurePoolStatus.RELEASED);
         pool.setReleasedAt(now);
         pool.setUpdatedAt(now);
-        var savedPool = examSecurePoolRepository.save(pool);
+        ExamSecurePool savedPool = examSecurePoolRepository.save(pool);
 
-        for (var question : questionRepository.findBySecurePoolId(savedPool.getId())) {
+        for (Question question : questionRepository.findBySecurePoolId(savedPool.getId())) {
             question.setConfidentiality(QuestionConfidentiality.RELEASED);
             question.setUpdatedAt(now);
             questionRepository.save(question);

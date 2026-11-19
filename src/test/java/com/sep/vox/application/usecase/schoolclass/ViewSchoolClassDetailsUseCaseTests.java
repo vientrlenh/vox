@@ -19,6 +19,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.user.User;
@@ -56,20 +57,20 @@ class ViewSchoolClassDetailsUseCaseTests {
 
     @Test
     void view_details_should_return_school_class_response_when_class_belongs_to_current_school() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var languageId = UUID.randomUUID();
-        var gradeId = UUID.randomUUID();
-        var classId = UUID.randomUUID();
-        var schoolClass = newSchoolClass(classId, schoolId, languageId, gradeId, "ENG-01", "English 01");
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID languageId = UUID.randomUUID();
+        UUID gradeId = UUID.randomUUID();
+        UUID classId = UUID.randomUUID();
+        SchoolClass schoolClass = newSchoolClass(classId, schoolId, languageId, gradeId, "ENG-01", "English 01");
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user = user(userId, schoolId, UserStatus.ACTIVE);
+        User _user = user(userId, schoolId, UserStatus.ACTIVE);
         when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(_user));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(schoolClass));
 
-        var result = useCase.execute(new ViewSchoolClassDetailsQuery(classId));
+        SchoolClassDto result = useCase.execute(new ViewSchoolClassDetailsQuery(classId));
 
         assertThat(result.id()).isEqualTo(classId);
         assertThat(result.schoolId()).isEqualTo(schoolId);
@@ -82,12 +83,12 @@ class ViewSchoolClassDetailsUseCaseTests {
 
     @Test
     void view_details_should_throw_when_class_does_not_exist() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var classId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID classId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user1 = user(userId, schoolId, UserStatus.ACTIVE);
+        User _user1 = user(userId, schoolId, UserStatus.ACTIVE);
         when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(_user1));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.empty());
@@ -97,10 +98,10 @@ class ViewSchoolClassDetailsUseCaseTests {
 
     @Test
     void view_details_should_throw_when_class_belongs_to_another_school() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var classId = UUID.randomUUID();
-        var schoolClass = newSchoolClass(
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID classId = UUID.randomUUID();
+        SchoolClass schoolClass = newSchoolClass(
             classId,
             UUID.randomUUID(),
             UUID.randomUUID(),
@@ -110,7 +111,7 @@ class ViewSchoolClassDetailsUseCaseTests {
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user2 = user(userId, schoolId, UserStatus.ACTIVE);
+        User _user2 = user(userId, schoolId, UserStatus.ACTIVE);
         when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(_user2));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(schoolClass));
@@ -120,7 +121,7 @@ class ViewSchoolClassDetailsUseCaseTests {
 
     @Test
     void view_details_should_throw_when_current_user_is_inactive() {
-        var userId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
@@ -132,10 +133,10 @@ class ViewSchoolClassDetailsUseCaseTests {
 
     @Test
     void view_details_should_throw_when_current_user_has_no_school() {
-        var userId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user3 = user(userId, null, UserStatus.ACTIVE);
+        User _user3 = user(userId, null, UserStatus.ACTIVE);
         when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(_user3));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(UUID.randomUUID())));
@@ -145,13 +146,13 @@ class ViewSchoolClassDetailsUseCaseTests {
 
     @Test
     void view_details_should_throw_when_school_is_inactive() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var school = activeSchool(schoolId);
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        School school = activeSchool(schoolId);
         school.setActive(false);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user4 = user(userId, schoolId, UserStatus.ACTIVE);
+        User _user4 = user(userId, schoolId, UserStatus.ACTIVE);
         when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(_user4));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
 
@@ -161,7 +162,7 @@ class ViewSchoolClassDetailsUseCaseTests {
     }
 
     private static SchoolClass newSchoolClass(UUID id, UUID schoolId, UUID languageId, UUID gradeId, String code, String name) {
-        var schoolClass = SchoolClass.create(
+        SchoolClass schoolClass = SchoolClass.create(
             schoolId,
             languageId,
             gradeId,
@@ -176,7 +177,7 @@ class ViewSchoolClassDetailsUseCaseTests {
     }
 
     private User user(UUID id, UUID schoolId, UserStatus status) {
-        var user = new User();
+        User user = new User();
         user.setId(id);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
@@ -186,7 +187,7 @@ class ViewSchoolClassDetailsUseCaseTests {
     }
 
     private static School activeSchool(UUID id) {
-        var school = new School();
+        School school = new School();
         school.setId(id);
         school.setActive(true);
         return school;

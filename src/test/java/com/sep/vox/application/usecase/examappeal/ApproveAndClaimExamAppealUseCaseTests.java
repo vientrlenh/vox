@@ -1,5 +1,6 @@
 package com.sep.vox.application.usecase.examappeal;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -53,10 +55,10 @@ public class ApproveAndClaimExamAppealUseCaseTests {
         useCase = new ApproveAndClaimExamAppealUseCase(
             approveExamAppealUseCase, assignExamAppealReviewerUseCase, examAppealAccessService);
 
-        var appeal = new ExamResultAppeal();
+        ExamResultAppeal appeal = new ExamResultAppeal();
         appeal.setId(appealId);
         appeal.setStatus(ExamAppealStatus.PENDING);
-        var candidateResult = new ExamCandidateResult();
+        ExamCandidateResult candidateResult = new ExamCandidateResult();
         candidateResult.setStatus(ExamCandidateResultStatus.APPEALED);
         context = new AppealContext(appeal, candidateResult, new ExamSession(),
             UUID.randomUUID(), studentId, "Kiểm tra Nói giữa kỳ");
@@ -76,7 +78,7 @@ public class ApproveAndClaimExamAppealUseCaseTests {
     void should_approve_before_assigning() {
         useCase.execute(appealId);
 
-        var order = inOrder(approveExamAppealUseCase, assignExamAppealReviewerUseCase);
+        InOrder order = inOrder(approveExamAppealUseCase, assignExamAppealReviewerUseCase);
         order.verify(approveExamAppealUseCase).execute(any());
         order.verify(assignExamAppealReviewerUseCase).execute(any());
     }
@@ -85,11 +87,12 @@ public class ApproveAndClaimExamAppealUseCaseTests {
     void should_assign_the_current_teacher_as_reviewer_with_a_fixed_override_reason() {
         useCase.execute(appealId);
 
-        var command = captureAssignCommand();
+        AssignExamAppealReviewerCommand command = captureAssignCommand();
         assertThat(command.appealId()).isEqualTo(appealId);
         assertThat(command.reviewerId()).isEqualTo(teacherId);
-        // Chuỗi cố định — Assign chỉ chấp nhận tự nhận chấm khi có override reason,
-        // nên nó phải luôn khác null và luôn nói rõ đây là bài trên lớp.
+        // A fixed string -- Assign only accepts a self-claim for grading when there is an override
+        // reason, so it must always be non-null and must always make clear that this is a class
+        // test.
         assertThat(command.overrideReason())
             .isEqualTo("Bài kiểm tra trên lớp: giáo viên phụ trách bài tự nhận chấm phúc khảo.");
     }
@@ -98,7 +101,7 @@ public class ApproveAndClaimExamAppealUseCaseTests {
     void should_default_the_deadline_to_three_days_later_at_5pm_vietnam_time() {
         useCase.execute(appealId);
 
-        var expected = LocalDate.now(DateMapper.DEFAULT_INPUT_ZONE)
+        Instant expected = LocalDate.now(DateMapper.DEFAULT_INPUT_ZONE)
             .plusDays(3)
             .atTime(LocalTime.of(17, 0))
             .atZone(DateMapper.DEFAULT_INPUT_ZONE)
@@ -128,13 +131,13 @@ public class ApproveAndClaimExamAppealUseCaseTests {
     }
 
     private ApproveExamAppealCommand captureApproveCommand() {
-        var captor = ArgumentCaptor.forClass(ApproveExamAppealCommand.class);
+        ArgumentCaptor<ApproveExamAppealCommand> captor = ArgumentCaptor.forClass(ApproveExamAppealCommand.class);
         verify(approveExamAppealUseCase).execute(captor.capture());
         return captor.getValue();
     }
 
     private AssignExamAppealReviewerCommand captureAssignCommand() {
-        var captor = ArgumentCaptor.forClass(AssignExamAppealReviewerCommand.class);
+        ArgumentCaptor<AssignExamAppealReviewerCommand> captor = ArgumentCaptor.forClass(AssignExamAppealReviewerCommand.class);
         verify(assignExamAppealReviewerUseCase).execute(captor.capture());
         return captor.getValue();
     }

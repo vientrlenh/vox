@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.query.dto.StudentExamRowInfo;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamScheduleJpaEntity;
@@ -61,7 +63,7 @@ class JpaStudentExamQueryRepositoryTests {
 
     @Test
     void should_hide_exam_when_candidate_has_no_schedule() {
-        var candidate = givenExam("Chưa xếp ca", "SCHEDULED", "PUBLISHED", now.plusSeconds(3600));
+        ExamCandidateJpaEntity candidate = givenExam("Chưa xếp ca", "SCHEDULED", "PUBLISHED", now.plusSeconds(3600));
         candidate.setScheduleId(null);
         em.flush();
 
@@ -106,7 +108,7 @@ class JpaStudentExamQueryRepositoryTests {
         givenExam("Bài cũ", "CLOSED", "COMPLETED", now.minusSeconds(86400));
         givenExam("Bài mới", "SCHEDULED", "PUBLISHED", now.plusSeconds(86400));
 
-        var page = repository.findMyExams(studentId, null, null, false, 1, 20, now);
+        PageResult<StudentExamRowInfo> page = repository.findMyExams(studentId, null, null, false, 1, 20, now);
 
         assertThat(page.content()).extracting(row -> row.examName())
             .containsExactly("Bài cũ", "Bài mới");
@@ -117,7 +119,7 @@ class JpaStudentExamQueryRepositoryTests {
         givenExam("Kỳ thi tập trung", "SCHEDULED", "PUBLISHED", now.plusSeconds(3600));
         givenExam("Bài trên lớp", "SCHEDULED", "PUBLISHED", now.plusSeconds(7200), "CLASS_TEST");
 
-        var page = repository.findMyExams(studentId, "CLASS_TEST", null, true, 1, 20, now);
+        PageResult<StudentExamRowInfo> page = repository.findMyExams(studentId, "CLASS_TEST", null, true, 1, 20, now);
 
         assertThat(page.content()).extracting(row -> row.examName()).containsExactly("Bài trên lớp");
     }
@@ -127,7 +129,7 @@ class JpaStudentExamQueryRepositoryTests {
         givenExam("Sắp thi", "SCHEDULED", "PUBLISHED", now.plusSeconds(3600));
         givenExam("Đã xong", "CLOSED", "COMPLETED", now.minusSeconds(86400));
 
-        var page = repository.findMyExams(studentId, null, "completed", true, 1, 20, now);
+        PageResult<StudentExamRowInfo> page = repository.findMyExams(studentId, null, "completed", true, 1, 20, now);
 
         assertThat(page.content()).extracting(row -> row.examName()).containsExactly("Đã xong");
     }
@@ -142,8 +144,9 @@ class JpaStudentExamQueryRepositoryTests {
     }
 
     /**
-     * Trang đầu là 1. Đây chính là chỗ lỗi cũ trú: khi repository nhân thẳng {@code page * size},
-     * client xin trang 1 nhận về trang thứ hai và trang đầu không có đường nào tới.
+     * The first page is 1. This is exactly where the old bug lived: when the repository multiplied
+     * {@code page * size} directly, a client asking for page 1 got the second page and the first
+     * page was unreachable.
      */
     @Test
     void should_paginate_from_page_one() {
@@ -151,8 +154,8 @@ class JpaStudentExamQueryRepositoryTests {
         givenExam("Bài 2", "SCHEDULED", "PUBLISHED", now.plusSeconds(200));
         givenExam("Bài 3", "SCHEDULED", "PUBLISHED", now.plusSeconds(100));
 
-        var firstPage = repository.findMyExams(studentId, null, null, true, 1, 2, now);
-        var secondPage = repository.findMyExams(studentId, null, null, true, 2, 2, now);
+        PageResult<StudentExamRowInfo> firstPage = repository.findMyExams(studentId, null, null, true, 1, 2, now);
+        PageResult<StudentExamRowInfo> secondPage = repository.findMyExams(studentId, null, null, true, 2, 2, now);
 
         assertThat(firstPage.content()).extracting(row -> row.examName()).containsExactly("Bài 1", "Bài 2");
         assertThat(firstPage.page()).isEqualTo(1);
@@ -174,7 +177,7 @@ class JpaStudentExamQueryRepositoryTests {
 
     @Test
     void should_report_an_empty_page_without_running_the_row_query() {
-        var page = findAll();
+        PageResult<StudentExamRowInfo> page = findAll();
 
         assertThat(page.content()).isEmpty();
         assertThat(page.totalElements()).isZero();
@@ -198,13 +201,13 @@ class JpaStudentExamQueryRepositoryTests {
 
     private ExamCandidateJpaEntity givenExamFor(
             UUID owner, String name, String examStatus, String scheduleStatus, Instant startDate, String kind) {
-        var exam = persisted(new ExamJpaEntity(
+        ExamJpaEntity exam = persisted(new ExamJpaEntity(
             null, null, null, "EX-" + UUID.randomUUID(), name, name + " mô tả", null, UUID.randomUUID(),
             kind, null, examStatus, 1, null, null, null, null,
             startDate, null, null, true,
             now, now, null, null));
 
-        var schedule = persisted(new ExamScheduleJpaEntity(
+        ExamScheduleJpaEntity schedule = persisted(new ExamScheduleJpaEntity(
             null, exam.getId(), null, startDate, startDate.plusSeconds(3600), scheduleStatus,
             null, now, now, null, null));
 

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exampaper;
 
+import com.sep.vox.domain.model.exam.ExamPaper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +29,7 @@ public class ViewExamPaperDetailsUseCase implements IUseCase<ViewExamPaperDetail
     @Override
     @Transactional(readOnly = true)
     public ExamPaperDto execute(ViewExamPaperDetailsQuery input) {
-        var paper = examPaperRepository.findById(input.id())
+        ExamPaper paper = examPaperRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
 
         // Tận dụng đúng rule phân quyền xem exam đã có sẵn — ném ForbiddenException/NotFoundException

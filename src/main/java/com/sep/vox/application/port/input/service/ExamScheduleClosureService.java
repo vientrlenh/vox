@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -51,7 +52,7 @@ public class ExamScheduleClosureService {
         if (examScheduleRepository.findByExamIdAndInSchedule(examId, now).isEmpty()) {
             return;
         }
-        var activeCount = examSessionRepository.countActiveByExamId(examId);
+        long activeCount = examSessionRepository.countActiveByExamId(examId);
         if (activeCount > 0) {
             throw new IllegalStateException("Còn " + activeCount
                 + " học sinh đang làm bài ở ca thi đang diễn ra, không thể đóng bài kiểm tra");
@@ -69,8 +70,8 @@ public class ExamScheduleClosureService {
      * @return số ca đã đổi trạng thái
      */
     public int closeSchedulesForExam(UUID examId, UUID actorId, Instant now) {
-        var changed = 0;
-        for (var schedule : examScheduleRepository.findByExamId(examId)) {
+        int changed = 0;
+        for (ExamSchedule schedule : examScheduleRepository.findByExamId(examId)) {
             if (isTerminal(schedule.getStatus())) {
                 continue;
             }
@@ -78,9 +79,9 @@ public class ExamScheduleClosureService {
             // thấy nó, dù khung giờ đã trôi qua -- gọi là COMPLETED là bịa ra một buổi thi không có.
             // Ca đang diễn ra không tới được đây vì guard chạy trước; nếu có thì nó đã bắt đầu thật
             // nên COMPLETED vẫn là nhãn đúng hơn CANCELLED.
-            var alreadyRan = schedule.getStatus() == ExamScheduleStatus.PUBLISHED
+            boolean alreadyRan = schedule.getStatus() == ExamScheduleStatus.PUBLISHED
                 && (schedule.hasEndedAt(now) || schedule.isOngoingAt(now));
-            var target = alreadyRan ? ExamScheduleStatus.COMPLETED : ExamScheduleStatus.CANCELLED;
+            ExamScheduleStatus target = alreadyRan ? ExamScheduleStatus.COMPLETED : ExamScheduleStatus.CANCELLED;
             apply(schedule, target, actorId, now);
             changed++;
         }
@@ -94,8 +95,8 @@ public class ExamScheduleClosureService {
      * @return số ca đã đổi trạng thái
      */
     public int cancelSchedulesForExam(UUID examId, UUID actorId, Instant now) {
-        var changed = 0;
-        for (var schedule : examScheduleRepository.findByExamId(examId)) {
+        int changed = 0;
+        for (ExamSchedule schedule : examScheduleRepository.findByExamId(examId)) {
             if (isTerminal(schedule.getStatus())) {
                 continue;
             }
@@ -112,8 +113,8 @@ public class ExamScheduleClosureService {
      * @return số ca đã đổi trạng thái
      */
     public int completeEndedSchedules(Instant now, int limit) {
-        var ended = examScheduleRepository.findPublishedEndedBefore(now, limit);
-        for (var schedule : ended) {
+        List<ExamSchedule> ended = examScheduleRepository.findPublishedEndedBefore(now, limit);
+        for (ExamSchedule schedule : ended) {
             apply(schedule, ExamScheduleStatus.COMPLETED, null, now);
         }
         return ended.size();

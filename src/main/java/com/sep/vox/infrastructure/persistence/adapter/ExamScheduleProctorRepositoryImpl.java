@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamScheduleProctorJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -27,7 +28,7 @@ public class ExamScheduleProctorRepositoryImpl implements ExamScheduleProctorRep
     @Override
     public ExamScheduleProctor save(ExamScheduleProctor proctor) {
         try {
-            var saved = springDataExamScheduleProctorRepository.save(ExamScheduleProctorMapper.toJpa(proctor));
+            ExamScheduleProctorJpaEntity saved = springDataExamScheduleProctorRepository.save(ExamScheduleProctorMapper.toJpa(proctor));
             return ExamScheduleProctorMapper.toDomain(saved);
         } catch (DataIntegrityViolationException e) {
             throw new DuplicatedException("Giám thị đã được phân công cho ca này");

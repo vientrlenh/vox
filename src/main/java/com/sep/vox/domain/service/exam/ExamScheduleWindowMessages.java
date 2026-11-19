@@ -22,8 +22,8 @@ public final class ExamScheduleWindowMessages {
         if (totalSeconds == null) {
             return "0 giây";
         }
-        var minutes = totalSeconds / 60;
-        var seconds = totalSeconds % 60;
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
         if (minutes == 0) {
             return seconds + " giây";
         }
@@ -31,7 +31,7 @@ public final class ExamScheduleWindowMessages {
     }
 
     public static String outsideExamWindow(Exam exam) {
-        var message = new StringBuilder("Ca thi phải nằm trong khoảng thời gian mở và đóng của kỳ thi");
+        StringBuilder message = new StringBuilder("Ca thi phải nằm trong khoảng thời gian mở và đóng của kỳ thi");
         if (exam.getOpenAt() != null) {
             message.append(", mở lúc ").append(exam.getOpenAt());
         }

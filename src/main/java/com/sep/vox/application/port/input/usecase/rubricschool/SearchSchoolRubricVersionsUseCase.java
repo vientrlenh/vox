@@ -12,6 +12,9 @@ import com.sep.vox.domain.mapper.RubricVersionDtoMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
@@ -53,7 +56,7 @@ public class SearchSchoolRubricVersionsUseCase implements IUseCase<SearchSchoolR
     public PageResult<RubricVersionDto> execute(SearchSchoolRubricVersionsQuery query) {
         // 1. Xác thực tài khoản
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
@@ -61,7 +64,7 @@ public class SearchSchoolRubricVersionsUseCase implements IUseCase<SearchSchoolR
         }
 
         // 2. Chốt chặn bảo mật 1: Kiểm tra School Admin có thuộc trường này không
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
         if (!schoolUser.getSchoolId().equals(query.schoolId())) {
@@ -69,7 +72,7 @@ public class SearchSchoolRubricVersionsUseCase implements IUseCase<SearchSchoolR
         }
 
         // 3. Chốt chặn bảo mật 2: Kiểm tra trường học có đang hoạt động không
-        var school = schoolRepository.findById(query.schoolId())
+        School school = schoolRepository.findById(query.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");

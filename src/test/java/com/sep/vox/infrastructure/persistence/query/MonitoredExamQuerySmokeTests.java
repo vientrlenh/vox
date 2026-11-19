@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.query.dto.MonitoredExamSummary;
 import com.sep.vox.application.query.repository.MonitoredExamQueryRepository;
 import com.sep.vox.support.IntegrationTest;
 
@@ -59,23 +61,27 @@ class MonitoredExamQuerySmokeTests {
     void should_list_a_running_exam_for_the_proctor_assigned_to_it() {
         seedSchedule(now.minus(Duration.ofMinutes(10)), now.plus(Duration.ofHours(1)));
 
-        var found = repository.findMonitorableByTeacher(teacherId, null, now, now.plus(LEAD));
+        List<MonitoredExamSummary> found = repository.findMonitorableByTeacher(teacherId, null, now, now.plus(LEAD));
 
         assertThat(found).singleElement().satisfies(exam -> {
             assertThat(exam.examId()).isEqualTo(examId);
             assertThat(exam.code()).isEqualTo("SMOKE-" + examId);
-            // SUM(CASE ...) chỉ chạy khi có dòng: tổ hợp rỗng không chứng minh được nó ánh xạ về long.
+            // SUM(CASE ...) only runs when there are rows: an empty combination cannot prove that
+            // it maps to long.
             assertThat(exam.liveScheduleCount()).isEqualTo(1L);
             assertThat(exam.windowStart()).isEqualTo(now.minus(Duration.ofMinutes(10)));
         });
     }
 
-    /** Ca chưa tới giờ vẫn phải hiện -- giám thị vào phòng trước khi học viên kết nối. */
+    /**
+     * A session that has not reached its time must still show -- proctors enter the room before
+     * students connect.
+     */
     @Test
     void should_list_an_upcoming_exam_but_report_no_running_schedule() {
         seedSchedule(now.plus(Duration.ofMinutes(10)), now.plus(Duration.ofHours(1)));
 
-        var found = repository.findMonitorableByTeacher(teacherId, null, now, now.plus(LEAD));
+        List<MonitoredExamSummary> found = repository.findMonitorableByTeacher(teacherId, null, now, now.plus(LEAD));
 
         assertThat(found).singleElement()
             .satisfies(exam -> assertThat(exam.liveScheduleCount()).isZero());
@@ -90,15 +96,16 @@ class MonitoredExamQuerySmokeTests {
     }
 
     /**
-     * Đường đọc một kỳ thi: {@code leadUntil} null nên BỎ lọc thời gian.
+     * The single-exam read path: {@code leadUntil} is null so the time filter is DROPPED.
      *
-     * <p>Ca đã kết thúc mà vẫn trả về chính là điều kiện để đầu trang xem lại có tên kỳ thi.
+     * <p>A session that has ended and is still returned is exactly the condition for the review
+     * page to carry the exam name at the top.
      */
     @Test
     void should_read_one_finished_exam_for_its_proctor_when_the_window_is_dropped() {
         seedSchedule(now.minus(Duration.ofHours(4)), now.minus(Duration.ofHours(3)));
 
-        var found = repository.findMonitorableByTeacher(teacherId, examId, now, null);
+        List<MonitoredExamSummary> found = repository.findMonitorableByTeacher(teacherId, examId, now, null);
 
         assertThat(found).singleElement()
             .satisfies(exam -> assertThat(exam.liveScheduleCount()).isZero());
@@ -116,7 +123,7 @@ class MonitoredExamQuerySmokeTests {
         seedExam();
         seedSchedule(now.minus(Duration.ofMinutes(10)), now.plus(Duration.ofHours(1)), false);
 
-        var found = repository.findMonitorableBySchool(schoolId, null, now, now.plus(LEAD));
+        List<MonitoredExamSummary> found = repository.findMonitorableBySchool(schoolId, null, now, now.plus(LEAD));
 
         assertThat(found).singleElement()
             .satisfies(exam -> assertThat(exam.liveScheduleCount()).isEqualTo(1L));
@@ -185,7 +192,7 @@ class MonitoredExamQuerySmokeTests {
     }
 
     private void seedSchedule(Instant start, Instant end, boolean assignTeacher) {
-        var scheduleId = UUID.randomUUID();
+        UUID scheduleId = UUID.randomUUID();
         em.createNativeQuery("""
             INSERT INTO exam_schedules (id, exam_id, start_date, end_date, status, created_at, updated_at)
             VALUES (:id, :examId, :start, :end, 'PUBLISHED', :now, :now)

@@ -19,6 +19,7 @@ import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.output.QuotaPricingPort;
+import com.sep.vox.application.response.input.exam.ExamTokenEstimateResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -74,7 +75,7 @@ class ClassTestTokenQuotaGuardServiceTests {
         subscriptionQuotaUserAllocationRepository = mock(SchoolSubscriptionQuotaUserAllocationRepository.class);
         examCandidateRepository = mock(ExamCandidateRepository.class);
         schoolBalanceRepository = mock(SchoolBalanceRepository.class);
-        var quotaPricingPort = mock(QuotaPricingPort.class);
+        QuotaPricingPort quotaPricingPort = mock(QuotaPricingPort.class);
         when(quotaPricingPort.currentEstimatedCostPerExamSecondUsd()).thenReturn(BigDecimal.ONE);
         when(quotaPricingPort.usdToVndRate()).thenReturn(USD_TO_VND_RATE);
 
@@ -87,7 +88,7 @@ class ClassTestTokenQuotaGuardServiceTests {
             quotaPricingPort,
             new SchoolSubscriptionDebtGuardService(schoolBalanceRepository));
 
-        var subscription = new SchoolSubscription();
+        SchoolSubscription subscription = new SchoolSubscription();
         subscription.setId(subscriptionId);
         subscription.setSchoolId(schoolId);
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(subscription));
@@ -238,31 +239,36 @@ class ClassTestTokenQuotaGuardServiceTests {
             .hasMessageContaining("Không tìm thấy hạn mức");
     }
 
-    /** Ước lượng phải là VND: cùng con số đó xuất hiện trên cảnh báo không chặn của estimateTokenQuota. */
+    /**
+     * The estimate must be in VND: the same number appears in the non-blocking warning of
+     * estimateTokenQuota.
+     */
     @Test
     void should_report_estimate_and_spendable_funds_in_vnd() {
         givenSchoolQuota(1_000_000, 0);
         givenBalance(5_000_000);
 
-        var estimate = guard.estimateTokenQuota(classTest(EXAM_SECONDS));
+        ExamTokenEstimateResponse estimate = guard.estimateTokenQuota(classTest(EXAM_SECONDS));
 
         assertThat(estimate.estimatedCostVnd()).isEqualByComparingTo(ESTIMATE_VND);
-        // 1.000.000 hạn mức + 5.000.000 số dư -- cảnh báo phải dùng chung thước với cửa chặn, nếu
-        // không thì hoặc dọa người dùng về một bài vẫn publish được, hoặc để họ bấm rồi mới ăn lỗi.
+        // 1,000,000 quota + 5,000,000 balance -- the warning must use the same yardstick as the
+        // blocking gate; otherwise it either scares the user about a test that can still be
+        // published, or lets them click and only then hit the error.
         assertThat(estimate.remainingExamVnd()).isEqualByComparingTo(BigDecimal.valueOf(6_000_000));
         assertThat(estimate.wouldExceedExam()).isFalse();
     }
 
     /**
-     * CENTRALIZED không có hạn mức cá nhân nên tiêu bao nhiêu cũng ăn thẳng vào ví chung -- người
-     * bấm lên lịch không tự thấy hệ quả lên các giáo viên khác đang có hạn mức cá nhân riêng cho
-     * CLASS_TEST. % tính trên phần hạn mức GÓI còn lại (không cộng ví tự nạp, khác remainingExamVnd).
+     * CENTRALIZED has no personal quota, so any spending goes straight into the shared wallet --
+     * the person pressing schedule does not see the effect on other teachers who have their own
+     * personal quota for CLASS_TEST. The percentage is computed on the remaining PLAN quota (top-up
+     * wallet not included, unlike remainingExamVnd).
      */
     @Test
     void should_compute_shared_pool_usage_ratio_and_teacher_count_for_centralized_estimate() {
         givenSchoolQuota(10_000_000, 1_000_000); // quotaOnlyRemaining = 9.000.000
-        var teacherWithRoom = UUID.randomUUID();
-        var teacherFullyUsed = UUID.randomUUID();
+        UUID teacherWithRoom = UUID.randomUUID();
+        UUID teacherFullyUsed = UUID.randomUUID();
         when(subscriptionQuotaUserAllocationRepository
             .findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.EXAM))
             .thenReturn(List.of(
@@ -271,31 +277,38 @@ class ClassTestTokenQuotaGuardServiceTests {
                 new SchoolSubscriptionQuotaUserAllocation(subscriptionId, QuotaType.EXAM, teacherFullyUsed,
                     BigDecimal.valueOf(500_000), BigDecimal.valueOf(500_000))));
 
-        var estimate = guard.estimateTokenQuota(centralizedExam(EXAM_SECONDS));
+        ExamTokenEstimateResponse estimate = guard.estimateTokenQuota(centralizedExam(EXAM_SECONDS));
 
         // estimatedCostVnd = 3.600.000 / quotaOnlyRemaining = 9.000.000 = 0.4 (40%).
         assertThat(estimate.sharedPoolUsageRatio()).isEqualByComparingTo(BigDecimal.valueOf(0.4));
-        // Chỉ teacherWithRoom còn dư (500.000 - 100.000 > 0) -- teacherFullyUsed đã dùng hết, không tính.
+        // Only teacherWithRoom still has room left (500,000 - 100,000 > 0) -- teacherFullyUsed has
+        // used everything up and is not counted.
         assertThat(estimate.teachersWithUnusedPersonalAllocationCount()).isEqualTo(1);
     }
 
-    /** Ví gói đã cạn/âm sẵn thì % vô nghĩa -- wouldExceedExam/schoolLocked đã đủ nói, thêm % chỉ gây rối. */
+    /**
+     * When the plan wallet is already exhausted/negative the percentage is meaningless --
+     * wouldExceedExam/schoolLocked already say it, and adding a percentage only causes confusion.
+     */
     @Test
     void should_return_null_shared_pool_insight_when_quota_pool_already_exhausted() {
         givenSchoolQuota(1_000_000, 1_000_000);
 
-        var estimate = guard.estimateTokenQuota(centralizedExam(EXAM_SECONDS));
+        ExamTokenEstimateResponse estimate = guard.estimateTokenQuota(centralizedExam(EXAM_SECONDS));
 
         assertThat(estimate.sharedPoolUsageRatio()).isNull();
         assertThat(estimate.teachersWithUnusedPersonalAllocationCount()).isNull();
     }
 
-    /** CLASS_TEST đã tự thấy trần cá nhân của chính mình rồi -- không cần soi hiệu ứng domino. */
+    /**
+     * CLASS_TEST already sees its own personal ceiling -- there is no need to look at the domino
+     * effect.
+     */
     @Test
     void should_not_compute_shared_pool_insight_for_class_test() {
         givenSchoolQuota(10_000_000, 1_000_000);
 
-        var estimate = guard.estimateTokenQuota(classTest(EXAM_SECONDS));
+        ExamTokenEstimateResponse estimate = guard.estimateTokenQuota(classTest(EXAM_SECONDS));
 
         assertThat(estimate.sharedPoolUsageRatio()).isNull();
         assertThat(estimate.teachersWithUnusedPersonalAllocationCount()).isNull();
@@ -332,19 +345,19 @@ class ClassTestTokenQuotaGuardServiceTests {
     }
 
     private Exam classTest(Integer examTimeDurationSecond) {
-        var exam = baseExam(examTimeDurationSecond);
+        Exam exam = baseExam(examTimeDurationSecond);
         exam.setKind(ExamKind.CLASS_TEST);
         return exam;
     }
 
     private Exam centralizedExam(Integer examTimeDurationSecond) {
-        var exam = baseExam(examTimeDurationSecond);
+        Exam exam = baseExam(examTimeDurationSecond);
         exam.setKind(ExamKind.CENTRALIZED);
         return exam;
     }
 
     private Exam baseExam(Integer examTimeDurationSecond) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         exam.setCreatedBy(teacherId);

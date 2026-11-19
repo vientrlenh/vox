@@ -1,5 +1,9 @@
 package com.sep.vox.application.port.input.usecase.question;
 
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionBank;
+import com.sep.vox.domain.model.question.QuestionCollaborator;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,12 +43,12 @@ public class UpdateQuestionCollaboratorUseCase implements IUseCase<UpdateQuestio
     @Override
     @Transactional
     public QuestionCollaboratorDto execute(UpdateQuestionCollaboratorCommand input) {
-        var command = normalize(input);
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UpdateQuestionCollaboratorCommand command = normalize(input);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var question = questionRepository.findById(command.questionId())
+        Question question = questionRepository.findById(command.questionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
-        var bank = questionBankRepository.findById(question.getQuestionBankId())
+        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
         if (!currentUserId.equals(question.getCreatedBy())) {
             throw new ForbiddenException("Chỉ owner mới được quản lý collaborator");
@@ -53,14 +57,14 @@ public class UpdateQuestionCollaboratorUseCase implements IUseCase<UpdateQuestio
             throw new IllegalStateException("Chỉ question thuộc school bank mới dùng collaborator");
         }
 
-        var collaborator = questionCollaboratorRepository.findById(command.collaboratorId())
+        QuestionCollaborator collaborator = questionCollaboratorRepository.findById(command.collaboratorId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy collaborator"));
         if (!collaborator.getQuestionId().equals(question.getId())) {
             throw new ForbiddenException("Collaborator không thuộc câu hỏi này");
         }
 
         collaborator.setPermission(QuestionCollaboratorPermission.valueOf(command.permission()));
-        var saved = questionCollaboratorRepository.save(collaborator);
+        QuestionCollaborator saved = questionCollaboratorRepository.save(collaborator);
         return QuestionCollaboratorDtoMapper.toDto(saved);
     }
 

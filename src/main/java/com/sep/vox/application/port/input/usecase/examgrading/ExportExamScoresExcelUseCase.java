@@ -8,12 +8,18 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,23 +76,23 @@ public class ExportExamScoresExcelUseCase implements IUseCase<ExportExamScoresQu
     @Override
     @Transactional(readOnly = true)
     public byte[] execute(ExportExamScoresQuery input) {
-        var rows = examScoreExportSupport.loadRows(input);
+        List<ExamScoreRowInfo> rows = examScoreExportSupport.loadRows(input);
 
-        var workbook = new XSSFWorkbook();
+        XSSFWorkbook workbook = new XSSFWorkbook();
         try (workbook) {
-            var sheet = workbook.createSheet("Bảng điểm");
-            var headerStyle = headerStyle(workbook);
-            var dateStyle = dateStyle(workbook);
+            XSSFSheet sheet = workbook.createSheet("Bảng điểm");
+            CellStyle headerStyle = headerStyle(workbook);
+            CellStyle dateStyle = dateStyle(workbook);
 
-            var headerRow = sheet.createRow(0);
-            for (var index = 0; index < HEADERS.size(); index++) {
-                var cell = headerRow.createCell(index);
+            XSSFRow headerRow = sheet.createRow(0);
+            for (int index = 0; index < HEADERS.size(); index++) {
+                XSSFCell cell = headerRow.createCell(index);
                 cell.setCellValue(HEADERS.get(index));
                 cell.setCellStyle(headerStyle);
             }
 
-            var rowIndex = 1;
-            for (var row : rows) {
+            int rowIndex = 1;
+            for (ExamScoreRowInfo row : rows) {
                 writeRow(sheet.createRow(rowIndex++), row, dateStyle);
             }
 
@@ -103,7 +109,7 @@ public class ExportExamScoresExcelUseCase implements IUseCase<ExportExamScoresQu
 
     /** Tên file ASCII thuần — tránh phải encode {@code Content-Disposition} theo RFC 5987. */
     public String exportFileName(String examKind) {
-        var scope = ExamKind.CLASS_TEST.name().equals(examKind) ? "lop" : "tap-trung";
+        String scope = ExamKind.CLASS_TEST.name().equals(examKind) ? "lop" : "tap-trung";
         return "bang-diem-" + scope + "-" + FILE_STAMP_FORMAT.format(Instant.now()) + ".xlsx";
     }
 
@@ -134,7 +140,7 @@ public class ExportExamScoresExcelUseCase implements IUseCase<ExportExamScoresQu
      * nằm ở lúc Excel đọc ô, không nằm ở cách file được mã hoá.
      */
     private void text(Row row, int column, String value) {
-        var cell = row.createCell(column);
+        Cell cell = row.createCell(column);
         if (value == null || value.isEmpty()) {
             cell.setBlank();
             return;
@@ -145,7 +151,7 @@ public class ExportExamScoresExcelUseCase implements IUseCase<ExportExamScoresQu
 
     /** Ô trống chứ không phải {@code 0} khi chưa có điểm — 0 là một điểm số có thật. */
     private void number(Row row, int column, BigDecimal value) {
-        var cell = row.createCell(column);
+        Cell cell = row.createCell(column);
         if (value == null) {
             cell.setBlank();
             return;
@@ -158,7 +164,7 @@ public class ExportExamScoresExcelUseCase implements IUseCase<ExportExamScoresQu
      * nên lấy thẳng {@code Instant} sẽ lệch 7 tiếng.
      */
     private void dateTime(Row row, int column, Instant value, CellStyle dateStyle) {
-        var cell = row.createCell(column);
+        Cell cell = row.createCell(column);
         if (value == null) {
             cell.setBlank();
             return;
@@ -168,9 +174,9 @@ public class ExportExamScoresExcelUseCase implements IUseCase<ExportExamScoresQu
     }
 
     private CellStyle headerStyle(XSSFWorkbook workbook) {
-        var font = workbook.createFont();
+        XSSFFont font = workbook.createFont();
         font.setBold(true);
-        var style = workbook.createCellStyle();
+        XSSFCellStyle style = workbook.createCellStyle();
         style.setFont(font);
         style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
         style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
@@ -178,13 +184,13 @@ public class ExportExamScoresExcelUseCase implements IUseCase<ExportExamScoresQu
     }
 
     private CellStyle dateStyle(XSSFWorkbook workbook) {
-        var style = workbook.createCellStyle();
+        XSSFCellStyle style = workbook.createCellStyle();
         style.setDataFormat(workbook.getCreationHelper().createDataFormat().getFormat(CELL_DATE_FORMAT));
         return style;
     }
 
     private void autoSize(Sheet sheet) {
-        for (var index = 0; index < HEADERS.size(); index++) {
+        for (int index = 0; index < HEADERS.size(); index++) {
             sheet.autoSizeColumn(index);
             if (sheet.getColumnWidth(index) > MAX_COLUMN_WIDTH) {
                 sheet.setColumnWidth(index, MAX_COLUMN_WIDTH);
@@ -193,7 +199,7 @@ public class ExportExamScoresExcelUseCase implements IUseCase<ExportExamScoresQu
     }
 
     private byte[] toBytes(XSSFWorkbook workbook) throws IOException {
-        try (var outputStream = new ByteArrayOutputStream()) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             workbook.write(outputStream);
             return outputStream.toByteArray();
         }

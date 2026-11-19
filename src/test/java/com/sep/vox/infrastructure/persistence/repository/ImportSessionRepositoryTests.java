@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -30,10 +31,10 @@ class ImportSessionRepositoryTests {
 
     @Test
     void whenSaveCancelledSession_thenPersistsStatus() {
-        var session = session(ImportSessionStatus.CANCELLED);
+        ImportSession session = session(ImportSessionStatus.CANCELLED);
 
-        var saved = importSessionRepository.save(session);
-        var found = importSessionRepository.findById(saved.getId());
+        ImportSession saved = importSessionRepository.save(session);
+        Optional<ImportSession> found = importSessionRepository.findById(saved.getId());
 
         assertThat(found).isPresent();
         assertThat(found.get().getStatus()).isEqualTo(ImportSessionStatus.CANCELLED);
@@ -42,10 +43,10 @@ class ImportSessionRepositoryTests {
     @ParameterizedTest
     @EnumSource(ImportType.class)
     void should_persist_every_import_type(ImportType type) {
-        var session = session(ImportSessionStatus.PREVIEWED, type);
+        ImportSession session = session(ImportSessionStatus.PREVIEWED, type);
 
-        var saved = importSessionRepository.save(session);
-        var found = importSessionRepository.findById(saved.getId());
+        ImportSession saved = importSessionRepository.save(session);
+        Optional<ImportSession> found = importSessionRepository.findById(saved.getId());
 
         assertThat(found).isPresent();
         assertThat(found.get().getType()).isEqualTo(type);
@@ -56,8 +57,8 @@ class ImportSessionRepositoryTests {
     }
 
     private static ImportSession session(ImportSessionStatus status, ImportType type) {
-        var now = Instant.now();
-        var userId = UUID.randomUUID();
+        Instant now = Instant.now();
+        UUID userId = UUID.randomUUID();
         return new ImportSession(
             UUID.randomUUID(),
             type,

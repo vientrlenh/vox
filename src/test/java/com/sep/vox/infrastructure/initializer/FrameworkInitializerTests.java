@@ -2,11 +2,20 @@ package com.sep.vox.infrastructure.initializer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.domain.model.framework.Framework;
+import com.sep.vox.domain.model.framework.FrameworkCriterion;
+import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
+import com.sep.vox.domain.model.framework.FrameworkResultBand;
+import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
@@ -69,11 +78,11 @@ class FrameworkInitializerTests {
     void should_seed_published_framework_and_version() throws Exception {
         frameworkInitializer.run(null);
 
-        var framework = frameworkRepository.findByCode(FRAMEWORK_CODE);
+        Optional<Framework> framework = frameworkRepository.findByCode(FRAMEWORK_CODE);
         assertThat(framework).isPresent();
         assertThat(framework.get().isActive()).isTrue();
 
-        var version = frameworkVersionRepository.findByCode(FRAMEWORK_VERSION_CODE);
+        Optional<FrameworkVersion> version = frameworkVersionRepository.findByCode(FRAMEWORK_VERSION_CODE);
         assertThat(version).isPresent();
         assertThat(version.get().getStatus()).isEqualTo(FrameworkVersionStatus.PUBLISHED);
         assertThat(version.get().getEffectiveFrom()).isNotNull();
@@ -81,35 +90,37 @@ class FrameworkInitializerTests {
     }
 
     /**
-     * UpdateFrameworkVersionStatusUseCase so tập code bằng equals() khi xuất bản. Bản seed
-     * ghi thẳng qua repository nên vòng qua kiểm tra đó -- test này thay thế nó.
+     * UpdateFrameworkVersionStatusUseCase compares the set of codes with equals() when publishing.
+     * The seed writes straight through the repository and so bypasses that check -- this test
+     * replaces it.
      */
     @Test
     void seeded_criteria_must_match_the_allowed_code_set_exactly() throws Exception {
         frameworkInitializer.run(null);
 
-        var versionId = frameworkVersionRepository.findByCode(FRAMEWORK_VERSION_CODE).orElseThrow().getId();
-        var criteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
+        UUID versionId = frameworkVersionRepository.findByCode(FRAMEWORK_VERSION_CODE).orElseThrow().getId();
+        List<FrameworkCriterion> criteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
 
         assertThat(criteria).extracting(criterion -> criterion.getCode())
             .containsExactlyInAnyOrderElementsOf(FrameworkCriterionCode.ALLOWED_CODES);
     }
 
     /**
-     * Điều kiện còn lại để bản này hợp lệ ở trạng thái PUBLISHED: mỗi tiêu chí đủ 6 thang,
-     * mỗi thang có ít nhất một dấu hiệu tích cực và một dấu hiệu tiêu cực.
+     * The remaining condition for this version to be valid in the PUBLISHED state: every criterion
+     * has all 6 levels, and every level has at least one positive indicator and one negative
+     * indicator.
      */
     @Test
     void every_criterion_must_have_all_bands_with_both_signal_directions() throws Exception {
         frameworkInitializer.run(null);
 
-        var versionId = frameworkVersionRepository.findByCode(FRAMEWORK_VERSION_CODE).orElseThrow().getId();
-        var criteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
-        var resultBands = frameworkResultBandRepository.findByFrameworkVersionId(versionId);
+        UUID versionId = frameworkVersionRepository.findByCode(FRAMEWORK_VERSION_CODE).orElseThrow().getId();
+        List<FrameworkCriterion> criteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
+        List<FrameworkResultBand> resultBands = frameworkResultBandRepository.findByFrameworkVersionId(versionId);
         assertThat(resultBands).hasSize(EXPECTED_RESULT_BANDS);
 
-        var criterionIds = criteria.stream().map(criterion -> criterion.getId()).toList();
-        var bands = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds);
+        List<UUID> criterionIds = criteria.stream().map(criterion -> criterion.getId()).toList();
+        List<FrameworkCriterionBand> bands = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds);
 
         assertThat(bands).hasSize(criteria.size() * EXPECTED_RESULT_BANDS);
         assertThat(bands).allSatisfy(band -> {
@@ -119,13 +130,13 @@ class FrameworkInitializerTests {
         });
     }
 
-    /** Chạy lại lúc khởi động sau không được nhân đôi dữ liệu. */
+    /** Running again at a later startup must not duplicate the data. */
     @Test
     void should_be_idempotent_across_restarts() throws Exception {
         frameworkInitializer.run(null);
         frameworkInitializer.run(null);
 
-        var versionId = frameworkVersionRepository.findByCode(FRAMEWORK_VERSION_CODE).orElseThrow().getId();
+        UUID versionId = frameworkVersionRepository.findByCode(FRAMEWORK_VERSION_CODE).orElseThrow().getId();
         assertThat(frameworkCriterionRepository.findByFrameworkVersionId(versionId))
             .hasSize(FrameworkCriterionCode.ALLOWED_CODES.size());
         assertThat(frameworkResultBandRepository.findByFrameworkVersionId(versionId))

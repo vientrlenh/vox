@@ -20,6 +20,7 @@ import com.sep.vox.application.port.input.command.UpdateExamDeliveryModeCommand;
 import com.sep.vox.application.port.input.usecase.exam.UpdateExamDeliveryModeUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamDeliveryMode;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -73,16 +74,16 @@ class UpdateExamDeliveryModeUseCaseTests {
 
     @Test
     void should_update_delivery_mode_for_class_test_as_chair() {
-        var exam = exam(ExamKind.CLASS_TEST, ExamStatus.DRAFT);
+        Exam exam = exam(ExamKind.CLASS_TEST, ExamStatus.DRAFT);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
             .thenReturn(true);
         when(examRepository.save(exam)).thenAnswer(inv -> inv.getArgument(0));
-        var lockedPaper = mock(ExamPaper.class);
+        ExamPaper lockedPaper = mock(ExamPaper.class);
         when(lockedPaper.getStatus()).thenReturn(ExamPaperStatus.LOCKED);
         when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(lockedPaper));
 
-        var result = useCase.execute(new UpdateExamDeliveryModeCommand(examId, "STUDENT_DEVICE"));
+        ExamDto result = useCase.execute(new UpdateExamDeliveryModeCommand(examId, "STUDENT_DEVICE"));
 
         assertThat(exam.getDeliveryMode()).isEqualTo(ExamDeliveryMode.STUDENT_DEVICE);
         assertThat(result.deliveryMode()).isEqualTo("STUDENT_DEVICE");
@@ -92,7 +93,7 @@ class UpdateExamDeliveryModeUseCaseTests {
 
     @Test
     void should_update_delivery_mode_for_centralized_as_school_admin() {
-        var exam = exam(ExamKind.CENTRALIZED, ExamStatus.DRAFT);
+        Exam exam = exam(ExamKind.CENTRALIZED, ExamStatus.DRAFT);
         when(schoolUserRepository.findByUserId(userId))
             .thenReturn(Optional.of(new com.sep.vox.domain.model.school.SchoolUser(schoolId, userId, null, null)));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId))
@@ -100,11 +101,11 @@ class UpdateExamDeliveryModeUseCaseTests {
                 UUID.randomUUID(), userId, UUID.randomUUID(), null, "SCHOOL_ADMIN", "School Admin")));
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examRepository.save(exam)).thenAnswer(inv -> inv.getArgument(0));
-        var lockedPaper = mock(ExamPaper.class);
+        ExamPaper lockedPaper = mock(ExamPaper.class);
         when(lockedPaper.getStatus()).thenReturn(ExamPaperStatus.LOCKED);
         when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(lockedPaper));
 
-        var result = useCase.execute(new UpdateExamDeliveryModeCommand(examId, "LAB"));
+        ExamDto result = useCase.execute(new UpdateExamDeliveryModeCommand(examId, "LAB"));
 
         assertThat(exam.getDeliveryMode()).isEqualTo(ExamDeliveryMode.LAB);
         assertThat(result.deliveryMode()).isEqualTo("LAB");
@@ -113,7 +114,7 @@ class UpdateExamDeliveryModeUseCaseTests {
 
     @Test
     void should_reject_when_candidates_already_assigned_to_schedule() {
-        var exam = exam(ExamKind.CLASS_TEST, ExamStatus.DRAFT);
+        Exam exam = exam(ExamKind.CLASS_TEST, ExamStatus.DRAFT);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
             .thenReturn(true);
@@ -126,7 +127,7 @@ class UpdateExamDeliveryModeUseCaseTests {
 
     @Test
     void should_reject_when_exam_already_in_progress() {
-        var exam = exam(ExamKind.CLASS_TEST, ExamStatus.IN_PROGRESS);
+        Exam exam = exam(ExamKind.CLASS_TEST, ExamStatus.IN_PROGRESS);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
             .thenReturn(true);
@@ -138,7 +139,7 @@ class UpdateExamDeliveryModeUseCaseTests {
 
     @Test
     void should_reject_when_not_authorized() {
-        var exam = exam(ExamKind.CLASS_TEST, ExamStatus.DRAFT);
+        Exam exam = exam(ExamKind.CLASS_TEST, ExamStatus.DRAFT);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examMemberRepository.existsByExamIdAndUserIdAndRole(examId, userId, ExamMemberRole.CHAIR))
             .thenReturn(false);
@@ -155,7 +156,7 @@ class UpdateExamDeliveryModeUseCaseTests {
     }
 
     private Exam exam(ExamKind kind, ExamStatus status) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         exam.setKind(kind);

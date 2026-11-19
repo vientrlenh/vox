@@ -33,28 +33,28 @@ public class NotificationDeviceRevokeListener {
     }
 
     /**
-     * {@code REQUIRES_NEW}, KHÔNG phải {@code REQUIRED} mặc định -- và đây là điều kiện để câu
-     * DELETE bên dưới chạy được, không phải một lựa chọn về phạm vi giao dịch.
+     * {@code REQUIRES_NEW}, NOT the default {@code REQUIRED} -- and this is the condition for the DELETE statement below
+     * to run at all, not a choice about transaction scope.
      *
-     * <p>Lúc callback AFTER_COMMIT chạy, {@code EntityManagerHolder} của giao dịch VỪA COMMIT vẫn
-     * còn gắn vào thread -- Spring chỉ gỡ nó ở {@code cleanupAfterCompletion}, tức là sau các
-     * callback. Nên {@code REQUIRED} nhìn thấy "đã có giao dịch" và THAM GIA vào nó thay vì mở
-     * giao dịch mới, trong khi giao dịch đó đã commit xong và không còn
-     * {@code EntityTransaction} nào sống. Hibernate từ chối câu DELETE với
-     * {@code TransactionRequiredException: No active transaction for update or delete query}, và
-     * {@code TransactionSynchronizationUtils} NUỐT ngoại lệ đó (chỉ log ERROR) -- nên /logout vẫn
-     * trả 200 trong khi thiết bị nhận thông báo không hề bị gỡ. Đúng kiểu hỏng im lặng: trên máy
-     * phòng lab, thông báo điểm của người vừa rời đi vẫn hiện cho người ngồi xuống sau.
+     * <p>When the AFTER_COMMIT callback runs, the {@code EntityManagerHolder} of the transaction that JUST COMMITTED is still
+     * bound to the thread -- Spring only removes it in {@code cleanupAfterCompletion}, which is after the
+     * callbacks. So {@code REQUIRED} sees "a transaction already exists" and JOINS it instead of opening a
+     * new one, while that transaction has already committed and there is no live
+     * {@code EntityTransaction}. Hibernate rejects the DELETE statement with
+     * {@code TransactionRequiredException: No active transaction for update or delete query}, and
+     * {@code TransactionSynchronizationUtils} SWALLOWS that exception (it only logs ERROR) -- so /logout still
+     * returns 200 while the device that receives notifications was never removed. A textbook silent failure: on a
+     * lab machine, the grade notification of the person who just left still shows to the person who sits down next.
      *
-     * <p>{@code @Transactional} trên {@code NotificationDeviceRepositoryImpl#deleteByUserIdAndDeviceId}
-     * KHÔNG cứu được: nó cũng là {@code REQUIRED}. Cùng annotation đó chạy tốt ở
-     * {@code deleteByLastSeenAtBefore} chỉ vì {@code @Scheduled} gọi từ một thread sạch, không có
-     * gì gắn sẵn.
+     * <p>The {@code @Transactional} on {@code NotificationDeviceRepositoryImpl#deleteByUserIdAndDeviceId}
+     * does NOT save it: that one is {@code REQUIRED} too. The same annotation works fine on
+     * {@code deleteByLastSeenAtBefore} only because {@code @Scheduled} calls it from a clean thread with nothing
+     * bound to it.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handle(DeviceSessionRevokedEvent event) {
-        var removed = notificationDeviceRepository.deleteByUserIdAndDeviceId(event.userId(), event.deviceId());
+        int removed = notificationDeviceRepository.deleteByUserIdAndDeviceId(event.userId(), event.deviceId());
         if (removed > 0) {
             LOGGER.info("Đã gỡ {} thiết bị nhận thông báo theo phiên bị thu hồi: sessionId={}, userId={}",
                 removed, event.sessionId(), event.userId());

@@ -78,23 +78,23 @@ class ExamHumanGradingNotificationServiceTests {
 
     @Test
     void should_notify_the_class_test_owner_when_papers_await_human_grading() {
-        var teacherId = UUID.randomUUID();
+        UUID teacherId = UUID.randomUUID();
         givenPendingResults(2);
         givenChairs(teacherId);
 
         service.publishIfPendingReview(exam(ExamKind.CLASS_TEST), now);
 
-        var payload = capturePayload();
+        ExamHumanGradingRequiredPayloadV1 payload = capturePayload();
         assertThat(payload.recipientIds()).containsExactly(teacherId);
         assertThat(payload.pendingCount()).isEqualTo(2);
         assertThat(payload.examKind()).isEqualTo(ExamKind.CLASS_TEST);
         assertThat(payload.examId()).isEqualTo(examId);
     }
 
-    /** Bài trên lớp là việc của giáo viên chủ bài: school admin không dính vào. */
+    /** A class test is the job of the teacher who owns it: the school admin is not involved. */
     @Test
     void should_not_notify_school_admins_for_a_class_test() {
-        var teacherId = UUID.randomUUID();
+        UUID teacherId = UUID.randomUUID();
         givenPendingResults(1);
         givenChairs(teacherId);
         givenSchoolAdmins(UUID.randomUUID(), UUID.randomUUID());
@@ -107,8 +107,8 @@ class ExamHumanGradingNotificationServiceTests {
 
     @Test
     void should_notify_both_chair_and_school_admins_for_a_centralized_exam() {
-        var chairId = UUID.randomUUID();
-        var adminId = UUID.randomUUID();
+        UUID chairId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
         givenPendingResults(5);
         givenChairs(chairId);
         givenSchoolAdmins(adminId);
@@ -118,10 +118,10 @@ class ExamHumanGradingNotificationServiceTests {
         assertThat(capturePayload().recipientIds()).containsExactlyInAnyOrder(chairId, adminId);
     }
 
-    /** Một người vừa là chủ tịch vừa là school admin chỉ được nhắc một lần. */
+    /** A person who is both the chair and a school admin is reminded only once. */
     @Test
     void should_not_repeat_a_recipient_who_is_both_chair_and_school_admin() {
-        var bothRoles = UUID.randomUUID();
+        UUID bothRoles = UUID.randomUUID();
         givenPendingResults(1);
         givenChairs(bothRoles);
         givenSchoolAdmins(bothRoles);
@@ -177,7 +177,7 @@ class ExamHumanGradingNotificationServiceTests {
 
         service.publishIfPendingReview(exam(ExamKind.CENTRALIZED), now);
 
-        var captor = ArgumentCaptor.forClass(Outbox.class);
+        ArgumentCaptor<Outbox> captor = ArgumentCaptor.forClass(Outbox.class);
         verify(outboxRepository).save(captor.capture());
         assertThat(captor.getValue().getEventType())
             .isEqualTo(EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED);
@@ -185,15 +185,15 @@ class ExamHumanGradingNotificationServiceTests {
     }
 
     /**
-     * Chốt chống trùng: lượt quét chạy mỗi phút và gặp lại đúng bài thi đó ở tick sau, còn nhánh
-     * đóng bài thì gọi lại lần nữa cho cùng bài. Thiếu chốt này thì mỗi bài thi bị nhắc mỗi phút
-     * suốt buổi thi.
+     * De-duplication guard: the sweep runs every minute and meets the same exam again on the next
+     * tick, and the close-exam branch calls again for the same exam. Without this guard, every exam
+     * would be reminded every minute for the whole exam session.
      */
     @Test
     void should_stay_silent_for_an_exam_already_notified() {
         givenPendingResults(4);
         givenChairs(UUID.randomUUID());
-        var exam = exam(ExamKind.CENTRALIZED);
+        Exam exam = exam(ExamKind.CENTRALIZED);
         exam.setHumanGradingNotifiedAt(Instant.parse("2026-08-31T02:00:00Z"));
 
         service.publishIfPendingReview(exam, now);
@@ -202,16 +202,19 @@ class ExamHumanGradingNotificationServiceTests {
         verify(examRepository, never()).save(any());
     }
 
-    /** Đóng dấu và phát event phải cùng một transaction: thiếu dấu là nhắc lại mỗi phút. */
+    /**
+     * Stamping and publishing the event must happen in the same transaction: without the stamp, the
+     * reminder repeats every minute.
+     */
     @Test
     void should_stamp_the_exam_when_it_publishes() {
         givenPendingResults(1);
         givenChairs(UUID.randomUUID());
-        var exam = exam(ExamKind.CENTRALIZED);
+        Exam exam = exam(ExamKind.CENTRALIZED);
 
         service.publishIfPendingReview(exam, now);
 
-        var captor = ArgumentCaptor.forClass(Exam.class);
+        ArgumentCaptor<Exam> captor = ArgumentCaptor.forClass(Exam.class);
         verify(examRepository).save(captor.capture());
         assertThat(captor.getValue().getHumanGradingNotifiedAt()).isEqualTo(now);
     }
@@ -231,7 +234,7 @@ class ExamHumanGradingNotificationServiceTests {
     // --- helpers ---------------------------------------------------------------
 
     private Exam exam(ExamKind kind) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         exam.setKind(kind);
@@ -240,7 +243,7 @@ class ExamHumanGradingNotificationServiceTests {
     }
 
     private ExamCandidateResult result(ExamCandidateResultStatus status) {
-        var result = new ExamCandidateResult();
+        ExamCandidateResult result = new ExamCandidateResult();
         result.setId(UUID.randomUUID());
         result.setStatus(status);
         return result;
@@ -259,7 +262,7 @@ class ExamHumanGradingNotificationServiceTests {
     }
 
     private ExamMember chairMember(UUID userId) {
-        var member = new ExamMember();
+        ExamMember member = new ExamMember();
         member.setExamId(examId);
         member.setUserId(userId);
         member.setRole(ExamMemberRole.CHAIR);
@@ -272,14 +275,14 @@ class ExamHumanGradingNotificationServiceTests {
     }
 
     private SchoolUser schoolUser(UUID userId) {
-        var schoolUser = new SchoolUser();
+        SchoolUser schoolUser = new SchoolUser();
         schoolUser.setUserId(userId);
         schoolUser.setSchoolId(schoolId);
         return schoolUser;
     }
 
     private ExamHumanGradingRequiredPayloadV1 capturePayload() {
-        var captor = ArgumentCaptor.forClass(Outbox.class);
+        ArgumentCaptor<Outbox> captor = ArgumentCaptor.forClass(Outbox.class);
         verify(outboxRepository).save(captor.capture());
         return jsonMapper.readValue(
             captor.getValue().getPayload(), ExamHumanGradingRequiredPayloadV1.class);

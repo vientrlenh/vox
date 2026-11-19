@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -84,11 +85,11 @@ class GradingSchemaBindingTests {
     @ParameterizedTest(name = "{0}")
     @MethodSource("typesBackedByDto")
     void should_back_every_schema_field_with_a_dto_component(String typeName, Class<?> dto) {
-        var componentNames = Stream.of(dto.getRecordComponents())
+        List<String> componentNames = Stream.of(dto.getRecordComponents())
             .map(component -> component.getName())
             .toList();
 
-        var propertyBoundFields = fieldsOf(typeName).stream()
+        List<String> propertyBoundFields = fieldsOf(typeName).stream()
             .filter(field -> !RESOLVER_BACKED_FIELDS.contains(typeName + "." + field))
             .toList();
 
@@ -100,20 +101,21 @@ class GradingSchemaBindingTests {
 
     @Test
     void should_cover_every_object_type_declared_in_the_schema() {
-        // Trừ hai type phân trang: chúng map sang PageResult dùng chung, không có DTO riêng.
-        var declared = new ArrayList<String>();
-        var matcher = TYPE_BLOCK.matcher(read());
+        // Except for the two paging types: they map to the shared PageResult and have no DTO of
+        // their own.
+        List<String> declared = new ArrayList<String>();
+        Matcher matcher = TYPE_BLOCK.matcher(read());
         while (matcher.find()) {
             declared.add(matcher.group(1));
         }
         declared.removeAll(List.of("GradingTaskPage", "GradingAssignmentRowPage"));
 
-        var covered = typesBackedByDto().map(arguments -> (String) arguments.get()[0]).toList();
+        List<String> covered = typesBackedByDto().map(arguments -> (String) arguments.get()[0]).toList();
         assertThat(declared).containsExactlyInAnyOrderElementsOf(covered);
     }
 
     private List<String> fieldsOf(String typeName) {
-        var matcher = TYPE_BLOCK.matcher(read());
+        Matcher matcher = TYPE_BLOCK.matcher(read());
         while (matcher.find()) {
             if (matcher.group(1).equals(typeName)) {
                 return FIELD.matcher(stripComments(matcher.group(2))).results()

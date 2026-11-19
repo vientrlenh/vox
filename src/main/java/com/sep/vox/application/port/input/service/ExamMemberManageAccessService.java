@@ -57,14 +57,14 @@ public class ExamMemberManageAccessService {
 
     /** Ném {@link ForbiddenException} nếu người gọi không được lập hội đồng cho kỳ thi này. */
     public ExamMemberActor requireCanManage(Exam exam) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (exam.getKind() != ExamKind.CENTRALIZED) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> SCHOOL_ADMIN.equals(role.roleCode()));
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId())) {
             return new ExamMemberActor(currentUserId, true);

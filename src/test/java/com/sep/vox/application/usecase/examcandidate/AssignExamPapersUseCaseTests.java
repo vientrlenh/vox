@@ -21,6 +21,7 @@ import com.sep.vox.application.port.input.command.ExamPaperAssignmentItem;
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamPapersUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.response.input.examcandidate.AssignExamPapersResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
@@ -84,7 +85,7 @@ class AssignExamPapersUseCaseTests {
             return List.copyOf(arg);
         });
 
-        var result = useCase.execute(new AssignExamPapersCommand(examId, List.of(
+        AssignExamPapersResponse result = useCase.execute(new AssignExamPapersCommand(examId, List.of(
             new ExamPaperAssignmentItem(candidate1, paper1),
             new ExamPaperAssignmentItem(candidate2, paper2))));
 
@@ -128,7 +129,7 @@ class AssignExamPapersUseCaseTests {
     }
 
     private ExamCandidate candidate(UUID id) {
-        var c = new ExamCandidate();
+        ExamCandidate c = new ExamCandidate();
         c.setId(id);
         c.setExamId(examId);
         c.setStudentId(UUID.randomUUID());
@@ -137,7 +138,7 @@ class AssignExamPapersUseCaseTests {
     }
 
     private ExamPaper paper(UUID id, ExamPaperStatus status) {
-        var p = new ExamPaper();
+        ExamPaper p = new ExamPaper();
         p.setId(id);
         p.setExamId(examId);
         p.setStatus(status);
@@ -145,7 +146,7 @@ class AssignExamPapersUseCaseTests {
     }
 
     private Exam exam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         return exam;

@@ -6,9 +6,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -51,7 +53,7 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
         if (codes == null || codes.isEmpty()) {
             return List.of();
         }
-        var upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
+        Set<String> upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
         return springDataSupportedLanguageRepository.findByCodeIn(upperCodes)
             .stream()
             .map(SupportedLanguageMapper::toDomain)
@@ -71,12 +73,12 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
 
     @Override
     public PageResult<SupportedLanguage> findAll(String search, Boolean isActive, int pageNumber, int size) {
-        var pageable = PageRequest.of(
+        PageRequest pageable = PageRequest.of(
             pageNumber - 1,
             size,
             Sort.by(Sort.Direction.DESC, (SupportedLanguageJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.ASC, (SupportedLanguageJpaEntity entity) -> entity.getId()))
         );
-        var page = springDataSupportedLanguageRepository.findAllWithSearchAndFilters(
+        Page<SupportedLanguageJpaEntity> page = springDataSupportedLanguageRepository.findAllWithSearchAndFilters(
             toSearchPattern(search),
             isActive,
             pageable
@@ -94,8 +96,8 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
 
     @Override
     public SupportedLanguage save(SupportedLanguage supportedLanguage) {
-        var entity = SupportedLanguageMapper.toJpa(supportedLanguage);
-        var saved = springDataSupportedLanguageRepository.save(entity);
+        SupportedLanguageJpaEntity entity = SupportedLanguageMapper.toJpa(supportedLanguage);
+        SupportedLanguageJpaEntity saved = springDataSupportedLanguageRepository.save(entity);
         return SupportedLanguageMapper.toDomain(saved);
     }
 

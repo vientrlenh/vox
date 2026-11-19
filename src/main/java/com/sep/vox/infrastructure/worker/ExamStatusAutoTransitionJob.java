@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.worker;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamPaper;
 import java.time.Instant;
 
 import org.slf4j.Logger;
@@ -50,18 +52,18 @@ public class ExamStatusAutoTransitionJob {
 
     @Scheduled(fixedDelay = 60000)
     public void run() {
-        var now = Instant.now();
+        Instant now = Instant.now();
 
-        for (var exam : examRepository.findByStatusAndOpenAtBefore(ExamStatus.SCHEDULED, now)) {
+        for (Exam exam : examRepository.findByStatusAndOpenAtBefore(ExamStatus.SCHEDULED, now)) {
             if (exam.getKind() != ExamKind.CLASS_TEST) {
                 continue;
             }
             exam.setStatus(ExamStatus.IN_PROGRESS);
             exam.setUpdatedAt(now);
             examRepository.save(exam);
-            // Khớp đúng side-effect của UpdateExamStatusUseCase.START — khoá paper khi bài chính thức mở cho học sinh,
-            // để không lệch hành vi giữa mở tự động (openAt) và CHAIR bấm tay.
-            for (var paper : examPaperRepository.findByExamId(exam.getId())) {
+            // Matches exactly the side-effect of UpdateExamStatusUseCase.START — locks the paper when the official exam opens for students,
+            // so behavior does not drift between the automatic opening (openAt) and the CHAIR pressing it manually.
+            for (ExamPaper paper : examPaperRepository.findByExamId(exam.getId())) {
                 if (paper.getStatus() != ExamPaperStatus.LOCKED) {
                     paper.setStatus(ExamPaperStatus.LOCKED);
                     paper.setUpdatedAt(now);
@@ -71,13 +73,13 @@ public class ExamStatusAutoTransitionJob {
             log.info("Tự động mở bài kiểm tra {} (openAt đã tới)", exam.getId());
         }
 
-        for (var exam : examRepository.findByStatusAndCloseAtBefore(ExamStatus.IN_PROGRESS, now)) {
+        for (Exam exam : examRepository.findByStatusAndCloseAtBefore(ExamStatus.IN_PROGRESS, now)) {
             if (exam.getKind() != ExamKind.CLASS_TEST) {
                 continue;
             }
-            // Bình thường guard không bao giờ chặn ở đây: closeAt luôn ở sau endDate của mọi ca
-            // (requireClassTestScheduleWindow bảo đảm). Nhánh này phòng dữ liệu lệch, và continue
-            // khiến nó tự lành ở tick sau thay vì cắt ngang buổi thi đang chạy.
+            // Normally the guard never blocks here: closeAt is always after the endDate of every shift
+            // (guaranteed by requireClassTestScheduleWindow). This branch protects against inconsistent data, and the continue
+            // makes it heal itself on the next tick instead of cutting into an exam that is running.
             try {
                 examScheduleClosureService.requireNoActiveSessionInOngoingSchedule(exam.getId(), now);
             } catch (IllegalStateException ex) {
@@ -87,16 +89,16 @@ public class ExamStatusAutoTransitionJob {
             exam.setStatus(ExamStatus.CLOSED);
             exam.setUpdatedAt(now);
             examRepository.save(exam);
-            // Khớp đúng side-effect của UpdateExamStatusUseCase.CLOSE: đa số bài trên lớp đóng bằng
-            // đường này, bỏ sót ở đây là ca thi ở lại PUBLISHED vĩnh viễn.
+            // Matches exactly the side-effect of UpdateExamStatusUseCase.CLOSE: most class tests are closed through
+            // this path, and missing it here leaves the exam shift in PUBLISHED forever.
             examScheduleClosureService.closeSchedulesForExam(exam.getId(), null, now);
             examQuestionSecureLockService.releaseIfAutoAfterClose(exam.getId());
             zeroScoreExamResultService.ensureZeroResultsForMissingOrEmptyAttempts(exam.getId());
-            // Đa số bài trên lớp đóng bằng đường này chứ không phải CHAIR bấm tay — bỏ sót
-            // ở đây là mất phân công chấm cho gần như toàn bộ bài.
+            // Most class tests are closed through this path rather than by the CHAIR manually — missing
+            // it here means losing the grading assignments for almost all attempts.
             classTestGradingAssignmentService.ensureAssignmentsForExam(exam.getId());
-            // Khớp side-effect của UpdateExamStatusUseCase.CLOSE: đa số bài trên lớp đóng bằng
-            // đường này, bỏ sót ở đây là giáo viên không bao giờ được báo có bài chờ chấm.
+            // Matches the side-effect of UpdateExamStatusUseCase.CLOSE: most class tests are closed through
+            // this path, and missing it here means teachers are never told there is an attempt waiting for grading.
             examHumanGradingNotificationService.publishIfPendingReview(exam, now);
             log.info("Tự động đóng bài kiểm tra {} (closeAt đã tới)", exam.getId());
         }

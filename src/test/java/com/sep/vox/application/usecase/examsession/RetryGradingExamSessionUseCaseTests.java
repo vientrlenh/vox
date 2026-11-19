@@ -51,10 +51,10 @@ class RetryGradingExamSessionUseCaseTests {
     @BeforeEach
     void setUp() {
         examSessionRepository = mock(ExamSessionRepository.class);
-        var examCandidateRepository = mock(ExamCandidateRepository.class);
-        var examCandidateResultRepository = mock(ExamCandidateResultRepository.class);
-        var examRepository = mock(ExamRepository.class);
-        var moderationAccessService = mock(ExamSessionModerationAccessService.class);
+        ExamCandidateRepository examCandidateRepository = mock(ExamCandidateRepository.class);
+        ExamCandidateResultRepository examCandidateResultRepository = mock(ExamCandidateResultRepository.class);
+        ExamRepository examRepository = mock(ExamRepository.class);
+        ExamSessionModerationAccessService moderationAccessService = mock(ExamSessionModerationAccessService.class);
         userContextPort = mock(UserContextPort.class);
         submitExamSessionUseCase = mock(SubmitExamSessionUseCase.class);
 
@@ -62,7 +62,7 @@ class RetryGradingExamSessionUseCaseTests {
             Instant.now().minusSeconds(3600), Instant.now().minusSeconds(600),
             ExamSessionStatus.GRADING_FAILED, false, null);
 
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(UUID.randomUUID());
         exam.setStatus(ExamStatus.CLOSED);
 

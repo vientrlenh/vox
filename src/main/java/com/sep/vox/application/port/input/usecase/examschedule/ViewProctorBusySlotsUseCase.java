@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -43,7 +44,7 @@ public class ViewProctorBusySlotsUseCase
         if (input.teacherIds() == null || input.teacherIds().isEmpty()) {
             return List.of();
         }
-        var schedule = examScheduleRepository.findById(input.scheduleId())
+        ExamSchedule schedule = examScheduleRepository.findById(input.scheduleId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
         // Cùng luật quyền với danh bạ giám thị: người xem được danh sách giáo viên thì cũng được
         // biết ai trong số đó đang bận.

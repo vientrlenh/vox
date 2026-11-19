@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.event.internal.consumer;
 
+import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
@@ -85,7 +86,7 @@ public class GradingAssignmentEmailConsumer {
         containerFactory = "stringKafkaListenerContainerFactory"
     )
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        var eventId = KafkaEventHeaders.readEventId(record);
+        UUID eventId = KafkaEventHeaders.readEventId(record);
 
         LOGGER.info("Receive event grading-assignment: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
@@ -96,11 +97,11 @@ public class GradingAssignmentEmailConsumer {
             return;
         }
 
-        var eventType = KafkaEventHeaders.readEventType(record);
-        var mail = renderMail(eventType, eventId, record.value());
+        String eventType = KafkaEventHeaders.readEventType(record);
+        Mail mail = renderMail(eventType, eventId, record.value());
 
-        // Người nhận đã bị xoá thì gửi lại bao nhiêu lần cũng vô ích: đánh dấu đã xử lý
-        // rồi bỏ qua, đừng để message chạy hết vòng retry rồi rơi vào DLT.
+        // If the recipient has been deleted, resending is pointless: mark it processed
+        // and skip, do not let the message run the whole retry cycle and end up in the DLT.
         if (mail == null) {
             markProcessed(eventId);
             LOGGER.warn("Skip mail, recipient not found: eventId={}, eventType={}", eventId, eventType);
@@ -122,20 +123,20 @@ public class GradingAssignmentEmailConsumer {
         ack.acknowledge();
     }
 
-    /** @return {@code null} khi không tìm được người nhận */
+    /** @return {@code null} when no recipient can be found */
     private Mail renderMail(String eventType, UUID eventId, String value) {
         return switch (eventType) {
             case EventTypeConstant.GRADING_DEADLINE_REMINDER -> {
-                var payload = parse(value, GradingDeadlineReminderPayloadV1.class, eventType, eventId);
+                GradingDeadlineReminderPayloadV1 payload = parse(value, GradingDeadlineReminderPayloadV1.class, eventType, eventId);
                 yield mail(payload.teacherId(), SUBJECT_DEADLINE_REMINDER,
                     () -> mailTemplatePort.renderGradingDeadlineReminderEmail(
                         orPlaceholder(payload.examName()),
                         roundLabel(payload.roundType()),
                         formatDeadline(payload.deadlineAt())));
             }
-            // Người nhận là admin ĐÃ GIAO bài, không phải học sinh: bài đang chờ giao lại.
+            // The recipient is the admin who ASSIGNED the attempt, not the student: the attempt is waiting to be reassigned.
             case EventTypeConstant.GRADING_ASSIGNMENT_DECLINED -> {
-                var payload = parse(value, GradingAssignmentDeclinedPayloadV1.class, eventType, eventId);
+                GradingAssignmentDeclinedPayloadV1 payload = parse(value, GradingAssignmentDeclinedPayloadV1.class, eventType, eventId);
                 yield mail(payload.assignedBy(), SUBJECT_DECLINED,
                     () -> mailTemplatePort.renderGradingDeclinedEmail(
                         orPlaceholder(payload.examName()),
@@ -147,12 +148,12 @@ public class GradingAssignmentEmailConsumer {
         };
     }
 
-    /** Hoãn render tới khi đã chắc chắn có người nhận, khỏi dựng HTML để rồi vứt đi. */
+    /** Defer rendering until a recipient is certain, so we do not build HTML just to throw it away. */
     private Mail mail(UUID recipientId, String subject, Supplier<String> html) {
         if (recipientId == null) {
             return null;
         }
-        var recipient = userRepository.findById(recipientId).orElse(null);
+        User recipient = userRepository.findById(recipientId).orElse(null);
         if (recipient == null) {
             return null;
         }
@@ -211,7 +212,7 @@ public class GradingAssignmentEmailConsumer {
 
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
-        var eventId = KafkaEventHeaders.readEventIdOrNull(record);
+        UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         LOGGER.error(
             "grading-assignment event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
             eventId, record.topic(), record.partition(), record.offset(), record.value());

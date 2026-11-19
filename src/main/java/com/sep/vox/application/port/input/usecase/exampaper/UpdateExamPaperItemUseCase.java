@@ -1,7 +1,15 @@
 package com.sep.vox.application.port.input.usecase.exampaper;
 
+import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
+import com.sep.vox.domain.model.exam.ExamPaper;
+import com.sep.vox.domain.model.exam.ExamPaperItem;
+import com.sep.vox.domain.model.question.QuestionAsset;
+import com.sep.vox.domain.model.question.QuestionCollaborator;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -88,15 +96,15 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
     @Override
     @Transactional
     public ExamPaperItemDto execute(UpdateExamPaperItemCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var item = examPaperItemRepository.findById(input.itemId())
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        ExamPaperItem item = examPaperItemRepository.findById(input.itemId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi trong đề thi"));
         if (!item.getPaperId().equals(input.paperId())) {
             throw new NotFoundException("Không tìm thấy câu hỏi trong đề thi");
         }
-        var paper = examPaperRepository.findById(item.getPaperId())
+        ExamPaper paper = examPaperRepository.findById(item.getPaperId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
-        var exam = examRepository.findById(paper.getExamId())
+        Exam exam = examRepository.findById(paper.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         // Bài trên lớp khoá đề bằng một bước DRAFT → LOCKED và mở lại tự do, nên LOCKED ở đó là trạng
         // thái làm việc bình thường; chỉ ở kỳ thi tập trung nó mới mang nghĩa "chốt, không sửa nữa".
@@ -114,7 +122,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
         //
         // Slot đã bị xoá (version còn DRAFT vẫn xoá slot được) thì coi như ô tự do: ràng buộc
         // blueprint không còn tồn tại nữa, fail-closed ở đây chỉ làm mã đề kẹt vĩnh viễn.
-        var slot = item.getBlueprintSlotId() == null
+        ExamBlueprintSlot slot = item.getBlueprintSlotId() == null
             ? null
             : examBlueprintSlotRepository.findById(item.getBlueprintSlotId()).orElse(null);
         if (slot != null && slot.getSlotType() == ExamBlueprintSlotType.FIXED) {
@@ -122,10 +130,10 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
                 "Ô câu hỏi này cố định theo blueprint, không thể đổi câu hỏi trực tiếp - phải qua đổi version blueprint");
         }
 
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var question = questionRepository.findAccessibleById(input.questionId(), currentUserId, currentSchoolId, false, false)
+        Question question = questionRepository.findAccessibleById(input.questionId(), currentUserId, currentSchoolId, false, false)
             .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi này"));
         if ((exam.getKind() == ExamKind.CENTRALIZED || slot != null)
                 && question.getStatus() != QuestionStatus.PUBLISHED) {
@@ -138,13 +146,13 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
         boolean isOwner = currentUserId.equals(question.getCreatedBy());
         boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
         if (!isOwner && !isSchoolShared) {
-            var collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
+            Optional<QuestionCollaborator> collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
             if (collaborator.isEmpty() || collaborator.get().getPermission() == QuestionCollaboratorPermission.READ_ONLY) {
                 throw new ForbiddenException("Quyền READ_ONLY không được phép gán câu hỏi vào đề thi");
             }
         }
 
-        var candidateDurationSeconds = calculatePaperDurationAfterQuestionChange(paper.getId(), item.getId(), question);
+        int candidateDurationSeconds = calculatePaperDurationAfterQuestionChange(paper.getId(), item.getId(), question);
         examTimeQuotaGuardService.requireWithinPlan(
             exam.getSchoolId(),
             candidateDurationSeconds,
@@ -152,7 +160,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
         );
 
         item.setQuestionId(question.getId());
-        var savedItem = examPaperItemRepository.save(item);
+        ExamPaperItem savedItem = examPaperItemRepository.save(item);
 
         examQuestionSecureLockService.lockQuestionForExam(
             question.getId(),
@@ -208,8 +216,8 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
             Question replacementQuestion) {
         // Chiếu thời lượng của mã đề SAU khi thay câu, TRƯỚC khi ghi -- nên không dùng lại được
         // RecalculateExamTimeDurationService (nó đọc từ DB, mà thay đổi chưa nằm trong đó).
-        var questions = new ArrayList<Question>();
-        for (var candidateItem : examPaperItemRepository.findByPaperId(paperId)) {
+        List<Question> questions = new ArrayList<Question>();
+        for (ExamPaperItem candidateItem : examPaperItemRepository.findByPaperId(paperId)) {
             if (candidateItem.getId().equals(itemId)) {
                 questions.add(replacementQuestion);
                 continue;
@@ -221,7 +229,7 @@ public class UpdateExamPaperItemUseCase implements IUseCase<UpdateExamPaperItemC
         }
         // totalSeconds (đã gồm thời lượng phát AUDIO/VIDEO) vì đây là thước đo ĐỘ DÀI so với gói --
         // xem PaperTimeCalculator để rõ vì sao ước tính CHI PHÍ lại dùng số khác.
-        var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
+        Map<UUID, QuestionAsset> assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
             .findByQuestionIdIn(questions.stream().map(q -> q.getId()).distinct().toList()));
         return PaperTimeCalculator.breakdownOf(questions, assetByQuestionId).totalSeconds();
     }

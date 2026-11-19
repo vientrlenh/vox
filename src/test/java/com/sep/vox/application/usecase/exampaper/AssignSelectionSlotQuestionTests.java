@@ -90,8 +90,8 @@ class AssignSelectionSlotQuestionTests {
         examBlueprintSlotRepository = mock(ExamBlueprintSlotRepository.class);
         questionRepository = mock(QuestionRepository.class);
         examQuestionSecureLockService = mock(ExamQuestionSecureLockService.class);
-        var schoolUserRepository = mock(SchoolUserRepository.class);
-        var userContextPort = mock(UserContextPort.class);
+        SchoolUserRepository schoolUserRepository = mock(SchoolUserRepository.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
 
         useCase = new UpdateExamPaperItemUseCase(
             examRepository,
@@ -127,12 +127,15 @@ class AssignSelectionSlotQuestionTests {
         when(schoolUserRepository.findByUserId(TEACHER_ID)).thenReturn(Optional.empty());
     }
 
-    /** Đây là ca hồi quy chính của bug: trước đây luôn ném "gắn với blueprint, không thể sửa". */
+    /**
+     * This is the main regression case of the bug: previously it always threw "tied to a blueprint,
+     * cannot be edited".
+     */
     @Test
     void should_assign_a_question_to_a_selection_slot_of_a_centralized_exam() {
         useCase.execute(command());
 
-        var captor = ArgumentCaptor.forClass(ExamPaperItem.class);
+        ArgumentCaptor<ExamPaperItem> captor = ArgumentCaptor.forClass(ExamPaperItem.class);
         verify(examPaperItemRepository).save(captor.capture());
         assertThat(captor.getValue().getQuestionId()).isEqualTo(QUESTION_ID);
     }
@@ -252,7 +255,7 @@ class AssignSelectionSlotQuestionTests {
 
         useCase.execute(command());
 
-        var captor = ArgumentCaptor.forClass(ExamPaper.class);
+        ArgumentCaptor<ExamPaper> captor = ArgumentCaptor.forClass(ExamPaper.class);
         verify(examPaperRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(ExamPaperStatus.IN_REVIEW);
     }
@@ -266,7 +269,7 @@ class AssignSelectionSlotQuestionTests {
     }
 
     private ExamPaper paper(ExamPaperStatus status) {
-        var examPaper = new ExamPaper();
+        ExamPaper examPaper = new ExamPaper();
         examPaper.setId(PAPER_ID);
         examPaper.setExamId(EXAM_ID);
         examPaper.setCode("EX-ABC123-P1");
@@ -275,7 +278,7 @@ class AssignSelectionSlotQuestionTests {
     }
 
     private ExamBlueprintSlot slot(ExamBlueprintSlotType slotType, QuestionSelectionSpec spec) {
-        var blueprintSlot = new ExamBlueprintSlot();
+        ExamBlueprintSlot blueprintSlot = new ExamBlueprintSlot();
         blueprintSlot.setId(SLOT_ID);
         blueprintSlot.setSlotType(slotType);
         blueprintSlot.setSelectionSpec(spec);
@@ -283,7 +286,7 @@ class AssignSelectionSlotQuestionTests {
     }
 
     private Exam centralizedExam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(EXAM_ID);
         exam.setKind(ExamKind.CENTRALIZED);
         exam.setSchoolId(SCHOOL_ID);
@@ -294,7 +297,7 @@ class AssignSelectionSlotQuestionTests {
     }
 
     private Exam classTestExam(UUID blueprintId) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(EXAM_ID);
         exam.setKind(ExamKind.CLASS_TEST);
         exam.setSchoolId(SCHOOL_ID);
@@ -305,7 +308,7 @@ class AssignSelectionSlotQuestionTests {
     }
 
     private Question question(QuestionStatus status, QuestionType type, UUID topicId) {
-        var question = new Question();
+        Question question = new Question();
         question.setId(QUESTION_ID);
         question.setCode("Q-001");
         question.setCreatedBy(TEACHER_ID);

@@ -50,15 +50,15 @@ class QuestionControllerTests {
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     void should_resolve_created_by_user_via_user_data_loader() {
-        var dto = question(createdById);
-        var user = new UserDto(createdById, "teacher@example.com", null, "Nguyễn Văn A",
+        QuestionDto dto = question(createdById);
+        UserDto user = new UserDto(createdById, "teacher@example.com", null, "Nguyễn Văn A",
             null, null, null, null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, UserDto>getDataLoader("userById")).thenReturn(loader);
         when(loader.load(createdById)).thenReturn(CompletableFuture.completedFuture(user));
 
-        var result = controller.createdByUser(dto, env);
+        CompletableFuture<UserDto> result = controller.createdByUser(dto, env);
 
         assertThat(result.join()).isSameAs(user);
         verify(loader).load(createdById);
@@ -66,10 +66,10 @@ class QuestionControllerTests {
 
     @Test
     void should_return_null_created_by_user_when_created_by_is_null() {
-        var dto = question(null);
+        QuestionDto dto = question(null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
 
-        var result = controller.createdByUser(dto, env);
+        CompletableFuture<UserDto> result = controller.createdByUser(dto, env);
 
         assertThat(result.join()).isNull();
         verify(env, never()).getDataLoader(any());

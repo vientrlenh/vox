@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamBlueprintJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -7,6 +8,7 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -30,14 +32,14 @@ public class ExamBlueprintRepositoryImpl implements ExamBlueprintRepository {
 
     @Override
     public ExamBlueprint save(ExamBlueprint blueprint) {
-        var saved = springDataExamBlueprintRepository.save(ExamBlueprintMapper.toJpa(blueprint));
+        ExamBlueprintJpaEntity saved = springDataExamBlueprintRepository.save(ExamBlueprintMapper.toJpa(blueprint));
         return ExamBlueprintMapper.toDomain(saved);
     }
 
     @Override
     public Optional<ExamBlueprint> findById(UUID id) {
-        var startedAt = System.nanoTime();
-        var result = springDataExamBlueprintRepository.findById(id)
+        long startedAt = System.nanoTime();
+        Optional<ExamBlueprint> result = springDataExamBlueprintRepository.findById(id)
             .map(ExamBlueprintMapper::toDomain);
         LOGGER.info("[blueprint-perf] repo ExamBlueprintRepositoryImpl.findById id={} tookMs={}",
             id, (System.nanoTime() - startedAt) / 1_000_000);
@@ -57,8 +59,8 @@ public class ExamBlueprintRepositoryImpl implements ExamBlueprintRepository {
     @Override
     public PageResult<ExamBlueprint> findAccessible(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
             boolean schoolAdmin, UUID schoolId, Boolean isActive, UUID languageId, String examKind, String keyword, int page, int size) {
-        var pageable = PageRequest.of(page - 1, size);
-        var result = springDataExamBlueprintRepository.findAccessible(
+        PageRequest pageable = PageRequest.of(page - 1, size);
+        Page<ExamBlueprintJpaEntity> result = springDataExamBlueprintRepository.findAccessible(
             currentUserId,
             currentSchoolId,
             systemAdmin,

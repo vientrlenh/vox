@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamSession;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,17 +37,17 @@ public class FlagExamSessionUseCase implements IUseCase<FlagExamSessionCommand, 
     @Override
     @Transactional
     public java.util.UUID execute(FlagExamSessionCommand input) {
-        var session = examSessionRepository.findById(input.sessionId())
+        ExamSession session = examSessionRepository.findById(input.sessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
-        var candidate = examCandidateRepository.findById(session.getCandidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của phiên thi"));
-        var exam = examRepository.findById(session.getExamId())
+        Exam exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của phiên thi"));
 
         moderationAccessService.authorize(exam, candidate);
 
         if (input.flagged()) {
-            var reason = StringNormalization.trimAndCollapseSpaces(input.reason());
+            String reason = StringNormalization.trimAndCollapseSpaces(input.reason());
             if (reason == null || reason.isBlank()) {
                 throw new IllegalArgumentException("Phải nhập lý do khi đánh dấu nghi vấn");
             }

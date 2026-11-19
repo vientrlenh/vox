@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamCandidateJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
@@ -31,7 +32,7 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     @Override
     public ExamCandidate save(ExamCandidate candidate) {
         try {
-            var saved = springDataExamCandidateRepository.save(ExamCandidateMapper.toJpa(candidate));
+            ExamCandidateJpaEntity saved = springDataExamCandidateRepository.save(ExamCandidateMapper.toJpa(candidate));
             return ExamCandidateMapper.toDomain(saved);
         } catch (DataIntegrityViolationException e) {
             throw new DuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
@@ -41,7 +42,7 @@ public class ExamCandidateRepositoryImpl implements ExamCandidateRepository {
     @Override
     public List<ExamCandidate> saveAll(Collection<ExamCandidate> candidates) {
         try {
-            var entities = candidates.stream().map(ExamCandidateMapper::toJpa).toList();
+            List<ExamCandidateJpaEntity> entities = candidates.stream().map(ExamCandidateMapper::toJpa).toList();
             return springDataExamCandidateRepository.saveAll(entities).stream()
                 .map(ExamCandidateMapper::toDomain)
                 .toList();

@@ -55,11 +55,11 @@ class MyClassControllerTests {
 
     @Test
     void my_classes_should_forward_arguments_to_use_case() {
-        var expected = new PageResult<>(List.of(schoolClassDto()), 1, 10, 1, 1);
+        PageResult<SchoolClassDto> expected = new PageResult<>(List.of(schoolClassDto()), 1, 10, 1, 1);
         when(viewMyClassesUseCase.execute(new ViewMyClassesQuery(schoolId, "eng", "ACTIVE", 1, 10)))
             .thenReturn(expected);
 
-        var result = controller.myClasses(schoolId, "eng", "ACTIVE", 1, 10);
+        PageResult<SchoolClassDto> result = controller.myClasses(schoolId, "eng", "ACTIVE", 1, 10);
 
         assertThat(result).isEqualTo(expected);
     }
@@ -77,7 +77,7 @@ class MyClassControllerTests {
 
     @Test
     void my_class_should_forward_id_to_use_case() {
-        var expected = schoolClassDto();
+        SchoolClassDto expected = schoolClassDto();
         when(viewMyClassDetailsUseCase.execute(new ViewMyClassDetailsQuery(classId))).thenReturn(expected);
 
         assertThat(controller.myClass(classId)).isEqualTo(expected);
@@ -85,11 +85,11 @@ class MyClassControllerTests {
 
     @Test
     void my_class_members_should_forward_filters_to_use_case() {
-        var expected = new PageResult<>(List.of(memberDto(UUID.randomUUID())), 1, 20, 1, 1);
+        PageResult<SchoolClassUserDto> expected = new PageResult<>(List.of(memberDto(UUID.randomUUID())), 1, 20, 1, 1);
         when(viewMyClassMembersUseCase.execute(new ViewMyClassMembersQuery(classId, "STUDENT", "mai", 1, 20)))
             .thenReturn(expected);
 
-        var result = controller.myClassMembers(classId, "STUDENT", "mai", 1, 20);
+        PageResult<SchoolClassUserDto> result = controller.myClassMembers(classId, "STUDENT", "mai", 1, 20);
 
         assertThat(result).isEqualTo(expected);
     }
@@ -103,12 +103,12 @@ class MyClassControllerTests {
     @Test
     @SuppressWarnings("unchecked")
     void my_class_school_grade_field_should_reuse_the_shared_loader() {
-        var gradeId = UUID.randomUUID();
-        var schoolClass = new SchoolClassDto(classId, schoolId, UUID.randomUUID(), gradeId,
+        UUID gradeId = UUID.randomUUID();
+        SchoolClassDto schoolClass = new SchoolClassDto(classId, schoolId, UUID.randomUUID(), gradeId,
             "ENG-01", "English 01", null, "ACTIVE", null, null);
-        var expected = new SchoolGradeDto(gradeId, schoolId, UUID.randomUUID(), "G10", "Grade 10", null, null, null, "ACTIVE", null, null);
-        var env = mock(DataFetchingEnvironment.class);
-        var loader = mock(DataLoader.class);
+        SchoolGradeDto expected = new SchoolGradeDto(gradeId, schoolId, UUID.randomUUID(), "G10", "Grade 10", null, null, null, "ACTIVE", null, null);
+        DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
+        DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, SchoolGradeDto>getDataLoader("schoolGradeByClass")).thenReturn(loader);
         when(loader.load(gradeId)).thenReturn(CompletableFuture.completedFuture(expected));
 
@@ -119,12 +119,12 @@ class MyClassControllerTests {
     @Test
     @SuppressWarnings("unchecked")
     void my_class_language_field_should_reuse_the_shared_loader() {
-        var languageId = UUID.randomUUID();
-        var schoolClass = new SchoolClassDto(classId, schoolId, languageId, UUID.randomUUID(),
+        UUID languageId = UUID.randomUUID();
+        SchoolClassDto schoolClass = new SchoolClassDto(classId, schoolId, languageId, UUID.randomUUID(),
             "ENG-01", "English 01", null, "ACTIVE", null, null);
-        var expected = new SupportedLanguageDto(languageId, "EN", "English", null, true, null, null);
-        var env = mock(DataFetchingEnvironment.class);
-        var loader = mock(DataLoader.class);
+        SupportedLanguageDto expected = new SupportedLanguageDto(languageId, "EN", "English", null, true, null, null);
+        DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
+        DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, SupportedLanguageDto>getDataLoader("supportedLanguageByClass")).thenReturn(loader);
         when(loader.load(languageId)).thenReturn(CompletableFuture.completedFuture(expected));
 
@@ -135,9 +135,9 @@ class MyClassControllerTests {
     @Test
     @SuppressWarnings("unchecked")
     void my_class_active_member_count_should_load_by_class_id() {
-        var schoolClass = schoolClassDto();
-        var env = mock(DataFetchingEnvironment.class);
-        var loader = mock(DataLoader.class);
+        SchoolClassDto schoolClass = schoolClassDto();
+        DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
+        DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, Integer>getDataLoader("activeMemberCountByClass")).thenReturn(loader);
         when(loader.load(classId)).thenReturn(CompletableFuture.completedFuture(7));
 
@@ -148,11 +148,11 @@ class MyClassControllerTests {
     @Test
     @SuppressWarnings("unchecked")
     void my_class_member_user_field_should_load_by_user_id() {
-        var userId = UUID.randomUUID();
-        var member = memberDto(userId);
-        var expected = userDto(userId);
-        var env = mock(DataFetchingEnvironment.class);
-        var loader = mock(DataLoader.class);
+        UUID userId = UUID.randomUUID();
+        SchoolClassUserDto member = memberDto(userId);
+        UserDto expected = userDto(userId);
+        DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
+        DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, UserDto>getDataLoader("userBySchoolClassUser")).thenReturn(loader);
         when(loader.load(userId)).thenReturn(CompletableFuture.completedFuture(expected));
 
@@ -163,16 +163,16 @@ class MyClassControllerTests {
     @Test
     @SuppressWarnings("unchecked")
     void my_class_member_role_codes_should_flatten_roles_to_codes() {
-        var userId = UUID.randomUUID();
-        var env = mock(DataFetchingEnvironment.class);
-        var loader = mock(DataLoader.class);
+        UUID userId = UUID.randomUUID();
+        DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
+        DataLoader loader = mock(DataLoader.class);
         when(env.<UserRolesKey, List<RoleDto>>getDataLoader("rolesByUser")).thenReturn(loader);
         when(loader.load(new UserRolesKey(userId))).thenReturn(CompletableFuture.completedFuture(List.of(
             new RoleDto(UUID.randomUUID(), "TEACHER", "Giáo viên", null, null),
             new RoleDto(UUID.randomUUID(), "STUDENT", "Học sinh", null, null)
         )));
 
-        var result = controller.myClassMemberUserRoleCodes(userDto(userId), env).join();
+        List<String> result = controller.myClassMemberUserRoleCodes(userDto(userId), env).join();
 
         assertThat(result).containsExactly("TEACHER", "STUDENT");
     }

@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
+import com.sep.vox.application.query.dto.UserRoleInfo;
+import com.sep.vox.domain.model.school.SchoolUser;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,7 +51,7 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolUserDto> execute(ViewSchoolUsersBySchoolQuery input) {
-        var callerId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
@@ -57,8 +60,8 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
             throw new ForbiddenException("Quyền truy cập không hợp lệ");
         }
 
-        var callerRoles = userRoleQueryRepository.findByUserIdWithRoleInfo(callerId);
-        var isSchoolAdmin = callerRoles.stream()
+        List<UserRoleInfo> callerRoles = userRoleQueryRepository.findByUserIdWithRoleInfo(callerId);
+        boolean isSchoolAdmin = callerRoles.stream()
             .anyMatch(r -> "SYSTEM_ADMIN".equals(r.roleCode()) || "SCHOOL_ADMIN".equals(r.roleCode()));
 
         // Admin: filter by whatever role the caller passes (null = all); sees everyone.
@@ -79,9 +82,9 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
             excludeUserId = callerId;
         }
 
-        var status = validateStatus(input.status());
+        String status = validateStatus(input.status());
 
-        var schoolUsersPage = schoolUserRepository.searchBySchoolId(
+        PageResult<SchoolUser> schoolUsersPage = schoolUserRepository.searchBySchoolId(
             input.schoolId(),
             excludeUserId,
             StringNormalization.trimAndCollapseSpaces(input.search()),
@@ -95,7 +98,7 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
     }
 
     private String validateStatus(String status) {
-        var normalized = StringNormalization.trimAndCollapseSpaces(status);
+        String normalized = StringNormalization.trimAndCollapseSpaces(status);
         if (normalized == null) {
             return null;
         }

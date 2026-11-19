@@ -8,12 +8,13 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.command.examevaluation.ConfidenceCaseSignalsInput;
 import com.sep.vox.application.port.input.command.examevaluation.EvaluationSignalsInput;
+import com.sep.vox.domain.valueobject.ConfidenceCaseSignals;
 
 class ExamEvaluationSignalMapperTests {
 
     @Test
     void preservesNullableConfidenceBranchesAndClippingPrecision() {
-        var confidence = new ConfidenceCaseSignalsInput(
+        ConfidenceCaseSignalsInput confidence = new ConfidenceCaseSignalsInput(
             null,
             0.8,
             1.0,
@@ -31,7 +32,7 @@ class ExamEvaluationSignalMapperTests {
             null,
             null
         );
-        var dto = new EvaluationSignalsInput(
+        EvaluationSignalsInput dto = new EvaluationSignalsInput(
             30,
             20,
             2,
@@ -49,7 +50,7 @@ class ExamEvaluationSignalMapperTests {
             confidence
         );
 
-        var mapped = ExamEvaluationSignalMapper.toDomain(dto).confidenceCase();
+        ConfidenceCaseSignals mapped = ExamEvaluationSignalMapper.toDomain(dto).confidenceCase();
 
         assertThat(mapped.cAsrLog()).isNull();
         assertThat(mapped.clippingRatio()).isEqualByComparingTo("0.0075");

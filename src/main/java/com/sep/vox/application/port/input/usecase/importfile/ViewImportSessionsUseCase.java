@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.importfile;
 
+import com.sep.vox.domain.model.importfile.ImportSession;
+import com.sep.vox.domain.model.school.School;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -54,15 +56,15 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
         if (input == null || input.page() <= 0 || input.size() <= 0) {
             throw new IllegalArgumentException("Số trang và kích thước trang không hợp lệ");
         }
-        var type = parseType(input.type());
-        var status = parseStatus(input.status());
+        ImportType type = parseType(input.type());
+        ImportSessionStatus status = parseStatus(input.status());
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = findCurrentUser(currentUserId);
-        var schoolId = getSchoolId(currentUser);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = findCurrentUser(currentUserId);
+        UUID schoolId = getSchoolId(currentUser);
         validateSchool(schoolId);
 
-        var result = importSessionRepository.findBySchoolId(
+        PageResult<ImportSession> result = importSessionRepository.findBySchoolId(
             schoolId,
             type,
             status,
@@ -73,7 +75,7 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        var user = userRepository.findById(currentUserId)
+        User user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalStateException("Người dùng hiện tại không hoạt động");
@@ -88,7 +90,7 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
     }
 
     private void validateSchool(UUID schoolId) {
-        var school = schoolRepository.findById(schoolId)
+        School school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
@@ -96,7 +98,7 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
     }
 
     private ImportType parseType(String type) {
-        var normalized = StringNormalization.trimAndCollapseSpaces(type);
+        String normalized = StringNormalization.trimAndCollapseSpaces(type);
         if (normalized == null || normalized.isBlank()) {
             return null;
         }
@@ -108,7 +110,7 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
     }
 
     private ImportSessionStatus parseStatus(String status) {
-        var normalized = StringNormalization.trimAndCollapseSpaces(status);
+        String normalized = StringNormalization.trimAndCollapseSpaces(status);
         if (normalized == null || normalized.isBlank()) {
             return null;
         }

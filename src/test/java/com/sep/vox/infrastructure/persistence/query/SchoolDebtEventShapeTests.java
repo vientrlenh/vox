@@ -51,10 +51,11 @@ class SchoolDebtEventShapeTests {
 
     @Test
     void should_accept_a_cleared_row_with_no_quota_bucket_and_no_trigger() {
-        // Hết nợ là sự kiện cấp TRƯỜNG: số dư là MỘT con số dùng chung cho cả hai ví hạn mức, nên
-        // không ví nào "vừa hết nợ". Ba cột đó phải để trống được, nếu không thì chỗ phát sự kiện
-        // buộc phải bịa ra một giá trị và làm bẩn chính quyển sổ dùng để đối soát.
-        var saved = schoolDebtEventRepository.save(new SchoolDebtEvent(
+        // Debt clearance is a SCHOOL-level event: the balance is ONE number shared by both quota
+        // wallets, so no wallet has "just cleared its debt". Those three columns must be allowed to
+        // stay empty, otherwise the event emitter is forced to invent a value and pollute the very
+        // ledger used for reconciliation.
+        SchoolDebtEvent saved = schoolDebtEventRepository.save(new SchoolDebtEvent(
             schoolId, subscriptionId, SchoolDebtEventType.CLEARED,
             null, null, null, null, null, null, BigDecimal.ZERO, now));
 
@@ -66,8 +67,9 @@ class SchoolDebtEventShapeTests {
 
     @Test
     void should_accept_a_debt_row_triggered_by_a_practice_session() {
-        // Chính là hình dạng mà trước V4 không ghi nổi: nợ sinh từ phiên LUYỆN NÓI.
-        var saved = schoolDebtEventRepository.save(new SchoolDebtEvent(
+        // Exactly the shape that could not be written before V4: debt arising from a SPEAKING
+        // PRACTICE session.
+        SchoolDebtEvent saved = schoolDebtEventRepository.save(new SchoolDebtEvent(
             schoolId, subscriptionId, SchoolDebtEventType.CAP_EXCEEDED,
             QuotaType.PRACTICE, null, UUID.randomUUID(), new BigDecimal("18402.60"),
             new BigDecimal("2400000"), new BigDecimal("2906310"), new BigDecimal("506310"), now));

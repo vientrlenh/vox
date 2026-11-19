@@ -118,7 +118,7 @@ public class ExamBlueprintController {
     @PostMapping("/exam-blueprints")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamBlueprintDto>> create(@Valid @RequestBody CreateExamBlueprintRequest request) {
-        var data = createExamBlueprintUseCase.execute(CreateExamBlueprintCommandMapper.fromRequest(request));
+        ExamBlueprintDto data = createExamBlueprintUseCase.execute(CreateExamBlueprintCommandMapper.fromRequest(request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo blueprint đề thi thành công", data));
     }
@@ -128,7 +128,7 @@ public class ExamBlueprintController {
     public ResponseEntity<ApiResponse<ExamBlueprintDto>> update(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamBlueprintRequest request) {
-        var data = updateExamBlueprintUseCase.execute(UpdateExamBlueprintCommandMapper.fromRequest(id, request));
+        ExamBlueprintDto data = updateExamBlueprintUseCase.execute(UpdateExamBlueprintCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật blueprint đề thi thành công", data));
     }
 
@@ -137,7 +137,7 @@ public class ExamBlueprintController {
     public ResponseEntity<ApiResponse<ExamBlueprintDto>> updateActiveStatus(
             @PathVariable("id") UUID id,
             @RequestBody UpdateExamBlueprintActiveStatusRequest request) {
-        var data = updateExamBlueprintActiveStatusUseCase.execute(
+        ExamBlueprintDto data = updateExamBlueprintActiveStatusUseCase.execute(
             new UpdateExamBlueprintActiveStatusCommand(id, request.isActive())
         );
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái kích hoạt blueprint thành công", data));
@@ -155,7 +155,7 @@ public class ExamBlueprintController {
     public ResponseEntity<ApiResponse<ExamBlueprintVersionDto>> createVersion(
             @PathVariable("id") UUID id,
             @Valid @RequestBody CreateExamBlueprintVersionRequest request) {
-        var data = createExamBlueprintVersionUseCase.execute(CreateExamBlueprintVersionCommandMapper.fromRequest(id, request));
+        ExamBlueprintVersionDto data = createExamBlueprintVersionUseCase.execute(CreateExamBlueprintVersionCommandMapper.fromRequest(id, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo version blueprint đề thi thành công", data));
     }
@@ -163,7 +163,7 @@ public class ExamBlueprintController {
     @PostMapping("/exam-blueprint-versions/{id}/duplicate")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamBlueprintVersionDto>> duplicateVersion(@PathVariable("id") UUID id) {
-        var data = duplicateExamBlueprintVersionUseCase.execute(new DuplicateExamBlueprintVersionCommand(id));
+        ExamBlueprintVersionDto data = duplicateExamBlueprintVersionUseCase.execute(new DuplicateExamBlueprintVersionCommand(id));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Nhân bản version blueprint đề thi thành công", data));
     }
@@ -173,7 +173,7 @@ public class ExamBlueprintController {
     public ResponseEntity<ApiResponse<ExamBlueprintVersionDto>> updateVersion(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamBlueprintVersionRequest request) {
-        var data = updateExamBlueprintVersionUseCase.execute(UpdateExamBlueprintVersionCommandMapper.fromRequest(id, request));
+        ExamBlueprintVersionDto data = updateExamBlueprintVersionUseCase.execute(UpdateExamBlueprintVersionCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật version blueprint đề thi thành công", data));
     }
 
@@ -182,7 +182,7 @@ public class ExamBlueprintController {
     public ResponseEntity<ApiResponse<ExamBlueprintVersionDto>> updateVersionStatus(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamBlueprintVersionStatusRequest request) {
-        var data = updateExamBlueprintVersionStatusUseCase.execute(
+        ExamBlueprintVersionDto data = updateExamBlueprintVersionStatusUseCase.execute(
             UpdateExamBlueprintVersionStatusCommandMapper.fromRequest(id, request)
         );
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái version blueprint đề thi thành công", data));
@@ -193,7 +193,7 @@ public class ExamBlueprintController {
     public ResponseEntity<ApiResponse<ExamBlueprintSectionDto>> createSection(
             @PathVariable("id") UUID versionId,
             @Valid @RequestBody CreateExamBlueprintSectionItemRequest request) {
-        var data = createExamBlueprintSectionUseCase.execute(
+        ExamBlueprintSectionDto data = createExamBlueprintSectionUseCase.execute(
             CreateExamBlueprintSectionCommandMapper.fromRequest(versionId, request)
         );
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -205,7 +205,7 @@ public class ExamBlueprintController {
     public ResponseEntity<ApiResponse<ExamBlueprintSectionDto>> updateSection(
             @PathVariable("sectionId") UUID sectionId,
             @Valid @RequestBody UpdateExamBlueprintSectionRequest request) {
-        var data = updateExamBlueprintSectionUseCase.execute(
+        ExamBlueprintSectionDto data = updateExamBlueprintSectionUseCase.execute(
             UpdateExamBlueprintSectionCommandMapper.fromRequest(sectionId, request)
         );
         return ResponseEntity.ok(ApiResponse.success("Cập nhật section thành công", data));
@@ -223,7 +223,7 @@ public class ExamBlueprintController {
     public ResponseEntity<ApiResponse<ExamBlueprintSlotDto>> createSlot(
             @PathVariable("sectionId") UUID sectionId,
             @Valid @RequestBody CreateExamBlueprintSlotItemRequest request) {
-        var data = createExamBlueprintSlotUseCase.execute(
+        ExamBlueprintSlotDto data = createExamBlueprintSlotUseCase.execute(
             CreateExamBlueprintSlotCommandMapper.fromRequest(sectionId, request)
         );
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -235,7 +235,7 @@ public class ExamBlueprintController {
     public ResponseEntity<ApiResponse<ExamBlueprintSlotDto>> updateSlot(
             @PathVariable("slotId") UUID slotId,
             @Valid @RequestBody UpdateExamBlueprintSlotRequest request) {
-        var data = updateExamBlueprintSlotUseCase.execute(
+        ExamBlueprintSlotDto data = updateExamBlueprintSlotUseCase.execute(
             UpdateExamBlueprintSlotCommandMapper.fromRequest(slotId, request)
         );
         return ResponseEntity.ok(ApiResponse.success("Cập nhật slot thành công", data));

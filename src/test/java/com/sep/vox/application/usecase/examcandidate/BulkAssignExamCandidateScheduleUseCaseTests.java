@@ -27,6 +27,7 @@ import com.sep.vox.application.port.input.service.ExamScheduleManageAccessServic
 import com.sep.vox.application.port.input.usecase.examcandidate.BulkAssignExamCandidateScheduleUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
@@ -104,11 +105,11 @@ class BulkAssignExamCandidateScheduleUseCaseTests {
         givenSchedule(ExamScheduleStatus.PUBLISHED);
         givenCandidates(candidate(firstCandidateId, null), candidate(secondCandidateId, null));
 
-        var result = useCase.execute(command(scheduleId));
+        List<ExamCandidateDto> result = useCase.execute(command(scheduleId));
 
         assertThat(result).hasSize(2);
         assertThat(result).allSatisfy(dto -> assertThat(dto.scheduleId()).isEqualTo(scheduleId));
-        // Ca chỉ bị khoá đúng một lần dù có bao nhiêu thí sinh.
+        // The session is locked exactly once no matter how many candidates there are.
         verify(examScheduleRepository).findByIdForUpdate(scheduleId);
     }
 
@@ -116,7 +117,7 @@ class BulkAssignExamCandidateScheduleUseCaseTests {
     void should_unassign_multiple_candidates_when_schedule_id_is_null() {
         givenCandidates(candidate(firstCandidateId, scheduleId), candidate(secondCandidateId, scheduleId));
 
-        var result = useCase.execute(command(null));
+        List<ExamCandidateDto> result = useCase.execute(command(null));
 
         assertThat(result).hasSize(2);
         assertThat(result).allSatisfy(dto -> assertThat(dto.scheduleId()).isNull());
@@ -154,7 +155,7 @@ class BulkAssignExamCandidateScheduleUseCaseTests {
 
     @Test
     void should_do_nothing_when_candidate_list_is_empty() {
-        var result = useCase.execute(new BulkAssignExamCandidateScheduleCommand(examId, List.of(), scheduleId));
+        List<ExamCandidateDto> result = useCase.execute(new BulkAssignExamCandidateScheduleCommand(examId, List.of(), scheduleId));
 
         assertThat(result).isEmpty();
         verify(examScheduleRepository, never()).findByIdForUpdate(any());
@@ -164,8 +165,8 @@ class BulkAssignExamCandidateScheduleUseCaseTests {
     @Test
     void should_reject_bulk_assign_when_any_student_has_an_overlapping_schedule() {
         givenSchedule(ExamScheduleStatus.PUBLISHED);
-        var first = candidate(firstCandidateId, null);
-        var second = candidate(secondCandidateId, null);
+        ExamCandidate first = candidate(firstCandidateId, null);
+        ExamCandidate second = candidate(secondCandidateId, null);
         givenCandidates(first, second);
         givenConflicts(new StudentScheduleConflict(second.getStudentId(), UUID.randomUUID(), start, end));
         givenName(second.getStudentId(), "Trần Thị Bình");
@@ -173,25 +174,25 @@ class BulkAssignExamCandidateScheduleUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(command(scheduleId)))
             .isInstanceOf(DuplicatedException.class)
             .hasMessageContaining("Trần Thị Bình");
-        // Cả lượt hỏng: không ai được xếp, kể cả người không vướng.
+        // The whole batch fails: nobody is assigned, not even those with no conflict.
         verify(examCandidateRepository, never()).saveAll(anyCollection());
     }
 
     @Test
     void should_ignore_each_candidate_own_current_schedule_when_checking_conflicts() {
-        // Hai thí sinh đang ở HAI ca hiện tại khác nhau, cả hai đều chồng giờ ca đích. Xếp sang ca
-        // đích là thay thế chỗ cũ nên không ai bị chặn.
+        // Two candidates are in TWO different current sessions, and both overlap the target session
+        // in time. Moving them to the target session replaces their old spot, so nobody is blocked.
         givenSchedule(ExamScheduleStatus.PUBLISHED);
-        var firstCurrent = UUID.randomUUID();
-        var secondCurrent = UUID.randomUUID();
-        var first = candidate(firstCandidateId, firstCurrent);
-        var second = candidate(secondCandidateId, secondCurrent);
+        UUID firstCurrent = UUID.randomUUID();
+        UUID secondCurrent = UUID.randomUUID();
+        ExamCandidate first = candidate(firstCandidateId, firstCurrent);
+        ExamCandidate second = candidate(secondCandidateId, secondCurrent);
         givenCandidates(first, second);
         givenConflicts(
             new StudentScheduleConflict(first.getStudentId(), firstCurrent, start, end),
             new StudentScheduleConflict(second.getStudentId(), secondCurrent, start, end));
 
-        var result = useCase.execute(command(scheduleId));
+        List<ExamCandidateDto> result = useCase.execute(command(scheduleId));
 
         assertThat(result).hasSize(2);
         assertThat(result).allSatisfy(dto -> assertThat(dto.scheduleId()).isEqualTo(scheduleId));
@@ -222,11 +223,12 @@ class BulkAssignExamCandidateScheduleUseCaseTests {
     }
 
     private void givenSchedule(ExamScheduleStatus status) {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(scheduleId);
         schedule.setExamId(examId);
         schedule.setStatus(status);
-        // Có khung giờ thì luật chống trùng lịch mới chạy — thiếu giờ là validator bỏ qua.
+        // The anti-overlap rule only runs when there is a time window -- without times the
+        // validator skips it.
         schedule.setStartDate(start);
         schedule.setEndDate(end);
         when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule));
@@ -238,7 +240,7 @@ class BulkAssignExamCandidateScheduleUseCaseTests {
     }
 
     private void givenName(UUID studentId, String fullName) {
-        var user = new User();
+        User user = new User();
         user.setId(studentId);
         user.setFullName(new FullName(fullName));
         when(userRepository.findByIdIn(anyCollection())).thenReturn(List.of(user));
@@ -250,7 +252,7 @@ class BulkAssignExamCandidateScheduleUseCaseTests {
     }
 
     private ExamCandidate candidate(UUID id, UUID currentScheduleId) {
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(id);
         candidate.setExamId(examId);
         candidate.setStudentId(UUID.randomUUID());
@@ -260,7 +262,7 @@ class BulkAssignExamCandidateScheduleUseCaseTests {
     }
 
     private Exam exam(ExamStatus status) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         exam.setStatus(status);

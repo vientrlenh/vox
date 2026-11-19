@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.service;
 
+import jakarta.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
@@ -44,7 +45,7 @@ public class SmtpEmailSendingService implements MailSendingPort {
 
     @Override
     public void send(String to, String subject, String body) {
-        var message = new SimpleMailMessage();
+        SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
         message.setTo(to);
         message.setSubject(subject);
@@ -55,8 +56,8 @@ public class SmtpEmailSendingService implements MailSendingPort {
 
     @Override
     public void sendHtml(String to, String subject, String html) throws Exception {
-        var message = javaMailSender.createMimeMessage();
-        var helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
+        MimeMessage message = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
         helper.setFrom(fromAddress());
         helper.setTo(to);
         helper.setSubject(subject);

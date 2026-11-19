@@ -71,10 +71,10 @@ public class ViewMyExamsUseCase implements IUseCase<ViewMyExamsQuery, PageResult
     public PageResult<StudentExamSummaryResponse> execute(ViewMyExamsQuery input) {
         // MỘT mốc "bây giờ" cho cả câu đếm lẫn câu lấy dòng: lấy hai lần thì một bài đúng lúc
         // chuyển trạng thái có thể lọt vào câu này mà rơi khỏi câu kia.
-        var now = Instant.now();
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        Instant now = Instant.now();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var page = studentExamQueryRepository.findMyExams(
+        PageResult<StudentExamRowInfo> page = studentExamQueryRepository.findMyExams(
             studentId,
             input.kind() == null ? null : input.kind().name(),
             input.status(),
@@ -92,15 +92,15 @@ public class ViewMyExamsUseCase implements IUseCase<ViewMyExamsQuery, PageResult
     }
 
     private List<StudentExamSummaryResponse> toResponses(List<StudentExamRowInfo> rows, Instant now) {
-        var attemptsByCandidateId = groupAttemptsByCandidateId(rows);
-        var papersById = papersByIds(rows);
+        Map<UUID, List<ExamAttemptSummary>> attemptsByCandidateId = groupAttemptsByCandidateId(rows);
+        Map<UUID, ExamPaper> papersById = papersByIds(rows);
 
         return rows.stream()
             .map(row -> {
                 ExamPaper assignedPaper = papersById.get(row.assignedPaperId());
-                var attempts = attemptsByCandidateId.getOrDefault(row.candidateId(), List.of());
-                var attemptsUsed = countAttemptsTowardLimit(attempts);
-                var entryAvailability = resolveEntryAvailability(row, now, attemptsUsed);
+                List<ExamAttemptSummary> attempts = attemptsByCandidateId.getOrDefault(row.candidateId(), List.of());
+                int attemptsUsed = countAttemptsTowardLimit(attempts);
+                EntryAvailability entryAvailability = resolveEntryAvailability(row, now, attemptsUsed);
 
                 return new StudentExamSummaryResponse(
                     row.examId(),
@@ -123,7 +123,7 @@ public class ViewMyExamsUseCase implements IUseCase<ViewMyExamsQuery, PageResult
     }
 
     private Map<UUID, ExamPaper> papersByIds(List<StudentExamRowInfo> rows) {
-        var paperIds = rows.stream()
+        List<UUID> paperIds = rows.stream()
             .map(row -> row.assignedPaperId())
             .filter(Objects::nonNull)
             .distinct()
@@ -134,7 +134,7 @@ public class ViewMyExamsUseCase implements IUseCase<ViewMyExamsQuery, PageResult
     }
 
     private Map<UUID, List<ExamAttemptSummary>> groupAttemptsByCandidateId(List<StudentExamRowInfo> rows) {
-        var candidateIds = rows.stream()
+        List<UUID> candidateIds = rows.stream()
             .map(row -> row.candidateId())
             .filter(Objects::nonNull)
             .toList();
@@ -160,13 +160,13 @@ public class ViewMyExamsUseCase implements IUseCase<ViewMyExamsQuery, PageResult
     }
 
     private List<StudentExamSessionSummaryResponse> toSessionSummaries(List<ExamAttemptSummary> attempts) {
-        var orderedAttempts = attempts.stream()
+        List<ExamAttemptSummary> orderedAttempts = attempts.stream()
             .sorted(Comparator.comparing((ExamAttemptSummary summary) -> summary.startedAt(), Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
 
-        var out = new java.util.ArrayList<StudentExamSessionSummaryResponse>(orderedAttempts.size());
+        List<StudentExamSessionSummaryResponse> out = new java.util.ArrayList<StudentExamSessionSummaryResponse>(orderedAttempts.size());
         for (int index = 0; index < orderedAttempts.size(); index++) {
-            var attempt = orderedAttempts.get(index);
+            ExamAttemptSummary attempt = orderedAttempts.get(index);
             out.add(new StudentExamSessionSummaryResponse(
                 attempt.sessionId(),
                 index + 1,

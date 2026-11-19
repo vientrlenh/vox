@@ -41,9 +41,9 @@ class SchoolQuotaPolicyTests {
 
     @Test
     void should_default_to_fully_distributable_when_the_school_never_set_anything() {
-        // Không có dòng nào trong DB. Trường chưa đụng tới màn cấu hình phải thấy hành vi y hệt
-        // trước V5 -- chia được toàn bộ ví.
-        var policy = schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, QuotaType.EXAM);
+        // No row in the DB. A school that has never touched the configuration screen must see
+        // behavior identical to before V5 -- the whole wallet can be distributed.
+        SchoolQuotaPolicy policy = schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, QuotaType.EXAM);
 
         assertThat(policy.getDistributableRatio()).isEqualByComparingTo(BigDecimal.ONE);
         assertThat(policy.distributableAmountOf(new BigDecimal("10000")))
@@ -52,20 +52,21 @@ class SchoolQuotaPolicyTests {
 
     @Test
     void should_take_the_configured_share_of_the_pool() {
-        var policy = new SchoolQuotaPolicy(schoolId, QuotaType.EXAM, new BigDecimal("0.8000"), null, null);
+        SchoolQuotaPolicy policy = new SchoolQuotaPolicy(schoolId, QuotaType.EXAM, new BigDecimal("0.8000"), null, null);
 
-        // Ví 10.000đ, trần 80% -> chia được 8.000đ. Đúng ví dụ đã thống nhất.
+        // A 10,000 VND wallet, 80% ceiling -> 8,000 VND can be distributed. Exactly the agreed
+        // example.
         assertThat(policy.distributableAmountOf(new BigDecimal("10000")))
             .isEqualByComparingTo(new BigDecimal("8000"));
     }
 
     @Test
     void should_round_the_distributable_share_down_not_up() {
-        // Làm tròn LÊN sẽ cho chia nhiều hơn trần vài phần triệu đồng -- tức phá đúng cái ràng buộc
-        // mà chính sách này sinh ra để đặt.
-        var policy = new SchoolQuotaPolicy(schoolId, QuotaType.EXAM, new BigDecimal("0.3333"), null, null);
+        // Rounding UP would allow distributing a few millionths of a dong more than the ceiling --
+        // breaking the very constraint this policy was created to set.
+        SchoolQuotaPolicy policy = new SchoolQuotaPolicy(schoolId, QuotaType.EXAM, new BigDecimal("0.3333"), null, null);
 
-        var distributable = policy.distributableAmountOf(new BigDecimal("10000.0000005"));
+        BigDecimal distributable = policy.distributableAmountOf(new BigDecimal("10000.0000005"));
 
         assertThat(distributable).isLessThanOrEqualTo(new BigDecimal("10000.0000005").multiply(new BigDecimal("0.3333")));
         assertThat(distributable.scale()).isEqualTo(6);

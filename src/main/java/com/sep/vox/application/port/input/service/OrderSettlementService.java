@@ -1,5 +1,10 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.model.school.SchoolBalance;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.subscription.SubscriptionPlan;
+import com.sep.vox.domain.model.user.Role;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.List;
@@ -142,7 +147,7 @@ public class OrderSettlementService {
         // Khóa đơn TRƯỚC khi đọc trạng thái: hai luồng cùng đọc "đơn còn PENDING" rồi cùng đi cộng
         // tiền là đúng kịch bản mà uq_payment_records_one_paid_per_order không chặn được, vì mỗi
         // luồng thao tác trên một dòng payment_records khác nhau của cùng một đơn.
-        var order = orderRepository.findByIdForUpdate(payment.getOrderId())
+        Order order = orderRepository.findByIdForUpdate(payment.getOrderId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng của lần thanh toán"));
 
         if (order.getStatus() == OrderStatus.SUCCESS) {
@@ -174,7 +179,7 @@ public class OrderSettlementService {
 
         // Giao hàng TRƯỚC khi phát hóa đơn: hóa đơn là chứng từ cho thứ đã giao. Cùng transaction
         // nên thứ tự này không đổi kết quả khi lỗi, nhưng nó nói đúng ý định cho người đọc sau.
-        var subscriptionId = fulfil(order, paidAt);
+        UUID subscriptionId = fulfil(order, paidAt);
 
         // Chỉ báo khi hóa đơn THẬT SỰ vừa được phát: Optional rỗng nghĩa là đơn này đã có hóa đơn
         // từ một lần chốt trước, và một callback lặp không được sinh mail/thông báo lần hai.
@@ -213,7 +218,7 @@ public class OrderSettlementService {
      */
     @Transactional
     public boolean expireIfOverdue(UUID orderId, Instant now) {
-        var order = orderRepository.findByIdForUpdate(orderId)
+        Order order = orderRepository.findByIdForUpdate(orderId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng cần hết hạn"));
 
         if (order.getStatus() != OrderStatus.PENDING || now.isBefore(order.getExpiresAt())) {
@@ -251,16 +256,16 @@ public class OrderSettlementService {
         // Khóa ví: một trường có thể có nhiều đơn nạp cùng lúc (uq_orders_one_open_subscription_order
         // cố ý KHÔNG chặn TOPUP), nên hai callback về gần nhau sẽ cùng đọc một số dư cũ rồi cùng ghi
         // đè -- mất hẳn một lần nạp mà không có lỗi nào nổi lên.
-        var balance = schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(order.getSchoolId(), now);
+        SchoolBalance balance = schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(order.getSchoolId(), now);
 
-        var credited = order.getSubtotalAmountVnd();
-        var balanceBefore = balance.getBalanceVnd();
-        var balanceAfter = balance.apply(credited, now);
+        BigDecimal credited = order.getSubtotalAmountVnd();
+        BigDecimal balanceBefore = balance.getBalanceVnd();
+        BigDecimal balanceAfter = balance.apply(credited, now);
         schoolBalanceRepository.save(balance);
 
         // subscriptionId chỉ để truy vết "lúc nạp trường đang dùng gói nào" -- số dư không thuộc về
         // gói nào cả, và trường chưa có gói vẫn nạp được nên null là hợp lệ.
-        var activeSubscriptionId = schoolSubscriptionRepository.findActiveBySchoolId(order.getSchoolId())
+        UUID activeSubscriptionId = schoolSubscriptionRepository.findActiveBySchoolId(order.getSchoolId())
             .map(s -> s.getId())
             .orElse(null);
 
@@ -325,22 +330,22 @@ public class OrderSettlementService {
         // Chốt kỳ nguồn TRƯỚC mọi thao tác ghi: cutOverToUpgrade sẽ kéo endDate của các kỳ chưa kết
         // thúc về hiện tại, và save() bên dưới thêm một kỳ mới -- hỏi "kỳ gần đây nhất" sau bất kỳ
         // việc nào trong hai việc đó là hỏi về một thế giới đã đổi.
-        var previousSubscriptionId = schoolSubscriptionRepository
+        UUID previousSubscriptionId = schoolSubscriptionRepository
             .findMostRecentBySchoolId(order.getSchoolId())
             .map(previous -> previous.getId())
             .orElse(null);
 
-        var planId = orderItemRepository.findByOrderId(order.getId()).stream()
+        UUID planId = orderItemRepository.findByOrderId(order.getId()).stream()
             .filter(item -> item.getType() == OrderItemType.SUBSCRIPTION)
             .map(item -> item.getItemId())
             .findFirst()
             .orElseThrow(() -> new IllegalStateException(
                 "Đơn đăng ký " + order.getId() + " không có dòng SUBSCRIPTION nào để kích hoạt"));
 
-        var plan = subscriptionPlanRepository.findById(planId)
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(planId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói dịch vụ của đơn đăng ký"));
 
-        var startsAt = order.getType() == OrderType.SUBSCRIPTION_UPGRADE
+        Instant startsAt = order.getType() == OrderType.SUBSCRIPTION_UPGRADE
             ? cutOverToUpgrade(order.getSchoolId(), now)
             : nextPeriodStart(order.getSchoolId(), now);
 
@@ -348,12 +353,12 @@ public class OrderSettlementService {
         // đơn nằm chờ, mà thứ phải lưu lại là con số trường thật sự trả. Dùng subtotal (giá niêm yết)
         // chứ không phải total: khoản bù nâng cấp là chuyện của LẦN MUA này, không phải giá trị của
         // kỳ -- ghi total thì lần nâng cấp sau lại bù dựa trên một con số đã bị bù một lần rồi.
-        var subscription = schoolSubscriptionRepository.save(SchoolSubscription.activate(
+        SchoolSubscription subscription = schoolSubscriptionRepository.save(SchoolSubscription.activate(
             order.getSchoolId(), plan, order.getSubtotalAmountVnd(), startsAt, now));
 
         // Gia hạn SỚM: kỳ cũ còn chạy tới startsAt, nên phần tiền tự nạp chưa tiêu của nó CHƯA chốt
         // được -- xem seedQuotaRecords và CarryQuotaFundingAtPeriodStartService.
-        var seededPoolTotals = seedQuotaRecords(
+        Map<QuotaType, BigDecimal> seededPoolTotals = seedQuotaRecords(
             subscription.getId(), planId, previousSubscriptionId, startsAt.isAfter(now));
         carryForwardUserAllocations(
             previousSubscriptionId, subscription.getId(), order.getSchoolId(), seededPoolTotals);
@@ -402,8 +407,8 @@ public class OrderSettlementService {
      * lần nữa là bù hai lần cho cùng một thứ.
      */
     private Instant cutOverToUpgrade(UUID schoolId, Instant now) {
-        var unfinished = schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now);
-        for (var previous : unfinished) {
+        List<SchoolSubscription> unfinished = schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now);
+        for (SchoolSubscription previous : unfinished) {
             previous.setStatus(SchoolSubscriptionStatus.EXPIRED);
             previous.setEndDate(now);
             schoolSubscriptionRepository.save(previous);
@@ -443,7 +448,7 @@ public class OrderSettlementService {
     private Map<QuotaType, BigDecimal> seedQuotaRecords(UUID subscriptionId, UUID planId,
             UUID previousSubscriptionId, boolean deferFundingCarry) {
         // KHÔNG đọc ví kỳ cũ ở nhánh hoãn: đọc là chốt, và chốt sớm chính là lỗi đang sửa.
-        var carriedByType = deferFundingCarry
+        Map<QuotaType, BigDecimal> carriedByType = deferFundingCarry
             ? Map.<QuotaType, BigDecimal>of()
             : unspentFundingByQuotaType(previousSubscriptionId);
 
@@ -469,7 +474,7 @@ public class OrderSettlementService {
             .forEach(record -> LOGGER.info("Chuyển {}đ tiền tự nạp chưa tiêu của ví {} sang kỳ {}",
                 record.getFundedFromBalanceVnd(), record.getQuotaType(), subscriptionId));
 
-        var seededPoolTotals = new EnumMap<QuotaType, BigDecimal>(QuotaType.class);
+        Map<QuotaType, BigDecimal> seededPoolTotals = new EnumMap<QuotaType, BigDecimal>(QuotaType.class);
         records.forEach(record ->
             seededPoolTotals.put(record.getQuotaType(), record.getTotalAllocatedAmountVnd()));
 
@@ -496,9 +501,9 @@ public class OrderSettlementService {
         if (previousSubscriptionId == null) {
             return Map.of();
         }
-        var carried = new EnumMap<QuotaType, BigDecimal>(QuotaType.class);
-        for (var record : quotaRecordRepository.findBySchoolSubscriptionId(previousSubscriptionId)) {
-            var unspent = record.unspentFundedVnd();
+        Map<QuotaType, BigDecimal> carried = new EnumMap<QuotaType, BigDecimal>(QuotaType.class);
+        for (SchoolSubscriptionQuotaRecord record : quotaRecordRepository.findBySchoolSubscriptionId(previousSubscriptionId)) {
+            BigDecimal unspent = record.unspentFundedVnd();
             if (unspent.signum() > 0) {
                 carried.put(record.getQuotaType(), unspent);
             }
@@ -561,18 +566,18 @@ public class OrderSettlementService {
             return;
         }
 
-        for (var seededPool : seededPoolTotals.entrySet()) {
-            var quotaType = seededPool.getKey();
-            var poolTotalVnd = orZero(seededPool.getValue());
+        for (Map.Entry<QuotaType, BigDecimal> seededPool : seededPoolTotals.entrySet()) {
+            QuotaType quotaType = seededPool.getKey();
+            BigDecimal poolTotalVnd = orZero(seededPool.getValue());
 
-            var carried = quotaUserAllocationRepository
+            List<SchoolSubscriptionQuotaUserAllocation> carried = quotaUserAllocationRepository
                 .findBySchoolSubscriptionIdAndQuotaType(previousSubscriptionId, quotaType);
             if (carried.isEmpty()) {
                 continue;
             }
 
-            var eligible = eligibleUserIds(schoolId, quotaType);
-            var kept = eligible
+            Optional<Set<UUID>> eligible = eligibleUserIds(schoolId, quotaType);
+            List<SchoolSubscriptionQuotaUserAllocation> kept = eligible
                 .map(userIds -> carried.stream()
                     .filter(allocation -> userIds.contains(allocation.getUserId()))
                     .toList())
@@ -582,8 +587,8 @@ public class OrderSettlementService {
                     carried.size() - kept.size(), quotaType, newSubscriptionId);
             }
 
-            var scale = carryScaleFor(kept, poolTotalVnd, quotaType, previousSubscriptionId, newSubscriptionId);
-            for (var allocation : kept) {
+            BigDecimal scale = carryScaleFor(kept, poolTotalVnd, quotaType, previousSubscriptionId, newSubscriptionId);
+            for (SchoolSubscriptionQuotaUserAllocation allocation : kept) {
                 quotaUserAllocationRepository.upsertAllocation(newSubscriptionId, quotaType,
                     allocation.getUserId(), scaled(orZero(allocation.getAllocatedAmountVnd()), scale));
             }
@@ -607,15 +612,15 @@ public class OrderSettlementService {
      * không cùng hạng.
      */
     private Optional<Set<UUID>> eligibleUserIds(UUID schoolId, QuotaType quotaType) {
-        var roleCode = quotaType.allocationRoleCode();
-        var role = roleRepository.findByCode(roleCode);
+        String roleCode = quotaType.allocationRoleCode();
+        Optional<Role> role = roleRepository.findByCode(roleCode);
         if (role.isEmpty()) {
             LOGGER.error("Không tìm thấy vai trò {} -- chép TOÀN BỘ trần {} sang kỳ mới thay vì lọc,"
                 + " để không lấy mất trần của người còn đang dạy/học.", roleCode, quotaType);
             return Optional.empty();
         }
 
-        var page = schoolUserRepository.findBySchoolId(schoolId, null, role.get().getId(),
+        PageResult<SchoolUser> page = schoolUserRepository.findBySchoolId(schoolId, null, role.get().getId(),
             UserStatus.ACTIVE.name(), null, false, 1, MAX_CARRY_FORWARD_USERS);
         if (page.totalElements() > page.content().size()) {
             LOGGER.error("Trường {} có {} người đủ điều kiện nhận trần {} nhưng chỉ đọc được {} --"
@@ -637,7 +642,7 @@ public class OrderSettlementService {
      */
     private BigDecimal carryScaleFor(List<SchoolSubscriptionQuotaUserAllocation> kept,
             BigDecimal poolTotalVnd, QuotaType quotaType, UUID previousSubscriptionId, UUID newSubscriptionId) {
-        var totalCarriedVnd = kept.stream()
+        BigDecimal totalCarriedVnd = kept.stream()
             .map(allocation -> orZero(allocation.getAllocatedAmountVnd()))
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
@@ -674,7 +679,7 @@ public class OrderSettlementService {
         if (invoiceRepository.existsByOrderId(order.getId())) {
             return Optional.empty();
         }
-        var invoice = invoiceRepository.save(Invoice.issueFor(order.getId(), payment.getId(), now));
+        Invoice invoice = invoiceRepository.save(Invoice.issueFor(order.getId(), payment.getId(), now));
         LOGGER.info("Phát hành hóa đơn {} cho đơn {}", invoice.getInvoiceNumber(), order.getId());
 
         return Optional.of(invoice);
@@ -696,7 +701,7 @@ public class OrderSettlementService {
      * {@code existsByOrderId} nên một callback lặp không phát sự kiện lần hai.
      */
     private void publishInvoicePaid(Order order, Invoice invoice, Instant now, UUID subscriptionId) {
-        var schoolAdminIds = schoolUserRepository
+        List<UUID> schoolAdminIds = schoolUserRepository
             .findBySchoolIdWithRole(order.getSchoolId(), RoleConstant.SCHOOL_ADMIN_ROLE)
             .stream()
             .map(schoolUser -> schoolUser.getUserId())
@@ -705,7 +710,7 @@ public class OrderSettlementService {
         // Chốt danh sách người nhận NGAY LÚC phát, không để consumer truy vấn lại -- giống hệt các
         // event nợ hạn mức. Nhờ vậy mỗi lần chạy lại (retry, replay từ DLT) đều ra đúng tập người
         // nhận cũ và uk_notifications_user_event chặn được trùng.
-        var payload = jsonSerializationPort.toJson(new InvoicePaidPayloadV1(
+        String payload = jsonSerializationPort.toJson(new InvoicePaidPayloadV1(
             schoolAdminIds,
             order.getSchoolId(),
             subscriptionId,

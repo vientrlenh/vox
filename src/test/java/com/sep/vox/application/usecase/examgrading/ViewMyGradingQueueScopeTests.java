@@ -60,34 +60,34 @@ class ViewMyGradingQueueScopeTests {
     void should_pass_the_exam_id_filter_through_to_the_query_repository() {
         tasksUseCase.execute(new ViewMyGradingTasksQuery(examId, null, null, 0, 20));
 
-        var captured = ArgumentCaptor.forClass(UUID.class);
+        ArgumentCaptor<UUID> captured = ArgumentCaptor.forClass(UUID.class);
         verify(examGradingQueryRepository).findTasksByTeacherIdAndExamId(
             any(), captured.capture(), any(), any(), any(), anyInt(), anyInt());
         assertThat(captured.getValue()).isEqualTo(examId);
     }
 
-    /** Bỏ trống examId = mọi kỳ thi, y như hành vi trước khi có bộ lọc. */
+    /** An empty examId = every exam, exactly the behavior from before the filter existed. */
     @Test
     void should_not_narrow_by_exam_when_no_exam_id_is_given() {
         tasksUseCase.execute(new ViewMyGradingTasksQuery(null, "ASSIGNED", null, 0, 20));
 
-        var captured = ArgumentCaptor.forClass(UUID.class);
+        ArgumentCaptor<UUID> captured = ArgumentCaptor.forClass(UUID.class);
         verify(examGradingQueryRepository).findTasksByTeacherIdAndExamId(
             any(), captured.capture(), any(), any(), any(), anyInt(), anyInt());
         assertThat(captured.getValue()).isNull();
     }
 
     /**
-     * Bài kiểm tra trên lớp có màn riêng, nơi giáo viên còn thấy tên học sinh. Nhận
-     * {@code examId} rồi mà quên khoá {@code kind} là mở đường cho một id bài trên lớp
-     * đi vào hàng đợi chấm ẩn danh.
+     * A class test has its own screen, where the teacher also sees the student's name. Accepting an
+     * {@code examId} and forgetting to lock {@code kind} would let the id of a class test into the
+     * anonymous grading queue.
      */
     @Test
     void should_lock_the_teacher_queue_to_centralized_exams_even_with_an_exam_id() {
         tasksUseCase.execute(new ViewMyGradingTasksQuery(examId, null, null, 0, 20));
 
-        var teacher = ArgumentCaptor.forClass(UUID.class);
-        var kind = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<UUID> teacher = ArgumentCaptor.forClass(UUID.class);
+        ArgumentCaptor<String> kind = ArgumentCaptor.forClass(String.class);
         verify(examGradingQueryRepository).findTasksByTeacherIdAndExamId(
             teacher.capture(), any(), kind.capture(), any(), any(), anyInt(), anyInt());
         assertThat(teacher.getValue()).isEqualTo(teacherId);

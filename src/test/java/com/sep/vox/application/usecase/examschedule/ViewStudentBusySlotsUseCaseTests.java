@@ -22,6 +22,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.ViewStudentBusySlotsQuery;
 import com.sep.vox.application.port.input.service.ExamDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewStudentBusySlotsUseCase;
+import com.sep.vox.application.response.input.examschedule.StudentBusySlotResponse;
 import com.sep.vox.domain.model.exam.ExamSchedule;
 import com.sep.vox.domain.model.exam.ExamScheduleStatus;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
@@ -63,7 +64,7 @@ class ViewStudentBusySlotsUseCaseTests {
 
     @Test
     void should_return_empty_when_no_student_ids_given() {
-        var result = useCase.execute(new ViewStudentBusySlotsQuery(List.of(scheduleId), List.of()));
+        List<StudentBusySlotResponse> result = useCase.execute(new ViewStudentBusySlotsQuery(List.of(scheduleId), List.of()));
 
         assertThat(result).isEmpty();
         verify(examScheduleRepository, never()).findById(any());
@@ -71,7 +72,7 @@ class ViewStudentBusySlotsUseCaseTests {
 
     @Test
     void should_return_empty_when_no_schedule_ids_given() {
-        var result = useCase.execute(new ViewStudentBusySlotsQuery(List.of(), List.of(studentId)));
+        List<StudentBusySlotResponse> result = useCase.execute(new ViewStudentBusySlotsQuery(List.of(), List.of(studentId)));
 
         assertThat(result).isEmpty();
         verify(examCandidateRepository, never()).findConflictsForStudents(anyCollection(), any(), any(), any());
@@ -91,7 +92,7 @@ class ViewStudentBusySlotsUseCaseTests {
         when(examCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
             .thenReturn(List.of(new StudentScheduleConflict(studentId, busyScheduleId, start, end)));
 
-        var result = useCase.execute(new ViewStudentBusySlotsQuery(List.of(scheduleId), List.of(studentId)));
+        List<StudentBusySlotResponse> result = useCase.execute(new ViewStudentBusySlotsQuery(List.of(scheduleId), List.of(studentId)));
 
         assertThat(result).singleElement().satisfies(slot -> {
             assertThat(slot.studentId()).isEqualTo(studentId);
@@ -104,8 +105,8 @@ class ViewStudentBusySlotsUseCaseTests {
 
     @Test
     void should_ask_about_every_schedule_in_the_request() {
-        var secondScheduleId = UUID.randomUUID();
-        var second = new ExamSchedule();
+        UUID secondScheduleId = UUID.randomUUID();
+        ExamSchedule second = new ExamSchedule();
         second.setId(secondScheduleId);
         second.setExamId(examId);
         second.setStatus(ExamScheduleStatus.DRAFT);
@@ -133,7 +134,7 @@ class ViewStudentBusySlotsUseCaseTests {
     }
 
     private ExamSchedule schedule() {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(scheduleId);
         schedule.setExamId(examId);
         schedule.setStatus(ExamScheduleStatus.DRAFT);

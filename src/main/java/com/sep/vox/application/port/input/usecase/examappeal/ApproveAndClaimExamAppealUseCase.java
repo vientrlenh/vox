@@ -55,8 +55,8 @@ public class ApproveAndClaimExamAppealUseCase implements IUseCase<UUID, UUID> {
     @Override
     @Transactional
     public UUID execute(UUID appealId) {
-        var currentUserId = examAppealAccessService.requireActiveUserId();
-        var context = examAppealAccessService.load(appealId);
+        UUID currentUserId = examAppealAccessService.requireActiveUserId();
+        ExamAppealAccessService.AppealContext context = examAppealAccessService.load(appealId);
         // Chỉ chủ bài trên lớp tự nhận chấm được. Không chặn ở đây thì school admin sẽ
         // rơi xuống tận Assign và nhận thông báo "người chấm phải là giáo viên cùng
         // trường" — đọc không ra vấn đề thật.
@@ -66,7 +66,7 @@ public class ApproveAndClaimExamAppealUseCase implements IUseCase<UUID, UUID> {
                     + "Quản trị trường hãy duyệt rồi phân công người chấm.");
         }
 
-        var deadline = defaultDeadline();
+        Instant deadline = defaultDeadline();
         approveExamAppealUseCase.execute(new ApproveExamAppealCommand(appealId, deadline));
         return assignExamAppealReviewerUseCase.execute(new AssignExamAppealReviewerCommand(
             appealId, currentUserId, SELF_CLAIM_OVERRIDE_REASON, deadline));

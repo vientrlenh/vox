@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamResultAppeal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -45,11 +47,11 @@ public class RejectExamAppealUseCase implements IUseCase<RejectExamAppealCommand
     @Override
     @Transactional
     public UUID execute(RejectExamAppealCommand command) {
-        var currentUserId = examAppealAccessService.requireActiveUserId();
-        var context = examAppealAccessService.load(command.appealId());
+        UUID currentUserId = examAppealAccessService.requireActiveUserId();
+        ExamAppealAccessService.AppealContext context = examAppealAccessService.load(command.appealId());
         examAppealAccessService.authorizeSchoolAdminOrClassTestChair(context, currentUserId);
 
-        var appeal = context.appeal();
+        ExamResultAppeal appeal = context.appeal();
         if (appeal.getStatus() != ExamAppealStatus.PENDING) {
             throw new IllegalStateException("Chỉ có thể từ chối đơn phúc khảo đang ở trạng thái Chờ duyệt.");
         }
@@ -57,7 +59,7 @@ public class RejectExamAppealUseCase implements IUseCase<RejectExamAppealCommand
             throw new IllegalArgumentException("Phải nêu lý do từ chối đơn phúc khảo.");
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         appeal.setStatus(ExamAppealStatus.REJECTED);
         appeal.setDecisionNote(command.reason());
         appeal.setResolvedBy(currentUserId);
@@ -65,7 +67,7 @@ public class RejectExamAppealUseCase implements IUseCase<RejectExamAppealCommand
         examResultAppealRepository.save(appeal);
 
         // Đơn bị từ chối: điểm gốc giữ nguyên giá trị, kết quả quay về đã công bố.
-        var candidateResult = context.candidateResult();
+        ExamCandidateResult candidateResult = context.candidateResult();
         candidateResult.setStatus(ExamCandidateResultStatus.RELEASED);
         candidateResult.setUpdatedAt(now);
         candidateResult.setUpdatedBy(currentUserId);
@@ -73,7 +75,7 @@ public class RejectExamAppealUseCase implements IUseCase<RejectExamAppealCommand
 
         // Ghi outbox trong chính transaction này: mail báo học sinh và quyết định từ chối
         // cùng sống hoặc cùng chết, không còn cảnh commit xong rồi mất mail vì SMTP lỗi.
-        var payload = new ExamAppealRejectedPayloadV1(
+        ExamAppealRejectedPayloadV1 payload = new ExamAppealRejectedPayloadV1(
             appeal.getId(),
             context.studentId(),
             context.examName(),

@@ -87,14 +87,14 @@ public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExam
     @Override
     @Transactional
     public DeleteExamResponse execute(DeleteExamCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         authorizeDelete(exam.getId(), exam.getSchoolId(), exam.getKind(), currentUserId, currentSchoolId, schoolAdmin);
@@ -116,7 +116,7 @@ public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExam
     }
 
     private void cancel(Exam exam, UUID currentUserId) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         exam.setStatus(ExamStatus.CANCELLED);
         exam.setUpdatedAt(now);
         exam.setUpdatedBy(currentUserId);
@@ -134,7 +134,7 @@ public class DeleteExamUseCase implements IUseCase<DeleteExamCommand, DeleteExam
         // nằm lại ngân hàng đề ở trạng thái khoá vĩnh viễn.
         examQuestionSecureLockService.releaseAllForExam(examId, currentUserId);
 
-        var paperIds = examPaperRepository.findByExamId(examId).stream()
+        List<UUID> paperIds = examPaperRepository.findByExamId(examId).stream()
             .map(paper -> paper.getId())
             .toList();
         if (!paperIds.isEmpty()) {

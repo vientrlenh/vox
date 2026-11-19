@@ -78,7 +78,7 @@ public class ExamResultController {
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Integer>> finalizeResults(
             @Valid @RequestBody BulkFinalizeExamResultsRequest request) {
-        var command = new BulkFinalizeExamResultsCommand(
+        BulkFinalizeExamResultsCommand command = new BulkFinalizeExamResultsCommand(
             request.examId(), Boolean.TRUE.equals(request.releasePendingWithAiScores()));
         return ResponseEntity.ok(
             ApiResponse.success("Chốt sổ kỳ thi thành công!", bulkFinalizeExamResultsUseCase.execute(command)));
@@ -101,9 +101,9 @@ public class ExamResultController {
             @RequestParam(name = "hasOpenAppeal", required = false) Boolean hasOpenAppeal,
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "kind", required = false) String kind) {
-        var query = toQuery(examId, scheduleId, teacherId, resultStatus, roundType, assignmentStatus,
+        ExportExamScoresQuery query = toQuery(examId, scheduleId, teacherId, resultStatus, roundType, assignmentStatus,
             unassignedOnly, overdueOnly, hasOpenAppeal, keyword, kind);
-        var csv = exportExamScoresUseCase.execute(query);
+        String csv = exportExamScoresUseCase.execute(query);
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"bang-diem.csv\"")
             .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
@@ -128,9 +128,9 @@ public class ExamResultController {
             @RequestParam(name = "hasOpenAppeal", required = false) Boolean hasOpenAppeal,
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "kind", required = false) String kind) {
-        var query = toQuery(examId, scheduleId, teacherId, resultStatus, roundType, assignmentStatus,
+        ExportExamScoresQuery query = toQuery(examId, scheduleId, teacherId, resultStatus, roundType, assignmentStatus,
             unassignedOnly, overdueOnly, hasOpenAppeal, keyword, kind);
-        var workbook = exportExamScoresExcelUseCase.execute(query);
+        byte[] workbook = exportExamScoresExcelUseCase.execute(query);
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=\"" + exportExamScoresExcelUseCase.exportFileName(kind) + "\"")

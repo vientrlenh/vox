@@ -31,6 +31,7 @@ import com.sep.vox.application.port.input.usecase.exam.CreateClassTestUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.response.input.exam.CreateClassTestResponse;
 import com.sep.vox.application.support.SubscriptionPeriodGuards;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
@@ -80,9 +81,9 @@ class CreateClassTestAssessmentPolicyTests {
         assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
         userContextPort = mock(UserContextPort.class);
         schoolSubscriptionActiveGuardService = mock(SchoolSubscriptionActiveGuardService.class);
-        var examRepository = mock(ExamRepository.class);
-        var examScheduleRepository = mock(ExamScheduleRepository.class);
-        var examCandidateRepository = mock(ExamCandidateRepository.class);
+        ExamRepository examRepository = mock(ExamRepository.class);
+        ExamScheduleRepository examScheduleRepository = mock(ExamScheduleRepository.class);
+        ExamCandidateRepository examCandidateRepository = mock(ExamCandidateRepository.class);
 
         useCase = new CreateClassTestUseCase(
             schoolClassRepository,
@@ -174,13 +175,13 @@ class CreateClassTestAssessmentPolicyTests {
             .hasMessageContaining("Bộ tiêu chí không thuộc trường của bạn");
     }
 
-    /** Policy hệ thống ({@code schoolId = null}) dùng được cho mọi trường. */
+    /** A system policy ({@code schoolId = null}) can be used by every school. */
     @Test
     void should_accept_system_wide_assessment_policy() {
         when(assessmentPolicyRepository.findById(POLICY_ID))
             .thenReturn(Optional.of(policy(null, AssessmentPolicyStatus.PUBLISHED)));
 
-        var result = useCase.execute(command(POLICY_ID));
+        CreateClassTestResponse result = useCase.execute(command(POLICY_ID));
 
         assertThat(result.exam().assessmentPolicyId()).isEqualTo(POLICY_ID);
     }
@@ -223,7 +224,7 @@ class CreateClassTestAssessmentPolicyTests {
     }
 
     private AssessmentPolicy policy(UUID schoolId, AssessmentPolicyStatus status) {
-        var policy = new AssessmentPolicy();
+        AssessmentPolicy policy = new AssessmentPolicy();
         policy.setId(POLICY_ID);
         policy.setSchoolId(schoolId);
         policy.setStatus(status);

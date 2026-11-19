@@ -1,10 +1,13 @@
 package com.sep.vox.application.port.input.usecase.stream;
 
+import com.sep.vox.domain.model.exam.Exam;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -59,11 +62,11 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
 
     @Override
     public String execute(IssueMonitorTokenCommand input) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolId = userContextPort.getCurrentSchoolId();
-        var now = Instant.now();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID schoolId = userContextPort.getCurrentSchoolId();
+        Instant now = Instant.now();
 
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi"));
 
         if (schoolId == null || !exam.getSchoolId().equals(schoolId)) {
@@ -74,15 +77,15 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
             throw new IllegalArgumentException("Kỳ thi không hỗ trợ chức năng giám sát stream");
         }
 
-        var activeSchedules = examScheduleRepository.findByExamIdAndInSchedule(exam.getId(), now);
+        List<ExamSchedule> activeSchedules = examScheduleRepository.findByExamIdAndInSchedule(exam.getId(), now);
 
         if (activeSchedules.isEmpty()) {
             throw new NotFoundException("Kỳ thi đang không có ca thi diễn ra");
         }
 
-        var requestedIds = normalizeScheduleIds(input.scheduleIds());
+        List<UUID> requestedIds = normalizeScheduleIds(input.scheduleIds());
 
-        var activeScheduleByIds = activeSchedules.stream()
+        Map<UUID, ExamSchedule> activeScheduleByIds = activeSchedules.stream()
             .collect(Collectors.toMap(s -> s.getId(), s -> s));
 
         List<ExamSchedule> selectedSchedules;
@@ -107,7 +110,7 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         } else if (userContextPort.isTeacher()) {
             role = "TEACHER";
 
-            var isChair = examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), userId, ExamMemberRole.CHAIR);
+            boolean isChair = examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), userId, ExamMemberRole.CHAIR);
 
             if (isChair) {
                 monitorScope = SCOPE_EXAM_CHAIR;
@@ -124,17 +127,17 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
             throw new ForbiddenException("Bạn không được phân công vào ca thi đang diễn ra nào");
         }
 
-        var scheduleIds = selectedSchedules.stream()
+        List<String> scheduleIds = selectedSchedules.stream()
             .map(s -> s.getId().toString())
             .distinct()
             .toList();
 
-        var tokenExpiry = selectedSchedules.stream()
+        Instant tokenExpiry = selectedSchedules.stream()
             .map(s -> s.getEndDate())
             .max(Comparator.naturalOrder())
             .orElseThrow();
 
-        var ttlExpiry = now.plus(MONITOR_TOKEN_TTL);
+        Instant ttlExpiry = now.plus(MONITOR_TOKEN_TTL);
         if (tokenExpiry.isAfter(ttlExpiry)) {
             tokenExpiry = ttlExpiry;
         }
@@ -152,8 +155,8 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
     }
 
     private List<ExamSchedule> restrictToProctoredSchedules(List<ExamSchedule> schedules, List<UUID> explicityRequestedIds, UUID teacherId) {
-        var scheduleIds = schedules.stream().map(s -> s.getId()).toList();
-        var proctoredIds = new HashSet<>(examScheduleProctorRepository.findScheduleIdsByTeacherIdAndScheduleIdIn(teacherId, scheduleIds));
+        List<UUID> scheduleIds = schedules.stream().map(s -> s.getId()).toList();
+        Set<UUID> proctoredIds = new HashSet<>(examScheduleProctorRepository.findScheduleIdsByTeacherIdAndScheduleIdIn(teacherId, scheduleIds));
         if (!explicityRequestedIds.isEmpty() && !proctoredIds.containsAll(explicityRequestedIds)) {
             throw new ForbiddenException("Bạn không được phân công vào một hoặc nhiều ca thi được yêu cầu");
         }

@@ -57,11 +57,11 @@ class ConsumeQuotaServiceTests {
         quotaUserAllocationRepository = mock(SchoolSubscriptionQuotaUserAllocationRepository.class);
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         schoolBalanceRepository = mock(SchoolBalanceRepository.class);
-        var schoolBalanceEntryRepository = mock(SchoolBalanceEntryRepository.class);
-        var schoolDebtNotificationService = mock(SchoolDebtNotificationService.class);
-        var quotaDebtConfig = mock(QuotaDebtConfigPort.class);
+        SchoolBalanceEntryRepository schoolBalanceEntryRepository = mock(SchoolBalanceEntryRepository.class);
+        SchoolDebtNotificationService schoolDebtNotificationService = mock(SchoolDebtNotificationService.class);
+        QuotaDebtConfigPort quotaDebtConfig = mock(QuotaDebtConfigPort.class);
         schoolQuotaUsageNotificationService = mock(SchoolQuotaUsageNotificationService.class);
-        var quotaUsageWarningConfig = mock(QuotaUsageWarningConfigPort.class);
+        QuotaUsageWarningConfigPort quotaUsageWarningConfig = mock(QuotaUsageWarningConfigPort.class);
         when(quotaUsageWarningConfig.warningRatio()).thenReturn(WARNING_RATIO);
         schoolAiSpendEntryRepository = mock(SchoolAiSpendEntryRepository.class);
 
@@ -77,7 +77,7 @@ class ConsumeQuotaServiceTests {
             quotaUsageWarningConfig,
             schoolAiSpendEntryRepository);
 
-        var subscription = new SchoolSubscription();
+        SchoolSubscription subscription = new SchoolSubscription();
         subscription.setId(subscriptionId);
         subscription.setSchoolId(schoolId);
         when(schoolSubscriptionRepository.findById(subscriptionId)).thenReturn(Optional.of(subscription));
@@ -121,9 +121,10 @@ class ConsumeQuotaServiceTests {
     }
 
     /**
-     * Sổ chi phí AI ghi ĐỦ số tiền, kể cả khi khoản đó nằm gọn trong hạn mức và không sinh bút toán
-     * ví nào. Đây là điểm phân biệt với {@code school_balance_entries} — sổ kia cố ý chỉ nhận phần
-     * tiêu vượt, nên dựng biểu đồ chi tiêu từ nó sẽ thiếu đúng phần lớn nhất.
+     * The AI cost ledger records the FULL amount, even when it fits within the quota and produces
+     * no wallet entry. That is what sets it apart from {@code school_balance_entries} -- that
+     * ledger deliberately only receives the overspend, so building a spending chart from it would
+     * miss the largest part.
      */
     @Test
     void should_record_the_full_amount_even_when_it_fits_inside_the_quota() {
@@ -132,7 +133,7 @@ class ConsumeQuotaServiceTests {
         service.consumeExamAllowingDebt(subscriptionId, examSessionId, BigDecimal.valueOf(2_000),
             BigDecimal.ONE, BigDecimal.TEN, null);
 
-        var entry = captureSpendEntry();
+        SchoolAiSpendEntry entry = captureSpendEntry();
         assertThat(entry.getAmountVnd()).isEqualByComparingTo(BigDecimal.valueOf(2_000));
         assertThat(entry.getSchoolId()).isEqualTo(schoolId);
         assertThat(entry.getExamSessionId()).isEqualTo(examSessionId);
@@ -157,7 +158,7 @@ class ConsumeQuotaServiceTests {
     @Test
     void should_attribute_a_class_test_charge_to_the_teacher_who_created_it() {
         givenQuota(BigDecimal.valueOf(100_000), BigDecimal.valueOf(10_000));
-        var teacherId = UUID.randomUUID();
+        UUID teacherId = UUID.randomUUID();
 
         service.consumeExamAllowingDebt(subscriptionId, examSessionId, BigDecimal.valueOf(2_000),
             BigDecimal.ONE, BigDecimal.TEN, teacherId);
@@ -166,25 +167,25 @@ class ConsumeQuotaServiceTests {
     }
 
     /**
-     * Đường luyện nói phải để lại dấu vết y như đường thi. Trước V10 nó KHÔNG để lại gì có mốc thời
-     * gian, nên "tháng trước luyện nói tốn bao nhiêu" là câu không ai trả lời được, kể cả bằng cách
-     * truy vấn tay.
+     * The practice path must leave a trace just like the exam path. Before V10 it left nothing with
+     * a timestamp, so "how much did practice cost last month" was a question nobody could answer,
+     * not even by querying by hand.
      */
     @Test
     void should_record_practice_spending_too() {
-        var practiceQuota = new SchoolSubscriptionQuotaRecord(
+        SchoolSubscriptionQuotaRecord practiceQuota = new SchoolSubscriptionQuotaRecord(
             quotaId, subscriptionId, QuotaType.PRACTICE, BigDecimal.valueOf(100_000), BigDecimal.ZERO);
         when(quotaRecordRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.PRACTICE))
             .thenReturn(Optional.of(practiceQuota));
         when(quotaRecordRepository.findById(quotaId)).thenReturn(Optional.of(practiceQuota));
         when(quotaRecordRepository.tryConsume(eq(quotaId), any())).thenReturn(true);
-        var practiceSessionId = UUID.randomUUID();
-        var studentId = UUID.randomUUID();
+        UUID practiceSessionId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
 
         service.consumePracticeAllowingDebt(subscriptionId, practiceSessionId, BigDecimal.valueOf(500),
             BigDecimal.ONE, BigDecimal.TEN, studentId);
 
-        var entry = captureSpendEntry();
+        SchoolAiSpendEntry entry = captureSpendEntry();
         assertThat(entry.getQuotaType()).isEqualTo(QuotaType.PRACTICE);
         assertThat(entry.getPracticeSessionId()).isEqualTo(practiceSessionId);
         assertThat(entry.getExamSessionId()).isNull();
@@ -203,13 +204,13 @@ class ConsumeQuotaServiceTests {
     }
 
     private SchoolAiSpendEntry captureSpendEntry() {
-        var captor = ArgumentCaptor.forClass(SchoolAiSpendEntry.class);
+        ArgumentCaptor<SchoolAiSpendEntry> captor = ArgumentCaptor.forClass(SchoolAiSpendEntry.class);
         verify(schoolAiSpendEntryRepository).save(captor.capture());
         return captor.getValue();
     }
 
     private void givenQuota(BigDecimal totalAllocatedVnd, BigDecimal usedVnd) {
-        var quota = new SchoolSubscriptionQuotaRecord(
+        SchoolSubscriptionQuotaRecord quota = new SchoolSubscriptionQuotaRecord(
             quotaId, subscriptionId, QuotaType.EXAM, totalAllocatedVnd, usedVnd);
         when(quotaRecordRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.EXAM))
             .thenReturn(Optional.of(quota));

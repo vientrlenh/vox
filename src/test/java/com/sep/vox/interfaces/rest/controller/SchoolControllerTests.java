@@ -20,6 +20,7 @@ import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 import com.sep.vox.application.port.input.command.AcceptSchoolClassImportCommand;
 import com.sep.vox.application.port.input.command.AcceptSchoolClassUserImportCommand;
@@ -149,11 +150,11 @@ class SchoolControllerTests {
 
     @Test
     void create_school_class_should_return_created_response() {
-        var expectedCommand = new CreateSchoolClassCommand(
+        CreateSchoolClassCommand expectedCommand = new CreateSchoolClassCommand(
             schoolId, languageId, gradeId, "ENG-01", "English 01", "Starter class");
         when(createSchoolClassUseCase.execute(expectedCommand)).thenReturn(new CreateSchoolClassResponse(schoolClassId));
 
-        var result = postJson(SCHOOLS_URI + "/{schoolId}/classes", """
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/classes", """
             {"languageId": "%s", "schoolGradeId": "%s", "code": "ENG-01", "name": "English 01",
              "description": "Starter class"}""".formatted(languageId, gradeId), schoolId).exchange();
 
@@ -164,7 +165,7 @@ class SchoolControllerTests {
 
     @Test
     void create_school_class_should_return_bad_request_when_code_is_missing() {
-        var result = postJson(SCHOOLS_URI + "/{schoolId}/classes",
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/classes",
             "{\"languageId\": \"%s\", \"schoolGradeId\": \"%s\", \"name\": \"English 01\"}".formatted(languageId, gradeId),
             schoolId).exchange();
 
@@ -174,12 +175,12 @@ class SchoolControllerTests {
 
     @Test
     void create_class_user_should_return_created_response() {
-        var schoolClassUserId = UUID.randomUUID();
-        var expectedCommand = new CreateSchoolClassUserCommand(schoolId, schoolClassId, userId);
+        UUID schoolClassUserId = UUID.randomUUID();
+        CreateSchoolClassUserCommand expectedCommand = new CreateSchoolClassUserCommand(schoolId, schoolClassId, userId);
         when(createSchoolClassUserUseCase.execute(expectedCommand))
             .thenReturn(new CreateSchoolClassUserResponse(schoolClassUserId));
 
-        var result = postJson(SCHOOLS_URI + "/{schoolId}/classes/{classId}/users",
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/classes/{classId}/users",
             "{\"userId\": \"%s\"}".formatted(userId), schoolId, schoolClassId).exchange();
 
         assertThat(result).hasStatus(201).bodyJson()
@@ -188,7 +189,7 @@ class SchoolControllerTests {
 
     @Test
     void delete_school_class_should_return_ok_response() {
-        var result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/classes/{classId}", schoolId, schoolClassId)
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/classes/{classId}", schoolId, schoolClassId)
             .exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
@@ -198,13 +199,13 @@ class SchoolControllerTests {
 
     @Test
     void create_import_file_session_should_return_preview_response() {
-        var expected = new PreviewSchoolClassImportResponse(importSessionId, "classes.csv",
+        PreviewSchoolClassImportResponse expected = new PreviewSchoolClassImportResponse(importSessionId, "classes.csv",
             List.of("code", "name"), Map.of("code", "code", "name", "name"),
             List.of(Map.of("code", "ENG-01", "name", "English 01")), 1L, "2026-06-09T10:00:00+07:00");
         when(previewSchoolClassImportFromFileUseCase.execute(any(PreviewSchoolClassImportFromFileCommand.class)))
             .thenReturn(expected);
 
-        var result = mvc.post().uri(SCHOOLS_URI + "/{schoolId}/classes/import/preview", schoolId)
+        MvcTestResult result = mvc.post().uri(SCHOOLS_URI + "/{schoolId}/classes/import/preview", schoolId)
             .multipart().file(csvFile("classes.csv", "code,name\nENG-01,English 01\n")).exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
@@ -213,9 +214,9 @@ class SchoolControllerTests {
 
     @Test
     void accept_school_class_import_session_should_return_ok() {
-        var mapping = Map.of("Mã lớp", "code", "Tên lớp", "name", "Ngôn ngữ", "languageCode", "Khối", "schoolGradeCode");
+        Map<String, String> mapping = Map.of("Mã lớp", "code", "Tên lớp", "name", "Ngôn ngữ", "languageCode", "Khối", "schoolGradeCode");
 
-        var result = postJson(SCHOOLS_URI + "/{schoolId}/classes/import/{sessionId}/accept", """
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/classes/import/{sessionId}/accept", """
             {"confirmedMapping": {"Mã lớp": "code", "Tên lớp": "name", "Ngôn ngữ": "languageCode",
                                   "Khối": "schoolGradeCode"}}""", schoolId, importSessionId).exchange();
 
@@ -227,7 +228,7 @@ class SchoolControllerTests {
 
     @Test
     void accept_school_class_import_session_should_return_bad_request_when_mapping_is_empty() {
-        var result = postJson(SCHOOLS_URI + "/{schoolId}/classes/import/{sessionId}/accept",
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/classes/import/{sessionId}/accept",
             "{\"confirmedMapping\": {}}", schoolId, importSessionId).exchange();
 
         assertThat(result).hasStatus(400);
@@ -236,10 +237,10 @@ class SchoolControllerTests {
 
     @Test
     void create_user_should_return_created_with_response() {
-        var expected = new CreateSchoolUserResponse(userId);
+        CreateSchoolUserResponse expected = new CreateSchoolUserResponse(userId);
         when(createSchoolUserUseCase.execute(any(CreateSchoolUserCommand.class))).thenReturn(expected);
 
-        var result = postJson(SCHOOLS_URI + "/{schoolId}/users", """
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/users", """
             {"email": "student@school.edu.vn", "phone": "0987654321", "fullName": "John Cena",
              "dateOfBirth": "2005-01-15", "address": "123 Street", "roleCode": "STUDENT"}""", schoolId).exchange();
 
@@ -249,7 +250,7 @@ class SchoolControllerTests {
 
     @Test
     void delete_school_user_should_return_no_content() {
-        var result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/users/{userId}", schoolId, userId).exchange();
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/users/{userId}", schoolId, userId).exchange();
 
         assertThat(result).hasStatus(204);
         verify(deleteSchoolUserUseCase).execute(new DeleteSchoolUserCommand(schoolId, userId));
@@ -257,12 +258,12 @@ class SchoolControllerTests {
 
     @Test
     void preview_import_user_should_return_ok() {
-        var expected = new PreviewSchoolUserImportResponse(importSessionId, "students.csv",
+        PreviewSchoolUserImportResponse expected = new PreviewSchoolUserImportResponse(importSessionId, "students.csv",
             List.of("email", "fullName"), Map.of("email", "email"), List.of(), 1L,
             OffsetDateTime.now().plusDays(1).toString());
         when(previewSchoolUserImportFromFileUseCase.execute(any())).thenReturn(expected);
 
-        var result = mvc.post().uri(SCHOOLS_URI + "/{schoolId}/users/import/preview", schoolId)
+        MvcTestResult result = mvc.post().uri(SCHOOLS_URI + "/{schoolId}/users/import/preview", schoolId)
             .multipart().file(csvFile("students.csv", "email,fullName\n")).exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
@@ -271,7 +272,7 @@ class SchoolControllerTests {
 
     @Test
     void accept_import_user_should_return_ok() {
-        var result = postJson(SCHOOLS_URI + "/{schoolId}/users/import/{sessionId}/accept",
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/users/import/{sessionId}/accept",
             "{\"confirmedMapping\": {\"Email\": \"email\", \"Họ tên\": \"fullName\"}}", schoolId, importSessionId)
             .exchange();
 
@@ -282,13 +283,13 @@ class SchoolControllerTests {
 
     @Test
     void create_class_user_import_file_session_should_return_preview_response() {
-        var expected = new PreviewSchoolClassUserImportResponse(importSessionId, "class-users.csv",
+        PreviewSchoolClassUserImportResponse expected = new PreviewSchoolClassUserImportResponse(importSessionId, "class-users.csv",
             List.of("email", "classCode"), Map.of("email", "email", "classCode", "classCode"),
             List.of(Map.of("email", "student@example.com", "classCode", "ENG-01")), 1L, "2026-06-09T10:00:00+07:00");
         when(previewSchoolClassUserImportFromFileUseCase.execute(any(PreviewSchoolClassUserImportFromFileCommand.class)))
             .thenReturn(expected);
 
-        var result = mvc.post().uri(SCHOOLS_URI + "/{schoolId}/classes/users/import/preview", schoolId)
+        MvcTestResult result = mvc.post().uri(SCHOOLS_URI + "/{schoolId}/classes/users/import/preview", schoolId)
             .multipart().file(csvFile("class-users.csv", "email,classCode\nstudent@example.com,ENG-01\n")).exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
@@ -297,7 +298,7 @@ class SchoolControllerTests {
 
     @Test
     void accept_class_user_import_session_should_return_ok() {
-        var result = postJson(SCHOOLS_URI + "/{schoolId}/classes/users/import/{sessionId}/accept",
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/classes/users/import/{sessionId}/accept",
             "{\"confirmedMapping\": {\"Email\": \"email\", \"Mã lớp\": \"classCode\"}}", schoolId, importSessionId)
             .exchange();
 
@@ -308,7 +309,7 @@ class SchoolControllerTests {
 
     @Test
     void delete_class_user_should_return_ok_response_without_data() {
-        var result = mvc.delete()
+        MvcTestResult result = mvc.delete()
             .uri(SCHOOLS_URI + "/{schoolId}/classes/{classId}/users/{userId}", schoolId, schoolClassId, userId)
             .exchange();
 
@@ -320,11 +321,11 @@ class SchoolControllerTests {
 
     @Test
     void update_class_user_status_should_return_ok_response() {
-        var expected = new UpdateSchoolClassUserStatusResponse(schoolClassId);
+        UpdateSchoolClassUserStatusResponse expected = new UpdateSchoolClassUserStatusResponse(schoolClassId);
         when(updateSchoolClassUserStatusUseCase.execute(any(UpdateSchoolClassUserStatusCommand.class)))
             .thenReturn(expected);
 
-        var result = mvc.patch()
+        MvcTestResult result = mvc.patch()
             .uri(SCHOOLS_URI + "/{schoolId}/classes/{classId}/users/{userId}/status", schoolId, schoolClassId, userId)
             .contentType(MediaType.APPLICATION_JSON).content("{\"isActive\": true}").exchange();
 
@@ -335,7 +336,7 @@ class SchoolControllerTests {
     @Test
     @WithMockUser(roles = "SYSTEM_ADMIN")
     void school_admin_routes_should_return_403_for_system_admin() {
-        var result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/classes/{classId}", schoolId, schoolClassId)
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/classes/{classId}", schoolId, schoolClassId)
             .exchange();
 
         assertThat(result).hasStatus(403);
@@ -345,7 +346,7 @@ class SchoolControllerTests {
     @Test
     @WithMockUser(roles = "TEACHER")
     void school_admin_routes_should_return_403_for_teacher() {
-        var result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/users/{userId}", schoolId, userId).exchange();
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/users/{userId}", schoolId, userId).exchange();
 
         assertThat(result).hasStatus(403);
         verifyNoInteractions(deleteSchoolUserUseCase);
@@ -353,7 +354,7 @@ class SchoolControllerTests {
 
     @Test
     void system_admin_routes_should_return_403_for_school_admin() {
-        var result = mvc.delete().uri(SCHOOLS_URI + "/{id}", schoolId).exchange();
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{id}", schoolId).exchange();
 
         assertThat(result).hasStatus(403);
         verifyNoInteractions(deleteSchoolUseCase);
@@ -365,7 +366,7 @@ class SchoolControllerTests {
      */
     @Test
     void create_school_directory_should_return_403_for_school_admin() {
-        var result = postJson(SCHOOLS_URI + "/directories", """
+        MvcTestResult result = postJson(SCHOOLS_URI + "/directories", """
             {"code": "HCM-01", "name": "Vox HCM", "provinceCode": "79", "provinceName": "Ho Chi Minh",
              "districtName": "District 1"}""").exchange();
 
@@ -376,7 +377,7 @@ class SchoolControllerTests {
     @Test
     @WithMockUser(roles = "SYSTEM_ADMIN")
     void delete_school_should_return_ok_for_system_admin() {
-        var result = mvc.delete().uri(SCHOOLS_URI + "/{id}", schoolId).exchange();
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{id}", schoolId).exchange();
 
         assertThat(result).hasStatusOk();
         verify(deleteSchoolUseCase).execute(any());
@@ -385,7 +386,7 @@ class SchoolControllerTests {
     @Test
     @WithAnonymousUser
     void school_admin_routes_should_return_401_without_authentication() {
-        var result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/classes/{classId}", schoolId, schoolClassId)
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/classes/{classId}", schoolId, schoolClassId)
             .exchange();
 
         assertThat(result).hasStatus(401);
@@ -395,7 +396,7 @@ class SchoolControllerTests {
     @Test
     @WithAnonymousUser
     void system_admin_routes_should_return_401_without_authentication() {
-        var result = mvc.delete().uri(SCHOOLS_URI + "/{id}", schoolId).exchange();
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{id}", schoolId).exchange();
 
         assertThat(result).hasStatus(401);
         verifyNoInteractions(deleteSchoolUseCase);

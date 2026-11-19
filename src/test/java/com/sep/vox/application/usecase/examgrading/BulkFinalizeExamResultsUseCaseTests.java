@@ -70,7 +70,7 @@ class BulkFinalizeExamResultsUseCaseTests {
             examGradingQueryRepository, examGradingAccessService,
             new ResultStatusHistoryRecorder(examResultStatusHistoryRepository));
 
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
@@ -98,7 +98,7 @@ class BulkFinalizeExamResultsUseCaseTests {
     }
 
     private ExamCandidateResult result(ExamCandidateResultStatus status) {
-        var result = new ExamCandidateResult();
+        ExamCandidateResult result = new ExamCandidateResult();
         result.setId(UUID.randomUUID());
         result.setStatus(status);
         return result;
@@ -110,7 +110,7 @@ class BulkFinalizeExamResultsUseCaseTests {
 
     @SuppressWarnings("unchecked")
     private List<ExamResultStatusHistory> captureHistories() {
-        var captor = (ArgumentCaptor<List<ExamResultStatusHistory>>) (ArgumentCaptor<?>)
+        ArgumentCaptor<List<ExamResultStatusHistory>> captor = (ArgumentCaptor<List<ExamResultStatusHistory>>) (ArgumentCaptor<?>)
             ArgumentCaptor.forClass(List.class);
         verify(examResultStatusHistoryRepository).saveAll(captor.capture());
         return captor.getValue();
@@ -182,26 +182,28 @@ class BulkFinalizeExamResultsUseCaseTests {
     @Test
     void should_release_pending_papers_on_ai_scores_once_the_admin_confirms() {
         givenPreview(pendingBlocked());
-        var pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
+        ExamCandidateResult pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
         givenResults(pending);
 
-        var changed = useCase.execute(confirmed());
+        Integer changed = useCase.execute(confirmed());
 
         assertThat(changed).isEqualTo(1);
         assertThat(pending.getStatus()).isEqualTo(ExamCandidateResultStatus.RELEASED);
         assertThat(pending.getReleasedAt()).isNotNull();
-        // Bài mới công bố thì chưa chung thẩm: publish mới là chỗ chốt PASSED/FAILED.
+        // A newly published submission is not at final review yet: publishing is where
+        // PASSED/FAILED is decided.
         assertThat(pending.getFinalizedAt()).isNull();
     }
 
     @Test
     void should_never_produce_final() {
-        // FINAL là trạng thái HẬU publish (finalizeForPublish sinh ra khi policy không có
-        // passingScore). Sinh nó ở đây thì requirePublishReadiness từ chối cả kỳ thi, mà
-        // lối ra duy nhất khỏi FINAL lại đòi kỳ thi đã publish — deadlock kín.
+        // FINAL is a POST-publish status (produced by finalizeForPublish when the policy has no
+        // passingScore). Producing it here would make requirePublishReadiness reject the whole
+        // exam, while the only way out of FINAL demands that the exam has been published -- a
+        // closed deadlock.
         givenPreview(pendingBlocked());
-        var pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
-        var released = result(ExamCandidateResultStatus.RELEASED);
+        ExamCandidateResult pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
+        ExamCandidateResult released = result(ExamCandidateResultStatus.RELEASED);
         givenResults(pending, released);
 
         useCase.execute(confirmed());
@@ -212,15 +214,15 @@ class BulkFinalizeExamResultsUseCaseTests {
 
     @Test
     void should_leave_released_invalid_and_already_decided_results_alone() {
-        var released = result(ExamCandidateResultStatus.RELEASED);
-        var invalid = result(ExamCandidateResultStatus.INVALID);
-        var passed = result(ExamCandidateResultStatus.PASSED);
+        ExamCandidateResult released = result(ExamCandidateResultStatus.RELEASED);
+        ExamCandidateResult invalid = result(ExamCandidateResultStatus.INVALID);
+        ExamCandidateResult passed = result(ExamCandidateResultStatus.PASSED);
         givenResults(released, invalid, passed);
 
-        var changed = useCase.execute(confirmed());
+        Integer changed = useCase.execute(confirmed());
 
-        // RELEASED đã sẵn sàng publish; INVALID đã có kết luận và sẽ tự thành FAILED
-        // (điểm ép về 0) lúc kỳ thi công bố; PASSED đã chốt.
+        // RELEASED is ready to publish; INVALID already has its conclusion and will turn into
+        // FAILED by itself (score forced to 0) when the exam is published; PASSED is already final.
         assertThat(changed).isZero();
         assertThat(released.getStatus()).isEqualTo(ExamCandidateResultStatus.RELEASED);
         assertThat(invalid.getStatus()).isEqualTo(ExamCandidateResultStatus.INVALID);
@@ -229,11 +231,12 @@ class BulkFinalizeExamResultsUseCaseTests {
 
     @Test
     void should_keep_the_original_released_at_when_a_paper_already_had_one() {
-        // Bài từng RELEASED rồi bị kéo về PENDING_REVIEW (gỡ vô hiệu) không được đặt lại
-        // mốc công bố: cửa sổ phúc khảo tính từ mốc đó.
+        // A submission that was once RELEASED and then pulled back to PENDING_REVIEW (invalidation
+        // lifted) must not get its release timestamp reset: the appeal window is counted from that
+        // timestamp.
         givenPreview(pendingBlocked());
-        var pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
-        var originalReleasedAt = Instant.now().minus(3, ChronoUnit.DAYS);
+        ExamCandidateResult pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
+        Instant originalReleasedAt = Instant.now().minus(3, ChronoUnit.DAYS);
         pending.setReleasedAt(originalReleasedAt);
         givenResults(pending);
 
@@ -249,12 +252,13 @@ class BulkFinalizeExamResultsUseCaseTests {
 
         useCase.execute(confirmed());
 
-        var histories = captureHistories();
+        List<ExamResultStatusHistory> histories = captureHistories();
         assertThat(histories).hasSize(1);
         assertThat(histories).allSatisfy(history -> {
             assertThat(history.getSource()).isEqualTo(ResultStatusChangeSource.ADMIN_BULK_FINALIZE);
             assertThat(history.getToStatus()).isEqualTo(ExamCandidateResultStatus.RELEASED);
-            // Phải phân biệt được về sau: bài này công bố theo điểm AI, không phải điểm người.
+            // It must be distinguishable later: this submission was published on the AI score, not
+            // on a human score.
             assertThat(history.getReason()).contains("điểm AI");
         });
     }
@@ -262,17 +266,17 @@ class BulkFinalizeExamResultsUseCaseTests {
     @Test
     void should_close_assignments_on_the_papers_it_released() {
         givenPreview(pendingBlocked());
-        var pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
+        ExamCandidateResult pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
         givenResults(pending);
-        var open = ExamGradingAssignment.open(pending.getId(), UUID.randomUUID(),
+        ExamGradingAssignment open = ExamGradingAssignment.open(pending.getId(), UUID.randomUUID(),
             GradingRoundType.INITIAL, null, null, Instant.now(), adminId, null);
         when(examGradingAssignmentRepository.findOpenByCandidateResultIdIn(anyCollection()))
             .thenReturn(List.of(open));
 
         useCase.execute(confirmed());
 
-        // Bài đã rời PENDING_REVIEW nên vòng INITIAL không còn xử lý được nó nữa; không
-        // đóng thì phân công treo vĩnh viễn trong hàng đợi của giáo viên.
+        // The submission has left PENDING_REVIEW, so the INITIAL round can no longer handle it; if
+        // it is not closed, the assignment hangs forever in the teacher's queue.
         assertThat(open.isCompleted()).isTrue();
         assertThat(open.getOutcome()).isEqualTo(GradingOutcome.DECLINED);
         assertThat(open.getActiveResultId()).isNull();

@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 import com.sep.vox.application.port.input.command.RejectRegisterFormCommand;
 import com.sep.vox.application.port.input.usecase.registration.ApproveRegisterFormUseCase;
@@ -40,9 +41,9 @@ class RegisterFormControllerTests {
     @Test
     @WithMockUser(roles = "SYSTEM_ADMIN")
     void reject_should_return_ok_response_for_system_admin() {
-        var id = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
 
-        var result = rejectRequest(id).exchange();
+        MvcTestResult result = rejectRequest(id).exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
             .extractingPath("$.message").isEqualTo("Đơn đăng ký đã từ chối thành công");
@@ -52,7 +53,7 @@ class RegisterFormControllerTests {
     @Test
     @WithMockUser(roles = "SYSTEM_ADMIN")
     void reject_should_return_bad_request_when_reason_is_blank() {
-        var result = mvc.post().uri("/api/v1/register-forms/{id}/reject", UUID.randomUUID())
+        MvcTestResult result = mvc.post().uri("/api/v1/register-forms/{id}/reject", UUID.randomUUID())
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"reason\": \"\"}")
             .exchange();
@@ -63,7 +64,7 @@ class RegisterFormControllerTests {
 
     @Test
     void reject_should_return_401_without_authenticated_user() {
-        var result = rejectRequest(UUID.randomUUID()).exchange();
+        MvcTestResult result = rejectRequest(UUID.randomUUID()).exchange();
 
         assertThat(result).hasStatus(401);
         verifyNoInteractions(rejectRegisterFormUseCase);
@@ -72,7 +73,7 @@ class RegisterFormControllerTests {
     @Test
     @WithMockUser(roles = "SCHOOL_ADMIN")
     void reject_should_return_403_for_role_other_than_system_admin() {
-        var result = rejectRequest(UUID.randomUUID()).exchange();
+        MvcTestResult result = rejectRequest(UUID.randomUUID()).exchange();
 
         assertThat(result).hasStatus(403);
         verifyNoInteractions(rejectRegisterFormUseCase);
@@ -85,8 +86,8 @@ class RegisterFormControllerTests {
     @Test
     @WithMockUser(roles = "TEACHER")
     void approve_should_return_403_for_role_other_than_system_admin() {
-        var id = UUID.randomUUID();
-        var result = mvc.post().uri("/api/v1/register-forms/{id}/approve", id)
+        UUID id = UUID.randomUUID();
+        MvcTestResult result = mvc.post().uri("/api/v1/register-forms/{id}/approve", id)
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"registerFormId\": \"" + id + "\", \"schoolCode\": \"VOX_HCM\", \"provinceCode\": \"79\"}")
             .exchange();

@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.exam.ExamPaper;
+import com.sep.vox.domain.model.exam.ExamPaperItem;
+import com.sep.vox.domain.model.exam.ExamPaperSection;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -59,8 +62,8 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
     @Override
     @Transactional
     public ExamDto execute(DeleteClassTestSectionCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var exam = examRepository.findById(input.examId())
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         if (exam.getKind() != ExamKind.CLASS_TEST) {
@@ -79,32 +82,32 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
 
         // Suy mã đề từ chính section được xoá: bài trên lớp giờ có thể có nhiều mã đề, đoán "đề đầu
         // tiên" là xoá nhầm section của mã đề khác.
-        var paperSection = examPaperSectionRepository.findById(input.sectionId())
+        ExamPaperSection paperSection = examPaperSectionRepository.findById(input.sectionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
-        var paper = examPaperRepository.findById(paperSection.getPaperId())
+        ExamPaper paper = examPaperRepository.findById(paperSection.getPaperId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
         if (!paper.getExamId().equals(exam.getId())) {
             throw new NotFoundException("Không tìm thấy section");
         }
-        var allPaperSections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
+        List<ExamPaperSection> allPaperSections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();
         if (allPaperSections.size() <= 1) {
             throw new IllegalStateException("Mã đề phải có ít nhất 1 section");
         }
 
-        var shouldRebalanceAfterDelete = ClassTestSectionWeightPolicy.looksAutoWeighted(allPaperSections);
+        boolean shouldRebalanceAfterDelete = ClassTestSectionWeightPolicy.looksAutoWeighted(allPaperSections);
 
-        for (var item : examPaperItemRepository.findBySectionId(paperSection.getId())) {
+        for (ExamPaperItem item : examPaperItemRepository.findBySectionId(paperSection.getId())) {
             examPaperItemRepository.deleteById(item.getId());
         }
         examPaperSectionRepository.deleteById(paperSection.getId());
 
-        var now = Instant.now();
-        var remainingPaperSections = allPaperSections.stream().filter(item -> !item.getId().equals(paperSection.getId())).toList();
+        Instant now = Instant.now();
+        List<ExamPaperSection> remainingPaperSections = allPaperSections.stream().filter(item -> !item.getId().equals(paperSection.getId())).toList();
         for (int i = 0; i < remainingPaperSections.size(); i++) {
-            var remaining = remainingPaperSections.get(i);
-            var newOrder = i + 1;
+            ExamPaperSection remaining = remainingPaperSections.get(i);
+            int newOrder = i + 1;
             if (remaining.getOrder() != newOrder) {
                 remaining.setOrder(newOrder);
             }
@@ -120,7 +123,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
 
         exam.setUpdatedAt(now);
         exam.setUpdatedBy(currentUserId);
-        var saved = examRepository.save(exam);
+        Exam saved = examRepository.save(exam);
         recalculateExamTimeDurationService.recalculate(exam.getId());
         return ExamDtoMapper.toDto(saved);
     }
@@ -132,12 +135,12 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         }
     }
     private void rebalanceSectionWeights(UUID paperId, Instant now, UUID currentUserId) {
-        var sections = examPaperSectionRepository.findByPaperId(paperId).stream()
+        List<ExamPaperSection> sections = examPaperSectionRepository.findByPaperId(paperId).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
-        var weights = distributeEqualWeights(sections.size());
+        List<BigDecimal> weights = distributeEqualWeights(sections.size());
         for (int i = 0; i < sections.size(); i++) {
-            var section = sections.get(i);
+            ExamPaperSection section = sections.get(i);
             section.setWeight(weights.get(i));
             section.setUpdatedAt(now);
             section.setUpdatedBy(currentUserId);
@@ -146,9 +149,9 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
     }
 
     private void normalizeSectionWeights(List<com.sep.vox.domain.model.exam.ExamPaperSection> sections, Instant now, UUID currentUserId) {
-        var weights = ClassTestSectionWeightPolicy.normalizeStoredWeights(sections);
+        List<BigDecimal> weights = ClassTestSectionWeightPolicy.normalizeStoredWeights(sections);
         for (int i = 0; i < sections.size(); i++) {
-            var section = sections.get(i);
+            ExamPaperSection section = sections.get(i);
             section.setWeight(weights.get(i));
             section.setUpdatedAt(now);
             section.setUpdatedBy(currentUserId);
@@ -157,9 +160,9 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
     }
 
     private List<BigDecimal> distributeEqualWeights(int count) {
-        var weights = new ArrayList<BigDecimal>();
-        var perItem = BigDecimal.ONE.divide(BigDecimal.valueOf(count), 2, java.math.RoundingMode.DOWN);
-        var runningSum = BigDecimal.ZERO;
+        List<BigDecimal> weights = new ArrayList<BigDecimal>();
+        BigDecimal perItem = BigDecimal.ONE.divide(BigDecimal.valueOf(count), 2, java.math.RoundingMode.DOWN);
+        BigDecimal runningSum = BigDecimal.ZERO;
         for (int i = 0; i < count - 1; i++) {
             weights.add(perItem);
             runningSum = runningSum.add(perItem);

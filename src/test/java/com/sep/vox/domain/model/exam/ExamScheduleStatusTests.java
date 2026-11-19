@@ -20,10 +20,13 @@ class ExamScheduleStatusTests {
         assertThat(ExamScheduleStatus.DELETED.isInEffect()).isFalse();
     }
 
-    /** Điểm danh chỉ là một hệ quả của "ca còn hiệu lực" — hai vị từ phải không bao giờ lệch nhau. */
+    /**
+     * Attendance is only a consequence of "the schedule is still valid" -- the two predicates must
+     * never drift apart.
+     */
     @Test
     void should_keep_attendance_aligned_with_in_effect() {
-        for (var status : ExamScheduleStatus.values()) {
+        for (ExamScheduleStatus status : ExamScheduleStatus.values()) {
             assertThat(status.allowsAttendance()).isEqualTo(status.isInEffect());
         }
     }

@@ -43,7 +43,7 @@ class ExamScheduleAutoCompleteJobTests {
 
     @Test
     void should_complete_schedules_returned_by_the_sweep() {
-        var ended = schedule(start, start.plus(2, ChronoUnit.HOURS));
+        ExamSchedule ended = schedule(start, start.plus(2, ChronoUnit.HOURS));
         when(examScheduleRepository.findPublishedEndedBefore(any(), eq(200))).thenReturn(List.of(ended));
 
         job.run();
@@ -62,7 +62,7 @@ class ExamScheduleAutoCompleteJobTests {
     }
 
     private ExamSchedule schedule(Instant from, Instant to) {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(UUID.randomUUID());
         schedule.setExamId(UUID.randomUUID());
         schedule.setStartDate(from);

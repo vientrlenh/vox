@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.stream;
 
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import java.time.Instant;
 import java.util.List;
 
@@ -8,6 +10,7 @@ import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamScheduleRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,36 +54,36 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
     @Override
     @Transactional
     public IssueStudentStreamTokenResponse execute(IssueStudentStreamTokenCommand input) {
-        var command = normalizeCommand(input);
+        IssueStudentStreamTokenCommand command = normalizeCommand(input);
 
-        var now = Instant.now();
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        Instant now = Instant.now();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var examSession = examSessionRepository.findByIdAndResumable(command.examSessionId())
+        ExamSession examSession = examSessionRepository.findByIdAndResumable(command.examSessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi hoặc phiên thi đã hết hạn"));
 
-        var exam = examRepository.findById(examSession.getExamId())
+        Exam exam = examRepository.findById(examSession.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
-        var candidate = examCandidateRepository.findById(examSession.getCandidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(examSession.getCandidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy học viên thi"));
 
         if (!candidate.getStudentId().equals(userId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var schedule = examScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
+        ExamSchedule schedule = examScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lịch thi"));
 
         // Sau toàn bộ khâu xác thực, không phải trước: bước này GHI vào phiên thi (chốt loại
         // stream), nên nếu chạy sớm hơn thì một người không sở hữu phiên thi vẫn kịp chốt hộ
         // loại stream trước khi bị chặn ở kiểm tra quyền bên trên.
-        var streamTypes = resolveStreamTypes(exam, examSession, command.streamType());
+        List<String> streamTypes = resolveStreamTypes(exam, examSession, command.streamType());
 
-        var windowStart = schedule.getStartDate();
-        var windowEnd = schedule.getEndDate();
+        Instant windowStart = schedule.getStartDate();
+        Instant windowEnd = schedule.getEndDate();
 
-        var token = streamTokenProvider.generateStreamToken(
+        String token = streamTokenProvider.generateStreamToken(
             userId.toString(),
             candidate.getId().toString(), 
             schedule.getId().toString(),  
@@ -121,7 +124,7 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
             throw new IllegalArgumentException("Kỳ thi không hỗ trợ stream");
         }
 
-        var chosenStreamType = examSession.getChosenStreamType();
+        ExamRequiredStreamType chosenStreamType = examSession.getChosenStreamType();
         if (chosenStreamType == null) {
             chosenStreamType = lockChosenStreamType(examSession, resolveFirstChoice(exam, requestedStreamType));
         }

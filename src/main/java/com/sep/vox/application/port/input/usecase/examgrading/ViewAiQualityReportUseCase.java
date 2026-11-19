@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,8 +32,8 @@ public class ViewAiQualityReportUseCase implements IUseCase<ViewAiQualityReportQ
     @Override
     @Transactional(readOnly = true)
     public AiQualityReportInfo execute(ViewAiQualityReportQuery input) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        UUID schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
         examGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId);
         return examResultAuditQueryRepository.aiQualityReport(schoolId, input.examId());
     }

@@ -1,6 +1,10 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamSession;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -66,9 +70,9 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
     @Override
     @Transactional
     public ExamCandidateDto execute(UnblockExamCandidateCommand input) {
-        var candidate = examCandidateRepository.findById(input.candidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(input.candidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh"));
-        var exam = examRepository.findById(candidate.getExamId())
+        Exam exam = examRepository.findById(candidate.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của thí sinh"));
 
         moderationAccessService.authorize(exam, candidate);
@@ -78,11 +82,11 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
             throw new IllegalStateException("Kỳ thi đã công bố kết quả, không thể thay đổi nữa");
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         candidate.setBlockedAt(null);
         candidate.setUpdatedAt(now);
         candidate.setUpdatedBy(moderationAccessService.getCurrentUserId());
-        var saved = examCandidateRepository.save(candidate);
+        ExamCandidate saved = examCandidateRepository.save(candidate);
 
         recomputeInvalidatedSessions(candidate.getId());
         return ExamCandidateDtoMapper.toDto(saved);
@@ -96,18 +100,18 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
      * {@link #moveToPendingReviewWithoutScores}).
      */
     private void recomputeInvalidatedSessions(java.util.UUID candidateId) {
-        for (var session : examSessionRepository.findByCandidateId(candidateId)) {
-            var result = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
+        for (ExamSession session : examSessionRepository.findByCandidateId(candidateId)) {
+            ExamCandidateResult result = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
             if (result == null || result.getStatus() != ExamCandidateResultStatus.INVALID) {
                 continue;
             }
 
-            var responseIds = examItemResponseRepository.findBySessionId(session.getId()).stream()
+            List<UUID> responseIds = examItemResponseRepository.findBySessionId(session.getId()).stream()
                 .map(response -> response.getId())
                 .toList();
-            var hasEvaluations = !examItemEvaluationRepository.findByResponseIdIn(responseIds).isEmpty();
+            boolean hasEvaluations = !examItemEvaluationRepository.findByResponseIdIn(responseIds).isEmpty();
             if (hasEvaluations) {
-                var recalculated = upsertExamCandidateResultUseCase.execute(session.getId());
+                ExamCandidateResult recalculated = upsertExamCandidateResultUseCase.execute(session.getId());
                 // Gỡ chặn có thể kéo bài từ INVALID về PENDING_REVIEW — bài trên lớp cần
                 // một phân công mới thì giáo viên chủ bài mới chấm lại được.
                 classTestGradingAssignmentService.ensureAssignmentForResult(recalculated);
@@ -140,7 +144,7 @@ public class UnblockExamCandidateUseCase implements IUseCase<UnblockExamCandidat
      */
     private void moveToPendingReviewWithoutScores(
             ExamCandidateResult result, UUID sessionId) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         result.setStatus(ExamCandidateResultStatus.PENDING_REVIEW);
         result.setUpdatedAt(now);
         result.setUpdatedBy(moderationAccessService.getCurrentUserId());

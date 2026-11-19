@@ -1,5 +1,8 @@
 package com.sep.vox.interfaces.rest.controller;
 
+import com.sep.vox.application.response.input.exam.ExamEntryTicketResponse;
+import com.sep.vox.application.response.input.exam.StudentExamSummaryResponse;
+import com.sep.vox.domain.common.PageResult;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -122,11 +125,12 @@ public class ExamController {
             @RequestParam(name = "page", defaultValue = "1") Integer page,
             @RequestParam(name = "size", defaultValue = "20") Integer size,
             @RequestParam(name = "sort", defaultValue = "examDate,desc") String sort) {
-        // Trang đếm từ 1, như mọi entry point khác. `Integer` chứ không phải `int` để một tham số
-        // rỗng (`?page=`) vào đây thành null và bị guard từ chối, thay vì nổ ở tầng bind với thông
-        // báo khó hiểu. Kiểm ngay tại biên: repository bên dưới chỉ còn trừ 1 để đổi sang offset.
+        // Page numbers count from 1, like every other entry point. `Integer` rather than `int` so an empty
+        // parameter (`?page=`) arrives here as null and is rejected by the guard, instead of failing at the
+        // binding layer with a confusing message. Validate right at the boundary: the repository below only
+        // subtracts 1 to convert to an offset.
         PageArguments.validate(page, size);
-        var data = viewMyExamsUseCase.execute(
+        PageResult<StudentExamSummaryResponse> data = viewMyExamsUseCase.execute(
             ViewMyExamsQueryMapper.fromRequest(kind, status, page, size, sort));
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách bài thi thành công", data));
     }
@@ -134,7 +138,7 @@ public class ExamController {
     @PostMapping
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ExamDto>> create(@Valid @RequestBody CreateExamRequest request) {
-        var data = createExamUseCase.execute(CreateExamCommandMapper.fromRequest(request));
+        ExamDto data = createExamUseCase.execute(CreateExamCommandMapper.fromRequest(request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo bài kiểm tra thành công", data));
     }
@@ -144,7 +148,7 @@ public class ExamController {
     public ResponseEntity<ApiResponse<ExamDto>> update(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamRequest request) {
-        var data = updateExamUseCase.execute(UpdateExamCommandMapper.fromRequest(id, request));
+        ExamDto data = updateExamUseCase.execute(UpdateExamCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật bài kiểm tra thành công", data));
     }
 
@@ -153,7 +157,7 @@ public class ExamController {
     public ResponseEntity<ApiResponse<ExamDto>> attachBlueprint(
             @PathVariable("id") UUID id,
             @Valid @RequestBody AttachExamBlueprintRequest request) {
-        var data = attachExamBlueprintUseCase.execute(AttachExamBlueprintCommandMapper.fromRequest(id, request));
+        ExamDto data = attachExamBlueprintUseCase.execute(AttachExamBlueprintCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Gắn blueprint vào bài kiểm tra thành công", data));
     }
 
@@ -162,7 +166,7 @@ public class ExamController {
     public ResponseEntity<ApiResponse<ExamDto>> updateStatus(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamStatusRequest request) {
-        var data = updateExamStatusUseCase.execute(UpdateExamStatusCommandMapper.fromRequest(id, request));
+        ExamDto data = updateExamStatusUseCase.execute(UpdateExamStatusCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái bài kiểm tra thành công", data));
     }
 
@@ -171,14 +175,14 @@ public class ExamController {
     public ResponseEntity<ApiResponse<ExamDto>> updateDeliveryMode(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamDeliveryModeRequest request) {
-        var data = updateExamDeliveryModeUseCase.execute(UpdateExamDeliveryModeCommandMapper.fromRequest(id, request));
+        ExamDto data = updateExamDeliveryModeUseCase.execute(UpdateExamDeliveryModeCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật hình thức làm bài thành công", data));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<DeleteExamResponse>> delete(@PathVariable UUID id) {
-        var data = deleteExamUseCase.execute(new DeleteExamCommand(id));
+        DeleteExamResponse data = deleteExamUseCase.execute(new DeleteExamCommand(id));
         return ResponseEntity.ok(ApiResponse.success("Xóa bài kiểm tra thành công", data));
     }
 
@@ -190,7 +194,7 @@ public class ExamController {
     public ResponseEntity<ApiResponse<ExamMemberDto>> createMember(
             @PathVariable("examId") UUID examId,
             @Valid @RequestBody CreateExamMemberRequest request) {
-        var data = createExamMemberUseCase.execute(CreateExamMemberCommandMapper.fromRequest(examId, request));
+        ExamMemberDto data = createExamMemberUseCase.execute(CreateExamMemberCommandMapper.fromRequest(examId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Gán collaborator cho bài kiểm tra thành công", data));
     }
@@ -201,7 +205,7 @@ public class ExamController {
             @PathVariable("examId") UUID examId,
             @PathVariable("memberId") UUID memberId,
             @Valid @RequestBody UpdateExamMemberRequest request) {
-        var data = updateExamMemberUseCase.execute(UpdateExamMemberCommandMapper.fromRequest(examId, memberId, request));
+        ExamMemberDto data = updateExamMemberUseCase.execute(UpdateExamMemberCommandMapper.fromRequest(examId, memberId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật collaborator cho bài kiểm tra thành công", data));
     }
 
@@ -219,7 +223,7 @@ public class ExamController {
     public ResponseEntity<ApiResponse<ExamSecurePoolDto>> updateSecurePoolStatus(
             @PathVariable("examId") UUID examId,
             @Valid @RequestBody UpdateExamSecurePoolStatusRequest request) {
-        var data = updateExamSecurePoolStatusUseCase.execute(
+        ExamSecurePoolDto data = updateExamSecurePoolStatusUseCase.execute(
             UpdateExamSecurePoolStatusCommandMapper.fromRequest(examId, request)
         );
         return ResponseEntity.ok(ApiResponse.success("Mở khoá câu hỏi đề thi thành công", data));
@@ -228,8 +232,8 @@ public class ExamController {
     @GetMapping("/{examId}/schedules/{scheduleId}/otp")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<GetExamScheduleOtpResponse>> getExamScheduleOtp(@PathVariable("examId") UUID examId, @PathVariable("scheduleId") UUID scheduleId) {
-        var query = new GetExamScheduleOtpQuery(examId, scheduleId);
-        var data = getExamScheduleOtpUseCase.execute(query);
+        GetExamScheduleOtpQuery query = new GetExamScheduleOtpQuery(examId, scheduleId);
+        GetExamScheduleOtpResponse data = getExamScheduleOtpUseCase.execute(query);
         return ResponseEntity.ok(ApiResponse.success("Mã OTP cho lịch thi được lấy thành công", data));
     }
 
@@ -238,14 +242,14 @@ public class ExamController {
     public ResponseEntity<ApiResponse<?>> verifyExamOtp(
             @PathVariable("examId") UUID examId,
             @Valid @RequestBody VerifyExamOtpRequest request) {
-        var data = verifyExamScheduleOtpUseCase.execute(new VerifyExamScheduleOtpCommand(examId, request.otp()));
+        ExamEntryTicketResponse data = verifyExamScheduleOtpUseCase.execute(new VerifyExamScheduleOtpCommand(examId, request.otp()));
         return ResponseEntity.ok(ApiResponse.success("Xác thực OTP thành công", data));
     }
 
     @PostMapping("/{examId}/class-test/start")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ApiResponse<?>> startClassTest(@PathVariable("examId") UUID examId) {
-        var data = startClassTestSessionUseCase.execute(new StartClassTestSessionCommand(examId));
+        ExamEntryTicketResponse data = startClassTestSessionUseCase.execute(new StartClassTestSessionCommand(examId));
         return ResponseEntity.ok(ApiResponse.success("Bắt đầu bài kiểm tra thành công", data));
     }
 }

@@ -1,10 +1,12 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.QuestionBankJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -29,8 +31,8 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
 
     @Override
     public QuestionBank save(QuestionBank questionBank) {
-        var entity = QuestionBankMapper.toJpa(questionBank);
-        var saved = springDataQuestionBankRepository.save(entity);
+        QuestionBankJpaEntity entity = QuestionBankMapper.toJpa(questionBank);
+        QuestionBankJpaEntity saved = springDataQuestionBankRepository.save(entity);
         return QuestionBankMapper.toDomain(saved);
     }
 
@@ -59,8 +61,8 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
 
     @Override
     public PageResult<QuestionBank> findAll(int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
-        var page = springDataQuestionBankRepository.findAll(pageable);
+        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        Page<QuestionBankJpaEntity> page = springDataQuestionBankRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent().stream()
                 .map(QuestionBankMapper::toDomain)
@@ -86,8 +88,8 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
     public PageResult<QuestionBank> findAccessible(UUID currentSchoolId, boolean systemAdmin, boolean schoolAdmin,
             QuestionBankOwnerType ownerType, QuestionBankStatus status, UUID languageId, UUID schoolId,
             UUID schoolGradeId, String keyword, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
-        var page = springDataQuestionBankRepository.findAccessible(
+        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        Page<QuestionBankJpaEntity> page = springDataQuestionBankRepository.findAccessible(
             currentSchoolId,
             systemAdmin,
             schoolAdmin,

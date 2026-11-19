@@ -58,7 +58,7 @@ class ForceSuspendSubscriptionUseCaseTests {
         schoolSubscriptionEventRepository = mock(SchoolSubscriptionEventRepository.class);
         suspensionNotificationService = mock(SchoolSubscriptionSuspensionNotificationService.class);
         examScheduleRepository = mock(ExamScheduleRepository.class);
-        var userContextPort = mock(UserContextPort.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(ADMIN_ID);
         when(examScheduleRepository.findBySchoolId(SCHOOL_ID)).thenReturn(List.of());
         when(schoolSubscriptionRepository.save(any())).thenAnswer(call -> call.getArgument(0));
@@ -75,7 +75,7 @@ class ForceSuspendSubscriptionUseCaseTests {
     void should_suspend_and_record_who_did_it_and_why() {
         givenSubscription(SchoolSubscriptionStatus.ACTIVE);
 
-        var result = useCase.execute(new ForceSuspendSubscriptionCommand(SUBSCRIPTION_ID, REASON));
+        UUID result = useCase.execute(new ForceSuspendSubscriptionCommand(SUBSCRIPTION_ID, REASON));
 
         assertThat(result).isEqualTo(SUBSCRIPTION_ID);
         verify(schoolSubscriptionRepository).save(argThat(saved ->
@@ -115,13 +115,13 @@ class ForceSuspendSubscriptionUseCaseTests {
     }
 
     /**
-     * Cắt quyền giữa ca thi làm hỏng bài của học sinh đang ngồi trong phòng -- lỗi không thuộc về các
-     * em. Đình chỉ phải đợi hết ca.
+     * Cutting access in the middle of an exam session ruins the work of students who are sitting in
+     * the room -- a fault that is not theirs. The suspension must wait until the session ends.
      */
     @Test
     void should_refuse_to_cut_access_while_an_exam_is_running() {
         givenSubscription(SchoolSubscriptionStatus.ACTIVE);
-        var ongoing = mock(ExamSchedule.class);
+        ExamSchedule ongoing = mock(ExamSchedule.class);
         when(ongoing.isOngoingAt(any())).thenReturn(true);
         when(examScheduleRepository.findBySchoolId(SCHOOL_ID)).thenReturn(List.of(ongoing));
 
@@ -133,7 +133,7 @@ class ForceSuspendSubscriptionUseCaseTests {
     }
 
     private void givenSubscription(SchoolSubscriptionStatus status) {
-        var subscription = new SchoolSubscription();
+        SchoolSubscription subscription = new SchoolSubscription();
         subscription.setId(SUBSCRIPTION_ID);
         subscription.setSchoolId(SCHOOL_ID);
         subscription.setStatus(status);

@@ -19,19 +19,19 @@ class ExamScheduleTests {
 
     @Test
     void should_treat_start_boundary_as_already_started() {
-        var schedule = schedule(ExamScheduleStatus.PUBLISHED, start, end);
+        ExamSchedule schedule = schedule(ExamScheduleStatus.PUBLISHED, start, end);
 
         assertThat(schedule.hasStartedAt(start.minusSeconds(1))).isFalse();
         assertThat(schedule.hasStartedAt(start)).isTrue();
     }
 
     /**
-     * Biên phải khớp với {@code findByIdAndInSchedule} (WHERE endDate > :now): đúng khoảnh khắc
-     * endDate là ca đã hết giờ, không còn vào thi được.
+     * The boundary must match {@code findByIdAndInSchedule} (WHERE endDate > :now): at the exact
+     * moment of endDate the schedule has ended and the candidate can no longer enter the exam.
      */
     @Test
     void should_treat_end_boundary_as_already_ended() {
-        var schedule = schedule(ExamScheduleStatus.PUBLISHED, start, end);
+        ExamSchedule schedule = schedule(ExamScheduleStatus.PUBLISHED, start, end);
 
         assertThat(schedule.hasEndedAt(end.minusSeconds(1))).isFalse();
         assertThat(schedule.hasEndedAt(end)).isTrue();
@@ -39,7 +39,7 @@ class ExamScheduleTests {
 
     @Test
     void should_report_ongoing_only_within_window() {
-        var schedule = schedule(ExamScheduleStatus.PUBLISHED, start, end);
+        ExamSchedule schedule = schedule(ExamScheduleStatus.PUBLISHED, start, end);
 
         assertThat(schedule.isOngoingAt(start.minusSeconds(1))).isFalse();
         assertThat(schedule.isOngoingAt(start)).isTrue();
@@ -47,13 +47,16 @@ class ExamScheduleTests {
         assertThat(schedule.isOngoingAt(end)).isFalse();
     }
 
-    /** Chỉ ca đã công bố mới "đang diễn ra" — ca nháp chưa ai nhìn thấy để mà vào thi. */
+    /**
+     * Only a published schedule is "in progress" -- nobody can see a draft schedule, so nobody can
+     * enter it.
+     */
     @Test
     void should_not_report_ongoing_for_non_published_status() {
-        var midway = start.plus(1, ChronoUnit.HOURS);
+        Instant midway = start.plus(1, ChronoUnit.HOURS);
 
-        for (var status : ExamScheduleStatus.values()) {
-            var schedule = schedule(status, start, end);
+        for (ExamScheduleStatus status : ExamScheduleStatus.values()) {
+            ExamSchedule schedule = schedule(status, start, end);
             assertThat(schedule.isOngoingAt(midway))
                 .as("status %s", status)
                 .isEqualTo(status == ExamScheduleStatus.PUBLISHED);
@@ -62,7 +65,7 @@ class ExamScheduleTests {
 
     @Test
     void should_not_report_started_or_ended_when_dates_missing() {
-        var schedule = schedule(ExamScheduleStatus.PUBLISHED, null, null);
+        ExamSchedule schedule = schedule(ExamScheduleStatus.PUBLISHED, null, null);
 
         assertThat(schedule.hasStartedAt(start)).isFalse();
         assertThat(schedule.hasEndedAt(start)).isFalse();
@@ -70,7 +73,7 @@ class ExamScheduleTests {
     }
 
     private ExamSchedule schedule(ExamScheduleStatus status, Instant from, Instant to) {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setStartDate(from);
         schedule.setEndDate(to);
         schedule.setStatus(status);

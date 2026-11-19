@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.application.port.input.command.UpdateSchoolScoringRuleCommand;
+import com.sep.vox.application.port.input.command.UpdateScoringRuleCommand;
 import java.util.UUID;
 
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -142,7 +144,7 @@ public class ScoringRuleController {
             @Argument(name = "policyId") UUID policyId,
             @Argument(name = "ruleId") UUID ruleId,
             @Argument(name = "input") UpdateScoringRuleInput input) {
-        var command = UpdateScoringRuleGraphQLMapper.fromInput(policyId, ruleId, input);
+        UpdateScoringRuleCommand command = UpdateScoringRuleGraphQLMapper.fromInput(policyId, ruleId, input);
         return updateSystemScoringRuleUseCase.execute(command);
     }
 
@@ -153,7 +155,7 @@ public class ScoringRuleController {
             @Argument(name = "policyId") UUID policyId,
             @Argument(name = "ruleId") UUID ruleId,
             @Argument(name = "input") UpdateScoringRuleInput input) {
-        var command = UpdateScoringRuleGraphQLMapper.fromSchoolInput(schoolId, policyId, ruleId, input);
+        UpdateSchoolScoringRuleCommand command = UpdateScoringRuleGraphQLMapper.fromSchoolInput(schoolId, policyId, ruleId, input);
         return updateSchoolScoringRuleUseCase.execute(command);
     }
 

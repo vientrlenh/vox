@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
 
+import com.sep.vox.domain.model.school.SchoolUser;
 import java.util.Set;
 import java.util.UUID;
 
@@ -48,8 +49,8 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolUserDto> execute(ViewSchoolUsersBySchoolQuery input) {
-        var callerId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID schoolId = userContextPort.getCurrentSchoolId();
 
         if (schoolId == null || !input.schoolId().equals(schoolId)) {
             throw new ForbiddenException("Bạn không có quyền xem danh sách người dùng của trường này");
@@ -62,10 +63,10 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
             throw new ForbiddenException("Quyền truy cập không hợp lệ");
         }
 
-        var status = validateStatus(input.status());
-        var roleId = resolveRoleId(input.roleId(), input.roleCode());
+        String status = validateStatus(input.status());
+        UUID roleId = resolveRoleId(input.roleId(), input.roleCode());
 
-        var schoolUsersPage = schoolUserRepository.findBySchoolId(
+        PageResult<SchoolUser> schoolUsersPage = schoolUserRepository.findBySchoolId(
             input.schoolId(),
             StringNormalization.trimAndCollapseSpaces(input.search()),
             roleId,
@@ -102,7 +103,7 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
             return roleId;
         }
 
-        var normalized = StringNormalization.trimAndCollapseSpaces(roleCode);
+        String normalized = StringNormalization.trimAndCollapseSpaces(roleCode);
         if (normalized == null) {
             return null;
         }
@@ -113,7 +114,7 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
     }
 
     private String validateStatus(String status) {
-        var normalized = StringNormalization.trimAndCollapseSpaces(status);
+        String normalized = StringNormalization.trimAndCollapseSpaces(status);
         if (normalized == null) {
             return null;
         }

@@ -86,31 +86,31 @@ public class ExamSessionResultCalculatorTests {
             examItemEvaluationRepository, examPaperItemRepository, examPaperSectionRepository,
             rubricResultBandRepository, frameworkResultBandRepository, rubricVersionRepository);
 
-        // Thang 0-9, khớp với dải xếp loại khai bên dưới. Sàn thang là điểm dành cho phần không có
-        // câu nào -- xem resolveScaleFloor.
-        var rubricVersion = mock(RubricVersion.class);
+        // A 0-9 scale, matching the grade bands declared below. The scale floor is the score given
+        // to a part that has no items -- see resolveScaleFloor.
+        RubricVersion rubricVersion = mock(RubricVersion.class);
         when(rubricVersion.getScoringScaleMin()).thenReturn(new BigDecimal("0.00"));
         when(rubricVersionRepository.findById(rubricVersionId)).thenReturn(Optional.of(rubricVersion));
 
-        var session = new ExamSession();
+        ExamSession session = new ExamSession();
         session.setId(sessionId);
         session.setExamId(examId);
         session.setPaperId(paperId);
         session.setCandidateId(candidateId);
         when(examSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
 
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setAssessmentPolicyId(policyId);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
-        var policy = new AssessmentPolicy();
+        AssessmentPolicy policy = new AssessmentPolicy();
         policy.setId(policyId);
         policy.setRubricVersionId(rubricVersionId);
         when(assessmentPolicyRepository.findById(policyId)).thenReturn(Optional.of(policy));
 
-        // Nói nặng hơn nghe (0.60 / 0.40) — nếu công thức lùi về trung bình cộng thì
-        // trọng số này là thứ để lộ ra ngay.
+        // Speaking carries more weight (0.60 / 0.40) -- if the formula slid back to a plain
+        // average, these weights are what would expose it immediately.
         when(examPaperSectionRepository.findByPaperId(paperId)).thenReturn(List.of(
             section(listeningSectionId, 2, "Listening", new BigDecimal("0.40")),
             section(speakingSectionId, 1, "Speaking", new BigDecimal("0.60"))));
@@ -128,7 +128,7 @@ public class ExamSessionResultCalculatorTests {
     }
 
     private ExamPaperSection section(UUID id, int order, String title, BigDecimal weight) {
-        var section = new ExamPaperSection();
+        ExamPaperSection section = new ExamPaperSection();
         section.setId(id);
         section.setPaperId(paperId);
         section.setOrder(order);
@@ -138,7 +138,7 @@ public class ExamSessionResultCalculatorTests {
     }
 
     private RubricResultBand band(String code, String name, String min, String max, int order) {
-        var resultBand = new RubricResultBand();
+        RubricResultBand resultBand = new RubricResultBand();
         resultBand.setId(UUID.randomUUID());
         resultBand.setRubricVersionId(rubricVersionId);
         resultBand.setCode(code);
@@ -150,7 +150,7 @@ public class ExamSessionResultCalculatorTests {
     }
 
     private ExamItemEvaluation evaluation(UUID responseId, String itemScore, boolean requiresHumanReview) {
-        var evaluation = new ExamItemEvaluation();
+        ExamItemEvaluation evaluation = new ExamItemEvaluation();
         evaluation.setId(UUID.randomUUID());
         evaluation.setResponseId(responseId);
         evaluation.setItemScore(new BigDecimal(itemScore));
@@ -168,10 +168,10 @@ public class ExamSessionResultCalculatorTests {
     void should_weight_items_into_sections_then_sections_into_total() {
         givenStoredScores("6.00", "8.00");
 
-        var result = calculator.calculate(sessionId);
+        ExamSessionResultCalculator.CalculatedExamSessionResult result = calculator.calculate(sessionId);
 
-        // Speaking 6.00*1.00 = 6.00; Listening 8.00*1.00 = 8.00.
-        // Tổng = (6.00*0.60 + 8.00*0.40) / 1.00 = 6.80 — trung bình cộng sẽ ra 7.00.
+        // Speaking 6.00*1.00 = 6.00; Listening 8.00*1.00 = 8.00. Total = (6.00*0.60 + 8.00*0.40) /
+        // 1.00 = 6.80 -- a plain average would give 7.00.
         assertThat(result.totalScore()).isEqualByComparingTo("6.80");
         assertThat(result.sections()).extracting(section -> section.score())
             .containsExactly(new BigDecimal("6.00"), new BigDecimal("8.00"));
@@ -181,7 +181,7 @@ public class ExamSessionResultCalculatorTests {
     void should_order_sections_by_their_declared_order() {
         givenStoredScores("6.00", "8.00");
 
-        var result = calculator.calculate(sessionId);
+        ExamSessionResultCalculator.CalculatedExamSessionResult result = calculator.calculate(sessionId);
 
         assertThat(result.sections()).extracting(section -> section.title())
             .containsExactly("Speaking", "Listening");
@@ -205,10 +205,11 @@ public class ExamSessionResultCalculatorTests {
 
     @Test
     void should_normalize_item_weights_within_a_section() {
-        // Một phần có HAI câu, mỗi câu trọng số 1.00 -- tổng trọng số trong phần là 2.00 chứ không
-        // phải 1.00. Đây đúng hình dạng dữ liệu đề thi thật đang có, và là chỗ lỗi cũ nằm.
-        var secondItemId = UUID.randomUUID();
-        var secondResponseId = UUID.randomUUID();
+        // One part has TWO items, each with weight 1.00 -- so the total weight inside the part is
+        // 2.00, not 1.00. This is exactly the shape of the real exam data, and where the old bug
+        // sits.
+        UUID secondItemId = UUID.randomUUID();
+        UUID secondResponseId = UUID.randomUUID();
         when(examPaperItemRepository.findByPaperId(paperId)).thenReturn(List.of(
             new ExamPaperItem(speakingItemId, null, speakingSectionId, paperId, null, 1, new BigDecimal("1.00")),
             new ExamPaperItem(secondItemId, null, speakingSectionId, paperId, null, 2, new BigDecimal("1.00")),
@@ -222,11 +223,11 @@ public class ExamSessionResultCalculatorTests {
             evaluation(secondResponseId, "8.00", false),
             evaluation(listeningResponseId, "8.00", false)));
 
-        var result = calculator.calculate(sessionId);
+        ExamSessionResultCalculator.CalculatedExamSessionResult result = calculator.calculate(sessionId);
 
-        // Speaking = (6.00*1.00 + 8.00*1.00) / 2.00 = 7.00. Bản cũ không chia, cho 14.00.
-        // Tổng = 7.00*0.60 + 8.00*0.40 = 7.40. Bản cũ cho 11.60 -- vượt trần thang 9.00, và khi đó
-        // KHÔNG dải xếp loại nào khớp.
+        // Speaking = (6.00*1.00 + 8.00*1.00) / 2.00 = 7.00. The old version did not divide and gave
+        // 14.00. Total = 7.00*0.60 + 8.00*0.40 = 7.40. The old version gave 11.60 -- over the 9.00
+        // scale cap, and then NO grade band matches.
         assertThat(result.sections()).extracting(section -> section.score())
             .containsExactly(new BigDecimal("7.00"), new BigDecimal("8.00"));
         assertThat(result.totalScore()).isEqualByComparingTo("7.40");
@@ -240,10 +241,11 @@ public class ExamSessionResultCalculatorTests {
             new ExamPaperItem(listeningItemId, null, listeningSectionId, paperId, null, 1, new BigDecimal("1.00"))));
         givenStoredScores("6.00", "8.00");
 
-        var result = calculator.calculate(sessionId);
+        ExamSessionResultCalculator.CalculatedExamSessionResult result = calculator.calculate(sessionId);
 
-        // Không câu nào trong phần Speaking khai trọng số -> các câu ngang nhau, lấy trung bình
-        // cộng = 6.00. Bản cũ trả về tổng đã nhân, tức 0.00, kéo tổng xuống 3.20.
+        // No item in the Speaking part declares a weight -> the items are equal, so take the plain
+        // average = 6.00. The old version returned the multiplied sum, i.e. 0.00, which dragged the
+        // total down to 3.20.
         assertThat(result.sections()).extracting(section -> section.score())
             .containsExactly(new BigDecimal("6.00"), new BigDecimal("8.00"));
         assertThat(result.totalScore()).isEqualByComparingTo("6.80");
@@ -272,12 +274,12 @@ public class ExamSessionResultCalculatorTests {
     @Test
     void should_preview_the_total_that_calculate_would_return_for_the_overridden_scores() {
         givenStoredScores("6.00", "8.00");
-        var previewed = calculator.preview(sessionId, Map.of(
+        ExamSessionResultCalculator.PreviewedExamSessionResult previewed = calculator.preview(sessionId, Map.of(
             speakingResponseId, new BigDecimal("9.00"),
             listeningResponseId, new BigDecimal("7.00")));
 
-        // Đây là bài kiểm quan trọng nhất của endpoint preview: con số giáo viên thấy
-        // trước khi bấm Nộp phải bằng con số học sinh nhận sau khi nộp.
+        // This is the most important check of the preview endpoint: the number the teacher sees
+        // before clicking Submit must equal the number the student receives after submission.
         givenStoredScores("9.00", "7.00");
         assertThat(previewed.totalScore()).isEqualByComparingTo(calculator.calculate(sessionId).totalScore());
         assertThat(previewed.totalScore()).isEqualByComparingTo("8.20");
@@ -287,8 +289,8 @@ public class ExamSessionResultCalculatorTests {
     void should_fall_back_to_stored_scores_for_parts_not_yet_graded() {
         givenStoredScores("6.00", "8.00");
 
-        // Chấm dở: chỉ nhập Speaking, Listening giữ nguyên điểm AI 8.00.
-        var previewed = calculator.preview(sessionId, Map.of(speakingResponseId, new BigDecimal("9.00")));
+        // Grading in progress: only Speaking is entered, Listening keeps its AI score of 8.00.
+        ExamSessionResultCalculator.PreviewedExamSessionResult previewed = calculator.preview(sessionId, Map.of(speakingResponseId, new BigDecimal("9.00")));
 
         assertThat(previewed.totalScore()).isEqualByComparingTo("8.60");
     }
@@ -297,7 +299,7 @@ public class ExamSessionResultCalculatorTests {
     void should_report_the_result_band_name_for_the_previewed_total() {
         givenStoredScores("6.00", "8.00");
 
-        var previewed = calculator.preview(sessionId, Map.of(
+        ExamSessionResultCalculator.PreviewedExamSessionResult previewed = calculator.preview(sessionId, Map.of(
             speakingResponseId, new BigDecimal("9.00"),
             listeningResponseId, new BigDecimal("9.00")));
 
@@ -308,7 +310,7 @@ public class ExamSessionResultCalculatorTests {
     void should_expose_previewed_item_scores_per_paper_item() {
         givenStoredScores("6.00", "8.00");
 
-        var previewed = calculator.preview(sessionId, Map.of(speakingResponseId, new BigDecimal("9.00")));
+        ExamSessionResultCalculator.PreviewedExamSessionResult previewed = calculator.preview(sessionId, Map.of(speakingResponseId, new BigDecimal("9.00")));
 
         assertThat(previewed.items()).extracting(itemScore -> itemScore.paperItemId())
             .containsExactly(speakingItemId, listeningItemId);

@@ -64,13 +64,13 @@ public class ExamPaperAuthoringAccessService {
     }
 
     public PaperActor resolve(Exam exam, UUID userId) {
-        var role = examMemberRepository.findByExamIdAndUserId(exam.getId(), userId)
+        ExamMemberRole role = examMemberRepository.findByExamIdAndUserId(exam.getId(), userId)
             .map(member -> member.getRole())
             .orElse(null);
         // Bài trên lớp là việc của giáo viên chủ bài, quản trị trường không điều phối (cùng ranh giới
         // mà ExamGradingAccessService dựng cho khâu chấm). Chặn ngay ở đây để mọi use case dùng service
         // này khỏi phải nhớ tự loại trừ.
-        var schoolAdmin = exam.getKind() != ExamKind.CLASS_TEST && isSchoolAdminOfExamSchool(exam, userId);
+        boolean schoolAdmin = exam.getKind() != ExamKind.CLASS_TEST && isSchoolAdminOfExamSchool(exam, userId);
         return new PaperActor(
             schoolAdmin,
             role == ExamMemberRole.CHAIR,
@@ -81,7 +81,7 @@ public class ExamPaperAuthoringAccessService {
 
     /** Ném {@link ForbiddenException} nếu người gọi không được soạn nội dung mã đề của kỳ thi này. */
     public PaperActor requireCanAuthor(Exam exam, UUID userId) {
-        var actor = resolve(exam, userId);
+        PaperActor actor = resolve(exam, userId);
         if (!actor.canAuthor()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
@@ -89,7 +89,7 @@ public class ExamPaperAuthoringAccessService {
     }
 
     private boolean isSchoolAdminOfExamSchool(Exam exam, UUID userId) {
-        var currentSchoolId = schoolUserRepository.findByUserId(userId)
+        UUID currentSchoolId = schoolUserRepository.findByUserId(userId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
         if (currentSchoolId == null || !currentSchoolId.equals(exam.getSchoolId())) {

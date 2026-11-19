@@ -79,7 +79,7 @@ class ExamAppealAccessClassTestTests {
     }
 
     private ExamAppealAccessService.AppealContext context() {
-        var result = new ExamCandidateResult();
+        ExamCandidateResult result = new ExamCandidateResult();
         result.setId(UUID.randomUUID());
         result.setExamId(EXAM_ID);
         return new ExamAppealAccessService.AppealContext(

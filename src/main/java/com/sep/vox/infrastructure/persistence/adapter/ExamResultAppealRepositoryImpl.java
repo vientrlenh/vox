@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamResultAppealJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -32,7 +33,7 @@ public class ExamResultAppealRepositoryImpl implements ExamResultAppealRepositor
 
     @Override
     public ExamResultAppeal save(ExamResultAppeal appeal) {
-        var saved = springDataExamResultAppealRepository.save(ExamResultAppealMapper.toJpa(appeal));
+        ExamResultAppealJpaEntity saved = springDataExamResultAppealRepository.save(ExamResultAppealMapper.toJpa(appeal));
         return ExamResultAppealMapper.toDomain(saved);
     }
 
@@ -60,7 +61,7 @@ public class ExamResultAppealRepositoryImpl implements ExamResultAppealRepositor
 
     @Override
     public long countBySchoolIdAndStatusIn(UUID schoolId, Collection<ExamAppealStatus> statuses) {
-        var statusNames = statuses.stream().map(e -> e.name()).toList();
+        List<String> statusNames = statuses.stream().map(e -> e.name()).toList();
         return springDataExamResultAppealRepository.countBySchoolIdAndStatusIn(schoolId, statusNames);
     }
 

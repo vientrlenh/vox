@@ -27,15 +27,16 @@ public final class SubscriptionPeriodGuards {
     private SubscriptionPeriodGuards() {}
 
     public static SubscriptionPeriodGuardService alwaysWithinPeriod() {
-        var subscription = new SchoolSubscription();
+        SchoolSubscription subscription = new SchoolSubscription();
         subscription.setId(UUID.randomUUID());
-        // ChronoUnit.YEARS/MONTHS KHÔNG dùng được với Instant (ném UnsupportedTemporalTypeException):
-        // Instant không có lịch nên không biết một năm dài bao nhiêu. Đếm bằng ngày -- ý ở đây chỉ là
-        // "một cửa sổ rộng tới mức mọi test đều lọt", nên độ chính xác của năm nhuận không quan trọng.
+        // ChronoUnit.YEARS/MONTHS cannot be used with Instant (throws
+        // UnsupportedTemporalTypeException): an Instant has no calendar, so it does not know how
+        // long a year is. Count in days -- the point here is only "a window wide enough that every
+        // test falls inside it", so leap-year accuracy does not matter.
         subscription.setStartDate(Instant.now().minus(50L * 365, ChronoUnit.DAYS));
         subscription.setEndDate(Instant.now().plus(50L * 365, ChronoUnit.DAYS));
 
-        var repository = mock(SchoolSubscriptionRepository.class);
+        SchoolSubscriptionRepository repository = mock(SchoolSubscriptionRepository.class);
         when(repository.findActiveBySchoolId(any())).thenReturn(Optional.of(subscription));
         return new SubscriptionPeriodGuardService(repository);
     }

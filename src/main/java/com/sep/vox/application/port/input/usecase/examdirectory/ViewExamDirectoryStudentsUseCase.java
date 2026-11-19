@@ -34,8 +34,8 @@ public class ViewExamDirectoryStudentsUseCase
     @Override
     @Transactional(readOnly = true)
     public PageResult<ExamDirectoryUserInfo> execute(ViewExamDirectoryQuery input) {
-        var scope = examDirectoryAccessService.resolveByExamId(input.examId());
-        var search = StringNormalization.trimAndCollapseSpaces(input.search());
+        ExamDirectoryAccessService.ExamDirectoryScope scope = examDirectoryAccessService.resolveByExamId(input.examId());
+        String search = StringNormalization.trimAndCollapseSpaces(input.search());
 
         if (scope.schoolWide()) {
             return examDirectoryQueryRepository.findUsersBySchoolId(

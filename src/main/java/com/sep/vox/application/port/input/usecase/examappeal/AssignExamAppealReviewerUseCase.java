@@ -1,6 +1,9 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamResultAppeal;
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -76,11 +79,11 @@ public class AssignExamAppealReviewerUseCase implements IUseCase<AssignExamAppea
     @Override
     @Transactional
     public UUID execute(AssignExamAppealReviewerCommand command) {
-        var currentUserId = examAppealAccessService.requireActiveUserId();
-        var context = examAppealAccessService.load(command.appealId());
+        UUID currentUserId = examAppealAccessService.requireActiveUserId();
+        ExamAppealAccessService.AppealContext context = examAppealAccessService.load(command.appealId());
         examAppealAccessService.authorizeSchoolAdminOrClassTestChair(context, currentUserId);
 
-        var appeal = context.appeal();
+        ExamResultAppeal appeal = context.appeal();
         if (appeal.getStatus() != ExamAppealStatus.APPROVED) {
             throw new IllegalStateException("Chỉ có thể phân công người chấm cho đơn phúc khảo đã được duyệt.");
         }
@@ -94,7 +97,7 @@ public class AssignExamAppealReviewerUseCase implements IUseCase<AssignExamAppea
             throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
         }
 
-        var candidateResult = context.candidateResult();
+        ExamCandidateResult candidateResult = context.candidateResult();
         // Bài đang có phân công khác chưa đóng thì không mở thêm được — unique index
         // trên active_result_id sẽ chặn, nhưng báo lỗi ở đây mới đọc được.
         if (examGradingAssignmentRepository.findOpenByCandidateResultId(candidateResult.getId()).isPresent()) {
@@ -105,8 +108,8 @@ public class AssignExamAppealReviewerUseCase implements IUseCase<AssignExamAppea
         // đây gần như chắc chắn bắn — và đó là chủ ý. Chỉ khi họ ĐÃ chấm tay bài này
         // (REGRADED sinh evaluation HUMAN) mới cần lý do; chỉ UPHELD thì không sinh
         // evaluation nên không có gì để xung đột.
-        var overrideReason = normalize(command.overrideReason());
-        var conflicted = examGradingQueryRepository.findTeacherIdsWithHumanEvaluation(candidateResult.getId());
+        String overrideReason = normalize(command.overrideReason());
+        Set<UUID> conflicted = examGradingQueryRepository.findTeacherIdsWithHumanEvaluation(candidateResult.getId());
         if (conflicted.contains(command.reviewerId())) {
             if (overrideReason == null) {
                 throw new IllegalArgumentException(
@@ -116,13 +119,13 @@ public class AssignExamAppealReviewerUseCase implements IUseCase<AssignExamAppea
             appeal.setReviewerOverrideReason(overrideReason);
         }
 
-        var now = Instant.now();
-        var deadlineAt = command.deadlineAt() == null ? appeal.getDeadline() : command.deadlineAt();
+        Instant now = Instant.now();
+        Instant deadlineAt = command.deadlineAt() == null ? appeal.getDeadline() : command.deadlineAt();
         if (deadlineAt != null && deadlineAt.isBefore(now)) {
             throw new IllegalArgumentException("Hạn chấm phải ở tương lai.");
         }
 
-        var assignment = examGradingAssignmentRepository.save(ExamGradingAssignment.open(
+        ExamGradingAssignment assignment = examGradingAssignmentRepository.save(ExamGradingAssignment.open(
             candidateResult.getId(),
             command.reviewerId(),
             GradingRoundType.APPEAL,
@@ -136,7 +139,7 @@ public class AssignExamAppealReviewerUseCase implements IUseCase<AssignExamAppea
         appeal.setStatus(ExamAppealStatus.GRADING);
         examResultAppealRepository.save(appeal);
 
-        var before = resultStatusHistoryRecorder.snapshot(candidateResult);
+        ResultStatusHistoryRecorder.Snapshot before = resultStatusHistoryRecorder.snapshot(candidateResult);
         candidateResult.setStatus(ExamCandidateResultStatus.RE_GRADING);
         candidateResult.setUpdatedAt(now);
         candidateResult.setUpdatedBy(currentUserId);
@@ -147,7 +150,7 @@ public class AssignExamAppealReviewerUseCase implements IUseCase<AssignExamAppea
         // Học sinh biết đơn đã được nhận và đang được chấm lại — mốc thông tin quan
         // trọng nhất giữa lúc nộp đơn và lúc có kết quả. Ghi outbox trong chính
         // transaction phân công để mail và phân công cùng sống hoặc cùng chết.
-        var payload = new ExamAppealApprovedPayloadV1(
+        ExamAppealApprovedPayloadV1 payload = new ExamAppealApprovedPayloadV1(
             appeal.getId(), context.studentId(), context.examName(), deadlineAt);
         outboxRepository.save(Outbox.create(
             AggregateTypeConstant.EXAM_RESULT_APPEAL,

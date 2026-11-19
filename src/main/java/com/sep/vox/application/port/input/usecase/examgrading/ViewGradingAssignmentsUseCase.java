@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,8 +38,8 @@ public class ViewGradingAssignmentsUseCase
     @Override
     @Transactional(readOnly = true)
     public PageResult<GradingAssignmentRowInfo> execute(SearchGradingAssignmentsQuery input) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        UUID schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
         return examGradingQueryRepository.searchAssignments(new GradingAssignmentFilter(
             schoolId,
             input.examId(),

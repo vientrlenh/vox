@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import java.util.List;
 import java.util.UUID;
 
@@ -59,13 +61,13 @@ public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<Resul
     @Override
     @Transactional(readOnly = true)
     public List<ResultStatusHistoryInfo> execute(UUID candidateResultId) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var result = examCandidateResultRepository.findById(candidateResultId)
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        ExamCandidateResult result = examCandidateResultRepository.findById(candidateResultId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kết quả bài thi."));
 
         // Chính chủ bài thi luôn xem được lịch sử của mình — kiểm trước để học sinh
         // không phải đi qua nhánh phân quyền admin và nhận ForbiddenException.
-        var isOwner = examCandidateRepository.findById(result.getCandidateId())
+        Boolean isOwner = examCandidateRepository.findById(result.getCandidateId())
             .map(candidate -> currentUserId.equals(candidate.getStudentId()))
             .orElse(false);
         // Dòng thời gian mang scoreBefore/scoreAfter — với chính chủ nó chính là điểm, nên
@@ -86,12 +88,12 @@ public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<Resul
             //
             // Đây là quyền ĐỌC. Mọi thao tác GHI điểm vẫn đi qua
             // ExamGradingAccessService.authorizeAssignedTeacher trên đúng dòng đang mở.
-            var wasAssignedTeacher = examGradingAssignmentRepository
+            boolean wasAssignedTeacher = examGradingAssignmentRepository
                 .existsByCandidateResultIdAndTeacherId(candidateResultId, currentUserId);
             if (wasAssignedTeacher) {
                 return examResultAuditQueryRepository.findHistory(candidateResultId);
             }
-            var exam = examRepository.findById(result.getExamId())
+            Exam exam = examRepository.findById(result.getExamId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
             examGradingAccessService.authorizeSchoolAdmin(exam.getSchoolId(), currentUserId);
         }

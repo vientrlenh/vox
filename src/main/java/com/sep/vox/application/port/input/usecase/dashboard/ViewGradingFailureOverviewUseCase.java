@@ -1,6 +1,9 @@
 package com.sep.vox.application.port.input.usecase.dashboard;
 
+import com.sep.vox.application.query.dto.GradingFailureGroupDto;
+import com.sep.vox.application.query.dto.GradingFailureTotalsDto;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -39,15 +42,15 @@ public class ViewGradingFailureOverviewUseCase
     @Override
     @Transactional(readOnly = true)
     public GradingFailureOverviewResponse execute(ViewGradingFailureOverviewQuery input) {
-        var window = GradingFailureWindow.resolve(input == null ? null : input.dateFrom(),
+        GradingFailureWindow window = GradingFailureWindow.resolve(input == null ? null : input.dateFrom(),
             input == null ? null : input.dateTo());
 
         if (window.isEmpty()) {
             return new GradingFailureOverviewResponse(0L, 0L, 0L, 0L, List.of(), 0L);
         }
 
-        var totals = gradingFailureQueryRepository.countTotals(window.from(), window.to());
-        var groups = gradingFailureQueryRepository.findGroups(window.from(), window.to(), MAX_GROUPS);
+        GradingFailureTotalsDto totals = gradingFailureQueryRepository.countTotals(window.from(), window.to());
+        List<GradingFailureGroupDto> groups = gradingFailureQueryRepository.findGroups(window.from(), window.to(), MAX_GROUPS);
 
         return new GradingFailureOverviewResponse(
             totals.sessionCount(),
@@ -69,9 +72,9 @@ public class ViewGradingFailureOverviewUseCase
     record GradingFailureWindow(Instant from, Instant to) {
 
         static GradingFailureWindow resolve(Instant dateFrom, Instant dateTo) {
-            var zone = ZoneConstant.BUSINESS_ZONE;
-            var to = dateTo == null ? Instant.now() : dateTo;
-            var from = dateFrom == null
+            ZoneId zone = ZoneConstant.BUSINESS_ZONE;
+            Instant to = dateTo == null ? Instant.now() : dateTo;
+            Instant from = dateFrom == null
                 ? to.atZone(zone).toLocalDate()
                     .minusDays(ViewPlatformOperationalHealthUseCase.DEFAULT_WINDOW_DAYS - 1L)
                     .atStartOfDay(zone).toInstant()

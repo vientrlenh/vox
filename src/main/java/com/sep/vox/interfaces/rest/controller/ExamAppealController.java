@@ -1,5 +1,9 @@
 package com.sep.vox.interfaces.rest.controller;
 
+import com.sep.vox.application.port.input.command.ApproveExamAppealCommand;
+import com.sep.vox.application.port.input.command.AssignExamAppealReviewerCommand;
+import com.sep.vox.application.port.input.command.CreateExamAppealCommand;
+import com.sep.vox.application.port.input.command.RejectExamAppealCommand;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -66,8 +70,8 @@ public class ExamAppealController {
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ApiResponse<UUID>> createAppeal(
             @Valid @RequestBody CreateExamAppealRequest request) {
-        var command = ExamAppealCommandMapper.fromRequest(request);
-        var appealId = createExamAppealUseCase.execute(command);
+        CreateExamAppealCommand command = ExamAppealCommandMapper.fromRequest(request);
+        UUID appealId = createExamAppealUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Gửi đơn phúc khảo thành công!", appealId));
     }
@@ -86,8 +90,8 @@ public class ExamAppealController {
     public ResponseEntity<ApiResponse<UUID>> approveAppeal(
             @PathVariable("appealId") UUID appealId,
             @Valid @RequestBody ApproveExamAppealRequest request) {
-        var command = ExamAppealCommandMapper.fromRequest(appealId, request);
-        var responseId = approveExamAppealUseCase.execute(command);
+        ApproveExamAppealCommand command = ExamAppealCommandMapper.fromRequest(appealId, request);
+        UUID responseId = approveExamAppealUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Duyệt đơn phúc khảo thành công!", responseId));
     }
 
@@ -106,8 +110,8 @@ public class ExamAppealController {
     public ResponseEntity<ApiResponse<UUID>> rejectAppeal(
             @PathVariable("appealId") UUID appealId,
             @Valid @RequestBody RejectExamAppealRequest request) {
-        var command = ExamAppealCommandMapper.fromRequest(appealId, request);
-        var responseId = rejectExamAppealUseCase.execute(command);
+        RejectExamAppealCommand command = ExamAppealCommandMapper.fromRequest(appealId, request);
+        UUID responseId = rejectExamAppealUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Từ chối đơn phúc khảo thành công!", responseId));
     }
 
@@ -118,8 +122,8 @@ public class ExamAppealController {
     public ResponseEntity<ApiResponse<UUID>> assignReviewer(
             @PathVariable("appealId") UUID appealId,
             @Valid @RequestBody AssignExamAppealReviewerRequest request) {
-        var command = ExamAppealCommandMapper.fromRequest(appealId, request);
-        var assignmentId = assignExamAppealReviewerUseCase.execute(command);
+        AssignExamAppealReviewerCommand command = ExamAppealCommandMapper.fromRequest(appealId, request);
+        UUID assignmentId = assignExamAppealReviewerUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Phân công người chấm phúc khảo thành công!", assignmentId));
     }
 }

@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.rest.controller;
 
+import com.sep.vox.application.port.input.command.ApproveRegisterFormCommand;
+import com.sep.vox.application.port.input.command.RejectRegisterFormCommand;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -35,9 +37,9 @@ public class RegisterFormController {
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Object>> approve(@PathVariable("id") UUID id, @Valid @RequestBody ApproveRegisterFormRequest request) {
-        var command = ApproveRegisterFormCommandMapper.fromRequest(id, request);
+        ApproveRegisterFormCommand command = ApproveRegisterFormCommandMapper.fromRequest(id, request);
         approveRegisterFormUseCase.execute(command);
-        var response = ApiResponse.success("Đơn đăng ký đã được phê duyệt");
+        ApiResponse<Object> response = ApiResponse.success("Đơn đăng ký đã được phê duyệt");
         return ResponseEntity.ok(response);
     }
 
@@ -45,9 +47,9 @@ public class RegisterFormController {
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Object>> reject(@PathVariable("id") UUID id, @Valid @RequestBody RejectRegisterFormRequest request) {
-        var command = RejectRegisterFormCommandMapper.fromRequest(id, request);
+        RejectRegisterFormCommand command = RejectRegisterFormCommandMapper.fromRequest(id, request);
         rejectRegisterFormUseCase.execute(command);
-        var response = ApiResponse.success("Đơn đăng ký đã từ chối thành công");
+        ApiResponse<Object> response = ApiResponse.success("Đơn đăng ký đã từ chối thành công");
         return ResponseEntity.ok(response);
     }
 }

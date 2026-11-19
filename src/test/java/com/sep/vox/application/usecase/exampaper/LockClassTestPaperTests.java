@@ -19,6 +19,7 @@ import com.sep.vox.application.port.input.service.ExamPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.ExamTimeQuotaGuardService;
 import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperStatusUseCase;
 import com.sep.vox.application.port.input.service.ExamPaperAuthoringAccessService;
+import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.model.exam.ExamMember;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -57,8 +58,8 @@ class LockClassTestPaperTests {
         examPaperRepository = mock(ExamPaperRepository.class);
         examPaperItemRepository = mock(ExamPaperItemRepository.class);
         examMemberRepository = mock(ExamMemberRepository.class);
-        var examRepository = mock(ExamRepository.class);
-        var userContextPort = mock(UserContextPort.class);
+        ExamRepository examRepository = mock(ExamRepository.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
 
         useCase = new UpdateExamPaperStatusUseCase(
             examPaperRepository,
@@ -80,12 +81,15 @@ class LockClassTestPaperTests {
         when(examPaperRepository.save(any(ExamPaper.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
-    /** Chốt hồi quy: người soạn đề chính là người khoá đề, và điều đó phải được phép. */
+    /**
+     * Regression guard: the person who drafted the paper is the person who locks it, and that must
+     * be allowed.
+     */
     @Test
     void should_let_the_authoring_chair_lock_the_paper_in_one_step() {
         when(examPaperRepository.findById(PAPER_ID)).thenReturn(Optional.of(paper(ExamPaperStatus.DRAFT)));
 
-        var result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "LOCK", null));
+        ExamPaperDto result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "LOCK", null));
 
         assertThat(result.status()).isEqualTo(ExamPaperStatus.LOCKED.name());
     }
@@ -110,18 +114,21 @@ class LockClassTestPaperTests {
             .hasMessageContaining("Quyền truy cập bị từ chối");
     }
 
-    /** Mở lại để sửa nội dung rồi khoá lần nữa — cũng không qua luồng duyệt. */
+    /**
+     * Reopened to edit the content and then locked again -- this also does not go through the
+     * review flow.
+     */
     @Test
     void should_let_the_authoring_chair_reopen_a_locked_paper() {
         when(examPaperRepository.findById(PAPER_ID)).thenReturn(Optional.of(paper(ExamPaperStatus.LOCKED)));
 
-        var result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "REOPEN", null));
+        ExamPaperDto result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "REOPEN", null));
 
         assertThat(result.status()).isEqualTo(ExamPaperStatus.DRAFT.name());
     }
 
     private Exam classTest() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(EXAM_ID);
         exam.setKind(ExamKind.CLASS_TEST);
         exam.setSchoolId(SCHOOL_ID);
@@ -129,11 +136,12 @@ class LockClassTestPaperTests {
     }
 
     private ExamPaper paper(ExamPaperStatus status) {
-        var paper = new ExamPaper();
+        ExamPaper paper = new ExamPaper();
         paper.setId(PAPER_ID);
         paper.setExamId(EXAM_ID);
         paper.setStatus(status);
-        // Giáo viên tạo bài cũng là người soạn đề — chính là ca requireNotAuthor sẽ chặn.
+        // The teacher who created the test is also the one who drafted the paper -- exactly the
+        // case requireNotAuthor would block.
         paper.setCreatedBy(TEACHER_ID);
         return paper;
     }

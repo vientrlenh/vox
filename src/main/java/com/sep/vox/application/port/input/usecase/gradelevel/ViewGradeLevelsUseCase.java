@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.gradelevel;
 
+import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -47,10 +48,10 @@ public class ViewGradeLevelsUseCase implements IUseCase<ViewGradeLevelsQuery, Pa
 
         // Mặc định ẩn Khối đã xóa mềm: khi không lọc theo trạng thái thì chỉ trả về ACTIVE.
         // Admin vẫn xem được Khối đã xóa bằng cách truyền status=INACTIVE.
-        var status = parseStatus(input.status());
-        var effectiveStatus = status == null ? GradeLevelStatus.ACTIVE : status;
+        GradeLevelStatus status = parseStatus(input.status());
+        GradeLevelStatus effectiveStatus = status == null ? GradeLevelStatus.ACTIVE : status;
 
-        var result = gradeLevelRepository.findAll(
+        PageResult<GradeLevel> result = gradeLevelRepository.findAll(
             StringNormalization.trimAndCollapseSpaces(input.search()),
             effectiveStatus,
             input.page(),
@@ -66,7 +67,7 @@ public class ViewGradeLevelsUseCase implements IUseCase<ViewGradeLevelsQuery, Pa
     }
 
     private GradeLevelStatus parseStatus(String status) {
-        var normalized = StringNormalization.trimAndCollapseSpaces(status);
+        String normalized = StringNormalization.trimAndCollapseSpaces(status);
         if (normalized == null) {
             return null;
         }

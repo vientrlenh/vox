@@ -29,6 +29,7 @@ import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.RoundRobinLoadBalancer;
 import com.sep.vox.application.port.input.usecase.examgrading.ReclaimOverdueAssignmentsUseCase;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
+import com.sep.vox.application.response.input.examgrading.ReclaimOverdueResponse;
 import com.sep.vox.domain.model.exam.ExamAppealStatus;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.ExamResultAppeal;
@@ -83,8 +84,8 @@ class ReclaimOverdueAssignmentsUseCaseTests {
     }
 
     private ExamGradingAssignment overdue(GradingRoundType roundType, UUID linkedAppealId) {
-        var now = Instant.now();
-        var assignment = ExamGradingAssignment.open(
+        Instant now = Instant.now();
+        ExamGradingAssignment assignment = ExamGradingAssignment.open(
             candidateResultId, UUID.randomUUID(), roundType, linkedAppealId, null,
             now.minus(3, ChronoUnit.DAYS), adminId, now.minus(1, ChronoUnit.DAYS));
         assignment.setId(UUID.randomUUID());
@@ -114,7 +115,7 @@ class ReclaimOverdueAssignmentsUseCaseTests {
 
     @Test
     void should_keep_the_appeal_in_grading_when_a_replacement_takes_over_immediately() {
-        var replacement = UUID.randomUUID();
+        UUID replacement = UUID.randomUUID();
         givenOverdue(overdue(GradingRoundType.APPEAL, appealId));
         when(examGradingQueryRepository.findTeacherIdsInSchool(schoolId, List.of(replacement)))
             .thenReturn(Set.of(replacement));
@@ -122,23 +123,24 @@ class ReclaimOverdueAssignmentsUseCaseTests {
 
         useCase.execute(reclaimAll(List.of(replacement)));
 
-        // Dòng mới mở ngay với cùng appealId trong cùng transaction, nên GRADING vẫn
-        // đúng — nhả rồi kéo lại chỉ tạo một khoảng trạng thái sai ở giữa.
+        // The new row is opened right away with the same appealId in the same transaction, so
+        // GRADING is still correct -- releasing and then pulling it back would only create a wrong
+        // in-between state.
         assertThat(appeal.getStatus()).isEqualTo(ExamAppealStatus.GRADING);
         verify(examResultAppealRepository, never()).save(any());
     }
 
     @Test
     void should_reject_a_replacement_who_already_graded_the_paper_under_appeal() {
-        var conflicted = UUID.randomUUID();
+        UUID conflicted = UUID.randomUUID();
         givenOverdue(overdue(GradingRoundType.APPEAL, appealId));
         when(examGradingQueryRepository.findTeacherIdsInSchool(schoolId, List.of(conflicted)))
             .thenReturn(Set.of(conflicted));
         when(examGradingQueryRepository.findTeacherIdsWithHumanEvaluation(candidateResultId))
             .thenReturn(Set.of(conflicted));
 
-        // Cùng luật COI mà ReassignGradingUseCase đã áp cho đổi người từng dòng: giao
-        // lại hàng loạt không được là cửa sau để lách nó.
+        // The same COI rule that ReassignGradingUseCase already applies to changing the person row
+        // by row: bulk reassignment must not be a back door around it.
         assertThatThrownBy(() -> useCase.execute(reclaimAll(List.of(conflicted))))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đã từng chấm");
@@ -148,7 +150,7 @@ class ReclaimOverdueAssignmentsUseCaseTests {
 
     @Test
     void should_allow_a_clean_replacement_for_an_appeal_round() {
-        var replacement = UUID.randomUUID();
+        UUID replacement = UUID.randomUUID();
         givenOverdue(overdue(GradingRoundType.APPEAL, appealId));
         when(examGradingQueryRepository.findTeacherIdsInSchool(schoolId, List.of(replacement)))
             .thenReturn(Set.of(replacement));
@@ -161,7 +163,7 @@ class ReclaimOverdueAssignmentsUseCaseTests {
 
     @Test
     void should_not_ask_about_conflicts_when_no_appeal_round_is_involved() {
-        var replacement = UUID.randomUUID();
+        UUID replacement = UUID.randomUUID();
         givenOverdue(overdue(GradingRoundType.INITIAL, null));
         when(examGradingQueryRepository.findTeacherIdsInSchool(schoolId, List.of(replacement)))
             .thenReturn(Set.of(replacement));
@@ -169,7 +171,8 @@ class ReclaimOverdueAssignmentsUseCaseTests {
 
         useCase.execute(reclaimAll(List.of(replacement)));
 
-        // Ba vòng còn lại không có luật COI — hỏi thừa là thêm query cho mọi lượt thu hồi.
+        // The other three rounds have no COI rule -- asking anyway would add a query to every
+        // reclaim.
         verify(examGradingQueryRepository, never()).findTeacherIdsWithHumanEvaluation(any());
     }
 
@@ -185,7 +188,7 @@ class ReclaimOverdueAssignmentsUseCaseTests {
 
     @Test
     void should_still_close_the_reclaimed_assignment_as_declined() {
-        var assignment = overdue(GradingRoundType.APPEAL, appealId);
+        ExamGradingAssignment assignment = overdue(GradingRoundType.APPEAL, appealId);
         givenOverdue(assignment);
 
         useCase.execute(reclaimAll(null));
@@ -197,18 +200,20 @@ class ReclaimOverdueAssignmentsUseCaseTests {
 
     @Test
     void should_cap_one_batch_and_tell_the_admin_there_is_more_to_do() {
-        var tooMany = IntStream.range(0, 501)
+        ExamGradingAssignment[] tooMany = IntStream.range(0, 501)
             .mapToObj(ignored -> overdue(GradingRoundType.INITIAL, null))
             .toArray(ExamGradingAssignment[]::new);
         givenOverdue(tooMany);
 
-        var response = useCase.execute(reclaimAll(null));
+        ReclaimOverdueResponse response = useCase.execute(reclaimAll(null));
 
-        // Một cú bấm "Thu hồi toàn bộ" không được ôm cả trường vào một transaction ghi;
-        // cờ hasMore là thứ cho admin biết cần bấm tiếp thay vì tưởng đã xong.
+        // A single click on "Reclaim all" must not take the whole school into one write
+        // transaction; the hasMore flag is what tells the admin they need to click again instead of
+        // assuming it is finished.
         assertThat(response.reclaimedAssignmentIds()).hasSize(500);
         assertThat(response.hasMore()).isTrue();
-        // Lấy dư đúng MỘT dòng là đủ để biết còn nữa — không cần thêm câu COUNT.
+        // Fetching exactly ONE extra row is enough to know there is more -- no need for an
+        // additional COUNT query.
         verify(examGradingAssignmentRepository).findOverdueInSchool(any(), any(), any(), eq(501));
     }
 

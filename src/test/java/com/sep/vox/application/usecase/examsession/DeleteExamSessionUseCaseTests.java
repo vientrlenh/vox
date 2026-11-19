@@ -86,7 +86,7 @@ public class DeleteExamSessionUseCaseTests {
             examResultAppealRepository
         );
 
-        var session = new ExamSession();
+        ExamSession session = new ExamSession();
         session.setId(sessionId);
         session.setExamId(examId);
         when(examSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
@@ -98,7 +98,7 @@ public class DeleteExamSessionUseCaseTests {
         exam.setStatus(ExamStatus.IN_PROGRESS);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
-        // SCHOOL_ADMIN cùng trường với bài thi — nhánh cho phép xoá.
+        // A SCHOOL_ADMIN of the same school as the exam -- the branch that allows deletion.
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(adminId);
         when(schoolUserRepository.findByUserId(adminId))
             .thenReturn(Optional.of(new SchoolUser(schoolId, adminId, null, null)));
@@ -116,7 +116,7 @@ public class DeleteExamSessionUseCaseTests {
     void should_soft_delete_the_session_with_its_reason() {
         delete("Vào phòng thi lỗi, phải thi lại");
 
-        var reason = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> reason = ArgumentCaptor.forClass(String.class);
         verify(examSessionRepository).softDelete(eq(sessionId), any(Instant.class), reason.capture());
         assertThat(reason.getValue()).isEqualTo("Vào phòng thi lỗi, phải thi lại");
     }
@@ -231,12 +231,12 @@ public class DeleteExamSessionUseCaseTests {
     }
 
     /**
-     * Đơn phúc khảo đang mở là tranh chấp điểm học sinh đã chính thức nêu — xoá bài lúc này để đơn
-     * treo trỏ vào một dòng đã ẩn.
+     * An open appeal is a score dispute the student has formally raised -- deleting the submission
+     * now would leave the pending appeal pointing at a hidden row.
      */
     @Test
     void should_refuse_when_the_result_has_an_open_appeal() {
-        var result = new ExamCandidateResult();
+        ExamCandidateResult result = new ExamCandidateResult();
         result.setId(UUID.randomUUID());
         when(examCandidateResultRepository.findBySessionId(sessionId)).thenReturn(Optional.of(result));
         when(examResultAppealRepository.existsOpenByCandidateResultId(result.getId())).thenReturn(true);
@@ -250,7 +250,7 @@ public class DeleteExamSessionUseCaseTests {
 
     @Test
     void should_allow_when_the_result_has_no_open_appeal() {
-        var result = new ExamCandidateResult();
+        ExamCandidateResult result = new ExamCandidateResult();
         result.setId(UUID.randomUUID());
         when(examCandidateResultRepository.findBySessionId(sessionId)).thenReturn(Optional.of(result));
         when(examResultAppealRepository.existsOpenByCandidateResultId(result.getId())).thenReturn(false);

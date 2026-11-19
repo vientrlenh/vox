@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.InvoiceJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -28,8 +29,8 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
 
     @Override
     public Invoice save(Invoice invoice) {
-        var entity = InvoiceMapper.toJpa(invoice);
-        var saved = springDataInvoiceRepository.save(entity);
+        InvoiceJpaEntity entity = InvoiceMapper.toJpa(invoice);
+        InvoiceJpaEntity saved = springDataInvoiceRepository.save(entity);
         return InvoiceMapper.toDomain(saved);
     }
 

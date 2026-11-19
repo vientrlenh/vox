@@ -105,7 +105,7 @@ public class ConfidenceReviewCalculator {
             ConfidenceMode mode,
             BigDecimal codeSwitchingRatio,
             boolean isShortAnswer) {
-        var profile = profile(mode);
+        ThresholdProfile profile = profile(mode);
         boolean hasCodeSwitch = codeSwitchingRatio != null
             && codeSwitchingRatio.compareTo(BigDecimal.ZERO) > 0;
         if (signals == null) {

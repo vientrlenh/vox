@@ -47,13 +47,13 @@ public class QuestionBankController {
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         validatePage(page, size);
-        var query = new ViewQuestionBanksQuery(ownerType, status, languageId, schoolId, schoolGradeId, keyword, page, size);
+        ViewQuestionBanksQuery query = new ViewQuestionBanksQuery(ownerType, status, languageId, schoolId, schoolGradeId, keyword, page, size);
         return viewQuestionBanksUseCase.execute(query);
     }
 
     @QueryMapping(name = "questionBank")
     public QuestionBankDto questionBank(@Argument(name = "id") UUID id) {
-        var query = new ViewQuestionBankDetailsQuery(id);
+        ViewQuestionBankDetailsQuery query = new ViewQuestionBankDetailsQuery(id);
         return viewQuestionBankDetailsUseCase.execute(query);
     }
 

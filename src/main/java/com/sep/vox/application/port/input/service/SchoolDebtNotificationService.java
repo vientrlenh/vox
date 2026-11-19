@@ -73,9 +73,9 @@ public class SchoolDebtNotificationService {
             UUID triggerExamSessionId, UUID triggerPracticeSessionId,
             BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd,
             BigDecimal overageVnd, BigDecimal capVnd, Instant now) {
-        var systemAdminIds = userRoleRepository.findActiveUserIdsByRoleCode(RoleConstant.SYSTEM_ADMIN_ROLE);
+        List<UUID> systemAdminIds = userRoleRepository.findActiveUserIdsByRoleCode(RoleConstant.SYSTEM_ADMIN_ROLE);
 
-        var payload = jsonSerializationPort.toJson(new SchoolDebtCapExceededPayloadV1(
+        String payload = jsonSerializationPort.toJson(new SchoolDebtCapExceededPayloadV1(
             systemAdminIds, schoolId, subscriptionId, quotaType, overageVnd, capVnd, now
         ));
 
@@ -105,9 +105,9 @@ public class SchoolDebtNotificationService {
             UUID subscriptionId, UUID schoolId, QuotaType quotaType,
             UUID triggerExamSessionId, UUID triggerPracticeSessionId,
             BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd, BigDecimal debtVnd, Instant now) {
-        var schoolAdminIds = schoolAdminIdsOf(schoolId);
+        List<UUID> schoolAdminIds = schoolAdminIdsOf(schoolId);
 
-        var payload = jsonSerializationPort.toJson(new SchoolLockedDueToDebtPayloadV1(
+        String payload = jsonSerializationPort.toJson(new SchoolLockedDueToDebtPayloadV1(
             schoolAdminIds, schoolId, subscriptionId, now
         ));
 
@@ -130,9 +130,9 @@ public class SchoolDebtNotificationService {
      * bỏ trống ở dòng CLEARED, có chk_school_debt_events_shape_matches_event_type canh (V4).
      */
     public void publishSchoolDebtCleared(UUID subscriptionId, UUID schoolId, Instant now) {
-        var schoolAdminIds = schoolAdminIdsOf(schoolId);
+        List<UUID> schoolAdminIds = schoolAdminIdsOf(schoolId);
 
-        var payload = jsonSerializationPort.toJson(new SchoolDebtClearedPayloadV1(
+        String payload = jsonSerializationPort.toJson(new SchoolDebtClearedPayloadV1(
             schoolAdminIds, schoolId, subscriptionId, now
         ));
 

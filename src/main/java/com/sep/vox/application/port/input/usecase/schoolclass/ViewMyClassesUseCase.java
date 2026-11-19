@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
+import com.sep.vox.domain.model.school.SchoolClass;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,9 +30,9 @@ public class ViewMyClassesUseCase implements IUseCase<ViewMyClassesQuery, PageRe
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolClassDto> execute(ViewMyClassesQuery input) {
-        var callerId = myClassAccessGuard.requireSchoolMembership(input.schoolId());
+        UUID callerId = myClassAccessGuard.requireSchoolMembership(input.schoolId());
 
-        var schoolClassesPage = schoolClassRepository.findByUserId(
+        PageResult<SchoolClass> schoolClassesPage = schoolClassRepository.findByUserId(
             input.schoolId(),
             callerId,
             StringNormalization.trimAndCollapseSpaces(input.search()),
@@ -43,7 +45,7 @@ public class ViewMyClassesUseCase implements IUseCase<ViewMyClassesQuery, PageRe
     }
 
     private SchoolClassStatus parseStatus(String status) {
-        var normalized = StringNormalization.trimAndCollapseSpaces(status);
+        String normalized = StringNormalization.trimAndCollapseSpaces(status);
         if (normalized == null) {
             return null;
         }

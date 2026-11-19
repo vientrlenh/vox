@@ -42,7 +42,7 @@ class ExamCandidateResultFinalizationServiceTests {
     }
 
     private ExamCandidateResult releasedResult() {
-        var result = new ExamCandidateResult();
+        ExamCandidateResult result = new ExamCandidateResult();
         result.setId(resultId);
         result.setSessionId(sessionId);
         result.setStatus(ExamCandidateResultStatus.RELEASED);
@@ -50,7 +50,7 @@ class ExamCandidateResultFinalizationServiceTests {
     }
 
     private ExamResultAppeal appeal(ExamAppealStatus status) {
-        var appeal = new ExamResultAppeal();
+        ExamResultAppeal appeal = new ExamResultAppeal();
         appeal.setId(UUID.randomUUID());
         appeal.setCandidateResultId(resultId);
         appeal.setStatus(status);
@@ -65,9 +65,9 @@ class ExamCandidateResultFinalizationServiceTests {
 
         service.invalidateNow(sessionId, actingUserId);
 
-        var captor = ArgumentCaptor.forClass(ExamCandidateResult.class);
+        ArgumentCaptor<ExamCandidateResult> captor = ArgumentCaptor.forClass(ExamCandidateResult.class);
         verify(examCandidateResultRepository).save(captor.capture());
-        var saved = captor.getValue();
+        ExamCandidateResult saved = captor.getValue();
         assertThat(saved.getStatus()).isEqualTo(ExamCandidateResultStatus.INVALID);
         assertThat(saved.getTotalScore()).isEqualByComparingTo("0.00");
     }
@@ -76,13 +76,14 @@ class ExamCandidateResultFinalizationServiceTests {
     void should_close_open_appeals_when_result_is_invalidated() {
         when(examCandidateResultRepository.findBySessionId(sessionId))
             .thenReturn(Optional.of(releasedResult()));
-        var openAppeal = appeal(ExamAppealStatus.GRADING);
+        ExamResultAppeal openAppeal = appeal(ExamAppealStatus.GRADING);
         when(examResultAppealRepository.findByCandidateResultId(resultId))
             .thenReturn(List.of(openAppeal));
 
         service.invalidateNow(sessionId, actingUserId);
 
-        // Đơn phúc khảo đang mở phải bị đóng (REJECTED) để không thể publish "hồi sinh" bài.
+        // An open appeal must be closed (REJECTED) so that publishing cannot "resurrect" the
+        // submission.
         assertThat(openAppeal.getStatus()).isEqualTo(ExamAppealStatus.REJECTED);
         assertThat(openAppeal.getResolvedAt()).isNotNull();
         verify(examResultAppealRepository).save(openAppeal);
@@ -92,8 +93,8 @@ class ExamCandidateResultFinalizationServiceTests {
     void should_not_touch_already_terminal_appeals() {
         when(examCandidateResultRepository.findBySessionId(sessionId))
             .thenReturn(Optional.of(releasedResult()));
-        var published = appeal(ExamAppealStatus.PUBLISHED);
-        var rejected = appeal(ExamAppealStatus.REJECTED);
+        ExamResultAppeal published = appeal(ExamAppealStatus.PUBLISHED);
+        ExamResultAppeal rejected = appeal(ExamAppealStatus.REJECTED);
         when(examResultAppealRepository.findByCandidateResultId(resultId))
             .thenReturn(List.of(published, rejected));
 

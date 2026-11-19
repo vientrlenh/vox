@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.service;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
@@ -37,6 +38,8 @@ import vn.payos.PayOS;
 import vn.payos.exception.NotFoundException;
 import vn.payos.exception.WebhookException;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
+import vn.payos.model.v2.paymentRequests.PaymentLink;
 import vn.payos.model.v2.paymentRequests.PaymentLinkStatus;
 
 // Tự tính chữ ký thay vì gọi payOSClient.webhooks().verify(...) vì SDK payos-java 2.0.1 bind Map
@@ -109,36 +112,36 @@ public class PayOSService implements PaymentProcessPort {
 
     @Override
     public PaymentCheckoutResult createPaymentLink(CreatePaymentLinkCommand command) {
-        var paymentLinkRequest = CreatePaymentLinkRequest.builder()
+        CreatePaymentLinkRequest paymentLinkRequest = CreatePaymentLinkRequest.builder()
             .orderCode(Long.parseLong(command.orderRef()))
             .amount(command.amount().longValueExact())
             .description(command.description())
             .returnUrl(returnUrl)
             .cancelUrl(cancelUrl)
-            // Hạn lấy từ ĐƠN chứ không phải hằng số của adapter -- xem CreatePaymentLinkCommand.expiresAt.
+            // The expiry comes from the ORDER, not from an adapter constant -- see CreatePaymentLinkCommand.expiresAt.
             .expiredAt(command.expiresAt().getEpochSecond())
             .build();
-        var response = payOSClient.paymentRequests().create(paymentLinkRequest);
+        CreatePaymentLinkResponse response = payOSClient.paymentRequests().create(paymentLinkRequest);
 
-        // PayOS trả về CẢ chuỗi VietQR lẫn bộ thông tin chuyển khoản, không chỉ mỗi checkoutUrl.
-        // Giữ lại để hiện mã ngay trong ứng dụng: người dùng không phải rời trang, và mình không mất
-        // dấu họ giữa chừng. checkoutUrl vẫn đi kèm làm lối thoát cho ai muốn dùng trang của PayOS.
+        // PayOS returns BOTH the VietQR string and the bank transfer details, not only the checkoutUrl.
+        // Keep them to show the code right inside the application: the user does not have to leave the page, and we do not lose
+        // track of them midway. checkoutUrl still comes along as an exit for anyone who wants to use PayOS's page.
         //
-        // Thiếu qrCode thì lùi về REDIRECT thay vì dựng một trang QR trống -- FE không phải đoán, và
-        // một phiên bản SDK không có trường này cũng không làm gãy luồng thanh toán.
+        // Without qrCode we fall back to REDIRECT instead of building an empty QR page -- the FE does not have to guess, and
+        // an SDK version without this field does not break the payment flow either.
         if (!hasText(response.getQrCode())) {
             LOGGER.warn("PayOS không trả về qrCode cho orderCode={} -- lùi về điều hướng sang trang checkout",
                 command.orderRef());
             return PaymentCheckoutResult.redirect(response.getCheckoutUrl(), response.getPaymentLinkId());
         }
 
-        var transfer = new BankTransferDetails(
+        BankTransferDetails transfer = new BankTransferDetails(
             response.getBin(),
             response.getAccountNumber(),
             response.getAccountName(),
             command.amount(),
-            // Nội dung chuyển khoản phải là thứ PayOS ĐANG chờ, không phải mô tả mình tự đặt: đây là
-            // khoá khớp tiền với đơn, lệch một ký tự là tiền về mà đơn vẫn treo.
+            // The transfer description must be what PayOS is CURRENTLY waiting for, not a description we set ourselves: it is
+            // the key that matches the money to the order, one character off and the money arrives while the order stays pending.
             response.getDescription());
 
         return PaymentCheckoutResult.qr(
@@ -148,13 +151,13 @@ public class PayOSService implements PaymentProcessPort {
     @Override
     public PaymentLinkStatusResult getPaymentLinkStatus(String providerOrderRef) {
         try {
-            var paymentLink = payOSClient.paymentRequests().get(Long.parseLong(providerOrderRef));
+            PaymentLink paymentLink = payOSClient.paymentRequests().get(Long.parseLong(providerOrderRef));
             return new PaymentLinkStatusResult(toRemoteStatus(paymentLink.getStatus()));
         } catch (NotFoundException e) {
-            // CHỈ bắt đúng 404. Mọi lỗi khác (mất mạng, 5xx, hết hạn mức gọi) vẫn ném ra ngoài: chỗ
-            // gọi phải phân biệt được "cổng nói không có phiên nào" với "không hỏi được cổng" -- quy
-            // cái sau về NOT_FOUND là tự cho phép mình đánh hỏng một lần thử có thể đang sống và sắp
-            // ra tiền.
+            // Catch ONLY 404. Every other error (network lost, 5xx, call quota exhausted) is still thrown: the
+            // caller must be able to tell "the gateway says there is no session" from "could not ask the gateway" -- mapping
+            // the latter to NOT_FOUND would allow us to fail an attempt that may still be alive and about to
+            // bring in money.
             LOGGER.warn("PayOS không có phiên thanh toán nào mang mã {} -- coi như lần thử đã chết",
                 providerOrderRef, e);
             return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND);
@@ -164,20 +167,20 @@ public class PayOSService implements PaymentProcessPort {
     @Override
     public boolean cancelPaymentLink(String providerOrderRef, String reason) {
         try {
-            var cancelled = payOSClient.paymentRequests().cancel(Long.parseLong(providerOrderRef), reason);
-            // Tin vào trạng thái PayOS TRẢ VỀ chứ không tin vào việc "gọi không ném lỗi": nếu vì lý do
-            // nào đó link không thật sự chuyển sang CANCELLED thì nó vẫn thu tiền được, mà chỗ gọi lại
-            // đang chờ một câu trả lời dứt khoát để dám đóng đơn.
-            var confirmed = toRemoteStatus(cancelled.getStatus()) == PaymentLinkRemoteStatus.CANCELLED;
+            PaymentLink cancelled = payOSClient.paymentRequests().cancel(Long.parseLong(providerOrderRef), reason);
+            // Trust the status PayOS RETURNS, not the fact that "the call did not throw": if for some reason
+            // the link did not actually move to CANCELLED it can still collect money, while the caller
+            // is waiting for a definitive answer before daring to close the order.
+            boolean confirmed = toRemoteStatus(cancelled.getStatus()) == PaymentLinkRemoteStatus.CANCELLED;
             if (!confirmed) {
                 LOGGER.warn("PayOS nhận lệnh hủy link {} nhưng trạng thái trả về là {}",
                     providerOrderRef, cancelled.getStatus());
             }
             return confirmed;
         } catch (Exception e) {
-            // Không ném ra ngoài: với chỗ gọi thì "hủy hỏng" và "cổng không hỗ trợ hủy" dẫn tới cùng
-            // một quyết định -- không đóng đơn. Ném lỗi ở đây chỉ biến một trường hợp xử lý được
-            // thành lỗi 500 cho người dùng.
+            // Do not throw: to the caller "cancel failed" and "the gateway does not support cancel" lead to the same
+            // decision -- do not close the order. Throwing here would only turn a case that can be handled
+            // into a 500 error for the user.
             LOGGER.warn("Không hủy được link thanh toán PayOS {}", providerOrderRef, e);
             return false;
         }
@@ -185,18 +188,18 @@ public class PayOSService implements PaymentProcessPort {
 
     @Override
     public CallbackVerificationResult verifyCallback(byte[] rawBody, Map<String, String> headers) {
-        var body = parseBody(rawBody);
+        Map<String, Object> body = parseBody(rawBody);
         if (body == null) {
             return CallbackVerificationResult.invalid();
         }
 
-        // PayOS đặt chữ ký trong body (không phải header), tính trên phần "data".
+        // PayOS puts the signature in the body (not a header), computed over the "data" part.
         if (!(body.get("data") instanceof Map<?, ?> rawData) || !(body.get("signature") instanceof String signature)) {
             return CallbackVerificationResult.invalid();
         }
 
-        var data = new HashMap<String, Object>(rawData.size());
-        for (var entry : rawData.entrySet()) {
+        Map<String, Object> data = new HashMap<String, Object>(rawData.size());
+        for (Map.Entry<?, ?> entry : rawData.entrySet()) {
             if (entry.getKey() instanceof String key) {
                 data.put(key, entry.getValue());
             }
@@ -211,8 +214,8 @@ public class PayOSService implements PaymentProcessPort {
             return CallbackVerificationResult.invalid();
         }
 
-        // Webhook PayOS chỉ báo thành công/thất bại qua code, không phân biệt lý do thất bại cụ thể.
-        var status = SUCCESS_CODE.equals(data.get("code"))
+        // The PayOS webhook only reports success/failure through the code, without distinguishing the specific reason for failure.
+        PaymentLinkRemoteStatus status = SUCCESS_CODE.equals(data.get("code"))
             ? PaymentLinkRemoteStatus.PAID
             : PaymentLinkRemoteStatus.FAILED;
 
@@ -228,11 +231,11 @@ public class PayOSService implements PaymentProcessPort {
     // đôi khi chứa byte UTF-8 không hợp lệ ở phần text tiếng Việt (desc), làm Jackson mặc định
     // ném StreamReadException. Trả null nếu payload không dùng được.
     private Map<String, Object> parseBody(byte[] rawBody) {
-        var decoder = StandardCharsets.UTF_8.newDecoder()
+        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
             .onMalformedInput(CodingErrorAction.REPLACE)
             .onUnmappableCharacter(CodingErrorAction.REPLACE);
         try {
-            var json = decoder.decode(ByteBuffer.wrap(rawBody)).toString();
+            String json = decoder.decode(ByteBuffer.wrap(rawBody)).toString();
             return jsonMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
         } catch (CharacterCodingException | RuntimeException e) {
             LOGGER.warn("Không đọc được payload webhook PayOS", e);
@@ -264,21 +267,21 @@ public class PayOSService implements PaymentProcessPort {
     }
 
     private String computeSignature(Map<String, Object> data) {
-        var sortedData = new TreeMap<>(data);
-        var queryString = new StringBuilder();
-        for (var entry : sortedData.entrySet()) {
+        TreeMap<String, Object> sortedData = new TreeMap<>(data);
+        StringBuilder queryString = new StringBuilder();
+        for (Map.Entry<String, Object> entry : sortedData.entrySet()) {
             if (!queryString.isEmpty()) {
                 queryString.append('&');
             }
-            var value = entry.getValue();
+            Object value = entry.getValue();
             queryString.append(entry.getKey()).append('=').append(value == null ? "" : value.toString());
         }
 
         try {
-            var mac = Mac.getInstance(HMAC_ALGORITHM);
+            Mac mac = Mac.getInstance(HMAC_ALGORITHM);
             mac.init(new SecretKeySpec(checksumKey.getBytes(StandardCharsets.UTF_8), HMAC_ALGORITHM));
-            var hmacBytes = mac.doFinal(queryString.toString().getBytes(StandardCharsets.UTF_8));
-            var hex = new StringBuilder();
+            byte[] hmacBytes = mac.doFinal(queryString.toString().getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder();
             for (byte b : hmacBytes) {
                 hex.append(String.format("%02x", b));
             }

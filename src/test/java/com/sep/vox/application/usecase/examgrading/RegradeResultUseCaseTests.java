@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.command.SubmitGradingCommand;
+import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.service.GradingActionSupport.PreparedAction;
@@ -29,6 +30,7 @@ import com.sep.vox.application.port.input.service.GradingItemScoreResolver.Resol
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.RegradeResultUseCase;
+import com.sep.vox.application.response.input.examgrading.GradingActionResponse;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
@@ -98,7 +100,7 @@ class RegradeResultUseCaseTests {
 
         when(examItemEvaluationRepository.findByResponseIdIn(anyCollection())).thenReturn(List.of());
         when(examItemEvaluationRepository.save(any())).thenAnswer(call -> {
-            var saved = (ExamItemEvaluation) call.getArgument(0);
+            ExamItemEvaluation saved = (ExamItemEvaluation) call.getArgument(0);
             saved.setId(UUID.randomUUID());
             return saved;
         });
@@ -111,16 +113,16 @@ class RegradeResultUseCaseTests {
     }
 
     private ExamCandidateResult given(GradingRoundType roundType, ExamCandidateResultStatus status) {
-        var current = new ExamCandidateResult();
+        ExamCandidateResult current = new ExamCandidateResult();
         current.setId(candidateResultId);
         current.setSessionId(sessionId);
         current.setStatus(status);
         current.setTotalScore(new BigDecimal("6.00"));
 
-        var assignment = ExamGradingAssignment.open(candidateResultId, teacherId, roundType, null,
+        ExamGradingAssignment assignment = ExamGradingAssignment.open(candidateResultId, teacherId, roundType, null,
             current.getTotalScore(), Instant.now(), UUID.randomUUID(), null);
         assignment.setId(assignmentId);
-        var context = new GradingContext(assignment, current, session, UUID.randomUUID(), "IELTS Mock", ExamKind.CENTRALIZED);
+        ExamGradingAccessService.GradingContext context = new GradingContext(assignment, current, session, UUID.randomUUID(), "IELTS Mock", ExamKind.CENTRALIZED);
 
         when(gradingActionSupport.prepare(assignmentId, GradingOutcome.REGRADED, null)).thenReturn(
             new PreparedAction(context, teacherId, roundType, GradingOutcome.REGRADED, null,
@@ -138,7 +140,7 @@ class RegradeResultUseCaseTests {
     }
 
     private ExamItemEvaluation captureSavedEvaluation() {
-        var captor = ArgumentCaptor.forClass(ExamItemEvaluation.class);
+        ArgumentCaptor<ExamItemEvaluation> captor = ArgumentCaptor.forClass(ExamItemEvaluation.class);
         verify(examItemEvaluationRepository).save(captor.capture());
         return captor.getValue();
     }
@@ -149,20 +151,21 @@ class RegradeResultUseCaseTests {
 
         useCase.execute(command());
 
-        var saved = captureSavedEvaluation();
+        ExamItemEvaluation saved = captureSavedEvaluation();
         assertThat(saved.getEngineType()).isEqualTo(ExamEvaluationEngineType.HUMAN);
         assertThat(saved.getStatus()).isEqualTo(ExamItemEvaluationStatus.FINALIZED);
         assertThat(saved.getReviewerId()).isEqualTo(teacherId);
         assertThat(saved.getItemScore()).isEqualByComparingTo("7.50");
         assertThat(saved.getPaperItemId()).isEqualTo(paperItemId);
-        // Người đã chấm thì không còn gì để chờ — cờ này bật là calculator giữ bài lại.
+        // Someone who has already graded has nothing left to wait for -- when this flag is on, the
+        // calculator holds the submission back.
         assertThat(saved.isRequiresHumanReview()).isFalse();
     }
 
     @Test
     void should_supersede_every_previous_evaluation_of_the_graded_items() {
         given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
-        var aiEvaluation = new ExamItemEvaluation();
+        ExamItemEvaluation aiEvaluation = new ExamItemEvaluation();
         aiEvaluation.setId(UUID.randomUUID());
         aiEvaluation.setResponseId(responseId);
         aiEvaluation.setStatus(ExamItemEvaluationStatus.AUTO_GRADED);
@@ -171,21 +174,22 @@ class RegradeResultUseCaseTests {
 
         useCase.execute(command());
 
-        // Calculator chọn bản còn hiệu lực theo TRẠNG THÁI, không ưu tiên HUMAN theo
-        // engineType — bỏ bước này là điểm AI cũ vẫn được tính vào tổng.
+        // The calculator picks the effective version by STATUS, and does not prefer HUMAN by
+        // engineType -- without this step the old AI score would still be counted into the total.
         assertThat(aiEvaluation.getStatus()).isEqualTo(ExamItemEvaluationStatus.SUPERSEDED);
     }
 
     /**
-     * Màn kết quả của học sinh đọc lại chính bản AI đã SUPERSEDED này để lấy lượt nói và
-     * bằng chứng AI (xem {@code ExamItemEvaluationRepository#findLatestAiByResponseId}).
-     * Nếu chấm lại mà xoá hoặc làm rỗng các cột đó, học sinh sẽ mất nội dung câu hỏi,
-     * audio và transcript ngay khi giáo viên nộp — nên bất biến này phải được khoá ở đây.
+     * The student's result screen re-reads this very AI version, now SUPERSEDED, to get the
+     * speaking turn and the AI evidence (see
+     * {@code ExamItemEvaluationRepository#findLatestAiByResponseId}). If regrading erased or
+     * emptied those columns, the student would lose the question content, audio and transcript the
+     * moment the teacher submits -- so this invariant must be locked in here.
      */
     @Test
     void should_only_flip_status_of_the_ai_evaluation_so_its_evidence_survives() {
         given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
-        var aiEvaluation = new ExamItemEvaluation();
+        ExamItemEvaluation aiEvaluation = new ExamItemEvaluation();
         aiEvaluation.setId(UUID.randomUUID());
         aiEvaluation.setResponseId(responseId);
         aiEvaluation.setEngineType(ExamEvaluationEngineType.AI_SINGLE);
@@ -211,7 +215,7 @@ class RegradeResultUseCaseTests {
     @Test
     void should_not_rewrite_an_evaluation_that_is_already_superseded() {
         given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
-        var old = new ExamItemEvaluation();
+        ExamItemEvaluation old = new ExamItemEvaluation();
         old.setId(UUID.randomUUID());
         old.setResponseId(responseId);
         old.setStatus(ExamItemEvaluationStatus.SUPERSEDED);
@@ -219,7 +223,8 @@ class RegradeResultUseCaseTests {
 
         useCase.execute(command());
 
-        // Chỉ đúng MỘT lần save: bản mới. Bản cũ đã SUPERSEDED thì không ghi lại.
+        // Exactly ONE save: the new version. The old version is already SUPERSEDED and is not
+        // written again.
         verify(examItemEvaluationRepository).save(any());
     }
 
@@ -230,10 +235,10 @@ class RegradeResultUseCaseTests {
         useCase.execute(command());
 
         @SuppressWarnings("unchecked")
-        var captor = (ArgumentCaptor<List<ExamItemCriterionScore>>) (ArgumentCaptor<?>)
+        ArgumentCaptor<List<ExamItemCriterionScore>> captor = (ArgumentCaptor<List<ExamItemCriterionScore>>) (ArgumentCaptor<?>)
             ArgumentCaptor.forClass(List.class);
         verify(examItemCriterionScoreRepository).saveAll(captor.capture());
-        var scores = captor.getValue();
+        List<ExamItemCriterionScore> scores = captor.getValue();
         assertThat(scores).hasSize(1);
         assertThat(scores.get(0).getRubricCriterionId()).isEqualTo(criterionId);
         assertThat(scores.get(0).getRawScore()).isEqualByComparingTo("8.00");
@@ -305,10 +310,10 @@ class RegradeResultUseCaseTests {
     void should_finish_with_the_recalculated_result_not_the_stale_one() {
         given(GradingRoundType.INITIAL, ExamCandidateResultStatus.PENDING_REVIEW);
 
-        var response = useCase.execute(command());
+        GradingActionResponse response = useCase.execute(command());
 
-        // finish() ghi audit và phát sự kiện dựa trên điểm — đưa bản cũ vào là báo sai
-        // điểm cho học sinh.
+        // finish() writes the audit and publishes the event based on the score -- passing the old
+        // version in would report the wrong score to the student.
         verify(gradingActionSupport).finish(any(), eq(recalculated));
         assertThat(response.totalScore()).isEqualByComparingTo("7.50");
         assertThat(response.outcome()).isEqualTo(GradingOutcome.REGRADED.name());

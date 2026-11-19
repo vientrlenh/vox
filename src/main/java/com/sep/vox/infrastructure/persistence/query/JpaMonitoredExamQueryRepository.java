@@ -52,10 +52,10 @@ public class JpaMonitoredExamQueryRepository implements MonitoredExamQueryReposi
             .getResultList();
     }
 
-    /** Dựng câu và gán phần tham số dùng chung; hai đường đọc chỉ còn phải gán bằng chứng quyền. */
+    /** Build the statement and bind the shared parameters; the two read paths only have to bind the authorization evidence. */
     private TypedQuery<MonitoredExamSummary> query(
             String accessJoin, String accessWhere, UUID examId, Instant now, Instant leadUntil) {
-        var query = em
+        TypedQuery<MonitoredExamSummary> query = em
             .createQuery(select(accessJoin, accessWhere, leadUntil != null), MonitoredExamSummary.class)
             .setParameter("examId", examId)
             .setParameter("now", now)

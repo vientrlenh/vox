@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,8 +28,8 @@ public class ViewExamAppealStatsUseCase {
 
     @Transactional(readOnly = true)
     public AppealStatsInfo execute() {
-        var currentUserId = examAppealAccessService.requireActiveUserId();
-        var schoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = examAppealAccessService.requireActiveUserId();
+        UUID schoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
         return examAppealQueryRepository.countByStatus(schoolId);

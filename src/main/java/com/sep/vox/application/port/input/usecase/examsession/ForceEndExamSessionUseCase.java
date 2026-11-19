@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamSession;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -52,11 +55,11 @@ public class ForceEndExamSessionUseCase implements IUseCase<ForceEndExamSessionC
     @Override
     @Transactional
     public java.util.UUID execute(ForceEndExamSessionCommand input) {
-        var session = examSessionRepository.findById(input.sessionId())
+        ExamSession session = examSessionRepository.findById(input.sessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
-        var candidate = examCandidateRepository.findById(session.getCandidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của phiên thi"));
-        var exam = examRepository.findById(session.getExamId())
+        Exam exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của phiên thi"));
 
         moderationAccessService.authorize(exam, candidate);
@@ -65,16 +68,16 @@ public class ForceEndExamSessionUseCase implements IUseCase<ForceEndExamSessionC
         if (exam.getStatus() == ExamStatus.RESULTS_PUBLISHED) {
             throw new IllegalStateException("Kỳ thi đã công bố kết quả, không thể thay đổi nữa");
         }
-        var isLiveSession = session.getStatus() == ExamSessionStatus.IN_PROGRESS
+        boolean isLiveSession = session.getStatus() == ExamSessionStatus.IN_PROGRESS
             || session.getStatus() == ExamSessionStatus.INTERRUPTED;
-        var isAlreadyGraded = session.getStatus() == ExamSessionStatus.GRADED;
+        boolean isAlreadyGraded = session.getStatus() == ExamSessionStatus.GRADED;
         if (!isLiveSession && !isAlreadyGraded) {
             throw new IllegalStateException("Chỉ có thể buộc kết thúc phiên thi đang diễn ra hoặc đã chấm xong");
         }
 
-        var now = Instant.now();
-        var currentUserId = moderationAccessService.getCurrentUserId();
-        var normalizedReason = StringNormalization.trimAndCollapseSpaces(input.reason());
+        Instant now = Instant.now();
+        UUID currentUserId = moderationAccessService.getCurrentUserId();
+        String normalizedReason = StringNormalization.trimAndCollapseSpaces(input.reason());
         if (normalizedReason == null || normalizedReason.isEmpty()) {
             throw new IllegalArgumentException("Cần nhập lý do khi buộc kết thúc phiên thi");
         }

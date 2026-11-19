@@ -72,10 +72,10 @@ class RemoveExamScheduleProctorUseCaseTests {
 
     @Test
     void should_remove_proctor_belonging_to_schedule() {
-        var proctor = new ExamScheduleProctor(proctorId, scheduleId, UUID.randomUUID());
+        ExamScheduleProctor proctor = new ExamScheduleProctor(proctorId, scheduleId, UUID.randomUUID());
         when(examScheduleProctorRepository.findById(proctorId)).thenReturn(Optional.of(proctor));
 
-        var result = useCase.execute(new DeleteExamScheduleProctorCommand(examId, scheduleId, proctorId));
+        UUID result = useCase.execute(new DeleteExamScheduleProctorCommand(examId, scheduleId, proctorId));
 
         assertThat(result).isEqualTo(proctorId);
         verify(examScheduleProctorRepository).deleteById(proctorId);
@@ -83,7 +83,7 @@ class RemoveExamScheduleProctorUseCaseTests {
 
     @Test
     void should_reject_when_proctor_not_in_schedule() {
-        var proctor = new ExamScheduleProctor(proctorId, UUID.randomUUID(), UUID.randomUUID());
+        ExamScheduleProctor proctor = new ExamScheduleProctor(proctorId, UUID.randomUUID(), UUID.randomUUID());
         when(examScheduleProctorRepository.findById(proctorId)).thenReturn(Optional.of(proctor));
 
         assertThatThrownBy(() -> useCase.execute(new DeleteExamScheduleProctorCommand(examId, scheduleId, proctorId)))
@@ -92,14 +92,14 @@ class RemoveExamScheduleProctorUseCaseTests {
     }
 
     private Exam exam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         return exam;
     }
 
     private ExamSchedule schedule() {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(scheduleId);
         schedule.setExamId(examId);
         schedule.setStatus(ExamScheduleStatus.DRAFT);

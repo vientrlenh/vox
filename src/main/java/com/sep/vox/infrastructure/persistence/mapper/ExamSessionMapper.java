@@ -10,7 +10,7 @@ public final class ExamSessionMapper {
     private ExamSessionMapper() {}
 
     public static ExamSession toDomain(ExamSessionJpaEntity jpa) {
-        var domain = new ExamSession(
+        ExamSession domain = new ExamSession(
             jpa.getId(),
             jpa.getExamId(),
             jpa.getCandidateId(),
@@ -30,7 +30,7 @@ public final class ExamSessionMapper {
     }
 
     public static ExamSessionJpaEntity toJpa(ExamSession domain) {
-        var jpa = new ExamSessionJpaEntity(
+        ExamSessionJpaEntity jpa = new ExamSessionJpaEntity(
             domain.getId(),
             domain.getExamId(),
             domain.getCandidateId(),

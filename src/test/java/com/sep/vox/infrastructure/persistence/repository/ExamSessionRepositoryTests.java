@@ -40,35 +40,36 @@ class ExamSessionRepositoryTests {
 
     @Test
     void whenFindByIdAndResumable_thenReturnsInProgressSession() {
-        var saved = newSession(ExamSessionStatus.IN_PROGRESS);
+        ExamSession saved = newSession(ExamSessionStatus.IN_PROGRESS);
 
         assertThat(examSessionRepository.findByIdAndResumable(saved.getId())).isPresent();
     }
 
     /**
-     * Đúng tình huống cần nhất: máy học viên mất kết nối, phiên bị đánh dấu INTERRUPTED, rồi máy
-     * quay lại với các đoạn ghi còn trong buffer và cần token để đẩy lên.
+     * Exactly the most needed situation: the student's machine loses connection, the session is
+     * marked INTERRUPTED, then the machine comes back with segments still in its buffer and needs a
+     * token to push them up.
      */
     @Test
     void whenFindByIdAndResumable_thenReturnsInterruptedSession() {
-        var saved = newSession(ExamSessionStatus.INTERRUPTED);
+        ExamSession saved = newSession(ExamSessionStatus.INTERRUPTED);
 
         assertThat(examSessionRepository.findByIdAndResumable(saved.getId())).isPresent();
     }
 
     @Test
     void whenFindByIdAndResumable_thenSkipsSubmittedSession() {
-        var saved = newSession(ExamSessionStatus.SUBMITTED);
+        ExamSession saved = newSession(ExamSessionStatus.SUBMITTED);
 
         assertThat(examSessionRepository.findByIdAndResumable(saved.getId())).isEmpty();
     }
 
     @Test
     void whenSessionHasNoChosenStreamType_thenLockWritesIt() {
-        var saved = newSession(ExamSessionStatus.IN_PROGRESS);
+        ExamSession saved = newSession(ExamSessionStatus.IN_PROGRESS);
         assertThat(saved.getChosenStreamType()).isNull();
 
-        var updated = examSessionRepository.lockChosenStreamType(saved.getId(), ExamRequiredStreamType.SCREEN);
+        int updated = examSessionRepository.lockChosenStreamType(saved.getId(), ExamRequiredStreamType.SCREEN);
 
         assertThat(updated).isEqualTo(1);
         assertThat(examSessionRepository.findById(saved.getId()))
@@ -78,15 +79,16 @@ class ExamSessionRepositoryTests {
     }
 
     /**
-     * Ghi một lần rồi khóa: lần phát token thứ hai không được đổi lựa chọn, kể cả khi request đến
-     * song song. Đây là thứ ngăn việc bắt đầu bằng camera + màn hình rồi hạ xuống còn camera.
+     * Write once, then lock: the second token issue must not change the choice, even when the
+     * requests arrive in parallel. This is what prevents starting with camera + screen and then
+     * dropping down to camera only.
      */
     @Test
     void whenStreamTypeAlreadyChosen_thenLockChangesNothing() {
-        var saved = newSession(ExamSessionStatus.IN_PROGRESS);
+        ExamSession saved = newSession(ExamSessionStatus.IN_PROGRESS);
         examSessionRepository.lockChosenStreamType(saved.getId(), ExamRequiredStreamType.CAMERA_AND_SCREEN);
 
-        var updated = examSessionRepository.lockChosenStreamType(saved.getId(), ExamRequiredStreamType.CAMERA);
+        int updated = examSessionRepository.lockChosenStreamType(saved.getId(), ExamRequiredStreamType.CAMERA);
 
         assertThat(updated).isEqualTo(0);
         assertThat(examSessionRepository.findById(saved.getId()))
@@ -97,7 +99,7 @@ class ExamSessionRepositoryTests {
 
     @Test
     void whenSessionHasNoCheckpoint_thenRemainingSecondsIsWritten() {
-        var saved = newSession(ExamSessionStatus.IN_PROGRESS);
+        ExamSession saved = newSession(ExamSessionStatus.IN_PROGRESS);
         assertThat(saved.getRemainingSeconds()).isNull();
 
         assertThat(examSessionRepository.checkpointRemainingSeconds(saved.getId(), 1500)).isEqualTo(1);
@@ -109,7 +111,7 @@ class ExamSessionRepositoryTests {
 
     @Test
     void whenCountdownMovesDown_thenCheckpointIsAccepted() {
-        var saved = newSession(ExamSessionStatus.IN_PROGRESS);
+        ExamSession saved = newSession(ExamSessionStatus.IN_PROGRESS);
         examSessionRepository.checkpointRemainingSeconds(saved.getId(), 1500);
 
         assertThat(examSessionRepository.checkpointRemainingSeconds(saved.getId(), 1490)).isEqualTo(1);
@@ -120,13 +122,14 @@ class ExamSessionRepositoryTests {
     }
 
     /**
-     * Ràng buộc bảo mật, không phải tối ưu: giá trị đến từ máy học viên, nên nếu đồng hồ được phép
-     * đi tới thì endpoint checkpoint trở thành API tự gia hạn thời gian thi. Cũng loại luôn các gói
-     * checkpoint cũ đến muộn không đúng thứ tự.
+     * A security constraint, not an optimization: the value comes from the student's machine, so if
+     * the clock were allowed to go forward, the checkpoint endpoint would become an API for
+     * extending exam time on your own. It also rejects old checkpoint packets that arrive late and
+     * out of order.
      */
     @Test
     void whenCountdownWouldMoveUp_thenCheckpointIsRejected() {
-        var saved = newSession(ExamSessionStatus.IN_PROGRESS);
+        ExamSession saved = newSession(ExamSessionStatus.IN_PROGRESS);
         examSessionRepository.checkpointRemainingSeconds(saved.getId(), 600);
 
         assertThat(examSessionRepository.checkpointRemainingSeconds(saved.getId(), 1500)).isEqualTo(0);
@@ -139,12 +142,13 @@ class ExamSessionRepositoryTests {
 
     @Test
     void whenSavingSession_thenChosenStreamTypeSurvivesRoundTrip() {
-        var saved = newSession(ExamSessionStatus.IN_PROGRESS);
+        ExamSession saved = newSession(ExamSessionStatus.IN_PROGRESS);
         examSessionRepository.lockChosenStreamType(saved.getId(), ExamRequiredStreamType.CAMERA);
 
-        // Một use case khác đọc phiên thi, đổi trạng thái rồi lưu lại: lựa chọn đã chốt không được
-        // biến mất chỉ vì đi qua một vòng map domain <-> JPA.
-        var reloaded = examSessionRepository.findById(saved.getId()).orElseThrow();
+        // Another use case reads the exam session, changes its status and saves it again: the
+        // locked choice must not vanish just because it went through a domain <-> JPA mapping
+        // round.
+        ExamSession reloaded = examSessionRepository.findById(saved.getId()).orElseThrow();
         reloaded.setStatus(ExamSessionStatus.INTERRUPTED);
         examSessionRepository.save(reloaded);
 

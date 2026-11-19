@@ -1,14 +1,17 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.SchoolGradeJpaEntity;
 import java.time.LocalDate;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -48,8 +51,8 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
 
     @Override
     public SchoolGrade save(SchoolGrade grade) {
-        var entity = SchoolGradeMapper.toJpa(grade);
-        var saved = springDataSchoolGradeRepository.save(entity);
+        SchoolGradeJpaEntity entity = SchoolGradeMapper.toJpa(grade);
+        SchoolGradeJpaEntity saved = springDataSchoolGradeRepository.save(entity);
         return SchoolGradeMapper.toDomain(saved);
     }
 
@@ -70,7 +73,7 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
         if (schoolId == null || codes == null || codes.isEmpty()) {
             return List.of();
         }
-        var upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
+        Set<String> upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
         return springDataSchoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, upperCodes)
                 .stream()
                 .map(SchoolGradeMapper::toDomain)
@@ -100,8 +103,8 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
 
     @Override
     public PageResult<SchoolGrade> findBySchoolId(UUID schoolId, UUID gradeLevelId, String status, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
-        var page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, gradeLevelId, status, pageable);
+        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        Page<SchoolGradeJpaEntity> page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, gradeLevelId, status, pageable);
         return new PageResult<>(
                 page.getContent().stream()
                         .map(SchoolGradeMapper::toDomain)

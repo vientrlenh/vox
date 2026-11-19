@@ -1,9 +1,13 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,18 +57,18 @@ public class AssignExamCandidateScheduleUseCase
     @Override
     @Transactional
     public ExamCandidateDto execute(AssignExamCandidateScheduleCommand input) {
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var currentUserId = examScheduleManageAccessService.requireCanManage(exam);
+        UUID currentUserId = examScheduleManageAccessService.requireCanManage(exam);
         ExamEditingGuard.requireScheduleEditable(exam);
 
-        var candidate = examCandidateRepository.findById(input.candidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(input.candidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh"));
         if (!candidate.getExamId().equals(exam.getId())) {
             throw new NotFoundException("Không tìm thấy thí sinh");
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
 
         // Bỏ gán khỏi ca luôn được phép, kể cả khi thí sinh đã không có ca (no-op).
         if (input.scheduleId() == null) {
@@ -77,7 +81,7 @@ public class AssignExamCandidateScheduleUseCase
             return ExamCandidateDtoMapper.toDto(candidate);
         }
 
-        var schedule = examScheduleRepository.findByIdForUpdate(input.scheduleId())
+        ExamSchedule schedule = examScheduleRepository.findByIdForUpdate(input.scheduleId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
         if (!schedule.getExamId().equals(exam.getId())) {
             throw new NotFoundException("Không tìm thấy ca thi");

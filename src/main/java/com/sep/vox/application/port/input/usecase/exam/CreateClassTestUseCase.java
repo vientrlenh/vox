@@ -1,7 +1,10 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.school.SchoolClassUser;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -108,18 +111,18 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     @Override
     @Transactional
     public CreateClassTestResponse execute(CreateClassTestCommand input) {
-        var command = normalize(input);
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        CreateClassTestCommand command = normalize(input);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         if (userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
                 .noneMatch(role -> "TEACHER".equals(role.roleCode()))) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var schoolClass = schoolClassRepository.findById(command.schoolClassId())
+        SchoolClass schoolClass = schoolClassRepository.findById(command.schoolClassId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
 
-        var membership = schoolClassUserRepository.findByUserIdAndSchoolClassId(currentUserId, schoolClass.getId())
+        SchoolClassUser membership = schoolClassUserRepository.findByUserIdAndSchoolClassId(currentUserId, schoolClass.getId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
         if (!membership.isActive()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
@@ -131,9 +134,9 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             command.assessmentPolicyId(), schoolClass.getSchoolId());
         validateOpenClose(command.openAt(), command.closeAt(), schoolClass.getSchoolId());
 
-        var now = Instant.now();
-        var exam = createExam(schoolClass, command, currentUserId, now);
-        var schedule = createDraftSchedule(exam, command.schoolRoomId(), currentUserId, now);
+        Instant now = Instant.now();
+        Exam exam = createExam(schoolClass, command, currentUserId, now);
+        ExamSchedule schedule = createDraftSchedule(exam, command.schoolRoomId(), currentUserId, now);
         return finishSetup(exam, schedule, schoolClass, currentUserId, now);
     }
 
@@ -158,7 +161,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         examScheduleProctorConflictValidator.requireTeacherFree(
             currentUserId, schedule.getStartDate(), schedule.getEndDate(), schedule.getId());
         examScheduleProctorRepository.save(new ExamScheduleProctor(schedule.getId(), currentUserId));
-        var candidateCount = assignCandidates(exam, schoolClass.getId(), currentUserId, now);
+        int candidateCount = assignCandidates(exam, schoolClass.getId(), currentUserId, now);
         return new CreateClassTestResponse(ExamDtoMapper.toDto(exam), candidateCount);
     }
 
@@ -190,16 +193,16 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             CreateClassTestCommand command,
             UUID currentUserId,
             Instant now) {
-        var code = "CT-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
-        var openAt = DateMapper.toInstant(command.openAt());
-        var closeAt = DateMapper.toInstant(command.closeAt());
+        String code = "CT-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
+        Instant openAt = DateMapper.toInstant(command.openAt());
+        Instant closeAt = DateMapper.toInstant(command.closeAt());
         Integer requestedMaxAttempt = command.maxAttempt();
         int maxAttempt = requestedMaxAttempt == null ? 1 : requestedMaxAttempt;
-        var streamConfig = examStreamConfigResolver.resolve(
+        ExamStreamConfigResolver.StreamConfig streamConfig = examStreamConfigResolver.resolve(
             command.requiredStreamTypes(), command.streamTypePermission());
         // Bài trên lớp không gắn blueprint lúc tạo: giáo viên chọn cách soạn từng mã đề ở trang chi
         // tiết. Nếu sau đó muốn dùng blueprint dùng chung thì gắn qua ChangeClassTestBlueprintUseCase.
-        var classTest = new Exam(
+        Exam classTest = new Exam(
             null,
             null,
             code,
@@ -249,7 +252,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
                 schoolRoomId, exam, exam.getOpenAt(), exam.getCloseAt());
         }
 
-        var schedule = ExamSchedule.createFresh(
+        ExamSchedule schedule = ExamSchedule.createFresh(
             exam.getId(),
             schoolRoomId,
             exam.getOpenAt(),
@@ -271,9 +274,9 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             UUID currentUserId,
             Instant now) {
         // findBySchoolClassId là 1-based (PageRequest.of(page - 1, size)) → trang đầu là 1, KHÔNG phải 0.
-        var roster = schoolClassUserRepository.findBySchoolClassId(schoolClassId, 1, MAX_CLASS_ROSTER_SIZE).content();
+        List<SchoolClassUser> roster = schoolClassUserRepository.findBySchoolClassId(schoolClassId, 1, MAX_CLASS_ROSTER_SIZE).content();
 
-        var activeUserIds = roster.stream()
+        List<UUID> activeUserIds = roster.stream()
             .filter(classUser -> classUser.isActive())
             .map(classUser -> classUser.getUserId())
             .distinct()
@@ -281,10 +284,10 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
         // MỘT query cho cả lớp thay vì hỏi vai trò từng học sinh — lớp 40 người là 40 query, và trần
         // roster là 2000. Giống hệt ImportExamCandidatesFromClassUseCase.
-        var studentIds = userRoleQueryRepository.findUserIdsByRoleCode(activeUserIds, SchoolRoleCodes.STUDENT);
+        Set<UUID> studentIds = userRoleQueryRepository.findUserIdsByRoleCode(activeUserIds, SchoolRoleCodes.STUDENT);
 
-        var candidates = new ArrayList<ExamCandidate>();
-        for (var userId : activeUserIds) {
+        List<ExamCandidate> candidates = new ArrayList<ExamCandidate>();
+        for (UUID userId : activeUserIds) {
             if (!studentIds.contains(userId)) {
                 continue;
             }
@@ -294,8 +297,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     }
 
     private void validateOpenClose(String openAt, String closeAt, UUID schoolId) {
-        var open = DateMapper.toInstant(openAt);
-        var close = DateMapper.toInstant(closeAt);
+        Instant open = DateMapper.toInstant(openAt);
+        Instant close = DateMapper.toInstant(closeAt);
         if (open == null || close == null) {
             throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
         }

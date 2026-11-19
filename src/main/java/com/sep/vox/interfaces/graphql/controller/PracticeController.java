@@ -103,29 +103,30 @@ public class PracticeController {
     @MutationMapping
     @PreAuthorize("hasRole('STUDENT')")
     public LearnerProfile submitInterestQuiz(@Argument("input") SubmitInterestQuizInput input) {
-        var answers = input.answers().stream()
+        List<QuizAnswer> answers = input.answers().stream()
             .map(answer -> new QuizAnswer(
                 answer.itemId(),
                 answer.mostStatementIndex(),
                 answer.leastStatementIndex()
             ))
             .toList();
-        var profile = submitInterestQuizUseCase.execute(new SubmitInterestQuizCommand(answers));
+        LearnerProfile profile = submitInterestQuizUseCase.execute(new SubmitInterestQuizCommand(answers));
 
-        // Sinh chủ đề NGAY sau khi nộp quiz, chạy nền, KHÔNG chặn phản hồi.
+        // Generate topics RIGHT AFTER the quiz is submitted, in the background, WITHOUT blocking the response.
         //
-        // Trước đây chỉ có một đường sinh: mở màn chọn chủ đề thấy `offers.size() < 3` mới gọi
-        // (PracticePlanningController). Nghĩa là học sinh vừa làm xong quiz mà kho chung đang đầy
-        // thì KHÔNG có chủ đề nào được sinh theo sở thích vừa khai -- em ấy chỉ được chọn từ những
-        // chủ đề người khác đã sinh. Ở đây gọi vô điều kiện: kho đầy thì backfillAsync vẫn sinh
-        // BACKFILL_COUNT_STEADY = 2 chủ đề bám đúng điểm sở thích vừa ghi.
+        // Previously there was only one generation path: the topic-selection screen called it when it saw
+        // `offers.size() < 3` (PracticePlanningController). That means a student who has just finished the quiz
+        // while the shared pool is full gets NO topic generated for the interests they just declared -- they
+        // can only pick from topics other people already generated. Here it is called unconditionally: even
+        // when the pool is full, backfillAsync still generates BACKFILL_COUNT_STEADY = 2 topics that follow the
+        // interest scores just recorded.
         //
-        // GỌI Ở CONTROLLER, KHÔNG gọi trong use case: use case là @Transactional còn backfillAsync
-        // là @Async, nên gọi bên trong sẽ để luồng nền chạy TRƯỚC khi transaction commit --
-        // hasCompletedInterestQuiz đọc ra "chưa làm quiz" và bỏ lượt, im lặng không làm gì. Controller
-        // không có transaction nên tới dòng này quiz đã commit xong.
+        // CALL IT IN THE CONTROLLER, NOT in the use case: the use case is @Transactional while backfillAsync is
+        // @Async, so calling it inside would let the background thread run BEFORE the transaction commits --
+        // hasCompletedInterestQuiz would read "quiz not done" and skip the turn, silently doing nothing. The
+        // controller has no transaction, so by this line the quiz has already committed.
         //
-        // Gọi trùng không tốn thêm: backfillAsync có khoá in-flight theo studentId.
+        // A duplicate call costs nothing extra: backfillAsync has an in-flight lock per studentId.
         topicOfferBackfillService.backfillAsync(userContextPort.getCurrentAuthenticatedUserId());
         return profile;
     }

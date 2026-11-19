@@ -1,5 +1,10 @@
 package com.sep.vox.infrastructure.initializer;
 
+import com.sep.vox.domain.model.framework.Framework;
+import com.sep.vox.domain.model.framework.FrameworkResultBand;
+import com.sep.vox.domain.model.rubric.Rubric;
+import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -163,35 +168,35 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
     }
 
     /**
-     * Idempotent theo từng BẢN MẪU, khoá là cặp (phiên bản bộ tiêu chí, bậc mục tiêu) -- xem
-     * {@link #createPolicy}. Nghĩa là bản nào đã có thì bỏ qua, các bản còn lại vẫn được dựng, và
-     * chạy lại nhiều lần không sinh thêm gì.
+     * Idempotent per TEMPLATE, keyed by the pair (rubric version, target band) -- see
+     * {@link #createPolicy}. That means a template that already exists is skipped, the remaining ones are still built, and
+     * running it many times produces nothing extra.
      */
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
-        var language = supportedLanguageRepository.findByCode(LANGUAGE_CODE).orElse(null);
+        SupportedLanguage language = supportedLanguageRepository.findByCode(LANGUAGE_CODE).orElse(null);
         if (language == null) {
             LOGGER.warn("Chưa có ngôn ngữ {}. Bỏ qua khởi tạo chính sách chấm mẫu của hệ thống", LANGUAGE_CODE);
             return;
         }
 
-        var framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
+        Framework framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
         if (framework == null || !framework.isActive()) {
             LOGGER.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo chính sách chấm mẫu", FRAMEWORK_CODE);
             return;
         }
 
-        var frameworkVersion = latestPublishedVersion(framework.getId());
+        FrameworkVersion frameworkVersion = latestPublishedVersion(framework.getId());
         if (frameworkVersion == null) {
             LOGGER.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo chính sách chấm mẫu",
                 FRAMEWORK_CODE);
             return;
         }
 
-        var now = Instant.now();
-        var created = 0;
-        for (var seed : POLICIES) {
+        Instant now = Instant.now();
+        int created = 0;
+        for (PolicySeed seed : POLICIES) {
             if (createPolicy(seed, language.getId(), framework.getId(), frameworkVersion, now)) {
                 created++;
             }
@@ -205,7 +210,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
             created, LANGUAGE_CODE, frameworkVersion.getCode());
     }
 
-    /** @return true nếu có ghi ra một chính sách mới. */
+    /** @return true if a new policy was written. */
     private boolean createPolicy(
             PolicySeed seed,
             UUID languageId,
@@ -213,7 +218,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
             FrameworkVersion frameworkVersion,
             Instant now) {
 
-        var targetBand = frameworkResultBandRepository
+        FrameworkResultBand targetBand = frameworkResultBandRepository
             .findByVersionIdAndCode(frameworkVersion.getId(), seed.targetBandCode()).orElse(null);
         if (targetBand == null) {
             LOGGER.warn("Phiên bản khung {} thiếu bậc {}. Bỏ qua chính sách chấm mẫu tương ứng",
@@ -221,7 +226,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
             return false;
         }
 
-        // Bản chuyên không khai Khối: phạm vi để trống thì trường tự chọn lúc sao về.
+        // The specialized template declares no Grade: with an empty scope the school chooses when copying it over.
         GradeLevel gradeLevel = null;
         if (seed.gradeLevelCode() != null) {
             gradeLevel = gradeLevelRepository.findByCode(seed.gradeLevelCode()).orElse(null);
@@ -233,38 +238,38 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
         }
         UUID gradeLevelId = gradeLevel == null ? null : gradeLevel.getId();
 
-        var rubricVersion = rubricVersionRepository.findByCode(seed.rubricVersionCode()).orElse(null);
+        RubricVersion rubricVersion = rubricVersionRepository.findByCode(seed.rubricVersionCode()).orElse(null);
         if (rubricVersion == null) {
             LOGGER.warn("Không tìm thấy phiên bản bộ tiêu chí mẫu {}. Bỏ qua chính sách chấm mẫu bậc {}",
                 seed.rubricVersionCode(), seed.targetBandCode());
             return false;
         }
-        var rubric = rubricRepository.findById(rubricVersion.getRubricId()).orElse(null);
+        Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId()).orElse(null);
         if (rubric == null || rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             LOGGER.warn("Bộ tiêu chí của phiên bản {} không thuộc sở hữu SYSTEM. Bỏ qua chính sách chấm mẫu"
                 + " bậc {}", seed.rubricVersionCode(), seed.targetBandCode());
             return false;
         }
-        // Cùng phép kiểm CreateSystemAssessmentPolicyUseCase áp: rubric gắn với FRAMEWORK (không
-        // phải phiên bản khung), nên so với getFrameworkId của phiên bản đang dùng.
+        // The same check CreateSystemAssessmentPolicyUseCase applies: the rubric is tied to the FRAMEWORK (not
+        // the framework version), so compare against getFrameworkId of the version in use.
         if (!rubric.getFrameworkId().equals(frameworkId)) {
             LOGGER.warn("Bộ tiêu chí {} không cùng khung với chính sách. Bỏ qua chính sách chấm mẫu bậc {}",
                 seed.rubricVersionCode(), seed.targetBandCode());
             return false;
         }
 
-        // Idempotent theo ĐÚNG danh tính của một bản mẫu: (phiên bản bộ tiêu chí, bậc mục tiêu).
+        // Idempotent by EXACTLY the identity of a template: (rubric version, target band).
         //
-        // Trước đây chỗ này dùng existsActiveForScopeAnyRubricVersion -- phép kiểm "mỗi phạm vi một
-        // chính sách" của đường tạo thật. Luật đó là bất biến của chính sách TRƯỜNG (mỗi lớp chỉ được
-        // chấm theo một chính sách), không phải của thư mục bản mẫu: hai bản mẫu cùng khối khác bậc
-        // là đúng thứ ta muốn dựng ra. Giữ nguyên nó thì bản chuyên bị bỏ qua âm thầm, và ba bản
-        // chuyên (đều không khai khối) còn đè lên nhau vì cùng một phạm vi rỗng.
+        // This place used to use existsActiveForScopeAnyRubricVersion -- the "one policy per scope"
+        // check of the real creation path. That rule is an invariant of SCHOOL policies (each class may only be
+        // graded by one policy), not of the template directory: two templates of the same grade with different bands
+        // are exactly what we want to build. Keeping it would silently skip the specialized template, and the three
+        // specialized templates (none of which declares a grade) would also overwrite each other because they share the same empty scope.
         //
-        // Bỏ luật đó ở đây KHÔNG ảnh hưởng gì: chính sách hệ thống không đi chấm bài (đường chấm đọc
-        // exams.assessment_policy_id), findActivePolicy không còn nơi gọi, và idx_assessment_policies
-        // _scope_version không bắt được hàng nào có NULL trong khoá. Đường tạo tay của system admin
-        // (CreateSystemAssessmentPolicyUseCase) vẫn giữ nguyên luật cũ.
+        // Dropping that rule here affects NOTHING: a system policy does not grade attempts (the grading path reads
+        // exams.assessment_policy_id), findActivePolicy has no remaining callers, and idx_assessment_policies
+        // _scope_version does not catch any row that has NULL in its key. The manual creation path of the system admin
+        // (CreateSystemAssessmentPolicyUseCase) keeps the old rule.
         boolean alreadySeeded = assessmentPolicyRepository
             .findPublishedSystemWideByRubricVersionId(rubricVersion.getId()).stream()
             .anyMatch(existing -> targetBand.getId().equals(existing.getTargetFrameworkBandId()));
@@ -276,23 +281,23 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
             null, languageId, frameworkVersion.getId(), gradeLevelId, null, null) + 1;
 
         assessmentPolicyRepository.save(new AssessmentPolicy(
-            // schoolId null = chính sách của hệ thống, không thuộc trường nào.
+            // schoolId null = a system policy, belonging to no school.
             null,
             gradeLevelId,
-            // Niên khóa và Lớp thuộc phạm vi của một trường cụ thể nên chính sách hệ thống luôn để trống.
+            // School year and Class belong to the scope of a specific school, so a system policy always leaves them empty.
             null,
             null,
             languageId,
             frameworkVersion.getId(),
             rubricVersion.getId(),
             targetBand.getId(),
-            // Xem javadoc lớp: văn bản quy định bậc, không quy định ngưỡng điểm.
+            // See the class javadoc: the regulation dictates the band, not the score threshold.
             null,
             AssessmentPolicyStrictness.STANDARD,
             nextVersion,
             AssessmentPolicyStatus.PUBLISHED,
-            // effectiveTo null = không giới hạn. Bản mẫu chỉ để đọc và sao nên không có lý do hết hạn;
-            // khoảng hiệu lực thật là thứ trường tự đặt lúc sao về.
+            // effectiveTo null = unlimited. A template is only for reading and copying so there is no reason for it to expire;
+            // the real validity range is what the school sets itself when copying it over.
             now,
             null,
             now,

@@ -1,11 +1,15 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.model.school.SchoolQuotaPolicy;
+import com.sep.vox.domain.model.school.SchoolUser;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -78,24 +82,24 @@ public class DistributeQuotaToUsersService {
             DistributionMode mode, List<AllocateUserQuotaAmountCommand> allocations, boolean confirmWalletDraw) {
         requireSchoolAdminAccess(schoolId);
 
-        var subscription = findActiveSubscription(schoolId);
-        var pool = findPool(subscription.getId(), quotaType);
-        var role = findRole(roleCode);
-        var eligibleUserIds = fetchEligibleUserIds(schoolId, role.getId());
+        SchoolSubscription subscription = findActiveSubscription(schoolId);
+        SchoolSubscriptionQuotaRecord pool = findPool(subscription.getId(), quotaType);
+        Role role = findRole(roleCode);
+        List<UUID> eligibleUserIds = fetchEligibleUserIds(schoolId, role.getId());
         if (eligibleUserIds.isEmpty()) {
             throw new IllegalArgumentException("Trường chưa có giáo viên/học sinh phù hợp để phân bổ hạn mức");
         }
 
-        var existing = fetchExistingAllocationsByUserId(subscription.getId(), quotaType);
+        Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing = fetchExistingAllocationsByUserId(subscription.getId(), quotaType);
 
         // Trần phân phối áp cho CẢ HAI chế độ, không riêng chia đều: nếu chỉ chặn ở AUTO thì quản
         // trị viên đi vòng qua bằng cách sửa tay từng người -- mà sửa tay chính là đường thường dùng
         // sau khi màn chia hạn mức chuyển sang hộp thoại từng người. Một trần đi vòng được không phải
         // là trần.
-        var policy = schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, quotaType);
-        var distributableVnd = policy.distributableAmountOf(orZero(pool.getTotalAllocatedAmountVnd()));
+        SchoolQuotaPolicy policy = schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, quotaType);
+        BigDecimal distributableVnd = policy.distributableAmountOf(orZero(pool.getTotalAllocatedAmountVnd()));
 
-        var targetAmounts = mode == DistributionMode.AUTO
+        Map<UUID, BigDecimal> targetAmounts = mode == DistributionMode.AUTO
             ? computeAutoSplit(eligibleUserIds, distributableVnd, existing)
             : computeManualAmounts(allocations, eligibleUserIds, existing, distributableVnd,
                 walletHeadroomVnd(schoolId), confirmWalletDraw);
@@ -134,22 +138,22 @@ public class DistributeQuotaToUsersService {
             UUID schoolId, QuotaType quotaType, String roleCode, String search, int page, int size) {
         requireSchoolAdminAccess(schoolId);
 
-        var subscription = findActiveSubscription(schoolId);
-        var pool = findPool(subscription.getId(), quotaType);
-        var role = findRole(roleCode);
+        SchoolSubscription subscription = findActiveSubscription(schoolId);
+        SchoolSubscriptionQuotaRecord pool = findPool(subscription.getId(), quotaType);
+        Role role = findRole(roleCode);
 
-        var userPage = schoolUserRepository.findBySchoolId(
+        PageResult<SchoolUser> userPage = schoolUserRepository.findBySchoolId(
             schoolId, blankToNull(search), role.getId(), UserStatus.ACTIVE.name(), null, false, page, size);
 
-        var existing = fetchExistingAllocationsByUserId(subscription.getId(), quotaType);
+        Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing = fetchExistingAllocationsByUserId(subscription.getId(), quotaType);
 
         // null (không phải 0) cho người CHƯA có dòng phân bổ: hai trạng thái đó cho hành vi ngược
         // nhau ở cửa chặn, nên gộp chúng thành cùng một số 0 là giấu mất thông tin mà quản trị trường
         // cần nhất -- xem javadoc của Row.
-        var rows = userPage.content().stream()
+        List<QuotaUserAllocationPageResponse.Row> rows = userPage.content().stream()
             .map(schoolUser -> schoolUser.getUserId())
             .map(userId -> {
-                var allocation = existing.get(userId);
+                SchoolSubscriptionQuotaUserAllocation allocation = existing.get(userId);
                 return new QuotaUserAllocationPageResponse.Row(
                     userId,
                     allocation == null ? null : orZero(allocation.getAllocatedAmountVnd()),
@@ -164,14 +168,14 @@ public class DistributeQuotaToUsersService {
         // điều kiện (xem sumAllocatedForEligibleUsers), mà lọc được ở tầng Java thì phải nạp trước
         // toàn bộ danh sách người đủ điều kiện của trường -- đúng cái mà việc phân trang màn này sinh
         // ra để tránh.
-        var distributed = subscriptionQuotaUserAllocationRepository.sumAllocatedForEligibleUsers(
+        BigDecimal distributed = subscriptionQuotaUserAllocationRepository.sumAllocatedForEligibleUsers(
             subscription.getId(), quotaType, schoolId, role.getId(), UserStatus.ACTIVE.name());
-        var orphaned = subscriptionQuotaUserAllocationRepository
+        BigDecimal orphaned = subscriptionQuotaUserAllocationRepository
             .sumAllocated(subscription.getId(), quotaType)
             .subtract(distributed)
             .max(BigDecimal.ZERO);
 
-        var policy = schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, quotaType);
+        SchoolQuotaPolicy policy = schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, quotaType);
 
         return new QuotaUserAllocationPageResponse(
             SchoolSubscriptionQuotaRecordDto.toDto(pool),
@@ -232,19 +236,19 @@ public class DistributeQuotaToUsersService {
      */
     private Map<UUID, BigDecimal> computeAutoSplit(List<UUID> eligibleUserIds, BigDecimal distributableVnd,
             Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing) {
-        var count = eligibleUserIds.size();
-        var base = distributableVnd.divide(BigDecimal.valueOf(count), 6, RoundingMode.DOWN);
+        int count = eligibleUserIds.size();
+        BigDecimal base = distributableVnd.divide(BigDecimal.valueOf(count), 6, RoundingMode.DOWN);
         // Phần dư sau khi chia đều (không hết vì DOWN), quy đổi sang số đơn vị SMALLEST_UNIT để rải
         // cho count đầu tiên -- giữ đúng tổng phần được chia, không "mất" hay "sinh thêm" tiền do làm tròn.
-        var remainderUnits = distributableVnd.subtract(base.multiply(BigDecimal.valueOf(count)))
+        int remainderUnits = distributableVnd.subtract(base.multiply(BigDecimal.valueOf(count)))
             .divide(SMALLEST_UNIT, 0, RoundingMode.DOWN)
             .intValueExact();
 
-        var result = new LinkedHashMap<UUID, BigDecimal>();
+        Map<UUID, BigDecimal> result = new LinkedHashMap<UUID, BigDecimal>();
         for (int i = 0; i < count; i++) {
-            var userId = eligibleUserIds.get(i);
-            var amount = i < remainderUnits ? base.add(SMALLEST_UNIT) : base;
-            var used = usedQuantityOrZero(existing.get(userId));
+            UUID userId = eligibleUserIds.get(i);
+            BigDecimal amount = i < remainderUnits ? base.add(SMALLEST_UNIT) : base;
+            BigDecimal used = usedQuantityOrZero(existing.get(userId));
             if (amount.compareTo(used) < 0) {
                 throw new IllegalArgumentException(
                     "Không thể chia đều vì có người dùng đã sử dụng vượt mức chia mới, hãy dùng chế độ thủ công");
@@ -261,10 +265,10 @@ public class DistributeQuotaToUsersService {
             throw new IllegalArgumentException("Danh sách phân bổ không được để trống");
         }
 
-        var eligibleSet = new HashSet<>(eligibleUserIds);
-        var result = new LinkedHashMap<UUID, BigDecimal>();
+        Set<UUID> eligibleSet = new HashSet<>(eligibleUserIds);
+        Map<UUID, BigDecimal> result = new LinkedHashMap<UUID, BigDecimal>();
 
-        for (var item : allocations) {
+        for (AllocateUserQuotaAmountCommand item : allocations) {
             if (item.userId() == null || !eligibleSet.contains(item.userId())) {
                 throw new IllegalArgumentException("Người dùng không thuộc trường hoặc không đúng vai trò: " + item.userId());
             }
@@ -274,14 +278,14 @@ public class DistributeQuotaToUsersService {
             if (item.amountVnd() == null || item.amountVnd().compareTo(BigDecimal.ZERO) < 0) {
                 throw new IllegalArgumentException("Số lượng phân bổ không hợp lệ");
             }
-            var used = usedQuantityOrZero(existing.get(item.userId()));
+            BigDecimal used = usedQuantityOrZero(existing.get(item.userId()));
             if (item.amountVnd().compareTo(used) < 0) {
                 throw new IllegalArgumentException("Không thể đặt hạn mức nhỏ hơn số lượng đã sử dụng");
             }
             result.put(item.userId(), item.amountVnd());
         }
 
-        var sumInRequest = result.values().stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+        BigDecimal sumInRequest = result.values().stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         // Chỉ cộng phần của những người CÒN đủ điều kiện. Dòng phân bổ không bị xoá khi giáo viên
         // nghỉ việc hay học sinh ra trường, nên cộng cả những dòng đó là để một khoản không ai với
         // tới được chiếm chỗ trong trần -- mà chủ trường thì không thấy nó ở bất kỳ trang nào của
@@ -291,7 +295,7 @@ public class DistributeQuotaToUsersService {
         // Cùng phép lọc với fetchEligibleUserIds, và cũng chính là tập mà viewPage cộng để ra
         // distributedAmountVnd -- hai bên phải đếm cùng một tập, nếu không thì con số giao diện dùng
         // để tính "còn chia được" sẽ không phải con số backend dùng để từ chối.
-        var sumOthers = existing.entrySet().stream()
+        BigDecimal sumOthers = existing.entrySet().stream()
             .filter(e -> !result.containsKey(e.getKey()))
             .filter(e -> eligibleSet.contains(e.getKey()))
             .map(e -> orZero(e.getValue().getAllocatedAmountVnd()))
@@ -301,7 +305,7 @@ public class DistributeQuotaToUsersService {
         // trường (school_balances) -- CHỈ nới TRẦN, không giữ tiền, y hệt cách ConsumeQuotaService đã
         // tự động rút ví khi tiêu thật vượt pool. Đòi confirmWalletDraw vì ví đó dùng chung cho cả
         // EXAM lẫn PRACTICE, quản trị viên phải biết mình đang ăn vào phần chung đó.
-        var overDistributableVnd = sumInRequest.add(sumOthers).subtract(distributableVnd);
+        BigDecimal overDistributableVnd = sumInRequest.add(sumOthers).subtract(distributableVnd);
         if (overDistributableVnd.signum() > 0) {
             if (overDistributableVnd.compareTo(walletHeadroomVnd) > 0) {
                 throw new IllegalArgumentException(
@@ -328,12 +332,12 @@ public class DistributeQuotaToUsersService {
 
     private QuotaUserAllocationSummaryResponse buildSummary(UUID subscriptionId, QuotaType quotaType,
             SchoolSubscriptionQuotaRecord pool, List<UUID> eligibleUserIds) {
-        var existing = fetchExistingAllocationsByUserId(subscriptionId, quotaType);
+        Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing = fetchExistingAllocationsByUserId(subscriptionId, quotaType);
 
         // Trả về ĐỦ mọi người đủ điều kiện, kể cả người chưa được cấp gì (allocation ZERO ảo, không
         // ghi xuống DB): màn chia hạn mức phải hiện được cả người đang có 0 thì quản trị trường mới
         // biết còn ai chưa chia.
-        var allocationDtos = eligibleUserIds.stream()
+        List<SchoolSubscriptionQuotaUserAllocationDto> allocationDtos = eligibleUserIds.stream()
             .map(userId -> existing.getOrDefault(userId, new SchoolSubscriptionQuotaUserAllocation(
                 subscriptionId, quotaType, userId, BigDecimal.ZERO, BigDecimal.ZERO)))
             .map(SchoolSubscriptionQuotaUserAllocationDto::toDto)
@@ -348,7 +352,7 @@ public class DistributeQuotaToUsersService {
     }
 
     private List<UUID> fetchEligibleUserIds(UUID schoolId, UUID roleId) {
-        var page = schoolUserRepository.findBySchoolId(
+        PageResult<SchoolUser> page = schoolUserRepository.findBySchoolId(
             schoolId, null, roleId, UserStatus.ACTIVE.name(), null, false, 1, MAX_ELIGIBLE_USERS_PAGE_SIZE);
         return page.content().stream().map(schoolUser -> schoolUser.getUserId()).sorted().toList();
     }

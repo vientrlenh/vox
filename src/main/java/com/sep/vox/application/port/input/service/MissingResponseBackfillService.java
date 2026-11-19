@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.exam.ExamPaperItem;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -94,7 +96,7 @@ public class MissingResponseBackfillService {
      *         không được phép cho 0
      */
     public boolean recordSilentAnswer(UUID responseId, UUID paperItemId) {
-        var response = examItemResponseRepository.findById(responseId).orElse(null);
+        ExamItemResponse response = examItemResponseRepository.findById(responseId).orElse(null);
         if (response != null && !isSilentAnswer(response)) {
             LOGGER.warn(
                 "Từ chối ghi 0 điểm cho câu {}: câu này CÓ nội dung trả lời, phải để người chấm xử lý.",
@@ -135,14 +137,14 @@ public class MissingResponseBackfillService {
         if (paperId == null) {
             return 0;
         }
-        var answeredPaperItemIds = examItemResponseRepository.findBySessionId(sessionId).stream()
+        Set<UUID> answeredPaperItemIds = examItemResponseRepository.findBySessionId(sessionId).stream()
             .map(response -> response.getPaperItemId())
             .filter(java.util.Objects::nonNull)
             .collect(java.util.stream.Collectors.toSet());
 
-        var now = Instant.now();
-        var created = 0;
-        for (var paperItem : examPaperItemRepository.findByPaperId(paperId)) {
+        Instant now = Instant.now();
+        int created = 0;
+        for (ExamPaperItem paperItem : examPaperItemRepository.findByPaperId(paperId)) {
             if (answeredPaperItemIds.contains(paperItem.getId())) {
                 continue;
             }
@@ -159,7 +161,7 @@ public class MissingResponseBackfillService {
             // exception ở đây rollback cả transaction và nuốt luôn vòng bắn sự kiện: phía Python
             // publish AnswerTurnsRecorded xong chờ mãi không có request chấm quay lại. Triệu chứng
             // là "bài không được chấm", không phải "backfill hỏng", nên rất dễ đổ nhầm cho Kafka.
-            var response = examItemResponseRepository.save(new ExamItemResponse(
+            ExamItemResponse response = examItemResponseRepository.save(new ExamItemResponse(
                 UUID.randomUUID(),
                 sessionId, paperItem.getId(), null, 0, null, NO_RECORDING, now
             ));

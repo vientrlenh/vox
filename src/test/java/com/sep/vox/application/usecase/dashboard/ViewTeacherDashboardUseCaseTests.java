@@ -19,6 +19,8 @@ import com.sep.vox.application.port.input.usecase.dashboard.ViewTeacherDashboard
 import com.sep.vox.application.port.input.usecase.examevaluation.ResolveExamCandidateAttemptsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.ExamCandidateAttempts;
+import com.sep.vox.application.response.input.dashboard.SchoolClassScoreStatsResponse;
+import com.sep.vox.application.response.input.dashboard.TeacherDashboardSummaryResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
@@ -91,7 +93,7 @@ class ViewTeacherDashboardUseCaseTests {
     }
 
     private Exam classTest(UUID examId, ExamStatus status, String name) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         exam.setKind(ExamKind.CLASS_TEST);
@@ -101,7 +103,7 @@ class ViewTeacherDashboardUseCaseTests {
     }
 
     private ExamCandidate candidate(UUID examId, UUID studentId) {
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(UUID.randomUUID());
         candidate.setExamId(examId);
         candidate.setStudentId(studentId);
@@ -114,8 +116,8 @@ class ViewTeacherDashboardUseCaseTests {
 
     @Test
     void should_only_count_class_test_exams_for_status_counts() {
-        var draftExamId = UUID.randomUUID();
-        var publishedExamId = UUID.randomUUID();
+        UUID draftExamId = UUID.randomUUID();
+        UUID publishedExamId = UUID.randomUUID();
         when(examRepository.findAccessible(
             eq(teacherId), eq(schoolId), eq(false), eq(false), eq(schoolId), eq(null),
             eq(ExamKind.CLASS_TEST), eq(null), eq(null), eq(1), eq(500)
@@ -128,7 +130,7 @@ class ViewTeacherDashboardUseCaseTests {
             membership(publishedExamId, teacherId)
         ));
 
-        var result = useCase.execute(null);
+        TeacherDashboardSummaryResponse result = useCase.execute(null);
 
         assertThat(result.examStatusCounts().draft()).isEqualTo(1L);
         assertThat(result.examStatusCounts().resultsPublished()).isEqualTo(1L);
@@ -142,7 +144,7 @@ class ViewTeacherDashboardUseCaseTests {
         when(examGradingAssignmentRepository.countByTeacherIdAndStatus(teacherId, GradingAssignmentStatus.COMPLETED))
             .thenReturn(7L);
 
-        var result = useCase.execute(null);
+        TeacherDashboardSummaryResponse result = useCase.execute(null);
 
         assertThat(result.gradingStats().pending()).isEqualTo(3L);
         assertThat(result.gradingStats().completed()).isEqualTo(7L);
@@ -150,7 +152,7 @@ class ViewTeacherDashboardUseCaseTests {
 
     @Test
     void should_report_null_average_when_teacher_has_no_class_tests() {
-        var result = useCase.execute(null);
+        TeacherDashboardSummaryResponse result = useCase.execute(null);
 
         assertThat(result.scoreStats().averageScore()).isNull();
         assertThat(result.scoreStats().gradedCount()).isZero();
@@ -159,8 +161,8 @@ class ViewTeacherDashboardUseCaseTests {
 
     @Test
     void should_compute_average_score_across_class_test_candidates() {
-        var examId = UUID.randomUUID();
-        var exam = classTest(examId, ExamStatus.RESULTS_PUBLISHED);
+        UUID examId = UUID.randomUUID();
+        Exam exam = classTest(examId, ExamStatus.RESULTS_PUBLISHED);
 
         when(examRepository.findAccessible(
             eq(teacherId), eq(schoolId), eq(false), eq(false), eq(schoolId), eq(null),
@@ -169,10 +171,10 @@ class ViewTeacherDashboardUseCaseTests {
         when(examMemberRepository.findByExamIdIn(List.of(examId)))
             .thenReturn(List.of(membership(examId, teacherId)));
 
-        var candidateGraded = new ExamCandidate();
+        ExamCandidate candidateGraded = new ExamCandidate();
         candidateGraded.setId(UUID.randomUUID());
         candidateGraded.setExamId(examId);
-        var candidateUngraded = new ExamCandidate();
+        ExamCandidate candidateUngraded = new ExamCandidate();
         candidateUngraded.setId(UUID.randomUUID());
         candidateUngraded.setExamId(examId);
         when(examCandidateRepository.findByExamIdIn(List.of(examId)))
@@ -185,7 +187,7 @@ class ViewTeacherDashboardUseCaseTests {
             candidateUngraded.getId(), new ExamCandidateAttempts(List.of(), null, null)
         ));
 
-        var result = useCase.execute(null);
+        TeacherDashboardSummaryResponse result = useCase.execute(null);
 
         assertThat(result.scoreStats().averageScore()).isEqualByComparingTo(BigDecimal.valueOf(8.50));
         assertThat(result.scoreStats().gradedCount()).isEqualTo(1L);
@@ -194,8 +196,8 @@ class ViewTeacherDashboardUseCaseTests {
 
     @Test
     void should_report_zero_graded_when_candidates_exist_but_none_are_graded() {
-        var examId = UUID.randomUUID();
-        var exam = classTest(examId, ExamStatus.RESULTS_PUBLISHED);
+        UUID examId = UUID.randomUUID();
+        Exam exam = classTest(examId, ExamStatus.RESULTS_PUBLISHED);
 
         when(examRepository.findAccessible(
             eq(teacherId), eq(schoolId), eq(false), eq(false), eq(schoolId), eq(null),
@@ -204,10 +206,10 @@ class ViewTeacherDashboardUseCaseTests {
         when(examMemberRepository.findByExamIdIn(List.of(examId)))
             .thenReturn(List.of(membership(examId, teacherId)));
 
-        var candidateOne = new ExamCandidate();
+        ExamCandidate candidateOne = new ExamCandidate();
         candidateOne.setId(UUID.randomUUID());
         candidateOne.setExamId(examId);
-        var candidateTwo = new ExamCandidate();
+        ExamCandidate candidateTwo = new ExamCandidate();
         candidateTwo.setId(UUID.randomUUID());
         candidateTwo.setExamId(examId);
         when(examCandidateRepository.findByExamIdIn(List.of(examId)))
@@ -220,7 +222,7 @@ class ViewTeacherDashboardUseCaseTests {
             candidateTwo.getId(), new ExamCandidateAttempts(List.of(), null, null)
         ));
 
-        var result = useCase.execute(null);
+        TeacherDashboardSummaryResponse result = useCase.execute(null);
 
         assertThat(result.scoreStats().averageScore()).isNull();
         assertThat(result.scoreStats().gradedCount()).isZero();
@@ -229,12 +231,12 @@ class ViewTeacherDashboardUseCaseTests {
 
     @Test
     void should_report_per_class_test_score_breakdown_with_class_name_and_high_low() {
-        var examId = UUID.randomUUID();
-        var exam = classTest(examId, ExamStatus.RESULTS_PUBLISHED, "Kiểm tra 15 phút");
-        var classId = UUID.randomUUID();
-        var studentA = UUID.randomUUID();
-        var studentB = UUID.randomUUID();
-        var studentC = UUID.randomUUID();
+        UUID examId = UUID.randomUUID();
+        Exam exam = classTest(examId, ExamStatus.RESULTS_PUBLISHED, "Kiểm tra 15 phút");
+        UUID classId = UUID.randomUUID();
+        UUID studentA = UUID.randomUUID();
+        UUID studentB = UUID.randomUUID();
+        UUID studentC = UUID.randomUUID();
 
         when(examRepository.findAccessible(
             eq(teacherId), eq(schoolId), eq(false), eq(false), eq(schoolId), eq(null),
@@ -243,9 +245,9 @@ class ViewTeacherDashboardUseCaseTests {
         when(examMemberRepository.findByExamIdIn(List.of(examId)))
             .thenReturn(List.of(membership(examId, teacherId)));
 
-        var candidateA = candidate(examId, studentA);
-        var candidateB = candidate(examId, studentB);
-        var candidateC = candidate(examId, studentC);
+        ExamCandidate candidateA = candidate(examId, studentA);
+        ExamCandidate candidateB = candidate(examId, studentB);
+        ExamCandidate candidateC = candidate(examId, studentC);
         when(examCandidateRepository.findByExamIdIn(List.of(examId)))
             .thenReturn(List.of(candidateA, candidateB, candidateC));
 
@@ -254,7 +256,7 @@ class ViewTeacherDashboardUseCaseTests {
             new SchoolClassUser(studentB, classId, true, Instant.now(), null, null),
             new SchoolClassUser(studentC, classId, true, Instant.now(), null, null)
         ));
-        var schoolClass = SchoolClass.create(schoolId, UUID.randomUUID(), UUID.randomUUID(), "L10A1", "Lớp 10A1", null, teacherId, Instant.now());
+        SchoolClass schoolClass = SchoolClass.create(schoolId, UUID.randomUUID(), UUID.randomUUID(), "L10A1", "Lớp 10A1", null, teacherId, Instant.now());
         schoolClass.setId(classId);
         when(schoolClassRepository.findAllById(List.of(classId))).thenReturn(List.of(schoolClass));
 
@@ -266,10 +268,10 @@ class ViewTeacherDashboardUseCaseTests {
             candidateC.getId(), new ExamCandidateAttempts(List.of(), null, null)
         ));
 
-        var result = useCase.execute(null);
+        TeacherDashboardSummaryResponse result = useCase.execute(null);
 
         assertThat(result.classScoreStats()).hasSize(1);
-        var stats = result.classScoreStats().get(0);
+        SchoolClassScoreStatsResponse stats = result.classScoreStats().get(0);
         assertThat(stats.examName()).isEqualTo("Kiểm tra 15 phút");
         assertThat(stats.className()).isEqualTo("Lớp 10A1");
         assertThat(stats.averageScore()).isEqualByComparingTo(BigDecimal.valueOf(7.0));
@@ -281,8 +283,8 @@ class ViewTeacherDashboardUseCaseTests {
 
     @Test
     void should_fall_back_to_unknown_class_name_when_class_membership_cannot_be_resolved() {
-        var examId = UUID.randomUUID();
-        var exam = classTest(examId, ExamStatus.RESULTS_PUBLISHED);
+        UUID examId = UUID.randomUUID();
+        Exam exam = classTest(examId, ExamStatus.RESULTS_PUBLISHED);
 
         when(examRepository.findAccessible(
             eq(teacherId), eq(schoolId), eq(false), eq(false), eq(schoolId), eq(null),
@@ -291,7 +293,7 @@ class ViewTeacherDashboardUseCaseTests {
         when(examMemberRepository.findByExamIdIn(List.of(examId)))
             .thenReturn(List.of(membership(examId, teacherId)));
 
-        var result = useCase.execute(null);
+        TeacherDashboardSummaryResponse result = useCase.execute(null);
 
         assertThat(result.classScoreStats()).hasSize(1);
         assertThat(result.classScoreStats().get(0).className()).isEqualTo("Không xác định");

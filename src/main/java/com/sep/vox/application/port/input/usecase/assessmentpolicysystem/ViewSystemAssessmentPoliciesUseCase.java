@@ -7,10 +7,13 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.AssessmentPolicyDto;
 import com.sep.vox.domain.mapper.AssessmentPolicyDtoMapper;
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,8 +36,8 @@ public class ViewSystemAssessmentPoliciesUseCase implements IUseCase<ViewSystemA
     @Override
     @Transactional(readOnly = true)
     public PageResult<AssessmentPolicyDto> execute(ViewSystemAssessmentPoliciesQuery query) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản bị khóa.");
@@ -65,7 +68,7 @@ public class ViewSystemAssessmentPoliciesUseCase implements IUseCase<ViewSystemA
             safeStatus = AssessmentPolicyStatus.PUBLISHED.name();
         }
 
-        var policyPage = assessmentPolicyRepository.findAllSystemWide(safeStatus, query.languageId(), query.rubricVersionId(),
+        PageResult<AssessmentPolicy> policyPage = assessmentPolicyRepository.findAllSystemWide(safeStatus, query.languageId(), query.rubricVersionId(),
                 query.effectiveFrom(), query.effectiveTo(), query.page(), query.size());
         return AssessmentPolicyDtoMapper.toDtoPage(policyPage);
     }

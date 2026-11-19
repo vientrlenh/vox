@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -30,8 +31,8 @@ public class ImportSessionRepositoryImpl implements ImportSessionRepository {
 
     @Override
     public ImportSession save(ImportSession session) {
-        var entity = ImportSessionMapper.toJpa(session);
-        var saved = springDataImportSessionRepository.saveAndFlush(entity);
+        ImportSessionJpaEntity entity = ImportSessionMapper.toJpa(session);
+        ImportSessionJpaEntity saved = springDataImportSessionRepository.saveAndFlush(entity);
         return ImportSessionMapper.toDomain(saved);
     }
 
@@ -43,12 +44,12 @@ public class ImportSessionRepositoryImpl implements ImportSessionRepository {
 
     @Override
     public PageResult<ImportSession> findBySchoolId(UUID schoolId, ImportType type, ImportSessionStatus status, int pageNumber, int size) {
-        var pageable = PageRequest.of(
+        PageRequest pageable = PageRequest.of(
             pageNumber - 1,
             size,
             Sort.by(Sort.Direction.DESC, (ImportSessionJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.DESC, (ImportSessionJpaEntity entity) -> entity.getId()))
         );
-        var page = springDataImportSessionRepository.findBySchoolIdWithFilters(
+        Page<ImportSessionJpaEntity> page = springDataImportSessionRepository.findBySchoolIdWithFilters(
             schoolId,
             valueOf(type),
             valueOf(status),

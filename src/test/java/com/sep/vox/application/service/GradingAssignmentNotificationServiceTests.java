@@ -89,7 +89,7 @@ class GradingAssignmentNotificationServiceTests {
 
         service.publishAssigned(List.of(assignment(GradingRoundType.SPOT_CHECK)), now);
 
-        var payload = capturePayload();
+        GradingAssignmentOpenedPayloadV1 payload = capturePayload();
         assertThat(payload.teacherId()).isEqualTo(teacherId);
         assertThat(payload.examId()).isEqualTo(examId);
         assertThat(payload.roundType()).isEqualTo("SPOT_CHECK");
@@ -107,9 +107,10 @@ class GradingAssignmentNotificationServiceTests {
     }
 
     /**
-     * Ca quan trọng nhất của lớp này. Kỳ thi tập trung chấm MÙ -- xem
-     * GradingStudentIdentityQueryTests, nơi studentName phải là null. Thông báo đi tới đúng
-     * người đang chấm, nên rò tên ở đây là phá thẳng cơ chế đó, và payload thì lưu vĩnh viễn.
+     * The most important case of this class. A centralized exam is graded BLIND -- see
+     * GradingStudentIdentityQueryTests, where studentName must be null. The notification goes to
+     * exactly the person grading, so leaking the name here breaks that mechanism outright, and the
+     * payload is stored permanently.
      */
     @Test
     void should_never_leak_the_candidate_name_for_a_centralized_exam() {
@@ -117,13 +118,14 @@ class GradingAssignmentNotificationServiceTests {
 
         service.publishAssigned(List.of(assignment(GradingRoundType.SPOT_CHECK)), now);
 
-        var captor = ArgumentCaptor.forClass(Outbox.class);
+        ArgumentCaptor<Outbox> captor = ArgumentCaptor.forClass(Outbox.class);
         verify(outboxRepository).save(captor.capture());
-        var rawPayload = captor.getValue().getPayload();
+        String rawPayload = captor.getValue().getPayload();
 
         assertThat(rawPayload).doesNotContain("Trần Quang Thiên");
-        var payload = jsonMapper.readValue(rawPayload, GradingAssignmentOpenedPayloadV1.class);
-        // Mã bài 8 ký tự hex là thứ duy nhất nhận diện bài trên màn ẩn danh.
+        GradingAssignmentOpenedPayloadV1 payload = jsonMapper.readValue(rawPayload, GradingAssignmentOpenedPayloadV1.class);
+        // The 8-character hex submission code is the only thing that identifies a submission on the
+        // anonymous screen.
         assertThat(payload.candidateLabel())
             .isEqualTo(candidateResultId.toString().replace("-", "").substring(0, 8).toUpperCase());
     }
@@ -150,11 +152,14 @@ class GradingAssignmentNotificationServiceTests {
             .isEqualTo(candidateResultId.toString().replace("-", "").substring(0, 8).toUpperCase());
     }
 
-    /** Gán tự động rải cả lớp trong một lần gọi: mỗi phân công một thông báo riêng. */
+    /**
+     * Auto-assign spreads a whole class in a single call: each assignment gets its own
+     * notification.
+     */
     @Test
     void should_publish_one_event_per_assignment() {
         given(ExamKind.CLASS_TEST, "Trần Quang Thiên");
-        var second = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
         when(examCandidateResultRepository.findByIdIn(any()))
             .thenReturn(List.of(result(candidateResultId), result(second)));
 
@@ -175,7 +180,7 @@ class GradingAssignmentNotificationServiceTests {
     // --- helpers ---------------------------------------------------------------
 
     private void given(ExamKind kind, String studentName) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setKind(kind);
         exam.setName(kind == ExamKind.CLASS_TEST ? "Kiểm tra 15 phút" : "Kỳ thi giữa kỳ");
@@ -184,13 +189,13 @@ class GradingAssignmentNotificationServiceTests {
             .thenReturn(List.of(result(candidateResultId)));
         when(examRepository.findByIdIn(any())).thenReturn(List.of(exam));
 
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(candidateId);
         candidate.setStudentId(studentId);
         when(examCandidateRepository.findByIdIn(any())).thenReturn(List.of(candidate));
 
         if (studentName != null) {
-            var user = new User();
+            User user = new User();
             user.setId(studentId);
             user.setFullName(new FullName(studentName));
             when(userRepository.findByIdIn(any())).thenReturn(List.of(user));
@@ -200,7 +205,7 @@ class GradingAssignmentNotificationServiceTests {
     }
 
     private ExamCandidateResult result(UUID id) {
-        var result = new ExamCandidateResult();
+        ExamCandidateResult result = new ExamCandidateResult();
         result.setId(id);
         result.setExamId(examId);
         result.setCandidateId(candidateId);
@@ -220,7 +225,7 @@ class GradingAssignmentNotificationServiceTests {
     }
 
     private GradingAssignmentOpenedPayloadV1 capturePayload() {
-        var captor = ArgumentCaptor.forClass(Outbox.class);
+        ArgumentCaptor<Outbox> captor = ArgumentCaptor.forClass(Outbox.class);
         verify(outboxRepository).save(captor.capture());
         return jsonMapper.readValue(
             captor.getValue().getPayload(), GradingAssignmentOpenedPayloadV1.class);

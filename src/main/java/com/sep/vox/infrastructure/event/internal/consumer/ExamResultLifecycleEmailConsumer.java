@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.event.internal.consumer;
 
+import com.sep.vox.domain.model.user.User;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -84,7 +85,7 @@ public class ExamResultLifecycleEmailConsumer {
         containerFactory = "stringKafkaListenerContainerFactory"
     )
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        var eventId = KafkaEventHeaders.readEventId(record);
+        UUID eventId = KafkaEventHeaders.readEventId(record);
 
         LOGGER.info("Receive event exam-result-lifecycle: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
@@ -95,11 +96,11 @@ public class ExamResultLifecycleEmailConsumer {
             return;
         }
 
-        var eventType = KafkaEventHeaders.readEventType(record);
-        var mail = renderMail(eventType, eventId, record.value());
+        String eventType = KafkaEventHeaders.readEventType(record);
+        Mail mail = renderMail(eventType, eventId, record.value());
 
-        // Học sinh đã bị xoá thì gửi lại bao nhiêu lần cũng không có người nhận: đánh dấu
-        // đã xử lý rồi bỏ qua, đừng để message chạy hết vòng retry rồi rơi vào DLT.
+        // If the student has been deleted, resending any number of times will never find a recipient: mark
+        // it processed and skip, do not let the message run the whole retry cycle and end up in the DLT.
         if (mail == null) {
             markProcessed(eventId);
             LOGGER.warn("Skip mail, recipient not found: eventId={}, eventType={}", eventId, eventType);
@@ -121,16 +122,16 @@ public class ExamResultLifecycleEmailConsumer {
         ack.acknowledge();
     }
 
-    /** @return {@code null} khi không tìm được người nhận */
+    /** @return {@code null} when no recipient can be found */
     private Mail renderMail(String eventType, UUID eventId, String value) {
         return switch (eventType) {
             case EventTypeConstant.EXAM_RESULT_RELEASED -> {
-                var payload = parse(value, ExamResultReleasedPayloadV1.class, eventType, eventId);
+                ExamResultReleasedPayloadV1 payload = parse(value, ExamResultReleasedPayloadV1.class, eventType, eventId);
                 yield mail(payload.studentId(), SUBJECT_RELEASED, () -> mailTemplatePort.renderResultReleasedEmail(
                     payload.examName(), formatScore(payload.totalScore())));
             }
             case EventTypeConstant.EXAM_RESULT_REGRADED -> {
-                var payload = parse(value, ExamResultRegradedPayloadV1.class, eventType, eventId);
+                ExamResultRegradedPayloadV1 payload = parse(value, ExamResultRegradedPayloadV1.class, eventType, eventId);
                 yield mail(payload.studentId(), SUBJECT_REGRADED, () -> mailTemplatePort.renderResultRegradedEmail(
                     payload.examName(),
                     roundLabel(payload.roundType()),
@@ -138,17 +139,17 @@ public class ExamResultLifecycleEmailConsumer {
                     formatScore(payload.scoreAfter())));
             }
             case EventTypeConstant.EXAM_RESULT_INVALIDATED -> {
-                var payload = parse(value, ExamResultInvalidatedPayloadV1.class, eventType, eventId);
+                ExamResultInvalidatedPayloadV1 payload = parse(value, ExamResultInvalidatedPayloadV1.class, eventType, eventId);
                 yield mail(payload.studentId(), SUBJECT_INVALIDATED,
                     () -> mailTemplatePort.renderResultInvalidatedEmail(payload.examName(), payload.reason()));
             }
             case EventTypeConstant.EXAM_RESULT_INVALID_CLEARED -> {
-                var payload = parse(value, ExamResultInvalidClearedPayloadV1.class, eventType, eventId);
+                ExamResultInvalidClearedPayloadV1 payload = parse(value, ExamResultInvalidClearedPayloadV1.class, eventType, eventId);
                 yield mail(payload.studentId(), SUBJECT_INVALID_CLEARED,
                     () -> mailTemplatePort.renderResultInvalidClearedEmail(payload.examName(), payload.reason()));
             }
             case EventTypeConstant.EXAM_RESULT_OUTCOME_DECIDED -> {
-                var payload = parse(value, ExamResultOutcomeDecidedPayloadV1.class, eventType, eventId);
+                ExamResultOutcomeDecidedPayloadV1 payload = parse(value, ExamResultOutcomeDecidedPayloadV1.class, eventType, eventId);
                 yield mail(payload.studentId(), SUBJECT_OUTCOME_DECIDED,
                     () -> mailTemplatePort.renderResultOutcomeDecidedEmail(
                         payload.examName(),
@@ -160,12 +161,12 @@ public class ExamResultLifecycleEmailConsumer {
         };
     }
 
-    /** Hoãn render tới khi đã chắc chắn có người nhận, khỏi dựng HTML để rồi vứt đi. */
+    /** Defer rendering until a recipient is certain, so we do not build HTML just to throw it away. */
     private Mail mail(UUID recipientId, String subject, Supplier<String> html) {
         if (recipientId == null) {
             return null;
         }
-        var recipient = userRepository.findById(recipientId).orElse(null);
+        User recipient = userRepository.findById(recipientId).orElse(null);
         if (recipient == null) {
             return null;
         }
@@ -218,7 +219,7 @@ public class ExamResultLifecycleEmailConsumer {
 
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
-        var eventId = KafkaEventHeaders.readEventIdOrNull(record);
+        UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         LOGGER.error(
             "exam-result-lifecycle event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
             eventId, record.topic(), record.partition(), record.offset(), record.value());

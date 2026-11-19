@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
+import com.sep.vox.domain.model.exam.ExamCandidate;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -58,12 +59,12 @@ public class DeleteExamCandidateUseCase implements IUseCase<DeleteExamCandidateC
     @Override
     @Transactional
     public Void execute(DeleteExamCandidateCommand input) {
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         authorize(exam);
         ExamEditingGuard.requireScheduleEditable(exam);
 
-        var candidate = examCandidateRepository.findById(input.candidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(input.candidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh"));
         if (!candidate.getExamId().equals(exam.getId())) {
             throw new NotFoundException("Không tìm thấy thí sinh");
@@ -79,11 +80,11 @@ public class DeleteExamCandidateUseCase implements IUseCase<DeleteExamCandidateC
 
     /** Cùng luật với {@link AssignExamCandidateScheduleUseCase}: quản trị trường sở tại hoặc chủ tịch hội đồng. */
     private UUID authorize(Exam exam) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId())) {
             return currentUserId;

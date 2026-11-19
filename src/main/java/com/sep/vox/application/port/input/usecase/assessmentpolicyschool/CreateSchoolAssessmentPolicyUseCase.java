@@ -20,6 +20,7 @@ import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolGrade;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
@@ -102,7 +103,7 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
         User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản đã bị khóa.");
 
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
         UUID schoolId = commands.get(0).schoolId();
         if (!schoolUser.getSchoolId().equals(schoolId)) throw new ForbiddenException("BẢO MẬT: Không thể tạo Policy cho trường khác.");
 
@@ -112,7 +113,7 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
         Set<ScopeClaimKey> scopeClaimsInBatch = new HashSet<>();
         // Nhớ lại kết quả tra Lớp -> Khối năm học -> Khối và trần bậc trong suốt batch:
         // một lần gọi API tạo nhiều policy thường dùng lại đúng vài khối và vài khung.
-        var bandScopeBatch = gradeLevelBandScopeGuardService.newBatch();
+        GradeLevelBandScopeGuardService.Batch bandScopeBatch = gradeLevelBandScopeGuardService.newBatch();
 
         for (CreateAssessmentPolicyCommand command : commands) {
             if (!schoolId.equals(command.schoolId())) {

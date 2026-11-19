@@ -30,17 +30,17 @@ class JwtAuthTokenProviderTests {
 
     @Test
     void generateJwtToken_should_include_school_id_claim_when_user_belongs_to_school() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var roles = List.of("SCHOOL_ADMIN");
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        List<String> roles = List.of("SCHOOL_ADMIN");
 
-        var token = jwtAuthTokenProvider.generateJwtToken(userId.toString(), schoolId, "admin@example.com", roles);
+        String token = jwtAuthTokenProvider.generateJwtToken(userId.toString(), schoolId, "admin@example.com", roles);
 
         assertThat(jwtAuthTokenProvider.getUserIdFromToken(token)).isEqualTo(userId);
         assertThat(jwtAuthTokenProvider.getSchoolIdFromToken(token)).isEqualTo(schoolId);
         assertThat(jwtAuthTokenProvider.getEmailFromToken(token)).isEqualTo("admin@example.com");
 
-        var claims = claims(token);
+        Claims claims = claims(token);
         assertThat(claims.get("userId", String.class)).isEqualTo(userId.toString());
         assertThat(claims.get("schoolId", String.class)).isEqualTo(schoolId.toString());
         assertThat(claims.get("email", String.class)).isEqualTo("admin@example.com");
@@ -49,16 +49,16 @@ class JwtAuthTokenProviderTests {
 
     @Test
     void generateJwtToken_should_omit_school_id_claim_when_user_has_no_school() {
-        var userId = UUID.randomUUID();
-        var roles = List.of("SYSTEM_ADMIN");
+        UUID userId = UUID.randomUUID();
+        List<String> roles = List.of("SYSTEM_ADMIN");
 
-        var token = jwtAuthTokenProvider.generateJwtToken(userId.toString(), null, "sysadmin@example.com", roles);
+        String token = jwtAuthTokenProvider.generateJwtToken(userId.toString(), null, "sysadmin@example.com", roles);
 
         assertThat(jwtAuthTokenProvider.getUserIdFromToken(token)).isEqualTo(userId);
         assertThat(jwtAuthTokenProvider.getSchoolIdFromToken(token)).isNull();
         assertThat(jwtAuthTokenProvider.getEmailFromToken(token)).isEqualTo("sysadmin@example.com");
 
-        var claims = claims(token);
+        Claims claims = claims(token);
         assertThat(claims).doesNotContainKey("schoolId");
         assertThat(rolesFromClaims(claims)).containsExactly("SYSTEM_ADMIN");
     }

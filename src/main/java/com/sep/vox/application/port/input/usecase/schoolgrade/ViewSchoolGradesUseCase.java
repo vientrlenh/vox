@@ -92,7 +92,7 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
     }
 
     private String parseStatus(String status) {
-        var normalized = StringNormalization.trimAndCollapseSpaces(status);
+        String normalized = StringNormalization.trimAndCollapseSpaces(status);
         if (normalized == null || normalized.isBlank()) {
             return null;
         }

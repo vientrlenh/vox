@@ -59,8 +59,8 @@ public class ResultStatusHistoryRecorder {
         if (before == null || after == null) {
             return null;
         }
-        var statusChanged = before.status() != after.getStatus();
-        var scoreChanged = !equalScores(before.totalScore(), after.getTotalScore());
+        boolean statusChanged = before.status() != after.getStatus();
+        boolean scoreChanged = !equalScores(before.totalScore(), after.getTotalScore());
         if (!statusChanged && !scoreChanged) {
             return null;
         }

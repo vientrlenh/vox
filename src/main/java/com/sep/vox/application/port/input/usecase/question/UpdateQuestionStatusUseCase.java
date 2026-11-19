@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.question;
 
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionBank;
 import java.time.Instant;
 
 import org.springframework.stereotype.Service;
@@ -48,20 +50,20 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
     @Override
     @Transactional
     public QuestionDto execute(UpdateQuestionStatusCommand input) {
-        var action = StringNormalization.normalizeCode(input.action());
-        var note = StringNormalization.trimAndCollapseSpaces(input.note());
+        String action = StringNormalization.normalizeCode(input.action());
+        String note = StringNormalization.trimAndCollapseSpaces(input.note());
 
-        var actor = questionStatusActorResolver.resolve();
-        var question = questionRepository.findById(input.questionId())
+        QuestionStatusTransition.Actor actor = questionStatusActorResolver.resolve();
+        Question question = questionRepository.findById(input.questionId())
             .orElseThrow(() -> new NotFoundException(QuestionStatusTransition.QUESTION_NOT_FOUND));
-        var bank = questionBankRepository.findById(question.getQuestionBankId())
+        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException(QuestionStatusTransition.QUESTION_BANK_NOT_FOUND));
-        var editorCollaborator = questionCollaboratorRepository
+        boolean editorCollaborator = questionCollaboratorRepository
             .findByQuestionIdAndUserId(question.getId(), actor.userId())
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
             .isPresent();
 
-        var rejection = QuestionStatusTransition.rejectionFor(question, bank, editorCollaborator, actor, action, note);
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(question, bank, editorCollaborator, actor, action, note);
         if (rejection != null) {
             // Cùng một lý do từ chối, hai endpoint dịch ra hai kiểu khác nhau: ở đây là exception
             // để giữ HTTP status, còn endpoint hàng loạt gom vào `failed[]`.
@@ -74,7 +76,7 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
         QuestionStatusTransition.apply(question, action);
         question.setUpdatedAt(Instant.now());
         question.setUpdatedBy(actor.userId());
-        var saved = questionRepository.save(question);
+        Question saved = questionRepository.save(question);
         return QuestionDtoMapper.toQuestionDto(saved);
     }
 }

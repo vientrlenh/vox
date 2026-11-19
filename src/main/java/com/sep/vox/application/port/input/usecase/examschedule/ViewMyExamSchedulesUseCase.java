@@ -1,9 +1,12 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
+import com.sep.vox.domain.model.exam.ExamCandidate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,8 +45,8 @@ public class ViewMyExamSchedulesUseCase
     @Override
     @Transactional(readOnly = true)
     public List<ExamScheduleDto> execute(ViewExamSchedulesQuery input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
-        var candidates = examCandidateRepository.findByStudentId(studentId).stream()
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
+        List<ExamCandidate> candidates = examCandidateRepository.findByStudentId(studentId).stream()
             .filter(candidate -> input.examId() == null || input.examId().equals(candidate.getExamId()))
             .toList();
         if (input.examId() != null && candidates.isEmpty()) {
@@ -58,7 +61,7 @@ public class ViewMyExamSchedulesUseCase
         //
         // Cùng luật với ViewMyExamsUseCase#toRow: chỉ ẩn DRAFT. CANCELLED vẫn hiện để học sinh
         // biết kỳ thi đã bị huỷ, giống cách ca CANCELLED vẫn lọt isVisibleToStudent.
-        var publishedExamIds = examRepository.findByIdIn(
+        Set<UUID> publishedExamIds = examRepository.findByIdIn(
                 candidates.stream()
                     .map(candidate -> candidate.getExamId())
                     .filter(Objects::nonNull)
@@ -68,13 +71,13 @@ public class ViewMyExamSchedulesUseCase
             .map(exam -> exam.getId())
             .collect(java.util.stream.Collectors.toSet());
 
-        var scheduleIds = candidates.stream()
+        List<UUID> scheduleIds = candidates.stream()
             .filter(candidate -> publishedExamIds.contains(candidate.getExamId()))
             .map(candidate -> candidate.getScheduleId())
             .filter(Objects::nonNull)
             .distinct()
             .toList();
-        var schedules = scheduleIds.isEmpty()
+        List<ExamSchedule> schedules = scheduleIds.isEmpty()
             ? List.<ExamSchedule>of()
             : examScheduleRepository.findByIdIn(scheduleIds);
         return ExamScheduleDtoMapper.toDtoList(schedules.stream()

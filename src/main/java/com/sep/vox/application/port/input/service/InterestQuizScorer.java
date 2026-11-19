@@ -37,21 +37,21 @@ public class InterestQuizScorer {
     }
 
     public Map<String, Double> normalize(Map<String, Integer> rawScores) {
-        var dimensions = quizDimensionCodes();
+        List<String> dimensions = quizDimensionCodes();
         if (dimensions.isEmpty()) {
             return Map.of();
         }
-        var min = dimensions.stream()
+        int min = dimensions.stream()
             .mapToInt(dimension -> rawScores.getOrDefault(dimension, 0))
             .min()
             .orElse(0);
-        var max = dimensions.stream()
+        int max = dimensions.stream()
             .mapToInt(dimension -> rawScores.getOrDefault(dimension, 0))
             .max()
             .orElse(0);
-        var result = new LinkedHashMap<String, Double>();
-        for (var dimension : dimensions) {
-            var raw = rawScores.getOrDefault(dimension, 0);
+        Map<String, Double> result = new LinkedHashMap<String, Double>();
+        for (String dimension : dimensions) {
+            Integer raw = rawScores.getOrDefault(dimension, 0);
             result.put(dimension, min == max ? 0.5 : (double) (raw - min) / (max - min));
         }
         return result;

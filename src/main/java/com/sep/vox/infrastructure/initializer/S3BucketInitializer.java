@@ -27,6 +27,8 @@ import software.amazon.awssdk.services.s3.model.PutBucketPolicyRequest;
 import software.amazon.awssdk.services.s3.model.PutPublicAccessBlockRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Bao dam bucket S3 ton tai va dung cau hinh (policy + CORS) ngay khi ung dung khoi dong.
@@ -54,7 +56,7 @@ public class S3BucketInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        var bucket = properties.getBucket();
+        String bucket = properties.getBucket();
         if (!hasText(bucket)) {
             LOGGER.warn("storage.s3.bucket chua duoc cau hinh. Bo qua buoc khoi tao bucket S3");
             return;
@@ -98,8 +100,8 @@ public class S3BucketInitializer implements ApplicationRunner {
     }
 
     private void createBucket(String bucket) {
-        var request = CreateBucketRequest.builder().bucket(bucket);
-        var region = properties.getRegion();
+        CreateBucketRequest.Builder request = CreateBucketRequest.builder().bucket(bucket);
+        String region = properties.getRegion();
         // us-east-1 la region mac dinh cua S3 va se bao loi neu gui kem LocationConstraint.
         if (hasText(region) && !US_EAST_1.equalsIgnoreCase(region)) {
             request.createBucketConfiguration(CreateBucketConfiguration.builder()
@@ -147,11 +149,11 @@ public class S3BucketInitializer implements ApplicationRunner {
     }
 
     private void applyBucketPolicy(String bucket) {
-        var resource = "arn:aws:s3:::" + bucket + "/*";
-        var statements = jsonMapper.createArrayNode();
+        String resource = "arn:aws:s3:::" + bucket + "/*";
+        ArrayNode statements = jsonMapper.createArrayNode();
 
         if (properties.isPublicRead()) {
-            var statement = jsonMapper.createObjectNode();
+            ObjectNode statement = jsonMapper.createObjectNode();
             statement.put("Sid", "PublicReadObjects");
             statement.put("Effect", "Allow");
             statement.put("Principal", "*");
@@ -161,7 +163,7 @@ public class S3BucketInitializer implements ApplicationRunner {
         }
 
         if (hasText(properties.getUploaderPrincipalArn())) {
-            var statement = jsonMapper.createObjectNode();
+            ObjectNode statement = jsonMapper.createObjectNode();
             statement.put("Sid", "AllowUploaderPutObject");
             statement.put("Effect", "Allow");
             statement.putObject("Principal").put("AWS", properties.getUploaderPrincipalArn().strip());
@@ -175,7 +177,7 @@ public class S3BucketInitializer implements ApplicationRunner {
             return;
         }
 
-        var policy = jsonMapper.createObjectNode();
+        ObjectNode policy = jsonMapper.createObjectNode();
         policy.put("Version", "2012-10-17");
         policy.set("Statement", statements);
 
@@ -186,7 +188,7 @@ public class S3BucketInitializer implements ApplicationRunner {
     }
 
     private void applyCorsConfiguration(String bucket) {
-        var rule = CORSRule.builder()
+        CORSRule rule = CORSRule.builder()
             .allowedHeaders("Range")
             .allowedMethods("GET", "HEAD")
             .allowedOrigins("*")
@@ -203,7 +205,7 @@ public class S3BucketInitializer implements ApplicationRunner {
         try {
             action.run();
         } catch (RuntimeException e) {
-            var message = "Khong the ap dung %s cho bucket S3 '%s': %s".formatted(step, bucket, messageOf(e));
+            String message = "Khong the ap dung %s cho bucket S3 '%s': %s".formatted(step, bucket, messageOf(e));
             if (properties.isFailOnError()) {
                 throw new InfrastructureException(message);
             }

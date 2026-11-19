@@ -1,5 +1,9 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
+import com.sep.vox.application.port.input.command.RecordAiUsageCommand;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamSession;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -55,19 +59,19 @@ public class ReportAiUsageUseCase implements IUseCase<ReportAiUsageCommand, Void
      */
     @Override
     public Void execute(ReportAiUsageCommand input) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var session = examSessionRepository.findByIdAndResumable(input.examSessionId())
+        ExamSession session = examSessionRepository.findByIdAndResumable(input.examSessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi hoặc phiên thi đã kết thúc"));
 
-        var candidate = examCandidateRepository.findById(session.getCandidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy học viên thi"));
 
         if (!candidate.getStudentId().equals(userId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        for (var item : input.usageEvents()) {
+        for (RecordAiUsageCommand item : input.usageEvents()) {
             recordAiUsageUseCase.execute(item);
         }
         return null;

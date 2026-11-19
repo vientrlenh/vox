@@ -22,8 +22,8 @@ public class GetTurnUploadUrlUseCase implements IUseCase<GetTurnUploadUrlQuery, 
 
     @Override
     public TurnUploadUrlResponse execute(GetTurnUploadUrlQuery input) {
-        var key = "%s/turn-%d.wav".formatted(input.attemptAnswerId(), input.turnOrder());
-        var presigned = storagePort.presignUpload(key, "audio/wav", TTL);
+        String key = "%s/turn-%d.wav".formatted(input.attemptAnswerId(), input.turnOrder());
+        StoragePort.PresignedUpload presigned = storagePort.presignUpload(key, "audio/wav", TTL);
         return new TurnUploadUrlResponse(presigned.uploadUrl(), presigned.publicUrl());
     }
 }

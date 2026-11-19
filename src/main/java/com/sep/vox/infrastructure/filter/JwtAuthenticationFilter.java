@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -40,14 +41,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         try {
             LOGGER.info("Incoming request: {}", request.getRequestURI());
-            var jwtToken = getTokenFromRequest(request);
+            String jwtToken = getTokenFromRequest(request);
             if (jwtToken != null) {
-                var email = authTokenPort.getEmailFromToken(jwtToken);
-                var userDetails = userDetailsService.loadUserByUsername(email);
+                String email = authTokenPort.getEmailFromToken(jwtToken);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
                 if (!userDetails.isEnabled()) {
                     throw new DisabledException("Trạng thái người dùng không hợp lệ");
                 }
-                var auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
@@ -59,7 +60,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String getTokenFromRequest(HttpServletRequest request) {
-        var token = request.getHeader(AUTHORIZATION_HEADER);
+        String token = request.getHeader(AUTHORIZATION_HEADER);
         if (token != null && token.startsWith(BEARER_PREFIX)) {
             return token.substring(TOKEN_BEGIN_INDEX);
         }

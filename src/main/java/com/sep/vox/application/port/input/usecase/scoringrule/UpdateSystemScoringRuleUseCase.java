@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.scoringrule;
 
+import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -62,7 +63,7 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
     public UUID execute(UpdateScoringRuleCommand command) {
         // 1. Kiểm tra tài khoản System Admin
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
@@ -97,8 +98,8 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
         }
 
         // 7. Convert Map JSON thô -> Value Object cụ thể theo conditionType/actionType MỚI (có thể đổi loại khác)
-        var conditionParams = ScoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
-        var actionParams = ScoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
+        ScoringRuleConditionParams conditionParams = ScoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
+        ScoringRuleActionParams actionParams = ScoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
 
         // 7b. Kiểm tra criterionCode/bandCode (nếu có) có thực sự tồn tại trong Rubric Version của Policy
         validateCriterionReferences(policy.getRubricVersionId(), policy.getFrameworkVersionId(), conditionParams, actionParams);

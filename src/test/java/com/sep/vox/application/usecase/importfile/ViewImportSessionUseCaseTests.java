@@ -18,6 +18,7 @@ import com.sep.vox.application.mapper.importfile.ImportSessionResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportSessionQuery;
 import com.sep.vox.application.port.input.usecase.importfile.ViewImportSessionUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.importfile.ImportSessionDetailsResponse;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
@@ -66,21 +67,21 @@ class ViewImportSessionUseCaseTests {
 
     @Test
     void execute_should_return_details_for_current_school() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var session = session(sessionId, schoolId);
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        ImportSession session = session(sessionId, schoolId);
         session.setOriginalHeadersJson(jsonSerializationPort.toJson(java.util.List.of("Mã lớp")));
         session.setSuggestedMappingJson(jsonSerializationPort.toJson(java.util.Map.of("Mã lớp", "code")));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user = activeUser(userId, schoolId);
+        User _user = activeUser(userId, schoolId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(schoolAdminRoleInfo(userId)));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
 
-        var response = useCase.execute(new ViewImportSessionQuery(sessionId));
+        ImportSessionDetailsResponse response = useCase.execute(new ViewImportSessionQuery(sessionId));
 
         assertThat(response.id()).isEqualTo(sessionId);
         assertThat(response.originalHeaders()).containsExactly("Mã lớp");
@@ -89,12 +90,12 @@ class ViewImportSessionUseCaseTests {
 
     @Test
     void execute_should_throw_when_session_belongs_to_other_school() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user1 = activeUser(userId, schoolId);
+        User _user1 = activeUser(userId, schoolId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(schoolAdminRoleInfo(userId)));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
@@ -133,7 +134,7 @@ class ViewImportSessionUseCaseTests {
     }
 
     private User activeUser(UUID id, UUID schoolId) {
-        var user = new User();
+        User user = new User();
         user.setId(id);
         user.setStatus(UserStatus.ACTIVE);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
@@ -143,7 +144,7 @@ class ViewImportSessionUseCaseTests {
     }
 
     private static School activeSchool(UUID id) {
-        var school = new School();
+        School school = new School();
         school.setId(id);
         school.setActive(true);
         return school;

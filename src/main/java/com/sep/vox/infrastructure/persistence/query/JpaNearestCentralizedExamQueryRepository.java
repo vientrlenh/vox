@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.query;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,10 +24,10 @@ public class JpaNearestCentralizedExamQueryRepository implements NearestCentrali
 
     @Override
     public Optional<NearestCentralizedExamDto> findNearestForSchool(UUID schoolId) {
-        // Danh sách kỳ thi tập trung của trường (thường chỉ vài chục) được đọc hết rồi chọn ra kỳ thi
-        // gần thời điểm hiện tại nhất — tránh phải tính "|open_at - now()|" bằng JPQL,
-        // vốn không có hàm trừ mốc thời gian ổn định giữa các phiên bản Hibernate.
-        var candidates = em.createQuery("""
+        // The school's list of centralized exams (usually only a few dozen) is read in full and the exam
+        // nearest to the current time is picked -- this avoids computing "|open_at - now()|" in JPQL,
+        // which has no timestamp-subtraction function that is stable across Hibernate versions.
+        List<CandidateExamProjection> candidates = em.createQuery("""
             SELECT new com.sep.vox.application.response.output.CandidateExamProjection(
                 e.id, e.code, e.name, e.status, e.openAt, e.closeAt
             )
@@ -39,17 +40,17 @@ public class JpaNearestCentralizedExamQueryRepository implements NearestCentrali
             .setParameter("schoolId", schoolId)
             .getResultList();
 
-        var now = Instant.now();
-        var nearest = candidates.stream()
+        Instant now = Instant.now();
+        Optional<CandidateExamProjection> nearest = candidates.stream()
             .min(Comparator.comparing(c -> Duration.between(now, c.openAt()).abs()));
 
         if (nearest.isEmpty()) {
             return Optional.empty();
         }
-        var exam = nearest.get();
+        CandidateExamProjection exam = nearest.get();
 
-        var totalCandidates = countCandidatesTotal(exam.id());
-        var absentCandidates = countCandidatesByStatus(exam.id(), "ABSENT");
+        long totalCandidates = countCandidatesTotal(exam.id());
+        long absentCandidates = countCandidatesByStatus(exam.id(), "ABSENT");
 
         return Optional.of(new NearestCentralizedExamDto(
             exam.id(),

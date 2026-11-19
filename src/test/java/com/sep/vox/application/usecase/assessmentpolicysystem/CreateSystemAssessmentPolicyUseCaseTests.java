@@ -55,14 +55,14 @@ class CreateSystemAssessmentPolicyUseCaseTests {
     @BeforeEach
     void setUp() {
         assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
-        var frameworkVersionRepository = mock(FrameworkVersionRepository.class);
-        var frameworkResultBandRepository = mock(FrameworkResultBandRepository.class);
+        FrameworkVersionRepository frameworkVersionRepository = mock(FrameworkVersionRepository.class);
+        FrameworkResultBandRepository frameworkResultBandRepository = mock(FrameworkResultBandRepository.class);
         rubricVersionRepository = mock(RubricVersionRepository.class);
         rubricRepository = mock(RubricRepository.class);
-        var languageRepository = mock(SupportedLanguageRepository.class);
-        var gradeLevelRepository = mock(GradeLevelRepository.class);
-        var userRepository = mock(UserRepository.class);
-        var userContextPort = mock(UserContextPort.class);
+        SupportedLanguageRepository languageRepository = mock(SupportedLanguageRepository.class);
+        GradeLevelRepository gradeLevelRepository = mock(GradeLevelRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
 
         useCase = new CreateSystemAssessmentPolicyUseCase(
                 assessmentPolicyRepository, frameworkVersionRepository, frameworkResultBandRepository,

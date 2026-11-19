@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -46,14 +48,14 @@ public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, 
     @Override
     @Transactional
     public UUID execute(ReassignGradingCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
         // Khoá: nếu không, giáo viên nộp xong đúng lúc admin bấm đổi người thì bản ghi
         // đè lên sẽ mang ảnh chụp cũ (ASSIGNED, chưa có outcome) và làm bài đã chấm
         // sống lại thành chưa chấm.
-        var context = examGradingAccessService.loadForUpdate(command.assignmentId());
+        ExamGradingAccessService.GradingContext context = examGradingAccessService.loadForUpdate(command.assignmentId());
         examGradingAccessService.authorizeSchoolAdmin(context.schoolId(), currentUserId);
 
-        var assignment = context.assignment();
+        ExamGradingAssignment assignment = context.assignment();
         if (assignment.isCompleted()) {
             throw new IllegalStateException("Không thể đổi giáo viên cho bài đã chấm xong.");
         }
@@ -65,7 +67,7 @@ public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, 
             throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
         }
         if (assignment.getRoundType() == GradingRoundType.APPEAL) {
-            var conflicted = examGradingQueryRepository
+            Set<UUID> conflicted = examGradingQueryRepository
                 .findTeacherIdsWithHumanEvaluation(assignment.getCandidateResultId());
             if (conflicted.contains(command.teacherId())) {
                 throw new IllegalArgumentException(

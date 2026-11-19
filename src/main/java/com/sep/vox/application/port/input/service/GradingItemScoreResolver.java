@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.exam.ExamItemResponse;
+import com.sep.vox.domain.model.rubric.RubricVersion;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -68,11 +70,11 @@ public class GradingItemScoreResolver {
     @Transactional(readOnly = true)
     public List<ResolvedItem> resolve(
             GradingContext context, SubmitGradingCommand command, boolean enforceFullCoverage) {
-        var items = command.items() == null ? List.<SubmitGradingCommand.ItemGrade>of() : command.items();
+        List<SubmitGradingCommand.ItemGrade> items = command.items() == null ? List.<SubmitGradingCommand.ItemGrade>of() : command.items();
         if (items.isEmpty()) {
             throw new IllegalArgumentException("Phải chấm điểm cho ít nhất một phần thi.");
         }
-        var paperItemIds = items.stream().map(itemGrade -> itemGrade.paperItemId()).toList();
+        List<UUID> paperItemIds = items.stream().map(itemGrade -> itemGrade.paperItemId()).toList();
         if (paperItemIds.stream().anyMatch(java.util.Objects::isNull)) {
             throw new IllegalArgumentException("Thiếu phần thi cần chấm.");
         }
@@ -80,7 +82,7 @@ public class GradingItemScoreResolver {
             throw new IllegalArgumentException("Không được chấm trùng phần thi.");
         }
 
-        var responsesByPaperItemId = examItemResponseRepository
+        Map<UUID, ExamItemResponse> responsesByPaperItemId = examItemResponseRepository
             .findBySessionId(context.candidateResult().getSessionId()).stream()
             .collect(Collectors.toMap(res -> res.getPaperItemId(), Function.identity(),
                 (left, right) -> left));
@@ -88,17 +90,17 @@ public class GradingItemScoreResolver {
             throw new IllegalArgumentException(
                 "Phải chấm đủ tất cả " + responsesByPaperItemId.size() + " phần thi của bài.");
         }
-        var criteria = rubricCriterionRepository
+        Map<UUID, RubricCriterion> criteria = rubricCriterionRepository
             .findByRubricVersionId(context.candidateResult().getRubricVersionId()).stream()
             .collect(Collectors.toMap(criterion -> criterion.getId(), Function.identity(), (left, right) -> left));
-        var rubricVersion = rubricVersionRepository.findById(context.candidateResult().getRubricVersionId())
+        RubricVersion rubricVersion = rubricVersionRepository.findById(context.candidateResult().getRubricVersionId())
             .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy rubric version của bài thi."));
 
         // Chấm xong toàn bộ rồi mới trả về — một phần lỗi không được để lại điểm
         // nửa vời của các phần trước đó.
-        var resolved = new ArrayList<ResolvedItem>();
-        for (var item : items) {
-            var response = responsesByPaperItemId.get(item.paperItemId());
+        List<ResolvedItem> resolved = new ArrayList<ResolvedItem>();
+        for (SubmitGradingCommand.ItemGrade item : items) {
+            ExamItemResponse response = responsesByPaperItemId.get(item.paperItemId());
             if (response == null) {
                 throw new IllegalArgumentException("Phần thi không thuộc bài thi này.");
             }
@@ -140,7 +142,7 @@ public class GradingItemScoreResolver {
         if (scores == null || scores.isEmpty()) {
             throw new IllegalArgumentException("Phải chấm điểm cho các tiêu chí.");
         }
-        var submittedIds = scores.stream()
+        List<UUID> submittedIds = scores.stream()
             .map(item -> item.rubricCriterionId()).toList();
         if (submittedIds.stream().anyMatch(Objects::isNull)) {
             throw new IllegalArgumentException("Thiếu tiêu chí chấm điểm.");
@@ -148,7 +150,7 @@ public class GradingItemScoreResolver {
         if (new HashSet<>(submittedIds).size() != submittedIds.size()) {
             throw new IllegalArgumentException("Không được chấm trùng tiêu chí.");
         }
-        var missingRequired = criteria.values().stream()
+        List<String> missingRequired = criteria.values().stream()
             .filter(criterion -> criterion.isRequired())
             .filter(criterion -> !submittedIds.contains(criterion.getId()))
             .map(criterion -> criterion.getName())
@@ -158,9 +160,9 @@ public class GradingItemScoreResolver {
                 "Phải chấm đủ các tiêu chí bắt buộc: " + String.join(", ", missingRequired) + ".");
         }
 
-        var scored = new ArrayList<RubricItemScoreFormula.ScoredCriterion>();
-        for (var item : scores) {
-            var criterion = criteria.get(item.rubricCriterionId());
+        List<RubricItemScoreFormula.ScoredCriterion> scored = new ArrayList<RubricItemScoreFormula.ScoredCriterion>();
+        for (SubmitGradingCommand.CriterionScoreItem item : scores) {
+            RubricCriterion criterion = criteria.get(item.rubricCriterionId());
             if (criterion == null) {
                 throw new IllegalArgumentException("Tiêu chí không thuộc rubric của bài thi này.");
             }

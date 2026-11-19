@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import com.sep.vox.application.query.dto.BulkFinalizePreviewInfo;
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -8,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -104,8 +108,8 @@ public class BulkFinalizeExamResultsUseCase
     @Override
     @Transactional
     public Integer execute(BulkFinalizeExamResultsCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var exam = examRepository.findById(command.examId())
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        Exam exam = examRepository.findById(command.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
         // Bài kiểm tra trên lớp: nhà trường không chấm, nên nếu chỉ school admin chốt
         // sổ được thì giáo viên kẹt cứng — công bố kết quả đòi MỌI bài phải RELEASED
@@ -113,7 +117,7 @@ public class BulkFinalizeExamResultsUseCase
         examGradingAccessService.authorizeSchoolAdminOrClassTestChair(
             exam.getSchoolId(), exam.getId(), currentUserId);
 
-        var preview = examGradingQueryRepository.previewBulkFinalize(exam.getSchoolId(), command.examId());
+        BulkFinalizePreviewInfo preview = examGradingQueryRepository.previewBulkFinalize(exam.getSchoolId(), command.examId());
         // Đơn phúc khảo đang mở thì LUÔN chặn, kể cả khi admin đã tick "công bố theo
         // điểm hiện có": cờ đó chỉ nói "chấp nhận điểm AI cho bài chưa ai chấm", không
         // nói "nuốt luôn tranh chấp điểm của học sinh". Nuốt đơn còn để lại hai hậu
@@ -125,8 +129,8 @@ public class BulkFinalizeExamResultsUseCase
                     + "Hãy xử lý hoặc từ chối các đơn này trước khi chốt sổ.");
         }
 
-        var results = examCandidateResultRepository.findByExamId(command.examId());
-        var blocking = countBlocking(results);
+        List<ExamCandidateResult> results = examCandidateResultRepository.findByExamId(command.examId());
+        Map<ExamCandidateResultStatus, Integer> blocking = countBlocking(results);
         if (!blocking.isEmpty()) {
             throw new IllegalStateException(describeBlocking(blocking));
         }
@@ -137,11 +141,11 @@ public class BulkFinalizeExamResultsUseCase
                     + "Hãy xử lý nốt, hoặc xác nhận công bố theo điểm AI hiện có.");
         }
 
-        var now = Instant.now();
-        var histories = new ArrayList<ExamResultStatusHistory>();
-        var released = new ArrayList<ExamCandidateResult>();
+        Instant now = Instant.now();
+        List<ExamResultStatusHistory> histories = new ArrayList<ExamResultStatusHistory>();
+        List<ExamCandidateResult> released = new ArrayList<ExamCandidateResult>();
 
-        for (var result : results) {
+        for (ExamCandidateResult result : results) {
             if (result.getStatus() != ExamCandidateResultStatus.PENDING_REVIEW) {
                 continue;
             }
@@ -189,9 +193,9 @@ public class BulkFinalizeExamResultsUseCase
         if (released.isEmpty()) {
             return;
         }
-        var openAssignments = examGradingAssignmentRepository.findOpenByCandidateResultIdIn(
+        List<ExamGradingAssignment> openAssignments = examGradingAssignmentRepository.findOpenByCandidateResultIdIn(
             released.stream().map(result -> result.getId()).toList());
-        for (var assignment : openAssignments) {
+        for (ExamGradingAssignment assignment : openAssignments) {
             assignment.complete(GradingOutcome.DECLINED, BULK_REASON, now);
             examGradingAssignmentRepository.save(assignment);
         }
@@ -199,11 +203,11 @@ public class BulkFinalizeExamResultsUseCase
 
     /** {@code EnumMap} để thứ tự kể trong thông báo bám theo thứ tự khai báo của enum. */
     private Map<ExamCandidateResultStatus, Integer> countBlocking(List<ExamCandidateResult> results) {
-        var counts = new EnumMap<ExamCandidateResultStatus, Integer>(ExamCandidateResultStatus.class);
-        for (var result : results) {
-            var status = result.getStatus();
+        Map<ExamCandidateResultStatus, Integer> counts = new EnumMap<ExamCandidateResultStatus, Integer>(ExamCandidateResultStatus.class);
+        for (ExamCandidateResult result : results) {
+            ExamCandidateResultStatus status = result.getStatus();
             if (BLOCKING_STATUSES.contains(status)) {
-                var current = counts.get(status);
+                Integer current = counts.get(status);
                 counts.put(status, current == null ? 1 : current + 1);
             }
         }
@@ -215,7 +219,7 @@ public class BulkFinalizeExamResultsUseCase
      * nhiều lần mới biết còn gì phải xử lý.
      */
     private String describeBlocking(Map<ExamCandidateResultStatus, Integer> counts) {
-        var parts = new ArrayList<String>();
+        List<String> parts = new ArrayList<String>();
         counts.forEach((status, count) -> parts.add(switch (status) {
             case APPEALED -> count + " bài có đơn phúc khảo chờ xử lý";
             case RE_GRADING -> count + " bài đang được chấm phúc khảo";

@@ -1,6 +1,11 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.exam.ExamBlueprintSection;
+import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
+import com.sep.vox.domain.model.question.QuestionAsset;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -40,13 +45,13 @@ public class RecalculateBlueprintVersionTimeLimitService {
 
     @Transactional
     public ExamBlueprintVersion recalculate(UUID blueprintVersionId) {
-        var version = examBlueprintVersionRepository.findById(blueprintVersionId).orElseThrow();
+        ExamBlueprintVersion version = examBlueprintVersionRepository.findById(blueprintVersionId).orElseThrow();
 
         // Chỉ slot FIXED mới có câu hỏi cụ thể để tính; slot RANDOM đóng góp 0 vì chưa biết sẽ bốc
         // câu nào.
-        var fixedQuestions = new ArrayList<Question>();
-        for (var section : examBlueprintSectionRepository.findByBlueprintVersionId(blueprintVersionId)) {
-            for (var slot : examBlueprintSlotRepository.findBySectionId(section.getId())) {
+        List<Question> fixedQuestions = new ArrayList<Question>();
+        for (ExamBlueprintSection section : examBlueprintSectionRepository.findByBlueprintVersionId(blueprintVersionId)) {
+            for (ExamBlueprintSlot slot : examBlueprintSlotRepository.findBySectionId(section.getId())) {
                 if (slot.getSlotType() != ExamBlueprintSlotType.FIXED || slot.getFixedQuestionId() == null) {
                     continue;
                 }
@@ -57,9 +62,9 @@ public class RecalculateBlueprintVersionTimeLimitService {
         // Cộng cả thời lượng phát AUDIO/VIDEO: con số này chảy vào requireWithinPlan ở 5 nơi
         // (AttachExamBlueprint, ChangeClassTestBlueprint, Create/UpdateExamBlueprintVersion,
         // CreateExamPaper), tức nó là thước đo ĐỘ DÀI bài thi -- phải đo cả phần media.
-        var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
+        Map<UUID, QuestionAsset> assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
             .findByQuestionIdIn(fixedQuestions.stream().map(q -> q.getId()).distinct().toList()));
-        var totalSeconds = PaperTimeCalculator.breakdownOf(fixedQuestions, assetByQuestionId).totalSeconds();
+        int totalSeconds = PaperTimeCalculator.breakdownOf(fixedQuestions, assetByQuestionId).totalSeconds();
 
         if (version.getTotalTimeLimitSeconds() == null || version.getTotalTimeLimitSeconds() != totalSeconds) {
             version.setTotalTimeLimitSeconds(totalSeconds);

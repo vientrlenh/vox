@@ -52,8 +52,8 @@ public final class GradingRoundPolicy {
      * tự đúng theo.
      */
     public static Set<ExamCandidateResultStatus> allAssignableStatuses() {
-        var all = EnumSet.noneOf(ExamCandidateResultStatus.class);
-        for (var roundType : GradingRoundType.values()) {
+        Set<ExamCandidateResultStatus> all = EnumSet.noneOf(ExamCandidateResultStatus.class);
+        for (GradingRoundType roundType : GradingRoundType.values()) {
             all.addAll(assignableStatuses(roundType));
         }
         return all;

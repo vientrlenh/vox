@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamMember;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,16 +32,16 @@ public class DeleteExamMemberUseCase implements IUseCase<DeleteExamMemberCommand
     @Override
     @Transactional
     public Void execute(DeleteExamMemberCommand input) {
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var member = examMemberRepository.findById(input.memberId())
+        ExamMember member = examMemberRepository.findById(input.memberId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên bài kiểm tra"));
 
         if (!member.getExamId().equals(exam.getId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var actor = examMemberManageAccessService.requireCanManage(exam);
+        ExamMemberManageAccessService.ExamMemberActor actor = examMemberManageAccessService.requireCanManage(exam);
         examMemberManageAccessService.requireCanTouchRole(actor, member.getRole());
 
         examMemberRepository.deleteById(member.getId());

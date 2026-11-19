@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionDetailsQuery;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkVersionDetailsUseCase;
+import com.sep.vox.domain.dto.FrameworkVersionDto;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
@@ -36,11 +37,11 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
 
     @Test
     void should_return_version_details() {
-        var versionId = UUID.randomUUID();
-        var frameworkId = UUID.randomUUID();
-        var query = new ViewFrameworkVersionDetailsQuery(versionId);
+        UUID versionId = UUID.randomUUID();
+        UUID frameworkId = UUID.randomUUID();
+        ViewFrameworkVersionDetailsQuery query = new ViewFrameworkVersionDetailsQuery(versionId);
 
-        var version = new FrameworkVersion();
+        FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setCode("V1_0");
@@ -52,7 +53,7 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
 
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
 
-        var result = useCase.execute(query);
+        FrameworkVersionDto result = useCase.execute(query);
 
         assertThat(result.id()).isEqualTo(versionId);
         assertThat(result.code()).isEqualTo("V1_0");
@@ -64,8 +65,8 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
 
     @Test
     void should_throw_not_found_when_version_missing() {
-        var versionId = UUID.randomUUID();
-        var query = new ViewFrameworkVersionDetailsQuery(versionId);
+        UUID versionId = UUID.randomUUID();
+        ViewFrameworkVersionDetailsQuery query = new ViewFrameworkVersionDetailsQuery(versionId);
 
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.empty());
 
@@ -74,11 +75,11 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
 
     @Test
     void should_return_shallow_dto_with_empty_nested_lists() {
-        var versionId = UUID.randomUUID();
-        var frameworkId = UUID.randomUUID();
-        var query = new ViewFrameworkVersionDetailsQuery(versionId);
+        UUID versionId = UUID.randomUUID();
+        UUID frameworkId = UUID.randomUUID();
+        ViewFrameworkVersionDetailsQuery query = new ViewFrameworkVersionDetailsQuery(versionId);
 
-        var version = new FrameworkVersion();
+        FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setCode("V1_0");
@@ -87,7 +88,7 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
 
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
 
-        var result = useCase.execute(query);
+        FrameworkVersionDto result = useCase.execute(query);
 
         assertThat(result.id()).isEqualTo(versionId);
         assertThat(result.criteria()).isEqualTo(List.of());

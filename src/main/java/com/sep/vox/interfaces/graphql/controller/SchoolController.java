@@ -1,5 +1,11 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.application.port.input.command.UpdateGradeLevelCommand;
+import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
+import com.sep.vox.application.port.input.command.UpdateSchoolCommand;
+import com.sep.vox.application.port.input.command.UpdateSchoolGradeCommand;
+import com.sep.vox.application.port.input.command.UpdateSchoolRoomCommand;
+import com.sep.vox.application.port.input.command.UpdateSchoolUserCommand;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -190,7 +196,7 @@ public class SchoolController {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
         }
-        var query = new ViewSchoolsQuery(page, size, search, isActive);
+        ViewSchoolsQuery query = new ViewSchoolsQuery(page, size, search, isActive);
         return viewSchoolsUseCase.execute(query);
     }
 
@@ -296,14 +302,14 @@ public class SchoolController {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
         }
-        var query = new ViewSchoolClassesQuery(page, size, search, status, languageId, schoolGradeId);
+        ViewSchoolClassesQuery query = new ViewSchoolClassesQuery(page, size, search, status, languageId, schoolGradeId);
         return viewSchoolClassesUseCase.execute(query);
     }
 
     @QueryMapping(name = "schoolClass")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public SchoolClassDto schoolClass(@Argument(name = "id") UUID id) {
-        var query = new ViewSchoolClassDetailsQuery(id);
+        ViewSchoolClassDetailsQuery query = new ViewSchoolClassDetailsQuery(id);
         return viewSchoolClassDetailsUseCase.execute(query);
     }
 
@@ -386,7 +392,7 @@ public class SchoolController {
     public UpdateSchoolClassResponse updateSchoolClass(
             @Argument(name = "id") UUID id,
             @Argument(name = "input") Map<String, Object> input) {
-        var command = UpdateSchoolClassCommandMapper.fromInput(id, input);
+        UpdateSchoolClassCommand command = UpdateSchoolClassCommandMapper.fromInput(id, input);
         return updateSchoolClassUseCase.execute(command);
     }
 
@@ -397,7 +403,7 @@ public class SchoolController {
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "userId") UUID userId,
             @Argument(name = "input") Map<String, Object> input) {
-        var command = UpdateSchoolUserCommandMapper.fromInput(schoolId, userId, input);
+        UpdateSchoolUserCommand command = UpdateSchoolUserCommandMapper.fromInput(schoolId, userId, input);
         return updateSchoolUserUseCase.execute(command);
     }
 
@@ -406,7 +412,7 @@ public class SchoolController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchool(@Argument(name = "id") UUID id, @Argument(name = "input") UpdateSchoolRequest request) {
 
-        var command = UpdateSchoolCommandMapper.fromRequest(id, request);
+        UpdateSchoolCommand command = UpdateSchoolCommandMapper.fromRequest(id, request);
 
         return updateSchoolUseCase.execute(command);
 
@@ -419,7 +425,7 @@ public class SchoolController {
     @QueryMapping(name = "schoolRoom")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public SchoolRoomFromDto schoolRoom(@Argument(name = "id") UUID id) {
-        var query = new ViewSchoolRoomDetailsQuery(id);
+        ViewSchoolRoomDetailsQuery query = new ViewSchoolRoomDetailsQuery(id);
         return viewSchoolRoomDetailsUseCase.execute(query);
     }
 
@@ -435,7 +441,7 @@ public class SchoolController {
         int pageNumber = (page != null && page > 0) ? page : 1;
         int pageSize = (size != null && size > 0) ? size : 10;
 
-        var query = new ViewSchoolRoomsQuery(schoolId, pageNumber, pageSize);
+        ViewSchoolRoomsQuery query = new ViewSchoolRoomsQuery(schoolId, pageNumber, pageSize);
         return viewSchoolRoomsUseCase.execute(query);
     }
 
@@ -446,8 +452,7 @@ public class SchoolController {
             @Argument(name = "id") UUID id,
             @Argument(name = "input") UpdateSchoolRoomRequest request
     ) {
-        // Mapper truyền cả id và request
-        var command = UpdateSchoolRoomCommandMapper.fromRequest(id, request);
+        UpdateSchoolRoomCommand command = UpdateSchoolRoomCommandMapper.fromRequest(id, request);
         return updateSchoolRoomUseCase.execute(command);
     }
 
@@ -460,7 +465,7 @@ public class SchoolController {
             @Argument(name = "id") UUID id,
             @Argument(name = "input") UpdateSchoolGradeRequest request
     ) {
-        var command = UpdateSchoolGradeCommandMapper.fromRequest(id, request);
+        UpdateSchoolGradeCommand command = UpdateSchoolGradeCommandMapper.fromRequest(id, request);
         return updateSchoolGradeUseCase.execute(command);
     }
 
@@ -468,7 +473,7 @@ public class SchoolController {
     @QueryMapping(name = "schoolGrade")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public SchoolGradeDto schoolGrade(@Argument(name = "schoolId") UUID schoolId, @Argument(name = "id") UUID id) {
-        var query = new ViewSchoolGradeDetailsQuery(schoolId, id);
+        ViewSchoolGradeDetailsQuery query = new ViewSchoolGradeDetailsQuery(schoolId, id);
         return viewSchoolGradeDetailsUseCase.execute(query);
     }
 
@@ -484,7 +489,7 @@ public class SchoolController {
         int pageNumber = (page != null && page > 0) ? page : 1;
         int pageSize = (size != null && size > 0) ? size : 10;
 
-        var query = new ViewSchoolGradesQuery(schoolId, gradeLevelId, status, pageNumber, pageSize);
+        ViewSchoolGradesQuery query = new ViewSchoolGradesQuery(schoolId, gradeLevelId, status, pageNumber, pageSize);
 
         return viewSchoolGradesUseCase.execute(query);
     }
@@ -500,7 +505,7 @@ public class SchoolController {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
         }
-        var query = new ViewGradeLevelsQuery(page, size, search, status);
+        ViewGradeLevelsQuery query = new ViewGradeLevelsQuery(page, size, search, status);
         return viewGradeLevelsUseCase.execute(query);
     }
 
@@ -514,7 +519,7 @@ public class SchoolController {
     public UUID updateGradeLevel(
             @Argument(name = "gradeLevelId") UUID gradeLevelId,
             @Argument(name = "input") UpdateGradeLevelRequest request) {
-        var command = UpdateGradeLevelCommandMapper.fromRequest(gradeLevelId, request);
+        UpdateGradeLevelCommand command = UpdateGradeLevelCommandMapper.fromRequest(gradeLevelId, request);
         return updateGradeLevelUseCase.execute(command);
     }
 
@@ -523,7 +528,7 @@ public class SchoolController {
         if (limit == null || limit <= 0) {
             throw new IllegalArgumentException("Giới hạn số phần tử lấy lên không hợp lệ");
         }
-        var query = new ViewSchoolDirectoryCursorPageQuery(cursor, limit);
+        ViewSchoolDirectoryCursorPageQuery query = new ViewSchoolDirectoryCursorPageQuery(cursor, limit);
         return viewSchoolDirectoryCursorPageUseCase.execute(query);
     }
 
@@ -532,13 +537,13 @@ public class SchoolController {
         if (page == null || size == null || page <= 0 || size <= 0) {
             throw new IllegalArgumentException("Số trang hoặc kích thước yêu cầu không hợp lệ");
         }
-        var query = new ViewSchoolDirectoryPageQuery(page, size);
+        ViewSchoolDirectoryPageQuery query = new ViewSchoolDirectoryPageQuery(page, size);
         return viewSchoolDirectoryPageUseCase.execute(query);
     }
 
     @QueryMapping(name = "schoolDirectory")
     public SchoolDirectoryDto schoolDirectory(@Argument(name = "id") UUID id) {
-        var query = new ViewSchoolDirectoryDetailsQuery(id);
+        ViewSchoolDirectoryDetailsQuery query = new ViewSchoolDirectoryDetailsQuery(id);
         return viewSchoolDirectoryDetailsUseCase.execute(query);
     }
 

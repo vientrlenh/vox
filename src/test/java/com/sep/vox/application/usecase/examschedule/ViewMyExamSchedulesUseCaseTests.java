@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.query.ViewExamSchedulesQuery;
 import com.sep.vox.application.port.input.usecase.examschedule.ViewMyExamSchedulesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamSchedule;
@@ -45,9 +46,9 @@ class ViewMyExamSchedulesUseCaseTests {
 
     @BeforeEach
     void setUp() {
-        var examCandidateRepository = mock(ExamCandidateRepository.class);
-        var examScheduleRepository = mock(ExamScheduleRepository.class);
-        var userContextPort = mock(UserContextPort.class);
+        ExamCandidateRepository examCandidateRepository = mock(ExamCandidateRepository.class);
+        ExamScheduleRepository examScheduleRepository = mock(ExamScheduleRepository.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
         examRepository = mock(ExamRepository.class);
 
         useCase = new ViewMyExamSchedulesUseCase(
@@ -55,9 +56,10 @@ class ViewMyExamSchedulesUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(STUDENT_ID);
         when(examCandidateRepository.findByStudentId(STUDENT_ID)).thenReturn(candidates);
-        // Ca chỉ hiện khi kỳ thi đã công bố; mọi ca trong bộ test này thuộc một kỳ thi
-        // SCHEDULED để các ca kiểm tra đúng thứ nó định kiểm là trạng thái CA.
-        var exam = mock(Exam.class);
+        // A session only shows when the exam has been published; every session in this test set
+        // belongs to a SCHEDULED exam so that the cases test exactly what they mean to test, the
+        // SESSION status.
+        Exam exam = mock(Exam.class);
         when(exam.getId()).thenReturn(EXAM_ID);
         when(exam.getStatus()).thenReturn(ExamStatus.SCHEDULED);
         when(examRepository.findByIdIn(anyCollection())).thenReturn(List.of(exam));
@@ -68,18 +70,19 @@ class ViewMyExamSchedulesUseCaseTests {
     }
 
     /**
-     * Ca đã publish nhưng KỲ THI còn DRAFT thì vẫn phải giấu: hai trạng thái độc lập nhau, và
-     * lịch của một kỳ thi chưa công bố không được lộ cho thí sinh.
+     * A session that is published but whose EXAM is still DRAFT must still be hidden: the two
+     * statuses are independent, and the schedule of an unpublished exam must not be exposed to
+     * candidates.
      */
     @Test
     void should_hide_schedules_of_draft_exam() {
-        var draftExam = mock(Exam.class);
+        Exam draftExam = mock(Exam.class);
         when(draftExam.getId()).thenReturn(EXAM_ID);
         when(draftExam.getStatus()).thenReturn(ExamStatus.DRAFT);
         when(examRepository.findByIdIn(anyCollection())).thenReturn(List.of(draftExam));
         givenSchedule(ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(1800));
 
-        var result = useCase.execute(new ViewExamSchedulesQuery(null, null, null, null));
+        List<ExamScheduleDto> result = useCase.execute(new ViewExamSchedulesQuery(null, null, null, null));
 
         assertThat(result).isEmpty();
     }
@@ -88,46 +91,46 @@ class ViewMyExamSchedulesUseCaseTests {
     void should_hide_draft_and_moved_schedules() {
         givenSchedule(ExamScheduleStatus.DRAFT, NOW.plusSeconds(3600));
         givenSchedule(ExamScheduleStatus.MOVED, NOW.plusSeconds(7200));
-        var published = givenSchedule(ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(1800));
+        ExamSchedule published = givenSchedule(ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(1800));
 
-        var result = useCase.execute(new ViewExamSchedulesQuery(null, null, null, null));
+        List<ExamScheduleDto> result = useCase.execute(new ViewExamSchedulesQuery(null, null, null, null));
 
         assertThat(result).extracting(dto -> dto.id()).containsExactly(published.getId());
     }
 
     @Test
     void should_keep_cancelled_schedule() {
-        var cancelled = givenSchedule(ExamScheduleStatus.CANCELLED, NOW.plusSeconds(3600));
+        ExamSchedule cancelled = givenSchedule(ExamScheduleStatus.CANCELLED, NOW.plusSeconds(3600));
 
-        var result = useCase.execute(new ViewExamSchedulesQuery(null, null, null, null));
+        List<ExamScheduleDto> result = useCase.execute(new ViewExamSchedulesQuery(null, null, null, null));
 
         assertThat(result).extracting(dto -> dto.id()).containsExactly(cancelled.getId());
     }
 
     @Test
     void should_sort_schedules_from_newest_to_oldest() {
-        var oldest = givenSchedule(ExamScheduleStatus.COMPLETED, NOW.minusSeconds(86400));
-        var newest = givenSchedule(ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(86400));
-        var middle = givenSchedule(ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(3600));
+        ExamSchedule oldest = givenSchedule(ExamScheduleStatus.COMPLETED, NOW.minusSeconds(86400));
+        ExamSchedule newest = givenSchedule(ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(86400));
+        ExamSchedule middle = givenSchedule(ExamScheduleStatus.PUBLISHED, NOW.plusSeconds(3600));
 
-        var result = useCase.execute(new ViewExamSchedulesQuery(null, null, null, null));
+        List<ExamScheduleDto> result = useCase.execute(new ViewExamSchedulesQuery(null, null, null, null));
 
         assertThat(result).extracting(dto -> dto.id())
             .containsExactly(newest.getId(), middle.getId(), oldest.getId());
     }
 
-    /** Bộ lọc của client không được dùng làm cửa hậu để lấy ca chưa publish. */
+    /** The client's filter must not be used as a back door to get unpublished sessions. */
     @Test
     void should_ignore_draft_status_filter_from_client() {
         givenSchedule(ExamScheduleStatus.DRAFT, NOW.plusSeconds(3600));
 
-        var result = useCase.execute(new ViewExamSchedulesQuery(null, ExamScheduleStatus.DRAFT, null, null));
+        List<ExamScheduleDto> result = useCase.execute(new ViewExamSchedulesQuery(null, ExamScheduleStatus.DRAFT, null, null));
 
         assertThat(result).isEmpty();
     }
 
     private ExamSchedule givenSchedule(ExamScheduleStatus status, Instant startDate) {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(UUID.randomUUID());
         schedule.setExamId(EXAM_ID);
         schedule.setStatus(status);
@@ -135,7 +138,7 @@ class ViewMyExamSchedulesUseCaseTests {
         schedule.setEndDate(startDate.plusSeconds(3600));
         schedules.add(schedule);
 
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(UUID.randomUUID());
         candidate.setExamId(EXAM_ID);
         candidate.setStudentId(STUDENT_ID);

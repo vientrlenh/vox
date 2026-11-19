@@ -1,6 +1,8 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -116,10 +118,10 @@ public class TopicOfferBackfillService {
             LOGGER.debug("Bỏ lượt bổ sung chủ đề: học sinh {} chưa nộp quiz sở thích.", studentId);
             return;
         }
-        var key = IN_FLIGHT_KEY_PREFIX + studentId;
+        String key = IN_FLIGHT_KEY_PREFIX + studentId;
         // Token riêng cho mỗi lượt: nhả khoá phải chứng minh được mình là chủ, không thì một lượt
         // chạy quá hạn có thể xoá nhầm khoá của lượt sau.
-        var token = UUID.randomUUID().toString();
+        String token = UUID.randomUUID().toString();
         if (!token.equals(cacheManagerPort.saveIfAbsentAndGet(key, token, IN_FLIGHT_TTL))) {
             // Pod nào đó (kể cả chính pod này) đang chạy rồi -- bỏ lượt, đúng như bản cũ.
             return;
@@ -127,9 +129,9 @@ public class TopicOfferBackfillService {
         try {
             // Đếm TRƯỚC mỗi lượt chứ không cache: kho là của chung, nhiều học sinh cùng đẩy nó
             // lên, nên một giá trị đọc lúc khởi động sẽ sai ngay sau vài phiên.
-            var pool = practiceTopicRepository.countOfferablePool();
-            var requested = pool < POOL_TARGET ? BACKFILL_COUNT_BUILDING : BACKFILL_COUNT_STEADY;
-            var created = topicSuggestionService.synchronousOffers(studentId, requested);
+            long pool = practiceTopicRepository.countOfferablePool();
+            int requested = pool < POOL_TARGET ? BACKFILL_COUNT_BUILDING : BACKFILL_COUNT_STEADY;
+            List<PracticePlanningResponses.PracticeTopicOffer> created = topicSuggestionService.synchronousOffers(studentId, requested);
             LOGGER.info(
                 "Đã bổ sung {}/{} chủ đề cho học sinh {} (kho hiện có {}).",
                 created.size(), requested, studentId, pool

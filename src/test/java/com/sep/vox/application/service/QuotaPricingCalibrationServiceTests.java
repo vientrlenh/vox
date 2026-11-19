@@ -53,9 +53,9 @@ class QuotaPricingCalibrationServiceTests {
         examItemResponseRepository = mock(ExamItemResponseRepository.class);
         practiceResponseTurnRepository = mock(PracticeResponseTurnRepository.class);
         quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
-        var calibrationProperties = new QuotaPricingCalibrationProperties(90, 2, new BigDecimal("0.20"),
+        QuotaPricingCalibrationProperties calibrationProperties = new QuotaPricingCalibrationProperties(90, 2, new BigDecimal("0.20"),
             new BigDecimal("0.001"), new BigDecimal("1.0"));
-        var quotaPricingProperties = new QuotaPricingProperties(new BigDecimal("0.01"), new BigDecimal("0.01"));
+        QuotaPricingProperties quotaPricingProperties = new QuotaPricingProperties(new BigDecimal("0.01"), new BigDecimal("0.01"));
 
         service = new QuotaPricingCalibrationService(
             sessionCostQueryRepository,
@@ -78,13 +78,14 @@ class QuotaPricingCalibrationServiceTests {
 
     @Test
     void should_skip_when_sessions_have_cost_but_no_matching_duration() {
-        var sessionA = UUID.randomUUID();
-        var sessionB = UUID.randomUUID();
+        UUID sessionA = UUID.randomUUID();
+        UUID sessionB = UUID.randomUUID();
         when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
             new SessionCostDto(sessionA, BigDecimal.TEN),
             new SessionCostDto(sessionB, BigDecimal.TEN)
         ));
-        // Chỉ 1 session có duration khớp -- dưới minSampleSessions=2 nên vẫn phải bỏ qua.
+        // Only 1 session has a matching duration -- below minSampleSessions=2, so it must still be
+        // skipped.
         when(examItemResponseRepository.sumDurationSecondsGroupedBySessionIds(anyCollection()))
             .thenReturn(List.of(new SessionDurationAggregate(sessionA, 100L)));
 
@@ -95,8 +96,8 @@ class QuotaPricingCalibrationServiceTests {
 
     @Test
     void should_save_raw_rate_unchanged_when_within_smoothing_and_bounds() {
-        var sessionA = UUID.randomUUID();
-        var sessionB = UUID.randomUUID();
+        UUID sessionA = UUID.randomUUID();
+        UUID sessionB = UUID.randomUUID();
         when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
             new SessionCostDto(sessionA, new BigDecimal("1.00")),
             new SessionCostDto(sessionB, new BigDecimal("1.00"))
@@ -105,14 +106,15 @@ class QuotaPricingCalibrationServiceTests {
             new SessionDurationAggregate(sessionA, 100L),
             new SessionDurationAggregate(sessionB, 100L)
         ));
-        // previousApplied = 0.01 (default .env), rawRate = 2.00/200 = 0.01 -- không đổi, không cần làm mượt.
+        // previousApplied = 0.01 (default .env), rawRate = 2.00/200 = 0.01 -- unchanged, no
+        // smoothing needed.
         when(quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.EXAM)).thenReturn(Optional.empty());
 
         service.recalibrateExam();
 
-        var captor = ArgumentCaptor.forClass(QuotaPricingCalibration.class);
+        ArgumentCaptor<QuotaPricingCalibration> captor = ArgumentCaptor.forClass(QuotaPricingCalibration.class);
         verify(quotaPricingCalibrationRepository).save(captor.capture());
-        var saved = captor.getValue();
+        QuotaPricingCalibration saved = captor.getValue();
         assertThat(saved.getSessionCount()).isEqualTo(2);
         assertThat(saved.getRawRateUsdPerSecond()).isEqualByComparingTo("0.01");
         assertThat(saved.getAppliedRateUsdPerSecond()).isEqualByComparingTo("0.01");
@@ -122,9 +124,10 @@ class QuotaPricingCalibrationServiceTests {
 
     @Test
     void should_smooth_when_raw_rate_jumps_more_than_max_change_ratio() {
-        var sessionA = UUID.randomUUID();
-        var sessionB = UUID.randomUUID();
-        // rawRate = 20.00/200 = 0.10 -- gấp 10 lần previousApplied (0.01), vượt xa maxChangeRatio=20%.
+        UUID sessionA = UUID.randomUUID();
+        UUID sessionB = UUID.randomUUID();
+        // rawRate = 20.00/200 = 0.10 -- 10 times previousApplied (0.01), far beyond
+        // maxChangeRatio=20%.
         when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
             new SessionCostDto(sessionA, new BigDecimal("10.00")),
             new SessionCostDto(sessionB, new BigDecimal("10.00"))
@@ -133,25 +136,26 @@ class QuotaPricingCalibrationServiceTests {
             new SessionDurationAggregate(sessionA, 100L),
             new SessionDurationAggregate(sessionB, 100L)
         ));
-        var previous = new QuotaPricingCalibration(Instant.now(), 90, 10, BigDecimal.ONE, 100L,
+        QuotaPricingCalibration previous = new QuotaPricingCalibration(Instant.now(), 90, 10, BigDecimal.ONE, 100L,
             new BigDecimal("0.01"), new BigDecimal("0.01"), null, QuotaPricingSource.EXAM);
         when(quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.EXAM)).thenReturn(Optional.of(previous));
 
         service.recalibrateExam();
 
-        var captor = ArgumentCaptor.forClass(QuotaPricingCalibration.class);
+        ArgumentCaptor<QuotaPricingCalibration> captor = ArgumentCaptor.forClass(QuotaPricingCalibration.class);
         verify(quotaPricingCalibrationRepository).save(captor.capture());
-        var saved = captor.getValue();
+        QuotaPricingCalibration saved = captor.getValue();
         assertThat(saved.getRawRateUsdPerSecond()).isEqualByComparingTo("0.10");
-        // Bị kẹp còn tối đa +20% so với previousApplied (0.01) = 0.012, KHÔNG được nhảy thẳng lên 0.10.
+        // Clamped to at most +20% over previousApplied (0.01) = 0.012; it must NOT jump straight to
+        // 0.10.
         assertThat(saved.getAppliedRateUsdPerSecond()).isEqualByComparingTo("0.012");
         assertThat(saved.getNote()).isNotNull();
     }
 
     @Test
     void should_clamp_to_max_rate_bound_even_after_smoothing() {
-        var sessionA = UUID.randomUUID();
-        var sessionB = UUID.randomUUID();
+        UUID sessionA = UUID.randomUUID();
+        UUID sessionB = UUID.randomUUID();
         when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
             new SessionCostDto(sessionA, new BigDecimal("500.00")),
             new SessionCostDto(sessionB, new BigDecimal("500.00"))
@@ -160,22 +164,23 @@ class QuotaPricingCalibrationServiceTests {
             new SessionDurationAggregate(sessionA, 100L),
             new SessionDurationAggregate(sessionB, 100L)
         ));
-        // previousApplied đã sát trần maxRateBound=1.0 -- dù làm mượt xong vẫn phải kẹp lại đúng 1.0.
-        var previous = new QuotaPricingCalibration(Instant.now(), 90, 10, BigDecimal.ONE, 100L,
+        // previousApplied is already at the maxRateBound=1.0 ceiling -- even after smoothing it
+        // must still be clamped to exactly 1.0.
+        QuotaPricingCalibration previous = new QuotaPricingCalibration(Instant.now(), 90, 10, BigDecimal.ONE, 100L,
             new BigDecimal("0.99"), new BigDecimal("0.99"), null, QuotaPricingSource.EXAM);
         when(quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.EXAM)).thenReturn(Optional.of(previous));
 
         service.recalibrateExam();
 
-        var captor = ArgumentCaptor.forClass(QuotaPricingCalibration.class);
+        ArgumentCaptor<QuotaPricingCalibration> captor = ArgumentCaptor.forClass(QuotaPricingCalibration.class);
         verify(quotaPricingCalibrationRepository).save(captor.capture());
         assertThat(captor.getValue().getAppliedRateUsdPerSecond()).isEqualByComparingTo("1.0");
     }
 
     @Test
     void should_use_practice_duration_source_and_tag_pricing_source() {
-        var sessionA = UUID.randomUUID();
-        var sessionB = UUID.randomUUID();
+        UUID sessionA = UUID.randomUUID();
+        UUID sessionB = UUID.randomUUID();
         when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
             new SessionCostDto(sessionA, new BigDecimal("1.00")),
             new SessionCostDto(sessionB, new BigDecimal("1.00"))
@@ -188,23 +193,24 @@ class QuotaPricingCalibrationServiceTests {
 
         service.recalibratePractice();
 
-        // Không được đụng gì tới nguồn duration của EXAM khi calibrate PRACTICE.
+        // Calibrating PRACTICE must not touch the EXAM duration source at all.
         verifyNoInteractions(examItemResponseRepository);
-        var captor = ArgumentCaptor.forClass(QuotaPricingCalibration.class);
+        ArgumentCaptor<QuotaPricingCalibration> captor = ArgumentCaptor.forClass(QuotaPricingCalibration.class);
         verify(quotaPricingCalibrationRepository).save(captor.capture());
-        var saved = captor.getValue();
+        QuotaPricingCalibration saved = captor.getValue();
         assertThat(saved.getPricingSource()).isEqualTo(QuotaPricingSource.PRACTICE);
         assertThat(saved.getAppliedRateUsdPerSecond()).isEqualByComparingTo("0.01");
     }
 
     @Test
     void should_skip_practice_when_only_exam_side_has_matching_duration() {
-        var examOnlySession = UUID.randomUUID();
+        UUID examOnlySession = UUID.randomUUID();
         when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
             new SessionCostDto(examOnlySession, BigDecimal.TEN)
         ));
-        // practiceResponseTurnRepository không trả về gì cho session này (nó là session EXAM,
-        // không có row practice_response_turn) -- đúng hành vi thật của join, không phải mock hoá đơn giản.
+        // practiceResponseTurnRepository returns nothing for this session (it is an EXAM session,
+        // so it has no practice_response_turn rows) -- this is the real behavior of the join, not a
+        // simplistic mock.
         when(practiceResponseTurnRepository.sumDurationSecondsGroupedBySessionIds(anyCollection()))
             .thenReturn(List.of());
 

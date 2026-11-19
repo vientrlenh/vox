@@ -1,6 +1,8 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
+import com.sep.vox.domain.model.exam.ExamCandidate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -64,17 +66,17 @@ public class BulkDeleteExamCandidatesUseCase implements IUseCase<BulkDeleteExamC
     @Override
     @Transactional
     public Void execute(BulkDeleteExamCandidatesCommand input) {
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         authorize(exam);
         ExamEditingGuard.requireScheduleEditable(exam);
 
-        var candidateIds = input.candidateIds() == null ? List.<UUID>of() : input.candidateIds();
+        List<UUID> candidateIds = input.candidateIds() == null ? List.<UUID>of() : input.candidateIds();
         if (candidateIds.isEmpty()) {
             return null;
         }
 
-        var candidates = examCandidateRepository.findByIdInAndExamId(candidateIds, exam.getId());
+        List<ExamCandidate> candidates = examCandidateRepository.findByIdInAndExamId(candidateIds, exam.getId());
         // Tra theo (id, examId) nên thiếu dòng nghĩa là có id không tồn tại hoặc thuộc kỳ thi khác —
         // hỏng cả lượt thay vì âm thầm xoá một phần.
         if (candidates.size() != candidateIds.stream().distinct().count()) {
@@ -83,7 +85,7 @@ public class BulkDeleteExamCandidatesUseCase implements IUseCase<BulkDeleteExamC
 
         // Một query cho cả lô: phiên đã xoá mềm không tính (findByCandidateIdIn đã loại DELETED),
         // nên thí sinh chỉ còn lượt thi đã xoá vẫn gỡ được khỏi kỳ thi.
-        var busyCandidateIds = examSessionRepository
+        Set<UUID> busyCandidateIds = examSessionRepository
             .findByCandidateIdIn(candidates.stream().map(candidate -> candidate.getId()).toList())
             .stream()
             .map(session -> session.getCandidateId())
@@ -104,11 +106,11 @@ public class BulkDeleteExamCandidatesUseCase implements IUseCase<BulkDeleteExamC
 
     /** Cùng luật với {@link DeleteExamCandidateUseCase}: quản trị trường sở tại hoặc chủ tịch hội đồng. */
     private void authorize(Exam exam) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId())) {
             return;

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -70,14 +71,14 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
         // Khoá hàng ca ngay từ đầu: ba luật chống trùng dưới đây đều soát khung giờ MỚI, nên nếu
         // một luồng khác đang xếp người vào chính ca này thì hai bên phải nối đuôi chứ không được
         // cùng đọc một trạng thái cũ.
-        var schedule = examScheduleRepository.findByIdForUpdate(input.id())
+        ExamSchedule schedule = examScheduleRepository.findByIdForUpdate(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
-        var exam = examRepository.findById(schedule.getExamId())
+        Exam exam = examRepository.findById(schedule.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var currentUserId = authorize(exam);
+        UUID currentUserId = authorize(exam);
         ExamEditingGuard.requireScheduleEditable(exam);
 
-        var isClassTest = exam.getKind() == ExamKind.CLASS_TEST;
+        boolean isClassTest = exam.getKind() == ExamKind.CLASS_TEST;
         if (isClassTest && exam.getStatus() != ExamStatus.DRAFT && exam.getStatus() != ExamStatus.SCHEDULED) {
             throw new IllegalStateException("Chỉ có thể sửa lịch bài kiểm tra trên lớp trước khi bắt đầu");
         }
@@ -127,7 +128,7 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
                 exam.getSchoolId(), effectiveStart, effectiveEnd);
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         if (isClassTest) {
             schedule.setSchoolRoomId(effectiveRoomId);
             schedule.setStartDate(effectiveStart);
@@ -156,11 +157,11 @@ public class UpdateExamScheduleUseCase implements IUseCase<UpdateExamScheduleCom
     }
 
     private UUID authorize(Exam exam) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId())) {
             return currentUserId;

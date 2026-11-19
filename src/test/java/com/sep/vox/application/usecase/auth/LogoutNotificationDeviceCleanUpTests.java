@@ -103,7 +103,7 @@ class LogoutNotificationDeviceCleanUpTests {
 
         userId = UUID.randomUUID();
         rawRefreshToken = "raw-refresh-token-" + UUID.randomUUID();
-        var now = Instant.now();
+        Instant now = Instant.now();
 
         sessionId = transactionTemplate.execute(status -> deviceSessionRepository.save(new DeviceSession(
             userId, DEVICE_ID, "Lab PC", SessionPlatform.WEB,
@@ -137,10 +137,10 @@ class LogoutNotificationDeviceCleanUpTests {
     }
 
     private void registerNotificationDevice(String deviceId) {
-        var now = Instant.now();
-        // installationId là duy nhất trên toàn bảng (ON CONFLICT của registerDevice dựa vào đó),
-        // nên phải sinh mới cho từng dòng chứ không dùng hằng số.
-        var installationId = UUID.randomUUID().toString();
+        Instant now = Instant.now();
+        // installationId is unique across the whole table (the ON CONFLICT of registerDevice relies
+        // on it), so it must be generated fresh for each row rather than using a constant.
+        String installationId = UUID.randomUUID().toString();
         transactionTemplate.executeWithoutResult(status -> notificationDeviceRepository.save(
             NotificationDevice.create(
                 userId, deviceId, NotificationDevicePlatform.WEB, installationId, now)));

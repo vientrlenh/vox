@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.notification;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +37,7 @@ public class ViewMyNotificationUseCase implements IUseCase<ViewMyNotificationQue
 
     @Transactional(readOnly = true)
     public NotificationDto execute(ViewMyNotificationQuery input) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
 
         return notificationRepository.findByIdAndUserId(input.id(), userId)
             .map(NotificationDtoMapper::toNotificationDto)

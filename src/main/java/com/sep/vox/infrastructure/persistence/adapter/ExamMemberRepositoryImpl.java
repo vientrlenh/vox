@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamMemberJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -24,7 +25,7 @@ public class ExamMemberRepositoryImpl implements ExamMemberRepository {
 
     @Override
     public ExamMember save(ExamMember examMember) {
-        var saved = springDataExamMemberRepository.save(ExamMemberMapper.toJpa(examMember));
+        ExamMemberJpaEntity saved = springDataExamMemberRepository.save(ExamMemberMapper.toJpa(examMember));
         return ExamMemberMapper.toDomain(saved);
     }
 

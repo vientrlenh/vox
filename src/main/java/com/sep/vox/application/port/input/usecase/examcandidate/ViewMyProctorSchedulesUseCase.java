@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.examcandidate;
 
 import java.util.List;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,11 +36,11 @@ public class ViewMyProctorSchedulesUseCase implements IUseCase<Void, List<Procto
     @Override
     @Transactional(readOnly = true)
     public List<ProctorScheduleSummary> execute(Void input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        boolean isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (isSchoolAdmin) {
-            var schoolId = schoolUserRepository.findByUserId(currentUserId)
+            UUID schoolId = schoolUserRepository.findByUserId(currentUserId)
                 .map(schoolUser -> schoolUser.getSchoolId())
                 .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
             return proctorScheduleQueryRepository.findBySchoolId(schoolId);

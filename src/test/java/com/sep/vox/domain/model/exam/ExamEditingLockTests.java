@@ -26,7 +26,7 @@ class ExamEditingLockTests {
     }
 
     private Exam examWithStatus(ExamStatus status) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setStatus(status);
         return exam;
     }

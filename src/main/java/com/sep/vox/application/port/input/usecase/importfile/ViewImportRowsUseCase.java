@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.importfile;
 
+import com.sep.vox.domain.model.importfile.ImportRow;
+import com.sep.vox.domain.model.school.School;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -67,23 +69,23 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
         if (input.page() <= 0 || input.size() <= 0) {
             throw new IllegalArgumentException("Số trang và kích thước trang không hợp lệ");
         }
-        var status = parseStatus(input.status());
+        ImportRowStatus status = parseStatus(input.status());
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = findCurrentUser(currentUserId);
-        var session = findSession(input.sessionId());
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = findCurrentUser(currentUserId);
+        ImportSession session = findSession(input.sessionId());
 
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (isSchoolAdmin) {
-            var schoolId = getSchoolId(currentUser);
+            UUID schoolId = getSchoolId(currentUser);
             validateSchool(schoolId);
             validateSessionBelongsToSchool(session, schoolId);
         } else if (!Objects.equals(session.getCreatedBy(), currentUserId)) {
             throw new ForbiddenException("Phiên import không thuộc về bạn");
         }
 
-        var rows = importRowRepository.findBySessionId(
+        PageResult<ImportRow> rows = importRowRepository.findBySessionId(
             session.getId(),
             status,
             input.page(), 
@@ -93,7 +95,7 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        var user = userRepository.findById(currentUserId)
+        User user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalStateException("Người dùng hiện tại không hoạt động");
@@ -108,7 +110,7 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
     }
 
     private void validateSchool(UUID schoolId) {
-        var school = schoolRepository.findById(schoolId)
+        School school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
@@ -127,7 +129,7 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
     }
 
     private ImportRowStatus parseStatus(String status) {
-        var normalized = StringNormalization.trimAndCollapseSpaces(status);
+        String normalized = StringNormalization.trimAndCollapseSpaces(status);
         if (normalized == null || normalized.isBlank()) {
             return null;
         }

@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamResultAppeal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -47,16 +49,16 @@ public class WithdrawExamAppealUseCase implements IUseCase<UUID, UUID> {
     @Override
     @Transactional
     public UUID execute(UUID appealId) {
-        var currentUserId = examAppealAccessService.requireActiveUserId();
-        var context = examAppealAccessService.load(appealId);
+        UUID currentUserId = examAppealAccessService.requireActiveUserId();
+        ExamAppealAccessService.AppealContext context = examAppealAccessService.load(appealId);
         examAppealAccessService.authorizeOwningStudent(context, currentUserId);
 
-        var appeal = context.appeal();
+        ExamResultAppeal appeal = context.appeal();
         if (appeal.getStatus() != ExamAppealStatus.PENDING) {
             throw new IllegalStateException("Chỉ có thể rút đơn khi đơn còn đang chờ duyệt.");
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         appeal.setStatus(ExamAppealStatus.WITHDRAWN);
         appeal.setWithdrawnAt(now);
         appeal.setResolvedAt(now);
@@ -67,10 +69,10 @@ public class WithdrawExamAppealUseCase implements IUseCase<UUID, UUID> {
         // Bài đã đi tiếp (FINAL, PASSED/FAILED, INVALID...) thì rút đơn không được
         // phép kéo ngược trạng thái — nếu không, một thao tác của học sinh mở lại
         // được kết quả đã chốt sổ.
-        var candidateResult = context.candidateResult();
-        var status = candidateResult.getStatus();
+        ExamCandidateResult candidateResult = context.candidateResult();
+        ExamCandidateResultStatus status = candidateResult.getStatus();
         if (status == ExamCandidateResultStatus.APPEALED || status == ExamCandidateResultStatus.RE_GRADING) {
-            var before = resultStatusHistoryRecorder.snapshot(candidateResult);
+            ResultStatusHistoryRecorder.Snapshot before = resultStatusHistoryRecorder.snapshot(candidateResult);
             candidateResult.setStatus(ExamCandidateResultStatus.RELEASED);
             candidateResult.setUpdatedAt(now);
             candidateResult.setUpdatedBy(currentUserId);

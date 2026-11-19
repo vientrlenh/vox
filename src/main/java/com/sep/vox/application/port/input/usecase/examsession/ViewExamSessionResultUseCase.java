@@ -1,5 +1,18 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
+import com.sep.vox.domain.dto.QuestionAssetDto;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamItemResponse;
+import com.sep.vox.domain.model.exam.ExamPaperItem;
+import com.sep.vox.domain.model.exam.ExamSession;
+import com.sep.vox.domain.model.framework.FrameworkResultBand;
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.rubric.RubricResultBand;
+import com.sep.vox.domain.model.rubric.RubricVersion;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,8 +86,8 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
         if (questionIds.isEmpty()) {
             return java.util.Map.of();
         }
-        var assets = new java.util.HashMap<java.util.UUID, com.sep.vox.domain.dto.QuestionAssetDto>();
-        for (var questionId : questionIds) {
+        Map<UUID, QuestionAssetDto> assets = new java.util.HashMap<java.util.UUID, com.sep.vox.domain.dto.QuestionAssetDto>();
+        for (UUID questionId : questionIds) {
             questionAssetRepository.findByQuestionId(questionId).stream()
                 .findFirst()
                 .map(com.sep.vox.domain.mapper.QuestionAssetDtoMapper::toDto)
@@ -93,18 +106,18 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
      */
     private java.util.List<ExamCandidateResultItemResponse> itemResponses(
             java.util.List<ExamSessionResultCalculator.ItemScore> items) {
-        var questionIds = items.stream()
+        List<UUID> questionIds = items.stream()
             .map(item -> item.questionId())
             .filter(id -> id != null)
             .distinct()
             .toList();
-        var texts = new java.util.HashMap<java.util.UUID, String>();
+        Map<UUID, String> texts = new java.util.HashMap<java.util.UUID, String>();
         if (!questionIds.isEmpty()) {
-            for (var question : questionRepository.findByIdIn(questionIds)) {
+            for (Question question : questionRepository.findByIdIn(questionIds)) {
                 texts.put(question.getId(), question.getQuestionText());
             }
         }
-        var assets = assetsByQuestionId(questionIds);
+        Map<UUID, QuestionAssetDto> assets = assetsByQuestionId(questionIds);
         return items.stream()
             .map(item -> new ExamCandidateResultItemResponse(
                 item.paperItemId(),
@@ -133,8 +146,8 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
      */
     private java.util.List<ExamCandidateResultItemResponse> itemResponsesWithoutScores(
             java.util.UUID sessionId, java.util.UUID paperId) {
-        var responseByPaperItemId = new java.util.HashMap<java.util.UUID, java.util.UUID>();
-        for (var response : examItemResponseRepository.findBySessionId(sessionId)) {
+        Map<UUID, UUID> responseByPaperItemId = new java.util.HashMap<java.util.UUID, java.util.UUID>();
+        for (ExamItemResponse response : examItemResponseRepository.findBySessionId(sessionId)) {
             if (response.getPaperItemId() != null) {
                 responseByPaperItemId.putIfAbsent(response.getPaperItemId(), response.getId());
             }
@@ -145,22 +158,22 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
 
         // Đi theo ĐỀ chứ không theo response: giữ đúng thứ tự (section, order) mà calculator dùng,
         // nên số "Câu 1, Câu 2" trên client không nhảy khi bài chuyển từ chưa chấm sang đã chấm.
-        var paperItems = examPaperItemRepository.findByPaperId(paperId).stream()
+        List<ExamPaperItem> paperItems = examPaperItemRepository.findByPaperId(paperId).stream()
             .filter(paperItem -> responseByPaperItemId.containsKey(paperItem.getId()))
             .sorted(java.util.Comparator.comparingInt(paperItem -> paperItem.getOrder()))
             .toList();
-        var questionIds = paperItems.stream()
+        List<UUID> questionIds = paperItems.stream()
             .map(paperItem -> paperItem.getQuestionId())
             .filter(id -> id != null)
             .distinct()
             .toList();
-        var texts = new java.util.HashMap<java.util.UUID, String>();
+        Map<UUID, String> texts = new java.util.HashMap<java.util.UUID, String>();
         if (!questionIds.isEmpty()) {
-            for (var question : questionRepository.findByIdIn(questionIds)) {
+            for (Question question : questionRepository.findByIdIn(questionIds)) {
                 texts.put(question.getId(), question.getQuestionText());
             }
         }
-        var assets = assetsByQuestionId(questionIds);
+        Map<UUID, QuestionAssetDto> assets = assetsByQuestionId(questionIds);
         return paperItems.stream()
             .map(paperItem -> new ExamCandidateResultItemResponse(
                 paperItem.getId(),
@@ -177,26 +190,26 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
     @Override
     @Transactional(readOnly = true)
     public ExamCandidateResultResponse execute(ViewExamSessionResultQuery input) {
-        var access = examResultAccessService.authorizeSession(input.sessionId());
-        var session = access.session();
-        var result = examCandidateResultRepository.findBySessionId(session.getId())
+        ExamResultAccessService.SessionAccess access = examResultAccessService.authorizeSession(input.sessionId());
+        ExamSession session = access.session();
+        ExamCandidateResult result = examCandidateResultRepository.findBySessionId(session.getId())
             .orElseThrow(() -> new NotFoundException("Khong tim thay ket qua phien thi"));
         // Chính chủ chỉ xem được bài đã có kết luận; giáo viên/admin thì luôn xem được.
         // Trang vẫn trả về bản ghi kèm status — che field chứ không chặn, để học sinh còn
         // biết bài mình đang ở đâu thay vì gặp màn "không tìm thấy".
-        var scoreVisible = !access.candidateOwner()
+        boolean scoreVisible = !access.candidateOwner()
             || ExamCandidateResultStatus.isVisibleToCandidate(result.getStatus());
-        var includeBreakdown = scoreVisible && shouldIncludeBreakdown(result.getStatus(), session.getId());
-        var calculated = includeBreakdown ? examSessionResultCalculator.calculate(session.getId()) : null;
-        var targetBand = result.getTargetFrameworkBandId() == null
+        boolean includeBreakdown = scoreVisible && shouldIncludeBreakdown(result.getStatus(), session.getId());
+        ExamSessionResultCalculator.CalculatedExamSessionResult calculated = includeBreakdown ? examSessionResultCalculator.calculate(session.getId()) : null;
+        FrameworkResultBand targetBand = result.getTargetFrameworkBandId() == null
             ? null
             : frameworkResultBandRepository.findById(result.getTargetFrameworkBandId()).orElse(null);
-        var rubricBand = result.getRubricResultBandId() == null
+        RubricResultBand rubricBand = result.getRubricResultBandId() == null
             ? null
             : rubricResultBandRepository.findById(result.getRubricResultBandId()).orElse(null);
         // Thang điểm đi kèm kết quả để client khỏi phải đoán -- xem javadoc ở
         // ExamCandidateResultResponse.scoringScaleMin để biết chuyện gì xảy ra khi nó đoán.
-        var rubricVersion = !scoreVisible || result.getRubricVersionId() == null
+        RubricVersion rubricVersion = !scoreVisible || result.getRubricVersionId() == null
             ? null
             : rubricVersionRepository.findById(result.getRubricVersionId()).orElse(null);
 
@@ -253,13 +266,13 @@ public class ViewExamSessionResultUseCase implements IUseCase<ViewExamSessionRes
         if (status == ExamCandidateResultStatus.INVALID) {
             return false;
         }
-        var responseIds = examItemResponseRepository.findBySessionId(sessionId).stream()
+        List<UUID> responseIds = examItemResponseRepository.findBySessionId(sessionId).stream()
             .map(response -> response.getId())
             .toList();
         if (responseIds.isEmpty()) {
             return false;
         }
-        var evaluatedResponseIds = examItemEvaluationRepository.findByResponseIdIn(responseIds).stream()
+        Set<UUID> evaluatedResponseIds = examItemEvaluationRepository.findByResponseIdIn(responseIds).stream()
             .map(evaluation -> evaluation.getResponseId())
             .collect(java.util.stream.Collectors.toSet());
         return evaluatedResponseIds.containsAll(responseIds);

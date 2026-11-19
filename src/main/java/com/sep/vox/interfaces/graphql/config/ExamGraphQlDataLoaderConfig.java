@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.config;
 
+import com.sep.vox.domain.model.school.SchoolClassUser;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -124,8 +125,9 @@ public class ExamGraphQlDataLoaderConfig {
                     .collect(Collectors.toMap(version -> version.id(), dto -> dto)))
             );
 
-        // Ô blueprint sinh ra từng câu trong mã đề. Mapped loader tự trả null cho key không tìm
-        // thấy, đúng ý fail-open ở UpdateExamPaperItemUseCase: slot đã xoá thì câu gán tự do.
+        // The blueprint slot that generated each question in the exam paper. The mapped loader returns null for
+        // a key it cannot find, which is intended and matches the fail-open behavior in
+        // UpdateExamPaperItemUseCase: once the slot is deleted, the question is assigned freely.
         registry.<UUID, ExamBlueprintSlotDto>forName("examBlueprintSlotById")
             .registerMappedBatchLoader((Set<UUID> slotIds, BatchLoaderEnvironment env) ->
                 Mono.fromSupplier(() -> examBlueprintSlotRepository.findByIdIn(slotIds)
@@ -226,14 +228,14 @@ public class ExamGraphQlDataLoaderConfig {
                         firstStudentIdByExam.putIfAbsent(candidate.getExamId(), candidate.getStudentId())
                     );
 
-                    var activeClassByStudentId = schoolClassUserRepository.findByUserIdIn(firstStudentIdByExam.values())
+                    Map<UUID, List<SchoolClassUser>> activeClassByStudentId = schoolClassUserRepository.findByUserIdIn(firstStudentIdByExam.values())
                         .stream()
                         .filter(user -> user.isActive())
                         .collect(Collectors.groupingBy(user -> user.getUserId()));
 
                     Map<UUID, UUID> result = new HashMap<>();
                     firstStudentIdByExam.forEach((examId, studentId) -> {
-                        var activeClasses = activeClassByStudentId.get(studentId);
+                        List<SchoolClassUser> activeClasses = activeClassByStudentId.get(studentId);
                         if (activeClasses != null && !activeClasses.isEmpty()) {
                             result.put(examId, activeClasses.get(0).getSchoolClassId());
                         }

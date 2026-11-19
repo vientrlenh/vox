@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examschedule;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
@@ -57,25 +59,25 @@ public class GetExamScheduleOtpUseCase implements IUseCase<GetExamScheduleOtpQue
 
     @Override
     public GetExamScheduleOtpResponse execute(GetExamScheduleOtpQuery input) {
-        var now = Instant.now();
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
-        var schedule = examScheduleRepository.findByIdAndInSchedule(input.scheduleId(), now)
+        Instant now = Instant.now();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
+        ExamSchedule schedule = examScheduleRepository.findByIdAndInSchedule(input.scheduleId(), now)
             .orElseThrow(() -> new NotFoundException("Lịch thi yêu cầu không tìm thấy hoặc đã hết hạn"));
 
         if (!schedule.getExamId().equals(input.examId())) {
             throw new IllegalArgumentException("Lịch thi yêu cầu không thuộc về kỳ thi này");
         }
 
-        var exam = examRepository.findById(schedule.getExamId())
+        Exam exam = examRepository.findById(schedule.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của lịch thi này"));
         if (!hasAccess(input.scheduleId(), exam.getSchoolId(), userId)) {
             throw new ForbiddenException("Lịch thi này không được bạn giám sát");
         }
 
-        var otpKey = CacheKey.examScheduleOtpKey(input.scheduleId());
-        var otp = oneTimePasswordPort.generate(OTP_LENGTH);
+        String otpKey = CacheKey.examScheduleOtpKey(input.scheduleId());
+        String otp = oneTimePasswordPort.generate(OTP_LENGTH);
         otp = cacheManagerPort.saveIfAbsentAndGet(otpKey, otp, TTL);
-        var expiresSeconds = cacheManagerPort.getRemainingTtl(otpKey);
+        Long expiresSeconds = cacheManagerPort.getRemainingTtl(otpKey);
 
         return new GetExamScheduleOtpResponse(otp, expiresSeconds);
     }
@@ -85,10 +87,10 @@ public class GetExamScheduleOtpUseCase implements IUseCase<GetExamScheduleOtpQue
             return true;
         }
 
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         return isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(examSchoolId);
     }

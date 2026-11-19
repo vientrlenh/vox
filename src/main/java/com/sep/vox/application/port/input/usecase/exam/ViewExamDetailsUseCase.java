@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.exam.Exam;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -44,15 +45,15 @@ public class ViewExamDetailsUseCase implements IUseCase<ViewExamDetailsQuery, Ex
     @Override
     @Transactional(readOnly = true)
     public ExamDto execute(ViewExamDetailsQuery input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = !userContextPort.isSystemAdmin()
+        boolean schoolAdmin = !userContextPort.isSystemAdmin()
             && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
                 .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
-        var exam = examRepository.findById(input.id())
+        Exam exam = examRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         if (!hasAccess(exam.getId(), exam.getSchoolId(), exam.getStatus(), currentUserId, currentSchoolId, schoolAdmin)) {

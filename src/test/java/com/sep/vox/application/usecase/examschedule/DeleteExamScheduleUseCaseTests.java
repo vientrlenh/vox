@@ -105,7 +105,7 @@ class DeleteExamScheduleUseCaseTests {
 
     @Test
     void should_soft_delete_when_no_candidates() {
-        var schedule = schedule();
+        ExamSchedule schedule = schedule();
         when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
         when(examCandidateRepository.countByScheduleId(scheduleId)).thenReturn(0L);
         when(examScheduleProctorRepository.countByScheduleId(scheduleId)).thenReturn(0L);
@@ -118,7 +118,7 @@ class DeleteExamScheduleUseCaseTests {
     }
 
     private Exam exam(ExamStatus status) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         exam.setStatus(status);
@@ -126,7 +126,7 @@ class DeleteExamScheduleUseCaseTests {
     }
 
     private ExamSchedule schedule() {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(scheduleId);
         schedule.setExamId(examId);
         schedule.setSchoolRoomId(UUID.randomUUID());

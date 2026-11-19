@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.query;
 
+import jakarta.persistence.TypedQuery;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -27,7 +28,7 @@ public class JpaExamStatusCountsQueryRepository implements ExamStatusCountsQuery
             String kind,
             Instant createdFrom,
             Instant createdTo) {
-        var jpql = new StringBuilder("""
+        StringBuilder jpql = new StringBuilder("""
             SELECT new com.sep.vox.application.query.dto.ExamStatusCountsDto(
                 COUNT(e),
                 COALESCE(SUM(CASE WHEN e.status = 'DRAFT' THEN 1L ELSE 0L END), 0L),
@@ -60,7 +61,7 @@ public class JpaExamStatusCountsQueryRepository implements ExamStatusCountsQuery
                   )
             """);
 
-        var query = em.createQuery(jpql.toString(), ExamStatusCountsDto.class)
+        TypedQuery<ExamStatusCountsDto> query = em.createQuery(jpql.toString(), ExamStatusCountsDto.class)
             .setParameter("schoolId", schoolId)
             .setParameter("kind", kind)
             .setParameter("systemAdmin", systemAdmin)

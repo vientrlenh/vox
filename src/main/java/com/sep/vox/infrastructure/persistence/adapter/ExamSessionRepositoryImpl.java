@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamSessionJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -50,7 +51,7 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
         if (statuses == null || statuses.isEmpty()) {
             return Optional.empty();
         }
-        var rawStatuses = statuses.stream().map(s -> s.name()).toList();
+        List<String> rawStatuses = statuses.stream().map(s -> s.name()).toList();
         return springDataExamSessionRepository.findTopByCandidateIdAndStatusInOrderByStartedAtDesc(candidateId, rawStatuses)
             .map(ExamSessionMapper::toDomain);
     }
@@ -100,7 +101,7 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
 
     @Override
     public ExamSession save(ExamSession session) {
-        var saved = springDataExamSessionRepository.save(ExamSessionMapper.toJpa(session));
+        ExamSessionJpaEntity saved = springDataExamSessionRepository.save(ExamSessionMapper.toJpa(session));
         return ExamSessionMapper.toDomain(saved);
     }
 
@@ -116,7 +117,7 @@ public class ExamSessionRepositoryImpl implements ExamSessionRepository {
 
     @Override
     public Optional<ExamSession> findByIdAndResumable(UUID id) {
-        var rawStatuses = ExamSessionStatus.RESUMABLE.stream().map(s -> s.name()).toList();
+        List<String> rawStatuses = ExamSessionStatus.RESUMABLE.stream().map(s -> s.name()).toList();
         return springDataExamSessionRepository.findByIdAndStatusIn(id, rawStatuses)
             .map(ExamSessionMapper::toDomain);
     }

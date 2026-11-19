@@ -35,13 +35,13 @@ public class QuestionTopicController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         validatePage(page, size);
-        var query = new ViewQuestionTopicsQuery(questionBankId, status, keyword, page, size);
+        ViewQuestionTopicsQuery query = new ViewQuestionTopicsQuery(questionBankId, status, keyword, page, size);
         return viewQuestionTopicsUseCase.execute(query);
     }
 
     @QueryMapping(name = "questionTopic")
     public QuestionTopicDto questionTopic(@Argument(name = "id") UUID id) {
-        var query = new ViewQuestionTopicDetailsQuery(id);
+        ViewQuestionTopicDetailsQuery query = new ViewQuestionTopicDetailsQuery(id);
         return viewQuestionTopicDetailsUseCase.execute(query);
     }
 

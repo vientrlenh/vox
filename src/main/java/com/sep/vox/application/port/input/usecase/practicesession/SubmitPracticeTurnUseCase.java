@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
+import com.sep.vox.application.response.input.subscription.ConsumeQuotaResponse;
+import com.sep.vox.domain.model.personalization.PracticeSession;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -95,7 +97,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
     @Override
     @Transactional
     public SubmitTurnResult execute(SubmitPracticeTurnCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         return execute(studentId, input.turn());
     }
 
@@ -106,14 +108,14 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
     @Transactional
     public SubmitTurnResult execute(UUID studentId, SubmitPracticeTurn turn) {
         requireOwnedInProgress(turn.getSessionId(), studentId);
-        var responseId = practiceItemResponseRepository.upsertResponse(
+        UUID responseId = practiceItemResponseRepository.upsertResponse(
             turn.getSessionId(),
             turn.getQuestionId(),
             turn.getAudioUrl(),
             turn.getTranscript(),
             turn.isQuestionComplete()
         );
-        var turnWrite = practiceResponseTurnRepository.save(
+        PracticeResponseTurnRepository.TurnWrite turnWrite = practiceResponseTurnRepository.save(
             responseId,
             turn.getTurnOrder(),
             turn.getTurnType(),
@@ -124,18 +126,18 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             turn.getWordFeedbackJson(),
             turn.getTurnScore()
         );
-        var turnId = turnWrite.turnId();
+        UUID turnId = turnWrite.turnId();
         // Bản gửi LẠI thì KHÔNG ghi thêm dòng sửa lỗi: turn_corrections không có ràng buộc duy nhất
         // nào, nên mỗi lần Python retry sẽ nhân đôi số thẻ sửa lỗi học sinh thấy khi xem lại buổi.
         // Vẫn dựng danh sách để trả về -- payload retry chính là payload lần đầu, nên lọc lại cho ra
         // đúng những dòng đã lưu.
-        var corrections = collectCorrections(turnId, turn.getCorrections(), turnWrite.created());
+        List<TurnCorrectionDto> corrections = collectCorrections(turnId, turn.getCorrections(), turnWrite.created());
         // Nạp phiên KỂ CẢ khi lượt này im lặng: client vẫn phải thấy đúng tổng "đã nói" trên
         // thanh tiến độ, chứ không phải một ô trống mỗi lần học sinh bấm mic rồi không nói gì.
-        var session = practiceSessionRepository.findById(turn.getSessionId())
+        PracticeSession session = practiceSessionRepository.findById(turn.getSessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
-        var spokenSeconds = session.getGradedSeconds();
-        var quotaExhausted = false;
+        int spokenSeconds = session.getGradedSeconds();
+        boolean quotaExhausted = false;
         // turnWrite.created() gác CẢ khối: bảng lượt nói tự chống trùng được (uq_practice_response_turn_order),
         // nhưng hai việc bên trong đây thì không -- trừ tiền vào ví trường, và cộng giây đã nói vào
         // phiên. Trước khi có cờ này, một lần Python retry sau khi mất response HTTP sẽ trừ tiền THẬT
@@ -152,16 +154,16 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             // vì PRACTICE trừ quota NGAY trong request này) -- xem
             // PracticeAttemptConnection._flush_turn_usage bên Agentic AI,
             // AI_USAGE_QUOTA_USD_MIGRATION.md mục 5/7. Fallback ZERO cho client Python cũ chưa gửi.
-            var costUsd = turn.getTurnCostUsd() != null ? turn.getTurnCostUsd() : BigDecimal.ZERO;
+            BigDecimal costUsd = turn.getTurnCostUsd() != null ? turn.getTurnCostUsd() : BigDecimal.ZERO;
             // Quy sang VND NGAY tại đây vì hạn mức tính bằng VND. Khác đường thi: bên đó cộng
             // cost_vnd đã chốt sẵn từng dòng ai_usage_records, còn ở đây chi phí do Python gửi
             // thẳng trong request nên chưa có dòng nào để cộng -- tỷ giá hiện hành là tỷ giá
             // đúng, vì khoản chi vừa phát sinh xong.
-            var fxRateUsed = quotaPricingPort.usdToVndRate();
-            var costVnd = costUsd
+            BigDecimal fxRateUsed = quotaPricingPort.usdToVndRate();
+            BigDecimal costVnd = costUsd
                 .multiply(fxRateUsed)
                 .setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
-            var subscriptionId = activeSubscriptionId(studentId);
+            UUID subscriptionId = activeSubscriptionId(studentId);
             // ConsumeQuotaService cũng @Transactional (REQUIRED mặc định) -- gọi thẳng thì nó
             // tham gia CHUNG transaction với response/turn/corrections vừa lưu ở trên. Nếu nó
             // ném (giờ chỉ còn các lỗi thật như không tìm thấy hạn mức/gói, không còn
@@ -177,7 +179,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             // tiền xong rồi (costUsd là chi phí THẬT của lượt vừa nói), nên từ chối không giữ
             // lại được đồng nào mà chỉ làm khoản chi biến mất khỏi sổ sách. Hết tiền hay chưa
             // giờ đọc từ cờ fundsExhausted của kết quả, không còn qua exception.
-            var consumeResult = consumeQuotaTransactionTemplate.execute(
+            ConsumeQuotaResponse consumeResult = consumeQuotaTransactionTemplate.execute(
                 status -> consumeQuotaService.consumePracticeAllowingDebt(
                     subscriptionId,
                     turn.getSessionId(),
@@ -200,7 +202,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
                 session.withGradedSecondsAndHeartbeat(spokenSeconds, Instant.now())
             );
         }
-        var result = new SubmitTurnResultDto(
+        SubmitTurnResultDto result = new SubmitTurnResultDto(
             responseId,
             turnId,
             practiceResponseTurnRepository.findRemainingQuestionSeconds(turn.getSessionId(), turn.getQuestionId()),
@@ -268,9 +270,9 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
      */
     private List<TurnCorrectionDto> collectCorrections(UUID turnId,
             List<TurnCorrectionSubmission> inputs, boolean persist) {
-        var result = new ArrayList<TurnCorrectionDto>();
-        for (var correction : inputs == null ? List.<TurnCorrectionSubmission>of() : inputs) {
-            var measured = MEASURED_CATEGORY.equalsIgnoreCase(correction.getCategory());
+        List<TurnCorrectionDto> result = new ArrayList<TurnCorrectionDto>();
+        for (TurnCorrectionSubmission correction : inputs == null ? List.<TurnCorrectionSubmission>of() : inputs) {
+            boolean measured = MEASURED_CATEGORY.equalsIgnoreCase(correction.getCategory());
             if (result.size() >= MAX_STORED_CORRECTIONS
                     || (!measured && correction.getConfidence() < MIN_JUDGED_CONFIDENCE)) {
                 continue;

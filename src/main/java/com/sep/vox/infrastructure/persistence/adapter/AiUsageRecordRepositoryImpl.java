@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.AiUsageRecordJpaEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -29,8 +30,8 @@ public class AiUsageRecordRepositoryImpl implements AiUsageRecordRepository {
 
     @Override
     public AiUsageRecord save(AiUsageRecord record) {
-        var entity = AiUsageRecordMapper.toJpa(record);
-        var saved = springDataAiUsageRecordRepository.save(entity);
+        AiUsageRecordJpaEntity entity = AiUsageRecordMapper.toJpa(record);
+        AiUsageRecordJpaEntity saved = springDataAiUsageRecordRepository.save(entity);
         return AiUsageRecordMapper.toDomain(saved);
     }
 

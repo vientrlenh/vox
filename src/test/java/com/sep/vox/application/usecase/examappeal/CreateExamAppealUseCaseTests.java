@@ -82,7 +82,7 @@ public class CreateExamAppealUseCaseTests {
     }
 
     private AppealContext context(ExamCandidateResultStatus status) {
-        var candidateResult = new ExamCandidateResult();
+        ExamCandidateResult candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);
         candidateResult.setSessionId(sessionId);
         candidateResult.setStatus(status);
@@ -96,7 +96,7 @@ public class CreateExamAppealUseCaseTests {
     }
 
     private ExamItemResponse response(UUID id, UUID paperItem) {
-        var response = new ExamItemResponse();
+        ExamItemResponse response = new ExamItemResponse();
         response.setId(id);
         response.setPaperItemId(paperItem);
         return response;
@@ -113,7 +113,7 @@ public class CreateExamAppealUseCaseTests {
 
     @SuppressWarnings("unchecked")
     private List<ExamResultAppealItem> captureSavedItems() {
-        var captor = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
         verify(examResultAppealItemRepository).saveAll(captor.capture());
         return captor.getValue();
     }
@@ -124,17 +124,17 @@ public class CreateExamAppealUseCaseTests {
             .thenReturn(context(ExamCandidateResultStatus.RELEASED));
         when(examItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of(response()));
 
-        var result = useCase.execute(command());
+        UUID result = useCase.execute(command());
 
         assertThat(result).isEqualTo(appealId);
-        var captor = ArgumentCaptor.forClass(ExamResultAppeal.class);
+        ArgumentCaptor<ExamResultAppeal> captor = ArgumentCaptor.forClass(ExamResultAppeal.class);
         verify(examResultAppealRepository).save(captor.capture());
-        var appeal = captor.getValue();
+        ExamResultAppeal appeal = captor.getValue();
         assertThat(appeal.getStatus()).isEqualTo(ExamAppealStatus.PENDING);
         assertThat(appeal.getScoreBefore()).isEqualByComparingTo("6.00");
         assertThat(appeal.getRequestedBy()).isEqualTo(studentId);
 
-        var items = captureSavedItems();
+        List<ExamResultAppealItem> items = captureSavedItems();
         assertThat(items).hasSize(1);
         assertThat(items.get(0).getAppealId()).isEqualTo(appealId);
         assertThat(items.get(0).getPaperItemId()).isEqualTo(paperItemId);
@@ -143,7 +143,7 @@ public class CreateExamAppealUseCaseTests {
 
     @Test
     void should_move_candidate_result_to_appealed() {
-        var context = context(ExamCandidateResultStatus.RELEASED);
+        ExamAppealAccessService.AppealContext context = context(ExamCandidateResultStatus.RELEASED);
         when(examAppealAccessService.loadByCandidateResultId(candidateResultId)).thenReturn(context);
         when(examItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of(response()));
 
@@ -229,7 +229,7 @@ public class CreateExamAppealUseCaseTests {
 
     @Test
     void should_reject_when_caller_is_not_the_owning_student() {
-        var context = context(ExamCandidateResultStatus.RELEASED);
+        ExamAppealAccessService.AppealContext context = context(ExamCandidateResultStatus.RELEASED);
         when(examAppealAccessService.loadByCandidateResultId(candidateResultId)).thenReturn(context);
         org.mockito.Mockito.doThrow(new ForbiddenException("BẢO MẬT"))
             .when(examAppealAccessService).authorizeOwningStudent(eq(context), eq(studentId));
@@ -262,7 +262,7 @@ public class CreateExamAppealUseCaseTests {
 
         assertThat(useCase.execute(command(null))).isEqualTo(appealId);
 
-        var items = captureSavedItems();
+        List<ExamResultAppealItem> items = captureSavedItems();
         assertThat(items).extracting(item -> item.getPaperItemId())
             .containsExactly(paperItemId, otherPaperItemId);
         assertThat(items).extracting(item -> item.getResponseId())
@@ -302,10 +302,10 @@ public class CreateExamAppealUseCaseTests {
         when(examItemResponseRepository.findBySessionId(sessionId))
             .thenReturn(List.of(response(), response(otherResponseId, otherPaperItemId)));
 
-        var result = useCase.execute(command(List.of(paperItemId, otherPaperItemId)));
+        UUID result = useCase.execute(command(List.of(paperItemId, otherPaperItemId)));
 
         assertThat(result).isEqualTo(appealId);
-        var items = captureSavedItems();
+        List<ExamResultAppealItem> items = captureSavedItems();
         assertThat(items).hasSize(2);
         assertThat(items).extracting(item -> item.getPaperItemId())
             .containsExactly(paperItemId, otherPaperItemId);

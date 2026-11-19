@@ -1,8 +1,11 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
+import com.sep.vox.application.query.dto.TopicSearchRowInfo;
 import java.util.Comparator;
 import java.util.List;
 
+import java.util.Map;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,30 +44,30 @@ public class SearchPracticeTopicsSemanticUseCase
     @Override
     @Transactional(readOnly = true)
     public List<PracticeTopicOffer> execute(SearchPracticeTopicsQuery input) {
-        var keyword = input.keyword() == null ? "" : input.keyword().strip();
+        String keyword = input.keyword() == null ? "" : input.keyword().strip();
         if (keyword.isBlank()) {
             return List.of();
         }
-        var hits = topicGenerationPort.searchByVector(keyword, VECTOR_FETCH_LIMIT);
+        List<TopicGenerationPort.TopicSearchHit> hits = topicGenerationPort.searchByVector(keyword, VECTOR_FETCH_LIMIT);
         if (hits.isEmpty()) {
             return List.of();
         }
 
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         // HYDRATE từ Postgres. Không dùng tên trong vector store: đó là bản chụp lúc index, tên
         // có thể đã đổi và chủ đề có thể đã bị tắt. Query cũng lọc luôn `active = true`.
-        var rows = practiceTopicQueryRepository.findActiveByIds(
+        List<TopicSearchRowInfo> rows = practiceTopicQueryRepository.findActiveByIds(
             studentId,
             hits.stream().map(hit -> hit.topicId()).toList()
         );
 
         // Giữ THỨ TỰ theo độ tương đồng, không theo thứ tự Postgres trả về -- xếp hạng là toàn
         // bộ giá trị của đường này.
-        var rankByTopicId = new java.util.HashMap<java.util.UUID, Double>();
-        for (var hit : hits) {
+        Map<UUID, Double> rankByTopicId = new java.util.HashMap<java.util.UUID, Double>();
+        for (TopicGenerationPort.TopicSearchHit hit : hits) {
             rankByTopicId.put(hit.topicId(), hit.similarity());
         }
-        var minutes = enrichmentService.minutesForStudent(studentId);
+        int minutes = enrichmentService.minutesForStudent(studentId);
         return rows.stream()
             .sorted(Comparator.comparingDouble(
                 (com.sep.vox.application.query.dto.TopicSearchRowInfo row) ->

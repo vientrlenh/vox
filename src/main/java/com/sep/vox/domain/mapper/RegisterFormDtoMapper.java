@@ -2,6 +2,7 @@ package com.sep.vox.domain.mapper;
 
 
 import java.util.List;
+import java.util.UUID;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RegisterFormDto;
@@ -20,7 +21,7 @@ import com.sep.vox.domain.valueobject.StudentCount;
 public class RegisterFormDtoMapper {
     
     public static RegisterFormDto toRegisterFormDto(RegisterForm registerForm, String schoolDomain, String schoolName, String schoolAddress) {
-        var directoryId = registerForm.getSchoolDirectoryId();
+        UUID directoryId = registerForm.getSchoolDirectoryId();
         return new RegisterFormDto(
             registerForm.getId(), 
             directoryId,

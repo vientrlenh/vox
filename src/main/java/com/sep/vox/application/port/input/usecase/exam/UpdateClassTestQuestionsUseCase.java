@@ -1,9 +1,14 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.question.QuestionAsset;
+import com.sep.vox.domain.model.question.QuestionCollaborator;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -87,8 +92,8 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
     @Override
     @Transactional
     public ExamDto execute(UpdateClassTestQuestionsCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var exam = examRepository.findById(input.examId())
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         if (exam.getKind() != ExamKind.CLASS_TEST) {
@@ -107,27 +112,27 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         if (input.sections() == null || input.sections().isEmpty()) {
             throw new IllegalStateException("Bài kiểm tra trên lớp phải có ít nhất 1 section");
         }
-        var seenQuestionIds = new java.util.HashSet<UUID>();
-        for (var section : input.sections()) {
+        Set<UUID> seenQuestionIds = new java.util.HashSet<UUID>();
+        for (ClassTestSectionCommand section : input.sections()) {
             if (section.questions() == null || section.questions().isEmpty()) {
                 throw new IllegalStateException("Mỗi section phải có ít nhất 1 câu hỏi");
             }
-            for (var questionCommand : section.questions()) {
+            for (ClassTestQuestionCommand questionCommand : section.questions()) {
                 if (!seenQuestionIds.add(questionCommand.questionId())) {
                     throw new IllegalStateException("Một câu hỏi không thể xuất hiện nhiều lần trong cùng 1 bài kiểm tra");
                 }
             }
         }
 
-        var candidateQuestions = new ArrayList<Question>();
-        for (var section : input.sections()) {
-            for (var questionCommand : section.questions()) {
-                var question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, exam.getSchoolId(), false, false)
+        List<Question> candidateQuestions = new ArrayList<Question>();
+        for (ClassTestSectionCommand section : input.sections()) {
+            for (ClassTestQuestionCommand questionCommand : section.questions()) {
+                Question question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, exam.getSchoolId(), false, false)
                     .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionCommand.questionId()));
                 boolean isOwner = currentUserId.equals(question.getCreatedBy());
                 boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
                 if (!isOwner && !isSchoolShared) {
-                    var collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
+                    Optional<QuestionCollaborator> collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
                     if (collaborator.isEmpty() || collaborator.get().getPermission() == QuestionCollaboratorPermission.READ_ONLY) {
                         throw new ForbiddenException("Quyền READ_ONLY không được phép dùng câu hỏi trong bài kiểm tra");
                     }
@@ -137,9 +142,9 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         }
         // Chiếu TRƯỚC khi ghi nên không dùng lại được RecalculateExamTimeDurationService. Dùng
         // totalSeconds (đã gồm thời lượng phát AUDIO/VIDEO) vì đây là thước đo ĐỘ DÀI so với gói.
-        var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
+        Map<UUID, QuestionAsset> assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
             .findByQuestionIdIn(candidateQuestions.stream().map(q -> q.getId()).distinct().toList()));
-        var candidateDurationSeconds = PaperTimeCalculator
+        int candidateDurationSeconds = PaperTimeCalculator
             .breakdownOf(candidateQuestions, assetByQuestionId).totalSeconds();
         examTimeQuotaGuardService.requireWithinPlan(
             exam.getSchoolId(),
@@ -147,18 +152,18 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             "Mã đề trên lớp"
         );
 
-        var paper = classTestPaperResolver.resolve(exam.getId(), input.paperId());
-        var existingPaperSections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
+        ExamPaper paper = classTestPaperResolver.resolve(exam.getId(), input.paperId());
+        List<ExamPaperSection> existingPaperSections = examPaperSectionRepository.findByPaperId(paper.getId()).stream()
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();
 
-        var now = Instant.now();
-        var commonCount = Math.min(existingPaperSections.size(), input.sections().size());
-        var sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(input.sections());
+        Instant now = Instant.now();
+        int commonCount = Math.min(existingPaperSections.size(), input.sections().size());
+        List<BigDecimal> sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(input.sections());
 
         for (int i = 0; i < commonCount; i++) {
-            var existingPaperSection = existingPaperSections.get(i);
-            var sectionCommand = input.sections().get(i);
+            ExamPaperSection existingPaperSection = existingPaperSections.get(i);
+            ClassTestSectionCommand sectionCommand = input.sections().get(i);
 
             existingPaperSection.setTitle(sectionCommand.title());
             existingPaperSection.setInstruction(sectionCommand.instruction());
@@ -180,7 +185,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
 
         exam.setUpdatedAt(now);
         exam.setUpdatedBy(currentUserId);
-        var saved = examRepository.save(exam);
+        Exam saved = examRepository.save(exam);
         recalculateExamTimeDurationService.recalculate(exam.getId());
         return ExamDtoMapper.toDto(saved);
     }
@@ -191,13 +196,13 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             UUID examId,
             UUID currentUserId,
             Instant now) {
-        for (var item : examPaperItemRepository.findBySectionId(paperSection.getId())) {
+        for (ExamPaperItem item : examPaperItemRepository.findBySectionId(paperSection.getId())) {
             examPaperItemRepository.deleteById(item.getId());
         }
 
-        var weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
+        List<BigDecimal> weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
         for (int i = 0; i < questions.size(); i++) {
-            var questionId = questions.get(i).questionId();
+            UUID questionId = questions.get(i).questionId();
             examPaperItemRepository.save(new ExamPaperItem(
                 null,
                 paperSection.getId(),
@@ -213,7 +218,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
     }
 
     private void deleteSection(ExamPaperSection paperSection) {
-        for (var item : examPaperItemRepository.findBySectionId(paperSection.getId())) {
+        for (ExamPaperItem item : examPaperItemRepository.findBySectionId(paperSection.getId())) {
             examPaperItemRepository.deleteById(item.getId());
         }
         examPaperSectionRepository.deleteById(paperSection.getId());
@@ -227,7 +232,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             UUID examId,
             UUID currentUserId,
             Instant now) {
-        var paperSection = examPaperSectionRepository.save(new ExamPaperSection(
+        ExamPaperSection paperSection = examPaperSectionRepository.save(new ExamPaperSection(
             paper.getId(),
             order,
             sectionCommand.title(),
@@ -240,10 +245,10 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             currentUserId
         ));
 
-        var questions = sectionCommand.questions();
-        var weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
+        List<ClassTestQuestionCommand> questions = sectionCommand.questions();
+        List<BigDecimal> weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
         for (int i = 0; i < questions.size(); i++) {
-            var questionId = questions.get(i).questionId();
+            UUID questionId = questions.get(i).questionId();
             examPaperItemRepository.save(new ExamPaperItem(
                 null,
                 paperSection.getId(),

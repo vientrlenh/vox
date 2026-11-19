@@ -1,9 +1,12 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -76,35 +79,35 @@ public class ZeroScoreExamResultService {
 
     @Transactional
     public ExamCandidateResult releaseZeroForEmptySession(UUID sessionId) {
-        var session = examSessionRepository.findById(sessionId)
+        ExamSession session = examSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
         return releaseZeroForSession(session, Instant.now());
     }
 
     @Transactional
     public void ensureZeroResultsForMissingOrEmptyAttempts(UUID examId) {
-        var exam = examRepository.findById(examId)
+        Exam exam = examRepository.findById(examId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var policy = resolvePolicy(exam);
-        var now = Instant.now();
-        var fallbackPaperId = examPaperRepository.findByExamId(examId).stream()
+        AssessmentPolicy policy = resolvePolicy(exam);
+        Instant now = Instant.now();
+        UUID fallbackPaperId = examPaperRepository.findByExamId(examId).stream()
             .findFirst()
             .map(paper -> paper.getId())
             .orElse(null);
 
-        for (var candidate : examCandidateRepository.findByExamId(examId)) {
+        for (ExamCandidate candidate : examCandidateRepository.findByExamId(examId)) {
             if (ExamCandidateStatus.isNonScorable(candidate.getStatus())) {
                 continue;
             }
-            var sessions = examSessionRepository.findByCandidateId(candidate.getId()).stream()
+            List<ExamSession> sessions = examSessionRepository.findByCandidateId(candidate.getId()).stream()
                 .filter(session -> examId.equals(session.getExamId()))
                 .toList();
             if (sessions.isEmpty()) {
-                var paperId = candidate.getAssignedPaperId() == null ? fallbackPaperId : candidate.getAssignedPaperId();
+                UUID paperId = candidate.getAssignedPaperId() == null ? fallbackPaperId : candidate.getAssignedPaperId();
                 if (paperId == null) {
                     continue;
                 }
-                var session = examSessionRepository.save(new ExamSession(
+                ExamSession session = examSessionRepository.save(new ExamSession(
                     examId,
                     candidate.getId(),
                     paperId,
@@ -118,7 +121,7 @@ public class ZeroScoreExamResultService {
                 continue;
             }
 
-            for (var session : sessions) {
+            for (ExamSession session : sessions) {
                 if (examCandidateResultRepository.findBySessionId(session.getId()).isPresent()) {
                     continue;
                 }
@@ -129,23 +132,23 @@ public class ZeroScoreExamResultService {
                 if (session.getSubmittedAt() == null) {
                     session.setSubmittedAt(now);
                 }
-                var saved = examSessionRepository.save(session);
+                ExamSession saved = examSessionRepository.save(session);
                 releaseZeroForSession(saved, policy, now);
             }
         }
     }
 
     private ExamCandidateResult releaseZeroForSession(ExamSession session, Instant now) {
-        var exam = examRepository.findById(session.getExamId())
+        Exam exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
         return releaseZeroForSession(session, resolvePolicy(exam), now);
     }
 
     private ExamCandidateResult releaseZeroForSession(ExamSession session, AssessmentPolicy policy, Instant now) {
-        var existing = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
-        var result = existing == null ? new ExamCandidateResult() : existing;
-        var floorScore = floorScore(policy);
-        var rubricBand = resolveRubricBandForZero(policy, floorScore);
+        ExamCandidateResult existing = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
+        ExamCandidateResult result = existing == null ? new ExamCandidateResult() : existing;
+        BigDecimal floorScore = floorScore(policy);
+        RubricResultBand rubricBand = resolveRubricBandForZero(policy, floorScore);
 
         result.setExamId(session.getExamId());
         result.setCandidateId(session.getCandidateId());
@@ -192,7 +195,7 @@ public class ZeroScoreExamResultService {
         if (policy.getRubricVersionId() == null) {
             return null;
         }
-        var matchingBands = rubricResultBandRepository.findByRubricVersionId(policy.getRubricVersionId()).stream()
+        List<RubricResultBand> matchingBands = rubricResultBandRepository.findByRubricVersionId(policy.getRubricVersionId()).stream()
             .sorted(Comparator.comparingInt(band -> band.getOrder()))
             .filter(band -> band.getScoreMin() != null
                 && band.getScoreMax() != null

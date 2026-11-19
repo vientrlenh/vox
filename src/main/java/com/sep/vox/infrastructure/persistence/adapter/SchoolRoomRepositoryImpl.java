@@ -1,11 +1,13 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.SchoolRoomJpaEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.PageResult;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -41,8 +43,8 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
 
     @Override
     public SchoolRoom save(SchoolRoom room) {
-        var entity = SchoolRoomMapper.toJpa(room);
-        var saved = springDataSchoolRoomRepository.save(entity);
+        SchoolRoomJpaEntity entity = SchoolRoomMapper.toJpa(room);
+        SchoolRoomJpaEntity saved = springDataSchoolRoomRepository.save(entity);
         return SchoolRoomMapper.toDomain(saved);
     }
 
@@ -64,9 +66,9 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
 
     @Override
     public PageResult<SchoolRoom> findBySchoolId(UUID schoolId, int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
 
-        var page = springDataSchoolRoomRepository.findBySchoolId(schoolId, pageable);
+        Page<SchoolRoomJpaEntity> page = springDataSchoolRoomRepository.findBySchoolId(schoolId, pageable);
 
         List<SchoolRoom> domainContent = page.getContent().stream()
                 .map(SchoolRoomMapper::toDomain)

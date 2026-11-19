@@ -71,7 +71,7 @@ public class InterestDimensionInitializer implements ApplicationRunner {
 
     private static InterestDimension dimension(
             String code, String label, String description, boolean quizEligible, int displayOrder) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new InterestDimension(code, label, description, true, quizEligible, displayOrder, now, now);
     }
 
@@ -83,8 +83,8 @@ public class InterestDimensionInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        var added = 0;
-        for (var seed : SEED) {
+        int added = 0;
+        for (InterestDimension seed : SEED) {
             if (interestDimensionRepository.findByCode(seed.getCode()).isPresent()) {
                 continue;
             }

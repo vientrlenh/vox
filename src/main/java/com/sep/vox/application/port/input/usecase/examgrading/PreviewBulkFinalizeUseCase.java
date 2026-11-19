@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import com.sep.vox.domain.model.exam.Exam;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -46,8 +47,8 @@ public class PreviewBulkFinalizeUseCase implements IUseCase<UUID, BulkFinalizePr
     @Override
     @Transactional(readOnly = true)
     public BulkFinalizePreviewInfo execute(UUID examId) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var exam = examRepository.findById(examId)
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        Exam exam = examRepository.findById(examId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
         examGradingAccessService.authorizeSchoolAdminOrExamChair(
             exam.getSchoolId(), exam.getId(), currentUserId);

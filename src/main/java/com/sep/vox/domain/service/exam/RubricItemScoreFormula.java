@@ -44,10 +44,10 @@ public final class RubricItemScoreFormula {
             return clampToScale(scaleMin == null ? BigDecimal.ZERO : scaleMin, scaleMin, scaleMax);
         }
 
-        var plainSum = BigDecimal.ZERO;
-        var weightedSum = BigDecimal.ZERO;
-        var weightSum = BigDecimal.ZERO;
-        for (var item : scored) {
+        BigDecimal plainSum = BigDecimal.ZERO;
+        BigDecimal weightedSum = BigDecimal.ZERO;
+        BigDecimal weightSum = BigDecimal.ZERO;
+        for (ScoredCriterion item : scored) {
             if (item == null || item.score() == null) {
                 continue;
             }
@@ -62,15 +62,15 @@ public final class RubricItemScoreFormula {
         if (weightSum.compareTo(BigDecimal.ZERO) > 0) {
             resolved = weightedSum.divide(weightSum, 2, RoundingMode.HALF_UP);
         } else {
-            // Không tiêu chí nào khai trọng số -> trung bình cộng. Lưới an toàn cho dữ liệu cũ
-            // có trước khi có ràng buộc lúc publish; vẫn cho ra điểm nằm trong thang.
+            // No criterion declares a weight -> plain average. Safety net for legacy data that
+            // predates the publish-time constraint; it still yields a score inside the scale.
             resolved = plainSum.divide(BigDecimal.valueOf(scored.size()), 2, RoundingMode.HALF_UP);
         }
         return clampToScale(resolved, scaleMin, scaleMax);
     }
 
     private static BigDecimal clampToScale(BigDecimal score, BigDecimal scaleMin, BigDecimal scaleMax) {
-        var safe = score == null ? BigDecimal.ZERO : score;
+        BigDecimal safe = score == null ? BigDecimal.ZERO : score;
         if (scaleMin != null && safe.compareTo(scaleMin) < 0) {
             safe = scaleMin;
         }

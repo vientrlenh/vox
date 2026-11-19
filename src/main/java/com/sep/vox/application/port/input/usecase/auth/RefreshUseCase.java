@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
+import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -52,28 +53,28 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
     @Override
     @Transactional
     public RefreshResponse execute(RefreshCommand input) {
-        var command = normalize(input);
+        RefreshCommand command = normalize(input);
         
-        var tokenHash = sessionTokenManagerPort.hash(command.token());
-        var refreshToken = refreshTokenRepository.findByTokenHashForUpdate(tokenHash)
+        String tokenHash = sessionTokenManagerPort.hash(command.token());
+        RefreshToken refreshToken = refreshTokenRepository.findByTokenHashForUpdate(tokenHash)
             .orElseThrow(() -> new UnauthorizedException("Token yêu cầu không hợp lệ"));
         
-        var now = Instant.now();
-        var deviceSession = deviceSessionRepository.findById(refreshToken.getSessionId())
+        Instant now = Instant.now();
+        DeviceSession deviceSession = deviceSessionRepository.findById(refreshToken.getSessionId())
             .orElseThrow(() -> new UnauthorizedException("Token yêu cầu không hợp lệ"));
 
         validateValidRequest(refreshToken, deviceSession, now, command);
         
-        var newRefreshToken = sessionTokenManagerPort.generateToken();
-        var newGeneratedRefreshToken = createNewRefreshToken(newRefreshToken, deviceSession, refreshToken, now);
+        GeneratedSessionToken newRefreshToken = sessionTokenManagerPort.generateToken();
+        RefreshToken newGeneratedRefreshToken = createNewRefreshToken(newRefreshToken, deviceSession, refreshToken, now);
         markOldTokenAsUsed(refreshToken.getId(), newGeneratedRefreshToken.getId(), deviceSession.getId(), now);
 
-        var user = userRepository.findById(deviceSession.getUserId())
+        User user = userRepository.findById(deviceSession.getUserId())
             .orElseThrow(() -> new UnauthorizedException("Token yêu cầu không hợp lệ"));
-        var schoolId = schoolUserRepository.findByUserId(user.getId())
+        UUID schoolId = schoolUserRepository.findByUserId(user.getId())
             .map(su -> su.getSchoolId())
             .orElse(null);
-        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), schoolId, user.getEmail().value(), getUserRoles(user.getId()));
+        String accessToken = authTokenPort.generateJwtToken(user.getId().toString(), schoolId, user.getEmail().value(), getUserRoles(user.getId()));
         return RefreshResponseMapper.toResponse(accessToken, newRefreshToken.rawToken());
     }
     
@@ -107,12 +108,12 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
     }
 
     private RefreshToken createNewRefreshToken(GeneratedSessionToken newToken, DeviceSession deviceSession, RefreshToken refreshToken, Instant now) {
-        var newRefreshToken = RefreshToken.createFresh(deviceSession.getId(), newToken.hashedToken(), now);
+        RefreshToken newRefreshToken = RefreshToken.createFresh(deviceSession.getId(), newToken.hashedToken(), now);
         return refreshTokenRepository.save(newRefreshToken);
     }
 
     private void markOldTokenAsUsed(UUID oldTokenId, UUID newTokenId, UUID sessionId, Instant now) {
-        var updatedRow = refreshTokenRepository.markUsedAndReplacedBy(oldTokenId, newTokenId, now);
+        int updatedRow = refreshTokenRepository.markUsedAndReplacedBy(oldTokenId, newTokenId, now);
         if (updatedRow == 0) {
             sessionManagerPort.revoke(sessionId, now);
             throw new UnauthorizedException("Token yêu cầu không hợp lệ");

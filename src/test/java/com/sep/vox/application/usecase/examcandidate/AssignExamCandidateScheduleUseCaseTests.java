@@ -26,6 +26,7 @@ import com.sep.vox.application.port.input.service.ExamScheduleManageAccessServic
 import com.sep.vox.application.port.input.usecase.examcandidate.AssignExamCandidateScheduleUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
@@ -97,7 +98,7 @@ class AssignExamCandidateScheduleUseCaseTests {
         when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate(null)));
         when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
 
-        var result = useCase.execute(new AssignExamCandidateScheduleCommand(examId, candidateId, scheduleId));
+        ExamCandidateDto result = useCase.execute(new AssignExamCandidateScheduleCommand(examId, candidateId, scheduleId));
 
         assertThat(result.scheduleId()).isEqualTo(scheduleId);
         verify(examCandidateRepository).save(any(ExamCandidate.class));
@@ -117,7 +118,7 @@ class AssignExamCandidateScheduleUseCaseTests {
     void should_allow_unassign_even_when_already_unassigned() {
         when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate(null)));
 
-        var result = useCase.execute(new AssignExamCandidateScheduleCommand(examId, candidateId, null));
+        ExamCandidateDto result = useCase.execute(new AssignExamCandidateScheduleCommand(examId, candidateId, null));
 
         assertThat(result.scheduleId()).isNull();
         verify(examCandidateRepository).save(any(ExamCandidate.class));
@@ -128,7 +129,7 @@ class AssignExamCandidateScheduleUseCaseTests {
     void should_short_circuit_when_reassigning_to_same_schedule() {
         when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate(scheduleId)));
 
-        var result = useCase.execute(new AssignExamCandidateScheduleCommand(examId, candidateId, scheduleId));
+        ExamCandidateDto result = useCase.execute(new AssignExamCandidateScheduleCommand(examId, candidateId, scheduleId));
 
         assertThat(result.scheduleId()).isEqualTo(scheduleId);
         verify(examScheduleRepository, never()).findByIdForUpdate(any());
@@ -138,7 +139,7 @@ class AssignExamCandidateScheduleUseCaseTests {
 
     @Test
     void should_reject_when_student_already_has_an_overlapping_schedule() {
-        var candidate = candidate(null);
+        ExamCandidate candidate = candidate(null);
         when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate));
         when(examScheduleRepository.findByIdForUpdate(scheduleId))
             .thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
@@ -155,10 +156,10 @@ class AssignExamCandidateScheduleUseCaseTests {
 
     @Test
     void should_ignore_the_student_current_schedule_when_checking_conflicts() {
-        // Đổi ca trong cùng một kỳ thi: ca cũ chồng giờ ca mới, nhưng xếp sang ca mới là THAY THẾ
-        // chỗ cũ nên không phải trùng giờ.
-        var currentScheduleId = UUID.randomUUID();
-        var candidate = candidate(currentScheduleId);
+        // Changing session within the same exam: the old session overlaps the new session in time,
+        // but moving to the new session REPLACES the old spot, so it is not an overlap.
+        UUID currentScheduleId = UUID.randomUUID();
+        ExamCandidate candidate = candidate(currentScheduleId);
         when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate));
         when(examScheduleRepository.findByIdForUpdate(scheduleId))
             .thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
@@ -166,7 +167,7 @@ class AssignExamCandidateScheduleUseCaseTests {
             .thenReturn(List.of(new StudentScheduleConflict(
                 candidate.getStudentId(), currentScheduleId, start, end)));
 
-        var result = useCase.execute(new AssignExamCandidateScheduleCommand(examId, candidateId, scheduleId));
+        ExamCandidateDto result = useCase.execute(new AssignExamCandidateScheduleCommand(examId, candidateId, scheduleId));
 
         assertThat(result.scheduleId()).isEqualTo(scheduleId);
         verify(examCandidateRepository).save(any(ExamCandidate.class));
@@ -187,7 +188,7 @@ class AssignExamCandidateScheduleUseCaseTests {
     @Test
     void should_skip_the_conflict_check_when_the_schedule_has_no_window() {
         when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate(null)));
-        var undated = schedule(ExamScheduleStatus.DRAFT);
+        ExamSchedule undated = schedule(ExamScheduleStatus.DRAFT);
         undated.setStartDate(null);
         undated.setEndDate(null);
         when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(undated));
@@ -198,7 +199,7 @@ class AssignExamCandidateScheduleUseCaseTests {
     }
 
     private ExamCandidate candidate(UUID currentScheduleId) {
-        var c = new ExamCandidate();
+        ExamCandidate c = new ExamCandidate();
         c.setId(candidateId);
         c.setExamId(examId);
         c.setStudentId(UUID.randomUUID());
@@ -208,19 +209,20 @@ class AssignExamCandidateScheduleUseCaseTests {
     }
 
     private ExamSchedule schedule(ExamScheduleStatus status) {
-        var s = new ExamSchedule();
+        ExamSchedule s = new ExamSchedule();
         s.setId(scheduleId);
         s.setExamId(examId);
         s.setSchoolRoomId(roomId);
         s.setStatus(status);
-        // Có khung giờ thì luật chống trùng lịch mới chạy — thiếu giờ là validator bỏ qua.
+        // The anti-overlap rule only runs when there is a time window -- without times the
+        // validator skips it.
         s.setStartDate(start);
         s.setEndDate(end);
         return s;
     }
 
     private Exam exam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         return exam;

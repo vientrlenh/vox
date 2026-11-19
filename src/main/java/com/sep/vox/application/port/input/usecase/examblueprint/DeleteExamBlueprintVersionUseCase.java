@@ -1,5 +1,10 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
+import com.sep.vox.domain.model.exam.ExamBlueprint;
+import com.sep.vox.domain.model.exam.ExamBlueprintSection;
+import com.sep.vox.domain.model.exam.ExamBlueprintSlot;
+import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,14 +48,14 @@ public class DeleteExamBlueprintVersionUseCase implements IUseCase<DeleteExamBlu
     @Override
     @Transactional
     public Void execute(DeleteExamBlueprintVersionCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
-        var version = examBlueprintVersionRepository.findById(input.versionId())
+        ExamBlueprintVersion version = examBlueprintVersionRepository.findById(input.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
-        var blueprint = examBlueprintRepository.findById(version.getBlueprintId())
+        ExamBlueprint blueprint = examBlueprintRepository.findById(version.getBlueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
         if (!examBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
@@ -64,8 +69,8 @@ public class DeleteExamBlueprintVersionUseCase implements IUseCase<DeleteExamBlu
                 "Phiên bản vẫn đang được ít nhất 1 bài kiểm tra hoặc mã đề tham chiếu, không thể xóa");
         }
 
-        for (var section : examBlueprintSectionRepository.findByBlueprintVersionId(version.getId())) {
-            for (var slot : examBlueprintSlotRepository.findBySectionId(section.getId())) {
+        for (ExamBlueprintSection section : examBlueprintSectionRepository.findByBlueprintVersionId(version.getId())) {
+            for (ExamBlueprintSlot slot : examBlueprintSlotRepository.findBySectionId(section.getId())) {
                 examBlueprintSlotRepository.deleteById(slot.getId());
             }
             examBlueprintSectionRepository.deleteById(section.getId());

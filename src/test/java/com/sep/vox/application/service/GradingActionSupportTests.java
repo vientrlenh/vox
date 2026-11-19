@@ -80,7 +80,8 @@ class GradingActionSupportTests {
         examResultStatusHistoryRepository = mock(ExamResultStatusHistoryRepository.class);
         outboxRepository = mock(OutboxRepository.class);
 
-        // Recorder dùng bản THẬT: "có ghi audit không" là chính thứ đang kiểm.
+        // The recorder uses the REAL implementation: "is an audit entry written or not" is exactly
+        // what is being checked.
         support = new GradingActionSupport(
             examGradingAccessService,
             examCandidateResultRepository,
@@ -93,14 +94,14 @@ class GradingActionSupportTests {
 
         when(examGradingAccessService.requireActiveUserId()).thenReturn(teacherId);
 
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(candidateId);
         candidate.setStudentId(studentId);
         when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate));
     }
 
     private ExamCandidateResult result(ExamCandidateResultStatus status, String totalScore) {
-        var result = new ExamCandidateResult();
+        ExamCandidateResult result = new ExamCandidateResult();
         result.setId(candidateResultId);
         result.setCandidateId(candidateId);
         result.setStatus(status);
@@ -114,17 +115,20 @@ class GradingActionSupportTests {
 
     private GradingContext context(
             GradingRoundType roundType, ExamCandidateResult result, UUID linkedAppealId) {
-        var assignment = ExamGradingAssignment.open(candidateResultId, teacherId, roundType, linkedAppealId,
+        ExamGradingAssignment assignment = ExamGradingAssignment.open(candidateResultId, teacherId, roundType, linkedAppealId,
             result.getTotalScore(), Instant.now(), UUID.randomUUID(), null);
         assignment.setId(assignmentId);
         return new GradingContext(assignment, result, new ExamSession(), UUID.randomUUID(), "IELTS Mock", ExamKind.CENTRALIZED);
     }
 
-    /** Vòng phúc khảo có đơn đi kèm; đơn đang ở GRADING vì giáo viên đang cầm bài. */
+    /**
+     * An appeal round comes with an appeal; the appeal is in GRADING because the teacher is holding
+     * the submission.
+     */
     private ExamResultAppeal givenAppealRound(ExamCandidateResult result) {
         when(examGradingAccessService.loadForUpdate(assignmentId))
             .thenReturn(context(GradingRoundType.APPEAL, result, appealId));
-        var appeal = new ExamResultAppeal();
+        ExamResultAppeal appeal = new ExamResultAppeal();
         appeal.setId(appealId);
         appeal.setStatus(ExamAppealStatus.GRADING);
         appeal.setScoreBefore(result.getTotalScore());
@@ -137,7 +141,7 @@ class GradingActionSupportTests {
     }
 
     private ExamResultStatusHistory captureHistory() {
-        var captor = ArgumentCaptor.forClass(ExamResultStatusHistory.class);
+        ArgumentCaptor<ExamResultStatusHistory> captor = ArgumentCaptor.forClass(ExamResultStatusHistory.class);
         verify(examResultStatusHistoryRepository).save(captor.capture());
         return captor.getValue();
     }
@@ -166,8 +170,8 @@ class GradingActionSupportTests {
 
     @Test
     void should_reject_a_completed_assignment() {
-        var result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
-        var context = context(GradingRoundType.INITIAL, result);
+        ExamCandidateResult result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
+        ExamGradingAccessService.GradingContext context = context(GradingRoundType.INITIAL, result);
         context.assignment().complete(GradingOutcome.UPHELD, null, Instant.now());
         when(examGradingAccessService.loadForUpdate(assignmentId)).thenReturn(context);
 
@@ -189,57 +193,59 @@ class GradingActionSupportTests {
 
     @Test
     void should_release_the_result_and_close_the_assignment() {
-        var result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
+        ExamCandidateResult result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
         given(GradingRoundType.INITIAL, result);
-        var prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, null);
+        GradingActionSupport.PreparedAction prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, null);
 
         support.finish(prepared, result);
 
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.RELEASED);
         assertThat(result.getReleasedAt()).isNotNull();
-        var assignment = prepared.context().assignment();
+        ExamGradingAssignment assignment = prepared.context().assignment();
         assertThat(assignment.getStatus()).isEqualTo(GradingAssignmentStatus.COMPLETED);
         assertThat(assignment.getOutcome()).isEqualTo(GradingOutcome.UPHELD);
-        // Nhả chỗ để bài nhận được vòng tiếp theo — đây là cơ chế của unique index.
+        // Releases the slot so the submission can receive the next round -- this is how the unique
+        // index works.
         assertThat(assignment.getActiveResultId()).isNull();
     }
 
     @Test
     void should_publish_a_first_release_notification_but_not_a_change_one() {
-        var result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
+        ExamCandidateResult result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
         given(GradingRoundType.INITIAL, result);
-        var prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, null);
+        GradingActionSupport.PreparedAction prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, null);
 
         support.finish(prepared, result);
 
-        var payload = OutboxTestSupport.capturePayload(
+        ExamResultReleasedPayloadV1 payload = OutboxTestSupport.capturePayload(
             outboxRepository, EventTypeConstant.EXAM_RESULT_RELEASED, ExamResultReleasedPayloadV1.class);
         assertThat(payload.studentId()).isEqualTo(studentId);
     }
 
     @Test
     void should_not_notify_when_a_spot_check_keeps_the_score() {
-        var result = result(ExamCandidateResultStatus.RELEASED, "6.00");
+        ExamCandidateResult result = result(ExamCandidateResultStatus.RELEASED, "6.00");
         given(GradingRoundType.SPOT_CHECK, result);
-        var prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, null);
+        GradingActionSupport.PreparedAction prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, null);
 
         support.finish(prepared, result);
 
-        // Hậu kiểm giữ nguyên điểm: làm phiền học sinh bằng "điểm vừa thay đổi" là sai.
+        // A post-check keeps the score unchanged: bothering the student with "your score just
+        // changed" would be wrong.
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.RELEASED);
         verify(outboxRepository, never()).save(any());
     }
 
     @Test
     void should_notify_when_a_spot_check_changes_a_published_score() {
-        var result = result(ExamCandidateResultStatus.RELEASED, "6.00");
+        ExamCandidateResult result = result(ExamCandidateResultStatus.RELEASED, "6.00");
         given(GradingRoundType.SPOT_CHECK, result);
-        var prepared = support.prepare(assignmentId, GradingOutcome.REGRADED, null);
+        GradingActionSupport.PreparedAction prepared = support.prepare(assignmentId, GradingOutcome.REGRADED, null);
         result.setTotalScore(new BigDecimal("7.50"));
 
         support.finish(prepared, result);
 
-        var payload = OutboxTestSupport.capturePayload(
+        ExamResultRegradedPayloadV1 payload = OutboxTestSupport.capturePayload(
             outboxRepository, EventTypeConstant.EXAM_RESULT_REGRADED, ExamResultRegradedPayloadV1.class);
         assertThat(payload.scoreBefore()).isEqualByComparingTo("6.00");
         assertThat(payload.scoreAfter()).isEqualByComparingTo("7.50");
@@ -247,13 +253,13 @@ class GradingActionSupportTests {
 
     @Test
     void should_record_the_status_change_with_the_round_as_source() {
-        var result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
+        ExamCandidateResult result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
         given(GradingRoundType.INITIAL, result);
-        var prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, "ghi chú");
+        GradingActionSupport.PreparedAction prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, "ghi chú");
 
         support.finish(prepared, result);
 
-        var history = captureHistory();
+        ExamResultStatusHistory history = captureHistory();
         assertThat(history.getFromStatus()).isEqualTo(ExamCandidateResultStatus.PENDING_REVIEW);
         assertThat(history.getToStatus()).isEqualTo(ExamCandidateResultStatus.RELEASED);
         assertThat(history.getSource()).isEqualTo(ResultStatusChangeSource.TEACHER_INITIAL);
@@ -263,24 +269,24 @@ class GradingActionSupportTests {
 
     @Test
     void should_still_record_an_upheld_decision_that_changes_nothing() {
-        var result = result(ExamCandidateResultStatus.RELEASED, "6.00");
+        ExamCandidateResult result = result(ExamCandidateResultStatus.RELEASED, "6.00");
         given(GradingRoundType.SPOT_CHECK, result);
-        var prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, "AI chấm đúng");
+        GradingActionSupport.PreparedAction prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, "AI chấm đúng");
 
         support.finish(prepared, result);
 
-        // Không đổi trạng thái, không đổi điểm — nhưng giáo viên ĐÃ ra quyết định, và
-        // quyết định đó là thứ chứng minh bài đã được người xem.
-        var history = captureHistory();
+        // Neither status nor score changes -- but the teacher HAS made a decision, and that
+        // decision is what proves a person has looked at the submission.
+        ExamResultStatusHistory history = captureHistory();
         assertThat(history.getFromStatus()).isEqualTo(history.getToStatus());
         assertThat(history.getReason()).isEqualTo("AI chấm đúng");
     }
 
     @Test
     void should_record_the_invalidation_reason() {
-        var result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
+        ExamCandidateResult result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
         given(GradingRoundType.INITIAL, result);
-        var prepared = support.prepare(assignmentId, GradingOutcome.INVALIDATED, "Gian lận: đọc bài mẫu");
+        GradingActionSupport.PreparedAction prepared = support.prepare(assignmentId, GradingOutcome.INVALIDATED, "Gian lận: đọc bài mẫu");
 
         support.finish(prepared, result);
 
@@ -293,14 +299,14 @@ class GradingActionSupportTests {
 
     @Test
     void should_move_the_appeal_back_to_approved_when_the_reviewer_declines() {
-        var result = result(ExamCandidateResultStatus.RE_GRADING, "6.00");
-        var appeal = givenAppealRound(result);
-        var prepared = support.prepare(assignmentId, GradingOutcome.DECLINED, "Quen thí sinh");
+        ExamCandidateResult result = result(ExamCandidateResultStatus.RE_GRADING, "6.00");
+        ExamResultAppeal appeal = givenAppealRound(result);
+        GradingActionSupport.PreparedAction prepared = support.prepare(assignmentId, GradingOutcome.DECLINED, "Quen thí sinh");
 
         support.finish(prepared, result);
 
-        // Giáo viên trả bài lại thì đơn vẫn đang chờ NGƯỜI KHÁC, không phải đã xong.
-        // APPROVED là trạng thái duy nhất mà AssignExamAppealReviewerUseCase nhận.
+        // When the teacher sends the submission back, the appeal is still waiting for SOMEONE ELSE,
+        // not finished. APPROVED is the only status AssignExamAppealReviewerUseCase accepts.
         assertThat(appeal.getStatus()).isEqualTo(ExamAppealStatus.APPROVED);
         assertThat(appeal.getResolvedAt()).isNull();
         verify(examResultAppealRepository).save(appeal);
@@ -308,9 +314,9 @@ class GradingActionSupportTests {
 
     @Test
     void should_publish_the_appeal_when_the_reviewer_decides() {
-        var result = result(ExamCandidateResultStatus.RE_GRADING, "6.00");
-        var appeal = givenAppealRound(result);
-        var prepared = support.prepare(assignmentId, GradingOutcome.REGRADED, "Chấm lại phần 2");
+        ExamCandidateResult result = result(ExamCandidateResultStatus.RE_GRADING, "6.00");
+        ExamResultAppeal appeal = givenAppealRound(result);
+        GradingActionSupport.PreparedAction prepared = support.prepare(assignmentId, GradingOutcome.REGRADED, "Chấm lại phần 2");
         result.setTotalScore(new BigDecimal("7.00"));
 
         support.finish(prepared, result);
@@ -324,9 +330,9 @@ class GradingActionSupportTests {
 
     @Test
     void should_not_touch_the_appeal_when_the_round_is_not_an_appeal() {
-        var result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
+        ExamCandidateResult result = result(ExamCandidateResultStatus.PENDING_REVIEW, "6.00");
         given(GradingRoundType.INITIAL, result);
-        var prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, null);
+        GradingActionSupport.PreparedAction prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, null);
 
         support.finish(prepared, result);
 
@@ -337,23 +343,24 @@ class GradingActionSupportTests {
 
     @Test
     void should_clear_the_finalized_mark_when_a_result_returns_to_pending_review() {
-        var result = result(ExamCandidateResultStatus.INVALID, "0.00");
+        ExamCandidateResult result = result(ExamCandidateResultStatus.INVALID, "0.00");
         result.setFinalizedAt(Instant.now().minus(1, ChronoUnit.DAYS));
         given(GradingRoundType.REMEDIATION, result);
-        var prepared = support.prepare(assignmentId, GradingOutcome.CLEARED_INVALID, "Không vi phạm");
+        GradingActionSupport.PreparedAction prepared = support.prepare(assignmentId, GradingOutcome.CLEARED_INVALID, "Không vi phạm");
 
         support.finish(prepared, result);
 
-        // Bài PENDING_REVIEW mang finalized_at là mâu thuẫn: nó chưa chốt gì cả.
+        // A PENDING_REVIEW submission carrying finalized_at is a contradiction: it has not
+        // finalized anything.
         assertThat(result.getStatus()).isEqualTo(ExamCandidateResultStatus.PENDING_REVIEW);
         assertThat(result.getFinalizedAt()).isNull();
     }
 
     @Test
     void should_save_the_result_only_when_the_status_actually_changes() {
-        var result = result(ExamCandidateResultStatus.RELEASED, "6.00");
+        ExamCandidateResult result = result(ExamCandidateResultStatus.RELEASED, "6.00");
         given(GradingRoundType.SPOT_CHECK, result);
-        var prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, null);
+        GradingActionSupport.PreparedAction prepared = support.prepare(assignmentId, GradingOutcome.UPHELD, null);
 
         support.finish(prepared, result);
 

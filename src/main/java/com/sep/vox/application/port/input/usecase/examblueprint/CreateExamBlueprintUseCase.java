@@ -41,15 +41,15 @@ public class CreateExamBlueprintUseCase implements IUseCase<CreateExamBlueprintC
     @Override
     @Transactional
     public ExamBlueprintDto execute(CreateExamBlueprintCommand input) {
-        var command = new CreateExamBlueprintCommand(
+        CreateExamBlueprintCommand command = new CreateExamBlueprintCommand(
             input.languageId(),
             input.gradeLevelId(),
             StringNormalization.normalizeCode(input.code()),
             StringNormalization.trimAndCollapseSpaces(input.name()),
             StringNormalization.trimAndCollapseSpaces(input.description())
         );
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
@@ -59,8 +59,8 @@ public class CreateExamBlueprintUseCase implements IUseCase<CreateExamBlueprintC
             throw new NotFoundException("Không tìm thấy khối lớp");
         }
 
-        var now = Instant.now();
-        var blueprint = new ExamBlueprint(
+        Instant now = Instant.now();
+        ExamBlueprint blueprint = new ExamBlueprint(
             currentSchoolId,
             command.languageId(),
             command.gradeLevelId(),

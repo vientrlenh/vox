@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.exam.ExamGradingAssignment;
+import com.sep.vox.domain.model.exam.ExamResultAppeal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -87,17 +89,17 @@ public class GradingActionSupport {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public PreparedAction prepare(UUID assignmentId, GradingOutcome outcome, String reason) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
         // Khoá ngay từ đây: mọi kiểm tra bên dưới đều đọc-rồi-quyết-định, nên chúng chỉ
         // đúng nếu không ai chen vào giữa lúc đọc và lúc finish() ghi.
-        var context = examGradingAccessService.loadForUpdate(assignmentId);
+        ExamGradingAccessService.GradingContext context = examGradingAccessService.loadForUpdate(assignmentId);
         examGradingAccessService.authorizeAssignedTeacher(context, currentUserId);
 
-        var assignment = context.assignment();
+        ExamGradingAssignment assignment = context.assignment();
         if (assignment.isCompleted()) {
             throw new IllegalStateException("Bạn đã chốt kết quả cho bài thi này.");
         }
-        var roundType = assignment.getRoundType();
+        GradingRoundType roundType = assignment.getRoundType();
         if (roundType == null) {
             throw new IllegalStateException("Phân công này thiếu vòng chấm.");
         }
@@ -109,7 +111,7 @@ public class GradingActionSupport {
         if (!GradingRoundPolicy.isAssignable(roundType, context.candidateResult().getStatus())) {
             throw new IllegalStateException("Bài thi này không còn ở trạng thái xử lý được của vòng chấm.");
         }
-        var normalizedReason = reason == null || reason.isBlank() ? null : reason.trim();
+        String normalizedReason = reason == null || reason.isBlank() ? null : reason.trim();
         if (GradingRoundPolicy.requiresReason(outcome) && normalizedReason == null) {
             throw new IllegalArgumentException("Phải nhập lý do cho quyết định này.");
         }
@@ -133,8 +135,8 @@ public class GradingActionSupport {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void finish(PreparedAction prepared, ExamCandidateResult result) {
-        var now = Instant.now();
-        var targetStatus = GradingRoundPolicy.resultStatusAfter(prepared.roundType(), prepared.outcome());
+        Instant now = Instant.now();
+        ExamCandidateResultStatus targetStatus = GradingRoundPolicy.resultStatusAfter(prepared.roundType(), prepared.outcome());
 
         if (targetStatus != null && result.getStatus() != targetStatus) {
             result.setStatus(targetStatus);
@@ -157,7 +159,7 @@ public class GradingActionSupport {
 
         // Quyết định "giữ nguyên" ở REMEDIATION (xác nhận vi phạm) và việc trả lại
         // phân công đều phải để lại dấu vết dù trạng thái đứng yên.
-        var source = ResultStatusChangeSource.ofRound(prepared.roundType());
+        ResultStatusChangeSource source = ResultStatusChangeSource.ofRound(prepared.roundType());
         if (prepared.outcome() == GradingOutcome.UPHELD || prepared.outcome() == GradingOutcome.DECLINED) {
             resultStatusHistoryRecorder.recordAlways(
                 prepared.before(), result, source, prepared.currentUserId(), prepared.reason());
@@ -166,7 +168,7 @@ public class GradingActionSupport {
                 prepared.before(), result, source, prepared.currentUserId(), prepared.reason());
         }
 
-        var assignment = prepared.context().assignment();
+        ExamGradingAssignment assignment = prepared.context().assignment();
         assignment.complete(prepared.outcome(), prepared.reason(), now);
         examGradingAssignmentRepository.save(assignment);
 
@@ -185,11 +187,11 @@ public class GradingActionSupport {
      * người khác, chỉ lùi về {@code APPROVED} để admin giao lại.
      */
     private void publishAppeal(PreparedAction prepared, ExamCandidateResult result, Instant now) {
-        var appealId = prepared.context().assignment().getAppealId();
+        UUID appealId = prepared.context().assignment().getAppealId();
         if (appealId == null) {
             return;
         }
-        var appeal = examResultAppealRepository.findById(appealId).orElse(null);
+        ExamResultAppeal appeal = examResultAppealRepository.findById(appealId).orElse(null);
         if (appeal == null) {
             return;
         }
@@ -205,7 +207,7 @@ public class GradingActionSupport {
         appeal.setDecisionNote(prepared.reason());
         examResultAppealRepository.save(appeal);
 
-        var studentId = resolveStudentId(result);
+        UUID studentId = resolveStudentId(result);
         if (studentId != null) {
             saveOutbox(
                 AggregateTypeConstant.EXAM_RESULT_APPEAL,
@@ -229,13 +231,13 @@ public class GradingActionSupport {
      * bằng thông báo "điểm vừa thay đổi" trong khi nó không đổi là sai.
      */
     private void publishScoreEvents(PreparedAction prepared, ExamCandidateResult result, Instant now) {
-        var studentId = resolveStudentId(result);
+        UUID studentId = resolveStudentId(result);
         if (studentId == null) {
             return;
         }
-        var examName = prepared.context().examName();
-        var wasPublished = prepared.before().status() != ExamCandidateResultStatus.PENDING_REVIEW;
-        var nowPublished = result.getStatus() == ExamCandidateResultStatus.RELEASED;
+        String examName = prepared.context().examName();
+        boolean wasPublished = prepared.before().status() != ExamCandidateResultStatus.PENDING_REVIEW;
+        boolean nowPublished = result.getStatus() == ExamCandidateResultStatus.RELEASED;
 
         if (nowPublished && !wasPublished) {
             saveOutbox(
@@ -249,7 +251,7 @@ public class GradingActionSupport {
             );
             return;
         }
-        var scoreChanged = prepared.before().totalScore() == null
+        boolean scoreChanged = prepared.before().totalScore() == null
             ? result.getTotalScore() != null
             : result.getTotalScore() != null
                 && prepared.before().totalScore().compareTo(result.getTotalScore()) != 0;
@@ -299,7 +301,7 @@ public class GradingActionSupport {
 
     /** Bắt buộc phải có, dùng khi thiếu học sinh là lỗi dữ liệu chứ không phải ca biên. */
     public UUID requireStudentId(ExamCandidateResult result) {
-        var studentId = resolveStudentId(result);
+        UUID studentId = resolveStudentId(result);
         if (studentId == null) {
             throw new NotFoundException("Không tìm thấy thí sinh của bài thi.");
         }

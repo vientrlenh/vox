@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamRecordingJpaEntity;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,7 +41,7 @@ public class ExamRecordingRepositoryImpl implements ExamRecordingRepository {
 
     @Override
     public ExamRecording save(ExamRecording recording) {
-        var saved = springDataExamRecordingRepository.save(ExamRecordingMapper.toJpa(recording));
+        ExamRecordingJpaEntity saved = springDataExamRecordingRepository.save(ExamRecordingMapper.toJpa(recording));
         return ExamRecordingMapper.toDomain(saved);
     }
 

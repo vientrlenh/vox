@@ -26,12 +26,14 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.SubmitGradingCommand;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService;
 import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
+import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.service.GradingItemScoreResolver;
 import com.sep.vox.application.port.input.usecase.examevaluation.ExamSessionResultCalculator;
 import com.sep.vox.application.port.input.usecase.examevaluation.ExamSessionResultCalculator.PreviewedExamSessionResult;
 import com.sep.vox.application.port.input.usecase.examevaluation.UpsertExamCandidateResultUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.PreviewGradingUseCase;
 import com.sep.vox.application.port.input.usecase.examgrading.RegradeResultUseCase;
+import com.sep.vox.application.response.input.examgrading.GradingPreviewResponse;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
@@ -113,7 +115,7 @@ public class PreviewGradingUseCaseTests {
     }
 
     private RubricVersion rubricVersion() {
-        var version = new RubricVersion();
+        RubricVersion version = new RubricVersion();
         version.setTotalScoreMethod(RubricTotalScoreMethod.WEIGHTED_AVERAGE);
         version.setScoringScaleMin(BigDecimal.ZERO);
         version.setScoringScaleMax(BigDecimal.TEN);
@@ -121,17 +123,17 @@ public class PreviewGradingUseCaseTests {
     }
 
     private GradingContext context() {
-        var assignment = ExamGradingAssignment.open(candidateResultId, teacherId,
+        ExamGradingAssignment assignment = ExamGradingAssignment.open(candidateResultId, teacherId,
             GradingRoundType.INITIAL, null, null, Instant.now(), null, null);
         assignment.setId(assignmentId);
 
-        var candidateResult = new ExamCandidateResult();
+        ExamCandidateResult candidateResult = new ExamCandidateResult();
         candidateResult.setId(candidateResultId);
         candidateResult.setSessionId(sessionId);
         candidateResult.setRubricVersionId(rubricVersionId);
         candidateResult.setStatus(ExamCandidateResultStatus.PENDING_REVIEW);
 
-        var session = new ExamSession();
+        ExamSession session = new ExamSession();
         session.setId(sessionId);
 
         return new GradingContext(assignment, candidateResult, session, UUID.randomUUID(), "IELTS Speaking Mock", ExamKind.CENTRALIZED);
@@ -147,14 +149,14 @@ public class PreviewGradingUseCaseTests {
 
     @SuppressWarnings("unchecked")
     private Map<UUID, BigDecimal> captureOverrides() {
-        var captor = (ArgumentCaptor<Map<UUID, BigDecimal>>) (ArgumentCaptor<?>) ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<Map<UUID, BigDecimal>> captor = (ArgumentCaptor<Map<UUID, BigDecimal>>) (ArgumentCaptor<?>) ArgumentCaptor.forClass(Map.class);
         verify(examSessionResultCalculator).preview(eq(sessionId), captor.capture());
         return captor.getValue();
     }
 
     @Test
     void should_return_total_and_band_from_the_calculator() {
-        var response = useCase.execute(command("8.00", "6.00"));
+        GradingPreviewResponse response = useCase.execute(command("8.00", "6.00"));
 
         assertThat(response.totalScore()).isEqualByComparingTo("7.20");
         assertThat(response.resultBandName()).isEqualTo("Trung cao cấp");
@@ -174,36 +176,37 @@ public class PreviewGradingUseCaseTests {
 
     @Test
     void should_hand_the_calculator_the_same_item_score_that_submitting_would_persist() {
-        // Test quan trọng nhất của endpoint này: con số giáo viên thấy trước khi bấm
-        // Nộp phải là đúng con số được ghi xuống khi nộp. Cùng command, cùng resolver.
+        // The most important test of this endpoint: the number the teacher sees before clicking
+        // Submit must be exactly the number that is written when they submit. Same command, same
+        // resolver.
         useCase.execute(command("8.00", "6.00"));
-        var previewedItemScore = captureOverrides().get(responseId);
+        BigDecimal previewedItemScore = captureOverrides().get(responseId);
 
-        // GradingActionSupport được mock: phần phân quyền / audit / đóng phân công đã
-        // có test riêng, ở đây chỉ cần đúng ĐƯỜNG ĐIỂM đi qua cùng một resolver.
-        var gradingActionSupport = mock(com.sep.vox.application.port.input.service.GradingActionSupport.class);
-        var context = context();
+        // GradingActionSupport is mocked: authorization / audit / closing the assignment already
+        // have their own tests; here we only need that both paths go through the same resolver.
+        GradingActionSupport gradingActionSupport = mock(com.sep.vox.application.port.input.service.GradingActionSupport.class);
+        ExamGradingAccessService.GradingContext context = context();
         when(gradingActionSupport.prepare(any(), any(), any())).thenReturn(
             new com.sep.vox.application.port.input.service.GradingActionSupport.PreparedAction(
                 context, teacherId, GradingRoundType.INITIAL, GradingOutcome.REGRADED, null, null));
 
-        var regradeUseCase = new RegradeResultUseCase(
+        RegradeResultUseCase regradeUseCase = new RegradeResultUseCase(
             gradingActionSupport, resolver, examItemEvaluationRepository, examItemCriterionScoreRepository,
             examSessionRepository, upsertExamCandidateResultUseCase);
         when(examItemEvaluationRepository.findByResponseIdIn(anyList())).thenReturn(List.of());
         when(examItemEvaluationRepository.save(any())).thenAnswer(invocation -> {
-            var evaluation = (ExamItemEvaluation) invocation.getArgument(0);
+            ExamItemEvaluation evaluation = (ExamItemEvaluation) invocation.getArgument(0);
             evaluation.setId(UUID.randomUUID());
             return evaluation;
         });
-        var recalculated = new ExamCandidateResult();
+        ExamCandidateResult recalculated = new ExamCandidateResult();
         recalculated.setStatus(ExamCandidateResultStatus.RELEASED);
         recalculated.setTotalScore(new BigDecimal("7.20"));
         when(upsertExamCandidateResultUseCase.execute(eq(sessionId), any())).thenReturn(recalculated);
 
         regradeUseCase.execute(command("8.00", "6.00"));
 
-        var captor = ArgumentCaptor.forClass(ExamItemEvaluation.class);
+        ArgumentCaptor<ExamItemEvaluation> captor = ArgumentCaptor.forClass(ExamItemEvaluation.class);
         verify(examItemEvaluationRepository).save(captor.capture());
         assertThat(previewedItemScore).isEqualByComparingTo(captor.getValue().getItemScore());
     }
@@ -230,13 +233,14 @@ public class PreviewGradingUseCaseTests {
 
     @Test
     void should_allow_previewing_only_some_parts() {
-        // Bài có 2 phần, giáo viên mới chấm 1 — preview KHÔNG bắt phủ đủ (khác /grade),
-        // để tổng chạy dần khi đang chấm. Calculator tự lấy điểm cũ cho phần chưa nhập.
+        // The submission has 2 parts and the teacher has graded only 1 -- the preview does NOT
+        // require full coverage (unlike /grade), so the total can build up while grading. The
+        // calculator takes the old score for the part not yet entered.
         when(examItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of(
             new ExamItemResponse(responseId, sessionId, paperItemId, null, null, null, null, null),
             new ExamItemResponse(UUID.randomUUID(), sessionId, UUID.randomUUID(), null, null, null, null, null)));
 
-        var response = useCase.execute(command("8.00", "6.00"));
+        GradingPreviewResponse response = useCase.execute(command("8.00", "6.00"));
 
         assertThat(response.totalScore()).isEqualByComparingTo("7.20");
         verify(examSessionResultCalculator).preview(eq(sessionId), any());

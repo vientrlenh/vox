@@ -2,6 +2,8 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -25,9 +27,9 @@ class DeviceSessionRepositoryTests {
 
     @Test
     void whenSave_thenReturnsPersistedDeviceSession() {
-        var userId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
 
-        var saved = deviceSessionRepository.save(newDeviceSession(userId, "device-1", "Chrome on Windows"));
+        DeviceSession saved = deviceSessionRepository.save(newDeviceSession(userId, "device-1", "Chrome on Windows"));
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getUserId()).isEqualTo(userId);
@@ -39,9 +41,9 @@ class DeviceSessionRepositoryTests {
 
     @Test
     void whenFindById_thenReturnsDeviceSession() {
-        var saved = deviceSessionRepository.save(newDeviceSession(UUID.randomUUID(), "device-2", "Safari on iPhone"));
+        DeviceSession saved = deviceSessionRepository.save(newDeviceSession(UUID.randomUUID(), "device-2", "Safari on iPhone"));
 
-        var found = deviceSessionRepository.findById(saved.getId());
+        Optional<DeviceSession> found = deviceSessionRepository.findById(saved.getId());
 
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(saved.getId());
@@ -50,12 +52,12 @@ class DeviceSessionRepositoryTests {
 
     @Test
     void whenFindByUserId_thenReturnsOnlySessionsForThatUser() {
-        var userId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         deviceSessionRepository.save(newDeviceSession(userId, "device-3", "Chrome on Windows"));
         deviceSessionRepository.save(newDeviceSession(userId, "device-4", "Android App"));
         deviceSessionRepository.save(newDeviceSession(UUID.randomUUID(), "device-5", "Desktop App"));
 
-        var found = deviceSessionRepository.findByUserId(userId);
+        List<DeviceSession> found = deviceSessionRepository.findByUserId(userId);
 
         assertThat(found).hasSize(2);
         assertThat(found)

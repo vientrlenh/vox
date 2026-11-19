@@ -1,5 +1,9 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamSession;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -80,11 +84,11 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
     @Override
     @Transactional
     public UUID execute(HandOffGradingToHumanCommand input) {
-        var session = examSessionRepository.findById(input.sessionId())
+        ExamSession session = examSessionRepository.findById(input.sessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
-        var candidate = examCandidateRepository.findById(session.getCandidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của phiên thi"));
-        var exam = examRepository.findById(session.getExamId())
+        Exam exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của phiên thi"));
 
         moderationAccessService.authorize(exam, candidate);
@@ -103,7 +107,7 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
                 "Phiên thi này không có câu trả lời nào, không có gì để người chấm xem");
         }
 
-        var existing = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
+        ExamCandidateResult existing = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
         if (existing != null) {
             // Đã có kết quả nghĩa là bài đã ở trong vòng đời chấm rồi -- vào hàng đợi hoặc đang
             // được giao. Tạo thêm là sinh bài trùng; đổi trạng thái của nó là ghi đè quyết định
@@ -114,16 +118,16 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
             return existing.getId();
         }
 
-        var policy = exam.getAssessmentPolicyId() == null
+        AssessmentPolicy policy = exam.getAssessmentPolicyId() == null
             ? null
             : assessmentPolicyRepository.findById(exam.getAssessmentPolicyId()).orElse(null);
-        var now = Instant.now();
+        Instant now = Instant.now();
 
         // Cùng bộ field với persistInvalidBlockedResult (SubmitExamSessionUseCase): rubric và
         // framework phải được chốt NGAY lúc tạo, vì màn chấm đọc thang điểm và danh sách tiêu chí
         // từ chính rubricVersionId của kết quả. Để null thì giáo viên mở ra không có tiêu chí nào
         // để nhập.
-        var result = new ExamCandidateResult();
+        ExamCandidateResult result = new ExamCandidateResult();
         result.setExamId(session.getExamId());
         result.setCandidateId(session.getCandidateId());
         result.setSessionId(session.getId());
@@ -141,7 +145,7 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
         result.setUpdatedAt(now);
         result.setUpdatedBy(moderationAccessService.getCurrentUserId());
 
-        var saved = examCandidateResultRepository.save(result);
+        ExamCandidateResult saved = examCandidateResultRepository.save(result);
         LOGGER.info(
             "Phiên {} (AI chấm lỗi) chuyển sang chấm tay: tạo kết quả {} ở PENDING_REVIEW, "
                 + "chờ nhà trường phân công.",

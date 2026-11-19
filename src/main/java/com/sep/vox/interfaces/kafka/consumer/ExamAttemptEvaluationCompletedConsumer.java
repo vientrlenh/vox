@@ -21,6 +21,7 @@ import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationCompletedEventDto;
 import com.sep.vox.interfaces.kafka.dto.ExamAttemptEvaluationFailedEventDto;
 import com.sep.vox.interfaces.kafka.mapper.RecordExamAttemptEvaluationCommandMapper;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
@@ -65,20 +66,20 @@ public class ExamAttemptEvaluationCompletedConsumer {
             record.partition(), record.offset(), record.key()
         );
         try {
-            var payload = jsonMapper.valueToTree(record.value());
-            var eventType = payload.path("eventType").asString();
+            JsonNode payload = jsonMapper.valueToTree(record.value());
+            String eventType = payload.path("eventType").asString();
 
             if ("ExamAttemptEvaluationCompleted".equals(eventType)) {
-                var dto = jsonMapper.treeToValue(payload, ExamAttemptEvaluationCompletedEventDto.class);
+                ExamAttemptEvaluationCompletedEventDto dto = jsonMapper.treeToValue(payload, ExamAttemptEvaluationCompletedEventDto.class);
                 recordExamAttemptEvaluationUseCase.execute(
                     RecordExamAttemptEvaluationCommandMapper.toCommand(dto)
                 );
                 LOGGER.info("Recorded exam evaluation for answerId={}", dto.answerId());
             } else if ("ExamAttemptEvaluationFailed".equals(eventType)) {
-                var failedEvent = jsonMapper.treeToValue(payload, ExamAttemptEvaluationFailedEventDto.class);
-                // payload là optional trong DTO: một producer cũ hơn có thể gửi sự kiện lỗi trần.
-                // Thiếu payload xử lý y hệt nhánh DLT — hỏng, không rõ vì sao.
-                var failurePayload = failedEvent.payload();
+                ExamAttemptEvaluationFailedEventDto failedEvent = jsonMapper.treeToValue(payload, ExamAttemptEvaluationFailedEventDto.class);
+                // payload is optional in the DTO: an older producer may send a bare failure event. A missing
+                // payload is handled exactly like the DLT branch -- failed, reason unknown.
+                ExamAttemptEvaluationFailedEventDto.PayloadDto failurePayload = failedEvent.payload();
                 updateExamSessionStatusUseCase.execute(UpdateExamSessionStatusCommand.gradingFailed(
                     UUID.fromString(failedEvent.examAttemptId()),
                     failurePayload == null ? null : failurePayload.error(),
@@ -107,15 +108,15 @@ public class ExamAttemptEvaluationCompletedConsumer {
     public void dltHandler(ConsumerRecord<String, Object> record) {
         LOGGER.error("Exam evaluation DLT message at topic {}: {}", record.topic(), record.value());
         try {
-            var sessionId = resolveSessionId(record.value());
+            UUID sessionId = resolveSessionId(record.value());
             if (sessionId == null) {
                 LOGGER.error("Exam evaluation DLT message could not resolve sessionId: {}", record.value());
                 return;
             }
 
-            // KHÔNG có lý do để lưu ở đây, và đó là sự thật chứ không phải thiếu sót: bản tin rơi
-            // xuống DLT sau khi hết lượt retry vì một lỗi xử lý phía mình (có khi còn không parse
-            // được), nên nó không mang thông điệp lỗi nào của dịch vụ chấm.
+            // There is NO reason to store one here, and that is the truth rather than an omission: the message
+            // lands in the DLT after retries are exhausted because of a processing error on our side (sometimes
+            // it cannot even be parsed), so it carries no error message from the grading service.
             updateExamSessionStatusUseCase.execute(
                 UpdateExamSessionStatusCommand.gradingFailedWithoutReason(sessionId));
         } catch (Exception ex) {
@@ -124,18 +125,18 @@ public class ExamAttemptEvaluationCompletedConsumer {
     }
 
     private UUID resolveSessionId(Object rawRecordValue) {
-        var payload = jsonMapper.valueToTree(rawRecordValue);
-        var eventType = payload.path("eventType").asString();
+        JsonNode payload = jsonMapper.valueToTree(rawRecordValue);
+        String eventType = payload.path("eventType").asString();
 
         if ("ExamAttemptEvaluationCompleted".equals(eventType)) {
-            var completedEvent = jsonMapper.treeToValue(payload, ExamAttemptEvaluationCompletedEventDto.class);
-            var sessionId = parseUuid(completedEvent.examAttemptId());
+            ExamAttemptEvaluationCompletedEventDto completedEvent = jsonMapper.treeToValue(payload, ExamAttemptEvaluationCompletedEventDto.class);
+            UUID sessionId = parseUuid(completedEvent.examAttemptId());
             return sessionId != null ? sessionId : resolveSessionIdFromAnswerId(completedEvent.answerId());
         }
 
         if ("ExamAttemptEvaluationFailed".equals(eventType)) {
-            var failedEvent = jsonMapper.treeToValue(payload, ExamAttemptEvaluationFailedEventDto.class);
-            var sessionId = parseUuid(failedEvent.examAttemptId());
+            ExamAttemptEvaluationFailedEventDto failedEvent = jsonMapper.treeToValue(payload, ExamAttemptEvaluationFailedEventDto.class);
+            UUID sessionId = parseUuid(failedEvent.examAttemptId());
             return sessionId != null ? sessionId : resolveSessionIdFromAnswerId(failedEvent.answerId());
         }
 
@@ -143,7 +144,7 @@ public class ExamAttemptEvaluationCompletedConsumer {
     }
 
     private UUID resolveSessionIdFromAnswerId(String answerId) {
-        var responseId = parseUuid(answerId);
+        UUID responseId = parseUuid(answerId);
         return responseId == null ? null : resolveExamSessionIdByResponseIdUseCase.execute(responseId);
     }
 

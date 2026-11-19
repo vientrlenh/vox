@@ -24,6 +24,7 @@ import com.sep.vox.application.port.input.usecase.examschedule.AddExamSchedulePr
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.dto.ExamScheduleProctorDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
 import com.sep.vox.domain.model.exam.ExamSchedule;
@@ -93,7 +94,7 @@ class AddExamScheduleProctorUseCaseTests {
                 return p;
             });
 
-        var result = useCase.execute(new AddExamScheduleProctorCommand(examId, scheduleId, teacherId));
+        ExamScheduleProctorDto result = useCase.execute(new AddExamScheduleProctorCommand(examId, scheduleId, teacherId));
 
         assertThat(result.teacherId()).isEqualTo(teacherId);
         assertThat(result.scheduleId()).isEqualTo(scheduleId);
@@ -144,8 +145,9 @@ class AddExamScheduleProctorUseCaseTests {
     }
 
     /**
-     * Hai ca kề nhau đúng mốc (ca trước kết thúc lúc ca sau bắt đầu) không phải là trùng — điều kiện
-     * giao khoảng là nửa mở, giống hệt luật kiểm tra phòng.
+     * Two sessions that touch exactly at the boundary (the earlier one ends when the later one
+     * starts) are not an overlap -- the intersection condition is half-open, exactly like the
+     * room-check rule.
      */
     @Test
     void should_accept_when_teacher_has_no_overlapping_schedule() {
@@ -159,7 +161,7 @@ class AddExamScheduleProctorUseCaseTests {
                 return p;
             });
 
-        var result = useCase.execute(new AddExamScheduleProctorCommand(examId, scheduleId, teacherId));
+        ExamScheduleProctorDto result = useCase.execute(new AddExamScheduleProctorCommand(examId, scheduleId, teacherId));
 
         assertThat(result.teacherId()).isEqualTo(teacherId);
         verify(examScheduleProctorRepository).save(any(ExamScheduleProctor.class));
@@ -193,14 +195,14 @@ class AddExamScheduleProctorUseCaseTests {
     }
 
     private Exam exam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         return exam;
     }
 
     private ExamSchedule schedule() {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(scheduleId);
         schedule.setExamId(examId);
         schedule.setSchoolRoomId(UUID.randomUUID());

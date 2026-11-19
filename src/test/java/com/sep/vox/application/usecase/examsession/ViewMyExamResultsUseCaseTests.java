@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.usecase.examsession.ViewMyExamResultsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.examsession.StudentExamResultSummaryResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
@@ -28,6 +29,7 @@ import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.ExamSessionRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
+import com.sep.vox.domain.repository.RubricVersionRepository;
 
 /**
  * Danh sách kết quả của học sinh dùng chung một luật hiển thị với màn chi tiết. Trước đợt
@@ -47,14 +49,14 @@ class ViewMyExamResultsUseCaseTests {
 
     @BeforeEach
     void setUp() {
-        var examCandidateRepository = mock(ExamCandidateRepository.class);
-        var examSessionRepository = mock(ExamSessionRepository.class);
+        ExamCandidateRepository examCandidateRepository = mock(ExamCandidateRepository.class);
+        ExamSessionRepository examSessionRepository = mock(ExamSessionRepository.class);
         examCandidateResultRepository = mock(ExamCandidateResultRepository.class);
-        var examRepository = mock(ExamRepository.class);
-        var rubricResultBandRepository = mock(RubricResultBandRepository.class);
-        var rubricVersionRepository =
+        ExamRepository examRepository = mock(ExamRepository.class);
+        RubricResultBandRepository rubricResultBandRepository = mock(RubricResultBandRepository.class);
+        RubricVersionRepository rubricVersionRepository =
             mock(com.sep.vox.domain.repository.RubricVersionRepository.class);
-        var userContextPort = mock(UserContextPort.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
         useCase = new ViewMyExamResultsUseCase(
             examCandidateRepository,
             examSessionRepository,
@@ -69,7 +71,7 @@ class ViewMyExamResultsUseCaseTests {
         when(examCandidateRepository.findByStudentId(STUDENT_ID)).thenReturn(List.of(new ExamCandidate(
             CANDIDATE_ID, EXAM_ID, STUDENT_ID, null, null, ExamCandidateStatus.ATTENDED,
             Instant.now(), Instant.now(), null, null, null)));
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(EXAM_ID);
         exam.setCode("CT-01");
         exam.setName("Bài tập 1");
@@ -85,12 +87,12 @@ class ViewMyExamResultsUseCaseTests {
     void should_hide_total_score_when_result_pending_review() {
         givenResult(ExamCandidateResultStatus.PENDING_REVIEW);
 
-        var summaries = useCase.execute(null);
+        List<StudentExamResultSummaryResponse> summaries = useCase.execute(null);
 
         assertThat(summaries).hasSize(1);
         assertThat(summaries.get(0).totalScore()).isNull();
         assertThat(summaries.get(0).rubricResultBandId()).isNull();
-        // Trạng thái vẫn trả về để danh sách hiển thị được "đang chờ chấm".
+        // The status is still returned so the list can show "waiting for grading".
         assertThat(summaries.get(0).resultStatus()).isEqualTo("PENDING_REVIEW");
     }
 
@@ -98,7 +100,7 @@ class ViewMyExamResultsUseCaseTests {
     void should_show_total_score_when_result_released() {
         givenResult(ExamCandidateResultStatus.RELEASED);
 
-        var summaries = useCase.execute(null);
+        List<StudentExamResultSummaryResponse> summaries = useCase.execute(null);
 
         assertThat(summaries.get(0).totalScore()).isEqualByComparingTo("7.50");
         assertThat(summaries.get(0).rubricResultBandId()).isEqualTo(BAND_ID);
@@ -120,7 +122,7 @@ class ViewMyExamResultsUseCaseTests {
     }
 
     private void givenResult(ExamCandidateResultStatus status) {
-        var result = new ExamCandidateResult(
+        ExamCandidateResult result = new ExamCandidateResult(
             UUID.randomUUID(), EXAM_ID, CANDIDATE_ID, SESSION_ID, UUID.randomUUID(), 1,
             UUID.randomUUID(), UUID.randomUUID(), null, BAND_ID,
             new BigDecimal("7.50"), status, null, null, Instant.now(), Instant.now(), null, null);

@@ -118,7 +118,7 @@ public enum NotificationTarget {
      *         true, và validator lúc khởi động bắt buộc hai bảng phủ cùng một tập eventType.
      */
     public static NotificationTarget of(String eventType) {
-        var target = BY_EVENT_TYPE.get(eventType);
+        NotificationTarget target = BY_EVENT_TYPE.get(eventType);
         if (target == null) {
             throw new IllegalArgumentException("Chưa ánh xạ NotificationTarget cho eventType=" + eventType);
         }

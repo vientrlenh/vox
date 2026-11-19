@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.UserRoleJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -39,8 +40,8 @@ public class UserRoleRepositoryImpl implements UserRoleRepository {
 
     @Override
     public UserRole save(UserRole userRole) {
-        var entity = UserRoleMapper.toJpa(userRole);
-        var saved = springDataUserRoleRepository.save(entity);
+        UserRoleJpaEntity entity = UserRoleMapper.toJpa(userRole);
+        UserRoleJpaEntity saved = springDataUserRoleRepository.save(entity);
         return UserRoleMapper.toDomain(saved);
     }
 
@@ -65,8 +66,8 @@ public class UserRoleRepositoryImpl implements UserRoleRepository {
 
     @Override
     public List<UserRole> findByRoleIdIn(Collection<UUID> roleIds, int page, int size) {
-        var fromRow = (page - 1) * size + 1;
-        var toRow = page * size;
+        int fromRow = (page - 1) * size + 1;
+        int toRow = page * size;
         return springDataUserRoleRepository.findByRoleIdIn(roleIds, fromRow, toRow)
             .stream()
             .map(UserRoleMapper::toDomain)

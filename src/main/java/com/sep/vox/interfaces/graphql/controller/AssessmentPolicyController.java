@@ -1,6 +1,7 @@
 package com.sep.vox.interfaces.graphql.controller;
 
 import com.sep.vox.application.common.DateMapper;
+import com.sep.vox.application.port.input.command.UpdateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.query.ViewSchoolAssessmentPoliciesQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolAssessmentPolicyDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSystemAssessmentPoliciesQuery;
@@ -208,7 +209,7 @@ public class AssessmentPolicyController {
     public UUID updateSystemAssessmentPolicy(
             @Argument(name = "policyId") UUID policyId,
             @Argument(name = "input") UpdateAssessmentPolicyInput input) {
-        var command = UpdateAssessmentPolicyGraphQLMapper.fromSystemInput(policyId, input);
+        UpdateAssessmentPolicyCommand command = UpdateAssessmentPolicyGraphQLMapper.fromSystemInput(policyId, input);
         return updateSystemAssessmentPolicyUseCase.execute(command);
     }
 
@@ -218,7 +219,7 @@ public class AssessmentPolicyController {
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "policyId") UUID policyId,
             @Argument(name = "input") UpdateAssessmentPolicyInput input) {
-        var command = UpdateAssessmentPolicyGraphQLMapper.fromSchoolInput(schoolId, policyId, input);
+        UpdateAssessmentPolicyCommand command = UpdateAssessmentPolicyGraphQLMapper.fromSchoolInput(schoolId, policyId, input);
         return updateSchoolAssessmentPolicyUseCase.execute(command);
     }
 

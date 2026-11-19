@@ -22,9 +22,9 @@ public final class ClassTestSectionWeightPolicy {
     }
 
     public static List<BigDecimal> resolveRequestedWeights(List<ClassTestSectionCommand> sections) {
-        var providedCount = sections.stream().filter(section -> section.weight() != null).count();
+        long providedCount = sections.stream().filter(section -> section.weight() != null).count();
         if (providedCount == sections.size()) {
-            var weights = sections.stream().map(command -> command.weight()).toList();
+            List<BigDecimal> weights = sections.stream().map(command -> command.weight()).toList();
             validateWeightSum(weights, "Tổng trọng số section phải bằng 1.00");
             return weights;
         }
@@ -34,14 +34,14 @@ public final class ClassTestSectionWeightPolicy {
     // H.6.4: câu hỏi trong section class test PHẢI có weight tường minh (không auto-fill
     // ở backend - nút "Chia trọng số tự động" là tính năng FE, backend chỉ validate).
     public static List<BigDecimal> resolveQuestionWeights(List<ClassTestQuestionCommand> questions) {
-        var weights = questions.stream().map(command -> command.weight()).toList();
+        List<BigDecimal> weights = questions.stream().map(command -> command.weight()).toList();
         validateWeightSum(weights, "Tổng trọng số câu hỏi trong phần phải bằng 1.00");
         return weights;
     }
 
     static void validateWeightSum(List<BigDecimal> weights, String message) {
-        var sum = BigDecimal.ZERO;
-        for (var weight : weights) {
+        BigDecimal sum = BigDecimal.ZERO;
+        for (BigDecimal weight : weights) {
             if (weight == null) {
                 throw new IllegalStateException(message);
             }
@@ -63,7 +63,7 @@ public final class ClassTestSectionWeightPolicy {
         if (sections.isEmpty() || sections.stream().anyMatch(section -> section.getWeight() == null)) {
             return true;
         }
-        var equalWeights = distributeEqualWeights(sections.size());
+        List<BigDecimal> equalWeights = distributeEqualWeights(sections.size());
         for (int i = 0; i < sections.size(); i++) {
             if (sections.get(i).getWeight().subtract(equalWeights.get(i)).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
                 return false;
@@ -73,17 +73,17 @@ public final class ClassTestSectionWeightPolicy {
     }
 
     static List<BigDecimal> normalizeStoredWeights(List<ExamPaperSection> sections) {
-        var totalWeight = sections.stream()
+        BigDecimal totalWeight = sections.stream()
             .map(section -> section.getWeight() == null ? BigDecimal.ZERO : section.getWeight())
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (totalWeight.compareTo(BigDecimal.ZERO) <= 0) {
             return distributeEqualWeights(sections.size());
         }
 
-        var weights = new ArrayList<BigDecimal>();
-        var runningSum = BigDecimal.ZERO;
+        List<BigDecimal> weights = new ArrayList<BigDecimal>();
+        BigDecimal runningSum = BigDecimal.ZERO;
         for (int i = 0; i < sections.size() - 1; i++) {
-            var normalized = (sections.get(i).getWeight() == null ? BigDecimal.ZERO : sections.get(i).getWeight())
+            BigDecimal normalized = (sections.get(i).getWeight() == null ? BigDecimal.ZERO : sections.get(i).getWeight())
                 .divide(totalWeight, 2, RoundingMode.HALF_UP);
             weights.add(normalized);
             runningSum = runningSum.add(normalized);
@@ -96,9 +96,9 @@ public final class ClassTestSectionWeightPolicy {
         if (count <= 0) {
             return List.of();
         }
-        var weights = new ArrayList<BigDecimal>();
-        var perItem = BigDecimal.ONE.divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
-        var runningSum = BigDecimal.ZERO;
+        List<BigDecimal> weights = new ArrayList<BigDecimal>();
+        BigDecimal perItem = BigDecimal.ONE.divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
+        BigDecimal runningSum = BigDecimal.ZERO;
         for (int i = 0; i < count - 1; i++) {
             weights.add(perItem);
             runningSum = runningSum.add(perItem);

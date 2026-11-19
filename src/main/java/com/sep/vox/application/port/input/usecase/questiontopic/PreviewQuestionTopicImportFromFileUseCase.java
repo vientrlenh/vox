@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.questiontopic;
 
+import com.sep.vox.application.response.output.ParseImportFileResult;
+import com.sep.vox.domain.model.question.QuestionBank;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -78,8 +80,8 @@ public class PreviewQuestionTopicImportFromFileUseCase
             throw new IllegalArgumentException("Ngân hàng câu hỏi không được để trống");
         }
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var questionBank = questionBankRepository.findById(input.questionBankId())
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        QuestionBank questionBank = questionBankRepository.findById(input.questionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         if (questionBank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
@@ -87,7 +89,7 @@ public class PreviewQuestionTopicImportFromFileUseCase
                 throw new ForbiddenException("Quyền truy cập bị từ chối");
             }
         } else {
-            var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+            UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
                 .map(schoolUser -> schoolUser.getSchoolId())
                 .orElse(null);
             if (currentSchoolId == null || !currentSchoolId.equals(questionBank.getSchoolId())) {
@@ -95,10 +97,10 @@ public class PreviewQuestionTopicImportFromFileUseCase
             }
         }
 
-        var parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION_TOPIC);
-        var now = Instant.now();
-        var expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
-        var savedSession = importSessionRepository.save(new ImportSession(
+        ParseImportFileResult parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION_TOPIC);
+        Instant now = Instant.now();
+        Instant expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
+        ImportSession savedSession = importSessionRepository.save(new ImportSession(
             questionBank.getOwnerType() == QuestionBankOwnerType.SCHOOL ? questionBank.getSchoolId() : null,
             ImportType.QUESTION_TOPIC,
             safeFileName(input.file().fileName()),
@@ -140,9 +142,9 @@ public class PreviewQuestionTopicImportFromFileUseCase
         if (rows.isEmpty()) {
             return;
         }
-        var importRows = new ArrayList<ImportRow>();
+        List<ImportRow> importRows = new ArrayList<ImportRow>();
         long rowNumber = 1L;
-        for (var row : rows) {
+        for (Map<String, String> row : rows) {
             importRows.add(new ImportRow(
                 sessionId,
                 rowNumber,

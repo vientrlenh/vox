@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import com.sep.vox.domain.model.subscription.SchoolSubscription;
+import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -55,15 +57,15 @@ public class RenewSchoolSubscriptionUseCase implements IUseCase<RenewSchoolSubsc
     @Override
     @Transactional
     public UUID execute(RenewSchoolSubscriptionCommand input) {
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID schoolId = userContextPort.getCurrentSchoolId();
 
-        var subscription = schoolSubscriptionRepository.findMostRecentBySchoolId(schoolId)
+        SchoolSubscription subscription = schoolSubscriptionRepository.findMostRecentBySchoolId(schoolId)
             .orElseThrow(() -> new NotFoundException(
                 "Trường chưa từng đăng ký gói nào, hãy chọn gói từ danh sách thay vì gia hạn."));
 
-        var currentPlan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
+        SubscriptionPlan currentPlan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
-        var renewalPlan = subscriptionPlanResolver.resolveActivePlan(currentPlan);
+        SubscriptionPlan renewalPlan = subscriptionPlanResolver.resolveActivePlan(currentPlan);
 
         // Đối chiếu với gói trường ĐÃ XÁC NHẬN ở màn xem trước. Không phải thủ tục cho có: giữa lúc
         // trường xem màn đó và lúc bấm gia hạn, System Admin hoàn toàn có thể lưu trữ gói hoặc đổi

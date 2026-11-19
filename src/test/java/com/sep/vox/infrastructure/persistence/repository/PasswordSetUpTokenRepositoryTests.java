@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -31,9 +32,9 @@ class PasswordSetUpTokenRepositoryTests {
 
     @Test
     void whenSave_thenReturnsPersistedPasswordSetUpToken() {
-        var userId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
 
-        var saved = passwordSetUpTokenRepository.save(newToken(userId, "token-hash"));
+        PasswordSetUpToken saved = passwordSetUpTokenRepository.save(newToken(userId, "token-hash"));
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getUserId()).isEqualTo(userId);
@@ -43,9 +44,9 @@ class PasswordSetUpTokenRepositoryTests {
 
     @Test
     void whenFindById_thenReturnsPasswordSetUpToken() {
-        var saved = passwordSetUpTokenRepository.save(newToken(UUID.randomUUID(), "find-id-token"));
+        PasswordSetUpToken saved = passwordSetUpTokenRepository.save(newToken(UUID.randomUUID(), "find-id-token"));
 
-        var found = passwordSetUpTokenRepository.findById(saved.getId());
+        Optional<PasswordSetUpToken> found = passwordSetUpTokenRepository.findById(saved.getId());
 
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(saved.getId());
@@ -54,11 +55,11 @@ class PasswordSetUpTokenRepositoryTests {
 
     @Test
     void whenFindByUserIdAndTokenHash_thenReturnsMatchingToken() {
-        var userId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         passwordSetUpTokenRepository.save(newToken(userId, "matching-token"));
         passwordSetUpTokenRepository.save(newToken(UUID.randomUUID(), "matching-token"));
 
-        var found = passwordSetUpTokenRepository.findByUserIdAndTokenHash(userId, "matching-token");
+        Optional<PasswordSetUpToken> found = passwordSetUpTokenRepository.findByUserIdAndTokenHash(userId, "matching-token");
 
         assertThat(found).isPresent();
         assertThat(found.get().getUserId()).isEqualTo(userId);
@@ -67,16 +68,16 @@ class PasswordSetUpTokenRepositoryTests {
 
     @Test
     void whenUpdateUsedTokenForValidToken_thenMarksTokenUsed() {
-        var userId = UUID.randomUUID();
-        var tokenHash = "valid-update-token";
+        UUID userId = UUID.randomUUID();
+        String tokenHash = "valid-update-token";
         passwordSetUpTokenRepository.save(newToken(userId, tokenHash));
         entityManager.flush();
 
-        var usedAt = Instant.now();
-        var updated = passwordSetUpTokenRepository.updateUsedToken(userId, tokenHash, usedAt);
+        Instant usedAt = Instant.now();
+        int updated = passwordSetUpTokenRepository.updateUsedToken(userId, tokenHash, usedAt);
         entityManager.clear();
 
-        var found = passwordSetUpTokenRepository.findByUserIdAndTokenHash(userId, tokenHash);
+        Optional<PasswordSetUpToken> found = passwordSetUpTokenRepository.findByUserIdAndTokenHash(userId, tokenHash);
         assertThat(updated).isEqualTo(1);
         assertThat(found).isPresent();
         assertThat(found.get().getUsedAt()).isNotNull();
@@ -84,21 +85,21 @@ class PasswordSetUpTokenRepositoryTests {
 
     @Test
     void whenUpdateUsedTokenForExpiredToken_thenDoesNotUpdate() {
-        var userId = UUID.randomUUID();
-        var tokenHash = "expired-update-token";
-        var now = Instant.now();
+        UUID userId = UUID.randomUUID();
+        String tokenHash = "expired-update-token";
+        Instant now = Instant.now();
         passwordSetUpTokenRepository.save(
             new PasswordSetUpToken(userId, tokenHash, now.minus(3, ChronoUnit.DAYS), now.minus(1, ChronoUnit.DAYS), null)
         );
         entityManager.flush();
 
-        var updated = passwordSetUpTokenRepository.updateUsedToken(userId, tokenHash, now);
+        int updated = passwordSetUpTokenRepository.updateUsedToken(userId, tokenHash, now);
 
         assertThat(updated).isZero();
     }
 
     private static PasswordSetUpToken newToken(UUID userId, String tokenHash) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new PasswordSetUpToken(
             userId,
             tokenHash,

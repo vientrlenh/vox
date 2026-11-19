@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import java.time.Instant;
 
 import org.springframework.stereotype.Service;
@@ -44,16 +46,16 @@ public class DeclineGradingAssignmentUseCase
     @Override
     @Transactional
     public GradingActionResponse execute(GradingDecisionCommand command) {
-        var prepared = gradingActionSupport.prepare(
+        GradingActionSupport.PreparedAction prepared = gradingActionSupport.prepare(
             command.assignmentId(), GradingOutcome.DECLINED, command.reason());
 
-        var result = prepared.context().candidateResult();
-        var assignment = prepared.context().assignment();
+        ExamCandidateResult result = prepared.context().candidateResult();
+        ExamGradingAssignment assignment = prepared.context().assignment();
         gradingActionSupport.finish(prepared, result);
 
         // Người cần biết là admin đã giao, không phải học sinh: bài đang nằm chờ
         // người điều phối xử lý tiếp.
-        var payload = new GradingAssignmentDeclinedPayloadV1(
+        GradingAssignmentDeclinedPayloadV1 payload = new GradingAssignmentDeclinedPayloadV1(
             assignment.getId(),
             result.getId(),
             assignment.getTeacherId(),

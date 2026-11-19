@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,7 @@ public class ViewMyExamRoleUseCase implements IUseCase<ViewMyExamRoleQuery, Stri
     @Override
     @Transactional(readOnly = true)
     public String execute(ViewMyExamRoleQuery input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         return examMemberRepository.findByExamIdAndUserId(input.examId(), currentUserId)
             .map(member -> member.getRole().name())
             .orElse(null);

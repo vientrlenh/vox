@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamPaperItemJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +24,7 @@ public class ExamPaperItemRepositoryImpl implements ExamPaperItemRepository {
 
     @Override
     public ExamPaperItem save(ExamPaperItem item) {
-        var saved = springDataExamPaperItemRepository.save(ExamPaperItemMapper.toJpa(item));
+        ExamPaperItemJpaEntity saved = springDataExamPaperItemRepository.save(ExamPaperItemMapper.toJpa(item));
         return ExamPaperItemMapper.toDomain(saved);
     }
 

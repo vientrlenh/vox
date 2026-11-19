@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -78,7 +80,7 @@ public class GradingAssignmentNotificationService {
             return;
         }
 
-        var resultsById = byId(
+        Map<UUID, ExamCandidateResult> resultsById = byId(
             examCandidateResultRepository.findByIdIn(assignments.stream()
                 .map(assignment -> assignment.getCandidateResultId())
                 .filter(id -> id != null)
@@ -86,7 +88,7 @@ public class GradingAssignmentNotificationService {
                 .toList()),
             result -> result.getId());
 
-        var examsById = byId(
+        Map<UUID, Exam> examsById = byId(
             examRepository.findByIdIn(resultsById.values().stream()
                 .map(result -> result.getExamId())
                 .filter(id -> id != null)
@@ -94,17 +96,17 @@ public class GradingAssignmentNotificationService {
                 .toList()),
             exam -> exam.getId());
 
-        var studentNamesByResultId = studentNames(resultsById.values(), examsById);
+        Map<UUID, String> studentNamesByResultId = studentNames(resultsById.values(), examsById);
 
-        for (var assignment : assignments) {
-            var result = resultsById.get(assignment.getCandidateResultId());
-            var exam = result == null ? null : examsById.get(result.getExamId());
+        for (ExamGradingAssignment assignment : assignments) {
+            ExamCandidateResult result = resultsById.get(assignment.getCandidateResultId());
+            Exam exam = result == null ? null : examsById.get(result.getExamId());
             if (result == null || exam == null || assignment.getTeacherId() == null) {
                 LOGGER.warn("Bỏ qua thông báo giao chấm, thiếu dữ liệu: assignmentId={}", assignment.getId());
                 continue;
             }
 
-            var payload = jsonSerializationPort.toJson(new GradingAssignmentOpenedPayloadV1(
+            String payload = jsonSerializationPort.toJson(new GradingAssignmentOpenedPayloadV1(
                 assignment.getId(),
                 assignment.getTeacherId(),
                 exam.getId(),
@@ -136,7 +138,7 @@ public class GradingAssignmentNotificationService {
         if (exam.getKind() != ExamKind.CLASS_TEST) {
             return GradingResultCode.of(result.getId());
         }
-        var studentName = studentNamesByResultId.get(result.getId());
+        String studentName = studentNamesByResultId.get(result.getId());
         return studentName != null ? studentName : GradingResultCode.of(result.getId());
     }
 
@@ -147,9 +149,9 @@ public class GradingAssignmentNotificationService {
      */
     private Map<UUID, String> studentNames(
             Collection<ExamCandidateResult> results, Map<UUID, Exam> examsById) {
-        var classTestResults = results.stream()
+        List<ExamCandidateResult> classTestResults = results.stream()
             .filter(result -> {
-                var exam = examsById.get(result.getExamId());
+                Exam exam = examsById.get(result.getExamId());
                 return exam != null && exam.getKind() == ExamKind.CLASS_TEST;
             })
             .filter(result -> result.getCandidateId() != null)
@@ -159,14 +161,14 @@ public class GradingAssignmentNotificationService {
             return Map.of();
         }
 
-        var candidatesById = byId(
+        Map<UUID, ExamCandidate> candidatesById = byId(
             examCandidateRepository.findByIdIn(classTestResults.stream()
                 .map(result -> result.getCandidateId())
                 .distinct()
                 .toList()),
             candidate -> candidate.getId());
 
-        var usersById = byId(
+        Map<UUID, User> usersById = byId(
             userRepository.findByIdIn(candidatesById.values().stream()
                 .map(candidate -> candidate.getStudentId())
                 .filter(id -> id != null)
@@ -174,13 +176,13 @@ public class GradingAssignmentNotificationService {
                 .toList()),
             user -> user.getId());
 
-        var names = new java.util.HashMap<UUID, String>();
-        for (var result : classTestResults) {
-            var candidate = candidatesById.get(result.getCandidateId());
+        Map<UUID, String> names = new java.util.HashMap<UUID, String>();
+        for (ExamCandidateResult result : classTestResults) {
+            ExamCandidate candidate = candidatesById.get(result.getCandidateId());
             if (candidate == null || candidate.getStudentId() == null) {
                 continue;
             }
-            var user = usersById.get(candidate.getStudentId());
+            User user = usersById.get(candidate.getStudentId());
             if (user == null || user.getFullName() == null) {
                 continue;
             }

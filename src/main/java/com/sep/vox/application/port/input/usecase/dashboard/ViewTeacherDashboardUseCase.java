@@ -72,12 +72,12 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
 
     @Override
     public TeacherDashboardSummaryResponse execute(Void input) {
-        var teacherId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolId = userContextPort.getCurrentSchoolId();
-        var classTests = fetchTeacherClassTests(teacherId, schoolId);
+        UUID teacherId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID schoolId = userContextPort.getCurrentSchoolId();
+        List<Exam> classTests = fetchTeacherClassTests(teacherId, schoolId);
 
-        var candidates = examCandidateRepository.findByExamIdIn(classTests.stream().map(exam -> exam.getId()).toList());
-        var candidateIds = candidates.stream().map(candidate -> candidate.getId()).toList();
+        List<ExamCandidate> candidates = examCandidateRepository.findByExamIdIn(classTests.stream().map(exam -> exam.getId()).toList());
+        List<UUID> candidateIds = candidates.stream().map(candidate -> candidate.getId()).toList();
         Map<UUID, ExamCandidateAttempts> attemptsByCandidateId = candidateIds.isEmpty()
             ? Map.of()
             : resolveExamCandidateAttemptsUseCase.executeBatch(candidateIds);
@@ -99,7 +99,7 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
      * giáo viên bị bỏ sót lúc đó. Đo thật 2026-08-28: dashboard giáo viên 500 mọi lần mở.
      */
     private List<Exam> fetchTeacherClassTests(UUID teacherId, UUID schoolId) {
-        var accessible = examRepository.findAccessible(
+        List<Exam> accessible = examRepository.findAccessible(
             teacherId, schoolId, false, false, schoolId, null, ExamKind.CLASS_TEST, null, null,
             1, MAX_CLASS_TESTS_FOR_DASHBOARD
         ).content();
@@ -107,7 +107,7 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
             return List.of();
         }
 
-        var examIds = accessible.stream().map(exam -> exam.getId()).toList();
+        List<UUID> examIds = accessible.stream().map(exam -> exam.getId()).toList();
         Set<UUID> memberExamIds = examMemberRepository.findByExamIdIn(examIds).stream()
             .filter(m -> m.getUserId().equals(teacherId))
             .map(member -> member.getExamId())
@@ -117,13 +117,13 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
     }
 
     private ExamStatusCountResponse buildExamStatusCounts(List<Exam> classTests) {
-        var draft = countByStatus(classTests, ExamStatus.DRAFT);
-        var scheduled = countByStatus(classTests, ExamStatus.SCHEDULED);
-        var inProgress = countByStatus(classTests, ExamStatus.IN_PROGRESS);
-        var closed = countByStatus(classTests, ExamStatus.CLOSED);
-        var resultsPublished = countByStatus(classTests, ExamStatus.RESULTS_PUBLISHED);
-        var cancelled = countByStatus(classTests, ExamStatus.CANCELLED);
-        var total = draft + scheduled + inProgress + closed + resultsPublished + cancelled;
+        long draft = countByStatus(classTests, ExamStatus.DRAFT);
+        long scheduled = countByStatus(classTests, ExamStatus.SCHEDULED);
+        long inProgress = countByStatus(classTests, ExamStatus.IN_PROGRESS);
+        long closed = countByStatus(classTests, ExamStatus.CLOSED);
+        long resultsPublished = countByStatus(classTests, ExamStatus.RESULTS_PUBLISHED);
+        long cancelled = countByStatus(classTests, ExamStatus.CANCELLED);
+        long total = draft + scheduled + inProgress + closed + resultsPublished + cancelled;
         return new ExamStatusCountResponse(total, draft, scheduled, inProgress, closed, resultsPublished, cancelled);
     }
 
@@ -144,7 +144,7 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
             return new ScoreStatsResponse(null, 0, 0);
         }
 
-        var scores = officialScoresOf(candidates, attemptsByCandidateId);
+        List<BigDecimal> scores = officialScoresOf(candidates, attemptsByCandidateId);
         if (scores.isEmpty()) {
             return new ScoreStatsResponse(null, 0, candidates.size());
         }
@@ -158,17 +158,17 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
             return List.of();
         }
 
-        var candidatesByExamId = candidates.stream().collect(Collectors.groupingBy(candidate -> candidate.getExamId()));
-        var classIdByStudentId = resolveActiveClassIdByStudent(candidates);
-        var classIdByExamId = resolveClassIdByExam(classTests, candidatesByExamId, classIdByStudentId);
-        var classNameById = resolveClassNames(classIdByExamId.values());
+        Map<UUID, List<ExamCandidate>> candidatesByExamId = candidates.stream().collect(Collectors.groupingBy(candidate -> candidate.getExamId()));
+        Map<UUID, UUID> classIdByStudentId = resolveActiveClassIdByStudent(candidates);
+        Map<UUID, UUID> classIdByExamId = resolveClassIdByExam(classTests, candidatesByExamId, classIdByStudentId);
+        Map<UUID, String> classNameById = resolveClassNames(classIdByExamId.values());
 
         return classTests.stream()
             .map(exam -> {
-                var examCandidates = candidatesByExamId.getOrDefault(exam.getId(), List.of());
-                var scores = officialScoresOf(examCandidates, attemptsByCandidateId);
-                var classId = classIdByExamId.get(exam.getId());
-                var className = classId == null ? UNKNOWN_CLASS_NAME : classNameById.getOrDefault(classId, UNKNOWN_CLASS_NAME);
+                List<ExamCandidate> examCandidates = candidatesByExamId.getOrDefault(exam.getId(), List.of());
+                List<BigDecimal> scores = officialScoresOf(examCandidates, attemptsByCandidateId);
+                UUID classId = classIdByExamId.get(exam.getId());
+                String className = classId == null ? UNKNOWN_CLASS_NAME : classNameById.getOrDefault(classId, UNKNOWN_CLASS_NAME);
                 return new SchoolClassScoreStatsResponse(
                     exam.getName(),
                     className,
@@ -183,7 +183,7 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
     }
 
     private Map<UUID, UUID> resolveActiveClassIdByStudent(List<ExamCandidate> candidates) {
-        var studentIds = candidates.stream().map(candidate -> candidate.getStudentId()).distinct().toList();
+        List<UUID> studentIds = candidates.stream().map(candidate -> candidate.getStudentId()).distinct().toList();
         if (studentIds.isEmpty()) {
             return Map.of();
         }
@@ -195,9 +195,9 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
     private Map<UUID, UUID> resolveClassIdByExam(List<Exam> classTests, Map<UUID, List<ExamCandidate>> candidatesByExamId,
             Map<UUID, UUID> classIdByStudentId) {
         Map<UUID, UUID> classIdByExamId = new HashMap<>();
-        for (var exam : classTests) {
-            var examCandidates = candidatesByExamId.getOrDefault(exam.getId(), List.of());
-            var classId = examCandidates.stream()
+        for (Exam exam : classTests) {
+            List<ExamCandidate> examCandidates = candidatesByExamId.getOrDefault(exam.getId(), List.of());
+            UUID classId = examCandidates.stream()
                 .map(c -> classIdByStudentId.get(c.getStudentId()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
@@ -211,7 +211,7 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
     }
 
     private Map<UUID, String> resolveClassNames(Collection<UUID> classIds) {
-        var distinctIds = classIds.stream().filter(Objects::nonNull).distinct().toList();
+        List<UUID> distinctIds = classIds.stream().filter(Objects::nonNull).distinct().toList();
         if (distinctIds.isEmpty()) {
             return Map.of();
         }

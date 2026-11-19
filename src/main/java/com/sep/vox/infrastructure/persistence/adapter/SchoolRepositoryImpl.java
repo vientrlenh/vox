@@ -1,11 +1,13 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.SchoolJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -46,9 +48,9 @@ public class SchoolRepositoryImpl implements SchoolRepository {
 
     @Override
     public PageResult<School> findAll(int page, int size, String search, Boolean isActive) {
-        var pageRequest = PageRequest.of(page - 1, size);
-        var pattern = StringNormalization.toLikePattern(search);
-        var pageable = isActive != null
+        PageRequest pageRequest = PageRequest.of(page - 1, size);
+        String pattern = StringNormalization.toLikePattern(search);
+        Page<SchoolJpaEntity> pageable = isActive != null
             ? springDataSchoolRepository.findAllBySearchAndIsActive(pattern, isActive, pageRequest)
             : springDataSchoolRepository.findAllBySearch(pattern, pageRequest);
         return new PageResult<>(
@@ -64,8 +66,8 @@ public class SchoolRepositoryImpl implements SchoolRepository {
 
     @Override
     public School save(School school) {
-        var entity = SchoolMapper.toJpa(school);
-        var saved = springDataSchoolRepository.save(entity);
+        SchoolJpaEntity entity = SchoolMapper.toJpa(school);
+        SchoolJpaEntity saved = springDataSchoolRepository.save(entity);
         return SchoolMapper.toDomain(saved);
     }
 

@@ -19,9 +19,11 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,10 +82,11 @@ class ExportExamScoresExcelUseCaseTests {
     }
 
     private Sheet sheetOf(byte[] bytes) {
-        try (var workbook = WorkbookFactory.create(new ByteArrayInputStream(bytes))) {
-            // Workbook đóng lại sau khi ra khỏi try, nên đọc hết sheet vào bộ nhớ trước là
-            // không khả thi — POI cho phép giữ tham chiếu sheet của workbook đã đóng khi
-            // dữ liệu đã nạp xong, và mọi assertion dưới đây chỉ đọc giá trị ô.
+        try (Workbook workbook = WorkbookFactory.create(new ByteArrayInputStream(bytes))) {
+            // The workbook is closed after leaving the try, so reading the whole sheet into memory
+            // beforehand is not feasible -- POI lets you keep a sheet reference of a closed
+            // workbook once the data has been loaded, and every assertion below only reads cell
+            // values.
             return workbook.getSheetAt(0);
         } catch (IOException exception) {
             throw new IllegalStateException("Không đọc lại được file xuất ra", exception);
@@ -91,14 +94,14 @@ class ExportExamScoresExcelUseCaseTests {
     }
 
     private GradingAssignmentFilter capturedFilter() {
-        var captor = ArgumentCaptor.forClass(GradingAssignmentFilter.class);
+        ArgumentCaptor<GradingAssignmentFilter> captor = ArgumentCaptor.forClass(GradingAssignmentFilter.class);
         verify(examGradingQueryRepository).findScoreRows(captor.capture());
         return captor.getValue();
     }
 
     @Test
     void should_write_the_thirteen_vietnamese_headers_in_order() {
-        var header = export().getRow(0);
+        Row header = export().getRow(0);
 
         assertThat(header.getLastCellNum()).isEqualTo((short) 13);
         assertThat(cellTexts(header)).containsExactly(
@@ -112,12 +115,12 @@ class ExportExamScoresExcelUseCaseTests {
             .toList();
     }
 
-    /** Lý do bản Excel tồn tại: cột này phải sort và tính trung bình được. */
+    /** The reason the Excel version exists: this column must be sortable and averageable. */
     @Test
     void should_write_the_score_as_a_real_number_cell() {
         givenRow("Nguyễn Văn A", new BigDecimal("7.50"), null);
 
-        var cell = export().getRow(1).getCell(6);
+        Cell cell = export().getRow(1).getCell(6);
 
         assertThat(cell.getCellType()).isEqualTo(CellType.NUMERIC);
         assertThat(cell.getNumericCellValue()).isEqualTo(7.5);
@@ -135,10 +138,11 @@ class ExportExamScoresExcelUseCaseTests {
     void should_write_the_sitting_time_as_a_date_cell_in_vietnam_time() {
         givenRow("Nguyễn Văn A", new BigDecimal("7.50"), null);
 
-        var cell = export().getRow(1).getCell(5);
+        Cell cell = export().getRow(1).getCell(5);
 
         assertThat(cell.getCellType()).isEqualTo(CellType.NUMERIC);
-        // Nguồn là 08:00+07:00; đọc ra phải là 08:00 bất kể JVM chạy ở múi giờ nào.
+        // The source is 08:00+07:00; what is read back must be 08:00 no matter which time zone the
+        // JVM runs in.
         assertThat(cell.getLocalDateTimeCellValue())
             .isEqualTo(LocalDateTime.of(2026, 7, 12, 8, 0));
     }
@@ -162,7 +166,7 @@ class ExportExamScoresExcelUseCaseTests {
 
     @Test
     void should_neutralize_the_other_formula_triggers_too() {
-        for (var trigger : List.of("+", "-", "@")) {
+        for (String trigger : List.of("+", "-", "@")) {
             givenRow(trigger + "cmd", null, null);
 
             assertThat(export().getRow(1).getCell(1).getStringCellValue())

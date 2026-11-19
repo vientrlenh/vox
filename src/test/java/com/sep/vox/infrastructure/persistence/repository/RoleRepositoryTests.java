@@ -3,6 +3,8 @@ package com.sep.vox.infrastructure.persistence.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -26,9 +28,9 @@ class RoleRepositoryTests {
 
     @Test
     void whenSave_thenReturnsPersistedRole() {
-        var role = newRole("SCHOOL_ADMIN", "School Admin");
+        Role role = newRole("SCHOOL_ADMIN", "School Admin");
 
-        var saved = roleRepository.save(role);
+        Role saved = roleRepository.save(role);
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getCode().value()).isEqualTo("SCHOOL_ADMIN");
@@ -37,9 +39,9 @@ class RoleRepositoryTests {
 
     @Test
     void whenFindById_thenReturnsRole() {
-        var saved = roleRepository.save(newRole("TEACHER", "Teacher"));
+        Role saved = roleRepository.save(newRole("TEACHER", "Teacher"));
 
-        var found = roleRepository.findById(saved.getId());
+        Optional<Role> found = roleRepository.findById(saved.getId());
 
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(saved.getId());
@@ -50,7 +52,7 @@ class RoleRepositoryTests {
     void whenFindByCode_thenReturnsRole() {
         roleRepository.save(newRole("STUDENT", "Student"));
 
-        var found = roleRepository.findByCode("STUDENT");
+        Optional<Role> found = roleRepository.findByCode("STUDENT");
 
         assertThat(found).isPresent();
         assertThat(found.get().getCode().value()).isEqualTo("STUDENT");
@@ -63,7 +65,7 @@ class RoleRepositoryTests {
         roleRepository.save(newRole("CONTENT_REVIEWER", "Reviewer"));
         roleRepository.save(newRole("SCHOOL_MANAGER", "Manager"));
 
-        var found = roleRepository.findByName("Reviewer");
+        List<Role> found = roleRepository.findByName("Reviewer");
 
         assertThat(found).hasSize(2);
         assertThat(found)
@@ -73,14 +75,14 @@ class RoleRepositoryTests {
 
     @Test
     void whenCount_thenReturnsNumberOfRoles() {
-        var before = roleRepository.count();
+        long before = roleRepository.count();
         roleRepository.save(newRole("COUNT_ROLE", "Count Role"));
 
         assertThat(roleRepository.count()).isEqualTo(before + 1);
     }
 
     private static Role newRole(String code, String name) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new Role(
             new RoleCode(code),
             name,

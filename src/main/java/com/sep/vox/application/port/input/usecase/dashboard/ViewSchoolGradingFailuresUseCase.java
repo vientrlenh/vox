@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.dashboard;
 
+import com.sep.vox.application.query.dto.SchoolGradingFailureDto;
+import com.sep.vox.domain.common.PageResult;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,11 +40,11 @@ public class ViewSchoolGradingFailuresUseCase
     @Override
     @Transactional(readOnly = true)
     public SchoolGradingFailurePageResponse execute(SearchSchoolGradingFailuresQuery input) {
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID schoolId = userContextPort.getCurrentSchoolId();
 
-        var page = schoolWorkloadQueryRepository.findUnhandledAiFailures(
+        PageResult<SchoolGradingFailureDto> page = schoolWorkloadQueryRepository.findUnhandledAiFailures(
             schoolId, input.examId(), input.retryLeft(), input.page(), input.size());
-        var counts = schoolWorkloadQueryRepository.countAiFailuresByAllowance(schoolId, input.examId());
+        int[] counts = schoolWorkloadQueryRepository.countAiFailuresByAllowance(schoolId, input.examId());
 
         return new SchoolGradingFailurePageResponse(
             page.content().stream().map(SchoolGradingFailureResponse::of).toList(),

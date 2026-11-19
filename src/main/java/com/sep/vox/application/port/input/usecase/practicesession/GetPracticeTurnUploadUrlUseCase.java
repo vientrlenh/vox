@@ -25,8 +25,8 @@ public class GetPracticeTurnUploadUrlUseCase {
     }
 
     public TurnUploadUrlResponse execute(UUID practiceSessionId, int turnOrder) {
-        var key = "practice/%s/turn-%d.wav".formatted(practiceSessionId, turnOrder);
-        var presigned = storagePort.presignUpload(key, "audio/wav", TTL);
+        String key = "practice/%s/turn-%d.wav".formatted(practiceSessionId, turnOrder);
+        StoragePort.PresignedUpload presigned = storagePort.presignUpload(key, "audio/wav", TTL);
         return new TurnUploadUrlResponse(presigned.uploadUrl(), presigned.publicUrl());
     }
 }

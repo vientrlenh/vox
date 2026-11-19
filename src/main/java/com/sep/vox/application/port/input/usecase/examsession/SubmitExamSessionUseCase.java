@@ -1,9 +1,24 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamItemResponse;
+import com.sep.vox.domain.model.exam.ExamPaperItem;
+import com.sep.vox.domain.model.exam.ExamSession;
+import com.sep.vox.domain.model.framework.FrameworkCriterion;
+import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
+import com.sep.vox.domain.model.framework.FrameworkResultBand;
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionAsset;
+import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
+import com.sep.vox.domain.model.question.QuestionTopic;
+import com.sep.vox.domain.model.rubric.RubricCriterion;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -107,12 +122,12 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
     @Override
     @Transactional
     public Void execute(SubmitExamSessionCommand input) {
-        var session = examSessionRepository.findById(input.sessionId())
+        ExamSession session = examSessionRepository.findById(input.sessionId())
             .orElseThrow(() -> new NotFoundException("Không thể tìm thấy phiên thi"));
         // GRADED chỉ được chấp nhận ở đây cho đúng 1 trường hợp: G.4 - session từng bị đánh
         // dấu vi phạm oan (INVALID, chưa từng có ExamItemEvaluation), đã dỡ cấm, được
         // RetryGradingExamSessionUseCase gọi lại để AI chấm thật lần đầu.
-        var fromStatus = session.getStatus();
+        ExamSessionStatus fromStatus = session.getStatus();
         if (fromStatus != ExamSessionStatus.SUBMITTED
                 && fromStatus != ExamSessionStatus.EXPIRED
                 && fromStatus != ExamSessionStatus.GRADING_FAILED
@@ -128,11 +143,11 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         }
         session.setStatus(ExamSessionStatus.GRADING);
 
-        var candidate = examCandidateRepository.findById(session.getCandidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy thí sinh của phiên thi"));
-        var exam = examRepository.findById(session.getExamId())
+        Exam exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy bài kiểm tra"));
-        var responses = examItemResponseRepository.findBySessionId(session.getId());
+        List<ExamItemResponse> responses = examItemResponseRepository.findBySessionId(session.getId());
         if (candidate.getBlockedAt() != null) {
             persistInvalidBlockedResult(session);
             return null;
@@ -158,13 +173,13 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         // transcript rỗng sang LLM. Xem MissingResponseBackfillService.
         missingResponseBackfillService.backfill(session.getId(), session.getPaperId());
 
-        var criteriaFrameworks = buildCriteriaFrameworks(exam.getAssessmentPolicyId());
+        List<ExamAttemptEvaluationRequestedExternalEvent.CriterionFramework> criteriaFrameworks = buildCriteriaFrameworks(exam.getAssessmentPolicyId());
 
-        for (var response : responses) {
+        for (ExamItemResponse response : responses) {
             if (MissingResponseBackfillService.NO_RECORDING.equals(response.getTerminationReason())) {
                 continue;
             }
-            var paperItemId = response.getPaperItemId();
+            UUID paperItemId = response.getPaperItemId();
             if (paperItemId == null) {
                 throw new NotFoundException("không thể tìm thấy paperItemId cho câu trả lời " + response.getId());
             }
@@ -184,16 +199,16 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
                 continue;
             }
 
-            var paperItem = examPaperItemRepository.findById(paperItemId)
+            ExamPaperItem paperItem = examPaperItemRepository.findById(paperItemId)
                 .orElseThrow(() -> new NotFoundException("không thể tìm thấy paper item " + paperItemId));
-            var question = questionRepository.findById(paperItem.getQuestionId())
+            Question question = questionRepository.findById(paperItem.getQuestionId())
                 .orElseThrow(() -> new NotFoundException("không thể tìm thấy câu hỏi " + paperItem.getQuestionId()));
-            var guide = questionEvaluationGuideRepository.findByQuestionId(question.getId()).orElse(null);
-            var asset = questionAssetRepository.findByQuestionId(question.getId()).stream().findFirst().orElse(null);
-            var topic = question.getQuestionTopicId() == null
+            QuestionEvaluationGuide guide = questionEvaluationGuideRepository.findByQuestionId(question.getId()).orElse(null);
+            QuestionAsset asset = questionAssetRepository.findByQuestionId(question.getId()).stream().findFirst().orElse(null);
+            QuestionTopic topic = question.getQuestionTopicId() == null
                 ? null
                 : questionTopicRepository.findById(question.getQuestionTopicId()).orElse(null);
-            var turns = examItemResponseTurnRepository.findByExamItemResponseId(response.getId()).stream()
+            List<ExamAttemptEvaluationRequestedExternalEvent.TurnInput> turns = examItemResponseTurnRepository.findByExamItemResponseId(response.getId()).stream()
                 .sorted(Comparator.comparingInt(turn -> turn.getTurnOrder()))
                 .map(turn -> new ExamAttemptEvaluationRequestedExternalEvent.TurnInput(
                     turn.getTurnOrder(),
@@ -215,7 +230,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
                 ));
             }
 
-            var event = new ExamAttemptEvaluationRequestedExternalEvent(
+            ExamAttemptEvaluationRequestedExternalEvent event = new ExamAttemptEvaluationRequestedExternalEvent(
                 session.getId().toString(),
                 response.getId().toString(),
                 question.getId().toString(),
@@ -266,14 +281,14 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
      * không có chữ nào. Chỉ có chữ mới chấm được.
      */
     private void persistInvalidBlockedResult(com.sep.vox.domain.model.exam.ExamSession session) {
-        var exam = examRepository.findById(session.getExamId())
+        Exam exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy bài kiểm tra"));
-        var policy = exam.getAssessmentPolicyId() == null
+        AssessmentPolicy policy = exam.getAssessmentPolicyId() == null
             ? null
             : assessmentPolicyRepository.findById(exam.getAssessmentPolicyId()).orElse(null);
-        var existing = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
-        var result = existing == null ? new ExamCandidateResult() : existing;
-        var now = Instant.now();
+        ExamCandidateResult existing = examCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
+        ExamCandidateResult result = existing == null ? new ExamCandidateResult() : existing;
+        Instant now = Instant.now();
 
         result.setExamId(session.getExamId());
         result.setCandidateId(session.getCandidateId());
@@ -304,40 +319,40 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
             return List.of();
         }
 
-        var policy = assessmentPolicyRepository.findById(assessmentPolicyId).orElse(null);
+        AssessmentPolicy policy = assessmentPolicyRepository.findById(assessmentPolicyId).orElse(null);
         if (policy == null) {
             return List.of();
         }
         if (policy.getTargetFrameworkBandId() == null) {
             throw new IllegalStateException("Assessment policy chưa cấu hình bậc mục tiêu để AI chấm.");
         }
-        var targetBand = frameworkResultBandRepository.findById(policy.getTargetFrameworkBandId())
+        FrameworkResultBand targetBand = frameworkResultBandRepository.findById(policy.getTargetFrameworkBandId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bậc mục tiêu của assessment policy."));
         if (!policy.getFrameworkVersionId().equals(targetBand.getFrameworkVersionId())) {
             throw new IllegalStateException("Bậc mục tiêu không thuộc framework version của assessment policy.");
         }
 
-        var rubricCriteria = rubricCriterionRepository.findByRubricVersionId(policy.getRubricVersionId());
+        List<RubricCriterion> rubricCriteria = rubricCriterionRepository.findByRubricVersionId(policy.getRubricVersionId());
         if (rubricCriteria.isEmpty()) {
             return List.of();
         }
 
-        var frameworkCriterionIds = rubricCriteria.stream()
+        List<UUID> frameworkCriterionIds = rubricCriteria.stream()
             .map(item -> item.getFrameworkCriterionId())
             .filter(id -> id != null)
             .toList();
-        var frameworkCriteriaById = frameworkCriterionRepository.findAllByIds(frameworkCriterionIds).stream()
+        Map<UUID, FrameworkCriterion> frameworkCriteriaById = frameworkCriterionRepository.findAllByIds(frameworkCriterionIds).stream()
             .collect(Collectors.toMap(item -> item.getId(), Function.identity()));
-        var frameworkCriterionBands = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(frameworkCriterionIds);
-        var frameworkBandsByCriterionId = frameworkCriterionBands.stream()
+        List<FrameworkCriterionBand> frameworkCriterionBands = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(frameworkCriterionIds);
+        Map<UUID, List<FrameworkCriterionBand>> frameworkBandsByCriterionId = frameworkCriterionBands.stream()
             .collect(Collectors.groupingBy(item -> item.getFrameworkCriterionId()));
-        var frameworkResultBandIds = frameworkCriterionBands.stream()
+        List<UUID> frameworkResultBandIds = frameworkCriterionBands.stream()
             .map(item -> item.getFrameworkResultBandId())
             .distinct()
             .toList();
-        var frameworkResultBandsById = frameworkResultBandRepository.findAllByIds(frameworkResultBandIds).stream()
+        Map<UUID, FrameworkResultBand> frameworkResultBandsById = frameworkResultBandRepository.findAllByIds(frameworkResultBandIds).stream()
             .collect(Collectors.toMap(item -> item.getId(), Function.identity()));
-        var ladderCriterionKeys = Set.of("grammar", "vocabulary", "coherence");
+        Set<String> ladderCriterionKeys = Set.of("grammar", "vocabulary", "coherence");
 
         return rubricCriteria.stream().map(criterion -> {
             if (criterion.getMinScore() == null || criterion.getMaxScore() == null
@@ -345,21 +360,21 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
                 throw new IllegalStateException("Tiêu chí rubric '" + criterion.getName()
                     + "' phải có minScore nhỏ hơn maxScore trước khi gửi sang AI.");
             }
-            var frameworkCriterion = frameworkCriteriaById.get(criterion.getFrameworkCriterionId());
-            var criterionBands = frameworkBandsByCriterionId
+            FrameworkCriterion frameworkCriterion = frameworkCriteriaById.get(criterion.getFrameworkCriterionId());
+            List<FrameworkCriterionBand> criterionBands = frameworkBandsByCriterionId
                 .getOrDefault(criterion.getFrameworkCriterionId(), List.of());
-            var targetCriterionBand = criterionBands.stream()
+            FrameworkCriterionBand targetCriterionBand = criterionBands.stream()
                 .filter(item -> policy.getTargetFrameworkBandId().equals(item.getFrameworkResultBandId()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(
                     "Tiêu chí framework chưa có mô tả cho bậc mục tiêu " + targetBand.getLabel() + "."));
-            var criterionKey = agentCriterionKey(criterion.getCode());
-            var sourceBands = criterionKey != null && ladderCriterionKeys.contains(criterionKey)
+            String criterionKey = agentCriterionKey(criterion.getCode());
+            List<FrameworkCriterionBand> sourceBands = criterionKey != null && ladderCriterionKeys.contains(criterionKey)
                 ? criterionBands
                 : List.of(targetCriterionBand);
-            var bands = sourceBands.stream()
+            List<ExamAttemptEvaluationRequestedExternalEvent.FrameworkBand> bands = sourceBands.stream()
                 .map(item -> {
-                    var resultBand = frameworkResultBandsById.get(item.getFrameworkResultBandId());
+                    FrameworkResultBand resultBand = frameworkResultBandsById.get(item.getFrameworkResultBandId());
                     if (resultBand == null) {
                         throw new IllegalStateException(
                             "Không tìm thấy bậc framework cho tiêu chí '" + criterion.getName() + "'.");
@@ -409,7 +424,7 @@ public class SubmitExamSessionUseCase implements IUseCase<SubmitExamSessionComma
         if (rubricCriterionCode == null) {
             return null;
         }
-        var normalized = rubricCriterionCode.trim().toLowerCase(Locale.ROOT);
+        String normalized = rubricCriterionCode.trim().toLowerCase(Locale.ROOT);
         return "discourse".equals(normalized) ? "coherence" : normalized;
     }
 }

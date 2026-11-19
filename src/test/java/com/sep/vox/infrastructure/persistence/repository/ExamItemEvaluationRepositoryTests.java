@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -33,29 +34,32 @@ class ExamItemEvaluationRepositoryTests {
 
     @Test
     void should_return_superseded_ai_evaluation_as_the_latest_ai() {
-        var responseId = UUID.randomUUID();
-        var ai = examItemEvaluationRepository.save(evaluation(responseId,
+        UUID responseId = UUID.randomUUID();
+        ExamItemEvaluation ai = examItemEvaluationRepository.save(evaluation(responseId,
             ExamEvaluationEngineType.AI_SINGLE, ExamItemEvaluationStatus.SUPERSEDED, hoursAgo(2)));
         examItemEvaluationRepository.save(evaluation(responseId,
             ExamEvaluationEngineType.HUMAN, ExamItemEvaluationStatus.FINALIZED, hoursAgo(1)));
 
-        var found = examItemEvaluationRepository.findLatestAiByResponseId(responseId);
+        Optional<ExamItemEvaluation> found = examItemEvaluationRepository.findLatestAiByResponseId(responseId);
 
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(ai.getId());
         assertThat(found.get().getStatus()).isEqualTo(ExamItemEvaluationStatus.SUPERSEDED);
     }
 
-    /** Bản hiệu lực vẫn phải là bản chấm tay — hai query không được lẫn vào nhau. */
+    /**
+     * The effective version must still be the manual grade -- the two queries must not get mixed
+     * up.
+     */
     @Test
     void should_keep_returning_the_human_row_as_the_authoritative_evaluation() {
-        var responseId = UUID.randomUUID();
+        UUID responseId = UUID.randomUUID();
         examItemEvaluationRepository.save(evaluation(responseId,
             ExamEvaluationEngineType.AI_SINGLE, ExamItemEvaluationStatus.SUPERSEDED, hoursAgo(2)));
-        var human = examItemEvaluationRepository.save(evaluation(responseId,
+        ExamItemEvaluation human = examItemEvaluationRepository.save(evaluation(responseId,
             ExamEvaluationEngineType.HUMAN, ExamItemEvaluationStatus.FINALIZED, hoursAgo(1)));
 
-        var found = examItemEvaluationRepository.findLatestByResponseId(responseId);
+        Optional<ExamItemEvaluation> found = examItemEvaluationRepository.findLatestByResponseId(responseId);
 
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(human.getId());
@@ -63,32 +67,33 @@ class ExamItemEvaluationRepositoryTests {
 
     @Test
     void should_prefer_the_newest_ai_evaluation_when_several_exist() {
-        var responseId = UUID.randomUUID();
+        UUID responseId = UUID.randomUUID();
         examItemEvaluationRepository.save(evaluation(responseId,
             ExamEvaluationEngineType.AI_SINGLE, ExamItemEvaluationStatus.SUPERSEDED, hoursAgo(5)));
-        var newest = examItemEvaluationRepository.save(evaluation(responseId,
+        ExamItemEvaluation newest = examItemEvaluationRepository.save(evaluation(responseId,
             ExamEvaluationEngineType.AI_ENSEMBLE, ExamItemEvaluationStatus.AUTO_GRADED, hoursAgo(1)));
 
-        var found = examItemEvaluationRepository.findLatestAiByResponseId(responseId);
+        Optional<ExamItemEvaluation> found = examItemEvaluationRepository.findLatestAiByResponseId(responseId);
 
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(newest.getId());
     }
 
     /**
-     * UNDER_REVIEW là báo cáo phúc khảo CHƯA công bố. Bình thường nó mang engine HUMAN nên
-     * không lọt vào query này, nhưng bộ lọc được viết tường minh để nếu sau có ai ghi bản
-     * review bằng engine AI thì học sinh vẫn không thấy điểm chưa công bố.
+     * UNDER_REVIEW is an appeal report that has NOT been published. Normally it carries the HUMAN
+     * engine so it does not fall into this query, but the filter is written explicitly so that if
+     * someone later writes a review version with the AI engine, the student still does not see an
+     * unpublished score.
      */
     @Test
     void should_ignore_an_under_review_ai_row() {
-        var responseId = UUID.randomUUID();
-        var published = examItemEvaluationRepository.save(evaluation(responseId,
+        UUID responseId = UUID.randomUUID();
+        ExamItemEvaluation published = examItemEvaluationRepository.save(evaluation(responseId,
             ExamEvaluationEngineType.AI_SINGLE, ExamItemEvaluationStatus.SUPERSEDED, hoursAgo(3)));
         examItemEvaluationRepository.save(evaluation(responseId,
             ExamEvaluationEngineType.AI_SINGLE, ExamItemEvaluationStatus.UNDER_REVIEW, hoursAgo(1)));
 
-        var found = examItemEvaluationRepository.findLatestAiByResponseId(responseId);
+        Optional<ExamItemEvaluation> found = examItemEvaluationRepository.findLatestAiByResponseId(responseId);
 
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(published.getId());
@@ -96,7 +101,7 @@ class ExamItemEvaluationRepositoryTests {
 
     @Test
     void should_return_empty_when_the_response_only_has_a_human_evaluation() {
-        var responseId = UUID.randomUUID();
+        UUID responseId = UUID.randomUUID();
         examItemEvaluationRepository.save(evaluation(responseId,
             ExamEvaluationEngineType.HUMAN, ExamItemEvaluationStatus.FINALIZED, hoursAgo(1)));
 
@@ -105,7 +110,7 @@ class ExamItemEvaluationRepositoryTests {
 
     @Test
     void should_not_leak_an_ai_evaluation_of_another_response() {
-        var responseId = UUID.randomUUID();
+        UUID responseId = UUID.randomUUID();
         examItemEvaluationRepository.save(evaluation(UUID.randomUUID(),
             ExamEvaluationEngineType.AI_SINGLE, ExamItemEvaluationStatus.AUTO_GRADED, hoursAgo(1)));
 

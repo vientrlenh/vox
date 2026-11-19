@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.exam.Exam;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +37,7 @@ public class EstimateExamTokenQuotaUseCase implements IUseCase<EstimateExamToken
     @Override
     @Transactional(readOnly = true)
     public ExamTokenEstimateResponse execute(EstimateExamTokenQuotaQuery input) {
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         if (!userContextPort.isSystemAdmin() && !exam.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {

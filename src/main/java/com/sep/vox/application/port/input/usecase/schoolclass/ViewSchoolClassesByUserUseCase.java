@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
+import com.sep.vox.domain.model.school.SchoolClass;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,7 +43,7 @@ public class ViewSchoolClassesByUserUseCase implements IUseCase<ViewSchoolClasse
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolClassDto> execute(ViewSchoolClassesByUserQuery input) {
-        var callerId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
@@ -53,7 +55,7 @@ public class ViewSchoolClassesByUserUseCase implements IUseCase<ViewSchoolClasse
             throw new NotFoundException("Không tìm thấy người dùng trong trường học");
         }
 
-        var schoolClassesPage = schoolClassRepository.findByUserId(
+        PageResult<SchoolClass> schoolClassesPage = schoolClassRepository.findByUserId(
             input.schoolId(),
             input.userId(),
             parseStatus(input.status()),
@@ -65,7 +67,7 @@ public class ViewSchoolClassesByUserUseCase implements IUseCase<ViewSchoolClasse
     }
 
     private SchoolClassStatus parseStatus(String status) {
-        var normalized = StringNormalization.trimAndCollapseSpaces(status);
+        String normalized = StringNormalization.trimAndCollapseSpaces(status);
         if (normalized == null) {
             return null;
         }

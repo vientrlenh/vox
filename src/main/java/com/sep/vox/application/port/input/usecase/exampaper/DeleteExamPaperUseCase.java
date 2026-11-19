@@ -1,8 +1,12 @@
 package com.sep.vox.application.port.input.usecase.exampaper;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamPaper;
 import java.time.Instant;
 import java.util.List;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,13 +63,13 @@ public class DeleteExamPaperUseCase implements IUseCase<DeleteExamPaperCommand, 
     @Override
     @Transactional
     public Void execute(DeleteExamPaperCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var paper = examPaperRepository.findById(input.paperId())
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        ExamPaper paper = examPaperRepository.findById(input.paperId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
-        var exam = examRepository.findById(paper.getExamId())
+        Exam exam = examRepository.findById(paper.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
-        var actor = examPaperAuthoringAccessService.requireCanAuthor(exam, currentUserId);
+        ExamPaperAuthoringAccessService.PaperActor actor = examPaperAuthoringAccessService.requireCanAuthor(exam, currentUserId);
         // Kỳ thi đã bắt đầu thì mã đề là dữ liệu đang chạy — cùng ranh giới mà AssignExamPapersUseCase
         // dựng cho khâu phân đề. Trước đây use case này chỉ soi trạng thái mã đề, nên REOPEN một mã
         // đề đã khoá rồi xoá nó giữa lúc thi vẫn lọt.
@@ -90,16 +94,16 @@ public class DeleteExamPaperUseCase implements IUseCase<DeleteExamPaperCommand, 
         // "chưa phân đề" thay vì để lại con trỏ tới một dòng đã biến mất: UpdateExamStatusUseCase
         // đếm đúng những thí sinh chưa có mã đề để chặn lên lịch, nên con trỏ mồ côi sẽ lọt qua cửa
         // đó rồi mới nổ lúc học sinh vào phòng thi.
-        var affectedCandidates = examCandidateRepository.findByAssignedPaperId(paper.getId());
+        List<ExamCandidate> affectedCandidates = examCandidateRepository.findByAssignedPaperId(paper.getId());
         if (!affectedCandidates.isEmpty()) {
-            var now = Instant.now();
+            Instant now = Instant.now();
             affectedCandidates.forEach(candidate -> candidate.unassignPaper(now, currentUserId));
             examCandidateRepository.saveAll(affectedCandidates);
         }
 
         // Phần thi và câu trong đề treo trên paper_id mà không có FK nào dọn hộ: xoá mỗi dòng đề là
         // để lại section/item mồ côi. Con trước cha.
-        var paperIds = List.of(paper.getId());
+        List<UUID> paperIds = List.of(paper.getId());
         examPaperItemRepository.deleteByPaperIdIn(paperIds);
         examPaperSectionRepository.deleteByPaperIdIn(paperIds);
         examPaperRepository.deleteById(paper.getId());

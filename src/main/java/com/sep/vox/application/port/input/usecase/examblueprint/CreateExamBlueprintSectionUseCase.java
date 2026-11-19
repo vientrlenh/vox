@@ -1,8 +1,12 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
+import com.sep.vox.domain.model.exam.ExamBlueprint;
+import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import java.util.List;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,15 +50,15 @@ public class CreateExamBlueprintSectionUseCase implements IUseCase<CreateExamBlu
     @Override
     @Transactional
     public ExamBlueprintSectionDto execute(CreateExamBlueprintSectionItemCommand input) {
-        var command = normalize(input);
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        CreateExamBlueprintSectionItemCommand command = normalize(input);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
-        var version = examBlueprintVersionRepository.findById(command.versionId())
+        ExamBlueprintVersion version = examBlueprintVersionRepository.findById(command.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
-        var blueprint = examBlueprintRepository.findById(version.getBlueprintId())
+        ExamBlueprint blueprint = examBlueprintRepository.findById(version.getBlueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
         if (!examBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
@@ -64,13 +68,13 @@ public class CreateExamBlueprintSectionUseCase implements IUseCase<CreateExamBlu
             throw new IllegalStateException("Chỉ được thêm section khi version đang DRAFT");
         }
 
-        var siblings = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId());
+        List<ExamBlueprintSection> siblings = examBlueprintSectionRepository.findByBlueprintVersionId(version.getId());
         if (siblings.stream().anyMatch(s -> s.getOrder() == command.order())) {
             throw new IllegalStateException("Thứ tự section đã tồn tại trong version này");
         }
 
-        var now = Instant.now();
-        var section = new ExamBlueprintSection(
+        Instant now = Instant.now();
+        ExamBlueprintSection section = new ExamBlueprintSection(
             version.getId(),
             command.order(),
             command.title(),

@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -72,13 +74,13 @@ public class ExamRecordingAccessService {
      * này im lặng suốt.
      */
     public ExamSession requireCanViewRecordings(UUID examSessionId) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID schoolId = userContextPort.getCurrentSchoolId();
 
-        var session = examSessionRepository.findById(examSessionId)
+        ExamSession session = examSessionRepository.findById(examSessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
 
-        var exam = examRepository.findById(session.getExamId())
+        Exam exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi"));
 
         if (schoolId == null || !exam.getSchoolId().equals(schoolId)) {
@@ -93,7 +95,7 @@ public class ExamRecordingAccessService {
             throw new ForbiddenException("Vai trò hiện tại của bạn không được phép xem bản ghi thi");
         }
 
-        var isChair = examMemberRepository
+        boolean isChair = examMemberRepository
             .existsByExamIdAndUserIdAndRole(exam.getId(), userId, ExamMemberRole.CHAIR);
         if (isChair) {
             return session;
@@ -106,7 +108,7 @@ public class ExamRecordingAccessService {
         // hỏi lại "vì sao chấm thế", mà lúc đó dòng của họ đã COMPLETED. Đây là quyền ĐỌC bằng
         // chứng, không phải quyền ghi điểm -- mọi hành động chấm vẫn qua
         // ExamGradingAccessService.authorizeAssignedTeacher trên đúng dòng đang mở.
-        var isAssignedGrader = examCandidateResultRepository.findBySessionId(session.getId())
+        Boolean isAssignedGrader = examCandidateResultRepository.findBySessionId(session.getId())
             .map(result -> examGradingAssignmentRepository
                 .existsByCandidateResultIdAndTeacherId(result.getId(), userId))
             .orElse(false);
@@ -114,10 +116,10 @@ public class ExamRecordingAccessService {
             return session;
         }
 
-        var candidate = examCandidateRepository.findById(session.getCandidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thi sinh"));
-        var scheduleId = candidate.getScheduleId();
-        var isProctor = scheduleId != null
+        UUID scheduleId = candidate.getScheduleId();
+        boolean isProctor = scheduleId != null
             && examScheduleProctorRepository.existsByScheduleIdAndTeacherId(scheduleId, userId);
         if (!isProctor) {
             throw new ForbiddenException("Bạn không được phân công để giám sát ca thi này");

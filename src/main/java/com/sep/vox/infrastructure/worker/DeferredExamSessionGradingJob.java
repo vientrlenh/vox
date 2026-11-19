@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.worker;
 
+import com.sep.vox.domain.model.exam.ExamSession;
 import java.time.Instant;
 
 import org.slf4j.Logger;
@@ -34,9 +35,9 @@ public class DeferredExamSessionGradingJob {
 
     @Scheduled(fixedDelay = 60000)
     public void run() {
-        for (var session : examSessionRepository.findDeferredGradingCandidates(Instant.now())) {
+        for (ExamSession session : examSessionRepository.findDeferredGradingCandidates(Instant.now())) {
             try {
-                var current = session;
+                ExamSession current = session;
                 if (current.getStatus() == ExamSessionStatus.IN_PROGRESS || current.getStatus() == ExamSessionStatus.INTERRUPTED) {
                     updateExamSessionStatusUseCase.execute(new UpdateExamSessionStatusCommand(current.getId(), ExamSessionStatus.EXPIRED));
                     current = examSessionRepository.findById(current.getId()).orElse(current);

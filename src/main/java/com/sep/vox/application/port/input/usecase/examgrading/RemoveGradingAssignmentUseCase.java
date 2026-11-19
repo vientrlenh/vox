@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -39,12 +40,12 @@ public class RemoveGradingAssignmentUseCase implements IUseCase<RemoveGradingAss
     @Override
     @Transactional
     public UUID execute(RemoveGradingAssignmentCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var context = examGradingAccessService.load(command.assignmentId());
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        ExamGradingAccessService.GradingContext context = examGradingAccessService.load(command.assignmentId());
         examGradingAccessService.authorizeSchoolAdmin(context.schoolId(), currentUserId);
         examGradingAccessService.rejectClassTestCoordination(context.candidateResult().getId());
 
-        var assignment = context.assignment();
+        ExamGradingAssignment assignment = context.assignment();
         // Đã chấm xong thì điểm đã ghi và bài đã công bố — xoá dòng phân công lúc
         // này chỉ xoá mất vết ai chấm, không hoàn tác được gì.
         if (assignment.isCompleted()) {

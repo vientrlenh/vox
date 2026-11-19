@@ -114,7 +114,7 @@ class OrderSettlementQuotaCarryForwardTests {
         subscriptionPlanQuotaRepository = mock(SubscriptionPlanQuotaRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         roleRepository = mock(RoleRepository.class);
-        var subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
+        SubscriptionPlanRepository subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
 
         service = new OrderSettlementService(
             orderRepository,
@@ -134,7 +134,7 @@ class OrderSettlementQuotaCarryForwardTests {
             mock(OutboxRepository.class),
             mock(JsonSerializationPort.class));
 
-        var order = new Order();
+        Order order = new Order();
         order.setId(orderId);
         order.setSchoolId(schoolId);
         order.setType(OrderType.SUBSCRIPTION_REQUEST);
@@ -143,25 +143,26 @@ class OrderSettlementQuotaCarryForwardTests {
         order.setTotalAmountVnd(BigDecimal.valueOf(20_000_000));
         when(orderRepository.findByIdForUpdate(orderId)).thenReturn(Optional.of(order));
 
-        var item = new OrderItem();
+        OrderItem item = new OrderItem();
         item.setOrderId(orderId);
         item.setType(OrderItemType.SUBSCRIPTION);
         item.setItemId(planId);
         when(orderItemRepository.findByOrderId(orderId)).thenReturn(List.of(item));
 
-        var plan = new SubscriptionPlan();
+        SubscriptionPlan plan = new SubscriptionPlan();
         plan.setId(planId);
         plan.setName("Gói năm");
         plan.setPeriodType(SubscriptionPlanPeriod.YEAR);
         plan.setPeriodCount(1);
         when(subscriptionPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
 
-        // Hóa đơn coi như đã phát: nhánh đó (và outbox theo sau) không liên quan gì tới việc mang hạn
-        // mức sang kỳ mới, cắt đi để test nói đúng một chuyện.
+        // The invoice is treated as already issued: that branch (and the outbox that follows) has
+        // nothing to do with carrying quota over into the new period, so it is cut off to make the
+        // test say exactly one thing.
         when(invoiceRepository.existsByOrderId(orderId)).thenReturn(true);
 
-        // Chỉ gán id cho dòng MỚI. cutOverToUpgrade cũng save() các kỳ cũ, và gán đè id ở đó sẽ làm
-        // hai kỳ mang cùng một id.
+        // Only assign an id to the NEW row. cutOverToUpgrade also calls save() on the old periods,
+        // and overwriting their ids here would make two periods carry the same id.
         when(schoolSubscriptionRepository.save(any())).thenAnswer(invocation -> {
             SchoolSubscription saved = invocation.getArgument(0);
             if (saved.getId() == null) {
@@ -178,7 +179,8 @@ class OrderSettlementQuotaCarryForwardTests {
         when(schoolSubscriptionRepository.findMostRecentBySchoolId(schoolId))
             .thenReturn(Optional.of(previousSubscription));
 
-        // Mặc định: kỳ cũ đã hết hạn, nên kỳ mới chạy NGAY -- mốc chốt sổ trùng mốc bắt đầu.
+        // Default: the old period has expired, so the new period runs IMMEDIATELY -- the cut-off
+        // point coincides with the start point.
         when(schoolSubscriptionRepository.findUnfinishedBySchoolId(eq(schoolId), any()))
             .thenReturn(List.of());
 
@@ -191,13 +193,14 @@ class OrderSettlementQuotaCarryForwardTests {
 
     @Test
     void renewal_after_expiry_carries_unspent_funding_into_the_new_period() {
-        // Q-7. Tiền này KHÔNG còn ở school_balances (đã rời ví kèm bút toán QUOTA_FUNDING), nó nằm
-        // ngay trong bản ghi bị dựng lại -- không mang sang là xoá tiền thật vào đúng ngày gia hạn.
+        // Q-7. This money is NO LONGER in school_balances (it left the wallet together with a
+        // QUOTA_FUNDING entry); it sits right in the record being rebuilt -- if it is not carried
+        // over, real money is wiped on the very day of renewal.
         givenPreviousPool(QuotaType.PRACTICE, 15_000_000, 0, 5_000_000);
 
         settle();
 
-        var seeded = seededPool(QuotaType.PRACTICE);
+        SchoolSubscriptionQuotaRecord seeded = seededPool(QuotaType.PRACTICE);
         assertThat(seeded.getFundedFromBalanceVnd()).isEqualByComparingTo("5000000");
         assertThat(seeded.getTotalAllocatedAmountVnd()).isEqualByComparingTo("15000000");
         assertThat(seeded.getUsedAmountVnd()).isEqualByComparingTo("0");
@@ -205,22 +208,23 @@ class OrderSettlementQuotaCarryForwardTests {
 
     @Test
     void only_the_unspent_part_of_the_funding_is_carried() {
-        // Quy ước "tiền gói tiêu trước, tiền tự nạp tiêu sau": tiêu 12tr trên ví 15tr có 5tr tự nạp
-        // thì chỉ 3tr còn lại được mang sang, 2tr kia đã tiêu thật.
+        // Convention "plan money is spent first, top-up money after": spending 12m from a 15m
+        // wallet that has 5m of top-up leaves only 3m to carry over; the other 2m was really spent.
         givenPreviousPool(QuotaType.PRACTICE, 15_000_000, 12_000_000, 5_000_000);
 
         settle();
 
-        var seeded = seededPool(QuotaType.PRACTICE);
+        SchoolSubscriptionQuotaRecord seeded = seededPool(QuotaType.PRACTICE);
         assertThat(seeded.getFundedFromBalanceVnd()).isEqualByComparingTo("3000000");
         assertThat(seeded.getTotalAllocatedAmountVnd()).isEqualByComparingTo("13000000");
     }
 
     @Test
     void renewal_carries_personal_ceilings_so_the_school_does_not_stall() {
-        // Q-2. Không chép thì PRACTICE về 0 cho CẢ TRƯỜNG (LEAST + COALESCE), còn EXAM thì mọi giáo
-        // viên thành không còn trần -- hai chiều hỏng ngược nhau, cùng im lặng như nhau.
-        var teacher = UUID.randomUUID();
+        // Q-2. If it is not copied, PRACTICE drops to 0 for the WHOLE SCHOOL (LEAST + COALESCE),
+        // while for EXAM every teacher ends up with no ceiling -- two failures in opposite
+        // directions, equally silent.
+        UUID teacher = UUID.randomUUID();
         givenPreviousAllocations(QuotaType.EXAM, Map.of(teacher, 2_000_000L));
 
         settle();
@@ -244,15 +248,16 @@ class OrderSettlementQuotaCarryForwardTests {
     // =====================================================================
 
     /**
-     * ĐỎ -- gia hạn sớm, chiều "tiền nhân đôi".
+     * RED -- early renewal, the "money doubles" direction.
      *
-     * <p>{@code seedQuotaRecords} chụp ảnh phần chưa tiêu tại lúc TRẢ TIỀN, nhưng
-     * {@code nextPeriodStart} cho kỳ mới bắt đầu ở endDate của kỳ cũ. Trong quãng giữa, kỳ cũ vẫn là
-     * kỳ {@code findActiveBySchoolId} trả về và ví hạn mức của nó vẫn tiêu được -- nên 5tr đó vừa nằm
-     * trong kỳ cũ (tiêu được tới 31/12) vừa đã được chép sang kỳ mới (tiêu lại từ 1/1).
+     * <p>{@code seedQuotaRecords} snapshots the unspent portion at the moment of PAYMENT, but
+     * {@code nextPeriodStart} makes the new period start at the old period's endDate. In the gap in
+     * between, the old period is still the one {@code findActiveBySchoolId} returns and its quota
+     * wallet can still be spent -- so those 5m sit both in the old period (spendable until 31/12)
+     * and already copied into the new period (spendable again from 1/1).
      *
-     * <p>Bất biến bị vỡ, và nó không phụ thuộc vào cách sửa: tổng tiền tự nạp đang MỞ trên các kỳ của
-     * một trường không được lớn hơn số họ đã thật sự nạp.
+     * <p>An invariant is broken, and it does not depend on how it is fixed: the total OPEN top-up
+     * money across a school's periods must not exceed what they actually topped up.
      */
     @Test
     void early_renewal_must_not_leave_the_same_funded_money_open_in_two_periods() {
@@ -261,8 +266,8 @@ class OrderSettlementQuotaCarryForwardTests {
 
         settle();
 
-        var stillOpenOnOldPeriod = previousPools.get(QuotaType.PRACTICE).getFundedFromBalanceVnd();
-        var carriedToNewPeriod = seededPool(QuotaType.PRACTICE).getFundedFromBalanceVnd();
+        BigDecimal stillOpenOnOldPeriod = previousPools.get(QuotaType.PRACTICE).getFundedFromBalanceVnd();
+        BigDecimal carriedToNewPeriod = seededPool(QuotaType.PRACTICE).getFundedFromBalanceVnd();
 
         assertThat(stillOpenOnOldPeriod.add(carriedToNewPeriod))
             .as("5tr tự nạp đang mở ở cả hai kỳ cùng lúc")
@@ -323,22 +328,23 @@ class OrderSettlementQuotaCarryForwardTests {
     }
 
     /**
-     * ĐỎ -- dòng phân bổ của người đã rời trường được chép sang, mãi mãi.
+     * RED -- the allocation row of a person who has left the school is copied over, forever.
      *
-     * <p>Q-5 đã quyết định những dòng này KHÔNG tính vào trần ({@code sumAllocatedForEligibleUsers}),
-     * nhưng {@code carryForwardUserAllocations} vẫn đọc TẤT CẢ dòng của kỳ cũ. Không có đường xoá, nên
-     * mỗi lần gia hạn lại dựng lại đúng tập đó cộng thêm người mới nghỉ -- bảng phình theo toàn bộ
-     * lịch sử nhân sự, và {@code orphanedAmountVnd} mà màn hình đang hiện cho nhà trường chỉ có tăng.
+     * <p>Q-5 decided that these rows do NOT count toward the ceiling
+     * ({@code sumAllocatedForEligibleUsers}), but {@code carryForwardUserAllocations} still reads
+     * ALL rows of the old period. There is no way to delete them, so every renewal rebuilds exactly
+     * that set plus whoever left recently -- the table grows with the entire staffing history, and
+     * the {@code orphanedAmountVnd} that the screen shows the school can only go up.
      *
-     * <p>Phép lọc phải là ĐÚNG phép lọc mà {@code sumAllocatedForEligibleUsers} dùng -- ACTIVE + còn
-     * thuộc trường + đúng vai trò. {@code findBySchoolIdWithRole} trông có vẻ hợp nhưng lọc
-     * {@code status <> DISABLED}, tức vẫn nhận INACTIVE và LOCKED: lỏng hơn trần, và hai bên đếm lệch
-     * tập chính là lỗi Q-5.
+     * <p>The filter must be EXACTLY the one {@code sumAllocatedForEligibleUsers} uses -- ACTIVE +
+     * still belonging to the school + the right role. {@code findBySchoolIdWithRole} looks suitable
+     * but filters {@code status <> DISABLED}, so it still accepts INACTIVE and LOCKED: looser than
+     * the ceiling, and the two sides counting different sets is exactly the Q-5 bug.
      */
     @Test
     void allocations_of_users_who_have_left_the_school_are_not_carried_forward() {
-        var stillHere = UUID.randomUUID();
-        var departed = UUID.randomUUID();
+        UUID stillHere = UUID.randomUUID();
+        UUID departed = UUID.randomUUID();
         givenPreviousAllocations(QuotaType.EXAM, Map.of(stillHere, 2_000_000L, departed, 3_000_000L));
         givenEligible(SchoolRoleCodes.TEACHER, stillHere);
 
@@ -400,7 +406,7 @@ class OrderSettlementQuotaCarryForwardTests {
     // =====================================================================
 
     private void settle() {
-        var payment = new PaymentRecord();
+        PaymentRecord payment = new PaymentRecord();
         payment.setId(UUID.randomUUID());
         payment.setOrderId(orderId);
         payment.setAmountVnd(BigDecimal.valueOf(20_000_000));
@@ -415,7 +421,7 @@ class OrderSettlementQuotaCarryForwardTests {
     }
 
     private void givenNewPlanQuotas(Map<QuotaType, Long> includedByType) {
-        var quotas = includedByType.entrySet().stream()
+        List<SubscriptionPlanQuota> quotas = includedByType.entrySet().stream()
             .map(entry -> new SubscriptionPlanQuota(
                 planId, entry.getKey(), BigDecimal.valueOf(entry.getValue())))
             .toList();
@@ -431,7 +437,7 @@ class OrderSettlementQuotaCarryForwardTests {
     }
 
     private void givenPreviousAllocations(QuotaType quotaType, Map<UUID, Long> allocatedByUser) {
-        var rows = allocatedByUser.entrySet().stream()
+        List<SchoolSubscriptionQuotaUserAllocation> rows = allocatedByUser.entrySet().stream()
             .map(entry -> new SchoolSubscriptionQuotaUserAllocation(
                 previousSubscriptionId, quotaType, entry.getKey(),
                 BigDecimal.valueOf(entry.getValue()), BigDecimal.ZERO))
@@ -442,30 +448,31 @@ class OrderSettlementQuotaCarryForwardTests {
     }
 
     /**
-     * Những người CÒN đủ điều kiện nhận trần của vai trò này. Không gọi helper thì roleRepository trả
-     * Optional rỗng và service chép TOÀN BỘ -- đúng hành vi fail-open đã chọn, nên các test khác ở đây
-     * không cần biết gì về vai trò.
+     * The people who are STILL eligible for this role's ceiling. If the helper is not called,
+     * roleRepository returns an empty Optional and the service copies EVERYTHING -- exactly the
+     * fail-open behavior that was chosen, so the other tests here do not need to know anything
+     * about roles.
      */
     private void givenEligible(String roleCode, UUID... userIds) {
-        var roleId = UUID.randomUUID();
-        var role = new Role();
+        UUID roleId = UUID.randomUUID();
+        Role role = new Role();
         role.setId(roleId);
         when(roleRepository.findByCode(roleCode)).thenReturn(Optional.of(role));
 
-        var members = Arrays.stream(userIds).map(this::schoolUser).toList();
+        List<SchoolUser> members = Arrays.stream(userIds).map(this::schoolUser).toList();
         when(schoolUserRepository.findBySchoolId(
                 eq(schoolId), any(), eq(roleId), eq(UserStatus.ACTIVE.name()), any(), eq(false), anyInt(), anyInt()))
             .thenReturn(new PageResult<>(members, 1, members.size(), members.size(), 1));
     }
 
     private SchoolUser schoolUser(UUID userId) {
-        var schoolUser = new SchoolUser();
+        SchoolUser schoolUser = new SchoolUser();
         schoolUser.setUserId(userId);
         return schoolUser;
     }
 
     private SchoolSubscriptionQuotaRecord seededPool(QuotaType quotaType) {
-        var captor = ArgumentCaptor.forClass(SchoolSubscriptionQuotaRecord.class);
+        ArgumentCaptor<SchoolSubscriptionQuotaRecord> captor = ArgumentCaptor.forClass(SchoolSubscriptionQuotaRecord.class);
         verify(quotaRecordRepository, atLeastOnce()).save(captor.capture());
         return captor.getAllValues().stream()
             .filter(record -> record.getQuotaType() == quotaType)
@@ -474,7 +481,7 @@ class OrderSettlementQuotaCarryForwardTests {
     }
 
     private List<BigDecimal> carriedAmounts(QuotaType quotaType) {
-        var captor = ArgumentCaptor.forClass(BigDecimal.class);
+        ArgumentCaptor<BigDecimal> captor = ArgumentCaptor.forClass(BigDecimal.class);
         verify(quotaUserAllocationRepository, atLeastOnce()).upsertAllocation(
             eq(newSubscriptionId), eq(quotaType), any(), captor.capture());
         return captor.getAllValues();

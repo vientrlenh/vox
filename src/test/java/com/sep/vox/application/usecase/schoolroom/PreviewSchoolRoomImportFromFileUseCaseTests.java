@@ -25,6 +25,7 @@ import com.sep.vox.application.port.input.command.PreviewSchoolRoomImportFromFil
 import com.sep.vox.application.port.input.usecase.schoolroom.PreviewSchoolRoomImportFromFileUseCase;
 import com.sep.vox.application.port.output.FileProcessingPort;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.schoolroom.PreviewSchoolRoomImportResponse;
 import com.sep.vox.application.response.output.ParseImportFileResult;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -76,11 +77,11 @@ class PreviewSchoolRoomImportFromFileUseCaseTests {
 
     @Test
     void execute_should_create_preview_session_with_room_type() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var file = UploadedFile.upload("rooms.csv", "text/csv", 20, "code,name\nP101,Phòng 101\n".getBytes(StandardCharsets.UTF_8));
-        var parsed = new ParseImportFileResult(
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        UploadedFile file = UploadedFile.upload("rooms.csv", "text/csv", 20, "code,name\nP101,Phòng 101\n".getBytes(StandardCharsets.UTF_8));
+        ParseImportFileResult parsed = new ParseImportFileResult(
             List.of("code", "name"),
             Map.of("code", "code", "name", "name"),
             List.of(Map.of("code", "P101", "name", "Phòng 101")),
@@ -88,23 +89,23 @@ class PreviewSchoolRoomImportFromFileUseCaseTests {
             1L
         );
 
-        var currentUser = activeUser(userId, schoolId);
+        User currentUser = activeUser(userId, schoolId);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(currentUser));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(fileProcessingPort.parse(file, ImportType.SCHOOL_ROOM)).thenReturn(parsed);
         when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> {
-            var session = invocation.getArgument(0, ImportSession.class);
+            ImportSession session = invocation.getArgument(0, ImportSession.class);
             session.setId(sessionId);
             return session;
         });
 
-        var response = useCase.execute(new PreviewSchoolRoomImportFromFileCommand(schoolId, file));
+        PreviewSchoolRoomImportResponse response = useCase.execute(new PreviewSchoolRoomImportFromFileCommand(schoolId, file));
 
         assertThat(response.importSessionId()).isEqualTo(sessionId);
         assertThat(response.totalRows()).isEqualTo(1L);
 
-        var sessionCaptor = ArgumentCaptor.forClass(ImportSession.class);
+        ArgumentCaptor<ImportSession> sessionCaptor = ArgumentCaptor.forClass(ImportSession.class);
         verify(importSessionRepository).save(sessionCaptor.capture());
         assertThat(sessionCaptor.getValue().getSchoolId()).isEqualTo(schoolId);
         assertThat(sessionCaptor.getValue().getType()).isEqualTo(ImportType.SCHOOL_ROOM);
@@ -114,10 +115,10 @@ class PreviewSchoolRoomImportFromFileUseCaseTests {
 
     @Test
     void execute_should_throw_when_current_user_is_inactive() {
-        var userId = UUID.randomUUID();
-        var file = UploadedFile.upload("rooms.csv", "text/csv", 1, new byte[] { 1 });
+        UUID userId = UUID.randomUUID();
+        UploadedFile file = UploadedFile.upload("rooms.csv", "text/csv", 1, new byte[] { 1 });
 
-        var inactive = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
+        User inactive = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(inactive));
 
@@ -128,11 +129,11 @@ class PreviewSchoolRoomImportFromFileUseCaseTests {
 
     @Test
     void execute_should_throw_when_requested_school_differs() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var file = UploadedFile.upload("rooms.csv", "text/csv", 1, new byte[] { 1 });
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UploadedFile file = UploadedFile.upload("rooms.csv", "text/csv", 1, new byte[] { 1 });
 
-        var currentUser = activeUser(userId, schoolId);
+        User currentUser = activeUser(userId, schoolId);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(currentUser));
 
@@ -146,7 +147,7 @@ class PreviewSchoolRoomImportFromFileUseCaseTests {
     }
 
     private User user(UUID id, UUID schoolId, UserStatus status) {
-        var user = new User();
+        User user = new User();
         user.setId(id);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
@@ -158,7 +159,7 @@ class PreviewSchoolRoomImportFromFileUseCaseTests {
     }
 
     private static School activeSchool(UUID id) {
-        var school = new School();
+        School school = new School();
         school.setId(id);
         school.setActive(true);
         return school;

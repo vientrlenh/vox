@@ -43,8 +43,8 @@ public class RubricRepositoryImpl implements RubricRepository {
 
     @Override
     public Rubric save(Rubric rubric) {
-        var entity = RubricMapper.toJpa(rubric);
-        var saved = springDataRubricRepository.save(entity);
+        RubricJpaEntity entity = RubricMapper.toJpa(rubric);
+        RubricJpaEntity saved = springDataRubricRepository.save(entity);
         return RubricMapper.toDomain(saved);
     }
 

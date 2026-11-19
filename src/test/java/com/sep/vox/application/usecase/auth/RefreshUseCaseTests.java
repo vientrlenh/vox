@@ -30,6 +30,7 @@ import com.sep.vox.application.port.output.SessionManagerPort;
 import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.application.response.output.GeneratedSessionToken;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
@@ -70,18 +71,18 @@ class RefreshUseCaseTests {
 
     @Test
     void refresh_should_rotate_token_when_request_is_valid() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var oldTokenId = UUID.randomUUID();
-        var newTokenId = UUID.randomUUID();
-        var roleId = UUID.randomUUID();
-        var deviceSession = activeSession(sessionId, userId, "device-1");
-        var oldToken = activeRefreshToken(oldTokenId, sessionId, "old-token-hash");
-        var savedNewToken = activeRefreshToken(newTokenId, sessionId, "new-token-hash");
-        var user = activeUser(userId, schoolId);
-        var schoolUser = activeSchoolUser(userId, schoolId);
-        var roles = List.of(new UserRoleInfo(
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        UUID oldTokenId = UUID.randomUUID();
+        UUID newTokenId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+        DeviceSession deviceSession = activeSession(sessionId, userId, "device-1");
+        RefreshToken oldToken = activeRefreshToken(oldTokenId, sessionId, "old-token-hash");
+        RefreshToken savedNewToken = activeRefreshToken(newTokenId, sessionId, "new-token-hash");
+        User user = activeUser(userId, schoolId);
+        SchoolUser schoolUser = activeSchoolUser(userId, schoolId);
+        List<UserRoleInfo> roles = List.of(new UserRoleInfo(
             UUID.randomUUID(),
             userId,
             roleId,
@@ -109,7 +110,7 @@ class RefreshUseCaseTests {
         when(authTokenPort.generateJwtToken(userId.toString(), schoolId, "test@example.com", List.of("SCHOOL_ADMIN")))
             .thenReturn("access-token");
 
-        var result = refreshUseCase.execute(new RefreshCommand("old-refresh-token", "device-1"));
+        RefreshResponse result = refreshUseCase.execute(new RefreshCommand("old-refresh-token", "device-1"));
 
         assertThat(result.accessToken()).isEqualTo("access-token");
         assertThat(result.refreshToken()).isEqualTo("new-refresh-token");
@@ -139,8 +140,8 @@ class RefreshUseCaseTests {
 
     @Test
     void refresh_should_throw_unauthorized_when_device_session_not_found() {
-        var sessionId = UUID.randomUUID();
-        var oldToken = activeRefreshToken(UUID.randomUUID(), sessionId, "old-token-hash");
+        UUID sessionId = UUID.randomUUID();
+        RefreshToken oldToken = activeRefreshToken(UUID.randomUUID(), sessionId, "old-token-hash");
         when(sessionTokenManagerPort.hash("old-refresh-token")).thenReturn("old-token-hash");
         when(refreshTokenRepository.findByTokenHashForUpdate("old-token-hash"))
             .thenReturn(Optional.of(oldToken));
@@ -158,8 +159,8 @@ class RefreshUseCaseTests {
 
     @Test
     void refresh_should_throw_unauthorized_when_token_is_expired() {
-        var sessionId = UUID.randomUUID();
-        var oldToken = expiredRefreshToken(UUID.randomUUID(), sessionId, "old-token-hash");
+        UUID sessionId = UUID.randomUUID();
+        RefreshToken oldToken = expiredRefreshToken(UUID.randomUUID(), sessionId, "old-token-hash");
         when(sessionTokenManagerPort.hash("old-refresh-token")).thenReturn("old-token-hash");
         when(refreshTokenRepository.findByTokenHashForUpdate("old-token-hash"))
             .thenReturn(Optional.of(oldToken));
@@ -176,8 +177,8 @@ class RefreshUseCaseTests {
 
     @Test
     void refresh_should_revoke_session_and_throw_unauthorized_when_token_is_used() {
-        var sessionId = UUID.randomUUID();
-        var oldToken = usedRefreshToken(UUID.randomUUID(), sessionId, "old-token-hash");
+        UUID sessionId = UUID.randomUUID();
+        RefreshToken oldToken = usedRefreshToken(UUID.randomUUID(), sessionId, "old-token-hash");
         when(sessionTokenManagerPort.hash("old-refresh-token")).thenReturn("old-token-hash");
         when(refreshTokenRepository.findByTokenHashForUpdate("old-token-hash"))
             .thenReturn(Optional.of(oldToken));
@@ -194,8 +195,8 @@ class RefreshUseCaseTests {
 
     @Test
     void refresh_should_revoke_session_and_throw_unauthorized_when_device_id_mismatches() {
-        var sessionId = UUID.randomUUID();
-        var oldToken = activeRefreshToken(UUID.randomUUID(), sessionId, "old-token-hash");
+        UUID sessionId = UUID.randomUUID();
+        RefreshToken oldToken = activeRefreshToken(UUID.randomUUID(), sessionId, "old-token-hash");
         when(sessionTokenManagerPort.hash("old-refresh-token")).thenReturn("old-token-hash");
         when(refreshTokenRepository.findByTokenHashForUpdate("old-token-hash"))
             .thenReturn(Optional.of(oldToken));
@@ -212,8 +213,8 @@ class RefreshUseCaseTests {
 
     @Test
     void refresh_should_throw_unauthorized_when_device_session_is_revoked() {
-        var sessionId = UUID.randomUUID();
-        var oldToken = activeRefreshToken(UUID.randomUUID(), sessionId, "old-token-hash");
+        UUID sessionId = UUID.randomUUID();
+        RefreshToken oldToken = activeRefreshToken(UUID.randomUUID(), sessionId, "old-token-hash");
         when(sessionTokenManagerPort.hash("old-refresh-token")).thenReturn("old-token-hash");
         when(refreshTokenRepository.findByTokenHashForUpdate("old-token-hash"))
             .thenReturn(Optional.of(oldToken));
@@ -228,11 +229,11 @@ class RefreshUseCaseTests {
 
     @Test
     void refresh_should_revoke_session_and_throw_unauthorized_when_old_token_update_fails() {
-        var sessionId = UUID.randomUUID();
-        var oldTokenId = UUID.randomUUID();
-        var newTokenId = UUID.randomUUID();
-        var oldToken = activeRefreshToken(oldTokenId, sessionId, "old-token-hash");
-        var savedNewToken = activeRefreshToken(newTokenId, sessionId, "new-token-hash");
+        UUID sessionId = UUID.randomUUID();
+        UUID oldTokenId = UUID.randomUUID();
+        UUID newTokenId = UUID.randomUUID();
+        RefreshToken oldToken = activeRefreshToken(oldTokenId, sessionId, "old-token-hash");
+        RefreshToken savedNewToken = activeRefreshToken(newTokenId, sessionId, "new-token-hash");
 
         when(sessionTokenManagerPort.hash("old-refresh-token")).thenReturn("old-token-hash");
         when(refreshTokenRepository.findByTokenHashForUpdate("old-token-hash"))
@@ -304,7 +305,7 @@ class RefreshUseCaseTests {
     }
 
     private RefreshToken activeRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new RefreshToken(
             tokenId,
             sessionId,
@@ -317,7 +318,7 @@ class RefreshUseCaseTests {
     }
 
     private RefreshToken expiredRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new RefreshToken(
             tokenId,
             sessionId,
@@ -330,7 +331,7 @@ class RefreshUseCaseTests {
     }
 
     private RefreshToken usedRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new RefreshToken(
             tokenId,
             sessionId,

@@ -99,7 +99,7 @@ public class ExamCandidateController {
     public ResponseEntity<ApiResponse<ExamCandidateDto>> add(
             @PathVariable("examId") UUID examId,
             @Valid @RequestBody AddExamCandidateRequest request) {
-        var data = addExamCandidateUseCase.execute(AddExamCandidateCommandMapper.fromRequest(examId, request));
+        ExamCandidateDto data = addExamCandidateUseCase.execute(AddExamCandidateCommandMapper.fromRequest(examId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Thêm thí sinh thành công", data));
     }
@@ -109,7 +109,7 @@ public class ExamCandidateController {
     public ResponseEntity<ApiResponse<List<ExamCandidateDto>>> importClass(
             @PathVariable("examId") UUID examId,
             @Valid @RequestBody ImportExamCandidatesFromClassRequest request) {
-        var data = importExamCandidatesFromClassUseCase.execute(
+        List<ExamCandidateDto> data = importExamCandidatesFromClassUseCase.execute(
             ImportExamCandidatesFromClassCommandMapper.fromRequest(examId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Nhập thí sinh theo lớp thành công", data));
@@ -120,7 +120,7 @@ public class ExamCandidateController {
     public ResponseEntity<ApiResponse<List<ExamCandidateDto>>> importGrade(
             @PathVariable("examId") UUID examId,
             @Valid @RequestBody ImportExamCandidatesFromGradeRequest request) {
-        var data = importExamCandidatesFromGradeUseCase.execute(
+        List<ExamCandidateDto> data = importExamCandidatesFromGradeUseCase.execute(
             ImportExamCandidatesFromGradeCommandMapper.fromRequest(examId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Nhập thí sinh theo khối thành công", data));
@@ -132,7 +132,7 @@ public class ExamCandidateController {
             @PathVariable("examId") UUID examId,
             @PathVariable("candidateId") UUID candidateId,
             @RequestBody AssignExamCandidateScheduleRequest request) {
-        var data = assignExamCandidateScheduleUseCase.execute(
+        ExamCandidateDto data = assignExamCandidateScheduleUseCase.execute(
             AssignExamCandidateScheduleCommandMapper.fromRequest(examId, candidateId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật ca thi của thí sinh thành công", data));
     }
@@ -143,7 +143,7 @@ public class ExamCandidateController {
     public ResponseEntity<ApiResponse<List<ExamCandidateDto>>> bulkAssignSchedule(
             @PathVariable("examId") UUID examId,
             @Valid @RequestBody BulkAssignExamCandidateScheduleRequest request) {
-        var data = bulkAssignExamCandidateScheduleUseCase.execute(
+        List<ExamCandidateDto> data = bulkAssignExamCandidateScheduleUseCase.execute(
             BulkAssignExamCandidateScheduleCommandMapper.fromRequest(examId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật ca thi của thí sinh thành công", data));
     }
@@ -153,7 +153,7 @@ public class ExamCandidateController {
     public ResponseEntity<ApiResponse<List<ExamCandidateDto>>> autoFill(
             @PathVariable("examId") UUID examId,
             @RequestBody(required = false) AutoFillExamCandidatesRequest request) {
-        var data = autoFillExamCandidatesUseCase.execute(
+        List<ExamCandidateDto> data = autoFillExamCandidatesUseCase.execute(
             AutoFillExamCandidatesCommandMapper.fromRequest(examId, request));
         return ResponseEntity.ok(ApiResponse.success("Tự động xếp thí sinh thành công", data));
     }
@@ -163,7 +163,7 @@ public class ExamCandidateController {
     public ResponseEntity<ApiResponse<AssignExamPapersResponse>> assignPapers(
             @PathVariable("examId") UUID examId,
             @Valid @RequestBody AssignExamPapersRequest request) {
-        var data = assignExamPapersUseCase.execute(AssignExamPapersCommandMapper.fromRequest(examId, request));
+        AssignExamPapersResponse data = assignExamPapersUseCase.execute(AssignExamPapersCommandMapper.fromRequest(examId, request));
         return ResponseEntity.ok(ApiResponse.success("Phân đề thành công", data));
     }
 
@@ -173,7 +173,7 @@ public class ExamCandidateController {
             @PathVariable("examId") UUID examId,
             @PathVariable("candidateId") UUID candidateId,
             @Valid @RequestBody UpdateExamCandidateStatusRequest request) {
-        var data = updateExamCandidateStatusUseCase.execute(new UpdateExamCandidateStatusCommand(
+        ExamCandidateDto data = updateExamCandidateStatusUseCase.execute(new UpdateExamCandidateStatusCommand(
             candidateId,
             ExamCandidateStatus.valueOf(request.status().trim().toUpperCase())
         ));
@@ -186,7 +186,7 @@ public class ExamCandidateController {
             @PathVariable("examId") UUID examId,
             @PathVariable("candidateId") UUID candidateId,
             @Valid @RequestBody SessionReasonRequest request) {
-        var data = unblockExamCandidateUseCase.execute(new UnblockExamCandidateCommand(candidateId, request.reason()));
+        ExamCandidateDto data = unblockExamCandidateUseCase.execute(new UnblockExamCandidateCommand(candidateId, request.reason()));
         return ResponseEntity.ok(ApiResponse.success("Dỡ chặn thí sinh thành công", data));
     }
 

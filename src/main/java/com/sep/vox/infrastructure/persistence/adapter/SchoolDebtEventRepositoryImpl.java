@@ -1,7 +1,9 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.SchoolDebtEventJpaEntity;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -22,16 +24,16 @@ public class SchoolDebtEventRepositoryImpl implements SchoolDebtEventRepository 
 
     @Override
     public SchoolDebtEvent save(SchoolDebtEvent event) {
-        var entity = SchoolDebtEventMapper.toJpa(event);
-        var saved = springDataSchoolDebtEventRepository.save(entity);
+        SchoolDebtEventJpaEntity entity = SchoolDebtEventMapper.toJpa(event);
+        SchoolDebtEventJpaEntity saved = springDataSchoolDebtEventRepository.save(entity);
         return SchoolDebtEventMapper.toDomain(saved);
     }
 
     @Override
     public PageResult<SchoolDebtEvent> findBySchoolId(UUID schoolId, int page, int size) {
-        var result = springDataSchoolDebtEventRepository
-            // page vào theo lối 1-BASED như mọi repository khác trong dự án, PageRequest đếm từ 0 --
-            // xem SchoolBalanceEntryRepositoryImpl.findBySchoolId.
+        Page<SchoolDebtEventJpaEntity> result = springDataSchoolDebtEventRepository
+            // The page arrives 1-BASED like every other repository in the project, while PageRequest counts from 0 --
+            // see SchoolBalanceEntryRepositoryImpl.findBySchoolId.
             .findBySchoolIdOrderByOccurredAtDescIdDesc(schoolId, PageRequest.of(page - 1, size));
 
         return new PageResult<>(

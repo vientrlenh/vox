@@ -19,12 +19,14 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import com.sep.vox.application.port.input.command.DeleteExamCommand;
 import com.sep.vox.application.port.input.usecase.exam.DeleteExamUseCase;
 import com.sep.vox.application.port.input.usecase.exam.ExamQuestionSecureLockService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.response.input.exam.DeleteExamResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMemberRole;
@@ -119,7 +121,7 @@ class DeleteExamUseCaseTests {
 
     @Test
     void should_hard_delete_draft_exam_with_all_its_children() {
-        var response = useCase.execute(new DeleteExamCommand(examId));
+        DeleteExamResponse response = useCase.execute(new DeleteExamCommand(examId));
 
         assertThat(response.deleted()).isTrue();
         assertThat(response.cancelledInstead()).isFalse();
@@ -138,8 +140,8 @@ class DeleteExamUseCaseTests {
     void should_delete_children_before_parent() {
         useCase.execute(new DeleteExamCommand(examId));
 
-        // Con trước cha: không có FK nào chặn, sai thứ tự là để lại dòng mồ côi.
-        var order = inOrder(
+        // Children before parents: no FK blocks it, and the wrong order leaves orphan rows behind.
+        InOrder order = inOrder(
             examPaperItemRepository, examPaperSectionRepository, examPaperRepository,
             examScheduleProctorRepository, examCandidateRepository, examScheduleRepository,
             examMemberRepository, examRepository);
@@ -157,9 +159,9 @@ class DeleteExamUseCaseTests {
     void should_unlock_secure_pool_questions_before_deleting_draft_exam() {
         useCase.execute(new DeleteExamCommand(examId));
 
-        // Câu hỏi bị khoá trỏ vào exam_secure_pools; xoá pool mà không mở khoá thì câu hỏi
-        // nằm lại ngân hàng đề ở trạng thái khoá vĩnh viễn, không cách nào dùng lại.
-        var order = inOrder(examQuestionSecureLockService, examRepository);
+        // Locked questions point into exam_secure_pools; if the pool is deleted without unlocking,
+        // the questions stay in the question bank locked forever and can never be reused.
+        InOrder order = inOrder(examQuestionSecureLockService, examRepository);
         order.verify(examQuestionSecureLockService).releaseAllForExam(examId, userId);
         order.verify(examRepository).deleteById(examId);
     }
@@ -218,7 +220,7 @@ class DeleteExamUseCaseTests {
     void should_do_nothing_when_exam_already_cancelled() {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam(ExamStatus.CANCELLED)));
 
-        var response = useCase.execute(new DeleteExamCommand(examId));
+        DeleteExamResponse response = useCase.execute(new DeleteExamCommand(examId));
 
         assertThat(response.deleted()).isFalse();
         assertThat(response.cancelledInstead()).isTrue();
@@ -228,15 +230,16 @@ class DeleteExamUseCaseTests {
     }
 
     /**
-     * Ca đã COMPLETED/MOVED là trạng thái kết thúc: ghi đè CANCELLED sẽ xoá dấu vết ca đã thi xong
-     * và làm lệch con trỏ movedToScheduleId của ca đã dời.
+     * A session that is COMPLETED/MOVED is in a final state: overwriting it with CANCELLED would
+     * erase the trace of a session that was already held and skew the movedToScheduleId pointer of
+     * the moved session.
      */
     @Test
     void should_not_cancel_completed_or_moved_schedules() {
-        var exam = exam(ExamStatus.SCHEDULED);
-        var draft = schedule(ExamScheduleStatus.DRAFT);
-        var completed = schedule(ExamScheduleStatus.COMPLETED);
-        var moved = schedule(ExamScheduleStatus.MOVED);
+        Exam exam = exam(ExamStatus.SCHEDULED);
+        ExamSchedule draft = schedule(ExamScheduleStatus.DRAFT);
+        ExamSchedule completed = schedule(ExamScheduleStatus.COMPLETED);
+        ExamSchedule moved = schedule(ExamScheduleStatus.MOVED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examRepository.save(any(Exam.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(draft, completed, moved));
@@ -253,8 +256,8 @@ class DeleteExamUseCaseTests {
 
     @Test
     void should_stamp_updated_by_on_cancelled_schedules() {
-        var exam = exam(ExamStatus.IN_PROGRESS);
-        var schedule = schedule(ExamScheduleStatus.PUBLISHED);
+        Exam exam = exam(ExamStatus.IN_PROGRESS);
+        ExamSchedule schedule = schedule(ExamScheduleStatus.PUBLISHED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examRepository.save(any(Exam.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
@@ -276,13 +279,14 @@ class DeleteExamUseCaseTests {
     }
 
     /**
-     * Chốt hồi quy cho ranh giới quyền của chủ tịch hội đồng: họ chạy trọn quy trình kỳ thi tập trung
-     * (sửa thông tin, đổi trạng thái, ra đề, xếp lịch) nhưng xoá kỳ thi thì vẫn chỉ quản trị trường —
-     * đây là thao tác phá huỷ, không nằm trong quy trình đó.
+     * Regression guard for the permission boundary of the council chair: they run the whole
+     * centralized-exam workflow (edit information, change status, author papers, arrange
+     * schedules), but deleting the exam is still only for the school admin -- it is a destructive
+     * action and is not part of that workflow.
      */
     @Test
     void should_reject_delete_of_a_centralized_exam_by_its_chair() {
-        var exam = exam(ExamStatus.DRAFT);
+        Exam exam = exam(ExamStatus.DRAFT);
         exam.setKind(ExamKind.CENTRALIZED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
@@ -292,18 +296,19 @@ class DeleteExamUseCaseTests {
     }
 
     private void assertCancelledInsteadOfDeleted(ExamStatus status) {
-        var exam = exam(status);
-        var schedule = schedule(ExamScheduleStatus.PUBLISHED);
+        Exam exam = exam(status);
+        ExamSchedule schedule = schedule(ExamScheduleStatus.PUBLISHED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examRepository.save(any(Exam.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(schedule));
 
-        var response = useCase.execute(new DeleteExamCommand(examId));
+        DeleteExamResponse response = useCase.execute(new DeleteExamCommand(examId));
 
         assertThat(response.deleted()).isFalse();
         assertThat(response.cancelledInstead()).isTrue();
         assertThat(exam.getStatus()).isEqualTo(ExamStatus.CANCELLED);
-        // Huỷ kỳ thi mà bỏ ca thi lại PUBLISHED thì ca vẫn hiện trong lịch thi của học sinh.
+        // Cancelling an exam but leaving its sessions PUBLISHED means the sessions still show in
+        // the students' exam calendar.
         assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.CANCELLED);
         verify(examRepository).save(exam);
         verify(examRepository, never()).deleteById(any());
@@ -312,7 +317,7 @@ class DeleteExamUseCaseTests {
     }
 
     private Exam exam(ExamStatus status) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         exam.setKind(ExamKind.CLASS_TEST);
@@ -321,7 +326,7 @@ class DeleteExamUseCaseTests {
     }
 
     private ExamSchedule schedule(ExamScheduleStatus status) {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(UUID.randomUUID());
         schedule.setExamId(examId);
         schedule.setStatus(status);
@@ -329,7 +334,7 @@ class DeleteExamUseCaseTests {
     }
 
     private ExamPaper paper() {
-        var paper = new ExamPaper();
+        ExamPaper paper = new ExamPaper();
         paper.setId(paperId);
         paper.setExamId(examId);
         return paper;

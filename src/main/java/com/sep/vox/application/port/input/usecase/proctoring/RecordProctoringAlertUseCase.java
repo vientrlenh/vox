@@ -50,7 +50,7 @@ public class RecordProctoringAlertUseCase implements IUseCase<RecordProctoringAl
             return false;
         }
 
-        var alert = new ExamProctoringAlert(
+        ExamProctoringAlert alert = new ExamProctoringAlert(
             input.eventId(),
             input.examSessionId(),
             input.candidateId(),

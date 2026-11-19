@@ -14,6 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.query.dto.ExamDirectoryGradeInfo;
+import com.sep.vox.application.query.dto.ExamDirectoryUserInfo;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.infrastructure.persistence.entity.RoleJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.SchoolClassUserJpaEntity;
@@ -72,13 +75,13 @@ class JpaExamDirectoryQueryRepositoryTests {
 
     @Test
     void should_count_a_student_once_even_when_they_belong_to_several_filtered_classes() {
-        var class1 = schoolClass("A1");
-        var class2 = schoolClass("A2");
-        var student = student("Nguyen Van An", "an");
+        UUID class1 = schoolClass("A1");
+        UUID class2 = schoolClass("A2");
+        UUID student = student("Nguyen Van An", "an");
         enroll(student, class1, true);
         enroll(student, class2, true);
 
-        var page = repository.findUsersByClassIds(List.of(class1, class2), "STUDENT", null, List.of(), 1, 20);
+        PageResult<ExamDirectoryUserInfo> page = repository.findUsersByClassIds(List.of(class1, class2), "STUDENT", null, List.of(), 1, 20);
 
         assertThat(page.totalElements()).isEqualTo(1);
         assertThat(page.content()).extracting(user -> user.userId()).containsExactly(student);
@@ -86,24 +89,24 @@ class JpaExamDirectoryQueryRepositoryTests {
 
     @Test
     void should_ignore_inactive_memberships_and_users_of_other_classes() {
-        var mine = schoolClass("B1");
-        var other = schoolClass("B2");
-        var active = student("Active Student", "active");
-        var leftClass = student("Left Student", "left");
-        var elsewhere = student("Other Student", "other");
+        UUID mine = schoolClass("B1");
+        UUID other = schoolClass("B2");
+        UUID active = student("Active Student", "active");
+        UUID leftClass = student("Left Student", "left");
+        UUID elsewhere = student("Other Student", "other");
         enroll(active, mine, true);
         enroll(leftClass, mine, false);
         enroll(elsewhere, other, true);
 
-        var page = repository.findUsersByClassIds(List.of(mine), "STUDENT", null, List.of(), 1, 20);
+        PageResult<ExamDirectoryUserInfo> page = repository.findUsersByClassIds(List.of(mine), "STUDENT", null, List.of(), 1, 20);
 
         assertThat(page.content()).extracting(user -> user.userId()).containsExactly(active);
     }
 
     @Test
     void should_return_empty_page_for_a_caller_who_teaches_no_class() {
-        // Tập lớp rỗng tuyệt đối không được suy thành "toàn trường".
-        var page = repository.findUsersByClassIds(List.of(), "STUDENT", null, List.of(), 1, 20);
+        // An absolutely empty set of classes must never be inferred as "the whole school".
+        PageResult<ExamDirectoryUserInfo> page = repository.findUsersByClassIds(List.of(), "STUDENT", null, List.of(), 1, 20);
 
         assertThat(page.content()).isEmpty();
         assertThat(page.totalElements()).isZero();
@@ -111,15 +114,15 @@ class JpaExamDirectoryQueryRepositoryTests {
 
     @Test
     void should_filter_school_users_by_role_and_search() {
-        var student = student("Tran Thi Binh", "binh");
-        var teacher = teacher("Le Van Cuong", "cuong");
+        UUID student = student("Tran Thi Binh", "binh");
+        UUID teacher = teacher("Le Van Cuong", "cuong");
         joinSchool(student);
         joinSchool(teacher);
 
-        var students = repository.findUsersBySchoolId(schoolId, "STUDENT", null, List.of(), 1, 20);
-        var teachers = repository.findUsersBySchoolId(schoolId, "TEACHER", null, List.of(), 1, 20);
-        var searched = repository.findUsersBySchoolId(schoolId, "STUDENT", "BINH", List.of(), 1, 20);
-        var missed = repository.findUsersBySchoolId(schoolId, "STUDENT", "cuong", List.of(), 1, 20);
+        PageResult<ExamDirectoryUserInfo> students = repository.findUsersBySchoolId(schoolId, "STUDENT", null, List.of(), 1, 20);
+        PageResult<ExamDirectoryUserInfo> teachers = repository.findUsersBySchoolId(schoolId, "TEACHER", null, List.of(), 1, 20);
+        PageResult<ExamDirectoryUserInfo> searched = repository.findUsersBySchoolId(schoolId, "STUDENT", "BINH", List.of(), 1, 20);
+        PageResult<ExamDirectoryUserInfo> missed = repository.findUsersBySchoolId(schoolId, "STUDENT", "cuong", List.of(), 1, 20);
 
         assertThat(students.content()).extracting(user -> user.userId()).containsExactly(student);
         assertThat(teachers.content()).extracting(user -> user.userId()).containsExactly(teacher);
@@ -128,20 +131,21 @@ class JpaExamDirectoryQueryRepositoryTests {
     }
 
     /**
-     * Bàn phím không bật bộ gõ tiếng Việt là mặc định: giáo viên gõ "nguyen van an" phải ra
-     * "Nguyễn Văn An". `LOWER(...) LIKE` phân biệt dấu nên trước đây tìm không ra người có thật.
+     * A keyboard without a Vietnamese input method is the default: a teacher typing "nguyen van an"
+     * must find "Nguyễn Văn An". `LOWER(...) LIKE` is accent-sensitive, so previously it could not
+     * find people who really exist.
      */
     @Test
     void should_match_vietnamese_names_typed_without_diacritics() {
-        var an = student("Nguyễn Văn An", "an");
-        var dat = student("Đỗ Quốc Đạt", "dat");
+        UUID an = student("Nguyễn Văn An", "an");
+        UUID dat = student("Đỗ Quốc Đạt", "dat");
         joinSchool(an);
         joinSchool(dat);
 
-        var plain = repository.findUsersBySchoolId(schoolId, "STUDENT", "nguyen van an", List.of(), 1, 20);
-        var withMarks = repository.findUsersBySchoolId(schoolId, "STUDENT", "Nguyễn Văn An", List.of(), 1, 20);
-        // "đ" là chữ cái riêng (U+0111), NFD không tách được nên dễ sót nhất.
-        var dStroke = repository.findUsersBySchoolId(schoolId, "STUDENT", "do quoc dat", List.of(), 1, 20);
+        PageResult<ExamDirectoryUserInfo> plain = repository.findUsersBySchoolId(schoolId, "STUDENT", "nguyen van an", List.of(), 1, 20);
+        PageResult<ExamDirectoryUserInfo> withMarks = repository.findUsersBySchoolId(schoolId, "STUDENT", "Nguyễn Văn An", List.of(), 1, 20);
+        // "đ" is its own letter (U+0111) that NFD cannot decompose, so it is the easiest to miss.
+        PageResult<ExamDirectoryUserInfo> dStroke = repository.findUsersBySchoolId(schoolId, "STUDENT", "do quoc dat", List.of(), 1, 20);
 
         assertThat(plain.content()).extracting(user -> user.userId()).containsExactly(an);
         assertThat(withMarks.content()).extracting(user -> user.userId()).containsExactly(an);
@@ -149,26 +153,28 @@ class JpaExamDirectoryQueryRepositoryTests {
     }
 
     /**
-     * Người đã là thí sinh phải bị loại NGAY TRONG SQL. Lọc ở client sau khi nhận trang thì
-     * {@code content} ngắn đi trong khi {@code totalElements}/{@code totalPages} vẫn đếm cả họ —
-     * nhập xong một lớp là picker hiện trang trống kèm số đếm khác 0.
+     * A person who is already a candidate must be excluded RIGHT IN THE SQL. Filtering on the
+     * client after receiving the page makes {@code content} shorter while
+     * {@code totalElements}/{@code totalPages} still count them -- after importing one class, the
+     * picker shows an empty page with a non-zero count.
      */
     @Test
     void should_exclude_given_users_from_both_content_and_counts() {
-        var an = student("Nguyen Van An", "an");
-        var binh = student("Tran Thi Binh", "binh");
+        UUID an = student("Nguyen Van An", "an");
+        UUID binh = student("Tran Thi Binh", "binh");
         joinSchool(an);
         joinSchool(binh);
 
-        var all = repository.findUsersBySchoolId(schoolId, "STUDENT", null, List.of(), 1, 20);
-        var withoutAn = repository.findUsersBySchoolId(schoolId, "STUDENT", null, List.of(an), 1, 20);
-        var searchedButExcluded =
+        PageResult<ExamDirectoryUserInfo> all = repository.findUsersBySchoolId(schoolId, "STUDENT", null, List.of(), 1, 20);
+        PageResult<ExamDirectoryUserInfo> withoutAn = repository.findUsersBySchoolId(schoolId, "STUDENT", null, List.of(an), 1, 20);
+        PageResult<ExamDirectoryUserInfo> searchedButExcluded =
             repository.findUsersBySchoolId(schoolId, "STUDENT", "nguyen van an", List.of(an), 1, 20);
 
         assertThat(all.totalElements()).isEqualTo(2);
         assertThat(withoutAn.content()).extracting(user -> user.userId()).containsExactly(binh);
         assertThat(withoutAn.totalElements()).isEqualTo(1);
-        // Tìm đúng người đã bị loại: phải là trang rỗng VÀ số đếm bằng 0, không được đếm thừa.
+        // Searching for exactly the excluded person: it must be an empty page AND a count of 0,
+        // with no over-counting.
         assertThat(searchedButExcluded.content()).isEmpty();
         assertThat(searchedButExcluded.totalElements()).isZero();
         assertThat(searchedButExcluded.totalPages()).isZero();
@@ -176,13 +182,13 @@ class JpaExamDirectoryQueryRepositoryTests {
 
     @Test
     void should_exclude_given_users_when_scoped_to_classes() {
-        var mine = schoolClass("C1");
-        var an = student("Nguyen Van An", "an");
-        var binh = student("Tran Thi Binh", "binh");
+        UUID mine = schoolClass("C1");
+        UUID an = student("Nguyen Van An", "an");
+        UUID binh = student("Tran Thi Binh", "binh");
         enroll(an, mine, true);
         enroll(binh, mine, true);
 
-        var page = repository.findUsersByClassIds(List.of(mine), "STUDENT", null, List.of(an), 1, 20);
+        PageResult<ExamDirectoryUserInfo> page = repository.findUsersByClassIds(List.of(mine), "STUDENT", null, List.of(an), 1, 20);
 
         assertThat(page.content()).extracting(user -> user.userId()).containsExactly(binh);
         assertThat(page.totalElements()).isEqualTo(1);
@@ -190,13 +196,14 @@ class JpaExamDirectoryQueryRepositoryTests {
 
     @Test
     void should_list_active_grades_of_the_school_only() {
-        var active = grade("NK-2026", "ACTIVE");
+        UUID active = grade("NK-2026", "ACTIVE");
         grade("NK-2020", "ARCHIVED");
-        // Khối lớp dùng chung -> niên khóa trường khác vẫn trỏ cùng gradeLevelId, chỉ khác school_id.
+        // Grade levels are shared -> another school's academic year still points at the same
+        // gradeLevelId, differing only by school_id.
         persisted(new SchoolGradeJpaEntity(null, UUID.randomUUID(), gradeLevelId, "NK-OTHER", "Niên khóa trường khác", null,
             LocalDate.parse("2026-09-01"), LocalDate.parse("2027-06-01"), "ACTIVE", now, now, null, null));
 
-        var page = repository.findGradesBySchoolId(schoolId, null, 1, 20);
+        PageResult<ExamDirectoryGradeInfo> page = repository.findGradesBySchoolId(schoolId, null, 1, 20);
 
         assertThat(page.content()).extracting(g -> g.id()).containsExactly(active);
         assertThat(page.totalElements()).isEqualTo(1);
@@ -206,7 +213,7 @@ class JpaExamDirectoryQueryRepositoryTests {
     void should_clamp_page_size_so_a_huge_request_cannot_drain_the_school() {
         joinSchool(student("Pham Thi Dung", "dung"));
 
-        var page = repository.findUsersBySchoolId(schoolId, "STUDENT", null, List.of(), 1, 100_000);
+        PageResult<ExamDirectoryUserInfo> page = repository.findUsersBySchoolId(schoolId, "STUDENT", null, List.of(), 1, 100_000);
 
         assertThat(page.size()).isEqualTo(100);
     }
@@ -226,7 +233,7 @@ class JpaExamDirectoryQueryRepositoryTests {
     }
 
     private UUID roleId(String code) {
-        var existing = em.createQuery(
+        List<UUID> existing = em.createQuery(
                 "SELECT r.id FROM RoleJpaEntity r WHERE r.code = :code", UUID.class)
             .setParameter("code", code)
             .getResultList();
@@ -242,14 +249,14 @@ class JpaExamDirectoryQueryRepositoryTests {
     }
 
     private UUID schoolClass(String code) {
-        // school_classes.created_by và updated_by đều là NOT NULL.
-        var actor = UUID.randomUUID();
+        // school_classes.created_by and updated_by are both NOT NULL.
+        UUID actor = UUID.randomUUID();
         return persisted(new SchoolClassJpaEntity(null, schoolId, UUID.randomUUID(), grade("NK", "ACTIVE"),
             code + "-" + suffix(), code, null, "ACTIVE", now, now, actor, actor)).getId();
     }
 
     private UUID user(String fullName, String local, UUID roleId) {
-        var userId = persisted(new UserJpaEntity(null, local + "-" + suffix() + "@test.local", "hash", null,
+        UUID userId = persisted(new UserJpaEntity(null, local + "-" + suffix() + "@test.local", "hash", null,
             fullName, null, LocalDate.parse("2008-01-01"), null, null, "ACTIVE", now, now, null, null)).getId();
         persisted(new UserRoleJpaEntity(null, userId, roleId, now));
         return userId;

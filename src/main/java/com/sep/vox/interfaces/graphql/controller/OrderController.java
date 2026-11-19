@@ -70,7 +70,7 @@ public class OrderController {
     @QueryMapping(name = "order")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public OrderDto order(@Argument(name = "id") UUID id) {
-        var query = new ViewOrderDetailsQuery(id);
+        ViewOrderDetailsQuery query = new ViewOrderDetailsQuery(id);
         return viewOrderDetailsUseCase.execute(query);
     }
 

@@ -82,12 +82,12 @@ class ViewResultStatusHistoryUseCaseTests {
         result.setStatus(ExamCandidateResultStatus.RELEASED);
         when(examCandidateResultRepository.findById(candidateResultId)).thenReturn(Optional.of(result));
 
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(candidateId);
         candidate.setStudentId(studentId);
         when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate));
 
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
@@ -201,11 +201,11 @@ class ViewResultStatusHistoryUseCaseTests {
 
     @Test
     void should_let_a_school_admin_of_the_same_school_see_it() {
-        var adminId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
         loggedInAs(adminId);
 
         assertThat(useCase.execute(candidateResultId)).hasSize(1);
-        // Phạm vi kiểm là TRƯỜNG CỦA BÀI THI, không phải trường của người đăng nhập.
+        // The scope of the check is the EXAM'S SCHOOL, not the logged-in user's school.
         verify(examGradingAccessService).authorizeSchoolAdmin(schoolId, adminId);
     }
 
@@ -221,7 +221,7 @@ class ViewResultStatusHistoryUseCaseTests {
     @Test
     void should_fail_when_the_result_does_not_exist() {
         loggedInAs(studentId);
-        var unknownId = UUID.randomUUID();
+        UUID unknownId = UUID.randomUUID();
         when(examCandidateResultRepository.findById(unknownId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(unknownId)).isInstanceOf(NotFoundException.class);

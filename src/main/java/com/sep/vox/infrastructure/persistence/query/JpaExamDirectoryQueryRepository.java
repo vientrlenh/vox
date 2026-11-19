@@ -27,8 +27,8 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
 
     @Override
     public PageResult<ExamDirectoryGradeInfo> findGradesBySchoolId(UUID schoolId, String search, int page, int size) {
-        var pattern = likePattern(search);
-        var filter = """
+        String pattern = likePattern(search);
+        String filter = """
             FROM SchoolGradeJpaEntity sg
             WHERE sg.schoolId = :schoolId
               AND sg.status = 'ACTIVE'
@@ -44,7 +44,7 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
             .setParameter("schoolId", schoolId)
             .setParameter("pattern", pattern);
 
-        var countQuery = em.createQuery("SELECT COUNT(sg) " + filter, Long.class)
+        TypedQuery<Long> countQuery = em.createQuery("SELECT COUNT(sg) " + filter, Long.class)
             .setParameter("schoolId", schoolId)
             .setParameter("pattern", pattern);
 
@@ -54,9 +54,9 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
     @Override
     public PageResult<ExamDirectoryUserInfo> findUsersBySchoolId(UUID schoolId, String roleCode, String search,
             Collection<UUID> excludeUserIds, int page, int size) {
-        var pattern = likePattern(search);
-        var excluded = normalizeExclusions(excludeUserIds);
-        var filter = """
+        String pattern = likePattern(search);
+        List<UUID> excluded = normalizeExclusions(excludeUserIds);
+        String filter = """
             FROM SchoolUserJpaEntity su
             JOIN UserJpaEntity u
                 ON u.id = su.userId
@@ -79,7 +79,7 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
             .setParameter("roleCode", roleCode)
             .setParameter("pattern", pattern);
 
-        var countQuery = em.createQuery("SELECT COUNT(su) " + filter, Long.class)
+        TypedQuery<Long> countQuery = em.createQuery("SELECT COUNT(su) " + filter, Long.class)
             .setParameter("schoolId", schoolId)
             .setParameter("roleCode", roleCode)
             .setParameter("pattern", pattern);
@@ -91,17 +91,17 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
     @Override
     public PageResult<ExamDirectoryUserInfo> findUsersByClassIds(Collection<UUID> schoolClassIds, String roleCode,
             String search, Collection<UUID> excludeUserIds, int page, int size) {
-        // IN () không hợp lệ ở JPQL, và ngữ nghĩa đúng của "không phụ trách lớp nào" là
-        // "không thấy ai" — tuyệt đối không được rơi về phạm vi toàn trường.
+        // IN () is not valid in JPQL, and the correct meaning of "in charge of no class" is
+        // "sees nobody" -- it must never fall back to the whole-school scope.
         if (schoolClassIds == null || schoolClassIds.isEmpty()) {
             return new PageResult<>(List.of(), Math.max(page, 1), normalizeSize(size), 0, 0);
         }
 
-        var pattern = likePattern(search);
-        var excluded = normalizeExclusions(excludeUserIds);
-        // Lọc lớp bằng EXISTS chứ không JOIN: học sinh học nhiều lớp trong tập sẽ bị JOIN
-        // nhân dòng, làm sai cả nội dung trang lẫn totalElements.
-        var filter = """
+        String pattern = likePattern(search);
+        List<UUID> excluded = normalizeExclusions(excludeUserIds);
+        // Filter classes with EXISTS rather than JOIN: a student enrolled in several classes of the set would be
+        // multiplied by a JOIN, corrupting both the page content and totalElements.
+        String filter = """
             FROM UserJpaEntity u
             WHERE u.status = 'ACTIVE'
               AND EXISTS (
@@ -126,7 +126,7 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
             .setParameter("roleCode", roleCode)
             .setParameter("pattern", pattern);
 
-        var countQuery = em.createQuery("SELECT COUNT(u) " + filter, Long.class)
+        TypedQuery<Long> countQuery = em.createQuery("SELECT COUNT(u) " + filter, Long.class)
             .setParameter("schoolClassIds", schoolClassIds)
             .setParameter("roleCode", roleCode)
             .setParameter("pattern", pattern);
@@ -135,17 +135,17 @@ public class JpaExamDirectoryQueryRepository implements ExamDirectoryQueryReposi
         return paginate(contentQuery, countQuery, page, size);
     }
 
-    /** `page` vào đây là 1-based; setFirstResult mới là 0-based. */
+    /** `page` arrives here 1-based; setFirstResult is the 0-based one. */
     private <T> PageResult<T> paginate(TypedQuery<T> contentQuery, TypedQuery<Long> countQuery, int page, int size) {
-        var normalizedPage = Math.max(page, 1);
-        var normalizedSize = normalizeSize(size);
+        int normalizedPage = Math.max(page, 1);
+        int normalizedSize = normalizeSize(size);
 
-        var content = contentQuery
+        List<T> content = contentQuery
             .setFirstResult((normalizedPage - 1) * normalizedSize)
             .setMaxResults(normalizedSize)
             .getResultList();
-        var totalElements = countQuery.getSingleResult();
-        var totalPages = totalElements == 0 ? 0 : (int) Math.ceil((double) totalElements / normalizedSize);
+        Long totalElements = countQuery.getSingleResult();
+        int totalPages = totalElements == 0 ? 0 : (int) Math.ceil((double) totalElements / normalizedSize);
 
         return new PageResult<>(content, normalizedPage, normalizedSize, totalElements, totalPages);
     }

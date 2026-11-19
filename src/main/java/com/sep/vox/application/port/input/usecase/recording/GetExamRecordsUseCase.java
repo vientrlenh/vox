@@ -1,6 +1,10 @@
 package com.sep.vox.application.port.input.usecase.recording;
 
+import com.sep.vox.domain.model.exam.ExamRecording;
+import com.sep.vox.domain.model.exam.ExamSession;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -39,15 +43,15 @@ public class GetExamRecordsUseCase implements IUseCase<GetExamRecordsQuery, List
     @Override
     public List<ExamRecordingDto> execute(GetExamRecordsQuery input) {
 
-        var session = accessService.requireCanViewRecordings(input.examSessionId());
+        ExamSession session = accessService.requireCanViewRecordings(input.examSessionId());
 
-        var streamTypeFilter = parseStreamTypeFilter(input.streamType());
+        ExamRequiredStreamType streamTypeFilter = parseStreamTypeFilter(input.streamType());
 
-        var records = examRecordingRepository.findByExamSessionId(session.getId()).stream()
+        List<ExamRecording> records = examRecordingRepository.findByExamSessionId(session.getId()).stream()
             .filter(r -> streamTypeFilter == null || r.getStreamType() == streamTypeFilter)
             .toList();
 
-        var canonicalIds = records.stream()
+        Set<UUID> canonicalIds = records.stream()
             .collect(Collectors.groupingBy(
                 record -> record.getStreamType(),
                 Collectors.maxBy(RecordingPrecedence.CANONICAL_ORDER)))

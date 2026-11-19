@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.question;
 
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionBank;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,25 +51,25 @@ public class UpsertQuestionEvaluationGuideUseCase implements IUseCase<UpsertQues
     @Override
     @Transactional
     public QuestionEvaluationGuideDto execute(UpsertQuestionEvaluationGuideCommand input) {
-        var command = normalize(input);
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UpsertQuestionEvaluationGuideCommand command = normalize(input);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var question = questionRepository.findById(command.questionId())
+        Question question = questionRepository.findById(command.questionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
-        var bank = questionBankRepository.findById(question.getQuestionBankId())
+        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        var owner = currentUserId.equals(question.getCreatedBy());
-        var editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
+        boolean owner = currentUserId.equals(question.getCreatedBy());
+        boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
             .isPresent();
-        var systemAdminOnSystemBank = userContextPort.isSystemAdmin()
+        boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
         if (!systemAdminOnSystemBank && !owner && !editorCollaborator) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var immutable = question.getStatus() == QuestionStatus.PUBLISHED
+        boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED
             || question.isLocked()
             || questionRepository.existsUsedInExam(question.getId());
         if (!systemAdminOnSystemBank
@@ -77,11 +80,11 @@ public class UpsertQuestionEvaluationGuideUseCase implements IUseCase<UpsertQues
             throw new ForbiddenException("Chỉ được sửa câu hỏi của mình khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
         }
 
-        var targetQuestion = immutable
+        Question targetQuestion = immutable
             ? questionCloneService.cloneAsDraftWithDetails(question, currentUserId)
             : question;
 
-        var guide = questionEvaluationGuideRepository.findByQuestionId(targetQuestion.getId())
+        QuestionEvaluationGuide guide = questionEvaluationGuideRepository.findByQuestionId(targetQuestion.getId())
             .orElseGet(() -> new QuestionEvaluationGuide(
                 targetQuestion.getId(),
                 null,
@@ -111,7 +114,7 @@ public class UpsertQuestionEvaluationGuideUseCase implements IUseCase<UpsertQues
             guide.setCommonMistakes(command.commonMistakes());
         }
 
-        var saved = questionEvaluationGuideRepository.save(guide);
+        QuestionEvaluationGuide saved = questionEvaluationGuideRepository.save(guide);
         return QuestionEvaluationGuideDtoMapper.toDto(saved);
     }
 

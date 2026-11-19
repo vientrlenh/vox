@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
+import com.sep.vox.domain.model.exam.Exam;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -57,10 +58,10 @@ public class AddExamCandidateUseCase implements IUseCase<AddExamCandidateCommand
     @Override
     @Transactional
     public ExamCandidateDto execute(AddExamCandidateCommand input) {
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var scope = examDirectoryAccessService.resolve(exam);
-        var currentUserId = scope.callerId();
+        ExamDirectoryAccessService.ExamDirectoryScope scope = examDirectoryAccessService.resolve(exam);
+        UUID currentUserId = scope.callerId();
         ExamEditingGuard.requireScheduleEditable(exam);
 
         // Thí sinh phải là school_user vai trò STUDENT cùng trường với bài kiểm tra.
@@ -72,7 +73,7 @@ public class AddExamCandidateUseCase implements IUseCase<AddExamCandidateCommand
         if (!scope.schoolWide() && !isInCallerClasses(scope, input.studentId())) {
             throw new ForbiddenException("Học sinh không thuộc lớp bạn phụ trách");
         }
-        var isStudent = userRoleQueryRepository.findByUserIdWithRoleInfo(input.studentId()).stream()
+        boolean isStudent = userRoleQueryRepository.findByUserIdWithRoleInfo(input.studentId()).stream()
             .anyMatch(role -> SchoolRoleCodes.STUDENT.equals(role.roleCode()));
         if (!isStudent) {
             throw new IllegalArgumentException("Người dùng không phải là học sinh");
@@ -82,9 +83,9 @@ public class AddExamCandidateUseCase implements IUseCase<AddExamCandidateCommand
             throw new DuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
         }
 
-        var candidate = ExamCandidate.createFresh(exam.getId(), input.studentId(), currentUserId,
+        ExamCandidate candidate = ExamCandidate.createFresh(exam.getId(), input.studentId(), currentUserId,
             Instant.now());
-        var saved = examCandidateRepository.save(candidate);
+        ExamCandidate saved = examCandidateRepository.save(candidate);
         // Bài đã publish (SCHEDULED) mà thêm học sinh thì số thí sinh -- một input của ước lượng
         // token đã soi lúc publish -- tăng lên; soi lại ngay, không riêng CLASS_TEST, không để tới
         // lúc chấm xong mới vỡ quota (xem ClassTestTokenQuotaGuardService).
@@ -95,7 +96,7 @@ public class AddExamCandidateUseCase implements IUseCase<AddExamCandidateCommand
     }
 
     private boolean isInCallerClasses(ExamDirectoryAccessService.ExamDirectoryScope scope, UUID studentId) {
-        var callerClassIds = examDirectoryAccessService.callerClassIds(scope);
+        List<UUID> callerClassIds = examDirectoryAccessService.callerClassIds(scope);
         if (callerClassIds.isEmpty()) {
             return false;
         }

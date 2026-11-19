@@ -113,7 +113,7 @@ class UpdateExamScheduleUseCaseTests {
         when(examScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId)))
             .thenReturn(1);
 
-        var result = useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd));
+        UUID result = useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd));
 
         assertThat(result).isEqualTo(scheduleId);
         verify(examScheduleRepository).updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId));
@@ -139,12 +139,12 @@ class UpdateExamScheduleUseCaseTests {
     }
 
     /**
-     * Lỗ dễ bỏ sót: gán giám thị lúc hai ca chưa đụng nhau, rồi kéo giờ cho chúng chồng lên. Chặn ở
-     * mỗi lúc gán là chưa đủ.
+     * An easily missed hole: assign a proctor while the two sessions do not touch, then move their
+     * times so that they overlap. Blocking only at assignment time is not enough.
      */
     @Test
     void should_reject_moving_schedule_when_proctor_busy_in_new_window() {
-        var teacherId = UUID.randomUUID();
+        UUID teacherId = UUID.randomUUID();
         when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
         when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
         when(examScheduleProctorRepository.findByScheduleId(scheduleId))
@@ -158,10 +158,13 @@ class UpdateExamScheduleUseCaseTests {
         verify(examScheduleRepository, never()).updateAtomic(any(), any(), any(), any(), any(), any());
     }
 
-    /** Cùng lỗ đó, đổi trục sang thí sinh: xếp học sinh lúc chưa đụng, rồi kéo giờ cho chồng lên. */
+    /**
+     * The same hole, along the candidate axis: place a student while there is no overlap, then move
+     * the times so they overlap.
+     */
     @Test
     void should_reject_moving_schedule_when_student_busy_in_new_window() {
-        var candidate = candidateOfSchedule();
+        ExamCandidate candidate = candidateOfSchedule();
         when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
         when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
         when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(candidate));
@@ -177,8 +180,9 @@ class UpdateExamScheduleUseCaseTests {
 
     @Test
     void should_ignore_candidates_of_the_schedule_being_moved() {
-        // Thí sinh của chính ca đang đổi giờ dĩ nhiên "bận" ở ca đó — không được tự chặn mình.
-        var candidate = candidateOfSchedule();
+        // A candidate of the very session whose time is being changed is of course "busy" in that
+        // session -- it must not block itself.
+        ExamCandidate candidate = candidateOfSchedule();
         when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
         when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
         when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(candidate));
@@ -188,13 +192,13 @@ class UpdateExamScheduleUseCaseTests {
         when(examScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId)))
             .thenReturn(1);
 
-        var result = useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd));
+        UUID result = useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd));
 
         assertThat(result).isEqualTo(scheduleId);
     }
 
     private ExamCandidate candidateOfSchedule() {
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(UUID.randomUUID());
         candidate.setExamId(examId);
         candidate.setStudentId(UUID.randomUUID());
@@ -216,8 +220,8 @@ class UpdateExamScheduleUseCaseTests {
 
     @Test
     void should_reject_when_new_window_shorter_than_exam_time_duration() {
-        var exam = exam();
-        // Khung giờ mới dài 2 tiếng nhưng thời gian làm bài là 3 tiếng.
+        Exam exam = exam();
+        // The new time window is 2 hours but the exam duration is 3 hours.
         exam.setExamTimeDurationSecond(3 * 3600);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
@@ -230,13 +234,13 @@ class UpdateExamScheduleUseCaseTests {
 
     @Test
     void should_reject_when_new_window_falls_outside_exam_window() {
-        var exam = exam();
+        Exam exam = exam();
         exam.setOpenAt(start);
         exam.setCloseAt(end);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
 
-        // newStart/newEnd là ngày hôm sau, nằm ngoài khung mở/đóng của kỳ thi.
+        // newStart/newEnd are the next day, outside the exam's open/close window.
         assertThatThrownBy(() -> useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd)))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("mở và đóng");
@@ -245,9 +249,9 @@ class UpdateExamScheduleUseCaseTests {
 
     @Test
     void should_allow_moving_class_test_schedule_outside_current_exam_window() {
-        // Với CLASS_TEST, ca thi là thứ định nghĩa khung giờ kỳ thi (openAt/closeAt được ghi
-        // ngược lại từ ca thi), nên dời ca thi ra ngoài khung hiện tại là hợp lệ.
-        var exam = exam();
+        // For CLASS_TEST, the session is what defines the exam window (openAt/closeAt are written
+        // back from the session), so moving the session outside the current window is valid.
+        Exam exam = exam();
         exam.setKind(ExamKind.CLASS_TEST);
         exam.setStatus(ExamStatus.DRAFT);
         exam.setOpenAt(start);
@@ -256,7 +260,7 @@ class UpdateExamScheduleUseCaseTests {
         when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
         when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
 
-        var result = useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd));
+        UUID result = useCase.execute(new UpdateExamScheduleCommand(scheduleId, null, newStart, newEnd));
 
         assertThat(result).isEqualTo(scheduleId);
         assertThat(exam.getOpenAt()).isEqualTo(newStart);
@@ -265,13 +269,14 @@ class UpdateExamScheduleUseCaseTests {
     }
 
     /**
-     * Sửa ca thi của bài kiểm tra trên lớp ghi ngược openAt/closeAt xuống exam, nên nó là một đường
-     * ghi khung mở/đóng khác — không soi hạn gói ở đây thì đổi giờ ca là lối vòng qua mặt ràng buộc
-     * mà Create/UpdateExamUseCase đang áp.
+     * Editing the session of a class test writes openAt/closeAt back down to the exam, so it is
+     * another path that writes the open/close window -- without checking the plan limit here,
+     * changing a session's time would be a way around the constraint that Create/UpdateExamUseCase
+     * apply.
      */
     @Test
     void should_reject_moving_class_test_schedule_outside_subscription_period() {
-        var exam = classTestExam();
+        Exam exam = classTestExam();
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
         when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
@@ -287,7 +292,7 @@ class UpdateExamScheduleUseCaseTests {
 
     @Test
     void should_check_subscription_period_with_effective_window_of_the_class_test() {
-        var exam = classTestExam();
+        Exam exam = classTestExam();
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(ExamScheduleStatus.DRAFT)));
         when(examScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
@@ -314,14 +319,14 @@ class UpdateExamScheduleUseCaseTests {
     }
 
     private Exam exam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         return exam;
     }
 
     private Exam classTestExam() {
-        var exam = exam();
+        Exam exam = exam();
         exam.setKind(ExamKind.CLASS_TEST);
         exam.setStatus(ExamStatus.DRAFT);
         exam.setOpenAt(start);
@@ -330,7 +335,7 @@ class UpdateExamScheduleUseCaseTests {
     }
 
     private ExamSchedule schedule(ExamScheduleStatus status) {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(scheduleId);
         schedule.setExamId(examId);
         schedule.setSchoolRoomId(roomId);

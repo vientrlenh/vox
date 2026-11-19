@@ -112,7 +112,7 @@ public class ExamSessionController {
     @QueryMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public List<ExamRecordingDto> recordings(@Argument(name = "examSessionId") UUID examSessionId, @Argument(name = "streamType") String streamType) {
-        var query = new GetExamRecordsQuery(examSessionId, streamType);
+        GetExamRecordsQuery query = new GetExamRecordsQuery(examSessionId, streamType);
         return getExamRecordsUseCase.execute(query);
     }
 

@@ -57,8 +57,8 @@ public class SchoolSubscriptionQuotaRecord {
      */
     public static SchoolSubscriptionQuotaRecord seeded(UUID schoolSubscriptionId, QuotaType quotaType,
             BigDecimal planIncludedAmountVnd, BigDecimal carriedFundingVnd) {
-        var included = planIncludedAmountVnd == null ? BigDecimal.ZERO : planIncludedAmountVnd;
-        var carried = carriedFundingVnd == null ? BigDecimal.ZERO : carriedFundingVnd.max(BigDecimal.ZERO);
+        BigDecimal included = planIncludedAmountVnd == null ? BigDecimal.ZERO : planIncludedAmountVnd;
+        BigDecimal carried = carriedFundingVnd == null ? BigDecimal.ZERO : carriedFundingVnd.max(BigDecimal.ZERO);
         return new SchoolSubscriptionQuotaRecord(
             null, schoolSubscriptionId, quotaType, included.add(carried), BigDecimal.ZERO, carried);
     }
@@ -74,7 +74,7 @@ public class SchoolSubscriptionQuotaRecord {
      */
     public static SchoolSubscriptionQuotaRecord seededPendingCarry(UUID schoolSubscriptionId,
             QuotaType quotaType, BigDecimal planIncludedAmountVnd, UUID carryFundingFromSubscriptionId) {
-        var record = seeded(schoolSubscriptionId, quotaType, planIncludedAmountVnd, BigDecimal.ZERO);
+        SchoolSubscriptionQuotaRecord record = seeded(schoolSubscriptionId, quotaType, planIncludedAmountVnd, BigDecimal.ZERO);
         record.setCarryFundingFromSubscriptionId(carryFundingFromSubscriptionId);
         return record;
     }
@@ -92,8 +92,8 @@ public class SchoolSubscriptionQuotaRecord {
      * 3tr -- 2tr tiền tự nạp đã bị tiêu, và chỉ 3tr được mang sang.
      */
     public BigDecimal unspentFundedVnd() {
-        var funded = fundedFromBalanceVnd == null ? BigDecimal.ZERO : fundedFromBalanceVnd;
-        var remaining = totalAllocatedAmountVnd.subtract(usedAmountVnd);
+        BigDecimal funded = fundedFromBalanceVnd == null ? BigDecimal.ZERO : fundedFromBalanceVnd;
+        BigDecimal remaining = totalAllocatedAmountVnd.subtract(usedAmountVnd);
         return funded.min(remaining).max(BigDecimal.ZERO);
     }
 

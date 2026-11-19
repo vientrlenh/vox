@@ -1,5 +1,12 @@
 package com.sep.vox.application.port.input.usecase.examevaluation;
 
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamItemResponse;
+import com.sep.vox.domain.model.exam.ExamSession;
+import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.valueobject.EvaluationSignals;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -110,10 +117,10 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
 
     @Override
     public Void execute(RecordExamAttemptEvaluationCommand input) {
-        var persisted = persistEvaluation(input);
+        PersistedEvaluation persisted = persistEvaluation(input);
 
         if (allResponsesHaveEvaluations(persisted.sessionId())) {
-            var result = upsertExamCandidateResultUseCase.execute(persisted.sessionId());
+            ExamCandidateResult result = upsertExamCandidateResultUseCase.execute(persisted.sessionId());
             // Bài trên lớp: mở luôn phân công cho giáo viên chủ bài, để họ chấm được
             // ngay khi học sinh vừa nộp thay vì chờ đóng bài. No-op với kỳ thi tập trung.
             classTestGradingAssignmentService.ensureAssignmentForResult(result);
@@ -125,9 +132,9 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
     }
 
     private PersistedEvaluation persistEvaluation(RecordExamAttemptEvaluationCommand input) {
-        var persisted = phaseOneTransactionTemplate.execute(status -> {
-            var responseId = UUID.fromString(input.answerId());
-            var response = examItemResponseRepository.findById(responseId)
+        PersistedEvaluation persisted = phaseOneTransactionTemplate.execute(status -> {
+            UUID responseId = UUID.fromString(input.answerId());
+            ExamItemResponse response = examItemResponseRepository.findById(responseId)
                 .orElseThrow(() -> new NotFoundException("không thể tìm thấy câu trả lời cho evaluation"));
 
             // Điểm người đã chốt thắng AI. Không có optimistic lock trên
@@ -139,15 +146,15 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                 return new PersistedEvaluation(response.getSessionId());
             }
 
-            var criteriaMap = input.payload() == null || input.payload().criteria() == null
+            Map<String, CriterionScoreInput> criteriaMap = input.payload() == null || input.payload().criteria() == null
                 ? Map.<String, CriterionScoreInput>of()
                 : input.payload().criteria();
 
             // Resolve the rubric version before combining criteria because each
             // school may use WEIGHTED_AVERAGE or SUM and a different score scale.
             // ExamPaperItem.weight remains a separate, later paper-level weight.
-            var evaluationContext = resolveEvaluationContext(response.getSessionId());
-            var rubricCriteriaByCode = rubricCriterionRepository.findByRubricVersionId(
+            EvaluationContext evaluationContext = resolveEvaluationContext(response.getSessionId());
+            Map<String, RubricCriterion> rubricCriteriaByCode = rubricCriterionRepository.findByRubricVersionId(
                 evaluationContext.rubricVersionId()
             ).stream().collect(Collectors.toMap(
                 item -> normalizeCode(item.getCode()),
@@ -164,10 +171,10 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                 evaluationContext.scoringScaleMax()
             );
 
-            var validity = input.payload() == null ? null : input.payload().validity();
-            var signals = ExamEvaluationSignalMapper.toDomain(input.payload() == null ? null : input.payload().signals());
-            var confidenceCase = signals.confidenceCase();
-            var overallConfidence = averageConfidence(confidenceCase);
+            ValidityResultInput validity = input.payload() == null ? null : input.payload().validity();
+            EvaluationSignals signals = ExamEvaluationSignalMapper.toDomain(input.payload() == null ? null : input.payload().signals());
+            ConfidenceCaseSignals confidenceCase = signals.confidenceCase();
+            BigDecimal overallConfidence = averageConfidence(confidenceCase);
             if (overallConfidence == null) {
                 overallConfidence = clampUnit(
                     input.payload() == null || input.payload().signals() == null
@@ -176,14 +183,14 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                 );
             }
             boolean isShortAnswer = signals.wordCount() < 35;
-            var confidenceDecision = confidenceReviewCalculator.compute(
+            ConfidenceReviewCalculator.Decision confidenceDecision = confidenceReviewCalculator.compute(
                 confidenceCase,
                 signals.audioQuality(),
                 evaluationContext.examKind(),
                 signals.codeSwitchingRatio(),
                 isShortAnswer
             );
-            var hasCriticalValidityFlag = hasCriticalValidityFlag(validity);
+            boolean hasCriticalValidityFlag = hasCriticalValidityFlag(validity);
             // Nhà trường ĐẶT ngưỡng -> BỎ QUA toàn bộ luật cứng của ConfidenceReviewCalculator,
             // chỉ so đúng một con số. Nhà trường đã nói rõ mức chấp nhận được của họ; chồng thêm
             // hàng chục ngưỡng nội bộ lên trên nữa thì con số họ nhập không còn nghĩa gì -- bài
@@ -191,11 +198,11 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             //
             // KHÔNG bỏ qua cờ validity: đó là "câu này có chấm được không" (audio hỏng, lạc đề),
             // không phải "chấm tin được tới đâu". Hai câu hỏi khác nhau.
-            var thresholdPercent = evaluationContext.aiConfidenceThresholdPercent();
+            BigDecimal thresholdPercent = evaluationContext.aiConfidenceThresholdPercent();
             // QUY ĐỔI ĐƠN VỊ: overallConfidence là tỉ lệ 0-1, ngưỡng nhà trường nhập là phần trăm
             // 0-100. So thẳng thì 0.82 luôn nhỏ hơn 75 và MỌI bài đổ sang duyệt -- hỏng im lặng,
             // vì hệ thống vẫn chạy và chỉ có con người phải chấm tay tất cả.
-            var confidencePercent = overallConfidence == null
+            BigDecimal confidencePercent = overallConfidence == null
                 ? null
                 : overallConfidence.multiply(ONE_HUNDRED);
             boolean belowThreshold = thresholdPercent != null
@@ -251,7 +258,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                                 ? "CONFIDENCE_BELOW_THRESHOLD"
                                 : String.join(",", confidenceDecision.reviewReasons())
                     );
-            var requiresRetake = requiresRetake(validity);
+            boolean requiresRetake = requiresRetake(validity);
             boolean markedInvalid = hasCriticalValidityFlag
                 || (validity != null && Boolean.FALSE.equals(validity.validForScoring()));
             // Bài vô hiệu nhận SÀN CỦA THANG, không phải số 0 (sửa 2026-08-11).
@@ -263,7 +270,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             // Nghĩa nghiệp vụ không đổi: sàn thang LÀ điểm thấp nhất diễn đạt được của rubric đó.
             // Trường nào muốn "bỏ trống = 0" thì khai sàn thang bằng 0, đó là lựa chọn của họ về
             // thang điểm chứ không phải quyết định của hệ thống.
-            var floorScore = scaleFloor(evaluationContext.scoringScaleMin());
+            BigDecimal floorScore = scaleFloor(evaluationContext.scoringScaleMin());
             boolean zeroedByValidity = markedInvalid;
             if (zeroedByValidity) {
                 itemScore = floorScore;
@@ -293,8 +300,8 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                 confidenceDecision.audioGateReasons()
             );
 
-            var existingEvaluation = examItemEvaluationRepository.findLatestByResponseId(response.getId()).orElse(null);
-            var evaluation = existingEvaluation == null
+            ExamItemEvaluation existingEvaluation = examItemEvaluationRepository.findLatestByResponseId(response.getId()).orElse(null);
+            ExamItemEvaluation evaluation = existingEvaluation == null
                 ? new ExamItemEvaluation(
                     response.getId(),
                     response.getPaperItemId(),
@@ -342,23 +349,23 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                 evaluation.setEvaluatedAt(parseEvaluatedAt(input.payload() == null ? null : input.payload().evaluatedAt()));
             }
 
-            var savedEvaluation = examItemEvaluationRepository.save(evaluation);
+            ExamItemEvaluation savedEvaluation = examItemEvaluationRepository.save(evaluation);
             if (existingEvaluation != null) {
                 examItemCriterionScoreRepository.deleteByEvaluationIdIn(List.of(savedEvaluation.getId()));
                 examItemEvaluationTurnRepository.deleteByEvaluationIdIn(List.of(savedEvaluation.getId()));
             }
 
-            var criterionScores = criteriaMap.entrySet().stream()
+            List<ExamItemCriterionScore> criterionScores = criteriaMap.entrySet().stream()
                 .filter(entry -> entry.getValue() != null && entry.getValue().score() != null)
                 .map(entry -> {
-                    var criterion = rubricCriteriaByCode.get(normalizeCode(entry.getKey()));
+                    RubricCriterion criterion = rubricCriteriaByCode.get(normalizeCode(entry.getKey()));
                     if (criterion == null) {
                         return null;
                     }
                     // Sàn của CHÍNH tiêu chí đó, không phải số 0 -- cùng lý do với điểm câu ở trên.
                     // Dùng min của tiêu chí (không phải của thang) vì với SUM mỗi tiêu chí có
                     // khoảng riêng, và điểm hiển thị từng tiêu chí phải nằm trong khoảng của nó.
-                    var score = zeroCriterionScores
+                    BigDecimal score = zeroCriterionScores
                         ? clampCriterionScore(criterion.getMinScore(), criterion)
                         : clampCriterionScore(
                             BigDecimal.valueOf(entry.getValue().score()),
@@ -379,12 +386,12 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
                 examItemCriterionScoreRepository.saveAll(criterionScores);
             }
 
-            var turns = input.payload() == null || input.payload().turns() == null
+            List<ExamItemEvaluationTurn> turns = input.payload() == null || input.payload().turns() == null
                 ? List.<ExamItemEvaluationTurn>of()
                 : input.payload().turns().stream()
                     .map(turn -> {
-                        var turnOrder = turn.turnOrder();
-                        var wordCount = turn.wordCount();
+                        Integer turnOrder = turn.turnOrder();
+                        Integer wordCount = turn.wordCount();
                         return new ExamItemEvaluationTurn(
                             UUID.randomUUID(),
                             savedEvaluation.getId(),
@@ -452,13 +459,13 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
             RubricTotalScoreMethod totalScoreMethod,
             BigDecimal scoringScaleMin,
             BigDecimal scoringScaleMax) {
-        var scored = new ArrayList<RubricItemScoreFormula.ScoredCriterion>();
-        for (var entry : criteriaMap.entrySet()) {
-            var criterionScore = entry.getValue();
+        List<RubricItemScoreFormula.ScoredCriterion> scored = new ArrayList<RubricItemScoreFormula.ScoredCriterion>();
+        for (Map.Entry<String, CriterionScoreInput> entry : criteriaMap.entrySet()) {
+            CriterionScoreInput criterionScore = entry.getValue();
             if (criterionScore == null || criterionScore.score() == null) {
                 continue;
             }
-            var criterion = rubricCriteriaByCode.get(normalizeCode(entry.getKey()));
+            RubricCriterion criterion = rubricCriteriaByCode.get(normalizeCode(entry.getKey()));
             if (criterion == null) {
                 continue;
             }
@@ -473,7 +480,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
     }
 
     private BigDecimal clampScore(BigDecimal score, BigDecimal scaleMin, BigDecimal scaleMax) {
-        var safeScore = score == null ? BigDecimal.ZERO : score;
+        BigDecimal safeScore = score == null ? BigDecimal.ZERO : score;
         if (scaleMin != null && safeScore.compareTo(scaleMin) < 0) {
             safeScore = scaleMin;
         }
@@ -498,16 +505,16 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
     }
 
     private EvaluationContext resolveEvaluationContext(UUID sessionId) {
-        var session = examSessionRepository.findById(sessionId)
+        ExamSession session = examSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy phiên thi cho evaluation"));
-        var exam = examRepository.findById(session.getExamId())
+        Exam exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy bài kiểm tra cho evaluation"));
         if (exam.getAssessmentPolicyId() == null) {
             throw new NotFoundException("bài kiểm tra chưa gắn assessment policy");
         }
-        var policy = assessmentPolicyRepository.findById(exam.getAssessmentPolicyId())
+        AssessmentPolicy policy = assessmentPolicyRepository.findById(exam.getAssessmentPolicyId())
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy assessment policy cho bài kiểm tra"));
-        var rubricVersion = rubricVersionRepository.findById(policy.getRubricVersionId())
+        RubricVersion rubricVersion = rubricVersionRepository.findById(policy.getRubricVersionId())
             .orElseThrow(() -> new NotFoundException("không thể tìm thấy rubric version cho bài kiểm tra"));
         return new EvaluationContext(
             policy.getRubricVersionId(),
@@ -543,7 +550,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
         if (value == null) {
             return "";
         }
-        var normalized = value.trim().toLowerCase(Locale.ROOT);
+        String normalized = value.trim().toLowerCase(Locale.ROOT);
         return "discourse".equals(normalized) ? "coherence" : normalized;
     }
 
@@ -562,7 +569,7 @@ public class RecordExamAttemptEvaluationUseCase implements IUseCase<RecordExamAt
         if (value == null) {
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
-        var decimal = BigDecimal.valueOf(Math.max(0D, Math.min(1D, value)));
+        BigDecimal decimal = BigDecimal.valueOf(Math.max(0D, Math.min(1D, value)));
         return decimal.setScale(2, RoundingMode.HALF_UP);
     }
 

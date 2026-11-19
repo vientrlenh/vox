@@ -37,10 +37,10 @@ public class ViewExamAppealDetailUseCase implements IUseCase<UUID, AppealDetailI
     @Override
     @Transactional(readOnly = true)
     public AppealDetailInfo execute(UUID appealId) {
-        var currentUserId = examAppealAccessService.requireActiveUserId();
-        var context = examAppealAccessService.load(appealId);
+        UUID currentUserId = examAppealAccessService.requireActiveUserId();
+        ExamAppealAccessService.AppealContext context = examAppealAccessService.load(appealId);
         examAppealAccessService.authorizeSchoolAdminOrClassTestChair(context, currentUserId);
-        var schoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID schoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(context.schoolId());
         return examAppealQueryRepository.findDetailById(appealId, schoolId)

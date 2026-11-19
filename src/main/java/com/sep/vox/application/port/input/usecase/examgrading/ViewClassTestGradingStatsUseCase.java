@@ -38,9 +38,9 @@ public class ViewClassTestGradingStatsUseCase implements IUseCase<UUID, GradingS
     @Override
     @Transactional(readOnly = true)
     public GradingStatsInfo execute(UUID examId) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
         examGradingAccessService.authorizeClassTestChair(examId, currentUserId);
-        var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
+        UUID schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
         return examGradingQueryRepository.stats(schoolId, examId, null, ExamKind.CLASS_TEST.name());
     }
 }

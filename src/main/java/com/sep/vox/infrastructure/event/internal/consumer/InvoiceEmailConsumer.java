@@ -1,5 +1,9 @@
 package com.sep.vox.infrastructure.event.internal.consumer;
 
+import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.subscription.SchoolSubscription;
+import com.sep.vox.domain.model.subscription.SubscriptionPlan;
+import com.sep.vox.domain.model.user.User;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
@@ -94,7 +98,7 @@ public class InvoiceEmailConsumer {
         containerFactory = "stringKafkaListenerContainerFactory"
     )
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        var eventId = KafkaEventHeaders.readEventId(record);
+        UUID eventId = KafkaEventHeaders.readEventId(record);
 
         LOGGER.info("Receive event invoice: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
@@ -105,7 +109,7 @@ public class InvoiceEmailConsumer {
             return;
         }
 
-        var payload = parse(record.value(), eventId);
+        InvoicePaidPayloadV1 payload = parse(record.value(), eventId);
 
         if (payload.schoolAdminIds() == null || payload.schoolAdminIds().isEmpty()) {
             LOGGER.warn("Skip mail, trường không còn admin nào: eventId={}, schoolId={}",
@@ -115,14 +119,14 @@ public class InvoiceEmailConsumer {
             return;
         }
 
-        var html = renderHtml(payload, eventId);
-        var subject = "Hóa đơn thanh toán #" + payload.invoiceNumber();
+        String html = renderHtml(payload, eventId);
+        String subject = "Hóa đơn thanh toán #" + payload.invoiceNumber();
 
-        // Một địa chỉ hỏng không được chặn những người còn lại: gom lỗi rồi ném MỘT lần ở
-        // cuối. Retry sẽ gửi lại cho cả nhóm, nhưng mail trùng đỡ tệ hơn mail thiếu.
-        var failed = 0;
-        for (var recipientId : payload.schoolAdminIds()) {
-            var recipient = userRepository.findById(recipientId).orElse(null);
+        // One bad address must not block the others: collect the errors and throw ONCE at the
+        // end. The retry will resend to the whole group, but a duplicate mail is better than a missing one.
+        int failed = 0;
+        for (UUID recipientId : payload.schoolAdminIds()) {
+            User recipient = userRepository.findById(recipientId).orElse(null);
             if (recipient == null) {
                 LOGGER.warn("Bỏ qua người nhận không còn tồn tại: eventId={}, userId={}", eventId, recipientId);
                 continue;
@@ -148,21 +152,21 @@ public class InvoiceEmailConsumer {
     }
 
     private String renderHtml(InvoicePaidPayloadV1 payload, UUID eventId) {
-        var school = schoolRepository.findById(payload.schoolId())
+        School school = schoolRepository.findById(payload.schoolId())
             .orElseThrow(() -> new IllegalStateException(
                 "Không tìm thấy trường: eventId=" + eventId + ", schoolId=" + payload.schoolId()));
-        var isTopUp = payload.sourceType() == InvoiceSourceType.TOPUP;
+        boolean isTopUp = payload.sourceType() == InvoiceSourceType.TOPUP;
 
-        // Nạp thêm hạn mức KHÔNG gắn với kỳ đăng ký nào: trường chưa mua gói bao giờ vẫn nạp
-        // được, và lúc đó publisher gửi subscriptionId null (xem OrderSettlementService
-        // .creditBalance). Đòi cho bằng được một kỳ ở đây sẽ ném, message chạy hết vòng retry
-        // rồi vào DLT -- mail chứng từ của mọi lần nạp kiểu đó không bao giờ tới.
-        var subscription = payload.subscriptionId() == null
+        // A quota top-up NOT tied to any subscription period: a school that has never bought a plan can still top up,
+        // and then the publisher sends a null subscriptionId (see OrderSettlementService
+        // .creditBalance). Insisting on a period here would throw, the message would run the whole retry cycle
+        // and land in the DLT -- the receipt mail of every top-up of that kind would never arrive.
+        SchoolSubscription subscription = payload.subscriptionId() == null
             ? null
             : schoolSubscriptionRepository.findById(payload.subscriptionId()).orElse(null);
 
-        // Hóa đơn GÓI mà không tra được kỳ thì vẫn phải kêu to như cũ: đó là dữ liệu hỏng, không
-        // phải một hình dạng hợp lệ.
+        // A PLAN invoice whose period cannot be looked up must still fail loudly as before: that is corrupt data, not
+        // a valid shape.
         if (subscription == null && !isTopUp) {
             throw new IllegalStateException("Không tìm thấy gói đăng ký: eventId=" + eventId);
         }
@@ -171,19 +175,19 @@ public class InvoiceEmailConsumer {
         if (isTopUp) {
             itemTitle = "Mua thêm hạn mức";
         } else {
-            // phải có subscription null check ở đây, analyzer đánh dấu subscription.getSubscriptionPlanId() là possible null reference
+            // The subscription null check is required here, the analyzer flags subscription.getSubscriptionPlanId() as a possible null reference
             if (subscription == null) {
                 throw new IllegalStateException("Không tìm thấy gói đăng ký: eventId=" + eventId);
             }
-            var plan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
+            SubscriptionPlan plan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
                 .orElseThrow(() -> new IllegalStateException("Không tìm thấy gói: eventId=" + eventId));
             itemTitle = "Gói " + plan.getName();
         }
 
-        var amountFormatter = new DecimalFormat("#,###", DecimalFormatSymbols.getInstance(Locale.of("vi", "VN")));
-        var amountLabel = amountFormatter.format(payload.amount()) + " ₫";
-        var paidAtLabel = payload.paidAt() == null ? "-" : PAID_AT_FORMATTER.format(payload.paidAt());
-        var validUntilLabel = subscription == null || subscription.getEndDate() == null
+        DecimalFormat amountFormatter = new DecimalFormat("#,###", DecimalFormatSymbols.getInstance(Locale.of("vi", "VN")));
+        String amountLabel = amountFormatter.format(payload.amount()) + " ₫";
+        String paidAtLabel = payload.paidAt() == null ? "-" : PAID_AT_FORMATTER.format(payload.paidAt());
+        String validUntilLabel = subscription == null || subscription.getEndDate() == null
             ? "-" : VALID_UNTIL_FORMATTER.format(subscription.getEndDate());
 
         return mailTemplatePort.renderInvoicePaidEmail(
@@ -202,7 +206,7 @@ public class InvoiceEmailConsumer {
 
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
-        var eventId = KafkaEventHeaders.readEventIdOrNull(record);
+        UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         LOGGER.error("invoice event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
             eventId, record.topic(), record.partition(), record.offset(), record.value());
     }

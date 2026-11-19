@@ -1,11 +1,13 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -45,8 +47,8 @@ public class ExamRepositoryImpl implements ExamRepository {
 
     @Override
     public Exam save(Exam exam) {
-        var entity = ExamMapper.toJpa(exam);
-        var saved = springDataExamRepository.save(entity);
+        ExamJpaEntity entity = ExamMapper.toJpa(exam);
+        ExamJpaEntity saved = springDataExamRepository.save(entity);
         return ExamMapper.toDomain(saved);
     }
 
@@ -54,8 +56,8 @@ public class ExamRepositoryImpl implements ExamRepository {
     public PageResult<Exam> findAccessible(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
             boolean schoolAdmin, UUID schoolId, UUID schoolClassId, ExamKind kind, ExamStatus status, String keyword,
             int page, int size) {
-        var pageable = PageRequest.of(page - 1, size);
-        var result = springDataExamRepository.findAccessible(
+        PageRequest pageable = PageRequest.of(page - 1, size);
+        Page<ExamJpaEntity> result = springDataExamRepository.findAccessible(
             currentUserId,
             currentSchoolId,
             systemAdmin,

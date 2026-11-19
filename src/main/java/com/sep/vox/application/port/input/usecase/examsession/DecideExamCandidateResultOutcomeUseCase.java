@@ -1,5 +1,9 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamSession;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -67,13 +71,13 @@ public class DecideExamCandidateResultOutcomeUseCase
     @Override
     @Transactional
     public UUID execute(DecideExamCandidateResultOutcomeCommand input) {
-        var result = examCandidateResultRepository.findById(input.candidateResultId())
+        ExamCandidateResult result = examCandidateResultRepository.findById(input.candidateResultId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kết quả bài thi"));
-        var session = examSessionRepository.findById(result.getSessionId())
+        ExamSession session = examSessionRepository.findById(result.getSessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi của kết quả này"));
-        var candidate = examCandidateRepository.findById(session.getCandidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của kết quả này"));
-        var exam = examRepository.findById(session.getExamId())
+        Exam exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của kết quả này"));
 
         moderationAccessService.authorize(exam, candidate);
@@ -88,9 +92,9 @@ public class DecideExamCandidateResultOutcomeUseCase
             throw new IllegalArgumentException("Quyết định không hợp lệ, chỉ chấp nhận PASSED hoặc FAILED");
         }
 
-        var now = Instant.now();
-        var actorId = moderationAccessService.getCurrentUserId();
-        var before = resultStatusHistoryRecorder.snapshot(result);
+        Instant now = Instant.now();
+        UUID actorId = moderationAccessService.getCurrentUserId();
+        ResultStatusHistoryRecorder.Snapshot before = resultStatusHistoryRecorder.snapshot(result);
         result.setStatus(input.decision());
         result.setUpdatedAt(now);
         result.setUpdatedBy(actorId);
@@ -100,7 +104,7 @@ public class DecideExamCandidateResultOutcomeUseCase
         // cuối cùng của bài, mà trước đây học sinh không được báo gì.
         resultStatusHistoryRecorder.record(
             before, result, ResultStatusChangeSource.EXAM_PUBLISH, actorId, null);
-        var payload = new ExamResultOutcomeDecidedPayloadV1(
+        ExamResultOutcomeDecidedPayloadV1 payload = new ExamResultOutcomeDecidedPayloadV1(
             result.getId(), candidate.getStudentId(), exam.getName(),
             input.decision().name(), result.getTotalScore(),
             result.getSessionId(), exam.getKind());

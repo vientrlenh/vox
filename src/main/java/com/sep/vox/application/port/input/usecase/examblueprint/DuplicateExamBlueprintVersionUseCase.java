@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
+import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,9 +42,9 @@ public class DuplicateExamBlueprintVersionUseCase
     @Override
     @Transactional
     public ExamBlueprintVersionDto execute(DuplicateExamBlueprintVersionCommand input) {
-        var sourceVersion = examBlueprintVersionRepository.findById(input.versionId())
+        ExamBlueprintVersion sourceVersion = examBlueprintVersionRepository.findById(input.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
-        var sections = examBlueprintSectionRepository.findByBlueprintVersionId(sourceVersion.getId()).stream()
+        List<CreateExamBlueprintSectionCommand> sections = examBlueprintSectionRepository.findByBlueprintVersionId(sourceVersion.getId()).stream()
             .map(section -> new CreateExamBlueprintSectionCommand(
                 null,
                 section.getOrder(),

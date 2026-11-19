@@ -1,5 +1,9 @@
 package com.sep.vox.application.port.input.usecase.question;
 
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionAsset;
+import com.sep.vox.domain.model.question.QuestionBank;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,30 +48,30 @@ public class DeleteQuestionAssetUseCase implements IUseCase<DeleteQuestionAssetC
     @Override
     @Transactional
     public Void execute(DeleteQuestionAssetCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var question = questionRepository.findById(input.questionId())
+        Question question = questionRepository.findById(input.questionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
-        var sourceAsset = questionAssetRepository.findById(input.assetId())
+        QuestionAsset sourceAsset = questionAssetRepository.findById(input.assetId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy tài nguyên câu hỏi"));
         if (!sourceAsset.getQuestionId().equals(question.getId())) {
             throw new ForbiddenException("Tài nguyên không thuộc câu hỏi này");
         }
 
-        var bank = questionBankRepository.findById(question.getQuestionBankId())
+        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        var owner = currentUserId.equals(question.getCreatedBy());
-        var editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
+        boolean owner = currentUserId.equals(question.getCreatedBy());
+        boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
             .isPresent();
-        var systemAdminOnSystemBank = userContextPort.isSystemAdmin()
+        boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
         if (!systemAdminOnSystemBank && !owner && !editorCollaborator) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var immutable = question.getStatus() == QuestionStatus.PUBLISHED
+        boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED
             || question.isLocked()
             || questionRepository.existsUsedInExam(question.getId());
         if (!systemAdminOnSystemBank
@@ -79,8 +83,8 @@ public class DeleteQuestionAssetUseCase implements IUseCase<DeleteQuestionAssetC
         }
 
         if (immutable) {
-            var clonedQuestion = questionCloneService.cloneAsDraftWithDetails(question, currentUserId);
-            var clonedAsset = questionAssetRepository.findByQuestionId(clonedQuestion.getId()).stream()
+            Question clonedQuestion = questionCloneService.cloneAsDraftWithDetails(question, currentUserId);
+            QuestionAsset clonedAsset = questionAssetRepository.findByQuestionId(clonedQuestion.getId()).stream()
                 .filter(asset -> asset.getOrder() == sourceAsset.getOrder())
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy tài nguyên câu hỏi trong bản nháp mới"));

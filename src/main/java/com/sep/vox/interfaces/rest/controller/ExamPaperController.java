@@ -63,7 +63,7 @@ public class ExamPaperController {
     public ResponseEntity<ApiResponse<ExamPaperDto>> create(
             @PathVariable("examId") UUID examId,
             @Valid @RequestBody(required = false) CreateExamPaperRequest request) {
-        var data = createExamPaperUseCase.execute(CreateExamPaperCommandMapper.fromRequest(examId, request));
+        ExamPaperDto data = createExamPaperUseCase.execute(CreateExamPaperCommandMapper.fromRequest(examId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo đề thi thành công", data));
     }
@@ -74,7 +74,7 @@ public class ExamPaperController {
             @PathVariable("id") UUID id,
             @PathVariable("itemId") UUID itemId,
             @Valid @RequestBody UpdateExamPaperItemRequest request) {
-        var data = updateExamPaperItemUseCase.execute(UpdateExamPaperItemCommandMapper.fromRequest(id, itemId, request));
+        ExamPaperItemDto data = updateExamPaperItemUseCase.execute(UpdateExamPaperItemCommandMapper.fromRequest(id, itemId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật câu hỏi trong đề thi thành công", data));
     }
 
@@ -84,7 +84,7 @@ public class ExamPaperController {
             @PathVariable("id") UUID id,
             @PathVariable("sectionId") UUID sectionId,
             @RequestBody UpdateExamPaperSectionRequest request) {
-        var data = updateExamPaperSectionUseCase.execute(UpdateExamPaperSectionCommandMapper.fromRequest(id, sectionId, request));
+        ExamPaperSectionDto data = updateExamPaperSectionUseCase.execute(UpdateExamPaperSectionCommandMapper.fromRequest(id, sectionId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật phần đề thi thành công", data));
     }
 
@@ -93,7 +93,7 @@ public class ExamPaperController {
     public ResponseEntity<ApiResponse<ExamPaperDto>> updateStatus(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateExamPaperStatusRequest request) {
-        var data = updateExamPaperStatusUseCase.execute(UpdateExamPaperStatusCommandMapper.fromRequest(id, request));
+        ExamPaperDto data = updateExamPaperStatusUseCase.execute(UpdateExamPaperStatusCommandMapper.fromRequest(id, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái đề thi thành công", data));
     }
 

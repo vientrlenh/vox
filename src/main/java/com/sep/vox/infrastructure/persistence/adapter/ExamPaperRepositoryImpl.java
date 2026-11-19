@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamPaperJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -24,7 +25,7 @@ public class ExamPaperRepositoryImpl implements ExamPaperRepository {
 
     @Override
     public ExamPaper save(ExamPaper paper) {
-        var saved = springDataExamPaperRepository.save(ExamPaperMapper.toJpa(paper));
+        ExamPaperJpaEntity saved = springDataExamPaperRepository.save(ExamPaperMapper.toJpa(paper));
         return ExamPaperMapper.toDomain(saved);
     }
 
@@ -33,7 +34,7 @@ public class ExamPaperRepositoryImpl implements ExamPaperRepository {
         if (papers == null || papers.isEmpty()) {
             return List.of();
         }
-        var entities = papers.stream().map(ExamPaperMapper::toJpa).toList();
+        List<ExamPaperJpaEntity> entities = papers.stream().map(ExamPaperMapper::toJpa).toList();
         return springDataExamPaperRepository.saveAll(entities).stream()
             .map(ExamPaperMapper::toDomain)
             .toList();

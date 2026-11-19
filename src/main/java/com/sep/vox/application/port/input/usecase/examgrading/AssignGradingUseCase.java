@@ -1,10 +1,12 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -71,75 +73,75 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
     @Override
     @Transactional
     public List<UUID> execute(AssignGradingCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var roundType = parseRoundType(command.roundType());
-        var deadlineAt = validateDeadline(command.deadlineAt());
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        GradingRoundType roundType = parseRoundType(command.roundType());
+        Instant deadlineAt = validateDeadline(command.deadlineAt());
 
-        var items = command.assignments() == null
+        List<AssignGradingCommand.AssignmentItem> items = command.assignments() == null
             ? List.<AssignGradingCommand.AssignmentItem>of() : command.assignments();
         if (items.isEmpty()) {
             throw new IllegalArgumentException("Phải chọn ít nhất một bài thi để phân công.");
         }
-        for (var item : items) {
+        for (AssignGradingCommand.AssignmentItem item : items) {
             if (item.candidateResultId() == null || item.teacherId() == null) {
                 throw new IllegalArgumentException("Thiếu bài thi hoặc giáo viên cần phân công.");
             }
         }
-        var candidateResultIds = items.stream()
+        List<UUID> candidateResultIds = items.stream()
             .map(item -> item.candidateResultId()).toList();
         if (new HashSet<>(candidateResultIds).size() != candidateResultIds.size()) {
             throw new DuplicatedException("Không được phân công trùng bài thi.");
         }
 
         // ---- nạp theo lô: kết quả -> kỳ thi -> trường ----
-        var resultsById = examCandidateResultRepository.findByIdIn(candidateResultIds).stream()
+        Map<UUID, ExamCandidateResult> resultsById = examCandidateResultRepository.findByIdIn(candidateResultIds).stream()
             .collect(Collectors.toMap(result -> result.getId(), Function.identity(), (left, right) -> left));
-        for (var candidateResultId : candidateResultIds) {
+        for (UUID candidateResultId : candidateResultIds) {
             if (!resultsById.containsKey(candidateResultId)) {
                 throw new NotFoundException("Không tìm thấy kết quả bài thi.");
             }
         }
-        var schoolIdByExamId = examRepository.findByIdIn(
+        Map<UUID, UUID> schoolIdByExamId = examRepository.findByIdIn(
                 resultsById.values().stream().map(result -> result.getExamId()).distinct().toList()).stream()
             .collect(Collectors.toMap(exam -> exam.getId(), exam -> exam.getSchoolId(), (left, right) -> left));
 
         // Trường của mỗi bài; đồng thời là tập trường phân biệt để phân quyền + lọc giáo viên.
-        var schoolIdByResultId = new HashMap<UUID, UUID>();
-        for (var result : resultsById.values()) {
-            var schoolId = schoolIdByExamId.get(result.getExamId());
+        Map<UUID, UUID> schoolIdByResultId = new HashMap<UUID, UUID>();
+        for (ExamCandidateResult result : resultsById.values()) {
+            UUID schoolId = schoolIdByExamId.get(result.getExamId());
             if (schoolId == null) {
                 throw new NotFoundException("Không tìm thấy bài kiểm tra của kết quả này.");
             }
             schoolIdByResultId.put(result.getId(), schoolId);
         }
-        var distinctSchoolIds = new HashSet<>(schoolIdByResultId.values());
+        Set<UUID> distinctSchoolIds = new HashSet<>(schoolIdByResultId.values());
 
         // ---- phân quyền: một lần / trường phân biệt (thường là một) ----
-        for (var schoolId : distinctSchoolIds) {
+        for (UUID schoolId : distinctSchoolIds) {
             examGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId);
         }
         // Bài trên lớp đi đường riêng: chủ bài tự nhận qua /class-tests/{id}/grading/claim.
         examGradingAccessService.rejectClassTestCoordination(candidateResultIds);
 
         // ---- đã có phân công ĐANG MỞ? một query cho cả lô ----
-        var alreadyAssigned = examGradingAssignmentRepository
+        Set<UUID> alreadyAssigned = examGradingAssignmentRepository
             .findOpenByCandidateResultIdIn(candidateResultIds).stream()
             .map(assignment -> assignment.getCandidateResultId())
             .collect(Collectors.toSet());
 
         // ---- giáo viên hợp lệ theo từng trường, một query / trường ----
-        var teacherIds = items.stream()
+        List<UUID> teacherIds = items.stream()
             .map(item -> item.teacherId()).distinct().toList();
-        var validTeachersBySchool = new HashMap<UUID, Set<UUID>>();
-        for (var schoolId : distinctSchoolIds) {
+        Map<UUID, Set<UUID>> validTeachersBySchool = new HashMap<UUID, Set<UUID>>();
+        for (UUID schoolId : distinctSchoolIds) {
             validTeachersBySchool.put(schoolId,
                 examGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds));
         }
 
-        var now = Instant.now();
-        var assignments = new ArrayList<ExamGradingAssignment>();
-        for (var item : items) {
-            var result = resultsById.get(item.candidateResultId());
+        Instant now = Instant.now();
+        List<ExamGradingAssignment> assignments = new ArrayList<ExamGradingAssignment>();
+        for (AssignGradingCommand.AssignmentItem item : items) {
+            ExamCandidateResult result = resultsById.get(item.candidateResultId());
             if (!GradingRoundPolicy.isAssignable(roundType, result.getStatus())) {
                 throw new IllegalStateException(
                     "Bài thi không ở trạng thái phù hợp với vòng chấm " + roundType.name() + ".");
@@ -149,7 +151,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
             if (alreadyAssigned.contains(item.candidateResultId())) {
                 throw new DuplicatedException("Bài thi này đang được một giáo viên chấm.");
             }
-            var schoolId = schoolIdByResultId.get(item.candidateResultId());
+            UUID schoolId = schoolIdByResultId.get(item.candidateResultId());
             if (!validTeachersBySchool.getOrDefault(schoolId, Set.of()).contains(item.teacherId())) {
                 throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
             }
@@ -168,7 +170,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
             ));
         }
 
-        var saved = examGradingAssignmentRepository.saveAll(assignments);
+        List<ExamGradingAssignment> saved = examGradingAssignmentRepository.saveAll(assignments);
 
         // Sau saveAll: thông báo cần id của dòng phân công để dẫn giáo viên vào đúng bài.
         gradingAssignmentNotificationService.publishAssigned(saved, now);

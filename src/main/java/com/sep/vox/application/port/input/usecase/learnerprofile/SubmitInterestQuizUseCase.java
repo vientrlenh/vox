@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.learnerprofile;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +31,7 @@ public class SubmitInterestQuizUseCase implements IUseCase<SubmitInterestQuizCom
     @Override
     @Transactional
     public LearnerProfile execute(SubmitInterestQuizCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         commandService.submitQuiz(studentId, input.answers());
         return LearnerProfileResponseMapper.toResponse(
             queryRepository.findCurrent(studentId)

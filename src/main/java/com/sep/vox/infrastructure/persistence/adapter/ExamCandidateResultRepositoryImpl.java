@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -60,7 +61,7 @@ public class ExamCandidateResultRepositoryImpl implements ExamCandidateResultRep
 
     @Override
     public ExamCandidateResult save(ExamCandidateResult result) {
-        var saved = springDataExamCandidateResultRepository.save(ExamCandidateResultMapper.toJpa(result));
+        ExamCandidateResultJpaEntity saved = springDataExamCandidateResultRepository.save(ExamCandidateResultMapper.toJpa(result));
         return ExamCandidateResultMapper.toDomain(saved);
     }
 

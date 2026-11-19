@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamResultAppealItemJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -23,7 +24,7 @@ public class ExamResultAppealItemRepositoryImpl implements ExamResultAppealItemR
 
     @Override
     public List<ExamResultAppealItem> saveAll(List<ExamResultAppealItem> items) {
-        var entities = items.stream().map(ExamResultAppealItemMapper::toJpa).toList();
+        List<ExamResultAppealItemJpaEntity> entities = items.stream().map(ExamResultAppealItemMapper::toJpa).toList();
         return springDataExamResultAppealItemRepository.saveAll(entities).stream()
             .map(ExamResultAppealItemMapper::toDomain)
             .toList();

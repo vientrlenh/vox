@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamBlueprintSectionJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +28,7 @@ public class ExamBlueprintSectionRepositoryImpl implements ExamBlueprintSectionR
 
     @Override
     public ExamBlueprintSection save(ExamBlueprintSection section) {
-        var saved = springDataExamBlueprintSectionRepository.save(ExamBlueprintSectionMapper.toJpa(section));
+        ExamBlueprintSectionJpaEntity saved = springDataExamBlueprintSectionRepository.save(ExamBlueprintSectionMapper.toJpa(section));
         return ExamBlueprintSectionMapper.toDomain(saved);
     }
 
@@ -49,8 +50,8 @@ public class ExamBlueprintSectionRepositoryImpl implements ExamBlueprintSectionR
         if (blueprintVersionIds.isEmpty()) {
             return List.of();
         }
-        var startedAt = System.nanoTime();
-        var result = springDataExamBlueprintSectionRepository.findByBlueprintVersionIdInOrderByOrderAsc(blueprintVersionIds).stream()
+        long startedAt = System.nanoTime();
+        List<ExamBlueprintSection> result = springDataExamBlueprintSectionRepository.findByBlueprintVersionIdInOrderByOrderAsc(blueprintVersionIds).stream()
             .map(ExamBlueprintSectionMapper::toDomain)
             .toList();
         LOGGER.info("[blueprint-perf] repo ExamBlueprintSectionRepositoryImpl.findByBlueprintVersionIdIn versionIds={} tookMs={}",

@@ -43,8 +43,8 @@ public class CreateExamSessionUseCase implements IUseCase<CreateExamSessionComma
         examPaperRepository.findById(input.paperId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
 
-        var now = Instant.now();
-        var session = new ExamSession(
+        Instant now = Instant.now();
+        ExamSession session = new ExamSession(
             input.examId(),
             input.candidateId(),
             input.paperId(),

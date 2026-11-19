@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,8 +67,8 @@ public class GradingSampleSelector {
      * không phải 0 — hậu kiểm mà trả về rỗng thì admin tưởng hệ thống hỏng.
      */
     private List<UUID> randomPercent(List<UUID> candidates, Integer percent) {
-        var size = sampleSize(candidates.size(), percent);
-        var shuffled = new ArrayList<>(candidates);
+        int size = sampleSize(candidates.size(), percent);
+        List<UUID> shuffled = new ArrayList<>(candidates);
         java.util.Collections.shuffle(shuffled, random);
         return List.copyOf(shuffled.subList(0, size));
     }
@@ -83,17 +85,17 @@ public class GradingSampleSelector {
      * </ul>
      */
     private List<UUID> riskBased(List<UUID> candidates, Integer percent, List<GradingRiskInfo> riskInfos) {
-        var infoById = riskInfos == null ? java.util.Map.<UUID, GradingRiskInfo>of()
+        Map<UUID, GradingRiskInfo> infoById = riskInfos == null ? java.util.Map.<UUID, GradingRiskInfo>of()
             : riskInfos.stream().collect(Collectors.toMap(
                 riskInfo -> riskInfo.candidateResultId(), Function.identity(), (left, right) -> left));
 
-        var ranked = new ArrayList<>(candidates);
+        List<UUID> ranked = new ArrayList<>(candidates);
         ranked.sort(Comparator
             .comparing((UUID id) -> riskScore(infoById.get(id))).reversed()
             // Hoà thì theo id để kết quả ổn định giữa hai lần gọi.
             .thenComparing(Function.identity()));
 
-        var size = percent == null ? ranked.size() : sampleSize(ranked.size(), percent);
+        int size = percent == null ? ranked.size() : sampleSize(ranked.size(), percent);
         return List.copyOf(ranked.subList(0, size));
     }
 
@@ -102,12 +104,12 @@ public class GradingSampleSelector {
         if (info == null) {
             return BigDecimal.ZERO;
         }
-        var score = BigDecimal.ZERO;
+        BigDecimal score = BigDecimal.ZERO;
         if (info.minConfidence() != null) {
             score = score.add(BigDecimal.ONE.subtract(info.minConfidence()));
         }
         if (info.passingScore() != null && info.totalScore() != null) {
-            var distance = info.totalScore().subtract(info.passingScore()).abs();
+            BigDecimal distance = info.totalScore().subtract(info.passingScore()).abs();
             if (distance.compareTo(BORDERLINE_BAND) <= 0) {
                 // Càng sát ngưỡng càng nặng: đúng ngưỡng = 1.0, mép dải = 0.
                 score = score.add(BigDecimal.ONE.subtract(
@@ -121,9 +123,9 @@ public class GradingSampleSelector {
         if (manualIds == null || manualIds.isEmpty()) {
             throw new IllegalArgumentException("Phải chọn ít nhất một bài thi để phân công.");
         }
-        var allowed = new LinkedHashSet<>(candidates);
-        var picked = new LinkedHashSet<UUID>();
-        for (var id : manualIds) {
+        Set<UUID> allowed = new LinkedHashSet<>(candidates);
+        Set<UUID> picked = new LinkedHashSet<UUID>();
+        for (UUID id : manualIds) {
             if (!allowed.contains(id)) {
                 throw new IllegalArgumentException(
                     "Có bài thi không đủ điều kiện cho vòng chấm này hoặc đã được phân công.");

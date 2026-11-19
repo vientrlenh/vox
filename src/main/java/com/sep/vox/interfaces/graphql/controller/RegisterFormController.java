@@ -39,14 +39,14 @@ public class RegisterFormController {
         if (page <= 0 || size <= 0) {
             throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
         }
-        var query = new ViewRegisterFormsQuery(page, size);
+        ViewRegisterFormsQuery query = new ViewRegisterFormsQuery(page, size);
         return viewRegisterFormsUseCase.execute(query);
     }
 
     @QueryMapping(name = "registerForm")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RegisterFormDto registerForm(@Argument(name = "id") UUID id) {
-        var query = new ViewRegisterFormDetailsQuery(id);
+        ViewRegisterFormDetailsQuery query = new ViewRegisterFormDetailsQuery(id);
         return viewRegisterFormDetailsUseCase.execute(query);
     }
 

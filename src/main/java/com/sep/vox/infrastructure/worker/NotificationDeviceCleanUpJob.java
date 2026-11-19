@@ -37,8 +37,8 @@ public class NotificationDeviceCleanUpJob {
             return;
         }
 
-        var threshold = Instant.now().minus(Duration.ofDays(retentionDays));
-        var removed = notificationDeviceRepository.deleteByLastSeenAtBefore(threshold);
+        Instant threshold = Instant.now().minus(Duration.ofDays(retentionDays));
+        int removed = notificationDeviceRepository.deleteByLastSeenAtBefore(threshold);
         if (removed > 0) {
             LOGGER.info("Đã dọn {} thiết bị không hoạt động quá {} ngày", removed, retentionDays);
         }

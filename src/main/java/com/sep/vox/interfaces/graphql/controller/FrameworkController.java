@@ -1,5 +1,9 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.application.port.input.command.UpdateFrameworkCriterionBandCommand;
+import com.sep.vox.application.port.input.command.UpdateFrameworkCriterionCommand;
+import com.sep.vox.application.port.input.command.UpdateFrameworkResultBandCommand;
+import com.sep.vox.application.port.input.command.UpdateFrameworkVersionCommand;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -188,7 +192,7 @@ public class FrameworkController {
             @Argument(name = "frameworkId") UUID frameworkId,
             @Argument(name = "versionId") UUID versionId,
             @Argument(name = "input") UpdateFrameworkVersionInput input) {
-        var command = UpdateFrameworkVersionCommandMapper.fromInput(frameworkId, versionId, input);
+        UpdateFrameworkVersionCommand command = UpdateFrameworkVersionCommandMapper.fromInput(frameworkId, versionId, input);
         return updateFrameworkVersionUseCase.execute(command);
     }
 
@@ -199,7 +203,7 @@ public class FrameworkController {
             @Argument(name = "versionId") UUID versionId,
             @Argument(name = "criterionId") UUID criterionId,
             @Argument(name = "input") UpdateFrameworkCriterionInput input) {
-        var command = UpdateFrameworkCriterionCommandMapper.fromInput(frameworkId, versionId, criterionId, input);
+        UpdateFrameworkCriterionCommand command = UpdateFrameworkCriterionCommandMapper.fromInput(frameworkId, versionId, criterionId, input);
         return updateFrameworkCriterionUseCase.execute(command);
     }
 
@@ -211,7 +215,7 @@ public class FrameworkController {
             @Argument(name = "criterionId") UUID criterionId,
             @Argument(name = "bandId") UUID bandId,
             @Argument(name = "input") UpdateFrameworkCriterionBandInput input) {
-        var command = UpdateFrameworkCriterionBandCommandMapper.fromInput(
+        UpdateFrameworkCriterionBandCommand command = UpdateFrameworkCriterionBandCommandMapper.fromInput(
                 frameworkId, versionId, criterionId, bandId, input);
         return updateFrameworkCriterionBandUseCase.execute(command);
     }
@@ -223,7 +227,7 @@ public class FrameworkController {
             @Argument(name = "versionId") UUID versionId,
             @Argument(name = "bandId") UUID bandId,
             @Argument(name = "input") UpdateFrameworkResultBandInput input) {
-        var command = UpdateFrameworkResultBandCommandMapper.fromInput(frameworkId, versionId, bandId, input);
+        UpdateFrameworkResultBandCommand command = UpdateFrameworkResultBandCommandMapper.fromInput(frameworkId, versionId, bandId, input);
         return updateFrameworkResultBandUseCase.execute(command);
     }
 

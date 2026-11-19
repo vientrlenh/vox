@@ -31,13 +31,13 @@ public class AsyncConfig {
     private static final String PUSH_THREAD_NAME_PREFIX = "push-";
 
     /**
-     * Giữ {@code AbortPolicy} mặc định: {@code ImportJobDispatcher} dựa vào việc bị từ chối
-     * để giữ job ở {@code IMPORTING} cho sweeper requeue. {@code CallerRunsPolicy} ở đây sẽ
-     * chạy cả phiên import trên thread scheduler và chặn luôn vòng poll.
+     * Keep the default {@code AbortPolicy}: {@code ImportJobDispatcher} relies on being rejected
+     * to leave the job in {@code IMPORTING} for the sweeper to requeue. {@code CallerRunsPolicy} here would
+     * run a whole import session on the scheduler thread and block the poll loop.
      */
     @Bean(name = "fileImportExecutor")
     public ThreadPoolTaskExecutor fileImportExecutor() {
-        var executor = new ThreadPoolTaskExecutor();
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(FILE_CORE_POOL_SIZE);
         executor.setMaxPoolSize(FILE_MAX_POOL_SIZE);
         executor.setQueueCapacity(FILE_QUEUE_CAPACITY);
@@ -49,13 +49,13 @@ public class AsyncConfig {
 
     @Bean(name = "practiceGenerationExecutor")
     public AsyncTaskExecutor practiceGenerationExecutor() {
-        var executor = new ThreadPoolTaskExecutor();
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(PRACTICE_CORE_POOL_SIZE);
         executor.setMaxPoolSize(PRACTICE_MAX_POOL_SIZE);
         executor.setQueueCapacity(PRACTICE_QUEUE_CAPACITY);
         executor.setThreadNamePrefix(PRACTICE_THREAD_NAME_PREFIX);
-        // Hàng đợi đầy thì chạy ngay trên thread gọi (chậm nhưng vẫn xong) thay vì ném
-        // RejectedExecutionException vào mặt học sinh đang chờ vào phiên.
+        // When the queue is full, run right away on the calling thread (slow but it still finishes) instead of throwing
+        // RejectedExecutionException in the face of a student waiting to enter the session.
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
         return new DelegatingSecurityContextAsyncTaskExecutor(executor);
@@ -63,7 +63,7 @@ public class AsyncConfig {
     
     @Bean(name = "pushExecutor")
     ThreadPoolTaskExecutor pushExecutor() {
-        var executor = new ThreadPoolTaskExecutor();
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(PUSH_CORE_POOL_SIZE);
         executor.setMaxPoolSize(PUSH_MAX_POOL_SIZE);
         executor.setQueueCapacity(PUSH_QUEUE_CAPACITY);

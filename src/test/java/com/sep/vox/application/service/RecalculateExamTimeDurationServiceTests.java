@@ -98,7 +98,7 @@ class RecalculateExamTimeDurationServiceTests {
 
     @Test
     void should_pass_when_exam_has_no_schedule() {
-        var exam = givenExamWithPaperDuration(ExamKind.CENTRALIZED, 3600);
+        Exam exam = givenExamWithPaperDuration(ExamKind.CENTRALIZED, 3600);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of());
 
         service.recalculate(examId);
@@ -109,7 +109,7 @@ class RecalculateExamTimeDurationServiceTests {
 
     @Test
     void should_allow_shortening_duration() {
-        var exam = givenExamWithPaperDuration(ExamKind.CENTRALIZED, 600);
+        Exam exam = givenExamWithPaperDuration(ExamKind.CENTRALIZED, 600);
         exam.setExamTimeDurationSecond(3600);
         when(examScheduleRepository.findByExamId(examId))
             .thenReturn(List.of(schedule(ExamScheduleStatus.PUBLISHED, start, start.plus(30, ChronoUnit.MINUTES))));
@@ -120,10 +120,10 @@ class RecalculateExamTimeDurationServiceTests {
         verify(examRepository).save(exam);
     }
 
-    /** Không mã đề nào ⇒ 0, không phải null: một trạng thái chỉ được có một cách mã hoá. */
+    /** No variants => 0, not null: one state may be encoded in only one way. */
     @Test
     void should_write_zero_duration_when_exam_has_no_paper() {
-        var exam = exam(ExamKind.CENTRALIZED);
+        Exam exam = exam(ExamKind.CENTRALIZED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examPaperRepository.findByExamId(examId)).thenReturn(List.of());
 
@@ -134,18 +134,21 @@ class RecalculateExamTimeDurationServiceTests {
         verify(examScheduleRepository, never()).findByExamId(any());
     }
 
-    /** Nhánh còn lại của cùng trạng thái "chưa tính được": có mã đề nhưng chưa gán câu hỏi nào. */
+    /**
+     * The other branch of the same "cannot be computed yet" state: there are variants but no
+     * question assigned yet.
+     */
     @Test
     void should_write_zero_duration_when_papers_have_no_assigned_question() {
-        var exam = exam(ExamKind.CENTRALIZED);
+        Exam exam = exam(ExamKind.CENTRALIZED);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
-        var paper = mock(ExamPaper.class);
+        ExamPaper paper = mock(ExamPaper.class);
         when(paper.getId()).thenReturn(paperId);
         when(paper.getTimeDurationSeconds()).thenReturn(0);
         when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(paper));
 
-        var item = mock(ExamPaperItem.class);
+        ExamPaperItem item = mock(ExamPaperItem.class);
         when(item.getPaperId()).thenReturn(paperId);
         when(item.getQuestionId()).thenReturn(null);
         when(examPaperItemRepository.findByPaperIdIn(List.of(paperId))).thenReturn(List.of(item));
@@ -158,24 +161,27 @@ class RecalculateExamTimeDurationServiceTests {
         verify(examRepository).save(exam);
     }
 
-    /** Dựng exam có đúng 1 mã đề, 1 item, câu hỏi tổng thời lượng = totalSeconds. */
+    /**
+     * Builds an exam with exactly 1 variant and 1 item, whose question's total duration =
+     * totalSeconds.
+     */
     private Exam givenExamWithPaperDuration(ExamKind kind, int totalSeconds) {
-        var exam = exam(kind);
+        Exam exam = exam(kind);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
-        var paper = mock(ExamPaper.class);
+        ExamPaper paper = mock(ExamPaper.class);
         when(paper.getId()).thenReturn(paperId);
         when(paper.getTimeDurationSeconds()).thenReturn(totalSeconds);
         when(examPaperRepository.findByExamId(examId)).thenReturn(List.of(paper));
 
-        // Item của mọi mã đề và câu hỏi của mọi item đều được nạp bằng MỘT query batch, thay vì
-        // một query cho mỗi mã đề rồi một query cho mỗi câu hỏi.
-        var item = mock(ExamPaperItem.class);
+        // The items of every variant and the questions of every item are loaded with ONE batch
+        // query, instead of one query per variant and then one query per question.
+        ExamPaperItem item = mock(ExamPaperItem.class);
         when(item.getPaperId()).thenReturn(paperId);
         when(item.getQuestionId()).thenReturn(questionId);
         when(examPaperItemRepository.findByPaperIdIn(List.of(paperId))).thenReturn(List.of(item));
 
-        var question = mock(Question.class);
+        Question question = mock(Question.class);
         when(question.getId()).thenReturn(questionId);
         when(question.getPreparationTimeSeconds()).thenReturn(0);
         when(question.getMaxResponseSeconds()).thenReturn(totalSeconds);
@@ -184,14 +190,14 @@ class RecalculateExamTimeDurationServiceTests {
     }
 
     private Exam exam(ExamKind kind) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setKind(kind);
         return exam;
     }
 
     private ExamSchedule schedule(ExamScheduleStatus status, Instant from, Instant to) {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(UUID.randomUUID());
         schedule.setExamId(examId);
         schedule.setStartDate(from);

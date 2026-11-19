@@ -1,7 +1,9 @@
 package com.sep.vox.infrastructure.worker;
 
+import com.sep.vox.domain.model.exam.Exam;
 import java.time.Instant;
 
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -42,27 +44,27 @@ public class ExamHumanGradingNoticeBatch {
     }
 
     /**
-     * Không {@code @Transactional} ở đây: mỗi bài thi phải là một transaction riêng của
-     * {@code publishIfPendingReview}. Bọc cả lượt trong một transaction nghĩa là một bài thi hỏng
-     * kéo theo rollback đánh dấu của tất cả những bài đã xử lý xong trước nó, và lượt sau nhắc lại
-     * từ đầu.
+     * Not {@code @Transactional} here: each attempt must be its own transaction of
+     * {@code publishIfPendingReview}. Wrapping the whole run in one transaction means one failing attempt
+     * rolls back the marking of all the attempts already processed before it, and the next run reminds from
+     * the start.
      */
     @Scheduled(fixedDelay = 60000)
     public void run() {
-        var due = examRepository.findDueForHumanGradingNotice();
+        List<Exam> due = examRepository.findDueForHumanGradingNotice();
         if (due.isEmpty()) {
             return;
         }
 
-        var now = Instant.now();
-        var notified = 0;
-        for (var exam : due) {
+        Instant now = Instant.now();
+        int notified = 0;
+        for (Exam exam : due) {
             try {
                 examHumanGradingNotificationService.publishIfPendingReview(exam, now);
                 notified++;
             } catch (Exception e) {
-                // Một bài thi hỏng (mất người nhận, dữ liệu lệch) không được cắt mất phần còn lại
-                // của lượt quét. Dấu chưa đóng nên bài này sẽ được thử lại ở tick sau.
+                // One failing attempt (lost recipient, inconsistent data) must not cut off the rest
+                // of the sweep. The marker is not closed so this attempt will be retried on the next tick.
                 LOGGER.error("Không nhắc được chấm tay cho bài thi {}", exam.getId(), e);
             }
         }

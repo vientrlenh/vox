@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamItemResponseTurnJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -25,7 +26,7 @@ public class ExamItemResponseTurnRepositoryImpl implements ExamItemResponseTurnR
 
     @Override
     public ExamItemResponseTurn upsert(ExamItemResponseTurn turn) {
-        var existing = springDataExamItemResponseTurnRepository.findByExamItemResponseIdAndTurnOrder(
+        ExamItemResponseTurnJpaEntity existing = springDataExamItemResponseTurnRepository.findByExamItemResponseIdAndTurnOrder(
             turn.getExamItemResponseId(),
             turn.getTurnOrder()
         ).orElse(null);
@@ -43,7 +44,7 @@ public class ExamItemResponseTurnRepositoryImpl implements ExamItemResponseTurnR
             turn.setCreatedAt(Instant.now());
         }
 
-        var saved = springDataExamItemResponseTurnRepository.save(ExamItemResponseTurnMapper.toJpa(turn));
+        ExamItemResponseTurnJpaEntity saved = springDataExamItemResponseTurnRepository.save(ExamItemResponseTurnMapper.toJpa(turn));
         return ExamItemResponseTurnMapper.toDomain(saved);
     }
 

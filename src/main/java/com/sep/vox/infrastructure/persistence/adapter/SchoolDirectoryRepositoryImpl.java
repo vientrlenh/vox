@@ -1,11 +1,14 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.SchoolDirectoryJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.common.PageResult;
@@ -36,8 +39,8 @@ public class SchoolDirectoryRepositoryImpl implements SchoolDirectoryRepository 
 
     @Override
     public SchoolDirectory save(SchoolDirectory sd) {
-        var entity = SchoolDirectoryMapper.toJpa(sd);
-        var saved = springDataSchoolDirectoryRepository.save(entity);
+        SchoolDirectoryJpaEntity entity = SchoolDirectoryMapper.toJpa(sd);
+        SchoolDirectoryJpaEntity saved = springDataSchoolDirectoryRepository.save(entity);
         return SchoolDirectoryMapper.toDomain(saved);
     }
 
@@ -58,8 +61,8 @@ public class SchoolDirectoryRepositoryImpl implements SchoolDirectoryRepository 
 
     @Override
     public List<SchoolDirectory> findAllByOrderByIdAsc(int limit) {
-        var pageable = PageRequest.of(0, limit + 1);
-        var results = springDataSchoolDirectoryRepository.findAllByOrderByIdAsc(pageable).getContent();
+        PageRequest pageable = PageRequest.of(0, limit + 1);
+        List<SchoolDirectoryJpaEntity> results = springDataSchoolDirectoryRepository.findAllByOrderByIdAsc(pageable).getContent();
         return results.stream()
             .map(SchoolDirectoryMapper::toDomain)
             .toList();
@@ -67,8 +70,8 @@ public class SchoolDirectoryRepositoryImpl implements SchoolDirectoryRepository 
 
     @Override
     public List<SchoolDirectory> findByIdGreaterThanOrderByIdAsc(UUID cursor, int limit) {
-        var pageable = PageRequest.of(0, limit + 1);
-        var results = springDataSchoolDirectoryRepository.findByIdGreaterThanOrderByIdAsc(cursor, pageable);
+        PageRequest pageable = PageRequest.of(0, limit + 1);
+        Slice<SchoolDirectoryJpaEntity> results = springDataSchoolDirectoryRepository.findByIdGreaterThanOrderByIdAsc(cursor, pageable);
         return results.stream()
             .map(SchoolDirectoryMapper::toDomain)
             .toList();
@@ -76,8 +79,8 @@ public class SchoolDirectoryRepositoryImpl implements SchoolDirectoryRepository 
 
     @Override
     public PageResult<SchoolDirectory> findAll(int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
-        var page = springDataSchoolDirectoryRepository.findAllByOrderByIdDesc(pageable);
+        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        Page<SchoolDirectoryJpaEntity> page = springDataSchoolDirectoryRepository.findAllByOrderByIdDesc(pageable);
         return new PageResult<>(
             page.stream()
                 .map(SchoolDirectoryMapper::toDomain)

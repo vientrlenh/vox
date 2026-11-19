@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examitemresponse;
 
+import com.sep.vox.domain.model.exam.ExamItemResponse;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -21,7 +22,7 @@ public class RecordAnswerTerminationReasonUseCase implements IUseCase<RecordAnsw
     @Override
     @Transactional
     public Void execute(Command input) {
-        var response = examItemResponseRepository.findById(input.answerId())
+        ExamItemResponse response = examItemResponseRepository.findById(input.answerId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu trả lời để lưu lý do kết thúc"));
         response.setTerminationReason(input.reason());
         examItemResponseRepository.save(response);

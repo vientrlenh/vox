@@ -31,6 +31,7 @@ import com.sep.vox.application.port.input.service.ExamDirectoryAccessService.Exa
 import com.sep.vox.application.port.input.usecase.examcandidate.ImportExamCandidatesFromClassUseCase;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -77,7 +78,7 @@ class ImportExamCandidatesFromClassUseCaseTests {
             examRepository, examCandidateRepository, schoolClassRepository, schoolClassUserRepository,
             userRoleQueryRepository, examDirectoryAccessService, classTestTokenQuotaGuardService);
 
-        var exam = exam();
+        Exam exam = exam();
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examDirectoryAccessService.resolve(exam))
             .thenReturn(new ExamDirectoryScope(userId, schoolId, true));
@@ -111,7 +112,7 @@ class ImportExamCandidatesFromClassUseCaseTests {
             return arg.stream().peek(c -> c.setId(UUID.randomUUID())).toList();
         });
 
-        var result = useCase.execute(new ImportExamCandidatesFromClassCommand(examId, classId));
+        List<ExamCandidateDto> result = useCase.execute(new ImportExamCandidatesFromClassCommand(examId, classId));
 
         assertThat(result).hasSize(1);
     }
@@ -132,7 +133,7 @@ class ImportExamCandidatesFromClassUseCaseTests {
             return arg.stream().peek(c -> c.setId(UUID.randomUUID())).toList();
         });
 
-        var result = useCase.execute(new ImportExamCandidatesFromClassCommand(examId, classId));
+        List<ExamCandidateDto> result = useCase.execute(new ImportExamCandidatesFromClassCommand(examId, classId));
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).studentId()).isEqualTo(activeStudent);
@@ -140,7 +141,7 @@ class ImportExamCandidatesFromClassUseCaseTests {
 
     @Test
     void should_reject_importing_class_into_scheduled_class_test_when_token_quota_exceeded() {
-        var exam = scheduledClassTest();
+        Exam exam = scheduledClassTest();
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examDirectoryAccessService.resolve(exam)).thenReturn(new ExamDirectoryScope(userId, schoolId, true));
         when(schoolClassUserRepository.findBySchoolClassId(classId, 1, 1000))
@@ -162,8 +163,9 @@ class ImportExamCandidatesFromClassUseCaseTests {
 
     @Test
     void should_not_check_quota_when_importing_into_draft_class_test() {
-        // Chưa publish thì publish sau này (UpdateExamStatusUseCase) sẽ tự soi với số thí sinh cuối cùng.
-        var exam = exam();
+        // Not published yet, so the later publish (UpdateExamStatusUseCase) will check against the
+        // final number of candidates.
+        Exam exam = exam();
         exam.setKind(ExamKind.CLASS_TEST);
         exam.setStatus(ExamStatus.DRAFT);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
@@ -192,7 +194,7 @@ class ImportExamCandidatesFromClassUseCaseTests {
             .thenReturn(Set.of(existingStudent));
         when(examCandidateRepository.findStudentIdsByExamId(examId)).thenReturn(Set.of(existingStudent));
 
-        var result = useCase.execute(new ImportExamCandidatesFromClassCommand(examId, classId));
+        List<ExamCandidateDto> result = useCase.execute(new ImportExamCandidatesFromClassCommand(examId, classId));
 
         assertThat(result).isEmpty();
     }
@@ -202,21 +204,21 @@ class ImportExamCandidatesFromClassUseCaseTests {
     }
 
     private SchoolClass schoolClass() {
-        var schoolClass = new SchoolClass();
+        SchoolClass schoolClass = new SchoolClass();
         schoolClass.setId(classId);
         schoolClass.setSchoolId(schoolId);
         return schoolClass;
     }
 
     private Exam exam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         return exam;
     }
 
     private Exam scheduledClassTest() {
-        var exam = exam();
+        Exam exam = exam();
         exam.setKind(ExamKind.CLASS_TEST);
         exam.setStatus(ExamStatus.SCHEDULED);
         return exam;

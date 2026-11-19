@@ -71,8 +71,8 @@ public final class PaperTimeCalculator {
      * gọi nhầm sau này không có cách nào biết.
      */
     public static int billableSecondsOf(Collection<Question> questions) {
-        var seconds = 0;
-        for (var question : questions) {
+        int seconds = 0;
+        for (Question question : questions) {
             seconds += billableSecondsOfOne(question);
         }
         return seconds;
@@ -90,8 +90,8 @@ public final class PaperTimeCalculator {
      * là đủ; hàm gộp chỉ để phòng dữ liệu cũ lỡ có hai dòng, lấy dòng đầu thay vì ném lỗi.
      */
     public static Map<UUID, QuestionAsset> indexByQuestionId(Collection<QuestionAsset> assets) {
-        var byQuestionId = new HashMap<UUID, QuestionAsset>();
-        for (var asset : assets) {
+        Map<UUID, QuestionAsset> byQuestionId = new HashMap<>();
+        for (QuestionAsset asset : assets) {
             byQuestionId.putIfAbsent(asset.getQuestionId(), asset);
         }
         return byQuestionId;
@@ -103,9 +103,9 @@ public final class PaperTimeCalculator {
     public static PaperTimeBreakdown breakdownOf(
             Collection<Question> questions,
             Map<UUID, QuestionAsset> assetByQuestionId) {
-        var billableSeconds = 0;
-        var mediaSeconds = 0;
-        for (var question : questions) {
+        int billableSeconds = 0;
+        int mediaSeconds = 0;
+        for (Question question : questions) {
             billableSeconds += billableSecondsOfOne(question);
             mediaSeconds += mediaSecondsOf(assetByQuestionId.get(question.getId()));
         }

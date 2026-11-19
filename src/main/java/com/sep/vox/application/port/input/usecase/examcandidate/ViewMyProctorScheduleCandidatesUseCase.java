@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,7 +31,7 @@ public class ViewMyProctorScheduleCandidatesUseCase implements IUseCase<UUID, Li
         // Khối kiểm quyền từng nằm ngay trong lớp này; nó chuyển sang ProctorScheduleAccessService
         // khi đường đọc thứ hai theo ca thi xuất hiện (lịch sử cảnh báo giám sát), để hai đường không
         // trả lời khác nhau cho cùng câu hỏi "ai được xem ca thi này".
-        var schedule = accessService.requireCanMonitorSchedule(scheduleId);
+        ExamSchedule schedule = accessService.requireCanMonitorSchedule(scheduleId);
         return proctorScheduleCandidatesQueryRepository.findByScheduleId(schedule.getId());
     }
 }

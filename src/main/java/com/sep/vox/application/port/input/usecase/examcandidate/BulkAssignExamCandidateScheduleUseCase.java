@@ -1,10 +1,12 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
+import com.sep.vox.domain.model.exam.Exam;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,19 +65,19 @@ public class BulkAssignExamCandidateScheduleUseCase
     @Override
     @Transactional
     public List<ExamCandidateDto> execute(BulkAssignExamCandidateScheduleCommand input) {
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var currentUserId = examScheduleManageAccessService.requireCanManage(exam);
+        UUID currentUserId = examScheduleManageAccessService.requireCanManage(exam);
         ExamEditingGuard.requireScheduleEditable(exam);
 
-        var candidateIds = input.candidateIds() == null ? List.<java.util.UUID>of() : input.candidateIds();
+        List<UUID> candidateIds = input.candidateIds() == null ? List.<java.util.UUID>of() : input.candidateIds();
         if (candidateIds.isEmpty()) {
             return List.of();
         }
 
         // Khoá ca TRƯỚC, đụng thí sinh SAU — cùng thứ tự với AutoFillExamCandidatesUseCase để hai
         // luồng chạy song song không khoá chéo nhau.
-        var scheduleId = input.scheduleId();
+        UUID scheduleId = input.scheduleId();
         ExamSchedule schedule = null;
         if (scheduleId != null) {
             schedule = examScheduleRepository.findByIdForUpdate(scheduleId)
@@ -88,7 +90,7 @@ public class BulkAssignExamCandidateScheduleUseCase
             }
         }
 
-        var candidates = examCandidateRepository.findByIdInAndExamId(candidateIds, exam.getId());
+        List<ExamCandidate> candidates = examCandidateRepository.findByIdInAndExamId(candidateIds, exam.getId());
         // Tra theo (id, examId) nên thiếu dòng nghĩa là có id không tồn tại hoặc thuộc kỳ thi khác —
         // hỏng cả lượt thay vì âm thầm xếp một phần.
         if (candidates.size() != candidateIds.stream().distinct().count()) {
@@ -102,9 +104,9 @@ public class BulkAssignExamCandidateScheduleUseCase
                 candidates, schedule.getStartDate(), schedule.getEndDate());
         }
 
-        var now = Instant.now();
-        var assignedToSchedule = new ArrayList<ExamCandidate>();
-        for (var candidate : candidates) {
+        Instant now = Instant.now();
+        List<ExamCandidate> assignedToSchedule = new ArrayList<ExamCandidate>();
+        for (ExamCandidate candidate : candidates) {
             if (scheduleId == null) {
                 candidate.unassignFromSchedule(now, currentUserId);
                 continue;

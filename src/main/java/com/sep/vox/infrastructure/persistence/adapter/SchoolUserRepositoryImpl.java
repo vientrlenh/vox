@@ -1,10 +1,12 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.SchoolUserJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -42,15 +44,15 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
 
     @Override
     public SchoolUser save(SchoolUser schoolUser) {
-        var entity = SchoolUserMapper.toJpa(schoolUser);
-        var saved = springDataSchoolUserRepository.save(entity);
+        SchoolUserJpaEntity entity = SchoolUserMapper.toJpa(schoolUser);
+        SchoolUserJpaEntity saved = springDataSchoolUserRepository.save(entity);
         return SchoolUserMapper.toDomain(saved);
     }
 
     @Override
     public List<SchoolUser> findBySchoolIdIn(Collection<UUID> schoolIds, int pageNumber, int size) {
-        var fromRow = (pageNumber - 1) * size + 1;
-        var toRow = pageNumber * size;
+        int fromRow = (pageNumber - 1) * size + 1;
+        int toRow = pageNumber * size;
         return springDataSchoolUserRepository.findBySchoolIdIn(schoolIds, fromRow, toRow)
             .stream()
             .map(SchoolUserMapper::toDomain)
@@ -60,12 +62,12 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
     @Override
     public PageResult<SchoolUser> findBySchoolId(UUID schoolId, String search, UUID roleId, String status,
             UUID excludeClassId, boolean excludeAdminRoles, int page, int size) {
-        var searchPattern = (search == null || search.isBlank())
+        String searchPattern = (search == null || search.isBlank())
             ? null
             : "%" + search.strip().toLowerCase() + "%";
-        var statusFilter = (status == null || status.isBlank()) ? null : status;
-        var pageRequest = PageRequest.of(page - 1, size);
-        var pageable = springDataSchoolUserRepository.searchBySchoolId(
+        String statusFilter = (status == null || status.isBlank()) ? null : status;
+        PageRequest pageRequest = PageRequest.of(page - 1, size);
+        Page<SchoolUserJpaEntity> pageable = springDataSchoolUserRepository.searchBySchoolId(
             schoolId, null, searchPattern, roleId, statusFilter, excludeClassId, excludeAdminRoles, pageRequest);
         return new PageResult<>(
             pageable.getContent()
@@ -82,12 +84,12 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
     @Override
     public PageResult<SchoolUser> searchBySchoolId(UUID schoolId, UUID excludeUserId, String search,
             UUID roleId, String status, int page, int size) {
-        var searchPattern = (search == null || search.isBlank())
+        String searchPattern = (search == null || search.isBlank())
             ? null
             : "%" + search.strip().toLowerCase() + "%";
-        var statusFilter = (status == null || status.isBlank()) ? null : status;
-        var pageRequest = PageRequest.of(page - 1, size);
-        var pageable = springDataSchoolUserRepository.searchBySchoolId(
+        String statusFilter = (status == null || status.isBlank()) ? null : status;
+        PageRequest pageRequest = PageRequest.of(page - 1, size);
+        Page<SchoolUserJpaEntity> pageable = springDataSchoolUserRepository.searchBySchoolId(
             schoolId, excludeUserId, searchPattern, roleId, statusFilter, null, false, pageRequest);
         return new PageResult<>(
             pageable.getContent()

@@ -26,6 +26,7 @@ import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.ExamCandidateRepository;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
 import com.sep.vox.domain.repository.ExamItemResponseRepository;
@@ -80,13 +81,13 @@ class ExamResultAccessServiceTests {
             userContextPort
         );
 
-        var session = new ExamSession(SESSION_ID, EXAM_ID, CANDIDATE_ID, UUID.randomUUID(),
+        ExamSession session = new ExamSession(SESSION_ID, EXAM_ID, CANDIDATE_ID, UUID.randomUUID(),
             Instant.now(), Instant.now(), ExamSessionStatus.GRADED, false, null);
         when(examSessionRepository.findById(SESSION_ID)).thenReturn(Optional.of(session));
         when(examCandidateRepository.findById(CANDIDATE_ID)).thenReturn(Optional.of(new ExamCandidate(
             CANDIDATE_ID, EXAM_ID, STUDENT_ID, null, null, ExamCandidateStatus.ATTENDED,
             Instant.now(), Instant.now(), null, null, null)));
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(EXAM_ID);
         exam.setSchoolId(SCHOOL_ID);
         when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(exam));
@@ -99,7 +100,7 @@ class ExamResultAccessServiceTests {
     void should_report_candidate_owner_when_current_user_is_the_student() {
         givenCurrentUser(STUDENT_ID, false);
 
-        var access = service.authorizeSession(SESSION_ID);
+        ExamResultAccessService.SessionAccess access = service.authorizeSession(SESSION_ID);
 
         assertThat(access.candidateOwner()).isTrue();
         assertThat(access.session().getId()).isEqualTo(SESSION_ID);
@@ -118,7 +119,7 @@ class ExamResultAccessServiceTests {
 
     @Test
     void should_not_report_candidate_owner_for_school_admin() {
-        var adminId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
         givenCurrentUser(adminId, false);
         givenSchoolAdmin(adminId);
 
@@ -153,7 +154,7 @@ class ExamResultAccessServiceTests {
 
     @Test
     void should_allow_school_admin_when_result_is_pending_review() {
-        var adminId = UUID.randomUUID();
+        UUID adminId = UUID.randomUUID();
         givenCurrentUser(adminId, false);
         givenSchoolAdmin(adminId);
         givenResult(ExamCandidateResultStatus.PENDING_REVIEW);
@@ -177,7 +178,7 @@ class ExamResultAccessServiceTests {
     }
 
     private void givenSchoolAdmin(UUID adminId) {
-        var schoolUser = new com.sep.vox.domain.model.school.SchoolUser();
+        SchoolUser schoolUser = new com.sep.vox.domain.model.school.SchoolUser();
         schoolUser.setSchoolId(SCHOOL_ID);
         when(schoolUserRepository.findByUserId(adminId)).thenReturn(Optional.of(schoolUser));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(adminId)).thenReturn(List.of(
@@ -187,7 +188,7 @@ class ExamResultAccessServiceTests {
     }
 
     private void givenResult(ExamCandidateResultStatus status) {
-        var result = new ExamCandidateResult(
+        ExamCandidateResult result = new ExamCandidateResult(
             UUID.randomUUID(), EXAM_ID, CANDIDATE_ID, SESSION_ID, UUID.randomUUID(), 1,
             UUID.randomUUID(), UUID.randomUUID(), null, null,
             new BigDecimal("7.00"), status, null, null, Instant.now(), Instant.now(), null, null);

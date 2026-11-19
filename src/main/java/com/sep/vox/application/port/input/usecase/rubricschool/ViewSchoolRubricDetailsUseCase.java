@@ -10,11 +10,15 @@ import com.sep.vox.domain.dto.RubricDto;
 import com.sep.vox.domain.mapper.RubricDtoMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
+import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import java.util.UUID;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,8 +49,8 @@ public class ViewSchoolRubricDetailsUseCase implements IUseCase<ViewSchoolRubric
     @Transactional(readOnly = true)
     public RubricDto execute(ViewSchoolRubricDetailsQuery query) {
         // 1. Xác thực tài khoản
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
@@ -58,7 +62,7 @@ public class ViewSchoolRubricDetailsUseCase implements IUseCase<ViewSchoolRubric
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric này."));
 
         // 3. Chốt chặn an ninh bằng SchoolUser
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
@@ -68,7 +72,7 @@ public class ViewSchoolRubricDetailsUseCase implements IUseCase<ViewSchoolRubric
         }
 
         // 4. Kiểm tra trạng thái trường học
-        var school = schoolRepository.findById(query.schoolId())
+        School school = schoolRepository.findById(query.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
 
         if (!school.isActive()) {

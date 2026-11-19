@@ -40,6 +40,7 @@ import com.sep.vox.support.RestControllerTest;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 @RestControllerTest(AuthController.class)
 class AuthControllerTests {
@@ -78,13 +79,13 @@ class AuthControllerTests {
 
     @Test
     void login_should_return_tokens_without_refresh_token_and_set_cookie() {
-        var device = new ClientDeviceCommand("device-1", "Chrome on Windows", "WEB");
-        var expectedCommand = new LoginCommand(
+        ClientDeviceCommand device = new ClientDeviceCommand("device-1", "Chrome on Windows", "WEB");
+        LoginCommand expectedCommand = new LoginCommand(
             "admin@example.com", "password", "203.0.113.10", "JUnit User Agent", device);
         when(loginUseCase.execute(expectedCommand))
             .thenReturn(new LoginResponse("access-token", "refresh-token", List.of("STUDENT")));
 
-        var result = mvc.post().uri("/api/v1/auth/login")
+        MvcTestResult result = mvc.post().uri("/api/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
             .header("X-Forwarded-For", "203.0.113.10")
             .header("User-Agent", "JUnit User Agent")
@@ -100,7 +101,7 @@ class AuthControllerTests {
 
     @Test
     void login_should_return_bad_request_and_skip_use_case_when_body_is_invalid() {
-        var result = mvc.post().uri("/api/v1/auth/login")
+        MvcTestResult result = mvc.post().uri("/api/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"login\": \"\", \"password\": \"password\"}")
             .exchange();
@@ -114,7 +115,7 @@ class AuthControllerTests {
         when(loginUseCase.execute(any(LoginCommand.class)))
             .thenThrow(new UnauthorizedException("Invalid credentials"));
 
-        var result = mvc.post().uri("/api/v1/auth/login")
+        MvcTestResult result = mvc.post().uri("/api/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
             .content(LOGIN_JSON)
             .exchange();
@@ -128,7 +129,7 @@ class AuthControllerTests {
         when(refreshUseCase.execute(new RefreshCommand("old-refresh-token", "device-1")))
             .thenReturn(new RefreshResponse("access-token", "new-refresh-token"));
 
-        var result = mvc.post().uri("/api/v1/auth/refresh")
+        MvcTestResult result = mvc.post().uri("/api/v1/auth/refresh")
             .contentType(MediaType.APPLICATION_JSON)
             .cookie(new Cookie("refresh_token", "old-refresh-token"))
             .content("{\"deviceId\": \"device-1\"}")
@@ -143,7 +144,7 @@ class AuthControllerTests {
 
     @Test
     void logout_should_revoke_session_and_clear_cookie() {
-        var result = mvc.post().uri("/api/v1/auth/logout")
+        MvcTestResult result = mvc.post().uri("/api/v1/auth/logout")
             .contentType(MediaType.APPLICATION_JSON)
             .cookie(new Cookie("refresh_token", "old-refresh-token"))
             .content("{\"deviceId\": \"device-1\"}")
@@ -161,7 +162,7 @@ class AuthControllerTests {
      */
     @Test
     void logout_should_return_ok_and_clear_cookie_when_refresh_cookie_is_missing() {
-        var result = mvc.post().uri("/api/v1/auth/logout")
+        MvcTestResult result = mvc.post().uri("/api/v1/auth/logout")
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"deviceId\": \"device-1\"}")
             .exchange();
@@ -173,7 +174,7 @@ class AuthControllerTests {
 
     @Test
     void send_reset_password_otp_should_return_ok_response() {
-        var result = mvc.post().uri("/api/v1/auth/reset-password-otp")
+        MvcTestResult result = mvc.post().uri("/api/v1/auth/reset-password-otp")
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"email\": \"admin@example.com\"}")
             .exchange();
@@ -188,7 +189,7 @@ class AuthControllerTests {
         when(sendResetPasswordOtpUseCase.execute(any(SendResetPasswordOtpCommand.class)))
             .thenThrow(new NotFoundException("User not found"));
 
-        var result = mvc.post().uri("/api/v1/auth/reset-password-otp")
+        MvcTestResult result = mvc.post().uri("/api/v1/auth/reset-password-otp")
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"email\": \"missing@example.com\"}")
             .exchange();
@@ -198,7 +199,7 @@ class AuthControllerTests {
 
     @Test
     void reset_password_should_return_ok_response() {
-        var result = mvc.patch().uri("/api/v1/auth/reset-password")
+        MvcTestResult result = mvc.patch().uri("/api/v1/auth/reset-password")
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"email\": \"admin@example.com\", \"password\": \"new-password\", \"otp\": \"1234567\"}")
             .exchange();

@@ -117,7 +117,7 @@ class DeleteExamCandidateUseCaseTests {
     }
 
     private ExamCandidate candidate(UUID ownerExamId) {
-        var c = new ExamCandidate();
+        ExamCandidate c = new ExamCandidate();
         c.setId(candidateId);
         c.setExamId(ownerExamId);
         c.setStudentId(UUID.randomUUID());
@@ -126,7 +126,7 @@ class DeleteExamCandidateUseCaseTests {
     }
 
     private Exam exam(ExamStatus status) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         exam.setStatus(status);

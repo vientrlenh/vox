@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamBlueprintVersionJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -28,14 +29,14 @@ public class ExamBlueprintVersionRepositoryImpl implements ExamBlueprintVersionR
 
     @Override
     public ExamBlueprintVersion save(ExamBlueprintVersion version) {
-        var saved = springDataExamBlueprintVersionRepository.save(ExamBlueprintVersionMapper.toJpa(version));
+        ExamBlueprintVersionJpaEntity saved = springDataExamBlueprintVersionRepository.save(ExamBlueprintVersionMapper.toJpa(version));
         return ExamBlueprintVersionMapper.toDomain(saved);
     }
 
     @Override
     public Optional<ExamBlueprintVersion> findById(UUID id) {
-        var startedAt = System.nanoTime();
-        var result = springDataExamBlueprintVersionRepository.findById(id)
+        long startedAt = System.nanoTime();
+        Optional<ExamBlueprintVersion> result = springDataExamBlueprintVersionRepository.findById(id)
             .map(ExamBlueprintVersionMapper::toDomain);
         LOGGER.info("[blueprint-perf] repo ExamBlueprintVersionRepositoryImpl.findById id={} tookMs={}",
             id, (System.nanoTime() - startedAt) / 1_000_000);
@@ -64,8 +65,8 @@ public class ExamBlueprintVersionRepositoryImpl implements ExamBlueprintVersionR
         if (blueprintIds.isEmpty()) {
             return List.of();
         }
-        var startedAt = System.nanoTime();
-        var result = springDataExamBlueprintVersionRepository.findByBlueprintIdInOrderByVersionDesc(blueprintIds).stream()
+        long startedAt = System.nanoTime();
+        List<ExamBlueprintVersion> result = springDataExamBlueprintVersionRepository.findByBlueprintIdInOrderByVersionDesc(blueprintIds).stream()
             .map(ExamBlueprintVersionMapper::toDomain)
             .toList();
         LOGGER.info("[blueprint-perf] repo ExamBlueprintVersionRepositoryImpl.findByBlueprintIdIn blueprintIds={} tookMs={}",

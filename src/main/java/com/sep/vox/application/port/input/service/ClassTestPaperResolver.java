@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class ClassTestPaperResolver {
     }
 
     public ExamPaper resolve(UUID examId, UUID requestedPaperId) {
-        var papers = examPaperRepository.findByExamId(examId);
+        List<ExamPaper> papers = examPaperRepository.findByExamId(examId);
         if (papers.isEmpty()) {
             throw new NotFoundException("Bài kiểm tra chưa có mã đề nào");
         }

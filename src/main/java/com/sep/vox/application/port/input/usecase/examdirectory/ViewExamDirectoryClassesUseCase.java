@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examdirectory;
 
+import com.sep.vox.domain.model.school.SchoolClass;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,10 +37,10 @@ public class ViewExamDirectoryClassesUseCase
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolClassDto> execute(ViewExamDirectoryQuery input) {
-        var scope = examDirectoryAccessService.resolveByExamId(input.examId());
-        var search = StringNormalization.trimAndCollapseSpaces(input.search());
+        ExamDirectoryAccessService.ExamDirectoryScope scope = examDirectoryAccessService.resolveByExamId(input.examId());
+        String search = StringNormalization.trimAndCollapseSpaces(input.search());
 
-        var page = scope.schoolWide()
+        PageResult<SchoolClass> page = scope.schoolWide()
             ? schoolClassRepository.findBySchoolId(
                 scope.schoolId(), search, SchoolClassStatus.ACTIVE, null, null, input.page(), input.size())
             : schoolClassRepository.findByUserId(

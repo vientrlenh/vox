@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.repository.ImportRowRepository;
@@ -26,8 +27,8 @@ class ImportRowRepositoryTests {
 
     @Test
     void whenFindBySessionIdWithStatus_thenReturnsMatchingRowsSortedByRowNumber() {
-        var sessionId = UUID.randomUUID();
-        var otherSessionId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        UUID otherSessionId = UUID.randomUUID();
         importRowRepository.saveAll(List.of(
             row(sessionId, 3L, ImportRowStatus.INVALID),
             row(sessionId, 1L, ImportRowStatus.INVALID),
@@ -35,7 +36,7 @@ class ImportRowRepositoryTests {
             row(otherSessionId, 1L, ImportRowStatus.INVALID)
         ));
 
-        var found = importRowRepository.findBySessionId(sessionId, ImportRowStatus.INVALID, 1, 10);
+        PageResult<ImportRow> found = importRowRepository.findBySessionId(sessionId, ImportRowStatus.INVALID, 1, 10);
 
         assertThat(found.content()).hasSize(2);
         assertThat(found.content()).extracting(row -> row.getRowNumber()).containsExactly(1L, 3L);
@@ -46,14 +47,14 @@ class ImportRowRepositoryTests {
 
     @Test
     void whenFindBySessionIdWithoutStatus_thenReturnsPagedRows() {
-        var sessionId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
         importRowRepository.saveAll(List.of(
             row(sessionId, 1L, ImportRowStatus.PENDING),
             row(sessionId, 2L, ImportRowStatus.INVALID),
             row(sessionId, 3L, ImportRowStatus.IMPORTED)
         ));
 
-        var found = importRowRepository.findBySessionId(sessionId, null, 2, 2);
+        PageResult<ImportRow> found = importRowRepository.findBySessionId(sessionId, null, 2, 2);
 
         assertThat(found.content()).hasSize(1);
         assertThat(found.content().get(0).getRowNumber()).isEqualTo(3L);

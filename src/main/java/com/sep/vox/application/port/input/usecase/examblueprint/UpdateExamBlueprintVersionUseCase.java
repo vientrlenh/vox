@@ -1,9 +1,13 @@
 package com.sep.vox.application.port.input.usecase.examblueprint;
 
+import com.sep.vox.domain.model.exam.ExamBlueprint;
+import com.sep.vox.domain.model.exam.ExamBlueprintVersion;
+import com.sep.vox.domain.model.question.Question;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -76,15 +80,15 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
     @Override
     @Transactional
     public ExamBlueprintVersionDto execute(UpdateExamBlueprintVersionCommand input) {
-        var command = normalize(input);
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UpdateExamBlueprintVersionCommand command = normalize(input);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
-        var version = examBlueprintVersionRepository.findById(command.versionId())
+        ExamBlueprintVersion version = examBlueprintVersionRepository.findById(command.versionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
-        var blueprint = examBlueprintRepository.findById(version.getBlueprintId())
+        ExamBlueprint blueprint = examBlueprintRepository.findById(version.getBlueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
         if (!examBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
@@ -102,32 +106,32 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
         version.setEffectiveTo(parseDateTime(command.effectiveTo()));
         version.setUpdatedAt(Instant.now());
         version.setUpdatedBy(currentUserId);
-        var savedVersion = examBlueprintVersionRepository.save(version);
+        ExamBlueprintVersion savedVersion = examBlueprintVersionRepository.save(version);
 
-        var existingSections = examBlueprintSectionRepository.findByBlueprintVersionId(savedVersion.getId());
-        var existingSectionsById = new HashMap<UUID, ExamBlueprintSection>();
-        var existingSlotsBySectionId = new HashMap<UUID, Map<UUID, ExamBlueprintSlot>>();
-        for (var section : existingSections) {
+        List<ExamBlueprintSection> existingSections = examBlueprintSectionRepository.findByBlueprintVersionId(savedVersion.getId());
+        Map<UUID, ExamBlueprintSection> existingSectionsById = new HashMap<UUID, ExamBlueprintSection>();
+        Map<UUID, Map<UUID, ExamBlueprintSlot>> existingSlotsBySectionId = new HashMap<UUID, Map<UUID, ExamBlueprintSlot>>();
+        for (ExamBlueprintSection section : existingSections) {
             existingSectionsById.put(section.getId(), section);
-            var slotsById = new HashMap<UUID, ExamBlueprintSlot>();
-            for (var slot : examBlueprintSlotRepository.findBySectionId(section.getId())) {
+            Map<UUID, ExamBlueprintSlot> slotsById = new HashMap<UUID, ExamBlueprintSlot>();
+            for (ExamBlueprintSlot slot : examBlueprintSlotRepository.findBySectionId(section.getId())) {
                 slotsById.put(slot.getId(), slot);
             }
             existingSlotsBySectionId.put(section.getId(), slotsById);
         }
 
-        var keptSectionIds = new HashSet<UUID>();
-        var keptSlotIds = new HashSet<UUID>();
+        Set<UUID> keptSectionIds = new HashSet<UUID>();
+        Set<UUID> keptSlotIds = new HashSet<UUID>();
 
-        for (var sectionCommand : command.sections()) {
-            var currentSection = toSection(savedVersion.getId(), sectionCommand, existingSectionsById, currentUserId);
-            var savedSection = examBlueprintSectionRepository.save(currentSection);
+        for (CreateExamBlueprintSectionCommand sectionCommand : command.sections()) {
+            ExamBlueprintSection currentSection = toSection(savedVersion.getId(), sectionCommand, existingSectionsById, currentUserId);
+            ExamBlueprintSection savedSection = examBlueprintSectionRepository.save(currentSection);
             keptSectionIds.add(savedSection.getId());
 
-            var existingSlots = existingSlotsBySectionId.getOrDefault(savedSection.getId(), Map.of());
-            for (var slotCommand : slotsOf(sectionCommand)) {
-                var currentSlot = toSlot(savedVersion.getId(), savedSection.getId(), slotCommand, existingSlots, currentUserId);
-                var savedSlot = examBlueprintSlotRepository.save(currentSlot);
+            Map<UUID, ExamBlueprintSlot> existingSlots = existingSlotsBySectionId.getOrDefault(savedSection.getId(), Map.of());
+            for (CreateExamBlueprintSlotCommand slotCommand : slotsOf(sectionCommand)) {
+                ExamBlueprintSlot currentSlot = toSlot(savedVersion.getId(), savedSection.getId(), slotCommand, existingSlots, currentUserId);
+                ExamBlueprintSlot savedSlot = examBlueprintSlotRepository.save(currentSlot);
                 keptSlotIds.add(savedSlot.getId());
             }
         }
@@ -135,7 +139,7 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
         deleteRemovedSlots(existingSlotsBySectionId, keptSlotIds);
         deleteRemovedSections(existingSections, keptSectionIds);
 
-        var recalculatedVersion = recalculateBlueprintVersionTimeLimitService.recalculate(savedVersion.getId());
+        ExamBlueprintVersion recalculatedVersion = recalculateBlueprintVersionTimeLimitService.recalculate(savedVersion.getId());
         examTimeQuotaGuardService.requireWithinPlan(
             blueprint.getSchoolId(),
             recalculatedVersion.getTotalTimeLimitSeconds(),
@@ -203,18 +207,18 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
         if (command.sections().isEmpty()) {
             throw new IllegalStateException("Blueprint version phải có ít nhất một section");
         }
-        var sectionOrders = new HashSet<Integer>();
-        var sectionWeightSum = BigDecimal.ZERO;
-        for (var section : command.sections()) {
+        Set<Integer> sectionOrders = new HashSet<Integer>();
+        BigDecimal sectionWeightSum = BigDecimal.ZERO;
+        for (CreateExamBlueprintSectionCommand section : command.sections()) {
             if (!sectionOrders.add(section.order())) {
                 throw new IllegalStateException("Thứ tự section không được trùng lặp");
             }
             if (slotsOf(section).isEmpty()) {
                 throw new IllegalStateException("Mỗi section phải có ít nhất một slot");
             }
-            var slotOrders = new HashSet<Integer>();
-            var slotWeightSum = BigDecimal.ZERO;
-            for (var slot : slotsOf(section)) {
+            Set<Integer> slotOrders = new HashSet<Integer>();
+            BigDecimal slotWeightSum = BigDecimal.ZERO;
+            for (CreateExamBlueprintSlotCommand slot : slotsOf(section)) {
                 if (!slotOrders.add(slot.order())) {
                     throw new IllegalStateException("Thứ tự slot trong section không được trùng lặp");
                 }
@@ -233,7 +237,7 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
     }
 
     private void validateSlot(CreateExamBlueprintSlotCommand slot) {
-        var slotType = ExamBlueprintSlotType.valueOf(slot.slotType());
+        ExamBlueprintSlotType slotType = ExamBlueprintSlotType.valueOf(slot.slotType());
         if (slotType == ExamBlueprintSlotType.FIXED) {
             if (slot.fixedQuestionId() == null) {
                 throw new IllegalStateException("Slot FIXED bắt buộc phải có fixedQuestionId");
@@ -241,7 +245,7 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
             if (slot.selectionSpec() != null) {
                 throw new IllegalStateException("Slot FIXED không được có selectionSpec");
             }
-            var question = questionRepository.findById(slot.fixedQuestionId())
+            Question question = questionRepository.findById(slot.fixedQuestionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi fixed cho slot"));
             if (question.getStatus() != QuestionStatus.PUBLISHED) {
                 throw new IllegalStateException("Câu hỏi fixed cho slot phải ở trạng thái PUBLISHED");
@@ -261,7 +265,7 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
             CreateExamBlueprintSectionCommand command,
             Map<UUID, ExamBlueprintSection> existingSectionsById,
             UUID currentUserId) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         if (command.id() == null) {
             return new ExamBlueprintSection(
                 versionId,
@@ -276,7 +280,7 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
                 currentUserId
             );
         }
-        var existing = existingSectionsById.get(command.id());
+        ExamBlueprintSection existing = existingSectionsById.get(command.id());
         if (existing == null) {
             throw new NotFoundException("Không tìm thấy section cần cập nhật");
         }
@@ -301,7 +305,7 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
             CreateExamBlueprintSlotCommand command,
             Map<UUID, ExamBlueprintSlot> existingSlots,
             UUID currentUserId) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         if (command.id() == null) {
             return new ExamBlueprintSlot(
                 sectionId,
@@ -319,7 +323,7 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
                 currentUserId
             );
         }
-        var existing = existingSlots.get(command.id());
+        ExamBlueprintSlot existing = existingSlots.get(command.id());
         if (existing == null) {
             throw new NotFoundException("Không tìm thấy slot cần cập nhật");
         }
@@ -345,8 +349,8 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
     }
 
     private void deleteRemovedSlots(Map<UUID, Map<UUID, ExamBlueprintSlot>> existingSlotsBySectionId, Set<UUID> keptSlotIds) {
-        for (var slotsById : existingSlotsBySectionId.values()) {
-            for (var slot : slotsById.values()) {
+        for (Map<UUID, ExamBlueprintSlot> slotsById : existingSlotsBySectionId.values()) {
+            for (ExamBlueprintSlot slot : slotsById.values()) {
                 if (!keptSlotIds.contains(slot.getId())) {
                     examBlueprintSlotRepository.deleteById(slot.getId());
                 }
@@ -355,7 +359,7 @@ public class UpdateExamBlueprintVersionUseCase implements IUseCase<UpdateExamBlu
     }
 
     private void deleteRemovedSections(java.util.List<ExamBlueprintSection> existingSections, Set<UUID> keptSectionIds) {
-        for (var section : existingSections) {
+        for (ExamBlueprintSection section : existingSections) {
             if (!keptSectionIds.contains(section.getId())) {
                 examBlueprintSectionRepository.deleteById(section.getId());
             }

@@ -33,7 +33,7 @@ public final class ViewMyExamsQueryMapper {
             return null;
         }
 
-        var normalized = status.trim().toLowerCase(Locale.ROOT);
+        String normalized = status.trim().toLowerCase(Locale.ROOT);
         if (!ALLOWED_STATUSES.contains(normalized)) {
             throw new IllegalArgumentException("Trạng thái bài thi không hợp lệ");
         }
@@ -45,7 +45,7 @@ public final class ViewMyExamsQueryMapper {
             return true;
         }
 
-        var parts = sort.trim().split(",");
+        String[] parts = sort.trim().split(",");
         if (parts.length > 2 || !SORT_FIELD.equalsIgnoreCase(parts[0].trim())) {
             throw new IllegalArgumentException("Tham số sắp xếp không hợp lệ");
         }
@@ -53,7 +53,7 @@ public final class ViewMyExamsQueryMapper {
             return true;
         }
 
-        var direction = parts[1].trim().toLowerCase(Locale.ROOT);
+        String direction = parts[1].trim().toLowerCase(Locale.ROOT);
         if ("desc".equals(direction)) {
             return true;
         }

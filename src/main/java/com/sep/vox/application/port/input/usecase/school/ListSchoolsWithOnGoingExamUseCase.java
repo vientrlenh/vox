@@ -20,7 +20,7 @@ public class ListSchoolsWithOnGoingExamUseCase implements IUseCase<Void, List<UU
 
     @Override
     public List<UUID> execute(Void input) {
-        var result = schoolRepository.findIdsWithOngoingExam(Instant.now());
+        List<UUID> result = schoolRepository.findIdsWithOngoingExam(Instant.now());
         if (result == null) {
             return List.of();
         }

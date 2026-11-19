@@ -50,8 +50,8 @@ public class SubscriptionPlanRepositoryImpl implements SubscriptionPlanRepositor
 
     @Override
     public SubscriptionPlan save(SubscriptionPlan plan) {
-        var entity = SubscriptionPlanMapper.toJpa(plan);
-        var saved = springDataSubscriptionPlanRepository.save(entity);
+        SubscriptionPlanJpaEntity entity = SubscriptionPlanMapper.toJpa(plan);
+        SubscriptionPlanJpaEntity saved = springDataSubscriptionPlanRepository.save(entity);
         return SubscriptionPlanMapper.toDomain(saved);
     }
 

@@ -161,13 +161,13 @@ class SchoolControllerTests {
 
     @Test
     void school_classes_should_return_page_result() {
-        var languageId = UUID.randomUUID();
-        var gradeId = UUID.randomUUID();
-        var expected = new PageResult<SchoolClassDto>(List.of(), 1, 20, 0, 0);
-        var query = new ViewSchoolClassesQuery(1, 20, "eng", "ACTIVE", languageId, gradeId);
+        UUID languageId = UUID.randomUUID();
+        UUID gradeId = UUID.randomUUID();
+        PageResult<SchoolClassDto> expected = new PageResult<SchoolClassDto>(List.of(), 1, 20, 0, 0);
+        ViewSchoolClassesQuery query = new ViewSchoolClassesQuery(1, 20, "eng", "ACTIVE", languageId, gradeId);
         when(viewSchoolClassesUseCase.execute(query)).thenReturn(expected);
 
-        var result = controller.schoolClasses(1, 20, "eng", "ACTIVE", languageId, gradeId);
+        PageResult<SchoolClassDto> result = controller.schoolClasses(1, 20, "eng", "ACTIVE", languageId, gradeId);
 
         assertThat(result).isEqualTo(expected);
         verify(viewSchoolClassesUseCase).execute(query);
@@ -181,8 +181,8 @@ class SchoolControllerTests {
 
     @Test
     void school_class_should_return_details() {
-        var classId = UUID.randomUUID();
-        var expected = new SchoolClassDto(
+        UUID classId = UUID.randomUUID();
+        SchoolClassDto expected = new SchoolClassDto(
             classId,
             UUID.randomUUID(),
             UUID.randomUUID(),
@@ -196,7 +196,7 @@ class SchoolControllerTests {
         );
         when(viewSchoolClassDetailsUseCase.execute(new ViewSchoolClassDetailsQuery(classId))).thenReturn(expected);
 
-        var result = controller.schoolClass(classId);
+        SchoolClassDto result = controller.schoolClass(classId);
 
         assertThat(result).isEqualTo(expected);
         verify(viewSchoolClassDetailsUseCase).execute(new ViewSchoolClassDetailsQuery(classId));
@@ -205,15 +205,15 @@ class SchoolControllerTests {
     @Test
     @SuppressWarnings("unchecked")
     void school_class_school_field_should_load_related_school() {
-        var schoolId = UUID.randomUUID();
-        var response = schoolClassDto(schoolId, UUID.randomUUID(), UUID.randomUUID());
-        var expected = new SchoolDto(schoolId, "SCH", "School", null, null, null, null, null, 0, true, null, null);
-        var env = mock(DataFetchingEnvironment.class);
-        var loader = mock(DataLoader.class);
+        UUID schoolId = UUID.randomUUID();
+        SchoolClassDto response = schoolClassDto(schoolId, UUID.randomUUID(), UUID.randomUUID());
+        SchoolDto expected = new SchoolDto(schoolId, "SCH", "School", null, null, null, null, null, 0, true, null, null);
+        DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
+        DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, SchoolDto>getDataLoader("schoolByClass")).thenReturn(loader);
         when(loader.load(schoolId)).thenReturn(CompletableFuture.completedFuture(expected));
 
-        var result = controller.school(response, env).join();
+        SchoolDto result = controller.school(response, env).join();
 
         assertThat(result).isEqualTo(expected);
         verify(loader).load(schoolId);
@@ -222,16 +222,16 @@ class SchoolControllerTests {
     @Test
     @SuppressWarnings("unchecked")
     void school_class_school_grade_field_should_load_related_grade_with_school_scope() {
-        var schoolId = UUID.randomUUID();
-        var gradeId = UUID.randomUUID();
-        var response = schoolClassDto(schoolId, UUID.randomUUID(), gradeId);
-        var expected = new SchoolGradeDto(gradeId, schoolId, UUID.randomUUID(), "G10", "Grade 10", null, null, null, "ACTIVE", null, null);
-        var env = mock(DataFetchingEnvironment.class);
-        var loader = mock(DataLoader.class);
+        UUID schoolId = UUID.randomUUID();
+        UUID gradeId = UUID.randomUUID();
+        SchoolClassDto response = schoolClassDto(schoolId, UUID.randomUUID(), gradeId);
+        SchoolGradeDto expected = new SchoolGradeDto(gradeId, schoolId, UUID.randomUUID(), "G10", "Grade 10", null, null, null, "ACTIVE", null, null);
+        DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
+        DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, SchoolGradeDto>getDataLoader("schoolGradeByClass")).thenReturn(loader);
         when(loader.load(gradeId)).thenReturn(CompletableFuture.completedFuture(expected));
 
-        var result = controller.schoolGrade(response, env).join();
+        SchoolGradeDto result = controller.schoolGrade(response, env).join();
 
         assertThat(result).isEqualTo(expected);
         verify(loader).load(gradeId);
@@ -240,15 +240,15 @@ class SchoolControllerTests {
     @Test
     @SuppressWarnings("unchecked")
     void school_class_language_field_should_load_related_language() {
-        var languageId = UUID.randomUUID();
-        var response = schoolClassDto(UUID.randomUUID(), languageId, UUID.randomUUID());
-        var expected = new SupportedLanguageDto(languageId, "EN", "English", null, true, null, null);
-        var env = mock(DataFetchingEnvironment.class);
-        var loader = mock(DataLoader.class);
+        UUID languageId = UUID.randomUUID();
+        SchoolClassDto response = schoolClassDto(UUID.randomUUID(), languageId, UUID.randomUUID());
+        SupportedLanguageDto expected = new SupportedLanguageDto(languageId, "EN", "English", null, true, null, null);
+        DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
+        DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, SupportedLanguageDto>getDataLoader("supportedLanguageByClass")).thenReturn(loader);
         when(loader.load(languageId)).thenReturn(CompletableFuture.completedFuture(expected));
 
-        var result = controller.language(response, env).join();
+        SupportedLanguageDto result = controller.language(response, env).join();
 
         assertThat(result).isEqualTo(expected);
         verify(loader).load(languageId);
@@ -256,12 +256,12 @@ class SchoolControllerTests {
 
     @Test
     void school_class_users_should_return_page_result() {
-        var classId = UUID.randomUUID();
-        var expected = new PageResult<SchoolClassUserDto>(List.of(), 1, 20, 0, 0);
-        var query = new ViewSchoolClassUsersQuery(classId, 1, 20);
+        UUID classId = UUID.randomUUID();
+        PageResult<SchoolClassUserDto> expected = new PageResult<SchoolClassUserDto>(List.of(), 1, 20, 0, 0);
+        ViewSchoolClassUsersQuery query = new ViewSchoolClassUsersQuery(classId, 1, 20);
         when(viewSchoolClassUsersUseCase.execute(query)).thenReturn(expected);
 
-        var result = controller.schoolClassUsers(classId, 1, 20);
+        PageResult<SchoolClassUserDto> result = controller.schoolClassUsers(classId, 1, 20);
 
         assertThat(result).isEqualTo(expected);
         verify(viewSchoolClassUsersUseCase).execute(query);
@@ -275,11 +275,11 @@ class SchoolControllerTests {
 
     @Test
     void school_classes_by_user_should_return_page_result() {
-        var expected = new PageResult<SchoolClassDto>(List.of(), 1, 20, 0, 0);
-        var query = new ViewSchoolClassesByUserQuery(schoolId, userId, null, 1, 20);
+        PageResult<SchoolClassDto> expected = new PageResult<SchoolClassDto>(List.of(), 1, 20, 0, 0);
+        ViewSchoolClassesByUserQuery query = new ViewSchoolClassesByUserQuery(schoolId, userId, null, 1, 20);
         when(viewSchoolClassesByUserUseCase.execute(query)).thenReturn(expected);
 
-        var result = controller.schoolClassesByUser(schoolId, userId, null, 1, 20);
+        PageResult<SchoolClassDto> result = controller.schoolClassesByUser(schoolId, userId, null, 1, 20);
 
         assertThat(result).isEqualTo(expected);
         verify(viewSchoolClassesByUserUseCase).execute(query);
@@ -293,13 +293,13 @@ class SchoolControllerTests {
 
     @Test
     void update_school_class_name_only_should_return_id_response() {
-        var classId = UUID.randomUUID();
-        var input = Map.<String, Object>of("name", "English 02");
-        var command = new UpdateSchoolClassCommand(classId, "English 02", true, null, false, null, false);
-        var expected = new UpdateSchoolClassResponse(classId);
+        UUID classId = UUID.randomUUID();
+        Map<String, Object> input = Map.<String, Object>of("name", "English 02");
+        UpdateSchoolClassCommand command = new UpdateSchoolClassCommand(classId, "English 02", true, null, false, null, false);
+        UpdateSchoolClassResponse expected = new UpdateSchoolClassResponse(classId);
         when(updateSchoolClassUseCase.execute(command)).thenReturn(expected);
 
-        var result = controller.updateSchoolClass(classId, input);
+        UpdateSchoolClassResponse result = controller.updateSchoolClass(classId, input);
 
         assertThat(result).isEqualTo(expected);
         verify(updateSchoolClassUseCase).execute(command);
@@ -307,14 +307,14 @@ class SchoolControllerTests {
 
     @Test
     void update_school_class_description_null_should_map_presence() {
-        var classId = UUID.randomUUID();
-        var input = new HashMap<String, Object>();
+        UUID classId = UUID.randomUUID();
+        Map<String, Object> input = new HashMap<String, Object>();
         input.put("description", null);
-        var command = new UpdateSchoolClassCommand(classId, null, false, null, true, null, false);
-        var expected = new UpdateSchoolClassResponse(classId);
+        UpdateSchoolClassCommand command = new UpdateSchoolClassCommand(classId, null, false, null, true, null, false);
+        UpdateSchoolClassResponse expected = new UpdateSchoolClassResponse(classId);
         when(updateSchoolClassUseCase.execute(command)).thenReturn(expected);
 
-        var result = controller.updateSchoolClass(classId, input);
+        UpdateSchoolClassResponse result = controller.updateSchoolClass(classId, input);
 
         assertThat(result).isEqualTo(expected);
         verify(updateSchoolClassUseCase).execute(command);
@@ -322,13 +322,13 @@ class SchoolControllerTests {
 
     @Test
     void update_school_class_status_only_should_map_presence() {
-        var classId = UUID.randomUUID();
-        var input = Map.<String, Object>of("status", "INACTIVE");
-        var command = new UpdateSchoolClassCommand(classId, null, false, null, false, "INACTIVE", true);
-        var expected = new UpdateSchoolClassResponse(classId);
+        UUID classId = UUID.randomUUID();
+        Map<String, Object> input = Map.<String, Object>of("status", "INACTIVE");
+        UpdateSchoolClassCommand command = new UpdateSchoolClassCommand(classId, null, false, null, false, "INACTIVE", true);
+        UpdateSchoolClassResponse expected = new UpdateSchoolClassResponse(classId);
         when(updateSchoolClassUseCase.execute(command)).thenReturn(expected);
 
-        var result = controller.updateSchoolClass(classId, input);
+        UpdateSchoolClassResponse result = controller.updateSchoolClass(classId, input);
 
         assertThat(result).isEqualTo(expected);
         verify(updateSchoolClassUseCase).execute(command);
@@ -336,11 +336,11 @@ class SchoolControllerTests {
 
     @Test
     void school_users_field_should_return_page_from_use_case() {
-        var response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
-        var page = new PageResult<>(List.of(response), 1, 20, 1, 1);
+        SchoolUserDto response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
+        PageResult<SchoolUserDto> page = new PageResult<>(List.of(response), 1, 20, 1, 1);
         when(viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, null, null, null))).thenReturn(page);
 
-        var result = controller.schoolUsersBySchool(schoolId, 1, 20, null, null, null, null, null);
+        PageResult<SchoolUserDto> result = controller.schoolUsersBySchool(schoolId, 1, 20, null, null, null, null, null);
 
         assertThat(result).isEqualTo(page);
         assertThat(result.content()).containsExactly(response);
@@ -349,11 +349,11 @@ class SchoolControllerTests {
 
     @Test
     void school_students_by_school_should_return_page_from_use_case() {
-        var response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
-        var page = new PageResult<>(List.of(response), 1, 20, 1, 1);
+        SchoolUserDto response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
+        PageResult<SchoolUserDto> page = new PageResult<>(List.of(response), 1, 20, 1, 1);
         when(viewSchoolStudentsBySchoolUseCase.execute(new ViewSchoolStudentsBySchoolQuery(schoolId, 1, 20, null, null))).thenReturn(page);
 
-        var result = controller.schoolStudentsBySchool(schoolId, 1, 20, null, null);
+        PageResult<SchoolUserDto> result = controller.schoolStudentsBySchool(schoolId, 1, 20, null, null);
 
         assertThat(result).isEqualTo(page);
         verify(viewSchoolStudentsBySchoolUseCase).execute(new ViewSchoolStudentsBySchoolQuery(schoolId, 1, 20, null, null));
@@ -368,11 +368,11 @@ class SchoolControllerTests {
 
     @Test
     void school_teachers_by_school_should_return_page_from_use_case() {
-        var response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
-        var page = new PageResult<>(List.of(response), 1, 20, 1, 1);
+        SchoolUserDto response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
+        PageResult<SchoolUserDto> page = new PageResult<>(List.of(response), 1, 20, 1, 1);
         when(viewSchoolTeachersBySchoolUseCase.execute(new ViewSchoolTeachersBySchoolQuery(schoolId, 1, 20, null, null))).thenReturn(page);
 
-        var result = controller.schoolTeachersBySchool(schoolId, 1, 20, null, null);
+        PageResult<SchoolUserDto> result = controller.schoolTeachersBySchool(schoolId, 1, 20, null, null);
 
         assertThat(result).isEqualTo(page);
         verify(viewSchoolTeachersBySchoolUseCase).execute(new ViewSchoolTeachersBySchoolQuery(schoolId, 1, 20, null, null));
@@ -387,10 +387,10 @@ class SchoolControllerTests {
 
     @Test
     void school_users_by_school_field_should_return_details_from_use_case() {
-        var response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
+        SchoolUserDto response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
         when(viewSchoolUserDetailsUseCase.execute(new ViewSchoolUserDetailsQuery(schoolId, userId))).thenReturn(response);
 
-        var result = controller.schoolUser(schoolId, userId);
+        SchoolUserDto result = controller.schoolUser(schoolId, userId);
 
         assertThat(result).isEqualTo(response);
         verify(viewSchoolUserDetailsUseCase).execute(new ViewSchoolUserDetailsQuery(schoolId, userId));
@@ -399,14 +399,14 @@ class SchoolControllerTests {
     @Test
     @SuppressWarnings("unchecked")
     void school_user_user_field_should_load_related_user() {
-        var response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
-        var expected = new UserDto(userId, "student@example.com", null, "Student", null, null, null, null, null, null);
-        var env = mock(DataFetchingEnvironment.class);
-        var loader = mock(DataLoader.class);
+        SchoolUserDto response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
+        UserDto expected = new UserDto(userId, "student@example.com", null, "Student", null, null, null, null, null, null);
+        DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
+        DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, UserDto>getDataLoader("userBySchoolUser")).thenReturn(loader);
         when(loader.load(userId)).thenReturn(CompletableFuture.completedFuture(expected));
 
-        var result = controller.schoolUserUser(response, env).join();
+        UserDto result = controller.schoolUserUser(response, env).join();
 
         assertThat(result).isEqualTo(expected);
         verify(loader).load(userId);

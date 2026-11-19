@@ -1,5 +1,9 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamItemResponse;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -61,7 +65,7 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
     @Override
     @Transactional
     public GradingActionResponse execute(GradingDecisionCommand command) {
-        var prepared = gradingActionSupport.prepare(
+        GradingActionSupport.PreparedAction prepared = gradingActionSupport.prepare(
             command.assignmentId(), GradingOutcome.UPHELD, command.reason());
 
         // Gỡ cờ nghi vấn: giáo viên đã xem và kết luận không vi phạm. Giữ nguyên
@@ -69,14 +73,14 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
         //
         // Ở REMEDIATION thì KHÔNG gỡ: giữ nguyên ở vòng đó nghĩa là xác nhận vi phạm,
         // gỡ cờ lúc này sẽ nói ngược lại chính quyết định vừa ghi.
-        var session = prepared.context().session();
+        ExamSession session = prepared.context().session();
         if (prepared.roundType() != GradingRoundType.REMEDIATION && session.isFlagged()) {
             session.setFlagged(false);
             examSessionRepository.save(session);
         }
 
-        var result = prepared.context().candidateResult();
-        var targetStatus = GradingRoundPolicy.resultStatusAfter(
+        ExamCandidateResult result = prepared.context().candidateResult();
+        ExamCandidateResultStatus targetStatus = GradingRoundPolicy.resultStatusAfter(
             prepared.roundType(), GradingOutcome.UPHELD);
 
         // Rào "phải chấm đủ" bên dưới CHỈ áp cho vòng nào mà giữ nguyên đồng nghĩa với CÔNG BỐ
@@ -91,13 +95,13 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
         // gì để chấm), không giữ nguyên được, phân công thành ngõ cụt không có lối đóng.
         // Hậu kiểm (SPOT_CHECK) cũng đứng ngoài vì bài vốn đã RELEASED -- chặn ở đó không thu
         // hồi lại được gì, chỉ khoá nốt người đang soi bài.
-        var publishesResult = targetStatus == ExamCandidateResultStatus.RELEASED;
+        boolean publishesResult = targetStatus == ExamCandidateResultStatus.RELEASED;
 
-        var filledAny = publishesResult && fillSilentAnswersOrRefuse(result.getSessionId(), session);
+        boolean filledAny = publishesResult && fillSilentAnswersOrRefuse(result.getSessionId(), session);
 
         // Chỉ tính lại khi thật sự vừa điền -- bài đã chấm đủ giữ nguyên đường cũ, không đụng
         // tới điểm đang có.
-        var finalResult = result;
+        ExamCandidateResult finalResult = result;
         if (filledAny) {
             finalResult = upsertExamCandidateResultUseCase.execute(
                 result.getSessionId(),
@@ -151,15 +155,15 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
             missingResponseBackfillService.backfill(sessionId, session.getPaperId());
         }
 
-        var responses = examItemResponseRepository.findBySessionId(sessionId);
+        List<ExamItemResponse> responses = examItemResponseRepository.findBySessionId(sessionId);
         if (responses.isEmpty()) {
             return false;
         }
-        var evaluatedResponseIds = examItemEvaluationRepository
+        Set<UUID> evaluatedResponseIds = examItemEvaluationRepository
             .findByResponseIdIn(responses.stream().map(response -> response.getId()).toList()).stream()
             .map(evaluation -> evaluation.getResponseId())
             .collect(Collectors.toSet());
-        var ungraded = responses.stream()
+        List<ExamItemResponse> ungraded = responses.stream()
             .filter(response -> !evaluatedResponseIds.contains(response.getId()))
             .toList();
 
@@ -175,7 +179,7 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
         // bài thiếu điểm (đúng lỗi mà nhánh này sinh ra để vá); gọi AI chấm hộ thì mâu thuẫn với
         // quyết định "gỡ chặn không cho AI chấm lại". Việc còn thiếu ở đây là việc của người
         // chấm, nên nói thẳng ra là còn thiếu.
-        var answeredButUngraded = ungraded.stream()
+        long answeredButUngraded = ungraded.stream()
             .filter(response -> !missingResponseBackfillService.isSilentAnswer(response))
             .count();
         if (answeredButUngraded > 0) {
@@ -185,8 +189,8 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
             );
         }
 
-        var filledAny = false;
-        for (var response : ungraded) {
+        boolean filledAny = false;
+        for (ExamItemResponse response : ungraded) {
             filledAny |= missingResponseBackfillService.recordSilentAnswer(
                 response.getId(), response.getPaperItemId());
         }

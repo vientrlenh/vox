@@ -29,7 +29,7 @@ public final class ExamProctoringAlertMapper {
     }
 
     public static ExamProctoringAlertJpaEntity toJpa(ExamProctoringAlert alert) {
-        var entity = new ExamProctoringAlertJpaEntity();
+        ExamProctoringAlertJpaEntity entity = new ExamProctoringAlertJpaEntity();
         entity.setId(alert.getId());
         entity.setEventId(alert.getEventId());
         entity.setExamSessionId(alert.getExamSessionId());

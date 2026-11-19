@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamMember;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,24 +36,24 @@ public class UpdateExamMemberUseCase implements IUseCase<UpdateExamMemberCommand
     @Override
     @Transactional
     public ExamMemberDto execute(UpdateExamMemberCommand input) {
-        var command = new UpdateExamMemberCommand(
+        UpdateExamMemberCommand command = new UpdateExamMemberCommand(
             input.examId(),
             input.memberId(),
             StringNormalization.normalizeCode(input.role())
         );
-        var exam = examRepository.findById(command.examId())
+        Exam exam = examRepository.findById(command.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var member = examMemberRepository.findById(command.memberId())
+        ExamMember member = examMemberRepository.findById(command.memberId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên bài kiểm tra"));
 
         if (!member.getExamId().equals(exam.getId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var actor = examMemberManageAccessService.requireCanManage(exam);
+        ExamMemberManageAccessService.ExamMemberActor actor = examMemberManageAccessService.requireCanManage(exam);
         // Đổi vai trò chạm tới hai vai: vai cũ bị gỡ và vai mới được gán. Kiểm cả hai, nếu không thì
         // chủ tịch hội đồng hạ cấp được chủ tịch khác xuống AUTHOR chỉ vì vai đích không phải CHAIR.
-        var newRole = ExamMemberRole.valueOf(command.role());
+        ExamMemberRole newRole = ExamMemberRole.valueOf(command.role());
         examMemberManageAccessService.requireCanTouchRole(actor, member.getRole());
         examMemberManageAccessService.requireCanTouchRole(actor, newRole);
 

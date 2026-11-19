@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import java.time.Instant;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,15 +53,15 @@ public class InvalidateResultUseCase implements IUseCase<GradingDecisionCommand,
     @Override
     @Transactional
     public GradingActionResponse execute(GradingDecisionCommand command) {
-        var prepared = gradingActionSupport.prepare(
+        GradingActionSupport.PreparedAction prepared = gradingActionSupport.prepare(
             command.assignmentId(), GradingOutcome.INVALIDATED, command.reason());
 
-        var result = prepared.context().candidateResult();
+        ExamCandidateResult result = prepared.context().candidateResult();
         gradingActionSupport.finish(prepared, result);
 
-        var studentId = gradingActionSupport.resolveStudentId(result);
+        UUID studentId = gradingActionSupport.resolveStudentId(result);
         if (studentId != null) {
-            var payload = new ExamResultInvalidatedPayloadV1(
+            ExamResultInvalidatedPayloadV1 payload = new ExamResultInvalidatedPayloadV1(
                 result.getId(), studentId, prepared.context().examName(), prepared.reason(),
                 result.getSessionId(), prepared.context().examKind());
             outboxRepository.save(Outbox.create(

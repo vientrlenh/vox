@@ -15,7 +15,7 @@ class ConfidenceReviewCalculatorTests {
 
     @Test
     void returnsNoReviewWhenSignalsAreMissing() {
-        var decision = calculator.compute(
+        ConfidenceReviewCalculator.Decision decision = calculator.compute(
             null,
             ExamKind.CLASS_TEST,
             null,
@@ -29,7 +29,7 @@ class ConfidenceReviewCalculatorTests {
 
     @Test
     void asrHardFailureRequiresMandatoryReview() {
-        var decision = calculator.compute(
+        ConfidenceReviewCalculator.Decision decision = calculator.compute(
             signals(decimal("0.54"), null, null, null, null, null, null, null, null, null),
             ExamKind.CLASS_TEST,
             null,
@@ -38,17 +38,19 @@ class ConfidenceReviewCalculatorTests {
 
         assertThat(decision.reviewSeverity()).isEqualTo("mandatory");
         assertThat(decision.reviewReasons()).containsExactly("ASR_LOW_CONF");
-        // "mandatory" là mức DUY NHẤT còn tự đẩy bài sang người chấm -- chốt lại ở đây để lần
-        // sau ai đổi ngưỡng cũng thấy ngay ranh giới đó.
+        // "mandatory" is the ONLY level that still pushes a submission to a human grader on its own
+        // -- pinned here so that whoever changes the thresholds next sees that boundary
+        // immediately.
         assertThat(decision.requiresHumanReview()).isTrue();
     }
 
     @Test
     void oneBranchSoftFailureIsReportedAsSoftWithoutForcingReview() {
-        // Một nhánh soft vẫn được ghi nhận severity "soft" để hiển thị cho người chấm, nhưng
-        // KHÔNG tự đẩy bài vào hàng chấm tay: reviewSoftSignals = false ở cả ba profile
-        // (PRACTICE/MOCK_TEST/HIGH_STAKES), nên requiresHumanReview chỉ bật ở "mandatory".
-        var decision = calculator.compute(
+        // A soft branch is still recorded with severity "soft" so it can be shown to the grader,
+        // but it does NOT push the submission into the manual grading queue: reviewSoftSignals =
+        // false in all three profiles (PRACTICE/MOCK_TEST/HIGH_STAKES), so requiresHumanReview is
+        // only switched on by "mandatory".
+        ConfidenceReviewCalculator.Decision decision = calculator.compute(
             signals(decimal("0.70"), null, null, null, null, null, null, null, null, null),
             ExamKind.CLASS_TEST,
             null,
@@ -61,7 +63,7 @@ class ConfidenceReviewCalculatorTests {
 
     @Test
     void twoUnstableLlmCriteriaRequireRecommendedReview() {
-        var decision = calculator.compute(
+        ConfidenceReviewCalculator.Decision decision = calculator.compute(
             signals(null, null, null, null, null, null, null, decimal("0.40"), decimal("0.40"), decimal("0.90")),
             ExamKind.CLASS_TEST,
             null,
@@ -75,13 +77,13 @@ class ConfidenceReviewCalculatorTests {
 
     @Test
     void centralizedModeTightensMinimumBound() {
-        var classTest = calculator.compute(
+        ConfidenceReviewCalculator.Decision classTest = calculator.compute(
             signals(decimal("0.78"), null, null, null, null, null, null, null, null, null),
             ExamKind.CLASS_TEST,
             null,
             false
         );
-        var centralized = calculator.compute(
+        ConfidenceReviewCalculator.Decision centralized = calculator.compute(
             signals(decimal("0.78"), null, null, null, null, null, null, null, null, null),
             ExamKind.CENTRALIZED,
             null,
@@ -90,8 +92,8 @@ class ConfidenceReviewCalculatorTests {
 
         assertThat(classTest.reviewSeverity()).isEqualTo("none");
         assertThat(centralized.reviewSeverity()).isEqualTo("recommended");
-        // Kỳ thi tập trung siết NGƯỠNG severity, nhưng "recommended" vẫn không tự đẩy sang
-        // người chấm -- chỉ "mandatory" mới đẩy.
+        // A centralized exam tightens the severity THRESHOLD, but "recommended" still does not push
+        // to a grader on its own -- only "mandatory" does.
         assertThat(centralized.requiresHumanReview()).isFalse();
     }
 
@@ -168,7 +170,7 @@ class ConfidenceReviewCalculatorTests {
 
     @Test
     void moderateAudioDoesNotTriggerHardGate() {
-        var decision = calculator.compute(
+        ConfidenceReviewCalculator.Decision decision = calculator.compute(
             signals(null, decimal("0.50"), decimal("0.90"), null, null, null, null, null, null, null),
             ExamKind.CLASS_TEST,
             null,

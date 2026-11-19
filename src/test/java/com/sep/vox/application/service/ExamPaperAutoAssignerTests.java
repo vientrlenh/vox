@@ -47,19 +47,22 @@ class ExamPaperAutoAssignerTests {
 
     @Test
     void should_assign_the_single_locked_paper_of_a_class_test() {
-        var paperId = givenPapers(1).get(0);
-        var candidate = candidate();
+        UUID paperId = givenPapers(1).get(0);
+        ExamCandidate candidate = candidate();
 
         assigner.assignPapersIfNeeded(exam(ExamKind.CLASS_TEST), List.of(candidate), Instant.now(), TEACHER_ID);
 
         assertThat(candidate.getAssignedPaperId()).isEqualTo(paperId);
     }
 
-    /** Trước đây kỳ thi tập trung bị bỏ qua hoàn toàn — giờ cũng được gán mặc định. */
+    /**
+     * Previously a centralized exam was skipped entirely -- now it also gets the default
+     * assignment.
+     */
     @Test
     void should_assign_papers_of_a_centralized_exam() {
-        var paperIds = givenPapers(2);
-        var candidate = candidate();
+        List<UUID> paperIds = givenPapers(2);
+        ExamCandidate candidate = candidate();
 
         assigner.assignPapersIfNeeded(exam(ExamKind.CENTRALIZED), List.of(candidate), Instant.now(), TEACHER_ID);
 
@@ -68,8 +71,8 @@ class ExamPaperAutoAssignerTests {
 
     @Test
     void should_spread_papers_evenly_across_candidates() {
-        var paperIds = givenPapers(2);
-        var candidates = List.of(candidate(), candidate(), candidate(), candidate());
+        List<UUID> paperIds = givenPapers(2);
+        List<ExamCandidate> candidates = List.of(candidate(), candidate(), candidate(), candidate());
 
         assigner.assignPapersIfNeeded(exam(ExamKind.CENTRALIZED), candidates, Instant.now(), TEACHER_ID);
 
@@ -79,16 +82,18 @@ class ExamPaperAutoAssignerTests {
     }
 
     /**
-     * Rải đều phải tính TRONG TỪNG CA. Rải đều trên toàn kỳ thi thì hai vòng round-robin -- xếp ca và
-     * phân đề -- trùng chu kỳ, và cả phòng lĩnh trọn một mã đề, mất sạch tác dụng của nhiều mã đề.
-     * Thứ tự dựng ở đây đúng bằng thứ tự AutoFillExamCandidatesUseCase tạo ra.
+     * Even distribution must be computed WITHIN EACH SESSION. If it is spread over the whole exam,
+     * the two round-robin passes -- placing candidates in sessions and assigning papers -- share
+     * the same cycle, and a whole room ends up with a single paper variant, losing all the benefit
+     * of having several variants. The order built here is exactly the order
+     * AutoFillExamCandidatesUseCase produces.
      */
     @Test
     void should_spread_papers_within_each_schedule() {
         givenPapers(2);
-        var firstSchedule = UUID.randomUUID();
-        var secondSchedule = UUID.randomUUID();
-        var candidates = List.of(
+        UUID firstSchedule = UUID.randomUUID();
+        UUID secondSchedule = UUID.randomUUID();
+        List<ExamCandidate> candidates = List.of(
             candidateInSchedule(firstSchedule),
             candidateInSchedule(secondSchedule),
             candidateInSchedule(firstSchedule),
@@ -100,16 +105,19 @@ class ExamPaperAutoAssignerTests {
         assertThat(distinctPapersIn(candidates, secondSchedule)).hasSize(2);
     }
 
-    /** Phân bố phải tính cả thí sinh đã có đề, nếu không mỗi lượt gán lại dồn vào mã đề đầu tiên. */
+    /**
+     * The distribution must also count candidates who already have a paper; otherwise every
+     * assignment run piles onto the first variant again.
+     */
     @Test
     void should_continue_the_existing_distribution() {
-        var paperIds = givenPapers(2);
-        var alreadyOnFirst = candidate();
+        List<UUID> paperIds = givenPapers(2);
+        ExamCandidate alreadyOnFirst = candidate();
         alreadyOnFirst.setAssignedPaperId(paperIds.get(0));
-        var anotherOnFirst = candidate();
+        ExamCandidate anotherOnFirst = candidate();
         anotherOnFirst.setAssignedPaperId(paperIds.get(0));
         when(examCandidateRepository.findByExamId(EXAM_ID)).thenReturn(List.of(alreadyOnFirst, anotherOnFirst));
-        var candidates = List.of(candidate(), candidate());
+        List<ExamCandidate> candidates = List.of(candidate(), candidate());
 
         assigner.assignPapersIfNeeded(exam(ExamKind.CENTRALIZED), candidates, Instant.now(), TEACHER_ID);
 
@@ -119,8 +127,8 @@ class ExamPaperAutoAssignerTests {
     @Test
     void should_keep_an_already_assigned_paper() {
         givenPapers(2);
-        var alreadyAssigned = UUID.randomUUID();
-        var candidate = candidate();
+        UUID alreadyAssigned = UUID.randomUUID();
+        ExamCandidate candidate = candidate();
         candidate.setAssignedPaperId(alreadyAssigned);
 
         assigner.assignPapersIfNeeded(exam(ExamKind.CENTRALIZED), List.of(candidate), Instant.now(), TEACHER_ID);
@@ -129,15 +137,15 @@ class ExamPaperAutoAssignerTests {
     }
 
     /**
-     * Bám đúng AssignExamPapersUseCase: chưa khoá hết thì không gán, nếu không thí sinh trỏ vào một
-     * mã đề mà người ra đề vẫn sửa được.
+     * Follows AssignExamPapersUseCase exactly: nothing is assigned until everything is locked;
+     * otherwise a candidate would point to a variant that the author can still edit.
      */
     @Test
     void should_skip_when_any_paper_is_not_locked() {
         when(examPaperRepository.findByExamId(EXAM_ID)).thenReturn(List.of(
             paper(1, ExamPaperStatus.LOCKED),
             paper(2, ExamPaperStatus.DRAFT)));
-        var candidate = candidate();
+        ExamCandidate candidate = candidate();
 
         assigner.assignPapersIfNeeded(exam(ExamKind.CENTRALIZED), List.of(candidate), Instant.now(), TEACHER_ID);
 
@@ -147,18 +155,18 @@ class ExamPaperAutoAssignerTests {
     @Test
     void should_skip_when_exam_has_no_paper() {
         when(examPaperRepository.findByExamId(EXAM_ID)).thenReturn(List.of());
-        var candidate = candidate();
+        ExamCandidate candidate = candidate();
 
         assigner.assignPapersIfNeeded(exam(ExamKind.CENTRALIZED), List.of(candidate), Instant.now(), TEACHER_ID);
 
         assertThat(candidate.getAssignedPaperId()).isNull();
     }
 
-    /** Thí sinh đã huỷ/miễn thi không vào phòng nên không cần đề. */
+    /** A candidate who was cancelled/exempted does not enter the room, so does not need a paper. */
     @Test
     void should_skip_non_scorable_candidate() {
         givenPapers(1);
-        var candidate = candidate();
+        ExamCandidate candidate = candidate();
         candidate.setStatus(ExamCandidateStatus.CANCELLED);
 
         assigner.assignPapersIfNeeded(exam(ExamKind.CENTRALIZED), List.of(candidate), Instant.now(), TEACHER_ID);
@@ -168,14 +176,14 @@ class ExamPaperAutoAssignerTests {
 
     @Test
     void should_backfill_every_candidate_without_paper() {
-        var paperIds = givenPapers(2);
-        var withPaper = candidate();
+        List<UUID> paperIds = givenPapers(2);
+        ExamCandidate withPaper = candidate();
         withPaper.setAssignedPaperId(paperIds.get(0));
-        var first = candidate();
-        var second = candidate();
+        ExamCandidate first = candidate();
+        ExamCandidate second = candidate();
         when(examCandidateRepository.findByExamId(EXAM_ID)).thenReturn(List.of(withPaper, first, second));
 
-        var backfilled = assigner.backfillExam(exam(ExamKind.CENTRALIZED), Instant.now(), TEACHER_ID);
+        int backfilled = assigner.backfillExam(exam(ExamKind.CENTRALIZED), Instant.now(), TEACHER_ID);
 
         assertThat(backfilled).isEqualTo(2);
         assertThat(first.getAssignedPaperId()).isNotNull();
@@ -186,12 +194,12 @@ class ExamPaperAutoAssignerTests {
 
     @Test
     void should_not_save_anything_when_backfill_has_nothing_to_do() {
-        var paperIds = givenPapers(1);
-        var withPaper = candidate();
+        List<UUID> paperIds = givenPapers(1);
+        ExamCandidate withPaper = candidate();
         withPaper.setAssignedPaperId(paperIds.get(0));
         when(examCandidateRepository.findByExamId(EXAM_ID)).thenReturn(List.of(withPaper));
 
-        var backfilled = assigner.backfillExam(exam(ExamKind.CENTRALIZED), Instant.now(), TEACHER_ID);
+        int backfilled = assigner.backfillExam(exam(ExamKind.CENTRALIZED), Instant.now(), TEACHER_ID);
 
         assertThat(backfilled).isZero();
         verify(examCandidateRepository, never()).saveAll(any());
@@ -201,15 +209,18 @@ class ExamPaperAutoAssignerTests {
     void should_not_backfill_when_papers_are_not_all_locked() {
         when(examPaperRepository.findByExamId(EXAM_ID)).thenReturn(List.of(paper(1, ExamPaperStatus.APPROVED)));
 
-        var backfilled = assigner.backfillExam(exam(ExamKind.CENTRALIZED), Instant.now(), TEACHER_ID);
+        int backfilled = assigner.backfillExam(exam(ExamKind.CENTRALIZED), Instant.now(), TEACHER_ID);
 
         assertThat(backfilled).isZero();
         verify(examCandidateRepository, never()).saveAll(any());
     }
 
-    /** Mọi mã đề đã LOCKED nhưng danh sách trả về phải ổn định theo variant để gán tái lập được. */
+    /**
+     * Every variant is LOCKED, but the returned list must be stable by variant so the assignment is
+     * reproducible.
+     */
     private List<UUID> givenPapers(int count) {
-        var papers = new java.util.ArrayList<ExamPaper>();
+        List<ExamPaper> papers = new java.util.ArrayList<ExamPaper>();
         for (int variant = 1; variant <= count; variant++) {
             papers.add(paper(variant, ExamPaperStatus.LOCKED));
         }
@@ -218,7 +229,7 @@ class ExamPaperAutoAssignerTests {
     }
 
     private ExamCandidate candidateInSchedule(UUID scheduleId) {
-        var candidate = candidate();
+        ExamCandidate candidate = candidate();
         candidate.setScheduleId(scheduleId);
         return candidate;
     }
@@ -235,14 +246,14 @@ class ExamPaperAutoAssignerTests {
     }
 
     private Exam exam(ExamKind kind) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(EXAM_ID);
         exam.setKind(kind);
         return exam;
     }
 
     private ExamCandidate candidate() {
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(UUID.randomUUID());
         candidate.setExamId(EXAM_ID);
         candidate.setStatus(ExamCandidateStatus.ASSIGNED);
@@ -250,7 +261,7 @@ class ExamPaperAutoAssignerTests {
     }
 
     private ExamPaper paper(int variant, ExamPaperStatus status) {
-        var paper = new ExamPaper();
+        ExamPaper paper = new ExamPaper();
         paper.setId(UUID.randomUUID());
         paper.setExamId(EXAM_ID);
         paper.setCode("MD" + variant);

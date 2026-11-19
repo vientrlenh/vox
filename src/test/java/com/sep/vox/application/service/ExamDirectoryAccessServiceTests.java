@@ -65,15 +65,15 @@ class ExamDirectoryAccessServiceTests {
 
     @Test
     void should_list_only_active_classes_the_caller_belongs_to() {
-        var classId = UUID.randomUUID();
-        var schoolClass = SchoolClass.create(
+        UUID classId = UUID.randomUUID();
+        SchoolClass schoolClass = SchoolClass.create(
             schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-01", "English 01", null,
             UUID.randomUUID(), Instant.now());
         schoolClass.setId(classId);
         when(schoolClassRepository.findByUserId(schoolId, callerId, null, SchoolClassStatus.ACTIVE, 1, 200))
             .thenReturn(new PageResult<>(List.of(schoolClass), 1, 200, 1, 1));
 
-        var classIds = service.callerClassIds(new ExamDirectoryScope(callerId, schoolId, false));
+        List<UUID> classIds = service.callerClassIds(new ExamDirectoryScope(callerId, schoolId, false));
 
         assertThat(classIds).containsExactly(classId);
     }
@@ -83,7 +83,7 @@ class ExamDirectoryAccessServiceTests {
         givenCallerInSchool(schoolId);
         givenCallerRoles("SCHOOL_ADMIN");
 
-        var scope = service.resolve(exam(ExamKind.CENTRALIZED));
+        ExamDirectoryAccessService.ExamDirectoryScope scope = service.resolve(exam(ExamKind.CENTRALIZED));
 
         assertThat(scope.schoolWide()).isTrue();
         assertThat(scope.callerId()).isEqualTo(callerId);
@@ -113,7 +113,7 @@ class ExamDirectoryAccessServiceTests {
         givenCallerRoles("TEACHER");
         givenCallerIsChair(true);
 
-        var scope = service.resolve(exam(ExamKind.CENTRALIZED));
+        ExamDirectoryAccessService.ExamDirectoryScope scope = service.resolve(exam(ExamKind.CENTRALIZED));
 
         assertThat(scope.schoolWide()).isTrue();
         assertThat(scope.schoolId()).isEqualTo(schoolId);
@@ -125,7 +125,7 @@ class ExamDirectoryAccessServiceTests {
         givenCallerRoles("TEACHER");
         givenCallerIsChair(true);
 
-        var scope = service.resolve(exam(ExamKind.CLASS_TEST));
+        ExamDirectoryAccessService.ExamDirectoryScope scope = service.resolve(exam(ExamKind.CLASS_TEST));
 
         assertThat(scope.schoolWide()).isFalse();
         assertThat(scope.callerId()).isEqualTo(callerId);
@@ -153,7 +153,7 @@ class ExamDirectoryAccessServiceTests {
     }
 
     private Exam exam(ExamKind kind) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         exam.setKind(kind);
@@ -161,14 +161,14 @@ class ExamDirectoryAccessServiceTests {
     }
 
     private void givenCallerInSchool(UUID actualSchoolId) {
-        var schoolUser = new SchoolUser();
+        SchoolUser schoolUser = new SchoolUser();
         schoolUser.setUserId(callerId);
         schoolUser.setSchoolId(actualSchoolId);
         when(schoolUserRepository.findByUserId(callerId)).thenReturn(Optional.of(schoolUser));
     }
 
     private void givenCallerRoles(String... roleCodes) {
-        var roles = java.util.Arrays.stream(roleCodes)
+        List<UserRoleInfo> roles = java.util.Arrays.stream(roleCodes)
             .map(code -> new UserRoleInfo(
                 UUID.randomUUID(), callerId, UUID.randomUUID(), Instant.now(), code, code))
             .toList();

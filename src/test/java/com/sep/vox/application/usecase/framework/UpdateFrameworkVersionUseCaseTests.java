@@ -47,16 +47,16 @@ public class UpdateFrameworkVersionUseCaseTests {
 
     @Test
     void should_update_draft_version() {
-        var command = new UpdateFrameworkVersionCommand(
+        UpdateFrameworkVersionCommand command = new UpdateFrameworkVersionCommand(
             frameworkId, versionId, "V2_0", "Version 2.0", "Updated",
             now, now.plus(365, ChronoUnit.DAYS)
         );
 
-        var framework = new Framework(
+        Framework framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        var version = new FrameworkVersion();
+        FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setStatus(FrameworkVersionStatus.DRAFT);
@@ -72,7 +72,7 @@ public class UpdateFrameworkVersionUseCaseTests {
 
     @Test
     void should_throw_when_framework_not_found() {
-        var command = new UpdateFrameworkVersionCommand(
+        UpdateFrameworkVersionCommand command = new UpdateFrameworkVersionCommand(
             frameworkId, versionId, "V2_0", "Version 2.0", "Updated",
             now, now.plus(365, ChronoUnit.DAYS)
         );
@@ -84,12 +84,12 @@ public class UpdateFrameworkVersionUseCaseTests {
 
     @Test
     void should_throw_when_version_not_found() {
-        var command = new UpdateFrameworkVersionCommand(
+        UpdateFrameworkVersionCommand command = new UpdateFrameworkVersionCommand(
             frameworkId, versionId, "V2_0", "Version 2.0", "Updated",
             now, now.plus(365, ChronoUnit.DAYS)
         );
 
-        var framework = new Framework(
+        Framework framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
@@ -102,17 +102,17 @@ public class UpdateFrameworkVersionUseCaseTests {
 
     @Test
     void should_throw_when_version_not_belongs_to_framework() {
-        var otherFrameworkId = UUID.randomUUID();
-        var command = new UpdateFrameworkVersionCommand(
+        UUID otherFrameworkId = UUID.randomUUID();
+        UpdateFrameworkVersionCommand command = new UpdateFrameworkVersionCommand(
             frameworkId, versionId, "V2_0", "Version 2.0", "Updated",
             now, now.plus(365, ChronoUnit.DAYS)
         );
 
-        var framework = new Framework(
+        Framework framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        var version = new FrameworkVersion();
+        FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(otherFrameworkId);
 
@@ -124,16 +124,16 @@ public class UpdateFrameworkVersionUseCaseTests {
 
     @Test
     void should_throw_when_version_not_draft() {
-        var command = new UpdateFrameworkVersionCommand(
+        UpdateFrameworkVersionCommand command = new UpdateFrameworkVersionCommand(
             frameworkId, versionId, "V2_0", "Version 2.0", "Updated",
             now, now.plus(365, ChronoUnit.DAYS)
         );
 
-        var framework = new Framework(
+        Framework framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        var version = new FrameworkVersion();
+        FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setStatus(FrameworkVersionStatus.PUBLISHED);

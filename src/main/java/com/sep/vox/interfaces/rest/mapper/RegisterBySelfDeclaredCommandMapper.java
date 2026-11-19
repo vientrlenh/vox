@@ -3,12 +3,13 @@ package com.sep.vox.interfaces.rest.mapper;
 import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.RegisterBySelfDeclaredCommand;
 import com.sep.vox.interfaces.rest.dto.request.RegisterBySelfDeclaredRequest;
+import java.time.LocalDate;
 
 public final class RegisterBySelfDeclaredCommandMapper {
     
 
     public static RegisterBySelfDeclaredCommand fromRequest(RegisterBySelfDeclaredRequest request) {
-        var dateOfBirth = DateMapper.toLocalDate(request.dateOfBirth().strip());
+        LocalDate dateOfBirth = DateMapper.toLocalDate(request.dateOfBirth().strip());
         return new RegisterBySelfDeclaredCommand(
             request.schoolName(), 
             request.schoolDomain(), 

@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.controller;
 
+import com.sep.vox.application.response.input.examturn.TurnUploadUrlResponse;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -28,7 +29,7 @@ public class ExamTurnController {
     public ResponseEntity<ApiResponse<?>> getUploadUrl(
             @RequestParam(name = "attemptAnswerId") UUID attemptAnswerId,
             @RequestParam(name = "turnOrder") int turnOrder) {
-        var data = getTurnUploadUrlUseCase.execute(new GetTurnUploadUrlQuery(attemptAnswerId, turnOrder));
+        TurnUploadUrlResponse data = getTurnUploadUrlUseCase.execute(new GetTurnUploadUrlQuery(attemptAnswerId, turnOrder));
         return ResponseEntity.ok(ApiResponse.success("Lấy upload URL thành công", data));
     }
 }

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
+import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.StringNormalization;
@@ -25,8 +26,8 @@ public class ViewSupportedLanguagesUseCase implements IUseCase<ViewSupportedLang
 
     @Override
     public PageResult<SupportedLanguageDto> execute(ViewSupportedLanguagesQuery input) {
-        var effectiveIsActive = userContextPort.isSystemAdmin() ? input.isActive() : Boolean.TRUE;
-        var result = supportedLanguageRepository.findAll(
+        Boolean effectiveIsActive = userContextPort.isSystemAdmin() ? input.isActive() : Boolean.TRUE;
+        PageResult<SupportedLanguage> result = supportedLanguageRepository.findAll(
             StringNormalization.trimAndCollapseSpaces(input.search()),
             effectiveIsActive,
             input.page(), 

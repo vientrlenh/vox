@@ -34,8 +34,8 @@ public class ExamScoreExportSupport {
 
     @Transactional(readOnly = true)
     public List<ExamScoreRowInfo> loadRows(ExportExamScoresQuery input) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        UUID schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
         // Giáo viên tạo bài kiểm tra trên lớp xuất được bảng điểm của ĐÚNG bài mình —
         // phạm vi đóng bằng examId, nên không rò dữ liệu kỳ thi khác của trường.
         examGradingAccessService.authorizeSchoolAdminOrClassTestChair(

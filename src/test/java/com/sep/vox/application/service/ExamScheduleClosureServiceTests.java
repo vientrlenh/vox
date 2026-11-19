@@ -54,7 +54,7 @@ class ExamScheduleClosureServiceTests {
 
     @Test
     void should_reject_close_when_ongoing_schedule_still_has_active_session() {
-        var ongoing = schedule(ExamScheduleStatus.PUBLISHED, start, end);
+        ExamSchedule ongoing = schedule(ExamScheduleStatus.PUBLISHED, start, end);
         when(examScheduleRepository.findByExamIdAndInSchedule(examId, start)).thenReturn(List.of(ongoing));
         when(examSessionRepository.countActiveByExamId(examId)).thenReturn(3L);
 
@@ -63,10 +63,13 @@ class ExamScheduleClosureServiceTests {
             .hasMessageContaining("3 học sinh đang làm bài");
     }
 
-    /** Cả lớp đã nộp xong thì giáo viên vẫn phải đóng sớm được — đây là lý do không chặn cứng theo giờ. */
+    /**
+     * Even when the whole class has already submitted, the teacher must still be able to close
+     * early -- this is why there is no hard block by time.
+     */
     @Test
     void should_allow_close_when_ongoing_schedule_has_no_active_session() {
-        var ongoing = schedule(ExamScheduleStatus.PUBLISHED, start, end);
+        ExamSchedule ongoing = schedule(ExamScheduleStatus.PUBLISHED, start, end);
         when(examScheduleRepository.findByExamIdAndInSchedule(examId, start)).thenReturn(List.of(ongoing));
         when(examSessionRepository.countActiveByExamId(examId)).thenReturn(0L);
 
@@ -86,10 +89,10 @@ class ExamScheduleClosureServiceTests {
 
     @Test
     void should_complete_published_schedule_that_already_ended() {
-        var ended = schedule(ExamScheduleStatus.PUBLISHED, start, end);
+        ExamSchedule ended = schedule(ExamScheduleStatus.PUBLISHED, start, end);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(ended));
 
-        var changed = service.closeSchedulesForExam(examId, actorId, afterEnd);
+        int changed = service.closeSchedulesForExam(examId, actorId, afterEnd);
 
         assertThat(changed).isEqualTo(1);
         assertThat(ended.getStatus()).isEqualTo(ExamScheduleStatus.COMPLETED);
@@ -98,10 +101,13 @@ class ExamScheduleClosureServiceTests {
         verify(examScheduleRepository).save(ended);
     }
 
-    /** Ca chưa tới giờ thì không bao giờ diễn ra nữa — gọi nó là "đã hoàn thành" là sai lịch sử. */
+    /**
+     * A session that has not reached its time will never take place -- calling it "completed" would
+     * falsify history.
+     */
     @Test
     void should_cancel_published_schedule_that_never_started() {
-        var notStarted = schedule(ExamScheduleStatus.PUBLISHED, afterEnd, afterEnd.plus(1, ChronoUnit.HOURS));
+        ExamSchedule notStarted = schedule(ExamScheduleStatus.PUBLISHED, afterEnd, afterEnd.plus(1, ChronoUnit.HOURS));
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(notStarted));
 
         service.closeSchedulesForExam(examId, actorId, start);
@@ -112,7 +118,7 @@ class ExamScheduleClosureServiceTests {
 
     @Test
     void should_cancel_draft_schedule_on_close() {
-        var draft = schedule(ExamScheduleStatus.DRAFT, start, end);
+        ExamSchedule draft = schedule(ExamScheduleStatus.DRAFT, start, end);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(draft));
 
         service.closeSchedulesForExam(examId, actorId, afterEnd);
@@ -121,17 +127,18 @@ class ExamScheduleClosureServiceTests {
     }
 
     /**
-     * COMPLETED/MOVED/CANCELLED là trạng thái kết thúc: ghi đè sẽ xoá dấu vết ca đã thi xong và làm
-     * lệch {@code movedToScheduleId}. DELETED đã bị {@code findByExamId} lọc sẵn.
+     * COMPLETED/MOVED/CANCELLED are final states: overwriting them would erase the trace of a
+     * session that was already held and skew {@code movedToScheduleId}. DELETED is already filtered
+     * out by {@code findByExamId}.
      */
     @Test
     void should_not_overwrite_terminal_schedule_status_on_close() {
-        var completed = schedule(ExamScheduleStatus.COMPLETED, start, end);
-        var moved = schedule(ExamScheduleStatus.MOVED, start, end);
-        var cancelled = schedule(ExamScheduleStatus.CANCELLED, start, end);
+        ExamSchedule completed = schedule(ExamScheduleStatus.COMPLETED, start, end);
+        ExamSchedule moved = schedule(ExamScheduleStatus.MOVED, start, end);
+        ExamSchedule cancelled = schedule(ExamScheduleStatus.CANCELLED, start, end);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(completed, moved, cancelled));
 
-        var changed = service.closeSchedulesForExam(examId, actorId, afterEnd);
+        int changed = service.closeSchedulesForExam(examId, actorId, afterEnd);
 
         assertThat(changed).isZero();
         assertThat(completed.getStatus()).isEqualTo(ExamScheduleStatus.COMPLETED);
@@ -140,11 +147,13 @@ class ExamScheduleClosureServiceTests {
         verify(examScheduleRepository, never()).save(any());
     }
 
-    /** Job đóng bài tự động không có người dùng: ghi null đè lên là xoá mất người sửa cuối. */
+    /**
+     * The automatic close job has no user: writing null over it would erase whoever edited last.
+     */
     @Test
     void should_keep_previous_updated_by_when_actor_is_null() {
-        var previousActor = UUID.randomUUID();
-        var ended = schedule(ExamScheduleStatus.PUBLISHED, start, end);
+        UUID previousActor = UUID.randomUUID();
+        ExamSchedule ended = schedule(ExamScheduleStatus.PUBLISHED, start, end);
         ended.setUpdatedBy(previousActor);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(ended));
 
@@ -158,11 +167,11 @@ class ExamScheduleClosureServiceTests {
 
     @Test
     void should_cancel_draft_and_published_schedules_on_cancel() {
-        var draft = schedule(ExamScheduleStatus.DRAFT, start, end);
-        var published = schedule(ExamScheduleStatus.PUBLISHED, start, end);
+        ExamSchedule draft = schedule(ExamScheduleStatus.DRAFT, start, end);
+        ExamSchedule published = schedule(ExamScheduleStatus.PUBLISHED, start, end);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(draft, published));
 
-        var changed = service.cancelSchedulesForExam(examId, actorId, afterEnd);
+        int changed = service.cancelSchedulesForExam(examId, actorId, afterEnd);
 
         assertThat(changed).isEqualTo(2);
         assertThat(draft.getStatus()).isEqualTo(ExamScheduleStatus.CANCELLED);
@@ -172,10 +181,13 @@ class ExamScheduleClosureServiceTests {
         verify(examScheduleRepository).save(published);
     }
 
-    /** Huỷ bài không phân biệt ca đã chạy hay chưa — khác hẳn đóng bài. */
+    /**
+     * Cancelling an exam makes no distinction between sessions that have run and those that have
+     * not -- completely unlike closing it.
+     */
     @Test
     void should_cancel_even_a_schedule_that_already_ended() {
-        var ended = schedule(ExamScheduleStatus.PUBLISHED, start, end);
+        ExamSchedule ended = schedule(ExamScheduleStatus.PUBLISHED, start, end);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(ended));
 
         service.cancelSchedulesForExam(examId, actorId, afterEnd);
@@ -185,8 +197,8 @@ class ExamScheduleClosureServiceTests {
 
     @Test
     void should_not_overwrite_terminal_schedule_status_on_cancel() {
-        var completed = schedule(ExamScheduleStatus.COMPLETED, start, end);
-        var moved = schedule(ExamScheduleStatus.MOVED, start, end);
+        ExamSchedule completed = schedule(ExamScheduleStatus.COMPLETED, start, end);
+        ExamSchedule moved = schedule(ExamScheduleStatus.MOVED, start, end);
         when(examScheduleRepository.findByExamId(examId)).thenReturn(List.of(completed, moved));
 
         assertThat(service.cancelSchedulesForExam(examId, actorId, afterEnd)).isZero();
@@ -197,10 +209,10 @@ class ExamScheduleClosureServiceTests {
 
     @Test
     void should_complete_ended_schedules_found_by_sweep() {
-        var ended = schedule(ExamScheduleStatus.PUBLISHED, start, end);
+        ExamSchedule ended = schedule(ExamScheduleStatus.PUBLISHED, start, end);
         when(examScheduleRepository.findPublishedEndedBefore(afterEnd, 200)).thenReturn(List.of(ended));
 
-        var changed = service.completeEndedSchedules(afterEnd, 200);
+        int changed = service.completeEndedSchedules(afterEnd, 200);
 
         assertThat(changed).isEqualTo(1);
         assertThat(ended.getStatus()).isEqualTo(ExamScheduleStatus.COMPLETED);
@@ -218,7 +230,7 @@ class ExamScheduleClosureServiceTests {
     }
 
     private ExamSchedule schedule(ExamScheduleStatus status, Instant from, Instant to) {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(UUID.randomUUID());
         schedule.setExamId(examId);
         schedule.setStartDate(from);

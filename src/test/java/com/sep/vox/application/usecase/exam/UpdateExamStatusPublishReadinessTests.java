@@ -85,7 +85,7 @@ class UpdateExamStatusPublishReadinessTests {
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
         userContextPort = mock(UserContextPort.class);
-        var examScheduleRepository = mock(ExamScheduleRepository.class);
+        ExamScheduleRepository examScheduleRepository = mock(ExamScheduleRepository.class);
 
         useCase = new UpdateExamStatusUseCase(
             examRepository,
@@ -116,7 +116,7 @@ class UpdateExamStatusPublishReadinessTests {
             .thenReturn(true);
         when(examRepository.save(any(Exam.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(candidateId);
         candidate.setExamId(examId);
         candidate.setStatus(ExamCandidateStatus.ATTENDED);
@@ -124,20 +124,20 @@ class UpdateExamStatusPublishReadinessTests {
     }
 
     /**
-     * Phiên CŨ bị xoá SAU khi đã có kết quả (kịch bản đúng nguyên văn báo cáo lỗi): kết quả vẫn còn
-     * dòng trong DB, chỉ đổi status thành DELETED, không bao giờ tự chuyển sang RELEASED/INVALID.
-     * Phiên MỚI (thi lại) đã chấm xong, RELEASED. Publish phải qua, không được đếm dòng DELETED là
-     * "còn treo".
+     * The OLD session is deleted AFTER a result exists (exactly the scenario from the bug report):
+     * the result still has a row in the DB, only its status changes to DELETED, and it never moves
+     * to RELEASED/INVALID by itself. The NEW session (a retake) is already graded, RELEASED.
+     * Publishing must go through; the DELETED row must not be counted as "still pending".
      */
     @Test
     void should_publish_when_the_only_unresolved_result_belongs_to_a_deleted_retaken_session() {
-        var deletedSession = session(ExamSessionStatus.DELETED);
-        var retakeSession = session(ExamSessionStatus.GRADED);
+        ExamSession deletedSession = session(ExamSessionStatus.DELETED);
+        ExamSession retakeSession = session(ExamSessionStatus.GRADED);
         when(examSessionRepository.findByCandidateId(candidateId))
             .thenReturn(List.of(deletedSession, retakeSession));
 
-        var deletedResult = result(deletedSession.getId(), ExamCandidateResultStatus.DELETED);
-        var retakeResult = result(retakeSession.getId(), ExamCandidateResultStatus.RELEASED);
+        ExamCandidateResult deletedResult = result(deletedSession.getId(), ExamCandidateResultStatus.DELETED);
+        ExamCandidateResult retakeResult = result(retakeSession.getId(), ExamCandidateResultStatus.RELEASED);
         when(examCandidateResultRepository.findBySessionId(deletedSession.getId()))
             .thenReturn(Optional.of(deletedResult));
         when(examCandidateResultRepository.findBySessionId(retakeSession.getId()))
@@ -152,21 +152,21 @@ class UpdateExamStatusPublishReadinessTests {
     }
 
     /**
-     * Phiên CŨ bị xoá TRƯỚC khi kịp có kết quả nào (lỗi phòng thi/sự cố kỹ thuật, xoá ngay). Không
-     * có dòng kết quả nào để mà đã-xoá -- {@code findBySessionId} trả rỗng thật sự, không phải
-     * DELETED. Cạnh khác của cùng lỗi: {@code missingResultCount} không được đếm phiên đã xoá là
-     * "thiếu kết quả".
+     * The OLD session is deleted BEFORE it had any result (an exam-room or technical incident,
+     * deleted right away). There is no result row to be deleted -- {@code findBySessionId} really
+     * returns empty, it is not DELETED. The other edge of the same bug: {@code missingResultCount}
+     * must not count a deleted session as "missing a result".
      */
     @Test
     void should_publish_when_the_deleted_session_never_had_a_result_at_all() {
-        var deletedSession = session(ExamSessionStatus.DELETED);
-        var retakeSession = session(ExamSessionStatus.GRADED);
+        ExamSession deletedSession = session(ExamSessionStatus.DELETED);
+        ExamSession retakeSession = session(ExamSessionStatus.GRADED);
         when(examSessionRepository.findByCandidateId(candidateId))
             .thenReturn(List.of(deletedSession, retakeSession));
 
         when(examCandidateResultRepository.findBySessionId(deletedSession.getId()))
             .thenReturn(Optional.empty());
-        var retakeResult = result(retakeSession.getId(), ExamCandidateResultStatus.RELEASED);
+        ExamCandidateResult retakeResult = result(retakeSession.getId(), ExamCandidateResultStatus.RELEASED);
         when(examCandidateResultRepository.findBySessionId(retakeSession.getId()))
             .thenReturn(Optional.of(retakeResult));
         when(examCandidateResultRepository.findByExamId(examId)).thenReturn(List.of(retakeResult));
@@ -177,14 +177,17 @@ class UpdateExamStatusPublishReadinessTests {
             .doesNotThrowAnyException();
     }
 
-    /** Đối chứng: một kết quả PENDING_REVIEW thật (chưa xoá) vẫn phải chặn publish như cũ -- bản
-     * vá chỉ tha DELETED, không nới lỏng cổng chặn cho trạng thái nào khác. */
+    /**
+     * Control case: a real (not deleted) PENDING_REVIEW result must still block publishing as
+     * before -- the patch only lets DELETED through and does not loosen the gate for any other
+     * status.
+     */
     @Test
     void should_still_block_publish_when_a_real_pending_result_remains() {
-        var pendingSession = session(ExamSessionStatus.GRADED);
+        ExamSession pendingSession = session(ExamSessionStatus.GRADED);
         when(examSessionRepository.findByCandidateId(candidateId)).thenReturn(List.of(pendingSession));
 
-        var pendingResult = result(pendingSession.getId(), ExamCandidateResultStatus.PENDING_REVIEW);
+        ExamCandidateResult pendingResult = result(pendingSession.getId(), ExamCandidateResultStatus.PENDING_REVIEW);
         when(examCandidateResultRepository.findBySessionId(pendingSession.getId()))
             .thenReturn(Optional.of(pendingResult));
         when(examCandidateResultRepository.findByExamId(examId)).thenReturn(List.of(pendingResult));
@@ -197,7 +200,7 @@ class UpdateExamStatusPublishReadinessTests {
     }
 
     private Exam closedExam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         exam.setKind(ExamKind.CENTRALIZED);
@@ -207,7 +210,7 @@ class UpdateExamStatusPublishReadinessTests {
     }
 
     private ExamSession session(ExamSessionStatus status) {
-        var session = new ExamSession();
+        ExamSession session = new ExamSession();
         session.setId(UUID.randomUUID());
         session.setExamId(examId);
         session.setCandidateId(candidateId);
@@ -216,7 +219,7 @@ class UpdateExamStatusPublishReadinessTests {
     }
 
     private ExamCandidateResult result(UUID sessionId, ExamCandidateResultStatus status) {
-        var result = new ExamCandidateResult();
+        ExamCandidateResult result = new ExamCandidateResult();
         result.setId(UUID.randomUUID());
         result.setExamId(examId);
         result.setCandidateId(candidateId);

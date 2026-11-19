@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
@@ -58,24 +60,24 @@ public class UpdateExamCandidateStatusUseCase implements IUseCase<UpdateExamCand
     @Override
     @Transactional
     public ExamCandidateDto execute(UpdateExamCandidateStatusCommand input) {
-        var candidate = examCandidateRepository.findById(input.candidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(input.candidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh"));
-        var exam = examRepository.findById(candidate.getExamId())
+        Exam exam = examRepository.findById(candidate.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của thí sinh"));
         if (candidate.getScheduleId() == null) {
             throw new IllegalStateException("Thí sinh chưa được xếp ca thi");
         }
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!hasAttendanceAccess(exam, candidate.getScheduleId(), currentUserId)) {
             throw new ForbiddenException("Bạn không phải giám thị của ca thi này");
         }
 
-        var schedule = examScheduleRepository.findById(candidate.getScheduleId())
+        ExamSchedule schedule = examScheduleRepository.findById(candidate.getScheduleId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi của thí sinh"));
-        var now = Instant.now();
-        var windowStart = schedule.getStartDate().minus(30, ChronoUnit.MINUTES);
-        var windowEnd = schedule.getEndDate();
+        Instant now = Instant.now();
+        Instant windowStart = schedule.getStartDate().minus(30, ChronoUnit.MINUTES);
+        Instant windowEnd = schedule.getEndDate();
         if (now.isBefore(windowStart) || now.isAfter(windowEnd)) {
             throw new IllegalStateException("Chỉ được điểm danh trong khoảng 30 phút trước đến khi kết thúc ca thi");
         }
@@ -96,10 +98,10 @@ public class UpdateExamCandidateStatusUseCase implements IUseCase<UpdateExamCand
             return true;
         }
 
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         return isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId());
     }

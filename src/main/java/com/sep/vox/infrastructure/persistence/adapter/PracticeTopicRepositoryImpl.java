@@ -69,7 +69,7 @@ public class PracticeTopicRepositoryImpl implements PracticeTopicRepository {
 
     @Override
     public Map<String, Double> findInterestScoresByDimension(UUID studentId) {
-        var result = new HashMap<String, Double>();
+        Map<String, Double> result = new HashMap<String, Double>();
         repository.findInterestScores(studentId)
             .forEach(row -> result.put(row.getDimension(), row.getScore()));
         return result;

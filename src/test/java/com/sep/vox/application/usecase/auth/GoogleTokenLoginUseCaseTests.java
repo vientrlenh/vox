@@ -59,9 +59,9 @@ class GoogleTokenLoginUseCaseTests {
         when(oAuth2LoginUseCase.execute(any()))
             .thenReturn(new LoginResponse("access", "refresh", List.of("STUDENT")));
 
-        var result = useCase.execute(command("id-token"));
+        LoginResponse result = useCase.execute(command("id-token"));
 
-        var sent = ArgumentCaptor.forClass(OAuth2LoginCommand.class);
+        ArgumentCaptor<OAuth2LoginCommand> sent = ArgumentCaptor.forClass(OAuth2LoginCommand.class);
         verify(oAuth2LoginUseCase).execute(sent.capture());
         assertThat(sent.getValue().provider()).isEqualTo("google");
         assertThat(sent.getValue().providerUserId()).isEqualTo("google-sub-1");

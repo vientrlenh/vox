@@ -60,7 +60,7 @@ public class ExamScheduleController {
     public ResponseEntity<ApiResponse<ExamScheduleDto>> create(
             @PathVariable(name = "examId") UUID examId,
             @Valid @RequestBody CreateExamScheduleRequest request) {
-        var data = createExamScheduleUseCase.execute(CreateExamScheduleCommandMapper.fromRequest(examId, request));
+        ExamScheduleDto data = createExamScheduleUseCase.execute(CreateExamScheduleCommandMapper.fromRequest(examId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo ca thi thành công", data));
     }
@@ -71,7 +71,7 @@ public class ExamScheduleController {
             @PathVariable("examId") UUID examId,
             @PathVariable("scheduleId") UUID scheduleId,
             @Valid @RequestBody UpdateExamScheduleStatusRequest request) {
-        var data = updateExamScheduleStatusUseCase.execute(
+        ExamScheduleDto data = updateExamScheduleStatusUseCase.execute(
             UpdateExamScheduleStatusCommandMapper.fromRequest(examId, scheduleId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái ca thi thành công", data));
     }
@@ -91,7 +91,7 @@ public class ExamScheduleController {
             @PathVariable("examId") UUID examId,
             @PathVariable("scheduleId") UUID scheduleId,
             @Valid @RequestBody AddExamScheduleProctorRequest request) {
-        var data = addExamScheduleProctorUseCase.execute(
+        ExamScheduleProctorDto data = addExamScheduleProctorUseCase.execute(
             AddExamScheduleProctorCommandMapper.fromRequest(examId, scheduleId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Thêm giám thị thành công", data));

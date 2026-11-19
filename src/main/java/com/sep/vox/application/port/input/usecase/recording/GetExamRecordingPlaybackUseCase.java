@@ -1,7 +1,10 @@
 package com.sep.vox.application.port.input.usecase.recording;
 
+import com.sep.vox.domain.model.exam.ExamSession;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -54,14 +57,14 @@ public class GetExamRecordingPlaybackUseCase
 
     @Override
     public List<ExamRecordingPlaybackResponse> execute(GetExamRecordsQuery input) {
-        var session = accessService.requireCanViewRecordings(input.examSessionId());
-        var records = examRecordingRepository.findByExamSessionId(session.getId());
+        ExamSession session = accessService.requireCanViewRecordings(input.examSessionId());
+        List<ExamRecording> records = examRecordingRepository.findByExamSessionId(session.getId());
 
         // Giữ nguyên cách chọn bản chuẩn của đường giám thị: mỗi nguồn ingest có hàng riêng nên
         // một streamType có thể có nhiều bản. Trả HẾT và chỉ đánh dấu bản nên mở trước, thay vì
         // lọc bớt -- bản WebRTC là bản duy nhất không đi qua máy thí sinh, nên khi có tranh chấp
         // nó phải với tới được. Người chấm tự chọn giữa chúng.
-        var canonicalIds = records.stream()
+        Set<UUID> canonicalIds = records.stream()
             .collect(Collectors.groupingBy(
                 (ExamRecording recording) -> recording.getStreamType(),
                 Collectors.maxBy(RecordingPrecedence.CANONICAL_ORDER)))
@@ -94,8 +97,8 @@ public class GetExamRecordingPlaybackUseCase
      * cùng phiên thi có thể vẫn xem tốt. Trả null để client hiện "chưa sẵn sàng" đúng ô đó.
      */
     private String playbackUrlFor(ExamRecording recording) {
-        var bucket = recording.getBucket();
-        var key = recording.getS3Key();
+        String bucket = recording.getBucket();
+        String key = recording.getS3Key();
         if (bucket == null || bucket.isBlank() || key == null || key.isBlank()) {
             return null;
         }

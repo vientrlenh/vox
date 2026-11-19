@@ -59,19 +59,22 @@ class ViewClassTestGradingResultsUseCaseTests {
     void should_scope_the_query_to_the_class_test_of_the_caller() {
         useCase.execute(new ViewClassTestGradingResultsQuery(examId, null, false, null, 0, 20));
 
-        var filter = ArgumentCaptor.forClass(GradingAssignmentFilter.class);
+        ArgumentCaptor<GradingAssignmentFilter> filter = ArgumentCaptor.forClass(GradingAssignmentFilter.class);
         verify(examGradingQueryRepository).searchAssignments(filter.capture(), anyInt(), anyInt());
         assertThat(filter.getValue().schoolId()).isEqualTo(schoolId);
         assertThat(filter.getValue().examId()).isEqualTo(examId);
         assertThat(filter.getValue().examKind()).isEqualTo("CLASS_TEST");
     }
 
-    /** Không lọc theo phân công: bài CHƯA giao ai mới là thứ giáo viên cần thấy ở đây. */
+    /**
+     * Do not filter by assignment: submissions NOT yet assigned to anyone are exactly what the
+     * teacher needs to see here.
+     */
     @Test
     void should_not_narrow_the_list_to_assigned_results() {
         useCase.execute(new ViewClassTestGradingResultsQuery(examId, null, false, null, 0, 20));
 
-        var filter = ArgumentCaptor.forClass(GradingAssignmentFilter.class);
+        ArgumentCaptor<GradingAssignmentFilter> filter = ArgumentCaptor.forClass(GradingAssignmentFilter.class);
         verify(examGradingQueryRepository).searchAssignments(filter.capture(), anyInt(), anyInt());
         assertThat(filter.getValue().teacherId()).isNull();
         assertThat(filter.getValue().assignmentStatus()).isNull();
@@ -82,7 +85,7 @@ class ViewClassTestGradingResultsUseCaseTests {
     void should_pass_the_unassigned_only_filter_through() {
         useCase.execute(new ViewClassTestGradingResultsQuery(examId, "RELEASED", true, "thiên", 0, 20));
 
-        var filter = ArgumentCaptor.forClass(GradingAssignmentFilter.class);
+        ArgumentCaptor<GradingAssignmentFilter> filter = ArgumentCaptor.forClass(GradingAssignmentFilter.class);
         verify(examGradingQueryRepository).searchAssignments(filter.capture(), anyInt(), anyInt());
         assertThat(filter.getValue().unassignedOnly()).isTrue();
         assertThat(filter.getValue().resultStatus()).isEqualTo("RELEASED");

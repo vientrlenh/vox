@@ -1,6 +1,14 @@
 package com.sep.vox.interfaces.graphql.controller;
 
 
+import com.sep.vox.application.port.input.command.UpdateSchoolRubricCommand;
+import com.sep.vox.application.port.input.command.UpdateSchoolRubricCriterionCommand;
+import com.sep.vox.application.port.input.command.UpdateSchoolRubricResultBandCommand;
+import com.sep.vox.application.port.input.command.UpdateSchoolRubricVersionCommand;
+import com.sep.vox.application.port.input.command.UpdateSystemRubricCommand;
+import com.sep.vox.application.port.input.command.UpdateSystemRubricCriterionCommand;
+import com.sep.vox.application.port.input.command.UpdateSystemRubricResultBandCommand;
+import com.sep.vox.application.port.input.command.UpdateSystemRubricVersionCommand;
 import com.sep.vox.application.port.input.query.*;
 import com.sep.vox.application.port.input.query.key.RubricCriteriaKey;
 import com.sep.vox.application.port.input.query.key.RubricResultBandsKey;
@@ -109,7 +117,7 @@ public class RubricController {
             @Argument(name = "id") UUID id,
             @Argument(name = "input") UpdateRubricInput input
     ) {
-        var command = UpdateRubricGraphQLMapper.fromSystemInput(id, input);
+        UpdateSystemRubricCommand command = UpdateRubricGraphQLMapper.fromSystemInput(id, input);
 
         return updateSystemRubricUseCase.execute(command);
     }
@@ -123,7 +131,7 @@ public class RubricController {
             @Argument(name = "id") UUID id,
             @Valid @Argument(name = "input") UpdateRubricInput input
     ) {
-        var command = UpdateRubricGraphQLMapper.fromSchoolInput(schoolId, id, input);
+        UpdateSchoolRubricCommand command = UpdateRubricGraphQLMapper.fromSchoolInput(schoolId, id, input);
         return updateSchoolRubricUseCase.execute(command);
     }
 
@@ -132,7 +140,7 @@ public class RubricController {
     @QueryMapping(name = "viewSystemRubric")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RubricDto viewSystemRubricById(@Argument(name = "id") UUID id) {
-        var query = new ViewSystemRubricDetailsQuery(id);
+        ViewSystemRubricDetailsQuery query = new ViewSystemRubricDetailsQuery(id);
         return viewSystemRubricDetailsUseCase.execute(query);
     }
 
@@ -144,7 +152,7 @@ public class RubricController {
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "id") UUID id
     ) {
-        var query = new ViewSchoolRubricDetailsQuery(schoolId, id);
+        ViewSchoolRubricDetailsQuery query = new ViewSchoolRubricDetailsQuery(schoolId, id);
         return viewSchoolRubricDetailsUseCase.execute(query);
     }
 
@@ -158,7 +166,7 @@ public class RubricController {
     ) {
 
         validatePageSize(page, size);
-        var query = new ViewSystemRubricsQuery(page, size);
+        ViewSystemRubricsQuery query = new ViewSystemRubricsQuery(page, size);
 
         return viewSystemRubricsUseCase.execute(query);
     }
@@ -174,7 +182,7 @@ public class RubricController {
     ) {
         validatePageSize(page, size);
 
-        var query = new ViewSchoolRubricsQuery(schoolId, page, size);
+        ViewSchoolRubricsQuery query = new ViewSchoolRubricsQuery(schoolId, page, size);
         return viewSchoolRubricsUseCase.execute(query);
     }
 
@@ -234,11 +242,9 @@ public class RubricController {
 
         validatePageSize(page, size);
 
-        // Tránh NullPointerException nếu Frontend không truyền filter
-        var safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
+        SearchRubricFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
 
-        // Tạo Query của Clean Architecture (Lưu ý tham số thứ 4 là PageRequest)
-        var query = new SearchSystemRubricsQuery(
+        SearchSystemRubricsQuery query = new SearchSystemRubricsQuery(
                 safeFilter.keyword(),
                 safeFilter.frameworkId(),
                 safeFilter.languageId(),
@@ -246,7 +252,6 @@ public class RubricController {
                 size
         );
 
-        // SỬA COMMENT: Thực thi UseCase của hệ thống (chứ không phải của trường)
         return searchSystemRubricsUseCase.execute(query);
     }
 
@@ -274,7 +279,7 @@ public class RubricController {
             @Argument(name = "size") Integer size) {
 
         validatePageSize(page, size);
-        var safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
+        SearchRubricFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
 
         return searchSystemRubricsUseCase.execute(new SearchSystemRubricsQuery(
                 safeFilter.keyword(),
@@ -297,11 +302,9 @@ public class RubricController {
 
         validatePageSize(page, size);
 
-        // 2. Tránh NullPointer
-        var safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
+        SearchRubricFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
 
-        // 3. Khởi tạo Query gọn gàng (Gộp inline PageRequest)
-        var query = new SearchSchoolRubricsQuery(
+        SearchSchoolRubricsQuery query = new SearchSchoolRubricsQuery(
                 schoolId,
                 safeFilter.keyword(),
                 safeFilter.frameworkId(),
@@ -322,11 +325,10 @@ public class RubricController {
 
         validatePageSize(page, size);
 
-        // 2. Tránh NullPointer
-        var safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
+        SearchRubricFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
 
-        // 3. Khởi tạo Query (schoolId được UseCase tự suy ra từ Teacher đang đăng nhập)
-        var query = new SearchTeacherRubricsQuery(
+        // schoolId is derived by the use case from the signed-in teacher.
+        SearchTeacherRubricsQuery query = new SearchTeacherRubricsQuery(
                 safeFilter.keyword(),
                 safeFilter.frameworkId(),
                 safeFilter.languageId(),
@@ -344,8 +346,7 @@ public class RubricController {
             @Argument(name = "versionId") UUID versionId,
             @Argument(name = "input") UpdateRubricVersionInput input
     ) {
-        // Sử dụng Mapper chuẩn men
-        var command = UpdateRubricVersionGraphQLMapper.fromSystemInput(versionId, input);
+        UpdateSystemRubricVersionCommand command = UpdateRubricVersionGraphQLMapper.fromSystemInput(versionId, input);
 
         return updateSystemRubricVersionUseCase.execute(command);
     }
@@ -359,7 +360,7 @@ public class RubricController {
             @Argument(name = "versionId") UUID versionId,
             @Argument(name = "input") UpdateRubricVersionInput input
     ) {
-        var command = UpdateRubricVersionGraphQLMapper.fromSchoolInput(schoolId, versionId, input);
+        UpdateSchoolRubricVersionCommand command = UpdateRubricVersionGraphQLMapper.fromSchoolInput(schoolId, versionId, input);
 
         return updateSchoolRubricVersionUseCase.execute(command);
     }
@@ -371,7 +372,7 @@ public class RubricController {
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "versionId") UUID versionId
     ) {
-        var query = new ViewSchoolRubricVersionDetailsQuery(schoolId, versionId);
+        ViewSchoolRubricVersionDetailsQuery query = new ViewSchoolRubricVersionDetailsQuery(schoolId, versionId);
         return viewSchoolRubricVersionDetailsUseCase.execute(query);
     }
 
@@ -381,7 +382,7 @@ public class RubricController {
     public RubricVersionDto viewSystemRubricVersion(
             @Argument(name = "versionId") UUID versionId
     ) {
-        var query = new ViewSystemRubricVersionDetailsQuery(versionId);
+        ViewSystemRubricVersionDetailsQuery query = new ViewSystemRubricVersionDetailsQuery(versionId);
         return viewSystemRubricVersionDetailsUseCase.execute(query);
     }
 
@@ -398,7 +399,7 @@ public class RubricController {
     ) {
         validatePageSize(page, size);
 
-        var query = new ViewSchoolRubricVersionsQuery(schoolId, rubricId, status, page, size);
+        ViewSchoolRubricVersionsQuery query = new ViewSchoolRubricVersionsQuery(schoolId, rubricId, status, page, size);
         return viewSchoolRubricVersionsUseCase.execute(query);
     }
 
@@ -414,7 +415,7 @@ public class RubricController {
     ) {
         validatePageSize(page, size);
 
-        var query = new ViewSystemRubricVersionsQuery(rubricId, status, page, size);
+        ViewSystemRubricVersionsQuery query = new ViewSystemRubricVersionsQuery(rubricId, status, page, size);
         return viewSystemRubricVersionsUseCase.execute(query);
     }
 
@@ -428,7 +429,7 @@ public class RubricController {
     ) {
         validatePageSize(page, size);
 
-        var query = new ViewTeacherRubricVersionsQuery(rubricId, page, size);
+        ViewTeacherRubricVersionsQuery query = new ViewTeacherRubricVersionsQuery(rubricId, page, size);
         return viewTeacherRubricVersionsUseCase.execute(query);
     }
 
@@ -483,10 +484,9 @@ public class RubricController {
 
         validatePageSize(page, size);
 
-        // 2. Phòng hộ lỗi dữ liệu null của Filter block
-        var safeFilter = (filter != null) ? filter : new SearchRubricVersionFilterRequest(null, null);
+        SearchRubricVersionFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricVersionFilterRequest(null, null);
 
-        var query = new SearchSystemRubricVersionsQuery(
+        SearchSystemRubricVersionsQuery query = new SearchSystemRubricVersionsQuery(
                 rubricId,
                 safeFilter.keyword(),
                 safeFilter.status(),
@@ -509,11 +509,9 @@ public class RubricController {
 
         validatePageSize(page, size);
 
-        // Tránh NullPointer
-        var safeFilter = (filter != null) ? filter : new SearchRubricVersionFilterRequest(null, null);
+        SearchRubricVersionFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricVersionFilterRequest(null, null);
 
-        // Khởi tạo Query phẳng
-        var query = new SearchSchoolRubricVersionsQuery(
+        SearchSchoolRubricVersionsQuery query = new SearchSchoolRubricVersionsQuery(
                 schoolId,
                 rubricId,
                 safeFilter.keyword(),
@@ -534,7 +532,7 @@ public class RubricController {
             @Argument(name = "criterionId") UUID criterionId,
             @Argument(name = "input") UpdateRubricCriterionInput input
     ) {
-        var command = RubricCriterionGraphQLMapper.fromSystemInput(criterionId, input);
+        UpdateSystemRubricCriterionCommand command = RubricCriterionGraphQLMapper.fromSystemInput(criterionId, input);
         return updateSystemRubricCriterionUseCase.execute(command);
     }
 
@@ -546,7 +544,7 @@ public class RubricController {
             @Argument(name = "criterionId") UUID criterionId,
             @Argument(name = "input") UpdateRubricCriterionInput input
     ) {
-        var command = RubricCriterionGraphQLMapper.fromSchoolInput(schoolId, criterionId, input);
+        UpdateSchoolRubricCriterionCommand command = RubricCriterionGraphQLMapper.fromSchoolInput(schoolId, criterionId, input);
         return updateSchoolRubricCriterionUseCase.execute(command);
     }
 
@@ -556,7 +554,7 @@ public class RubricController {
     public RubricCriterionDto viewSystemRubricCriterion(
             @Argument(name = "criterionId") UUID criterionId
     ) {
-        var query = new ViewSystemRubricCriterionDetailsQuery(criterionId);
+        ViewSystemRubricCriterionDetailsQuery query = new ViewSystemRubricCriterionDetailsQuery(criterionId);
         return viewSystemRubricCriterionDetailsUseCase.execute(query);
     }
 
@@ -567,7 +565,7 @@ public class RubricController {
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "criterionId") UUID criterionId
     ) {
-        var query = new ViewSchoolRubricCriterionDetailsQuery(schoolId, criterionId);
+        ViewSchoolRubricCriterionDetailsQuery query = new ViewSchoolRubricCriterionDetailsQuery(schoolId, criterionId);
         return viewSchoolRubricCriterionDetailsUseCase.execute(query);
     }
 
@@ -582,7 +580,7 @@ public class RubricController {
     ) {
         validatePageSize(page, size);
 
-        var query = new ViewSystemRubricCriteriaQuery(versionId, page, size);
+        ViewSystemRubricCriteriaQuery query = new ViewSystemRubricCriteriaQuery(versionId, page, size);
         return viewSystemRubricCriteriaUseCase.execute(query);
     }
 
@@ -598,7 +596,7 @@ public class RubricController {
 
         validatePageSize(page, size);
 
-        var query = new ViewSchoolRubricCriteriaQuery(schoolId, versionId, page, size);
+        ViewSchoolRubricCriteriaQuery query = new ViewSchoolRubricCriteriaQuery(schoolId, versionId, page, size);
         return viewSchoolRubricCriteriaUseCase.execute(query);
     }
 
@@ -613,9 +611,9 @@ public class RubricController {
             @Argument(name = "size") Integer size) {
 
         validatePageSize(page, size);
-        var safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterRequest(null, null);
+        SearchRubricCriterionFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterRequest(null, null);
 
-        var query = new SearchSystemRubricCriteriaQuery(
+        SearchSystemRubricCriteriaQuery query = new SearchSystemRubricCriteriaQuery(
                 versionId, safeFilter.keyword(), safeFilter.isRequired(), page, size
         );
 
@@ -633,9 +631,9 @@ public class RubricController {
             @Argument(name = "size") Integer size) {
 
         validatePageSize(page, size);
-        var safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterRequest(null, null);
+        SearchRubricCriterionFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterRequest(null, null);
 
-        var query = new SearchSchoolRubricCriteriaQuery(
+        SearchSchoolRubricCriteriaQuery query = new SearchSchoolRubricCriteriaQuery(
                 schoolId, versionId, safeFilter.keyword(), safeFilter.isRequired(), page, size
         );
 
@@ -650,7 +648,7 @@ public class RubricController {
             @Argument(name = "resultBandId") UUID resultBandId,
             @Argument(name = "input") UpdateRubricResultBandInput input
     ) {
-        var command = RubricResultBandGraphQLMapper.fromSystemInput(resultBandId, input);
+        UpdateSystemRubricResultBandCommand command = RubricResultBandGraphQLMapper.fromSystemInput(resultBandId, input);
         return updateSystemRubricResultBandUseCase.execute(command);
     }
 
@@ -662,7 +660,7 @@ public class RubricController {
             @Argument(name = "resultBandId") UUID resultBandId,
             @Argument(name = "input") UpdateRubricResultBandInput input
     ) {
-        var command = RubricResultBandGraphQLMapper.fromSchoolInput(schoolId, resultBandId, input);
+        UpdateSchoolRubricResultBandCommand command = RubricResultBandGraphQLMapper.fromSchoolInput(schoolId, resultBandId, input);
         return updateSchoolRubricResultBandUseCase.execute(command);
     }
 
@@ -672,7 +670,7 @@ public class RubricController {
     public RubricResultBandDto viewSystemRubricResultBand(
             @Argument(name = "resultBandId") UUID resultBandId
     ) {
-        var query = new ViewSystemRubricResultBandDetailsQuery(resultBandId);
+        ViewSystemRubricResultBandDetailsQuery query = new ViewSystemRubricResultBandDetailsQuery(resultBandId);
         return viewSystemRubricResultBandDetailsUseCase.execute(query);
     }
 
@@ -683,7 +681,7 @@ public class RubricController {
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "resultBandId") UUID resultBandId
     ) {
-        var query = new ViewSchoolRubricResultBandDetailsQuery(schoolId, resultBandId);
+        ViewSchoolRubricResultBandDetailsQuery query = new ViewSchoolRubricResultBandDetailsQuery(schoolId, resultBandId);
         return viewSchoolRubricResultBandDetailsUseCase.execute(query);
     }
 
@@ -698,7 +696,7 @@ public class RubricController {
 
         validatePageSize(page, size);
 
-        var query = new ViewSystemRubricResultBandsQuery(versionId, page, size);
+        ViewSystemRubricResultBandsQuery query = new ViewSystemRubricResultBandsQuery(versionId, page, size);
         return viewSystemRubricResultBandsUseCase.execute(query);
     }
 
@@ -714,7 +712,7 @@ public class RubricController {
 
         validatePageSize(page, size);
 
-        var query = new ViewSchoolRubricResultBandsQuery(schoolId, versionId, page, size);
+        ViewSchoolRubricResultBandsQuery query = new ViewSchoolRubricResultBandsQuery(schoolId, versionId, page, size);
         return viewSchoolRubricResultBandsUseCase.execute(query);
     }
 
@@ -728,9 +726,9 @@ public class RubricController {
             @Argument(name = "size") Integer size) {
 
         validatePageSize(page, size);
-        var safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterRequest(null);
+        SearchRubricResultBandFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterRequest(null);
 
-        var query = new SearchSystemRubricResultBandsQuery(versionId, safeFilter.keyword(), page, size);
+        SearchSystemRubricResultBandsQuery query = new SearchSystemRubricResultBandsQuery(versionId, safeFilter.keyword(), page, size);
         return searchSystemRubricResultBandsUseCase.execute(query);
     }
 
@@ -745,9 +743,9 @@ public class RubricController {
             @Argument(name = "size") Integer size) {
 
         validatePageSize(page, size);
-        var safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterRequest(null);
+        SearchRubricResultBandFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterRequest(null);
 
-        var query = new SearchSchoolRubricResultBandsQuery(schoolId, versionId, safeFilter.keyword(), page, size);
+        SearchSchoolRubricResultBandsQuery query = new SearchSchoolRubricResultBandsQuery(schoolId, versionId, safeFilter.keyword(), page, size);
         return searchSchoolRubricResultBandsUseCase.execute(query);
     }
 

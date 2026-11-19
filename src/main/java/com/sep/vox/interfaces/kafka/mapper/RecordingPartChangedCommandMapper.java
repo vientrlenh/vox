@@ -41,7 +41,7 @@ public final class RecordingPartChangedCommandMapper {
     }
 
     private static ExamRequiredStreamType toStreamType(String raw) {
-        var type = ExamRequiredStreamType.valueOf(raw.trim().toUpperCase());
+        ExamRequiredStreamType type = ExamRequiredStreamType.valueOf(raw.trim().toUpperCase());
         if (type == ExamRequiredStreamType.CAMERA_AND_SCREEN) {
             throw new IllegalArgumentException("Một bản ghi không thể có streamType CAMERA_AND_SCREEN: " + raw);
         }

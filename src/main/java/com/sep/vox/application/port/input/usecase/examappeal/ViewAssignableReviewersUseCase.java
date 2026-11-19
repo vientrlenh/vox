@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.examappeal;
 
 import java.util.List;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,15 +40,15 @@ public class ViewAssignableReviewersUseCase
     @Override
     @Transactional(readOnly = true)
     public List<AppealReviewerLiteInfo> execute(ViewAssignableReviewersQuery input) {
-        var currentUserId = examAppealAccessService.requireActiveUserId();
-        var schoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = examAppealAccessService.requireActiveUserId();
+        UUID schoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
 
         // Đơn phải thuộc trường của người gọi — nếu không, cờ xung đột sẽ rò rỉ thông
         // tin về bài thi của trường khác.
         if (input.appealId() != null) {
-            var context = examAppealAccessService.load(input.appealId());
+            ExamAppealAccessService.AppealContext context = examAppealAccessService.load(input.appealId());
             examAppealAccessService.authorizeSchoolAdminOrClassTestChair(context, currentUserId);
         }
         return examAppealQueryRepository.findAssignableReviewers(schoolId, input.appealId(), input.keyword());

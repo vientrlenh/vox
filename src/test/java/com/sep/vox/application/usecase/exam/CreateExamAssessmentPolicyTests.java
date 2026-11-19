@@ -27,6 +27,7 @@ import com.sep.vox.application.port.input.usecase.exam.CreateExamUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.exam.Exam;
@@ -59,9 +60,9 @@ class CreateExamAssessmentPolicyTests {
         assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
         examRepository = mock(ExamRepository.class);
         subscriptionPeriodGuardService = mock(SubscriptionPeriodGuardService.class);
-        var schoolUserRepository = mock(SchoolUserRepository.class);
-        var userRoleQueryRepository = mock(UserRoleQueryRepository.class);
-        var userContextPort = mock(UserContextPort.class);
+        SchoolUserRepository schoolUserRepository = mock(SchoolUserRepository.class);
+        UserRoleQueryRepository userRoleQueryRepository = mock(UserRoleQueryRepository.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
 
         useCase = new CreateExamUseCase(
             examRepository,
@@ -75,7 +76,7 @@ class CreateExamAssessmentPolicyTests {
         );
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(ADMIN_ID);
-        var schoolUser = mock(SchoolUser.class);
+        SchoolUser schoolUser = mock(SchoolUser.class);
         when(schoolUser.getSchoolId()).thenReturn(SCHOOL_ID);
         when(schoolUserRepository.findByUserId(ADMIN_ID)).thenReturn(Optional.of(schoolUser));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(ADMIN_ID)).thenReturn(List.of(
@@ -125,15 +126,17 @@ class CreateExamAssessmentPolicyTests {
         when(assessmentPolicyRepository.findById(POLICY_ID))
             .thenReturn(Optional.of(policy(SCHOOL_ID, AssessmentPolicyStatus.PUBLISHED)));
 
-        var result = useCase.execute(command(POLICY_ID));
+        ExamDto result = useCase.execute(command(POLICY_ID));
 
         assertThat(result.assessmentPolicyId()).isEqualTo(POLICY_ID);
     }
 
-    /** Bỏ trống vẫn tạo được: kỳ thi tập trung chọn policy ở bước sửa. */
+    /**
+     * Leaving it empty still allows creation: a centralized exam picks its policy at the edit step.
+     */
     @Test
     void should_accept_missing_assessment_policy_at_creation() {
-        var result = useCase.execute(command(null));
+        ExamDto result = useCase.execute(command(null));
 
         assertThat(result).isNotNull();
         assertThat(result.assessmentPolicyId()).isNull();
@@ -228,7 +231,7 @@ class CreateExamAssessmentPolicyTests {
     }
 
     private AssessmentPolicy policy(UUID schoolId, AssessmentPolicyStatus status) {
-        var policy = new AssessmentPolicy();
+        AssessmentPolicy policy = new AssessmentPolicy();
         policy.setId(POLICY_ID);
         policy.setSchoolId(schoolId);
         policy.setStatus(status);

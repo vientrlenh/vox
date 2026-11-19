@@ -28,6 +28,7 @@ import com.sep.vox.application.port.input.service.ExamDirectoryAccessService.Exa
 import com.sep.vox.application.port.input.usecase.examcandidate.AddExamCandidateUseCase;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamKind;
@@ -69,7 +70,7 @@ class AddExamCandidateUseCaseTests {
             schoolClassUserRepository, userRoleQueryRepository, examDirectoryAccessService,
             classTestTokenQuotaGuardService);
 
-        var exam = exam();
+        Exam exam = exam();
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examDirectoryAccessService.resolve(exam))
             .thenReturn(new ExamDirectoryScope(userId, schoolId, true));
@@ -86,7 +87,7 @@ class AddExamCandidateUseCaseTests {
             return c;
         });
 
-        var result = useCase.execute(new AddExamCandidateCommand(examId, studentId));
+        ExamCandidateDto result = useCase.execute(new AddExamCandidateCommand(examId, studentId));
 
         assertThat(result.studentId()).isEqualTo(studentId);
         assertThat(result.examId()).isEqualTo(examId);
@@ -98,7 +99,7 @@ class AddExamCandidateUseCaseTests {
 
     @Test
     void should_reject_adding_candidate_to_scheduled_class_test_when_token_quota_exceeded() {
-        var exam = scheduledClassTest();
+        Exam exam = scheduledClassTest();
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
         when(examDirectoryAccessService.resolve(exam)).thenReturn(new ExamDirectoryScope(userId, schoolId, true));
         when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, studentId)).thenReturn(true);
@@ -119,8 +120,9 @@ class AddExamCandidateUseCaseTests {
 
     @Test
     void should_not_check_quota_when_adding_candidate_to_draft_class_test() {
-        // Chưa publish thì publish sau này (UpdateExamStatusUseCase) sẽ tự soi với số thí sinh cuối cùng.
-        var exam = exam();
+        // Not published yet, so the later publish (UpdateExamStatusUseCase) will check against the
+        // final number of candidates.
+        Exam exam = exam();
         exam.setKind(ExamKind.CLASS_TEST);
         exam.setStatus(ExamStatus.DRAFT);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
@@ -198,7 +200,7 @@ class AddExamCandidateUseCaseTests {
             return c;
         });
 
-        var result = useCase.execute(new AddExamCandidateCommand(examId, studentId));
+        ExamCandidateDto result = useCase.execute(new AddExamCandidateCommand(examId, studentId));
 
         assertThat(result.studentId()).isEqualTo(studentId);
     }
@@ -220,7 +222,7 @@ class AddExamCandidateUseCaseTests {
     }
 
     private SchoolClassUser activeMembership() {
-        var membership = new SchoolClassUser();
+        SchoolClassUser membership = new SchoolClassUser();
         membership.setUserId(studentId);
         membership.setSchoolClassId(classId);
         membership.setActive(true);
@@ -233,14 +235,14 @@ class AddExamCandidateUseCaseTests {
     }
 
     private Exam exam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         return exam;
     }
 
     private Exam scheduledClassTest() {
-        var exam = exam();
+        Exam exam = exam();
         exam.setKind(ExamKind.CLASS_TEST);
         exam.setStatus(ExamStatus.SCHEDULED);
         return exam;

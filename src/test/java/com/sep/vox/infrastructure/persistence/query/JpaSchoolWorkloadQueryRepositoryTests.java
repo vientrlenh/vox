@@ -5,13 +5,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 
+import com.sep.vox.application.query.dto.ExamAwaitingPublishDto;
+import com.sep.vox.application.query.dto.SchoolGradingFailureDto;
+import com.sep.vox.application.query.dto.SchoolUnscoredWorkloadDto;
 import com.sep.vox.application.query.repository.SchoolWorkloadQueryRepository;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
@@ -39,11 +44,14 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     @PersistenceContext
     private EntityManager em;
 
-    /** Năm nhóm, mỗi nhóm một bài: tổng phải bằng 5 và không bài nào bị đếm hai lần. */
+    /**
+     * Five groups, one submission each: the total must equal 5 and no submission may be counted
+     * twice.
+     */
     @Test
     void shouldPartitionUnscoredWorkIntoFiveExclusiveBuckets() {
-        var school = insertSchool();
-        var exam = insertExam(school, "Giữa kỳ I", "CLOSED");
+        UUID school = insertSchool();
+        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
 
         insertFailedSession(exam, SUBMITTED, 0);
         insertFailedSession(exam, SUBMITTED, 1);
@@ -53,7 +61,7 @@ class JpaSchoolWorkloadQueryRepositoryTests {
         insertAssignment(insertPendingReviewResult(exam, insertSession(exam, SUBMITTED, "GRADED")),
             NOW.plusSeconds(86400));
 
-        var counts = repository.countUnscored(school, NOW);
+        SchoolUnscoredWorkloadDto counts = repository.countUnscored(school, NOW);
 
         assertThat(counts.aiFailedRetryLeft()).isEqualTo(1);
         assertThat(counts.aiFailedNoRetryLeft()).isEqualTo(1);
@@ -65,17 +73,18 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     }
 
     /**
-     * Chuyển sang chấm tay KHÔNG đổi trạng thái phiên — cố ý, xem {@code HandOffGradingToHumanUseCase}.
-     * Bài phải rời nhóm "AI hỏng, chưa ai xử lý" và sang hàng đợi người chấm.
+     * Handing over to manual grading does NOT change the session status -- on purpose, see
+     * {@code HandOffGradingToHumanUseCase}. The submission must leave the "AI failed, nobody has
+     * handled it" group and move to the grader queue.
      */
     @Test
     void shouldMoveAHandedOffPaperOutOfTheUntouchedAiBucket() {
-        var school = insertSchool();
-        var exam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        var sessionId = insertFailedSession(exam, SUBMITTED, 0);
+        UUID school = insertSchool();
+        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
+        UUID sessionId = insertFailedSession(exam, SUBMITTED, 0);
         insertPendingReviewResult(exam, sessionId);
 
-        var counts = repository.countUnscored(school, NOW);
+        SchoolUnscoredWorkloadDto counts = repository.countUnscored(school, NOW);
 
         assertThat(counts.aiFailed()).isZero();
         assertThat(counts.awaitingAssignment()).isEqualTo(1);
@@ -83,18 +92,19 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     }
 
     /**
-     * Định mức một lượt của trường quyết định bài còn cứu được bằng AI hay bắt buộc phải xếp giáo
-     * viên. Hai con số này là thứ quản trị trường đọc TRƯỚC khi bấm công bố điểm.
+     * The school's per-attempt allowance decides whether a submission can still be saved by AI or
+     * must be assigned to a teacher. These two numbers are what the school admin reads BEFORE
+     * clicking publish scores.
      */
     @Test
     void shouldSplitFailedPapersByRemainingAiRetryAllowance() {
-        var school = insertSchool();
-        var exam = insertExam(school, "Giữa kỳ I", "CLOSED");
+        UUID school = insertSchool();
+        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
         insertFailedSession(exam, SUBMITTED, 0);
         insertFailedSession(exam, SUBMITTED, 0);
         insertFailedSession(exam, SUBMITTED, 1);
 
-        var counts = repository.countUnscored(school, NOW);
+        SchoolUnscoredWorkloadDto counts = repository.countUnscored(school, NOW);
 
         assertThat(counts.aiFailedRetryLeft()).isEqualTo(2);
         assertThat(counts.aiFailedNoRetryLeft()).isEqualTo(1);
@@ -102,16 +112,16 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     }
 
     /**
-     * Kỳ đã công bố điểm KHÔNG còn lối ra nào (cả hai use case đều từ chối ở trạng thái đó), nên bài
-     * của nó không phải việc phải làm mà là thiệt hại đã xảy ra. Để chúng trong hàng đợi thì con số
-     * có một mức sàn không bao giờ về 0.
+     * A period whose scores are published has NO way out anymore (both use cases refuse in that
+     * state), so its submissions are not work to do but damage already done. Leaving them in the
+     * queue would give the number a floor that never reaches 0.
      */
     @Test
     void shouldExcludePapersOfExamsWhoseResultsAreAlreadyPublished() {
-        var school = insertSchool();
-        var openExam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        var publishedExam = insertExam(school, "Thi thử", "RESULTS_PUBLISHED");
-        var cancelledExam = insertExam(school, "Kỳ đã hủy", "CANCELLED");
+        UUID school = insertSchool();
+        UUID openExam = insertExam(school, "Giữa kỳ I", "CLOSED");
+        UUID publishedExam = insertExam(school, "Thi thử", "RESULTS_PUBLISHED");
+        UUID cancelledExam = insertExam(school, "Kỳ đã hủy", "CANCELLED");
         insertFailedSession(openExam, SUBMITTED, 0);
         insertFailedSession(publishedExam, SUBMITTED, 0);
         insertFailedSession(cancelledExam, SUBMITTED, 0);
@@ -119,11 +129,14 @@ class JpaSchoolWorkloadQueryRepositoryTests {
         assertThat(repository.countUnscored(school, NOW).total()).isEqualTo(1);
     }
 
-    /** Bài kiểm tra trên lớp có màn điều phối riêng của giáo viên ra đề — gộp vào đây là lệch số. */
+    /**
+     * A class test has its own dispatch screen for the teacher who authored it -- merging it in
+     * here would skew the numbers.
+     */
     @Test
     void shouldIgnoreClassTests() {
-        var school = insertSchool();
-        var classTest = insertExam(school, "KT 15 phút", "CLOSED", "CLASS_TEST");
+        UUID school = insertSchool();
+        UUID classTest = insertExam(school, "KT 15 phút", "CLOSED", "CLASS_TEST");
         insertFailedSession(classTest, SUBMITTED, 0);
 
         assertThat(repository.countUnscored(school, NOW).total()).isZero();
@@ -131,8 +144,8 @@ class JpaSchoolWorkloadQueryRepositoryTests {
 
     @Test
     void shouldReportTheOldestWaitingPaper() {
-        var school = insertSchool();
-        var exam = insertExam(school, "Giữa kỳ I", "CLOSED");
+        UUID school = insertSchool();
+        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
         insertFailedSession(exam, Instant.parse("2026-08-27T02:14:00Z"), 0);
         insertFailedSession(exam, Instant.parse("2026-08-20T01:00:00Z"), 0);
 
@@ -140,28 +153,34 @@ class JpaSchoolWorkloadQueryRepositoryTests {
             .isEqualTo(Instant.parse("2026-08-20T01:00:00Z"));
     }
 
-    /** Hàng đợi sạch phải ra null, không phải 0: 0 ngày chờ nghĩa là "có bài, vừa nộp hôm nay". */
+    /**
+     * A clean queue must give null, not 0: 0 days of waiting means "there is a submission, just
+     * submitted today".
+     */
     @Test
     void shouldReturnNoOldestPaperWhenNothingIsWaiting() {
-        var school = insertSchool();
+        UUID school = insertSchool();
         insertExam(school, "Giữa kỳ I", "CLOSED");
 
-        var counts = repository.countUnscored(school, NOW);
+        SchoolUnscoredWorkloadDto counts = repository.countUnscored(school, NOW);
 
         assertThat(counts.total()).isZero();
         assertThat(counts.oldestSubmittedAt()).isNull();
     }
 
-    /** Chỉ kỳ CLOSED — đúng tập kỳ mà nút "Công bố điểm" đang bấm được. */
+    /**
+     * Only CLOSED periods -- exactly the set of periods for which the "Publish scores" button can
+     * be clicked.
+     */
     @Test
     void shouldListOnlyClosedExamsThatStillHaveUnscoredPapers() {
-        var school = insertSchool();
-        var closedExam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        var runningExam = insertExam(school, "Đang thi", "IN_PROGRESS");
+        UUID school = insertSchool();
+        UUID closedExam = insertExam(school, "Giữa kỳ I", "CLOSED");
+        UUID runningExam = insertExam(school, "Đang thi", "IN_PROGRESS");
         insertFailedSession(closedExam, SUBMITTED, 0);
         insertFailedSession(runningExam, SUBMITTED, 0);
 
-        var exams = repository.findExamsAwaitingPublish(school, NOW, 5);
+        List<ExamAwaitingPublishDto> exams = repository.findExamsAwaitingPublish(school, NOW, 5);
 
         assertThat(exams).hasSize(1);
         assertThat(exams.get(0).examId()).isEqualTo(closedExam);
@@ -169,18 +188,21 @@ class JpaSchoolWorkloadQueryRepositoryTests {
         assertThat(exams.get(0).unscoredCount()).isEqualTo(1);
     }
 
-    /** Kỳ nhiều bài trống nhất trước: đó là kỳ gây thiệt hại lớn nhất nếu bấm công bố nhầm. */
+    /**
+     * The period with the most empty submissions first: that is the one that does the most damage
+     * if published by mistake.
+     */
     @Test
     void shouldRankExamsByHowMuchWouldBeLostOnPublish() {
-        var school = insertSchool();
-        var small = insertExam(school, "Ít bài", "CLOSED");
-        var big = insertExam(school, "Nhiều bài", "CLOSED");
+        UUID school = insertSchool();
+        UUID small = insertExam(school, "Ít bài", "CLOSED");
+        UUID big = insertExam(school, "Nhiều bài", "CLOSED");
         insertFailedSession(small, SUBMITTED, 0);
         insertFailedSession(big, SUBMITTED, 0);
         insertFailedSession(big, SUBMITTED, 1);
         insertAssignment(insertPendingReviewResult(big, insertSession(big, SUBMITTED, "GRADED")), null);
 
-        var exams = repository.findExamsAwaitingPublish(school, NOW, 5);
+        List<ExamAwaitingPublishDto> exams = repository.findExamsAwaitingPublish(school, NOW, 5);
 
         assertThat(exams).hasSize(2);
         assertThat(exams.get(0).name()).isEqualTo("Nhiều bài");
@@ -191,11 +213,11 @@ class JpaSchoolWorkloadQueryRepositoryTests {
         assertThat(exams.get(1).unscoredCount()).isEqualTo(1);
     }
 
-    /** Trường khác không được lẫn vào — mọi câu ở đây đều là phạm vi MỘT trường. */
+    /** Another school must not be mixed in -- every query here is scoped to ONE school. */
     @Test
     void shouldNotLeakPapersFromAnotherSchool() {
-        var school = insertSchool();
-        var otherSchool = insertSchool();
+        UUID school = insertSchool();
+        UUID otherSchool = insertSchool();
         insertFailedSession(insertExam(school, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
         insertFailedSession(insertExam(otherSchool, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
 
@@ -204,32 +226,35 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     }
 
     /**
-     * Con số trên thẻ và số dòng sau khi bấm vào phải bằng nhau. Đây là bất biến chính của cả cặp
-     * truy vấn: cùng một CTE sinh ra cả hai, nên test này sẽ gãy ngay nếu ai đó viết lại vị từ ở một
-     * bên.
+     * The number on the card and the number of rows after clicking in must be equal. This is the
+     * main invariant of the whole query pair: the same CTE produces both, so this test will break
+     * right away if anyone rewrites the predicate on one side.
      */
     @Test
     void shouldListExactlyThePapersTheDashboardCardCounts() {
-        var school = insertSchool();
-        var exam = insertExam(school, "Giữa kỳ I", "CLOSED");
+        UUID school = insertSchool();
+        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
         insertFailedSession(exam, SUBMITTED, 0);
         insertFailedSession(exam, SUBMITTED, 1);
-        // Đã chuyển người chấm: rời nhóm AI ở CẢ hai bên.
+        // Already handed to a grader: leaves the AI group on BOTH sides.
         insertPendingReviewResult(exam, insertFailedSession(exam, SUBMITTED, 0));
 
-        var counted = repository.countUnscored(school, NOW).aiFailed();
-        var listed = repository.findUnhandledAiFailures(school, null, null, 1, 20);
+        int counted = repository.countUnscored(school, NOW).aiFailed();
+        PageResult<SchoolGradingFailureDto> listed = repository.findUnhandledAiFailures(school, null, null, 1, 20);
 
         assertThat(counted).isEqualTo(2);
         assertThat(listed.totalElements()).isEqualTo(2L);
         assertThat(listed.content()).hasSize(2);
     }
 
-    /** Hai nhóm dẫn tới hai hành động khác nhau, nên lọc được giữa chúng là lý do màn này tồn tại. */
+    /**
+     * The two groups lead to two different actions, so being able to filter between them is the
+     * reason this screen exists.
+     */
     @Test
     void shouldFilterByRemainingAiRetryAllowance() {
-        var school = insertSchool();
-        var exam = insertExam(school, "Giữa kỳ I", "CLOSED");
+        UUID school = insertSchool();
+        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
         insertFailedSession(exam, SUBMITTED, 0);
         insertFailedSession(exam, SUBMITTED, 1);
         insertFailedSession(exam, SUBMITTED, 1);
@@ -242,14 +267,14 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     }
 
     /**
-     * Hai số đếm đứng trên chính hai nút lọc, nên chúng phải theo bộ lọc kỳ thi — nếu lấy tổng toàn
-     * trường thì nút ghi 3 mà bấm vào chỉ ra 1 dòng.
+     * The two counts sit on the two filter buttons themselves, so they must follow the exam filter
+     * -- if the school-wide total were used, a button saying 3 would show only 1 row when clicked.
      */
     @Test
     void shouldCountAllowanceGroupsWithinTheSelectedExam() {
-        var school = insertSchool();
-        var examA = insertExam(school, "Giữa kỳ I", "CLOSED");
-        var examB = insertExam(school, "Cuối kỳ", "CLOSED");
+        UUID school = insertSchool();
+        UUID examA = insertExam(school, "Giữa kỳ I", "CLOSED");
+        UUID examB = insertExam(school, "Cuối kỳ", "CLOSED");
         insertFailedSession(examA, SUBMITTED, 0);
         insertFailedSession(examB, SUBMITTED, 0);
         insertFailedSession(examB, SUBMITTED, 1);
@@ -259,24 +284,27 @@ class JpaSchoolWorkloadQueryRepositoryTests {
         assertThat(repository.countAiFailuresByAllowance(school, examB)).containsExactly(1, 1);
     }
 
-    /** Cũ nhất trước: em chờ lâu nhất là em cần xử lý trước, không phải sự cố mới nhất. */
+    /**
+     * Oldest first: the student who has waited longest is the one to handle first, not the newest
+     * incident.
+     */
     @Test
     void shouldListTheLongestWaitingPaperFirst() {
-        var school = insertSchool();
-        var exam = insertExam(school, "Giữa kỳ I", "CLOSED");
+        UUID school = insertSchool();
+        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
         insertFailedSession(exam, Instant.parse("2026-08-27T02:14:00Z"), 0);
-        var oldest = insertFailedSession(exam, Instant.parse("2026-08-20T01:00:00Z"), 0);
+        UUID oldest = insertFailedSession(exam, Instant.parse("2026-08-20T01:00:00Z"), 0);
 
-        var page = repository.findUnhandledAiFailures(school, null, null, 1, 20);
+        PageResult<SchoolGradingFailureDto> page = repository.findUnhandledAiFailures(school, null, null, 1, 20);
 
         assertThat(page.content().get(0).sessionId()).isEqualTo(oldest);
     }
 
     @Test
     void shouldCarryTheDetailsNeededToTriageAPaper() {
-        var school = insertSchool();
-        var exam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        var sessionId = insertFailedSession(exam, SUBMITTED, 0);
+        UUID school = insertSchool();
+        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
+        UUID sessionId = insertFailedSession(exam, SUBMITTED, 0);
         em.createNativeQuery("""
             UPDATE exam_sessions SET grading_error = :error, grading_retry_count = 3 WHERE id = :id
             """)
@@ -284,7 +312,7 @@ class JpaSchoolWorkloadQueryRepositoryTests {
             .setParameter("id", sessionId)
             .executeUpdate();
 
-        var row = repository.findUnhandledAiFailures(school, null, null, 1, 20).content().get(0);
+        SchoolGradingFailureDto row = repository.findUnhandledAiFailures(school, null, null, 1, 20).content().get(0);
 
         assertThat(row.examName()).isEqualTo("Giữa kỳ I");
         assertThat(row.candidateName()).isEqualTo("Trần Minh Anh");
@@ -294,13 +322,16 @@ class JpaSchoolWorkloadQueryRepositoryTests {
         assertThat(row.schoolRetryLeft()).isTrue();
     }
 
-    /** Phiên hỏng qua nhánh DLT không mang lý do — đó là dữ liệu THẬT, không phải dòng lỗi. */
+    /**
+     * A session that failed through the DLT branch carries no reason -- that is REAL data, not an
+     * error row.
+     */
     @Test
     void shouldKeepPapersThatFailedWithoutAReason() {
-        var school = insertSchool();
+        UUID school = insertSchool();
         insertFailedSession(insertExam(school, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
 
-        var row = repository.findUnhandledAiFailures(school, null, null, 1, 20).content().get(0);
+        SchoolGradingFailureDto row = repository.findUnhandledAiFailures(school, null, null, 1, 20).content().get(0);
 
         assertThat(row.error()).isNull();
         assertThat(row.aiRetryCount()).isNull();
@@ -309,8 +340,8 @@ class JpaSchoolWorkloadQueryRepositoryTests {
 
     @Test
     void shouldNotListPapersFromAnotherSchool() {
-        var school = insertSchool();
-        var otherSchool = insertSchool();
+        UUID school = insertSchool();
+        UUID otherSchool = insertSchool();
         insertFailedSession(insertExam(school, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
         insertFailedSession(insertExam(otherSchool, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
 
@@ -321,9 +352,9 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     // ---------- fixtures ----------
 
     private UUID insertSchool() {
-        var id = UUID.randomUUID();
-        var actor = UUID.randomUUID();
-        var now = OffsetDateTime.now(ZoneOffset.UTC);
+        UUID id = UUID.randomUUID();
+        UUID actor = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
             INSERT INTO schools (id, code, name, address, contact_email, contact_phone,
                                  is_active, student_count, created_at, updated_at, created_by, updated_by)
@@ -343,8 +374,8 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     }
 
     private UUID insertExam(UUID schoolId, String name, String status, String kind) {
-        var id = UUID.randomUUID();
-        var now = OffsetDateTime.now(ZoneOffset.UTC);
+        UUID id = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
             INSERT INTO exams (id, school_id, language_id, code, name, kind, status, requires_otp,
                                close_at, created_at, updated_at)
@@ -364,8 +395,8 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     }
 
     private UUID insertCandidate(UUID examId) {
-        var studentId = UUID.randomUUID();
-        var now = OffsetDateTime.now(ZoneOffset.UTC);
+        UUID studentId = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
             INSERT INTO users (id, email, full_name, password_hash, date_of_birth, status, created_at, updated_at)
             VALUES (:id, :email, 'Trần Minh Anh', 'x', DATE '2008-01-01', 'ACTIVE', :now, :now)
@@ -375,7 +406,7 @@ class JpaSchoolWorkloadQueryRepositoryTests {
             .setParameter("now", now)
             .executeUpdate();
 
-        var candidateId = UUID.randomUUID();
+        UUID candidateId = UUID.randomUUID();
         em.createNativeQuery("""
             INSERT INTO exam_candidates (id, exam_id, student_id, status, assigned_at, updated_at)
             VALUES (:id, :examId, :studentId, 'ATTENDED', :now, :now)
@@ -389,7 +420,7 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     }
 
     private UUID insertFailedSession(UUID examId, Instant submittedAt, int schoolRegradeCount) {
-        var id = insertSession(examId, submittedAt, "GRADING_FAILED");
+        UUID id = insertSession(examId, submittedAt, "GRADING_FAILED");
         em.createNativeQuery(
             "UPDATE exam_sessions SET school_regrade_count = :count WHERE id = :id")
             .setParameter("count", schoolRegradeCount)
@@ -399,7 +430,7 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     }
 
     private UUID insertSession(UUID examId, Instant submittedAt, String status) {
-        var id = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
         em.createNativeQuery("""
             INSERT INTO exam_sessions (id, exam_id, candidate_id, paper_id, started_at, submitted_at,
                                        status, flagged)
@@ -417,8 +448,8 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     }
 
     private UUID insertPendingReviewResult(UUID examId, UUID sessionId) {
-        var id = UUID.randomUUID();
-        var now = OffsetDateTime.now(ZoneOffset.UTC);
+        UUID id = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
             INSERT INTO exam_candidate_results (id, exam_id, session_id, candidate_id, assessment_policy_id,
                                                 framework_version_id, rubric_version_id, target_framework_band_id,
@@ -439,9 +470,12 @@ class JpaSchoolWorkloadQueryRepositoryTests {
         return id;
     }
 
-    /** {@code active_result_id} là cờ "phân công đang mở" — đó là thứ hai câu truy vấn LEFT JOIN vào. */
+    /**
+     * {@code active_result_id} is the "assignment is open" flag -- that is what both queries LEFT
+     * JOIN on.
+     */
     private void insertAssignment(UUID candidateResultId, Instant deadlineAt) {
-        var now = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
             INSERT INTO exam_grading_assignments (id, candidate_result_id, active_result_id, teacher_id,
                                                   round_type, status, assigned_at, deadline_at)

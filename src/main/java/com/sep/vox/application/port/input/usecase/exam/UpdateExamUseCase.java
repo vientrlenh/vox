@@ -1,7 +1,11 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import java.time.Instant;
 
+import java.util.List;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,15 +86,15 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
     @Override
     @Transactional
     public ExamDto execute(UpdateExamCommand input) {
-        var command = normalize(input);
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UpdateExamCommand command = normalize(input);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
-        var exam = examRepository.findById(command.examId())
+        Exam exam = examRepository.findById(command.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         authorizeMutation(exam.getId(), exam.getSchoolId(), exam.getKind(), currentUserId, currentSchoolId, schoolAdmin);
@@ -153,7 +157,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         // Phân biệt này là bắt buộc: lúc tạo, null nghĩa là "không giám sát", còn ở đây null phải
         // mang nghĩa "không đụng tới" thì sửa tên mới không vô tình xoá cấu hình giám sát.
         if (command.requiredStreamTypes() != null) {
-            var streamConfig = examStreamConfigResolver.resolve(
+            ExamStreamConfigResolver.StreamConfig streamConfig = examStreamConfigResolver.resolve(
                 command.requiredStreamTypes(), command.streamTypePermission());
             exam.setRequiredStreamType(streamConfig.requiredStreamType());
             exam.setStreamTypePermission(streamConfig.streamTypePermission());
@@ -173,7 +177,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         // nhánh assessmentPolicy phía trên.
         subscriptionPeriodGuardService.requireWithinSubscriptionPeriod(
             exam.getSchoolId(), exam.getOpenAt(), exam.getCloseAt());
-        var now = Instant.now();
+        Instant now = Instant.now();
         if (exam.getKind() == ExamKind.CLASS_TEST && (command.openAt() != null || command.closeAt() != null)) {
             syncClassTestDraftSchedules(exam, currentUserId, now);
         }
@@ -189,7 +193,7 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
      * hai ca, giáo viên bị gác hai ca, học sinh bị xếp hai ca).
      */
     private void syncClassTestDraftSchedules(com.sep.vox.domain.model.exam.Exam exam, java.util.UUID currentUserId, Instant now) {
-        for (var schedule : examScheduleRepository.findByExamId(exam.getId())) {
+        for (ExamSchedule schedule : examScheduleRepository.findByExamId(exam.getId())) {
             if (schedule.getStatus() == ExamScheduleStatus.DRAFT || schedule.getStatus() == ExamScheduleStatus.PUBLISHED) {
                 examScheduleRoomValidator.requireNoOverlap(
                     schedule.getSchoolRoomId(), exam.getOpenAt(), exam.getCloseAt(), schedule.getId());
@@ -274,19 +278,19 @@ public class UpdateExamUseCase implements IUseCase<UpdateExamCommand, ExamDto> {
         if (!touchesScheduleTiming(command)) {
             return;
         }
-        var activeSchedules = examScheduleRepository.findByExamId(exam.getId()).stream()
+        List<ExamSchedule> activeSchedules = examScheduleRepository.findByExamId(exam.getId()).stream()
             .filter(schedule -> schedule.getStatus() == ExamScheduleStatus.DRAFT
                 || schedule.getStatus() == ExamScheduleStatus.PUBLISHED)
             .toList();
 
-        var outsideCount = activeSchedules.stream()
+        long outsideCount = activeSchedules.stream()
             .filter(schedule -> exam.isScheduleWindowOutsideExamWindow(schedule.getStartDate(), schedule.getEndDate()))
             .count();
         if (outsideCount > 0) {
             throw new IllegalStateException(ExamScheduleWindowMessages.schedulesOutsideNewWindow((int) outsideCount));
         }
 
-        var tooShortCount = activeSchedules.stream()
+        long tooShortCount = activeSchedules.stream()
             .filter(schedule -> exam.isScheduleWindowShorterThanExamTime(schedule.getStartDate(), schedule.getEndDate()))
             .count();
         if (tooShortCount > 0) {

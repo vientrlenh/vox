@@ -1,8 +1,19 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.dto.QuestionAssetDto;
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamPaper;
+import com.sep.vox.domain.model.exam.ExamPaperSection;
+import com.sep.vox.domain.model.exam.ExamSchedule;
+import com.sep.vox.domain.model.exam.ExamSession;
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionAsset;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -71,31 +82,31 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
 
     @Override
     public StudentExamPaperResponse execute(ViewExamSessionPaperQuery input) {
-        var session = examSessionRepository.findById(input.sessionId())
+        ExamSession session = examSessionRepository.findById(input.sessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
-        var candidate = examCandidateRepository.findById(session.getCandidateId())
+        ExamCandidate candidate = examCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của phiên thi"));
         if (!candidate.getStudentId().equals(userContextPort.getCurrentAuthenticatedUserId())) {
             throw new ForbiddenException("Bạn không được phép xem đề thi của phiên này");
         }
 
-        var exam = examRepository.findById(session.getExamId())
+        Exam exam = examRepository.findById(session.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var paper = examPaperRepository.findById(session.getPaperId())
+        ExamPaper paper = examPaperRepository.findById(session.getPaperId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
 
-        var sections = examPaperSectionRepository.findByPaperId(session.getPaperId());
-        var sectionById = new HashMap<>(sections.stream()
+        List<ExamPaperSection> sections = examPaperSectionRepository.findByPaperId(session.getPaperId());
+        Map<UUID, ExamPaperSection> sectionById = new HashMap<>(sections.stream()
             .collect(java.util.stream.Collectors.toMap(section -> section.getId(), section -> section)));
-        var paperQuestions = sections.stream()
+        List<StudentExamPaperQuestionResponse> paperQuestions = sections.stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .flatMap(section -> examPaperItemRepository.findBySectionId(section.getId()).stream()
                 .sorted(Comparator.comparingInt(item -> item.getOrder())))
             .map(item -> {
-                var question = questionRepository.findById(item.getQuestionId())
+                Question question = questionRepository.findById(item.getQuestionId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi trong đề thi"));
-                var section = sectionById.get(item.getSectionId());
-                var asset = questionAssetRepository.findByQuestionId(question.getId()).stream()
+                ExamPaperSection section = sectionById.get(item.getSectionId());
+                QuestionAssetDto asset = questionAssetRepository.findByQuestionId(question.getId()).stream()
                     .findFirst()
                     .map(QuestionAssetDtoMapper::toDto)
                     .orElse(null);
@@ -135,10 +146,10 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
             })
             .toList();
 
-        var schedule = candidate.getScheduleId() == null
+        ExamSchedule schedule = candidate.getScheduleId() == null
             ? null
             : examScheduleRepository.findById(candidate.getScheduleId()).orElse(null);
-        var durationSeconds = paper.getTimeDurationSeconds() == null
+        int durationSeconds = paper.getTimeDurationSeconds() == null
             ? estimateDurationSeconds(session.getPaperId())
             : paper.getTimeDurationSeconds();
         return new StudentExamPaperResponse(
@@ -163,8 +174,8 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
     private static int orderOf(java.util.Map<java.util.UUID, com.sep.vox.domain.model.exam.ExamPaperSection> sectionsById,
             java.util.UUID sectionId,
             int itemOrder) {
-        var section = sectionsById.get(sectionId);
-        var sectionOrder = section == null ? 0 : section.getOrder();
+        ExamPaperSection section = sectionsById.get(sectionId);
+        int sectionOrder = section == null ? 0 : section.getOrder();
         return sectionOrder * 1000 + itemOrder;
     }
 
@@ -176,13 +187,13 @@ public class GetExamSessionPaperUseCase implements IUseCase<ViewExamSessionPaper
      * không có gì để đối chiếu nên sai hoàn toàn âm thầm.
      */
     private int estimateDurationSeconds(UUID paperId) {
-        var questions = examPaperItemRepository.findByPaperId(paperId).stream()
+        List<Question> questions = examPaperItemRepository.findByPaperId(paperId).stream()
             .map(item -> item.getQuestionId())
             .filter(Objects::nonNull)
             .map(questionRepository::findById)
             .flatMap(o -> o.stream())
             .toList();
-        var assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
+        Map<UUID, QuestionAsset> assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
             .findByQuestionIdIn(questions.stream().map(q -> q.getId()).distinct().toList()));
         return PaperTimeCalculator.breakdownOf(questions, assetByQuestionId).totalSeconds();
     }

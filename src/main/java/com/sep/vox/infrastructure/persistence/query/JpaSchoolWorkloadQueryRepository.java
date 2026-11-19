@@ -157,29 +157,29 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
     }
 
     /**
-     * Chạy trên CHÍNH {@code unscored} rồi lọc lấy hai nhóm AI, thay vì viết lại mệnh đề "phiên hỏng
-     * chưa có kết quả": thẻ trên trang tổng quan và danh sách này phải đếm đúng một tập, và một bản
-     * sao của cùng điều kiện chỉ cần lệch một chi tiết là bấm vào con số 14 rồi thấy 12 dòng.
+     * Runs on {@code unscored} ITSELF and then filters for the two AI groups, instead of rewriting the "failed session
+     * with no result" clause: the card on the overview page and this list must count exactly one set, and a
+     * copy of the same condition only has to differ in one detail for someone to click the number 14 and see 12 rows.
      *
-     * <p>Xếp CŨ NHẤT TRƯỚC — ngược với màn của quản trị hệ thống. Bên đó câu hỏi là "vừa hỏng chuyện
-     * gì", ở đây là "em nào đã chờ lâu nhất mà vẫn chưa có điểm".
+     * <p>Sorted OLDEST FIRST — the opposite of the system admin's screen. There the question is "what just
+     * broke", here it is "which student has waited longest and still has no score".
      *
-     * <p>{@code now} vẫn phải truyền vào CTE dù hai nhóm AI không dùng tới nó: nó nằm trong nhánh xét
-     * quá hạn của các nhóm khác, và Hibernate đòi mọi tham số trong câu đều được gán.
+     * <p>{@code now} must still be passed into the CTE even though the two AI groups do not use it: it is in the overdue
+     * branch of the other groups, and Hibernate requires every parameter in the statement to be bound.
      */
     @Override
     @SuppressWarnings("unchecked")
     public PageResult<SchoolGradingFailureDto> findUnhandledAiFailures(
             UUID schoolId, UUID examId, Boolean retryLeft, int page, int size) {
-        // Xuống dòng ở cuối là BẮT BUỘC: mệnh đề có thể kết thúc bằng một tham số có tên (:examId), và
-        // nối thẳng với "ORDER BY" ngay sau sẽ tạo ra tên tham số ":examIdORDER" -- Hibernate báo "no
-        // parameter named" chứ không báo lỗi cú pháp SQL.
-        var where = " WHERE u.bucket IN ('AI_RETRY_LEFT', 'AI_NO_RETRY')"
+        // The trailing line break is REQUIRED: the clause may end with a named parameter (:examId), and
+        // concatenating it directly with the following "ORDER BY" would produce the parameter name ":examIdORDER" -- Hibernate reports "no
+        // parameter named" instead of an SQL syntax error.
+        String where = " WHERE u.bucket IN ('AI_RETRY_LEFT', 'AI_NO_RETRY')"
             + (examId == null ? "" : " AND u.exam_id = :examId")
             + allowancePredicate(retryLeft)
             + "\n";
 
-        var total = toLong(bind(em.createNativeQuery(
+        long total = toLong(bind(em.createNativeQuery(
             UNSCORED_CTE + "SELECT COUNT(*) FROM unscored u" + where), schoolId, examId)
             .getSingleResult());
 
@@ -217,7 +217,7 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
             .setParameter("offset", (long) (page - 1) * size)
             .getResultList();
 
-        var content = rows.stream()
+        List<SchoolGradingFailureDto> content = rows.stream()
             .map(row -> new SchoolGradingFailureDto(
                 toUuid(row[0]),
                 toUuid(row[1]),

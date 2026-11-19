@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamGradingAssignmentJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -108,23 +109,23 @@ public class ExamGradingAssignmentRepositoryImpl implements ExamGradingAssignmen
     }
 
     /**
-     * Flush ngay, không đợi cuối transaction — bỏ đi là lỗi thật, không phải tối ưu.
+     * Flush right away, do not wait for the end of the transaction — removing this is a real bug, not an optimization.
      *
-     * <p>Unique index trên {@code active_result_id} nhạy với THỨ TỰ ghi. Hibernate mặc
-     * định flush INSERT trước UPDATE, nên "đóng vòng cũ rồi mở vòng mới cho cùng một
-     * bài" (chính là {@code CLEAR_INVALID}) sẽ chèn dòng mới trước khi nhả
-     * {@code active_result_id} của dòng cũ -> vi phạm unique.
+     * <p>The unique index on {@code active_result_id} is sensitive to the ORDER of writes. Hibernate flushes
+     * INSERT before UPDATE by default, so "close the old round and open a new round for the same
+     * attempt" (that is {@code CLEAR_INVALID}) would insert the new row before releasing the
+     * {@code active_result_id} of the old row -> unique violation.
      */
     @Override
     public ExamGradingAssignment save(ExamGradingAssignment assignment) {
-        var saved = springDataExamGradingAssignmentRepository.saveAndFlush(
+        ExamGradingAssignmentJpaEntity saved = springDataExamGradingAssignmentRepository.saveAndFlush(
             ExamGradingAssignmentMapper.toJpa(assignment));
         return ExamGradingAssignmentMapper.toDomain(saved);
     }
 
     @Override
     public List<ExamGradingAssignment> saveAll(List<ExamGradingAssignment> assignments) {
-        var entities = assignments.stream().map(ExamGradingAssignmentMapper::toJpa).toList();
+        List<ExamGradingAssignmentJpaEntity> entities = assignments.stream().map(ExamGradingAssignmentMapper::toJpa).toList();
         return springDataExamGradingAssignmentRepository.saveAllAndFlush(entities).stream()
             .map(ExamGradingAssignmentMapper::toDomain)
             .toList();

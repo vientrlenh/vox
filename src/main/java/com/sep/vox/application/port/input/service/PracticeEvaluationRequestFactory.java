@@ -1,9 +1,11 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.application.query.dto.QuestionEvaluationInfo;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -49,9 +51,9 @@ public class PracticeEvaluationRequestFactory {
             UUID sessionId,
             UUID responseId,
             UUID questionId) {
-        var question = practiceQuestionQueryRepository.findQuestionWithTopic(questionId)
+        QuestionEvaluationInfo question = practiceQuestionQueryRepository.findQuestionWithTopic(questionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi luyện."));
-        var turns = practiceResponseTurnRepository
+        List<ExamAttemptEvaluationRequestedExternalEvent.TurnInput> turns = practiceResponseTurnRepository
             .findByPracticeResponseIdOrderByTurnOrder(responseId).stream()
             .map(record -> new ExamAttemptEvaluationRequestedExternalEvent.TurnInput(
                 record.turnOrder(),
@@ -62,7 +64,7 @@ public class PracticeEvaluationRequestFactory {
                 record.durationSeconds()
             ))
             .toList();
-        var payload = new ExamAttemptEvaluationRequestedExternalEvent.Payload(
+        ExamAttemptEvaluationRequestedExternalEvent.Payload payload = new ExamAttemptEvaluationRequestedExternalEvent.Payload(
             question.questionText(),
             // Dạng bài THẬT (V13). Trước đây gửi "SPEAKING" -- không thuộc enum QuestionType
             // bên Python nên bị validator nuốt về null trong im lặng, khiến
@@ -98,7 +100,7 @@ public class PracticeEvaluationRequestFactory {
     }
 
     private ExamAttemptEvaluationRequestedExternalEvent.EvaluationGuide evaluationGuide(String json) {
-        var fields = jsonSerializationPort.toStringMap(json);
+        Map<String, String> fields = jsonSerializationPort.toStringMap(json);
         return new ExamAttemptEvaluationRequestedExternalEvent.EvaluationGuide(
             fields.get("expected_content"),
             fields.get("key_points"),
@@ -110,14 +112,14 @@ public class PracticeEvaluationRequestFactory {
     }
 
     private List<ExamAttemptEvaluationRequestedExternalEvent.CriterionFramework> criteriaFrameworks(UUID sessionId) {
-        var rows = practiceSessionQueryRepository.findCriteriaFrameworks(sessionId);
-        var grouped = new LinkedHashMap<UUID, List<CriterionFrameworkInfo>>();
-        for (var row : rows) {
+        List<CriterionFrameworkInfo> rows = practiceSessionQueryRepository.findCriteriaFrameworks(sessionId);
+        Map<UUID, List<CriterionFrameworkInfo>> grouped = new LinkedHashMap<UUID, List<CriterionFrameworkInfo>>();
+        for (CriterionFrameworkInfo row : rows) {
             grouped.computeIfAbsent(row.getCriterionId(), ignored -> new ArrayList<>()).add(row);
         }
         return grouped.values().stream().map(group -> {
-            var first = group.get(0);
-            var bands = group.stream()
+            CriterionFrameworkInfo first = group.get(0);
+            List<ExamAttemptEvaluationRequestedExternalEvent.FrameworkBand> bands = group.stream()
                 .map(row -> new ExamAttemptEvaluationRequestedExternalEvent.FrameworkBand(
                     row.getBandCode(),
                     row.getBandLabel(),
@@ -129,7 +131,7 @@ public class PracticeEvaluationRequestFactory {
                     row.getBandOrder()
                 ))
                 .toList();
-            var criterionKey = first.getCriterionCode().trim().toLowerCase(Locale.ROOT);
+            String criterionKey = first.getCriterionCode().trim().toLowerCase(Locale.ROOT);
             if ("discourse".equals(criterionKey)) {
                 criterionKey = "coherence";
             }

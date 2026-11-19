@@ -30,6 +30,7 @@ import com.sep.vox.application.port.input.service.ExamScheduleManageAccessServic
 import com.sep.vox.application.port.input.usecase.examcandidate.AutoFillExamCandidatesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.dto.ExamCandidateDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
@@ -107,16 +108,16 @@ class AutoFillExamCandidatesUseCaseTests {
             schedule(schedule1, room1, ExamScheduleStatus.DRAFT, Instant.parse("2026-01-01T09:00:00Z"))));
         when(examScheduleRepository.findByIdForUpdate(schedule2)).thenReturn(Optional.of(
             schedule(schedule2, room2, ExamScheduleStatus.PUBLISHED, Instant.parse("2026-01-02T09:00:00Z"))));
-        var c1 = candidate();
-        var c2 = candidate();
-        var c3 = candidate();
+        ExamCandidate c1 = candidate();
+        ExamCandidate c2 = candidate();
+        ExamCandidate c3 = candidate();
         when(examCandidateRepository.findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(examId))
             .thenReturn(List.of(c1, c2, c3));
 
-        var result = useCase.execute(new AutoFillExamCandidatesCommand(examId, null));
+        List<ExamCandidateDto> result = useCase.execute(new AutoFillExamCandidatesCommand(examId, null));
 
-        // Ca xếp theo (startDate, id): schedule1 trước, schedule2 sau.
-        // Chia đều round-robin: c1 -> schedule1, c2 -> schedule2, c3 -> schedule1.
+        // Sessions are ordered by (startDate, id): schedule1 first, schedule2 second. Even
+        // round-robin distribution: c1 -> schedule1, c2 -> schedule2, c3 -> schedule1.
         assertThat(result).hasSize(3);
         assertThat(c1.getScheduleId()).isEqualTo(schedule1);
         assertThat(c2.getScheduleId()).isEqualTo(schedule2);
@@ -154,11 +155,11 @@ class AutoFillExamCandidatesUseCaseTests {
         ));
         when(examScheduleRepository.findByIdForUpdate(schedule2)).thenReturn(Optional.of(
             schedule(schedule2, room2, ExamScheduleStatus.DRAFT, Instant.parse("2026-01-02T09:00:00Z"))));
-        var c1 = candidate();
+        ExamCandidate c1 = candidate();
         when(examCandidateRepository.findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(examId))
             .thenReturn(List.of(c1));
 
-        var result = useCase.execute(new AutoFillExamCandidatesCommand(examId, List.of(schedule2)));
+        List<ExamCandidateDto> result = useCase.execute(new AutoFillExamCandidatesCommand(examId, List.of(schedule2)));
 
         assertThat(result).hasSize(1);
         assertThat(c1.getScheduleId()).isEqualTo(schedule2);
@@ -175,7 +176,7 @@ class AutoFillExamCandidatesUseCaseTests {
         when(examCandidateRepository.findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(examId))
             .thenReturn(List.of());
 
-        var result = useCase.execute(new AutoFillExamCandidatesCommand(examId, null));
+        List<ExamCandidateDto> result = useCase.execute(new AutoFillExamCandidatesCommand(examId, null));
 
         assertThat(result).isEmpty();
         verify(examCandidateRepository, never()).saveAll(anyCollection());
@@ -187,7 +188,7 @@ class AutoFillExamCandidatesUseCaseTests {
             schedule(schedule1, room1, ExamScheduleStatus.COMPLETED, Instant.parse("2026-01-01T09:00:00Z"))
         ));
 
-        var result = useCase.execute(new AutoFillExamCandidatesCommand(examId, null));
+        List<ExamCandidateDto> result = useCase.execute(new AutoFillExamCandidatesCommand(examId, null));
 
         assertThat(result).isEmpty();
         verify(examScheduleRepository, never()).findByIdForUpdate(schedule1);
@@ -197,7 +198,7 @@ class AutoFillExamCandidatesUseCaseTests {
     @Test
     void should_reject_autofill_when_a_student_has_an_overlapping_schedule() {
         givenTwoLockedSchedules();
-        var c1 = candidate();
+        ExamCandidate c1 = candidate();
         when(examCandidateRepository.findByExamIdAndScheduleIdIsNullOrderByAssignedAtAsc(examId))
             .thenReturn(List.of(c1));
         when(examCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
@@ -207,7 +208,7 @@ class AutoFillExamCandidatesUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new AutoFillExamCandidatesCommand(examId, null)))
             .isInstanceOf(DuplicatedException.class);
-        // Cả lượt hỏng: không ai được xếp.
+        // The whole batch fails: nobody is assigned.
         verify(examCandidateRepository, never()).saveAll(anyCollection());
         assertThat(c1.getScheduleId()).isNull();
     }
@@ -256,7 +257,7 @@ class AutoFillExamCandidatesUseCaseTests {
     }
 
     private ExamCandidate candidate() {
-        var c = new ExamCandidate();
+        ExamCandidate c = new ExamCandidate();
         c.setId(UUID.randomUUID());
         c.setExamId(examId);
         c.setStudentId(UUID.randomUUID());
@@ -266,19 +267,20 @@ class AutoFillExamCandidatesUseCaseTests {
     }
 
     private ExamSchedule schedule(UUID id, UUID roomId, ExamScheduleStatus status, Instant start) {
-        var s = new ExamSchedule();
+        ExamSchedule s = new ExamSchedule();
         s.setId(id);
         s.setExamId(examId);
         s.setSchoolRoomId(roomId);
         s.setStatus(status);
         s.setStartDate(start);
-        // Có khung giờ trọn vẹn thì luật chống trùng lịch mới chạy — thiếu giờ kết thúc là bỏ qua.
+        // The anti-overlap rule only runs with a complete time window -- a missing end time means
+        // it is skipped.
         s.setEndDate(start == null ? null : start.plus(2, ChronoUnit.HOURS));
         return s;
     }
 
     private Exam exam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         return exam;

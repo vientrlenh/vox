@@ -19,6 +19,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.DeleteExamPaperCommand;
@@ -101,7 +102,7 @@ class DeleteExamPaperUseCaseTests {
     void should_delete_paper_items_and_sections_before_the_paper() {
         useCase.execute(new DeleteExamPaperCommand(paperId));
 
-        var order = inOrder(examPaperItemRepository, examPaperSectionRepository, examPaperRepository);
+        InOrder order = inOrder(examPaperItemRepository, examPaperSectionRepository, examPaperRepository);
         order.verify(examPaperItemRepository).deleteByPaperIdIn(List.of(paperId));
         order.verify(examPaperSectionRepository).deleteByPaperIdIn(List.of(paperId));
         order.verify(examPaperRepository).deleteById(paperId);
@@ -120,7 +121,7 @@ class DeleteExamPaperUseCaseTests {
 
     @Test
     void should_reject_when_user_is_not_the_creator() {
-        var paper = paper(ExamPaperStatus.DRAFT);
+        ExamPaper paper = paper(ExamPaperStatus.DRAFT);
         paper.setCreatedBy(UUID.randomUUID());
         when(examPaperRepository.findById(paperId)).thenReturn(Optional.of(paper));
 
@@ -132,7 +133,7 @@ class DeleteExamPaperUseCaseTests {
 
     @Test
     void should_clear_paper_assignment_of_affected_candidates() {
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(UUID.randomUUID());
         candidate.setExamId(examId);
         candidate.setAssignedPaperId(paperId);
@@ -181,7 +182,7 @@ class DeleteExamPaperUseCaseTests {
 
     @Test
     void should_reject_when_exam_already_started() {
-        var exam = exam();
+        Exam exam = exam();
         exam.setStatus(ExamStatus.IN_PROGRESS);
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
 
@@ -193,7 +194,7 @@ class DeleteExamPaperUseCaseTests {
     }
 
     private ExamPaper paper(ExamPaperStatus status) {
-        var paper = new ExamPaper();
+        ExamPaper paper = new ExamPaper();
         paper.setId(paperId);
         paper.setExamId(examId);
         paper.setStatus(status);
@@ -202,7 +203,7 @@ class DeleteExamPaperUseCaseTests {
     }
 
     private Exam exam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setKind(ExamKind.CLASS_TEST);
         return exam;

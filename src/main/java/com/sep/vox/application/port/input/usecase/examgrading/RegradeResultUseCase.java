@@ -1,8 +1,14 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import com.sep.vox.application.port.input.service.ExamGradingAccessService;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.exam.ExamSession;
 import java.time.Instant;
 import java.util.ArrayList;
 
+import java.util.List;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,17 +77,17 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
     @Override
     @Transactional
     public GradingActionResponse execute(SubmitGradingCommand command) {
-        var prepared = gradingActionSupport.prepare(
+        GradingActionSupport.PreparedAction prepared = gradingActionSupport.prepare(
             command.assignmentId(), GradingOutcome.REGRADED, null);
-        var context = prepared.context();
+        ExamGradingAccessService.GradingContext context = prepared.context();
 
         // Nộp là chốt COMPLETED, nên bắt buộc phủ đủ mọi phần — nộp thiếu rồi chốt
         // sẽ khóa cứng phần chưa chấm (bài COMPLETED không gỡ được).
-        var resolvedItems = gradingItemScoreResolver.resolve(context, command, true);
-        var now = Instant.now();
+        List<GradingItemScoreResolver.ResolvedItem> resolvedItems = gradingItemScoreResolver.resolve(context, command, true);
+        Instant now = Instant.now();
 
         // Gỡ cờ nghi vấn: giáo viên đã xem và kết luận không vi phạm.
-        var session = context.session();
+        ExamSession session = context.session();
         if (session.isFlagged()) {
             session.setFlagged(false);
             examSessionRepository.save(session);
@@ -90,18 +96,18 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
         // Bản AI và mọi bản chấm cũ của các phần được chấm đều lùi về SUPERSEDED,
         // để mỗi phần chỉ còn đúng một bản FINALIZED là nguồn điểm. Calculator dựa
         // vào việc bản cũ bị flip trạng thái, KHÔNG ưu tiên HUMAN theo engineType.
-        var responseIds = resolvedItems.stream()
+        List<UUID> responseIds = resolvedItems.stream()
             .map(item -> item.responseId()).toList();
-        for (var evaluation : examItemEvaluationRepository.findByResponseIdIn(responseIds)) {
+        for (ExamItemEvaluation evaluation : examItemEvaluationRepository.findByResponseIdIn(responseIds)) {
             if (evaluation.getStatus() != ExamItemEvaluationStatus.SUPERSEDED) {
                 evaluation.setStatus(ExamItemEvaluationStatus.SUPERSEDED);
                 examItemEvaluationRepository.save(evaluation);
             }
         }
 
-        var criterionScores = new ArrayList<ExamItemCriterionScore>();
-        for (var item : resolvedItems) {
-            var savedEvaluation = examItemEvaluationRepository.save(new ExamItemEvaluation(
+        List<ExamItemCriterionScore> criterionScores = new ArrayList<ExamItemCriterionScore>();
+        for (GradingItemScoreResolver.ResolvedItem item : resolvedItems) {
+            ExamItemEvaluation savedEvaluation = examItemEvaluationRepository.save(new ExamItemEvaluation(
                 item.responseId(),
                 item.paperItemId(),
                 ExamEvaluationEngineType.HUMAN,
@@ -137,9 +143,9 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
 
         // Một lần gọi là đủ: calculator quét toàn bộ item nên thấy hết bản mới.
         // Trạng thái truyền tường minh — xem javadoc lớp.
-        var targetStatus = GradingRoundPolicy.resultStatusAfter(
+        ExamCandidateResultStatus targetStatus = GradingRoundPolicy.resultStatusAfter(
             prepared.roundType(), GradingOutcome.REGRADED);
-        var recalculated = upsertExamCandidateResultUseCase.execute(
+        ExamCandidateResult recalculated = upsertExamCandidateResultUseCase.execute(
             context.candidateResult().getSessionId(),
             targetStatus == null ? context.candidateResult().getStatus() : targetStatus);
 

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -52,7 +53,7 @@ public class ExamAssessmentPolicyValidator {
     }
 
     private void validate(UUID assessmentPolicyId, UUID schoolId) {
-        var policy = assessmentPolicyRepository.findById(assessmentPolicyId)
+        AssessmentPolicy policy = assessmentPolicyRepository.findById(assessmentPolicyId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ tiêu chí đánh giá"));
         if (policy.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
             throw new IllegalStateException("Chỉ được dùng bộ tiêu chí đã xuất bản");

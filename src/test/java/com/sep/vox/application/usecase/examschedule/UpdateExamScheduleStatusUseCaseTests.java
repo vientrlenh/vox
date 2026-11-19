@@ -26,6 +26,7 @@ import com.sep.vox.application.port.input.service.ExamScheduleProctorConflictVal
 import com.sep.vox.application.port.input.usecase.examschedule.UpdateExamScheduleStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.dto.ExamScheduleDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
@@ -106,12 +107,12 @@ class UpdateExamScheduleStatusUseCaseTests {
 
     @Test
     void should_publish_when_every_candidate_has_paper() {
-        var schedule = schedule(ExamScheduleStatus.DRAFT);
+        ExamSchedule schedule = schedule(ExamScheduleStatus.DRAFT);
         when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
         when(examScheduleProctorRepository.countByScheduleId(scheduleId)).thenReturn(1L);
         when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(candidateWithPaper()));
 
-        var result = useCase.execute(command("PUBLISH", null));
+        ExamScheduleDto result = useCase.execute(command("PUBLISH", null));
 
         assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.PUBLISHED);
         assertThat(result.status()).isEqualTo(ExamScheduleStatus.PUBLISHED.name());
@@ -146,10 +147,13 @@ class UpdateExamScheduleStatusUseCaseTests {
         verify(examScheduleRepository, never()).save(any());
     }
 
-    /** Thí sinh đã huỷ/miễn thi không vào phòng nên không cần đề, không được chặn cả ca. */
+    /**
+     * A candidate who was cancelled/exempted does not enter the room, so does not need a paper and
+     * must not block the whole session.
+     */
     @Test
     void should_ignore_cancelled_candidate_without_paper_when_publishing() {
-        var schedule = schedule(ExamScheduleStatus.DRAFT);
+        ExamSchedule schedule = schedule(ExamScheduleStatus.DRAFT);
         when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
         when(examScheduleProctorRepository.countByScheduleId(scheduleId)).thenReturn(1L);
         when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(
@@ -181,10 +185,10 @@ class UpdateExamScheduleStatusUseCaseTests {
 
     @Test
     void should_move_and_set_moved_to_schedule_id() {
-        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
-        var schedule = givenSource(ExamScheduleStatus.PUBLISHED);
+        UUID targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        ExamSchedule schedule = givenSource(ExamScheduleStatus.PUBLISHED);
 
-        var result = useCase.execute(command("MOVE", targetId));
+        ExamScheduleDto result = useCase.execute(command("MOVE", targetId));
 
         assertThat(schedule.getStatus()).isEqualTo(ExamScheduleStatus.MOVED);
         assertThat(schedule.getMovedToScheduleId()).isEqualTo(targetId);
@@ -193,10 +197,10 @@ class UpdateExamScheduleStatusUseCaseTests {
 
     @Test
     void should_move_candidates_to_target_schedule() {
-        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        UUID targetId = givenTarget(ExamScheduleStatus.DRAFT);
         givenSource(ExamScheduleStatus.PUBLISHED);
-        var first = candidate();
-        var second = candidate();
+        ExamCandidate first = candidate();
+        ExamCandidate second = candidate();
         when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(first, second));
 
         useCase.execute(command("MOVE", targetId));
@@ -208,17 +212,17 @@ class UpdateExamScheduleStatusUseCaseTests {
 
     @Test
     void should_move_proctors_to_target_schedule() {
-        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        UUID targetId = givenTarget(ExamScheduleStatus.DRAFT);
         givenSource(ExamScheduleStatus.PUBLISHED);
-        var teacherId = UUID.randomUUID();
-        var proctorId = UUID.randomUUID();
+        UUID teacherId = UUID.randomUUID();
+        UUID proctorId = UUID.randomUUID();
         when(examScheduleProctorRepository.findByScheduleId(scheduleId))
             .thenReturn(List.of(new ExamScheduleProctor(proctorId, scheduleId, teacherId)));
         when(examScheduleProctorRepository.existsByScheduleIdAndTeacherId(targetId, teacherId)).thenReturn(false);
 
         useCase.execute(command("MOVE", targetId));
 
-        var saved = ArgumentCaptor.forClass(ExamScheduleProctor.class);
+        ArgumentCaptor<ExamScheduleProctor> saved = ArgumentCaptor.forClass(ExamScheduleProctor.class);
         verify(examScheduleProctorRepository).save(saved.capture());
         assertThat(saved.getValue().getScheduleId()).isEqualTo(targetId);
         assertThat(saved.getValue().getTeacherId()).isEqualTo(teacherId);
@@ -227,10 +231,10 @@ class UpdateExamScheduleStatusUseCaseTests {
 
     @Test
     void should_not_duplicate_proctor_already_assigned_to_target() {
-        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        UUID targetId = givenTarget(ExamScheduleStatus.DRAFT);
         givenSource(ExamScheduleStatus.PUBLISHED);
-        var teacherId = UUID.randomUUID();
-        var proctorId = UUID.randomUUID();
+        UUID teacherId = UUID.randomUUID();
+        UUID proctorId = UUID.randomUUID();
         when(examScheduleProctorRepository.findByScheduleId(scheduleId))
             .thenReturn(List.of(new ExamScheduleProctor(proctorId, scheduleId, teacherId)));
         when(examScheduleProctorRepository.existsByScheduleIdAndTeacherId(targetId, teacherId)).thenReturn(true);
@@ -242,14 +246,15 @@ class UpdateExamScheduleStatusUseCaseTests {
     }
 
     /**
-     * Ca đích có khung giờ khác ca nguồn, nên giám thị đi theo có thể đâm vào một ca thứ ba — dời ca
-     * không được phép âm thầm tạo ra trùng lịch.
+     * The target session has a different time window from the source session, so a proctor who
+     * moves along may collide with a third session -- moving a session must not silently create an
+     * overlap.
      */
     @Test
     void should_reject_move_when_proctor_busy_in_target_window() {
-        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        UUID targetId = givenTarget(ExamScheduleStatus.DRAFT);
         givenSource(ExamScheduleStatus.PUBLISHED);
-        var teacherId = UUID.randomUUID();
+        UUID teacherId = UUID.randomUUID();
         when(examScheduleProctorRepository.findByScheduleId(scheduleId))
             .thenReturn(List.of(new ExamScheduleProctor(UUID.randomUUID(), scheduleId, teacherId)));
         when(examScheduleProctorRepository.existsByScheduleIdAndTeacherId(targetId, teacherId)).thenReturn(false);
@@ -261,12 +266,15 @@ class UpdateExamScheduleStatusUseCaseTests {
         verify(examScheduleProctorRepository, never()).save(any());
     }
 
-    /** Đối xứng với luật giám thị: thí sinh đi theo sang ca đích có thể đâm vào một ca thứ ba. */
+    /**
+     * Symmetric with the proctor rule: a candidate who moves along to the target session may
+     * collide with a third session.
+     */
     @Test
     void should_reject_move_when_student_busy_in_target_window() {
-        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        UUID targetId = givenTarget(ExamScheduleStatus.DRAFT);
         givenSource(ExamScheduleStatus.PUBLISHED);
-        var moving = candidate();
+        ExamCandidate moving = candidate();
         when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(moving));
         when(examCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
             .thenReturn(List.of(new StudentScheduleConflict(
@@ -274,16 +282,17 @@ class UpdateExamScheduleStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command("MOVE", targetId)))
             .isInstanceOf(DuplicatedException.class);
-        // Không ai được chuyển, kể cả người không vướng.
+        // Nobody is moved, not even those with no conflict.
         verify(examCandidateRepository, never()).saveAll(anyCollection());
     }
 
     @Test
     void should_ignore_the_source_schedule_when_checking_candidate_conflicts() {
-        // Thí sinh đang ở ca nguồn nên dĩ nhiên "bận" ở đó — ca nguồn sắp thành MOVED, không tính.
-        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        // A candidate in the source session is of course "busy" there -- the source session is
+        // about to become MOVED, so it is not counted.
+        UUID targetId = givenTarget(ExamScheduleStatus.DRAFT);
         givenSource(ExamScheduleStatus.PUBLISHED);
-        var moving = candidate();
+        ExamCandidate moving = candidate();
         when(examCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of(moving));
         when(examCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
             .thenReturn(List.of(new StudentScheduleConflict(
@@ -307,7 +316,7 @@ class UpdateExamScheduleStatusUseCaseTests {
     @Test
     void should_reject_move_when_exam_already_started() {
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam(ExamStatus.IN_PROGRESS)));
-        var targetId = givenTarget(ExamScheduleStatus.DRAFT);
+        UUID targetId = givenTarget(ExamScheduleStatus.DRAFT);
         givenSource(ExamScheduleStatus.PUBLISHED);
 
         assertThatThrownBy(() -> useCase.execute(command("MOVE", targetId)))
@@ -317,9 +326,10 @@ class UpdateExamScheduleStatusUseCaseTests {
 
     @Test
     void should_allow_complete_when_exam_in_progress() {
-        // Đánh dấu ca hoàn thành là thao tác vận hành lúc đang thi -- không nằm trong phạm vi khoá.
+        // Marking a session completed is an operational action during the exam -- it is outside the
+        // scope of the lock.
         when(examRepository.findById(examId)).thenReturn(Optional.of(exam(ExamStatus.IN_PROGRESS)));
-        var schedule = givenSource(ExamScheduleStatus.PUBLISHED);
+        ExamSchedule schedule = givenSource(ExamScheduleStatus.PUBLISHED);
 
         useCase.execute(command("COMPLETE", null));
 
@@ -327,15 +337,15 @@ class UpdateExamScheduleStatusUseCaseTests {
     }
 
     private UUID givenTarget(ExamScheduleStatus status) {
-        var targetId = UUID.randomUUID();
-        var target = schedule(status);
+        UUID targetId = UUID.randomUUID();
+        ExamSchedule target = schedule(status);
         target.setId(targetId);
         when(examScheduleRepository.findByIdForUpdate(targetId)).thenReturn(Optional.of(target));
         return targetId;
     }
 
     private ExamSchedule givenSource(ExamScheduleStatus status) {
-        var schedule = schedule(status);
+        ExamSchedule schedule = schedule(status);
         when(examScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
         return schedule;
     }
@@ -349,7 +359,7 @@ class UpdateExamScheduleStatusUseCaseTests {
     }
 
     private ExamCandidate candidate(UUID assignedPaperId, ExamCandidateStatus status) {
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(UUID.randomUUID());
         candidate.setExamId(examId);
         candidate.setStudentId(UUID.randomUUID());
@@ -364,7 +374,7 @@ class UpdateExamScheduleStatusUseCaseTests {
     }
 
     private Exam exam(ExamStatus status) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(examId);
         exam.setSchoolId(schoolId);
         exam.setStatus(status);
@@ -372,7 +382,7 @@ class UpdateExamScheduleStatusUseCaseTests {
     }
 
     private ExamSchedule schedule(ExamScheduleStatus status) {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(scheduleId);
         schedule.setExamId(examId);
         schedule.setSchoolRoomId(roomId);

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -34,15 +35,16 @@ class SchoolGradeRepositoryTests {
 
     @Test
     void whenFindBySchoolIdAndCodeIn_thenReturnsOnlyGradesOfThatSchool() {
-        var schoolId = UUID.randomUUID();
-        var otherSchoolId = UUID.randomUUID();
-        // Khối lớp giờ dùng chung: hai trường cùng trỏ vào một grade level, phân biệt bằng schoolId.
-        var level = persistGradeLevel("LEVEL-BATCH-01", 1);
+        UUID schoolId = UUID.randomUUID();
+        UUID otherSchoolId = UUID.randomUUID();
+        // Grade levels are now shared: two schools point at the same grade level, distinguished by
+        // schoolId.
+        GradeLevelJpaEntity level = persistGradeLevel("LEVEL-BATCH-01", 1);
         schoolGradeRepository.save(newSchoolGrade(schoolId, level.getId(), "G10", "Grade 10"));
         schoolGradeRepository.save(newSchoolGrade(schoolId, level.getId(), "G11", "Grade 11"));
         schoolGradeRepository.save(newSchoolGrade(otherSchoolId, level.getId(), "G12", "Other Grade 12"));
 
-        var found = schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G10", "G11", "G12", "MISSING"));
+        List<SchoolGrade> found = schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G10", "G11", "G12", "MISSING"));
 
         assertThat(found)
             .hasSize(2)
@@ -51,8 +53,8 @@ class SchoolGradeRepositoryTests {
     }
 
     private GradeLevelJpaEntity persistGradeLevel(String code, int order) {
-        var now = Instant.now();
-        var level = new GradeLevelJpaEntity(
+        Instant now = Instant.now();
+        GradeLevelJpaEntity level = new GradeLevelJpaEntity(
             null,
             code,
             code,
@@ -71,7 +73,7 @@ class SchoolGradeRepositoryTests {
     }
 
     private static SchoolGrade newSchoolGrade(UUID schoolId, UUID gradeLevelId, String code, String name) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new SchoolGrade(
             schoolId,
             gradeLevelId,

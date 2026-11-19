@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -24,7 +25,7 @@ class ExamDirectoryAuthorizationBoundaryTests {
 
     @Test
     void every_exam_directory_resolver_should_be_gated_for_exam_organisers() {
-        var resolvers = Arrays.stream(ExamDirectoryController.class.getDeclaredMethods())
+        List<Method> resolvers = Arrays.stream(ExamDirectoryController.class.getDeclaredMethods())
             .filter(method -> method.isAnnotationPresent(QueryMapping.class)
                 || method.isAnnotationPresent(SchemaMapping.class))
             .toList();
@@ -41,7 +42,7 @@ class ExamDirectoryAuthorizationBoundaryTests {
 
     @Test
     void admin_directory_surface_should_stay_school_admin_only() {
-        var adminOnly = new Method[] {
+        Method[] adminOnly = new Method[] {
             declared("schoolClasses"),
             declared("schoolGrades"),
             declared("schoolStudentsBySchool"),
@@ -56,12 +57,12 @@ class ExamDirectoryAuthorizationBoundaryTests {
     }
 
     /**
-     * Tra theo tên thay vì chữ ký cứng: các query admin này có nhiều tham số và hay được
-     * thêm bộ lọc mới, nhưng tên thì ổn định. Vẫn khẳng định tìm thấy đúng một method để
-     * bài test không âm thầm bỏ qua khi ai đó đổi tên.
+     * Look up by name instead of a hard signature: these admin queries have many parameters and new
+     * filters are added often, but the names are stable. It still asserts that exactly one method
+     * is found, so the test does not silently skip when someone renames it.
      */
     private static Method declared(String name) {
-        var candidates = Arrays.stream(SchoolController.class.getDeclaredMethods())
+        List<Method> candidates = Arrays.stream(SchoolController.class.getDeclaredMethods())
             .filter(method -> method.getName().equals(name))
             .toList();
         assertThat(candidates)
@@ -71,7 +72,7 @@ class ExamDirectoryAuthorizationBoundaryTests {
     }
 
     private static String preAuthorizeValue(Method method) {
-        var annotation = method.getAnnotation(PreAuthorize.class);
+        PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
         return annotation == null ? null : annotation.value();
     }
 }

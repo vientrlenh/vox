@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -43,11 +44,11 @@ public class SchoolQuotaPolicyRepositoryImpl implements SchoolQuotaPolicyReposit
 
     @Override
     public SchoolQuotaPolicy upsertRatio(UUID schoolId, QuotaType quotaType, BigDecimal distributableRatio) {
-        var now = Instant.now();
-        var existing = springDataSchoolQuotaPolicyRepository
+        Instant now = Instant.now();
+        Optional<SchoolQuotaPolicyJpaEntity> existing = springDataSchoolQuotaPolicyRepository
             .findBySchoolIdAndQuotaType(schoolId, quotaType.name());
 
-        var entity = new SchoolQuotaPolicyJpaEntity(
+        SchoolQuotaPolicyJpaEntity entity = new SchoolQuotaPolicyJpaEntity(
             existing.map(e -> e.getId()).orElse(null),
             schoolId,
             quotaType.name(),

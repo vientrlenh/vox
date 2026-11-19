@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -31,7 +32,7 @@ public class JpaExamResultAuditQueryRepository implements ExamResultAuditQueryRe
 
     @Override
     public List<ResultStatusHistoryInfo> findHistory(UUID candidateResultId) {
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT h.id, h.candidateResultId, h.fromStatus, h.toStatus, h.scoreBefore, h.scoreAfter,
                    h.source, h.actorId, u.fullName, h.reason, h.createdAt
             FROM ExamResultStatusHistoryJpaEntity h
@@ -42,8 +43,8 @@ public class JpaExamResultAuditQueryRepository implements ExamResultAuditQueryRe
             .setParameter("candidateResultId", candidateResultId)
             .getResultList();
 
-        var result = new ArrayList<ResultStatusHistoryInfo>();
-        for (var row : rows) {
+        List<ResultStatusHistoryInfo> result = new ArrayList<ResultStatusHistoryInfo>();
+        for (Tuple row : rows) {
             result.add(new ResultStatusHistoryInfo(
                 row.get(0, UUID.class),
                 row.get(1, UUID.class),
@@ -62,16 +63,16 @@ public class JpaExamResultAuditQueryRepository implements ExamResultAuditQueryRe
     }
 
     /**
-     * Một query lấy mọi vòng hậu kiểm đã xong, rồi tổng hợp trong Java.
+     * One query fetches every finished post-review round, then aggregates in Java.
      *
-     * <p>Cố ý không gom nhóm trong SQL: độ lệch phải tính trên {@code scoreBefore} của
-     * dòng phân công so với {@code totalScore} <em>hiện tại</em> của bài, và biểu thức
-     * đó cộng thêm trung bình/lớn nhất/tách theo giáo viên sẽ thành một câu SQL không
-     * ai đọc lại được. Số dòng ở đây là số bài đã hậu kiểm của một kỳ thi — nhỏ.
+     * <p>Deliberately not grouped in SQL: the deviation must be computed on the assignment row's {@code scoreBefore}
+     * against the attempt's <em>current</em> {@code totalScore}, and that expression plus
+     * average/max/split by teacher would become an SQL statement nobody can re-read.
+     * The number of rows here is the number of post-reviewed attempts of one exam — small.
      */
     @Override
     public AiQualityReportInfo aiQualityReport(UUID schoolId, UUID examId) {
-        var rows = em.createQuery("""
+        List<Tuple> rows = em.createQuery("""
             SELECT ga.teacherId, t.fullName, ga.outcome, ga.scoreBefore, cr.totalScore
             FROM ExamGradingAssignmentJpaEntity ga
             JOIN ExamCandidateResultJpaEntity cr ON cr.id = ga.candidateResultId
@@ -88,27 +89,27 @@ public class JpaExamResultAuditQueryRepository implements ExamResultAuditQueryRe
             .setParameter("completed", GradingAssignmentStatus.COMPLETED.name())
             .getResultList();
 
-        var upheld = 0;
-        var regraded = 0;
-        var invalidated = 0;
-        var deltaSum = BigDecimal.ZERO;
-        var deltaCount = 0;
-        var maxDelta = BigDecimal.ZERO;
-        var perTeacher = new LinkedHashMap<UUID, TeacherAccumulator>();
+        int upheld = 0;
+        int regraded = 0;
+        int invalidated = 0;
+        BigDecimal deltaSum = BigDecimal.ZERO;
+        int deltaCount = 0;
+        BigDecimal maxDelta = BigDecimal.ZERO;
+        Map<UUID, TeacherAccumulator> perTeacher = new LinkedHashMap<UUID, TeacherAccumulator>();
 
-        for (var row : rows) {
-            var outcome = row.get(2, String.class);
-            // Bỏ qua ngay từ đầu, không chỉ khỏi mẫu số tổng: giáo viên trả lại bài
-            // (hoặc bị thu hồi quá hạn) thì chưa đọc bài, không nói được gì về chất
-            // lượng AI. Đếm họ vào byTeacher.reviewed khiến Σ byTeacher > reviewed, và
-            // khiến người chưa đọc trông y hệt người đã hậu kiểm rồi kết luận AI đúng.
+        for (Tuple row : rows) {
+            String outcome = row.get(2, String.class);
+            // Skipped from the very start, not only removed from the total denominator: a teacher who returned the attempt
+            // (or had it revoked after the deadline) has not read it and cannot say anything about the AI's
+            // quality. Counting them in byTeacher.reviewed makes the sum of byTeacher > reviewed, and
+            // makes someone who has not read look exactly like someone who reviewed afterwards and concluded the AI was right.
             if (outcome == null || GradingOutcome.DECLINED.name().equals(outcome)) {
                 continue;
             }
-            var teacherId = row.get(0, UUID.class);
-            var delta = absoluteDelta(row.get(3, BigDecimal.class), row.get(4, BigDecimal.class));
+            UUID teacherId = row.get(0, UUID.class);
+            BigDecimal delta = absoluteDelta(row.get(3, BigDecimal.class), row.get(4, BigDecimal.class));
 
-            var accumulator = perTeacher.computeIfAbsent(
+            TeacherAccumulator accumulator = perTeacher.computeIfAbsent(
                 teacherId, ignored -> new TeacherAccumulator(row.get(1, String.class)));
             accumulator.reviewed++;
 
@@ -131,10 +132,10 @@ public class JpaExamResultAuditQueryRepository implements ExamResultAuditQueryRe
             }
         }
 
-        // Mẫu số bỏ qua các vòng bị trả lại (DECLINED): giáo viên không đọc bài thì
-        // không nói được gì về chất lượng AI.
-        var reviewed = upheld + regraded + invalidated;
-        var byTeacher = new ArrayList<AiQualityReportInfo.ByTeacher>();
+        // The denominator skips returned rounds (DECLINED): a teacher who did not read the attempt
+        // cannot say anything about the AI's quality.
+        int reviewed = upheld + regraded + invalidated;
+        List<AiQualityReportInfo.ByTeacher> byTeacher = new ArrayList<AiQualityReportInfo.ByTeacher>();
         perTeacher.forEach((teacherId, accumulator) -> byTeacher.add(new AiQualityReportInfo.ByTeacher(
             teacherId,
             accumulator.teacherName,

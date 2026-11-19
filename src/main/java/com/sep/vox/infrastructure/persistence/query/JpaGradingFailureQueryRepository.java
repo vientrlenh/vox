@@ -115,19 +115,19 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
     }
 
     /**
-     * {@code IS NOT DISTINCT FROM} chứ không phải {@code =}: nhóm "không rõ nguyên nhân" có chữ ký
-     * null, và {@code null = null} trong SQL ra null nên bấm vào nhóm đó sẽ trả về danh sách rỗng
-     * trong khi thẻ nhóm vẫn hiện số phiên.
+     * {@code IS NOT DISTINCT FROM} and not {@code =}: the "unknown cause" group has a null signature,
+     * and {@code null = null} in SQL gives null, so clicking that group would return an empty list
+     * while the group card still shows the session count.
      *
-     * <p>Sắp xếp kèm {@code session_id} làm khóa phụ: nhiều phiên của cùng một ca thi hỏng trong
-     * cùng một giây, và chỉ xếp theo thời gian thì thứ tự giữa chúng không xác định — phân trang sẽ
-     * lặp phiên ở trang này và đánh rơi phiên ở trang kia.
+     * <p>Sorting also uses {@code session_id} as a secondary key: several sessions of the same failed exam shift fall in
+     * the same second, and sorting by time alone leaves their order undefined — pagination would
+     * repeat a session on one page and drop one on another.
      */
     @Override
     @SuppressWarnings("unchecked")
     public PageResult<GradingFailureSessionDto> findSessions(
             Instant from, Instant to, String signature, int page, int size) {
-        var total = toLong(em.createNativeQuery(FAILED_SESSIONS_CTE + """
+        long total = toLong(em.createNativeQuery(FAILED_SESSIONS_CTE + """
             SELECT COUNT(*) FROM failed WHERE signature IS NOT DISTINCT FROM :signature
             """)
             .setParameter("fromInstant", from)
@@ -170,7 +170,7 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
             .setParameter("offset", (long) (page - 1) * size)
             .getResultList();
 
-        var content = rows.stream()
+        List<GradingFailureSessionDto> content = rows.stream()
             .map(row -> new GradingFailureSessionDto(
                 toUuid(row[0]),
                 toUuid(row[1]),

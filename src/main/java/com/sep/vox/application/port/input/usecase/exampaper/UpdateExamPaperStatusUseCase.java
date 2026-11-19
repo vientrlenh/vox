@@ -1,6 +1,8 @@
 package com.sep.vox.application.port.input.usecase.exampaper;
 
+import com.sep.vox.domain.model.exam.ExamCandidate;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -75,17 +77,17 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
     @Override
     @Transactional
     public ExamPaperDto execute(UpdateExamPaperStatusCommand input) {
-        var command = new UpdateExamPaperStatusCommand(
+        UpdateExamPaperStatusCommand command = new UpdateExamPaperStatusCommand(
             input.paperId(),
             StringNormalization.normalizeCode(input.action()),
             StringNormalization.trimAndCollapseSpaces(input.note())
         );
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var paper = examPaperRepository.findById(command.paperId())
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        ExamPaper paper = examPaperRepository.findById(command.paperId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
-        var exam = examRepository.findById(paper.getExamId())
+        Exam exam = examRepository.findById(paper.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var actor = examPaperAuthoringAccessService.resolve(exam, currentUserId);
+        ExamPaperAuthoringAccessService.PaperActor actor = examPaperAuthoringAccessService.resolve(exam, currentUserId);
 
         switch (command.action()) {
             case "SUBMIT" -> {
@@ -129,10 +131,10 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         paper.setUpdatedAt(now);
         paper.setUpdatedBy(currentUserId);
-        var saved = examPaperRepository.save(paper);
+        ExamPaper saved = examPaperRepository.save(paper);
 
         // Gán bù SAU khi lưu: ExamPaperAutoAssigner đọc lại trạng thái mã đề để chốt "mọi mã đề đã
         // LOCKED", nên trạng thái mới phải nằm trong DB trước đã.
@@ -148,11 +150,11 @@ public class UpdateExamPaperStatusUseCase implements IUseCase<UpdateExamPaperSta
      * {@link ExamPaperAutoAssigner#backfillExam} gán bù, nên không ai kẹt vĩnh viễn.
      */
     private void unassignCandidatesOf(ExamPaper paper, UUID currentUserId) {
-        var affected = examCandidateRepository.findByAssignedPaperId(paper.getId());
+        List<ExamCandidate> affected = examCandidateRepository.findByAssignedPaperId(paper.getId());
         if (affected.isEmpty()) {
             return;
         }
-        var now = Instant.now();
+        Instant now = Instant.now();
         affected.forEach(candidate -> candidate.unassignPaper(now, currentUserId));
         examCandidateRepository.saveAll(affected);
     }

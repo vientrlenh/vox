@@ -51,12 +51,12 @@ class GradingDeadlineReminderJobTests {
     @Test
     void should_use_one_threshold_for_the_whole_run() {
         when(batch.remindOnce(any())).thenReturn(1, 1, 0);
-        var threshold = ArgumentCaptor.forClass(Instant.class);
+        ArgumentCaptor<Instant> threshold = ArgumentCaptor.forClass(Instant.class);
 
         job.remind();
 
-        // Tính lại ngưỡng mỗi lô sẽ làm cửa sổ trôi dần và kéo vào phân công chưa tới
-        // lúc nhắc.
+        // Recomputing the threshold for every batch would make the window drift and pull in
+        // assignments that are not yet due for a reminder.
         verify(batch, times(3)).remindOnce(threshold.capture());
         assertThat(threshold.getAllValues()).containsOnly(threshold.getAllValues().getFirst());
     }

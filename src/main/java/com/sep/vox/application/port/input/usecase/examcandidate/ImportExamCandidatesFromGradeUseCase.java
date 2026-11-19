@@ -1,9 +1,14 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.school.SchoolClass;
+import com.sep.vox.domain.model.school.SchoolClassUser;
+import com.sep.vox.domain.model.school.SchoolGrade;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -66,45 +71,45 @@ public class ImportExamCandidatesFromGradeUseCase
     @Override
     @Transactional
     public List<ExamCandidateDto> execute(ImportExamCandidatesFromGradeCommand input) {
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        var scope = examDirectoryAccessService.resolve(exam);
+        ExamDirectoryAccessService.ExamDirectoryScope scope = examDirectoryAccessService.resolve(exam);
         // Nhập theo niên khóa là gom mọi lớp của niên khóa đó — vượt xa phạm vi của chủ
         // tịch một bài trên lớp. Chặn ở đây để quyền ghi khớp đúng quyền đọc
         // (`ViewExamDirectoryGradesUseCase` từ chối cùng trường hợp này).
         if (!scope.schoolWide()) {
             throw new ForbiddenException("Bài kiểm tra trên lớp không hỗ trợ nhập thí sinh theo niên khóa");
         }
-        var currentUserId = scope.callerId();
+        UUID currentUserId = scope.callerId();
         ExamEditingGuard.requireScheduleEditable(exam);
 
-        var grade = schoolGradeRepository.findById(input.schoolGradeId())
+        SchoolGrade grade = schoolGradeRepository.findById(input.schoolGradeId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy khối"));
         if (!grade.getSchoolId().equals(exam.getSchoolId())) {
             throw new ForbiddenException("Khối không thuộc trường của bài kiểm tra");
         }
 
-        var now = Instant.now();
-        var classes = schoolClassRepository.findBySchoolId(
+        Instant now = Instant.now();
+        List<SchoolClass> classes = schoolClassRepository.findBySchoolId(
             exam.getSchoolId(), null, null, null, grade.getId(), 1, MAX_CLASSES).content();
 
-        var activeUserIds = new LinkedHashSet<UUID>();
-        for (var schoolClass : classes) {
+        Set<UUID> activeUserIds = new LinkedHashSet<UUID>();
+        for (SchoolClass schoolClass : classes) {
             // findBySchoolClassId là 1-based (PageRequest.of(page - 1, size)) → trang đầu là 1, KHÔNG phải 0.
-            var roster = schoolClassUserRepository.findBySchoolClassId(
+            List<SchoolClassUser> roster = schoolClassUserRepository.findBySchoolClassId(
                 schoolClass.getId(), 1, MAX_CLASS_ROSTER_SIZE).content();
-            for (var classUser : roster) {
+            for (SchoolClassUser classUser : roster) {
                 if (classUser.isActive()) {
                     activeUserIds.add(classUser.getUserId());
                 }
             }
         }
 
-        var studentIds = userRoleQueryRepository.findUserIdsByRoleCode(activeUserIds, SchoolRoleCodes.STUDENT);
-        var existingStudentIds = examCandidateRepository.findStudentIdsByExamId(exam.getId());
+        Set<UUID> studentIds = userRoleQueryRepository.findUserIdsByRoleCode(activeUserIds, SchoolRoleCodes.STUDENT);
+        Set<UUID> existingStudentIds = examCandidateRepository.findStudentIdsByExamId(exam.getId());
 
-        var newCandidates = new ArrayList<ExamCandidate>();
-        for (var userId : activeUserIds) {
+        List<ExamCandidate> newCandidates = new ArrayList<ExamCandidate>();
+        for (UUID userId : activeUserIds) {
             if (!studentIds.contains(userId)) {
                 continue;
             }
@@ -117,7 +122,7 @@ public class ImportExamCandidatesFromGradeUseCase
         if (newCandidates.isEmpty()) {
             return List.of();
         }
-        var saved = examCandidateRepository.saveAll(newCandidates);
+        List<ExamCandidate> saved = examCandidateRepository.saveAll(newCandidates);
         // Xem AddExamCandidateUseCase: nhập cả khối vào bài đã publish thì số thí sinh -- một input
         // của ước lượng token đã soi lúc publish -- tăng lên mạnh nhất trong mọi đường thêm thí sinh,
         // càng phải soi lại ngay. Không cần check kind vì đường này chỉ chạy được cho scope trường

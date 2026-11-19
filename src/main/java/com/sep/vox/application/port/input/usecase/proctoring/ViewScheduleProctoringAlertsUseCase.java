@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.proctoring;
 
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,7 +40,7 @@ public class ViewScheduleProctoringAlertsUseCase implements IUseCase<UUID, List<
     @Override
     @Transactional(readOnly = true)
     public List<ExamProctoringAlertDto> execute(UUID scheduleId) {
-        var schedule = accessService.requireCanMonitorSchedule(scheduleId);
+        ExamSchedule schedule = accessService.requireCanMonitorSchedule(scheduleId);
         return examProctoringAlertRepository.findByScheduleIdOrderByCapturedAt(schedule.getId())
             .stream()
             .map(ExamProctoringAlertDtoMapper::toDto)

@@ -26,6 +26,7 @@ import com.sep.vox.application.port.input.usecase.exampaper.UpdateExamPaperStatu
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.dto.ExamPaperDto;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamKind;
 import com.sep.vox.domain.model.exam.ExamMember;
@@ -73,8 +74,8 @@ class UpdateExamPaperStatusUseCaseTests {
         examMemberRepository = mock(ExamMemberRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
-        var examRepository = mock(ExamRepository.class);
-        var userContextPort = mock(UserContextPort.class);
+        ExamRepository examRepository = mock(ExamRepository.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
 
         examCandidateRepository = mock(ExamCandidateRepository.class);
         examPaperAutoAssigner = mock(ExamPaperAutoAssigner.class);
@@ -106,7 +107,7 @@ class UpdateExamPaperStatusUseCaseTests {
     void should_let_the_chair_lock_their_own_paper_in_one_step() {
         givenPaper(ExamPaperStatus.DRAFT, CALLER_ID);
 
-        var result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "LOCK", null));
+        ExamPaperDto result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "LOCK", null));
 
         assertThat(result.status()).isEqualTo(ExamPaperStatus.LOCKED.name());
     }
@@ -116,7 +117,7 @@ class UpdateExamPaperStatusUseCaseTests {
         givenCallerIsSchoolAdminWithoutExamRole();
         givenPaper(ExamPaperStatus.DRAFT, CALLER_ID);
 
-        var result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "LOCK", null));
+        ExamPaperDto result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "LOCK", null));
 
         assertThat(result.status()).isEqualTo(ExamPaperStatus.LOCKED.name());
     }
@@ -132,12 +133,15 @@ class UpdateExamPaperStatusUseCaseTests {
         verify(examPaperRepository, never()).save(any());
     }
 
-    /** Đi tắt rồi phải quay lại sửa được, nếu không người soạn tự khoá mình ra ngoài. */
+    /**
+     * After taking the shortcut it must be possible to come back and edit, otherwise the author
+     * locks themselves out.
+     */
     @Test
     void should_let_the_chair_reopen_their_own_locked_paper() {
         givenPaper(ExamPaperStatus.LOCKED, CALLER_ID);
 
-        var result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "REOPEN", null));
+        ExamPaperDto result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "REOPEN", null));
 
         assertThat(result.status()).isEqualTo(ExamPaperStatus.DRAFT.name());
     }
@@ -167,13 +171,15 @@ class UpdateExamPaperStatusUseCaseTests {
     }
 
     /**
-     * Mở khoá là để sửa lại mã đề, mà thí sinh đang trỏ vào nó thì bài thi bị đổi dưới chân họ. Trả
-     * họ về "chưa phân đề" giống hệt lúc xoá mã đề (DeleteExamPaperUseCase); khoá lại thì được gán bù.
+     * Unlocking is for editing the variant again, and a candidate who is pointing at it would have
+     * the exam changed under their feet. Return them to "no paper assigned", exactly as when a
+     * variant is deleted (DeleteExamPaperUseCase); once it is locked again they can be assigned
+     * again.
      */
     @Test
     void should_unassign_candidates_when_reopening_a_locked_paper() {
         givenPaper(ExamPaperStatus.LOCKED, CALLER_ID);
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(UUID.randomUUID());
         candidate.setExamId(EXAM_ID);
         candidate.setAssignedPaperId(PAPER_ID);
@@ -210,7 +216,7 @@ class UpdateExamPaperStatusUseCaseTests {
     void should_let_the_chair_lock_someone_elses_approved_paper() {
         givenPaper(ExamPaperStatus.APPROVED, OTHER_AUTHOR_ID);
 
-        var result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "LOCK", null));
+        ExamPaperDto result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "LOCK", null));
 
         assertThat(result.status()).isEqualTo(ExamPaperStatus.LOCKED.name());
     }
@@ -219,7 +225,7 @@ class UpdateExamPaperStatusUseCaseTests {
     void should_let_the_chair_approve_someone_elses_paper() {
         givenPaper(ExamPaperStatus.IN_REVIEW, OTHER_AUTHOR_ID);
 
-        var result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "APPROVE", null));
+        ExamPaperDto result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "APPROVE", null));
 
         assertThat(result.status()).isEqualTo(ExamPaperStatus.APPROVED.name());
     }
@@ -251,7 +257,7 @@ class UpdateExamPaperStatusUseCaseTests {
         givenCallerRole(ExamMemberRole.AUTHOR);
         givenPaper(ExamPaperStatus.DRAFT, CALLER_ID);
 
-        var result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "SUBMIT", null));
+        ExamPaperDto result = useCase.execute(new UpdateExamPaperStatusCommand(PAPER_ID, "SUBMIT", null));
 
         assertThat(result.status()).isEqualTo(ExamPaperStatus.IN_REVIEW.name());
     }
@@ -284,10 +290,10 @@ class UpdateExamPaperStatusUseCaseTests {
             .isInstanceOf(ForbiddenException.class);
     }
 
-    /** Quản trị trường khác trường không có quyền gì trên kỳ thi này. */
+    /** A school admin from another school has no rights at all on this exam. */
     @Test
     void should_reject_a_school_admin_from_another_school() {
-        var otherSchool = mock(SchoolUser.class);
+        SchoolUser otherSchool = mock(SchoolUser.class);
         when(otherSchool.getSchoolId()).thenReturn(UUID.randomUUID());
         when(schoolUserRepository.findByUserId(CALLER_ID)).thenReturn(Optional.of(otherSchool));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(CALLER_ID)).thenReturn(List.of(
@@ -302,12 +308,12 @@ class UpdateExamPaperStatusUseCaseTests {
     }
 
     private void givenCallerRole(ExamMemberRole role) {
-        var member = new ExamMember(EXAM_ID, CALLER_ID, role, Instant.now(), CALLER_ID);
+        ExamMember member = new ExamMember(EXAM_ID, CALLER_ID, role, Instant.now(), CALLER_ID);
         when(examMemberRepository.findByExamIdAndUserId(EXAM_ID, CALLER_ID)).thenReturn(Optional.of(member));
     }
 
     private void givenCallerIsSchoolAdminWithoutExamRole() {
-        var schoolUser = mock(SchoolUser.class);
+        SchoolUser schoolUser = mock(SchoolUser.class);
         when(schoolUser.getSchoolId()).thenReturn(SCHOOL_ID);
         when(schoolUserRepository.findByUserId(CALLER_ID)).thenReturn(Optional.of(schoolUser));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(CALLER_ID)).thenReturn(List.of(
@@ -318,7 +324,7 @@ class UpdateExamPaperStatusUseCaseTests {
     }
 
     private void givenPaper(ExamPaperStatus status, UUID createdBy) {
-        var paper = new ExamPaper();
+        ExamPaper paper = new ExamPaper();
         paper.setId(PAPER_ID);
         paper.setExamId(EXAM_ID);
         paper.setStatus(status);
@@ -327,7 +333,7 @@ class UpdateExamPaperStatusUseCaseTests {
     }
 
     private Exam centralizedExam() {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(EXAM_ID);
         exam.setSchoolId(SCHOOL_ID);
         exam.setKind(ExamKind.CENTRALIZED);

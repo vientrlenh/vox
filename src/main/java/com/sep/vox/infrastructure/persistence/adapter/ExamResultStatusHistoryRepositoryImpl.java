@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamResultStatusHistoryJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -23,7 +24,7 @@ public class ExamResultStatusHistoryRepositoryImpl implements ExamResultStatusHi
 
     @Override
     public ExamResultStatusHistory save(ExamResultStatusHistory history) {
-        var saved = springDataExamResultStatusHistoryRepository.save(
+        ExamResultStatusHistoryJpaEntity saved = springDataExamResultStatusHistoryRepository.save(
             ExamResultStatusHistoryMapper.toJpa(history));
         return ExamResultStatusHistoryMapper.toDomain(saved);
     }
@@ -33,7 +34,7 @@ public class ExamResultStatusHistoryRepositoryImpl implements ExamResultStatusHi
         if (histories.isEmpty()) {
             return List.of();
         }
-        var entities = histories.stream().map(ExamResultStatusHistoryMapper::toJpa).toList();
+        List<ExamResultStatusHistoryJpaEntity> entities = histories.stream().map(ExamResultStatusHistoryMapper::toJpa).toList();
         return springDataExamResultStatusHistoryRepository.saveAll(entities).stream()
             .map(ExamResultStatusHistoryMapper::toDomain)
             .toList();

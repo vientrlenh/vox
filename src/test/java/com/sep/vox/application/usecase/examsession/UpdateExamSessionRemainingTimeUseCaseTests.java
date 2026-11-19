@@ -71,7 +71,7 @@ class UpdateExamSessionRemainingTimeUseCaseTests {
         session.setCandidateId(candidateId);
         session.setStatus(ExamSessionStatus.IN_PROGRESS);
 
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(candidateId);
         candidate.setStudentId(userId);
 
@@ -127,7 +127,7 @@ class UpdateExamSessionRemainingTimeUseCaseTests {
 
     @Test
     void should_return_the_value_the_server_actually_holds() {
-        var stored = new ExamSession();
+        ExamSession stored = new ExamSession();
         stored.setId(sessionId);
         stored.setRemainingSeconds(120);
         when(examSessionRepository.findById(sessionId)).thenReturn(Optional.of(stored));

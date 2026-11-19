@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.application.query.dto.SessionRowInfo;
 import java.util.List;
 import java.util.UUID;
 
@@ -78,7 +79,7 @@ public class PracticeSessionClosedHandler {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void afterClosed(UUID studentId, UUID sessionId, String status, String diagnosis) {
-        var row = practiceSessionQueryRepository.findSessionRowById(sessionId).orElse(null);
+        SessionRowInfo row = practiceSessionQueryRepository.findSessionRowById(sessionId).orElse(null);
         if (row == null) {
             return;
         }

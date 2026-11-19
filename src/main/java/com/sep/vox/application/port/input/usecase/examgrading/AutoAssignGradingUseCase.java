@@ -1,9 +1,13 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import com.sep.vox.application.query.dto.GradingRiskInfo;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -68,8 +72,8 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
     @Override
     @Transactional
     public List<UUID> execute(AutoAssignGradingCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        UUID schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
         examGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId);
 
         if (command.examId() == null && command.scheduleId() == null) {
@@ -81,11 +85,11 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
         if (examGradingAccessService.isClassTestExam(command.examId())) {
             throw new ForbiddenException(ExamGradingAccessService.CLASS_TEST_COORDINATION_REJECTION);
         }
-        var roundType = parseRoundType(command.roundType());
-        var selectionMode = parseSelectionMode(command.selectionMode());
-        var deadlineAt = validateDeadline(command.deadlineAt());
+        GradingRoundType roundType = parseRoundType(command.roundType());
+        GradingSampleSelectionMode selectionMode = parseSelectionMode(command.selectionMode());
+        Instant deadlineAt = validateDeadline(command.deadlineAt());
 
-        var teacherIds = command.teacherIds() == null ? List.<UUID>of() : command.teacherIds();
+        List<UUID> teacherIds = command.teacherIds() == null ? List.<UUID>of() : command.teacherIds();
         if (teacherIds.isEmpty()) {
             throw new IllegalArgumentException("Phải chọn ít nhất một giáo viên để phân công.");
         }
@@ -93,15 +97,15 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
             throw new DuplicatedException("Không được chọn trùng giáo viên.");
         }
         // Một query cho cả nhóm thay vì isTeacherOfSchool lặp từng người (N+1).
-        var validTeachers = examGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds);
+        Set<UUID> validTeachers = examGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds);
         if (!validTeachers.containsAll(teacherIds)) {
             throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
         }
 
-        var eligibleStatuses = GradingRoundPolicy.assignableStatuses(roundType).stream()
+        List<String> eligibleStatuses = GradingRoundPolicy.assignableStatuses(roundType).stream()
             .map(candidateResultStatus -> candidateResultStatus.name())
             .toList();
-        var candidates = examGradingQueryRepository.findAssignableResultIds(
+        List<UUID> candidates = examGradingQueryRepository.findAssignableResultIds(
             schoolId, command.examId(), command.scheduleId(), eligibleStatuses);
         if (candidates.isEmpty()) {
             return List.of();
@@ -111,27 +115,27 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
 
         // Chỉ nạp tín hiệu rủi ro khi chế độ thật sự cần — một query nặng chạy không
         // công cho ba chế độ còn lại là lãng phí thấy rõ.
-        var riskInfos = selectionMode == GradingSampleSelectionMode.RISK_BASED
+        List<GradingRiskInfo> riskInfos = selectionMode == GradingSampleSelectionMode.RISK_BASED
             ? examGradingQueryRepository.findRiskInfos(candidates)
             : List.<com.sep.vox.application.query.dto.GradingRiskInfo>of();
-        var selected = gradingSampleSelector.select(
+        List<UUID> selected = gradingSampleSelector.select(
             selectionMode, candidates, command.percent(), command.candidateResultIds(), riskInfos);
         if (selected.isEmpty()) {
             return List.of();
         }
 
-        var loads = examGradingQueryRepository.assignedLoadByTeacherIds(teacherIds);
-        var picked = roundRobinLoadBalancer.distribute(selected, teacherIds, loads);
+        Map<UUID, Long> loads = examGradingQueryRepository.assignedLoadByTeacherIds(teacherIds);
+        List<UUID> picked = roundRobinLoadBalancer.distribute(selected, teacherIds, loads);
 
         // scoreBefore chụp lúc giao, batch một query — mốc đo độ lệch sau khi chấm.
-        var scoreByResultId = examCandidateResultRepository.findByIdIn(selected).stream()
+        Map<UUID, ExamCandidateResult> scoreByResultId = examCandidateResultRepository.findByIdIn(selected).stream()
             .collect(Collectors.toMap(result -> result.getId(), Function.identity(), (left, right) -> left));
 
-        var now = Instant.now();
-        var assignments = new ArrayList<ExamGradingAssignment>();
-        for (var index = 0; index < selected.size(); index++) {
-            var candidateResultId = selected.get(index);
-            var result = scoreByResultId.get(candidateResultId);
+        Instant now = Instant.now();
+        List<ExamGradingAssignment> assignments = new ArrayList<ExamGradingAssignment>();
+        for (int index = 0; index < selected.size(); index++) {
+            UUID candidateResultId = selected.get(index);
+            ExamCandidateResult result = scoreByResultId.get(candidateResultId);
             assignments.add(ExamGradingAssignment.open(
                 candidateResultId,
                 picked.get(index),
@@ -144,7 +148,7 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
             ));
         }
 
-        var saved = examGradingAssignmentRepository.saveAll(assignments);
+        List<ExamGradingAssignment> saved = examGradingAssignmentRepository.saveAll(assignments);
 
         gradingAssignmentNotificationService.publishAssigned(saved, now);
 

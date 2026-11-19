@@ -22,9 +22,9 @@ class SchoolSubscriptionActiveGuardServiceTests {
 
     @Test
     void requireActiveForSchool_throws_whenNoActiveSubscription() {
-        var repository = mock(SchoolSubscriptionRepository.class);
+        SchoolSubscriptionRepository repository = mock(SchoolSubscriptionRepository.class);
         when(repository.findActiveBySchoolId(SCHOOL_ID)).thenReturn(Optional.empty());
-        var guard = new SchoolSubscriptionActiveGuardService(repository);
+        SchoolSubscriptionActiveGuardService guard = new SchoolSubscriptionActiveGuardService(repository);
 
         assertThatThrownBy(() -> guard.requireActiveForSchool(SCHOOL_ID, "tạo Bài kiểm tra tập trung"))
             .isInstanceOf(PlanLimitExceededException.class)
@@ -34,18 +34,18 @@ class SchoolSubscriptionActiveGuardServiceTests {
 
     @Test
     void requireActiveForSchool_passes_whenSubscriptionActive() {
-        var repository = mock(SchoolSubscriptionRepository.class);
+        SchoolSubscriptionRepository repository = mock(SchoolSubscriptionRepository.class);
         when(repository.findActiveBySchoolId(SCHOOL_ID)).thenReturn(Optional.of(mock(SchoolSubscription.class)));
-        var guard = new SchoolSubscriptionActiveGuardService(repository);
+        SchoolSubscriptionActiveGuardService guard = new SchoolSubscriptionActiveGuardService(repository);
 
         assertThatCode(() -> guard.requireActiveForSchool(SCHOOL_ID, "tạo Class Test")).doesNotThrowAnyException();
     }
 
     @Test
     void requireActiveForStudent_throws_whenNoActiveSubscription() {
-        var repository = mock(SchoolSubscriptionRepository.class);
+        SchoolSubscriptionRepository repository = mock(SchoolSubscriptionRepository.class);
         when(repository.findActiveSubscriptionIdForUser(STUDENT_ID)).thenReturn(Optional.empty());
-        var guard = new SchoolSubscriptionActiveGuardService(repository);
+        SchoolSubscriptionActiveGuardService guard = new SchoolSubscriptionActiveGuardService(repository);
 
         assertThatThrownBy(() -> guard.requireActiveForStudent(STUDENT_ID, "bắt đầu buổi luyện tập cá nhân hóa AI"))
             .isInstanceOf(PlanLimitExceededException.class)
@@ -54,9 +54,9 @@ class SchoolSubscriptionActiveGuardServiceTests {
 
     @Test
     void requireActiveForStudent_passes_whenSubscriptionActive() {
-        var repository = mock(SchoolSubscriptionRepository.class);
+        SchoolSubscriptionRepository repository = mock(SchoolSubscriptionRepository.class);
         when(repository.findActiveSubscriptionIdForUser(STUDENT_ID)).thenReturn(Optional.of(SUBSCRIPTION_ID));
-        var guard = new SchoolSubscriptionActiveGuardService(repository);
+        SchoolSubscriptionActiveGuardService guard = new SchoolSubscriptionActiveGuardService(repository);
 
         assertThatCode(() -> guard.requireActiveForStudent(STUDENT_ID, "bắt đầu buổi luyện tập cá nhân hóa AI"))
             .doesNotThrowAnyException();

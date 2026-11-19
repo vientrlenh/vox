@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,8 +36,8 @@ public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCom
     @Override
     @Transactional
     public List<UUID> execute(SetGradingDeadlineCommand command) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var assignmentIds = command.assignmentIds() == null ? List.<UUID>of() : command.assignmentIds();
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        List<UUID> assignmentIds = command.assignmentIds() == null ? List.<UUID>of() : command.assignmentIds();
         if (assignmentIds.isEmpty()) {
             throw new IllegalArgumentException("Phải chọn ít nhất một phân công để đặt hạn.");
         }
@@ -51,10 +52,10 @@ public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCom
         // theo lô, nên hai admin gửi hai danh sách giao nhau theo thứ tự ngược nhau sẽ
         // khoá chéo và deadlock. Sắp trước cho mọi transaction đi cùng một chiều.
         // Thứ tự đầu vào không ảnh hưởng kết quả trả về nên sắp lại là vô hại.
-        var lockOrderedIds = assignmentIds.stream().sorted().toList();
-        var contexts = new ArrayList<ExamGradingAccessService.GradingContext>();
-        for (var assignmentId : lockOrderedIds) {
-            var context = examGradingAccessService.loadForUpdate(assignmentId);
+        List<UUID> lockOrderedIds = assignmentIds.stream().sorted().toList();
+        List<ExamGradingAccessService.GradingContext> contexts = new ArrayList<ExamGradingAccessService.GradingContext>();
+        for (UUID assignmentId : lockOrderedIds) {
+            ExamGradingAccessService.GradingContext context = examGradingAccessService.loadForUpdate(assignmentId);
             if (context.assignment().isCompleted()) {
                 throw new IllegalStateException("Không thể đặt hạn cho phân công đã chốt.");
             }
@@ -68,9 +69,9 @@ public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCom
         examGradingAccessService.rejectClassTestCoordination(
             contexts.stream().map(context -> context.candidateResult().getId()).toList());
 
-        var updated = contexts.stream()
+        List<ExamGradingAssignment> updated = contexts.stream()
             .map(context -> {
-                var assignment = context.assignment();
+                ExamGradingAssignment assignment = context.assignment();
                 assignment.setDeadlineAt(command.deadlineAt());
                 assignment.setRemindedAt(null);
                 return assignment;

@@ -1,8 +1,12 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamItemResponse;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,11 +69,11 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
     @Override
     @Transactional
     public UUID execute(CreateExamAppealCommand command) {
-        var currentUserId = examAppealAccessService.requireActiveUserId();
-        var context = examAppealAccessService.loadByCandidateResultId(command.candidateResultId());
+        UUID currentUserId = examAppealAccessService.requireActiveUserId();
+        ExamAppealAccessService.AppealContext context = examAppealAccessService.loadByCandidateResultId(command.candidateResultId());
         examAppealAccessService.authorizeOwningStudent(context, currentUserId);
 
-        var candidateResult = context.candidateResult();
+        ExamCandidateResult candidateResult = context.candidateResult();
         if (candidateResult.getStatus() != ExamCandidateResultStatus.RELEASED) {
             throw new IllegalStateException("Chỉ có thể phúc khảo kết quả đã được công bố.");
         }
@@ -82,7 +86,7 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
                 "Mỗi kết quả chỉ được phúc khảo tối đa " + MAX_APPEAL_ROUNDS + " lần.");
         }
         // Trùng phần thi là lỗi của client, phát hiện trước khi chạm DB.
-        var requested = command.paperItemIds();
+        List<UUID> requested = command.paperItemIds();
         LinkedHashSet<UUID> selected = null;
         if (requested != null) {
             selected = new LinkedHashSet<>(requested);
@@ -93,7 +97,7 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
 
         // Điểm chấm lại được ghi theo response, nên phải chốt response ngay từ đầu.
         // MỘT lượt duyệt response của phiên thi, tránh N lần gọi repository.
-        var responsesByPaperItem = examItemResponseRepository.findBySessionId(candidateResult.getSessionId())
+        Map<UUID, ExamItemResponse> responsesByPaperItem = examItemResponseRepository.findBySessionId(candidateResult.getSessionId())
             .stream()
             .filter(item -> item.getPaperItemId() != null)
             .collect(Collectors.toMap(
@@ -116,8 +120,8 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
             }
         }
 
-        var now = Instant.now();
-        var appeal = new ExamResultAppeal(
+        Instant now = Instant.now();
+        ExamResultAppeal appeal = new ExamResultAppeal(
             command.candidateResultId(),
             currentUserId,
             command.reason(),
@@ -134,7 +138,7 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
             null,
             null
         );
-        var saved = examResultAppealRepository.save(appeal);
+        ExamResultAppeal saved = examResultAppealRepository.save(appeal);
 
         // Id của đơn chỉ có sau khi INSERT trả về, nên phần thi phải lưu ở bước sau.
         examResultAppealItemRepository.saveAll(distinctPaperItemIds.stream()
@@ -156,7 +160,7 @@ public class CreateExamAppealUseCase implements IUseCase<CreateExamAppealCommand
                 examGradingAssignmentRepository.save(open);
             });
 
-        var before = resultStatusHistoryRecorder.snapshot(candidateResult);
+        ResultStatusHistoryRecorder.Snapshot before = resultStatusHistoryRecorder.snapshot(candidateResult);
         candidateResult.setStatus(ExamCandidateResultStatus.APPEALED);
         candidateResult.setUpdatedAt(now);
         candidateResult.setUpdatedBy(currentUserId);

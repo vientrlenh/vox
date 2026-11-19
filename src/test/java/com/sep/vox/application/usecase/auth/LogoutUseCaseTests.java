@@ -48,7 +48,7 @@ class LogoutUseCaseTests {
 
     @Test
     void logout_should_revoke_session_of_presented_refresh_token() {
-        var sessionId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
         when(sessionTokenManagerPort.hash("refresh-token")).thenReturn("token-hash");
         when(refreshTokenRepository.findByTokenHash("token-hash"))
             .thenReturn(Optional.of(activeRefreshToken(sessionId, "token-hash")));
@@ -66,7 +66,7 @@ class LogoutUseCaseTests {
      */
     @Test
     void logout_should_revoke_by_cookie_when_caller_is_not_authenticated() {
-        var sessionId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
         when(sessionTokenManagerPort.hash("refresh-token")).thenReturn("token-hash");
         when(refreshTokenRepository.findByTokenHash("token-hash"))
             .thenReturn(Optional.of(activeRefreshToken(sessionId, "token-hash")));
@@ -84,9 +84,9 @@ class LogoutUseCaseTests {
      */
     @Test
     void logout_should_revoke_every_live_session_on_the_same_device() {
-        var userId = UUID.randomUUID();
-        var cookieSessionId = UUID.randomUUID();
-        var strandedSessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID cookieSessionId = UUID.randomUUID();
+        UUID strandedSessionId = UUID.randomUUID();
 
         when(sessionTokenManagerPort.hash("refresh-token")).thenReturn("token-hash");
         when(refreshTokenRepository.findByTokenHash("token-hash"))
@@ -105,8 +105,8 @@ class LogoutUseCaseTests {
 
     @Test
     void logout_should_revoke_session_once_when_both_sources_point_to_it() {
-        var userId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
 
         when(sessionTokenManagerPort.hash("refresh-token")).thenReturn("token-hash");
         when(refreshTokenRepository.findByTokenHash("token-hash"))
@@ -122,8 +122,8 @@ class LogoutUseCaseTests {
 
     @Test
     void logout_should_leave_sessions_of_other_devices_alone() {
-        var userId = UUID.randomUUID();
-        var otherDeviceSessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID otherDeviceSessionId = UUID.randomUUID();
 
         when(userContextPort.findCurrentAuthenticatedUserId()).thenReturn(Optional.of(userId));
         when(deviceSessionRepository.findByUserId(userId))
@@ -136,8 +136,8 @@ class LogoutUseCaseTests {
 
     @Test
     void logout_should_skip_sessions_that_are_already_revoked() {
-        var userId = UUID.randomUUID();
-        var revokedSessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID revokedSessionId = UUID.randomUUID();
 
         when(userContextPort.findCurrentAuthenticatedUserId()).thenReturn(Optional.of(userId));
         when(deviceSessionRepository.findByUserId(userId))
@@ -201,7 +201,7 @@ class LogoutUseCaseTests {
     }
 
     private static RefreshToken activeRefreshToken(UUID sessionId, String tokenHash) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new RefreshToken(
             UUID.randomUUID(),
             sessionId,

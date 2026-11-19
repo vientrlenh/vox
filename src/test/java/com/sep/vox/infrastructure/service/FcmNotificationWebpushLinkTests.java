@@ -36,15 +36,15 @@ class FcmNotificationWebpushLinkTests {
 
     @Test
     void should_point_at_the_redirect_route_of_the_notification() {
-        var link = service("https://app.vox.edu.vn/n").webpushLink(messageWithId());
+        String link = service("https://app.vox.edu.vn/n").webpushLink(messageWithId());
 
         assertThat(link).isEqualTo("https://app.vox.edu.vn/n/" + NOTIFICATION_ID);
     }
 
-    /** Cấu hình có hay không có dấu / ở cuối đều phải ra cùng một URL, không ra "//". */
+    /** A configuration with or without a trailing / must produce the same URL, not "//". */
     @Test
     void should_not_double_the_slash_when_configured_url_ends_with_one() {
-        var link = service("https://app.vox.edu.vn/n/").webpushLink(messageWithId());
+        String link = service("https://app.vox.edu.vn/n/").webpushLink(messageWithId());
 
         assertThat(link).isEqualTo("https://app.vox.edu.vn/n/" + NOTIFICATION_ID);
     }

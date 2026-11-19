@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamSecurePoolJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +24,7 @@ public class ExamSecurePoolRepositoryImpl implements ExamSecurePoolRepository {
 
     @Override
     public ExamSecurePool save(ExamSecurePool pool) {
-        var saved = springDataExamSecurePoolRepository.save(ExamSecurePoolMapper.toJpa(pool));
+        ExamSecurePoolJpaEntity saved = springDataExamSecurePoolRepository.save(ExamSecurePoolMapper.toJpa(pool));
         return ExamSecurePoolMapper.toDomain(saved);
     }
 

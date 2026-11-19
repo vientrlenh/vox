@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examappeal;
 
+import com.sep.vox.domain.model.exam.ExamResultAppeal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -28,16 +29,16 @@ public class ApproveExamAppealUseCase implements IUseCase<ApproveExamAppealComma
     @Override
     @Transactional
     public UUID execute(ApproveExamAppealCommand command) {
-        var currentUserId = examAppealAccessService.requireActiveUserId();
-        var context = examAppealAccessService.load(command.appealId());
+        UUID currentUserId = examAppealAccessService.requireActiveUserId();
+        ExamAppealAccessService.AppealContext context = examAppealAccessService.load(command.appealId());
         examAppealAccessService.authorizeSchoolAdminOrClassTestChair(context, currentUserId);
 
-        var appeal = context.appeal();
+        ExamResultAppeal appeal = context.appeal();
         if (appeal.getStatus() != ExamAppealStatus.PENDING) {
             throw new IllegalStateException("Chỉ có thể duyệt đơn phúc khảo đang ở trạng thái Chờ duyệt.");
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         if (command.deadline() == null) {
             throw new IllegalArgumentException("Phải đặt hạn xử lý cho đơn phúc khảo.");
         }

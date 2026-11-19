@@ -23,7 +23,7 @@ public class JpaProctorScheduleCandidatesQueryRepository implements ProctorSched
 
     @Override
     public List<ProctorCandidateSummary> findByScheduleId(UUID scheduleId) {
-        var rows = em.createQuery("""
+        List<Object[]> rows = em.createQuery("""
             SELECT candidate.id, user.id, user.fullName, user.email, candidate.status, candidate.blockedAt
             FROM ExamCandidateJpaEntity candidate
             JOIN UserJpaEntity user ON user.id = candidate.studentId
@@ -37,12 +37,12 @@ public class JpaProctorScheduleCandidatesQueryRepository implements ProctorSched
             return List.of();
         }
 
-        var candidateIds = rows.stream().map(row -> (UUID) row[0]).toList();
+        List<UUID> candidateIds = rows.stream().map(row -> (UUID) row[0]).toList();
 
         // Sessions of every candidate in this schedule, most recent first --
         // used below to keep only the LATEST session per candidateId so proctors
         // see live exam-session status (not just attendance status).
-        var sessions = em.createQuery("""
+        List<ExamSessionJpaEntity> sessions = em.createQuery("""
             SELECT s FROM ExamSessionJpaEntity s
             WHERE s.candidateId IN :candidateIds
             ORDER BY s.startedAt DESC
@@ -51,14 +51,14 @@ public class JpaProctorScheduleCandidatesQueryRepository implements ProctorSched
             .getResultList();
 
         Map<UUID, ExamSessionJpaEntity> latestSessionByCandidateId = new LinkedHashMap<>();
-        for (var session : sessions) {
+        for (ExamSessionJpaEntity session : sessions) {
             latestSessionByCandidateId.putIfAbsent(session.getCandidateId(), session);
         }
 
         return rows.stream()
             .map(row -> {
-                var candidateId = (UUID) row[0];
-                var latestSession = latestSessionByCandidateId.get(candidateId);
+                UUID candidateId = (UUID) row[0];
+                ExamSessionJpaEntity latestSession = latestSessionByCandidateId.get(candidateId);
                 return new ProctorCandidateSummary(
                     candidateId,
                     (UUID) row[1],

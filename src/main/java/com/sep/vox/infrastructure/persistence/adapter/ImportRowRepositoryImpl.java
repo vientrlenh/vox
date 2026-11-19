@@ -4,6 +4,7 @@ import com.sep.vox.infrastructure.persistence.entity.ImportRowJpaEntity;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -34,18 +35,18 @@ public class ImportRowRepositoryImpl implements ImportRowRepository {
 
     @Override
     public PageResult<ImportRow> findBySessionId(UUID sessionId, ImportRowStatus status, int pageNumber, int size) {
-        var sort = Sort.by(Sort.Order.asc((ImportRowJpaEntity row) -> row.getRowNumber()));
-        var pageable = PageRequest.of(
+        Sort sort = Sort.by(Sort.Order.asc((ImportRowJpaEntity row) -> row.getRowNumber()));
+        PageRequest pageable = PageRequest.of(
             pageNumber - 1,
             size,
             sort
         );
-        var page = springDataImportRowRepository.findBySessionIdWithFilters(
+        Page<ImportRowJpaEntity> page = springDataImportRowRepository.findBySessionIdWithFilters(
             sessionId,
             valueOf(status),
             pageable
         );
-        var content = page.getContent()
+        List<ImportRow> content = page.getContent()
             .stream()
             .map(ImportRowMapper::toDomain)
             .toList();
@@ -60,7 +61,7 @@ public class ImportRowRepositoryImpl implements ImportRowRepository {
 
     @Override
     public List<ImportRow> saveAll(List<ImportRow> rows) {
-        var entities = rows.stream()
+        List<ImportRowJpaEntity> entities = rows.stream()
             .map(ImportRowMapper::toJpa)
             .toList();
         return springDataImportRowRepository.saveAll(entities)
@@ -75,7 +76,7 @@ public class ImportRowRepositoryImpl implements ImportRowRepository {
 
     @Override
     public List<ImportRow> findBySessionId(UUID sessionId) {
-        var entities = springDataImportRowRepository.findBySessionId(sessionId);
+        List<ImportRowJpaEntity> entities = springDataImportRowRepository.findBySessionId(sessionId);
         return entities.stream()
             .map(ImportRowMapper::toDomain)
             .toList();

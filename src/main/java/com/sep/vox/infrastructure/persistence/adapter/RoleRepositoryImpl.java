@@ -1,10 +1,12 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.RoleJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -45,8 +47,8 @@ public class RoleRepositoryImpl implements RoleRepository {
 
     @Override
     public Role save(Role role) {
-        var entity = RoleMapper.toJpa(role);
-        var saved = springDataRoleRepository.save(entity);
+        RoleJpaEntity entity = RoleMapper.toJpa(role);
+        RoleJpaEntity saved = springDataRoleRepository.save(entity);
         return RoleMapper.toDomain(saved);
     }
 
@@ -74,8 +76,8 @@ public class RoleRepositoryImpl implements RoleRepository {
 
     @Override
     public PageResult<Role> findAll(int page, int size) {
-        var pageRequest = PageRequest.of(page - 1, size);
-        var pageable = springDataRoleRepository.findAll(pageRequest);
+        PageRequest pageRequest = PageRequest.of(page - 1, size);
+        Page<RoleJpaEntity> pageable = springDataRoleRepository.findAll(pageRequest);
         return new PageResult<>(
                 pageable.getContent()
                         .stream()

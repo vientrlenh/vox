@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.initializer;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -141,12 +142,12 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        var existingNames = subscriptionPlanRepository.findAll(1, LOOKUP_PAGE_SIZE).content().stream()
+        Set<String> existingNames = subscriptionPlanRepository.findAll(1, LOOKUP_PAGE_SIZE).content().stream()
             .map(plan -> plan.getName())
             .collect(Collectors.toSet());
 
-        var created = 0;
-        for (var seed : PLANS) {
+        int created = 0;
+        for (PlanSeed seed : PLANS) {
             if (existingNames.contains(seed.name())) {
                 continue;
             }
@@ -163,32 +164,32 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
     }
 
     private void createPlan(PlanSeed seed) {
-        var now = Instant.now();
-        var includedAmountVnd = seed.includedAmountVnd();
+        Instant now = Instant.now();
+        BigDecimal includedAmountVnd = seed.includedAmountVnd();
 
-        var plan = subscriptionPlanRepository.save(new SubscriptionPlan(
+        SubscriptionPlan plan = subscriptionPlanRepository.save(new SubscriptionPlan(
             seed.name(),
             seed.tagline(),
             seed.priceVnd(),
             seed.periodType(),
             seed.periodCount(),
             MAX_TIME_PER_ATTEMPT_MIN,
-            // ACTIVE ngay, không phải DRAFT: mục đích của thang gói này là dùng được luôn, mà DRAFT
-            // thì trường không đăng ký được. Khác với SubscriptionPlan.create() -- hàm đó dành cho
-            // gói do quản trị viên soạn và phải duyệt trước khi bán.
+            // ACTIVE right away, not DRAFT: the purpose of this plan ladder is to be usable immediately, and with DRAFT
+            // schools cannot subscribe. Different from SubscriptionPlan.create() -- that function is for
+            // plans drafted by an administrator that must be approved before being sold.
             SubscriptionPlanStatus.ACTIVE,
             1L,
             now,
             now,
-            // Không có người dùng đăng nhập lúc khởi động; cột created_by/updated_by cho phép null.
+            // No user is logged in at startup; the created_by/updated_by columns allow null.
             null,
             null
         ));
 
-        // Cấp BẰNG NHAU cho cả hai loại: chưa có số liệu thật nào nói trường tiêu lệch về bên nào, và
-        // đoán sai tỷ lệ sẽ làm một ví cạn sớm trong khi ví kia còn nguyên -- mà hai ví không tiêu
-        // chéo được cho nhau.
-        for (var quotaType : QUOTA_TYPES) {
+        // Grant EQUAL amounts to both types: no real data says which way the school's spending leans, and
+        // guessing the ratio wrong would drain one wallet early while the other stays untouched -- and the two wallets cannot
+        // be spent across each other.
+        for (QuotaType quotaType : QUOTA_TYPES) {
             subscriptionPlanQuotaRepository.save(new SubscriptionPlanQuota(
                 plan.getId(),
                 quotaType,

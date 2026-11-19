@@ -54,17 +54,17 @@ public class SubscriptionUpgradePolicyService {
      * nhiêu" của nó luôn bằng 0, lấy nó làm mốc thì không bao giờ nâng cấp được.
      */
     public void requireUpgradeEligible(SchoolSubscription inForce, Instant at) {
-        var total = Duration.between(inForce.getStartDate(), inForce.getEndDate()).toSeconds();
+        long total = Duration.between(inForce.getStartDate(), inForce.getEndDate()).toSeconds();
         if (total <= 0) {
             return;
         }
-        var elapsed = Duration.between(inForce.getStartDate(), at).toSeconds();
-        var minElapsed = MIN_ELAPSED_RATIO.multiply(BigDecimal.valueOf(total)).longValue();
+        long elapsed = Duration.between(inForce.getStartDate(), at).toSeconds();
+        long minElapsed = MIN_ELAPSED_RATIO.multiply(BigDecimal.valueOf(total)).longValue();
         if (elapsed >= minElapsed) {
             return;
         }
 
-        var eligibleAt = inForce.getStartDate().plusSeconds(minElapsed);
+        Instant eligibleAt = inForce.getStartDate().plusSeconds(minElapsed);
         throw new IllegalStateException(
             "Gói hiện tại mới bắt đầu, chưa thể nâng cấp. Có thể nâng cấp từ ngày "
                 + DISPLAY_DATE.format(eligibleAt) + ".");
@@ -97,12 +97,12 @@ public class SubscriptionUpgradePolicyService {
      *            cho giảm giá lớn hơn tiền hàng, và đơn âm tiền thì cổng nào cũng từ chối.
      */
     public BigDecimal calculateUnusedCredit(List<SchoolSubscription> unfinished, BigDecimal cap, Instant at) {
-        var total = unfinished.stream()
+        BigDecimal total = unfinished.stream()
             .map(subscription -> unusedValueOf(subscription, at))
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         // max(ZERO) cho trường hợp gói rẻ hơn cả mức tối thiểu: khi đó không bù đồng nào và trường trả
         // trọn giá, vẫn tốt hơn một đơn không thể thanh toán.
-        var payableCap = cap.subtract(MIN_PAYABLE_VND).max(BigDecimal.ZERO);
+        BigDecimal payableCap = cap.subtract(MIN_PAYABLE_VND).max(BigDecimal.ZERO);
         return total.min(payableCap);
     }
 
@@ -110,8 +110,8 @@ public class SubscriptionUpgradePolicyService {
         if (subscription.getPricePaidSnapshot() == null) {
             return BigDecimal.ZERO;
         }
-        var total = Duration.between(subscription.getStartDate(), subscription.getEndDate()).toSeconds();
-        var remaining = Duration.between(at, subscription.getEndDate()).toSeconds();
+        long total = Duration.between(subscription.getStartDate(), subscription.getEndDate()).toSeconds();
+        long remaining = Duration.between(at, subscription.getEndDate()).toSeconds();
         if (total <= 0 || remaining <= 0) {
             return BigDecimal.ZERO;
         }

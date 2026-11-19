@@ -32,18 +32,19 @@ class AiUsageRecordChargeWaiverTests {
     private EntityManager em;
 
     /**
-     * CÁI BẪY V9 SINH RA ĐỂ CHẶN: lượt chấm hỏng đốt token, lượt chấm lại thành công gọi
-     * markCharged() và trước đây nuốt luôn phần của lượt hỏng — trường trả tiền cho cả hai lần.
+     * THE TRAP V9 WAS CREATED TO BLOCK: a failed grading attempt burns tokens, the successful
+     * regrade calls markCharged() and previously swallowed the failed attempt's share too -- the
+     * school paid for both runs.
      */
     @Test
     void shouldNotChargeTheFailedRoundWhenALaterRetrySucceeds() {
-        var sessionId = UUID.randomUUID();
-        insertUsage(sessionId, "40000");  // lượt hỏng
+        UUID sessionId = UUID.randomUUID();
+        insertUsage(sessionId, "40000");  // failed attempt
         repository.markWaivedByExamSessionId(sessionId, Instant.now());
 
-        insertUsage(sessionId, "100000"); // lượt chấm lại
-        var chargedAt = Instant.now();
-        var claimed = repository.markChargedByExamSessionId(sessionId, chargedAt);
+        insertUsage(sessionId, "100000"); // regrade attempt
+        Instant chargedAt = Instant.now();
+        int claimed = repository.markChargedByExamSessionId(sessionId, chargedAt);
 
         assertThat(claimed).isEqualTo(1);
         assertThat(repository.sumCostVndByExamSessionIdAndChargedAt(sessionId, chargedAt))
@@ -52,18 +53,19 @@ class AiUsageRecordChargeWaiverTests {
     }
 
     /**
-     * Chiều ngược lại: miễn KHÔNG được đụng vào dòng đã thu. Một phiên chấm đúng rồi mới hỏng ở lượt
-     * sau — miễn đè lên lượt đầu là hoàn tiền cho phần việc đã giao đủ.
+     * The opposite direction: the waiver must NOT touch a row that has already been charged. A
+     * session graded correctly and only failing on a later attempt -- letting the waiver overwrite
+     * the first attempt would refund work that was fully delivered.
      */
     @Test
     void shouldNotWaiveCostThatWasAlreadyCharged() {
-        var sessionId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
         insertUsage(sessionId, "100000");
-        var chargedAt = Instant.now();
+        Instant chargedAt = Instant.now();
         repository.markChargedByExamSessionId(sessionId, chargedAt);
 
         insertUsage(sessionId, "40000");
-        var waived = repository.markWaivedByExamSessionId(sessionId, Instant.now());
+        int waived = repository.markWaivedByExamSessionId(sessionId, Instant.now());
 
         assertThat(waived).isEqualTo(1);
         assertThat(repository.sumCostVndByExamSessionIdAndChargedAt(sessionId, chargedAt))
@@ -71,10 +73,12 @@ class AiUsageRecordChargeWaiverTests {
         assertThat(repository.sumWaivedCostVndByExamSessionId(sessionId)).isEqualByComparingTo("40000");
     }
 
-    /** Miễn hai lần không nhân đôi: lần sau không còn dòng nào chưa ngã ngũ để động vào. */
+    /**
+     * Waiving twice does not double up: the second time there is no unsettled row left to touch.
+     */
     @Test
     void shouldBeIdempotentAcrossRepeatedWaives() {
-        var sessionId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
         insertUsage(sessionId, "40000");
 
         assertThat(repository.markWaivedByExamSessionId(sessionId, Instant.now())).isEqualTo(1);
@@ -83,12 +87,13 @@ class AiUsageRecordChargeWaiverTests {
     }
 
     /**
-     * Phiên hỏng mà KHÔNG ai chấm lại vẫn phải miễn. Trước V9 hành vi phụ thuộc vào việc có người đi
-     * khắc phục hay không — bỏ mặc thì miễn phí, đi sửa thì bị tính tiền cho cả lượt hỏng.
+     * A failed session that NOBODY regrades must still be waived. Before V9 the behavior depended
+     * on whether someone went to fix it -- left alone it was free, fixed it and the failed attempt
+     * was charged too.
      */
     @Test
     void shouldWaiveEvenWhenNobodyEverRetries() {
-        var sessionId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
         insertUsage(sessionId, "40000");
         repository.markWaivedByExamSessionId(sessionId, Instant.now());
 

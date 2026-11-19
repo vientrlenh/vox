@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.usecase.examevaluation;
 
+import com.sep.vox.domain.model.rubric.RubricCriterion;
 import java.util.List;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.query.ViewExamItemResponseEvaluationQuery;
@@ -51,8 +53,8 @@ public class ViewExamItemResponseEvaluationUseCase
 
     @Override
     public ExamItemEvaluationDetailsResponse execute(ViewExamItemResponseEvaluationQuery input) {
-        var access = examResultAccessService.requireCandidateVisibleResponse(input.answerId());
-        var evaluation = examItemEvaluationRepository.findLatestByResponseId(input.answerId())
+        ExamResultAccessService.ResponseAccess access = examResultAccessService.requireCandidateVisibleResponse(input.answerId());
+        ExamItemEvaluation evaluation = examItemEvaluationRepository.findLatestByResponseId(input.answerId())
             .orElse(null);
         // Chưa ai chấm câu này -- vẫn phải trả về bản ghi bài nói.
         //
@@ -70,15 +72,15 @@ public class ViewExamItemResponseEvaluationUseCase
 
         // Bản hiệu lực là bản chấm tay ⇒ mọi bằng chứng AI nằm ở bản AI đã bị SUPERSEDED,
         // phải đi tìm riêng. Bản hiệu lực đã là AI thì chính nó — không tốn thêm query.
-        var aiEvaluation = evaluation.getEngineType() == ExamEvaluationEngineType.HUMAN
+        ExamItemEvaluation aiEvaluation = evaluation.getEngineType() == ExamEvaluationEngineType.HUMAN
             ? examItemEvaluationRepository.findLatestAiByResponseId(input.answerId()).orElse(null)
             : evaluation;
 
         // criteria vẫn theo bản hiệu lực: sau khi chấm lại thì đây là điểm và rationale của
         // GIÁO VIÊN, đúng như thiết kế. Chỉ ngữ cảnh mới lấy từ bản AI.
-        var criteria = examItemCriterionScoreRepository.findByEvaluationId(evaluation.getId()).stream()
+        List<ExamItemCriterionScoreResponse> criteria = examItemCriterionScoreRepository.findByEvaluationId(evaluation.getId()).stream()
             .map(item -> {
-                var criterion = rubricCriterionRepository.findById(item.getRubricCriterionId()).orElse(null);
+                RubricCriterion criterion = rubricCriterionRepository.findById(item.getRubricCriterionId()).orElse(null);
                 return new ExamItemCriterionScoreResponse(
                     item.getId(),
                     item.getRubricCriterionId(),
@@ -94,7 +96,7 @@ public class ViewExamItemResponseEvaluationUseCase
             .toList();
         // Turn chỉ tồn tại ở bản AI. Đọc theo bản hiệu lực là mất audio/transcript/nội dung
         // câu hỏi ngay sau lần chấm lại đầu tiên — chính là lỗi đang sửa.
-        var turnSourceId = (aiEvaluation == null ? evaluation : aiEvaluation).getId();
+        UUID turnSourceId = (aiEvaluation == null ? evaluation : aiEvaluation).getId();
         List<ExamItemEvaluationTurnResponse> turns = examItemEvaluationTurnRepository.findByEvaluationId(turnSourceId).stream()
             .map(item -> new ExamItemEvaluationTurnResponse(
                 item.getId(),
@@ -174,7 +176,7 @@ public class ViewExamItemResponseEvaluationUseCase
      */
     private ExamItemEvaluationDetailsResponse ungradedDetails(
             com.sep.vox.domain.model.exam.ExamItemResponse response) {
-        var turns = examItemResponseTurnRepository.findByExamItemResponseId(response.getId()).stream()
+        List<ExamItemEvaluationTurnResponse> turns = examItemResponseTurnRepository.findByExamItemResponseId(response.getId()).stream()
             .map(item -> new ExamItemEvaluationTurnResponse(
                 item.getId(),
                 item.getTurnOrder(),

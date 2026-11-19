@@ -74,7 +74,7 @@ final class StudentExamViewSupport {
     }
 
     static String examDateOf(ExamSchedule schedule, Instant fallback) {
-        var examDate = examDateInstantOf(schedule, fallback);
+        Instant examDate = examDateInstantOf(schedule, fallback);
         return examDate == null ? null : examDate.toString();
     }
 }

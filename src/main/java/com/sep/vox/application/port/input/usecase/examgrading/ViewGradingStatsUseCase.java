@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examgrading;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,8 +28,8 @@ public class ViewGradingStatsUseCase implements IUseCase<ViewGradingStatsQuery, 
     @Override
     @Transactional(readOnly = true)
     public GradingStatsInfo execute(ViewGradingStatsQuery input) {
-        var currentUserId = examGradingAccessService.requireActiveUserId();
-        var schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
+        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        UUID schoolId = examGradingAccessService.requireCurrentSchoolId(currentUserId);
         return examGradingQueryRepository.stats(
             schoolId, input.examId(), input.scheduleId(), GradingScopeKind.orCentralized(input.kind()));
     }

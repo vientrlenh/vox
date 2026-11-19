@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.application.response.input.examsession.ExamSessionResponse;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumSet;
@@ -76,11 +79,11 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
 
     @Override
     public ExamEntryTicketResponse execute(StartClassTestSessionCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
-        var candidate = examCandidateRepository.findByExamIdAndStudentId(input.examId(), studentId)
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
+        ExamCandidate candidate = examCandidateRepository.findByExamIdAndStudentId(input.examId(), studentId)
             .orElseThrow(() -> new NotFoundException("Bạn không phải thí sinh của bài kiểm tra này"));
 
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         // Chặn ngay ở cổng vào: vào làm bài được nhưng không ghi được dữ liệu giám sát thì bài làm
@@ -93,7 +96,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
             throw new IllegalStateException("Bài kiểm tra này yêu cầu xác thực OTP, vui lòng dùng luồng xác thực OTP");
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         if (candidate.getBlockedAt() != null) {
             throw new IllegalStateException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
         }
@@ -116,11 +119,11 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
 
         // Lấy ca thi đang trong khung giờ, không fallback về closeAt của bài: đây đúng là điều kiện
         // mà IssueStudentStreamTokenUseCase kiểm tra ngay sau đó khi phát token stream.
-        var schedule = examScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
+        ExamSchedule schedule = examScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
             .orElseThrow(() -> new NotFoundException("Ca thi không hợp lệ hoặc đã hết hạn"));
-        var scheduleEndAt = schedule.getEndDate();
+        Instant scheduleEndAt = schedule.getEndDate();
 
-        var resumableSession = findResumableSession(candidate.getId());
+        ExamSession resumableSession = findResumableSession(candidate.getId());
         if (resumableSession != null) {
             if (resumableSession.getStatus() == ExamSessionStatus.INTERRUPTED) {
                 updateExamSessionStatusUseCase.execute(
@@ -136,7 +139,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         }
 
         if (exam.getMaxAttempt() != null) {
-            var usedAttempts = countUsedAttempts(candidate.getId());
+            long usedAttempts = countUsedAttempts(candidate.getId());
             if (usedAttempts >= exam.getMaxAttempt()) {
                 throw new DuplicatedException("Đã hết số lượt làm bài cho phép (" + exam.getMaxAttempt() + " lượt)");
             }
@@ -148,7 +151,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId())
             .ifPresent(subscription -> schoolSubscriptionDebtGuardService.requireSchoolNotLocked(subscription.getSchoolId()));
 
-        var session = createExamSessionUseCase.execute(new CreateExamSessionCommand(
+        ExamSessionResponse session = createExamSessionUseCase.execute(new CreateExamSessionCommand(
             input.examId(),
             candidate.getId(),
             candidate.getAssignedPaperId()

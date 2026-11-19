@@ -49,13 +49,13 @@ public final class AvatarUrlPolicy {
             return null;
         }
 
-        var normalized = rawUrl.trim();
+        String normalized = rawUrl.trim();
         if (normalized.length() > MAX_URL_LENGTH) {
             throw new IllegalArgumentException("Đường dẫn ảnh đại diện quá dài");
         }
 
-        var host = httpsHostOf(normalized);
-        var hosts = parseHosts(allowedHosts);
+        String host = httpsHostOf(normalized);
+        List<String> hosts = parseHosts(allowedHosts);
         if (!hosts.isEmpty() && !hosts.contains(host)) {
             throw new IllegalArgumentException("Ảnh đại diện phải được tải lên vùng lưu trữ của hệ thống");
         }
@@ -72,8 +72,8 @@ public final class AvatarUrlPolicy {
             throw new IllegalArgumentException("Đường dẫn ảnh đại diện không hợp lệ");
         }
 
-        var scheme = uri.getScheme();
-        var host = uri.getHost();
+        String scheme = uri.getScheme();
+        String host = uri.getHost();
         if (scheme == null || !scheme.toLowerCase(Locale.ROOT).equals("https") || host == null || host.isBlank()) {
             throw new IllegalArgumentException("Đường dẫn ảnh đại diện phải là URL https hợp lệ");
         }

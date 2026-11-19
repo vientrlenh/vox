@@ -58,6 +58,9 @@ Walk the diff the other way. For every changed hunk, name the plan item that req
 - Check for accidental edits: whitespace-only changes, import reordering, files touched by the IDE or formatter,
   edited `build/`, `.gradle/`, `logs/`, or a committed `.env`.
 - The one allowed extra is extracting logic that was duplicated in more than one place.
+- Edits to the plan file itself (`docs/<name>-plan/index.html`) made by `implement-plan` are expected, not scope
+  creep: status, decision answers, status-log lines and implementation notes. Check that only those parts changed.
+  An edit to the plan's content (phases, jobs, scope, options) while the plan was not a Draft is a finding.
 
 ## Step 5: Run real checks
 

@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.ExamScheduleJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -89,7 +90,7 @@ public class ExamScheduleRepositoryImpl implements ExamScheduleRepository {
 
     @Override
     public ExamSchedule save(ExamSchedule schedule) {
-        var saved = springDataExamScheduleRepository.save(ExamScheduleMapper.toJpa(schedule));
+        ExamScheduleJpaEntity saved = springDataExamScheduleRepository.save(ExamScheduleMapper.toJpa(schedule));
         return ExamScheduleMapper.toDomain(saved);
     }
 

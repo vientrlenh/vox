@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 import com.sep.vox.application.port.input.command.CreateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.command.DeleteSupportedLanguageCommand;
@@ -44,11 +45,11 @@ class SupportedLanguageControllerTests {
     @Test
     @WithMockUser(roles = "SYSTEM_ADMIN")
     void create_should_return_created_response() {
-        var supportedLanguageId = UUID.randomUUID();
+        UUID supportedLanguageId = UUID.randomUUID();
         when(createSupportedLanguageUseCase.execute(new CreateSupportedLanguageCommand("EN", "English", "Main language")))
             .thenReturn(new CreateSupportedLanguageResponse(supportedLanguageId));
 
-        var result = createRequest(CREATE_BODY).exchange();
+        MvcTestResult result = createRequest(CREATE_BODY).exchange();
 
         assertThat(result).hasStatus(201).bodyJson()
             .extractingPath("$.data.supportedLanguageId").isEqualTo(supportedLanguageId.toString());
@@ -57,7 +58,7 @@ class SupportedLanguageControllerTests {
     @Test
     @WithMockUser(roles = "SYSTEM_ADMIN")
     void create_should_return_bad_request_when_code_is_longer_than_ten_characters() {
-        var result = createRequest("{\"code\": \"ABCDEFGHIJK\", \"name\": \"English\"}").exchange();
+        MvcTestResult result = createRequest("{\"code\": \"ABCDEFGHIJK\", \"name\": \"English\"}").exchange();
 
         assertThat(result).hasStatus(400);
         verifyNoInteractions(createSupportedLanguageUseCase);
@@ -65,7 +66,7 @@ class SupportedLanguageControllerTests {
 
     @Test
     void create_should_return_401_without_authenticated_user() {
-        var result = createRequest(CREATE_BODY).exchange();
+        MvcTestResult result = createRequest(CREATE_BODY).exchange();
 
         assertThat(result).hasStatus(401);
         verifyNoInteractions(createSupportedLanguageUseCase);
@@ -74,7 +75,7 @@ class SupportedLanguageControllerTests {
     @Test
     @WithMockUser(roles = "SCHOOL_ADMIN")
     void create_should_return_403_for_role_other_than_system_admin() {
-        var result = createRequest(CREATE_BODY).exchange();
+        MvcTestResult result = createRequest(CREATE_BODY).exchange();
 
         assertThat(result).hasStatus(403);
         verifyNoInteractions(createSupportedLanguageUseCase);
@@ -83,9 +84,9 @@ class SupportedLanguageControllerTests {
     @Test
     @WithMockUser(roles = "SYSTEM_ADMIN")
     void delete_should_return_ok_response_for_system_admin() {
-        var id = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
 
-        var result = mvc.delete().uri("/api/v1/supported-languages/{id}", id).exchange();
+        MvcTestResult result = mvc.delete().uri("/api/v1/supported-languages/{id}", id).exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
             .extractingPath("$.message").isEqualTo("Xóa ngôn ngữ thành công");
@@ -94,7 +95,7 @@ class SupportedLanguageControllerTests {
 
     @Test
     void delete_should_return_401_without_authenticated_user() {
-        var result = mvc.delete().uri("/api/v1/supported-languages/{id}", UUID.randomUUID()).exchange();
+        MvcTestResult result = mvc.delete().uri("/api/v1/supported-languages/{id}", UUID.randomUUID()).exchange();
 
         assertThat(result).hasStatus(401);
         verifyNoInteractions(deleteSupportedLanguageUseCase);
@@ -103,7 +104,7 @@ class SupportedLanguageControllerTests {
     @Test
     @WithMockUser(roles = "TEACHER")
     void delete_should_return_403_for_role_other_than_system_admin() {
-        var result = mvc.delete().uri("/api/v1/supported-languages/{id}", UUID.randomUUID()).exchange();
+        MvcTestResult result = mvc.delete().uri("/api/v1/supported-languages/{id}", UUID.randomUUID()).exchange();
 
         assertThat(result).hasStatus(403);
         verifyNoInteractions(deleteSupportedLanguageUseCase);

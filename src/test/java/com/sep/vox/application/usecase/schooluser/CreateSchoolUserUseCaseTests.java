@@ -22,6 +22,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.schooluser.CreateSchoolUserResponse;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.outbox.Outbox;
@@ -77,10 +78,10 @@ public class CreateSchoolUserUseCaseTests {
 
     @Test
     void create_student_without_dates_should_throw() {
-        var caller = callerUser(callerId, schoolId);
-        var savedUser = savedUser(schoolId);
-        var studentRole = role("STUDENT");
-        var command = new CreateSchoolUserCommand(
+        User caller = callerUser(callerId, schoolId);
+        User savedUser = savedUser(schoolId);
+        Role studentRole = role("STUDENT");
+        CreateSchoolUserCommand command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
             "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null
         );
@@ -99,15 +100,15 @@ public class CreateSchoolUserUseCaseTests {
 
     @Test
     void create_student_with_dates_should_save_school_user() {
-        var caller = callerUser(callerId, schoolId);
-        var savedUser = savedUser(schoolId);
-        var studentRole = role("STUDENT");
-        var command = new CreateSchoolUserCommand(
+        User caller = callerUser(callerId, schoolId);
+        User savedUser = savedUser(schoolId);
+        Role studentRole = role("STUDENT");
+        CreateSchoolUserCommand command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
             "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT",
             LocalDate.of(2023, 1, 1), LocalDate.of(2029, 1, 1)
         );
-        var schoolUser = new SchoolUser(schoolId, savedUser.getId(), Instant.now(), Instant.now().plus(36500, ChronoUnit.DAYS));
+        SchoolUser schoolUser = new SchoolUser(schoolId, savedUser.getId(), Instant.now(), Instant.now().plus(36500, ChronoUnit.DAYS));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
@@ -117,7 +118,7 @@ public class CreateSchoolUserUseCaseTests {
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
         when(userRoleRepository.save(any(UserRole.class))).thenReturn(new UserRole(savedUser.getId(), studentRole.getId(), Instant.now()));
         when(schoolUserRepository.save(any(SchoolUser.class))).thenReturn(schoolUser);
-        var result = createSchoolUserUseCase.execute(command);
+        CreateSchoolUserResponse result = createSchoolUserUseCase.execute(command);
 
         assertThat(result.id()).isEqualTo(savedUser.getId());
         verify(schoolUserRepository).save(any(SchoolUser.class));
@@ -126,10 +127,10 @@ public class CreateSchoolUserUseCaseTests {
 
     @Test
     void create_student_with_start_date_not_before_end_date_should_throw() {
-        var caller = callerUser(callerId, schoolId);
-        var savedUser = savedUser(schoolId);
-        var studentRole = role("STUDENT");
-        var command = new CreateSchoolUserCommand(
+        User caller = callerUser(callerId, schoolId);
+        User savedUser = savedUser(schoolId);
+        Role studentRole = role("STUDENT");
+        CreateSchoolUserCommand command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
             "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT",
             LocalDate.of(2029, 1, 1), LocalDate.of(2029, 1, 1)
@@ -149,11 +150,11 @@ public class CreateSchoolUserUseCaseTests {
 
     @Test
     void create_should_throw_when_school_inactive() {
-        var caller = callerUser(callerId, schoolId);
-        var studentRole = role("STUDENT");
-        var inactiveSchool = school(schoolId, "Trường A");
+        User caller = callerUser(callerId, schoolId);
+        Role studentRole = role("STUDENT");
+        School inactiveSchool = school(schoolId, "Trường A");
         inactiveSchool.setActive(false);
-        var command = new CreateSchoolUserCommand(
+        CreateSchoolUserCommand command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
             "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT",
             LocalDate.of(2023, 1, 1), LocalDate.of(2029, 1, 1)
@@ -170,10 +171,10 @@ public class CreateSchoolUserUseCaseTests {
 
     @Test
     void create_teacher_should_save_school_user() {
-        var caller = callerUser(callerId, schoolId);
-        var savedUser = savedUser(schoolId);
-        var teacherRole = role("TEACHER");
-        var command = new CreateSchoolUserCommand(
+        User caller = callerUser(callerId, schoolId);
+        User savedUser = savedUser(schoolId);
+        Role teacherRole = role("TEACHER");
+        CreateSchoolUserCommand command = new CreateSchoolUserCommand(
             schoolId, "teacher@school.edu.vn", "0987654322",
             "Tran Thi B", LocalDate.of(1985, 3, 20), "456 Street", "TEACHER", null, null
         );
@@ -185,19 +186,19 @@ public class CreateSchoolUserUseCaseTests {
         when(userRepository.findByPhone("0987654322")).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
         when(userRoleRepository.save(any(UserRole.class))).thenReturn(new UserRole(savedUser.getId(), teacherRole.getId(), Instant.now()));
-        var result = createSchoolUserUseCase.execute(command);
+        CreateSchoolUserResponse result = createSchoolUserUseCase.execute(command);
 
         assertThat(result.id()).isEqualTo(savedUser.getId());
-        // Giáo viên giờ cũng được gắn vào trường qua school_users (không có thời hạn)
+        // A teacher is now also attached to the school through school_users (with no expiry).
         verify(schoolUserRepository).save(any(SchoolUser.class));
         verify(outboxRepository).save(any(Outbox.class));
     }
 
     @Test
     void create_should_throw_when_caller_belongs_to_different_school() {
-        var otherSchoolId = UUID.randomUUID();
-        var caller = callerUser(callerId, otherSchoolId);
-        var command = new CreateSchoolUserCommand(
+        UUID otherSchoolId = UUID.randomUUID();
+        User caller = callerUser(callerId, otherSchoolId);
+        CreateSchoolUserCommand command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
             "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null
         );
@@ -212,8 +213,8 @@ public class CreateSchoolUserUseCaseTests {
 
     @Test
     void create_should_throw_when_role_code_is_invalid() {
-        var caller = callerUser(callerId, schoolId);
-        var command = new CreateSchoolUserCommand(
+        User caller = callerUser(callerId, schoolId);
+        CreateSchoolUserCommand command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
             "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "SCHOOL_ADMIN", null, null
         );
@@ -227,8 +228,8 @@ public class CreateSchoolUserUseCaseTests {
 
     @Test
     void create_should_throw_when_role_not_found_in_repository() {
-        var caller = callerUser(callerId, schoolId);
-        var command = new CreateSchoolUserCommand(
+        User caller = callerUser(callerId, schoolId);
+        CreateSchoolUserCommand command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
             "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null
         );
@@ -243,7 +244,7 @@ public class CreateSchoolUserUseCaseTests {
 
     @Test
     void create_should_throw_when_caller_is_inactive() {
-        var command = new CreateSchoolUserCommand(
+        CreateSchoolUserCommand command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
             "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null
         );
@@ -257,9 +258,9 @@ public class CreateSchoolUserUseCaseTests {
 
     @Test
     void create_should_throw_when_email_already_exists() {
-        var caller = callerUser(callerId, schoolId);
-        var studentRole = role("STUDENT");
-        var command = new CreateSchoolUserCommand(
+        User caller = callerUser(callerId, schoolId);
+        Role studentRole = role("STUDENT");
+        CreateSchoolUserCommand command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
             "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null
         );
@@ -275,9 +276,9 @@ public class CreateSchoolUserUseCaseTests {
 
     @Test
     void create_should_throw_when_phone_already_exists() {
-        var caller = callerUser(callerId, schoolId);
-        var studentRole = role("STUDENT");
-        var command = new CreateSchoolUserCommand(
+        User caller = callerUser(callerId, schoolId);
+        Role studentRole = role("STUDENT");
+        CreateSchoolUserCommand command = new CreateSchoolUserCommand(
             schoolId, "student@school.edu.vn", "0987654321",
             "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT", null, null
         );
@@ -297,8 +298,8 @@ public class CreateSchoolUserUseCaseTests {
     }
 
     private User callerUser(UUID id, UUID userSchoolId, UserStatus status) {
-        var now = Instant.now();
-        var user = new User(id, new Email("admin@school.edu.vn"), "hash",
+        Instant now = Instant.now();
+        User user = new User(id, new Email("admin@school.edu.vn"), "hash",
             new Phone("0900000000"), new FullName("Admin User"), null,
             new DateOfBirth(LocalDate.of(1980, 1, 1)), "Admin Street", null,
             status, now, now, id, id);
@@ -309,8 +310,8 @@ public class CreateSchoolUserUseCaseTests {
     }
 
     private User savedUser(UUID userSchoolId) {
-        var now = Instant.now();
-        var id = UUID.randomUUID();
+        Instant now = Instant.now();
+        UUID id = UUID.randomUUID();
         return new User(id, new Email("student@school.edu.vn"), "__PASSWORD_NOT_SET__",
             new Phone("0987654321"), new FullName("Nguyen Van A"), null,
             new DateOfBirth(LocalDate.of(2005, 1, 15)), "123 Street", null,
@@ -318,13 +319,13 @@ public class CreateSchoolUserUseCaseTests {
     }
 
     private Role role(String code) {
-        var now = Instant.now();
-        var systemId = UUID.randomUUID();
+        Instant now = Instant.now();
+        UUID systemId = UUID.randomUUID();
         return new Role(UUID.randomUUID(), new RoleCode(code), code, now, now, systemId, systemId);
     }
 
     private School school(UUID id, String name) {
-        var school = new School();
+        School school = new School();
         school.setId(id);
         school.setName(name);
         school.setActive(true);

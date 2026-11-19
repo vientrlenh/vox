@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schooldirectory;
 
+import com.sep.vox.domain.model.school.SchoolDirectory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,7 @@ public class ViewSchoolDirectoryPageUseCase implements IUseCase<ViewSchoolDirect
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolDirectoryDto> execute(ViewSchoolDirectoryPageQuery input) {
-        var result = schoolDirectoryRepository.findAll(input.page(), input.size());
+        PageResult<SchoolDirectory> result = schoolDirectoryRepository.findAll(input.page(), input.size());
         return SchoolDirectoryDtoMapper.toSchoolDirectoryDtoPage(result);
     }
     

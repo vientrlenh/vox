@@ -27,6 +27,7 @@ import com.sep.vox.application.port.input.usecase.examsession.UpdateExamSessionS
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.HealthCheckPort;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.exam.ExamEntryTicketResponse;
 import com.sep.vox.domain.model.exam.Exam;
 import com.sep.vox.domain.model.exam.ExamCandidate;
 import com.sep.vox.domain.model.exam.ExamCandidateStatus;
@@ -67,12 +68,12 @@ class VerifyExamScheduleOtpStreamHealthTests {
 
     @BeforeEach
     void setUp() {
-        var examCandidateRepository = mock(ExamCandidateRepository.class);
+        ExamCandidateRepository examCandidateRepository = mock(ExamCandidateRepository.class);
         examRepository = mock(ExamRepository.class);
-        var examScheduleRepository = mock(ExamScheduleRepository.class);
-        var examSessionRepository = mock(ExamSessionRepository.class);
-        var cacheManagerPort = mock(CacheManagerPort.class);
-        var userContextPort = mock(UserContextPort.class);
+        ExamScheduleRepository examScheduleRepository = mock(ExamScheduleRepository.class);
+        ExamSessionRepository examSessionRepository = mock(ExamSessionRepository.class);
+        CacheManagerPort cacheManagerPort = mock(CacheManagerPort.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
         healthCheckPort = mock(HealthCheckPort.class);
 
         useCase = new VerifyExamScheduleOtpUseCase(
@@ -141,20 +142,23 @@ class VerifyExamScheduleOtpStreamHealthTests {
             .hasMessageContaining("Streaming service");
     }
 
-    /** Bài không giám sát vẫn phải phát vé bình thường, không được vạ lây vì streaming chết. */
+    /**
+     * A non-proctored test must still issue its ticket normally and must not be dragged down when
+     * streaming is dead.
+     */
     @Test
     void should_still_issue_entry_ticket_for_unmonitored_exam_when_streaming_is_down() {
         doThrow(new ServiceUnavailableException("Streaming service hiện không hoạt động"))
             .when(healthCheckPort).checkStreamingOk();
 
-        var result = useCase.execute(new VerifyExamScheduleOtpCommand(EXAM_ID, OTP));
+        ExamEntryTicketResponse result = useCase.execute(new VerifyExamScheduleOtpCommand(EXAM_ID, OTP));
 
         assertThat(result.attemptId()).isNotNull();
         assertThat(result.requiredStreamType()).isNull();
     }
 
     private ExamCandidate candidate() {
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(CANDIDATE_ID);
         candidate.setExamId(EXAM_ID);
         candidate.setStudentId(STUDENT_ID);
@@ -165,7 +169,7 @@ class VerifyExamScheduleOtpStreamHealthTests {
     }
 
     private Exam exam(ExamKind kind, ExamRequiredStreamType streamType) {
-        var exam = new Exam();
+        Exam exam = new Exam();
         exam.setId(EXAM_ID);
         exam.setKind(kind);
         exam.setStatus(ExamStatus.IN_PROGRESS);
@@ -180,7 +184,7 @@ class VerifyExamScheduleOtpStreamHealthTests {
     }
 
     private ExamSchedule schedule() {
-        var schedule = new ExamSchedule();
+        ExamSchedule schedule = new ExamSchedule();
         schedule.setId(SCHEDULE_ID);
         schedule.setExamId(EXAM_ID);
         schedule.setStartDate(Instant.now().minusSeconds(600));
@@ -189,7 +193,7 @@ class VerifyExamScheduleOtpStreamHealthTests {
     }
 
     private ExamSession inProgressSession() {
-        var session = new ExamSession();
+        ExamSession session = new ExamSession();
         session.setId(UUID.randomUUID());
         session.setExamId(EXAM_ID);
         session.setCandidateId(CANDIDATE_ID);

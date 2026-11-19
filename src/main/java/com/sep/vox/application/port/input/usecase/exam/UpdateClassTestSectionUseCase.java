@@ -1,7 +1,11 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionCollaborator;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -69,8 +73,8 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
     @Override
     @Transactional
     public ExamDto execute(UpdateClassTestSectionCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var exam = examRepository.findById(input.examId())
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         if (exam.getKind() != ExamKind.CLASS_TEST) {
@@ -87,10 +91,10 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
         }
         requireNoAttachedBlueprint(exam);
 
-        var paperSection = examPaperSectionRepository.findById(input.sectionId())
+        ExamPaperSection paperSection = examPaperSectionRepository.findById(input.sectionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
 
-        var now = Instant.now();
+        Instant now = Instant.now();
 
         if (input.title() != null) {
             paperSection.setTitle(input.title());
@@ -108,7 +112,7 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
 
         if (input.weight() != null) {
             paperSection.setWeight(input.weight());
-            var sections = examPaperSectionRepository.findByPaperId(paperSection.getPaperId()).stream()
+            List<ExamPaperSection> sections = examPaperSectionRepository.findByPaperId(paperSection.getPaperId()).stream()
                 .map(section -> section.getId().equals(paperSection.getId()) ? paperSection : section)
                 .toList();
             ClassTestSectionWeightPolicy.validateStoredWeights(sections, "Tổng trọng số section phải bằng 1.00");
@@ -121,13 +125,13 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
             if (input.questions().isEmpty()) {
                 throw new IllegalStateException("Section phải có ít nhất 1 câu hỏi");
             }
-            for (var questionCommand : input.questions()) {
-                var question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, exam.getSchoolId(), false, false)
+            for (ClassTestQuestionCommand questionCommand : input.questions()) {
+                Question question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, exam.getSchoolId(), false, false)
                     .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionCommand.questionId()));
                 boolean isOwner = currentUserId.equals(question.getCreatedBy());
                 boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
                 if (!isOwner && !isSchoolShared) {
-                    var collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
+                    Optional<QuestionCollaborator> collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
                     if (collaborator.isEmpty() || collaborator.get().getPermission() == QuestionCollaboratorPermission.READ_ONLY) {
                         throw new ForbiddenException("Quyền READ_ONLY không được phép dùng câu hỏi trong bài kiểm tra");
                     }
@@ -138,7 +142,7 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
 
         exam.setUpdatedAt(now);
         exam.setUpdatedBy(currentUserId);
-        var saved = examRepository.save(exam);
+        Exam saved = examRepository.save(exam);
         recalculateExamTimeDurationService.recalculate(exam.getId());
         return ExamDtoMapper.toDto(saved);
     }
@@ -156,16 +160,16 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
             UUID examId,
             UUID currentUserId,
             Instant now) {
-        var existingItems = examPaperItemRepository.findBySectionId(paperSection.getId()).stream()
+        List<ExamPaperItem> existingItems = examPaperItemRepository.findBySectionId(paperSection.getId()).stream()
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();
-        for (var item : existingItems) {
+        for (ExamPaperItem item : existingItems) {
             examPaperItemRepository.deleteById(item.getId());
         }
 
-        var weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
+        List<BigDecimal> weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
         for (int i = 0; i < questions.size(); i++) {
-            var questionId = questions.get(i).questionId();
+            UUID questionId = questions.get(i).questionId();
             examPaperItemRepository.save(new ExamPaperItem(
                 null,
                 paperSection.getId(),

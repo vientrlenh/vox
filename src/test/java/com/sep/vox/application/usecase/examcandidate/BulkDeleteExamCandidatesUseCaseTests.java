@@ -90,7 +90,7 @@ public class BulkDeleteExamCandidatesUseCaseTests {
     }
 
     private ExamCandidate candidate(UUID id) {
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(id);
         candidate.setExamId(examId);
         candidate.setStudentId(UUID.randomUUID());
@@ -126,10 +126,13 @@ public class BulkDeleteExamCandidatesUseCaseTests {
         verify(examCandidateRepository, never()).deleteByIdIn(any());
     }
 
-    /** Một người đã vào thi là cả lô bị từ chối — không xoá phần còn lại. */
+    /**
+     * If one person has already entered the exam, the whole batch is rejected -- the rest is not
+     * deleted.
+     */
     @Test
     void should_refuse_the_whole_batch_when_any_candidate_already_sat_the_exam() {
-        var session = new ExamSession();
+        ExamSession session = new ExamSession();
         session.setCandidateId(candidateB);
         when(examSessionRepository.findByCandidateIdIn(anyCollection())).thenReturn(List.of(session));
 
@@ -152,7 +155,7 @@ public class BulkDeleteExamCandidatesUseCaseTests {
 
     @Test
     void should_refuse_a_caller_who_is_neither_school_admin_nor_chair() {
-        var outsider = UUID.randomUUID();
+        UUID outsider = UUID.randomUUID();
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(outsider);
         when(schoolUserRepository.findByUserId(outsider))
             .thenReturn(Optional.of(new SchoolUser(UUID.randomUUID(), outsider, null, null)));

@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 import com.sep.vox.application.port.input.command.BulkFinalizeExamResultsCommand;
 import com.sep.vox.application.port.input.query.ExportExamScoresQuery;
@@ -67,7 +68,7 @@ class ExamResultControllerTests {
 
     @Test
     void should_forward_every_screen_filter_to_the_excel_use_case() {
-        var result = mvc.get().uri(EXCEL_URI)
+        MvcTestResult result = mvc.get().uri(EXCEL_URI)
             .param("examId", examId.toString())
             .param("scheduleId", scheduleId.toString())
             .param("teacherId", teacherId.toString())
@@ -97,7 +98,7 @@ class ExamResultControllerTests {
 
     @Test
     void should_send_the_workbook_as_a_download_with_the_xlsx_content_type() {
-        var result = mvc.get().uri(EXCEL_URI).param("examId", examId.toString()).param("kind", "CLASS_TEST")
+        MvcTestResult result = mvc.get().uri(EXCEL_URI).param("examId", examId.toString()).param("kind", "CLASS_TEST")
             .exchange();
 
         assertThat(result).hasStatusOk();
@@ -137,7 +138,7 @@ class ExamResultControllerTests {
 
     @Test
     void should_send_the_csv_as_utf8_so_vietnamese_survives() {
-        var result = mvc.get().uri(CSV_URI).param("examId", examId.toString()).exchange();
+        MvcTestResult result = mvc.get().uri(CSV_URI).param("examId", examId.toString()).exchange();
 
         assertThat(result).hasStatusOk();
         assertThat(result).headers().hasValue(HttpHeaders.CONTENT_TYPE, "text/csv;charset=UTF-8");
@@ -151,7 +152,7 @@ class ExamResultControllerTests {
         when(bulkFinalizeExamResultsUseCase.execute(new BulkFinalizeExamResultsCommand(examId, true)))
             .thenReturn(7);
 
-        var result = mvc.post().uri("/api/v1/exam-results/finalize")
+        MvcTestResult result = mvc.post().uri("/api/v1/exam-results/finalize")
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"examId\": \"" + examId + "\", \"releasePendingWithAiScores\": true}")
             .exchange();
@@ -161,7 +162,7 @@ class ExamResultControllerTests {
 
     @Test
     void finalize_should_return_bad_request_when_exam_id_is_missing() {
-        var result = mvc.post().uri("/api/v1/exam-results/finalize")
+        MvcTestResult result = mvc.post().uri("/api/v1/exam-results/finalize")
             .contentType(MediaType.APPLICATION_JSON)
             .content("{}")
             .exchange();
@@ -173,7 +174,7 @@ class ExamResultControllerTests {
     @Test
     @WithMockUser(roles = "STUDENT")
     void export_should_return_403_for_a_student() {
-        var result = mvc.get().uri(EXCEL_URI).param("examId", examId.toString()).exchange();
+        MvcTestResult result = mvc.get().uri(EXCEL_URI).param("examId", examId.toString()).exchange();
 
         assertThat(result).hasStatus(403);
         verifyNoInteractions(exportExamScoresExcelUseCase);
@@ -182,7 +183,7 @@ class ExamResultControllerTests {
     @Test
     @WithMockUser(roles = "STUDENT")
     void preview_should_return_403_for_a_student() {
-        var result = mvc.get().uri("/api/v1/exam-results/finalize/preview")
+        MvcTestResult result = mvc.get().uri("/api/v1/exam-results/finalize/preview")
             .param("examId", examId.toString()).exchange();
 
         assertThat(result).hasStatus(403);

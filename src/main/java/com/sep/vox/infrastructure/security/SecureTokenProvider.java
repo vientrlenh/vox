@@ -45,12 +45,12 @@ public class SecureTokenProvider {
 
     private String hash(String raw, String method) {
         try {
-            var md = MessageDigest.getInstance(method);
-            var hashBytes = md.digest(raw.getBytes(StandardCharsets.UTF_8));
+            MessageDigest md = MessageDigest.getInstance(method);
+            byte[] hashBytes = md.digest(raw.getBytes(StandardCharsets.UTF_8));
 
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             for (byte b : hashBytes) {
-                var hex = Integer.toHexString(0xff & b);
+                String hex = Integer.toHexString(0xff & b);
                 if (hex.length() == 1) {
                     sb.append('0');
                 } 

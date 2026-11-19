@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.examsession;
 
+import com.sep.vox.domain.model.exam.ExamSession;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.query.ViewExamSessionQuery;
@@ -23,8 +24,8 @@ public class ViewExamSessionUseCase implements IUseCase<ViewExamSessionQuery, Ex
 
     @Override
     public ExamSessionResponse execute(ViewExamSessionQuery input) {
-        var session = examResultAccessService.getAuthorizedSession(input.sessionId());
-        var candidateBlocked = examCandidateRepository.findById(session.getCandidateId())
+        ExamSession session = examResultAccessService.getAuthorizedSession(input.sessionId());
+        Boolean candidateBlocked = examCandidateRepository.findById(session.getCandidateId())
             .map(candidate -> candidate.getBlockedAt() != null)
             .orElse(false);
         return new ExamSessionResponse(

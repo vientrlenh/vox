@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.recording;
 
 import java.time.Instant;
 
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,11 +40,11 @@ public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordi
         examSessionRepository.findById(input.examSessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi cho recording event: " + input.examSessionId()));
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         // Tra cứu kèm source: mỗi nguồn ingest chỉ cập nhật hàng của chính nó, nên hai đường
         // ingest của cùng một phiên thi cùng tồn tại thay vì đường về sau ghi đè đường về trước.
         // Việc chọn bản nào là bản chuẩn diễn ra ở đường đọc (GetExamRecordsUseCase).
-        var existing = examRecordingRepository.findByExamSessionIdAndStreamTypeAndSource(
+        Optional<ExamRecording> existing = examRecordingRepository.findByExamSessionIdAndStreamTypeAndSource(
             input.examSessionId(), input.streamType(), input.source());
 
         if (existing.isPresent()
@@ -57,7 +58,7 @@ public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordi
             return null;
         }
 
-        var recording = existing.orElseGet(() -> new ExamRecording(
+        ExamRecording recording = existing.orElseGet(() -> new ExamRecording(
             input.examSessionId(),
             input.candidateId(),
             input.streamType(),

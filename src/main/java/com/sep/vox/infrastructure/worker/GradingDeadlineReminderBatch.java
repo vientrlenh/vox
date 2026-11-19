@@ -1,6 +1,12 @@
 package com.sep.vox.infrastructure.worker;
 
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -54,41 +60,41 @@ public class GradingDeadlineReminderBatch {
     }
 
     /**
-     * {@code reminded_at} và dòng outbox cùng nằm trong MỘT transaction, nên thứ tự ghi
-     * không còn quan trọng: hoặc cả hai cùng commit, hoặc cả hai cùng mất và lô sau nhắc
-     * lại. Trước đây mail gửi sau commit nên phải đánh dấu trước, và đổi lại là một lỗi
-     * SMTP làm mất luôn lượt nhắc của phân công đó.
+     * {@code reminded_at} and the outbox row are in ONE transaction, so the write order
+     * no longer matters: either both commit, or both are lost and the next batch reminds
+     * again. Previously the mail was sent after commit so the marker had to be set first, and the trade-off was that an SMTP
+     * error lost the reminder of that assignment for good.
      *
-     * @return số phân công đã xử lý; {@code 0} nghĩa là hết tồn đọng
+     * @return the number of assignments processed; {@code 0} means the backlog is empty
      */
     @Transactional
     public int remindOnce(Instant threshold) {
-        var due = examGradingAssignmentRepository.findDueForReminder(threshold);
+        List<ExamGradingAssignment> due = examGradingAssignmentRepository.findDueForReminder(threshold);
         if (due.isEmpty()) {
             return 0;
         }
-        var now = Instant.now();
+        Instant now = Instant.now();
 
-        // Nạp kết quả + kỳ thi theo lô: một lô có thể tới vài trăm dòng, gọi lẻ từng
-        // dòng là N+1 ngay trong background.
-        var resultsById = examCandidateResultRepository.findByIdIn(
+        // Load results + exams in bulk: one batch can reach several hundred rows, and calling one
+        // row at a time is an N+1 right inside the background job.
+        Map<UUID, ExamCandidateResult> resultsById = examCandidateResultRepository.findByIdIn(
                 due.stream().map(assignment -> assignment.getCandidateResultId()).distinct().toList()).stream()
             .collect(Collectors.toMap(
                 result -> result.getId(), Function.identity(), (left, right) -> left));
-        // Giữ nguyên Exam thay vì chỉ rút lấy tên: thông báo còn cần id và loại bài để mở
-        // đúng màn hình chấm, mà lô này là chỗ duy nhất trong luồng còn cầm Exam trong tay.
-        var examsById = examRepository.findByIdIn(
+        // Keep the Exam as is instead of extracting only its name: the notification also needs the id and the exam kind to open
+        // the right grading screen, and this batch is the only place in the flow still holding the Exam in hand.
+        Map<UUID, Exam> examsById = examRepository.findByIdIn(
                 resultsById.values().stream().map(result -> result.getExamId()).distinct().toList()).stream()
             .collect(Collectors.toMap(
                 exam -> exam.getId(), Function.identity(), (left, right) -> left));
 
-        for (var assignment : due) {
+        for (ExamGradingAssignment assignment : due) {
             assignment.setRemindedAt(now);
             examGradingAssignmentRepository.save(assignment);
 
-            var result = resultsById.get(assignment.getCandidateResultId());
-            var exam = result == null ? null : examsById.get(result.getExamId());
-            var payload = new GradingDeadlineReminderPayloadV1(
+            ExamCandidateResult result = resultsById.get(assignment.getCandidateResultId());
+            Exam exam = result == null ? null : examsById.get(result.getExamId());
+            GradingDeadlineReminderPayloadV1 payload = new GradingDeadlineReminderPayloadV1(
                 assignment.getId(),
                 assignment.getTeacherId(),
                 exam == null ? null : exam.getName(),

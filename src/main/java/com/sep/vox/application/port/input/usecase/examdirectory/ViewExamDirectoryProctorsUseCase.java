@@ -36,7 +36,7 @@ public class ViewExamDirectoryProctorsUseCase
     @Override
     @Transactional(readOnly = true)
     public PageResult<ExamDirectoryUserInfo> execute(ViewExamDirectoryQuery input) {
-        var scope = examDirectoryAccessService.resolveByExamId(input.examId());
+        ExamDirectoryAccessService.ExamDirectoryScope scope = examDirectoryAccessService.resolveByExamId(input.examId());
 
         return examDirectoryQueryRepository.findUsersBySchoolId(
             scope.schoolId(),

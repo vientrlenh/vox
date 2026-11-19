@@ -30,7 +30,7 @@ class GradingSampleSelectorTests {
 
     @Test
     void should_take_everything_in_all_mode() {
-        var candidates = ids(7);
+        List<UUID> candidates = ids(7);
 
         assertThat(selector.select(GradingSampleSelectionMode.ALL, candidates, null, null, null))
             .containsExactlyElementsOf(candidates);
@@ -52,14 +52,14 @@ class GradingSampleSelectorTests {
 
     @Test
     void should_pick_distinct_results_when_sampling() {
-        var picked = selector.select(GradingSampleSelectionMode.RANDOM_PERCENT, ids(20), 50, null, null);
+        List<UUID> picked = selector.select(GradingSampleSelectionMode.RANDOM_PERCENT, ids(20), 50, null, null);
 
         assertThat(picked).hasSize(10).doesNotHaveDuplicates();
     }
 
     @Test
     void should_reject_a_percentage_outside_one_to_hundred() {
-        var candidates = ids(5);
+        List<UUID> candidates = ids(5);
 
         assertThatThrownBy(() ->
             selector.select(GradingSampleSelectionMode.RANDOM_PERCENT, candidates, 0, null, null))
@@ -74,13 +74,13 @@ class GradingSampleSelectorTests {
 
     @Test
     void should_rank_low_confidence_results_first() {
-        var confident = UUID.randomUUID();
-        var shaky = UUID.randomUUID();
-        var risks = List.of(
+        UUID confident = UUID.randomUUID();
+        UUID shaky = UUID.randomUUID();
+        List<GradingRiskInfo> risks = List.of(
             new GradingRiskInfo(confident, new BigDecimal("0.95"), new BigDecimal("8.00"), null),
             new GradingRiskInfo(shaky, new BigDecimal("0.30"), new BigDecimal("8.00"), null));
 
-        var picked = selector.select(
+        List<UUID> picked = selector.select(
             GradingSampleSelectionMode.RISK_BASED, List.of(confident, shaky), 50, null, risks);
 
         assertThat(picked).containsExactly(shaky);
@@ -88,14 +88,15 @@ class GradingSampleSelectorTests {
 
     @Test
     void should_rank_borderline_scores_first() {
-        var clear = UUID.randomUUID();
-        var borderline = UUID.randomUUID();
-        // Cùng độ tự tin; điểm sát ngưỡng đạt là chỗ chấm sai gây hậu quả nặng nhất.
-        var risks = List.of(
+        UUID clear = UUID.randomUUID();
+        UUID borderline = UUID.randomUUID();
+        // Same confidence; a score right at the pass threshold is where a grading mistake has the
+        // heaviest consequences.
+        List<GradingRiskInfo> risks = List.of(
             new GradingRiskInfo(clear, new BigDecimal("0.80"), new BigDecimal("8.50"), new BigDecimal("5.00")),
             new GradingRiskInfo(borderline, new BigDecimal("0.80"), new BigDecimal("5.05"), new BigDecimal("5.00")));
 
-        var picked = selector.select(
+        List<UUID> picked = selector.select(
             GradingSampleSelectionMode.RISK_BASED, List.of(clear, borderline), 50, null, risks);
 
         assertThat(picked).containsExactly(borderline);
@@ -103,22 +104,22 @@ class GradingSampleSelectorTests {
 
     @Test
     void should_keep_risk_ranking_stable_across_calls() {
-        var risks = List.of(
+        List<GradingRiskInfo> risks = List.of(
             new GradingRiskInfo(UUID.randomUUID(), new BigDecimal("0.50"), null, null));
-        var candidates = ids(4);
+        List<UUID> candidates = ids(4);
 
-        var first = selector.select(GradingSampleSelectionMode.RISK_BASED, candidates, null, null, risks);
-        var second = selector.select(GradingSampleSelectionMode.RISK_BASED, candidates, null, null, risks);
+        List<UUID> first = selector.select(GradingSampleSelectionMode.RISK_BASED, candidates, null, null, risks);
+        List<UUID> second = selector.select(GradingSampleSelectionMode.RISK_BASED, candidates, null, null, risks);
 
-        // Không có tín hiệu rủi ro thì hoà; hoà phải xếp theo id để hai lần gọi không
-        // ra hai thứ tự khác nhau.
+        // With no risk signal it is a tie; a tie must be ordered by id so two calls do not produce
+        // two different orders.
         assertThat(first).containsExactlyElementsOf(second);
     }
 
     @Test
     void should_take_only_the_ids_the_admin_listed() {
-        var candidates = ids(5);
-        var chosen = List.of(candidates.get(1), candidates.get(3));
+        List<UUID> candidates = ids(5);
+        List<UUID> chosen = List.of(candidates.get(1), candidates.get(3));
 
         assertThat(selector.select(GradingSampleSelectionMode.MANUAL_LIST, candidates, null, chosen, null))
             .containsExactlyElementsOf(chosen);
@@ -126,10 +127,10 @@ class GradingSampleSelectorTests {
 
     @Test
     void should_reject_a_manual_id_that_is_not_eligible() {
-        var candidates = ids(3);
+        List<UUID> candidates = ids(3);
 
-        // Bài không nằm trong pool nghĩa là sai trạng thái hoặc đã có người chấm —
-        // bỏ qua lặng lẽ sẽ khiến admin tưởng đã giao xong.
+        // A submission outside the pool means it is in the wrong state or someone has already
+        // graded it -- skipping it silently would make the admin think the assignment is done.
         assertThatThrownBy(() -> selector.select(
             GradingSampleSelectionMode.MANUAL_LIST, candidates, null, List.of(UUID.randomUUID()), null))
             .isInstanceOf(IllegalArgumentException.class)

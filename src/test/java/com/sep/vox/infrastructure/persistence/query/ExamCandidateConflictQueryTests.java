@@ -60,8 +60,9 @@ class ExamCandidateConflictQueryTests {
 
     @Test
     void should_find_a_student_booked_in_an_overlapping_schedule_of_another_exam() {
-        // Ca của kỳ thi khác chạy 09:00–11:00, chồng một giờ lên khung đang xét.
-        var busyScheduleId = seedSchedule(otherExamId, "PUBLISHED",
+        // A session of another exam runs 09:00-11:00, overlapping the window under test by one
+        // hour.
+        UUID busyScheduleId = seedSchedule(otherExamId, "PUBLISHED",
             windowStart.plus(1, ChronoUnit.HOURS), windowEnd.plus(1, ChronoUnit.HOURS));
         seedCandidate(otherExamId, studentId, busyScheduleId, "ASSIGNED");
 
@@ -74,14 +75,15 @@ class ExamCandidateConflictQueryTests {
 
     @Test
     void should_not_treat_back_to_back_schedules_as_a_conflict() {
-        // Ca kết thúc ĐÚNG lúc khung đang xét bắt đầu, và ca bắt đầu ĐÚNG lúc khung kết thúc.
-        // Biên nửa mở [start, end) nên cả hai đều không phải trùng giờ.
-        var before = seedSchedule(otherExamId, "PUBLISHED",
+        // A session that ends EXACTLY when the window under test starts, and a session that starts
+        // EXACTLY when the window ends. The boundary is half-open [start, end), so neither is an
+        // overlap.
+        UUID before = seedSchedule(otherExamId, "PUBLISHED",
             windowStart.minus(2, ChronoUnit.HOURS), windowStart);
         seedCandidate(otherExamId, studentId, before, "ASSIGNED");
 
-        var laterExamId = seedExam("Kỳ thi cuối kỳ");
-        var after = seedSchedule(laterExamId, "PUBLISHED", windowEnd, windowEnd.plus(2, ChronoUnit.HOURS));
+        UUID laterExamId = seedExam("Kỳ thi cuối kỳ");
+        UUID after = seedSchedule(laterExamId, "PUBLISHED", windowEnd, windowEnd.plus(2, ChronoUnit.HOURS));
         seedCandidate(laterExamId, studentId, after, "ASSIGNED");
 
         assertThat(conflicts()).isEmpty();
@@ -89,11 +91,11 @@ class ExamCandidateConflictQueryTests {
 
     @Test
     void should_ignore_exempted_and_cancelled_candidates() {
-        var exemptedSchedule = seedSchedule(otherExamId, "PUBLISHED", windowStart, windowEnd);
+        UUID exemptedSchedule = seedSchedule(otherExamId, "PUBLISHED", windowStart, windowEnd);
         seedCandidate(otherExamId, studentId, exemptedSchedule, "EXEMPTED");
 
-        var cancelledExamId = seedExam("Kỳ thi đã rút");
-        var cancelledSchedule = seedSchedule(cancelledExamId, "PUBLISHED", windowStart, windowEnd);
+        UUID cancelledExamId = seedExam("Kỳ thi đã rút");
+        UUID cancelledSchedule = seedSchedule(cancelledExamId, "PUBLISHED", windowStart, windowEnd);
         seedCandidate(cancelledExamId, studentId, cancelledSchedule, "CANCELLED");
 
         assertThat(conflicts()).isEmpty();
@@ -101,9 +103,9 @@ class ExamCandidateConflictQueryTests {
 
     @Test
     void should_ignore_schedules_that_are_not_draft_or_published() {
-        for (var status : List.of("COMPLETED", "MOVED", "CANCELLED", "DELETED")) {
-            var examId = seedExam("Kỳ thi " + status);
-            var scheduleId = seedSchedule(examId, status, windowStart, windowEnd);
+        for (String status : List.of("COMPLETED", "MOVED", "CANCELLED", "DELETED")) {
+            UUID examId = seedExam("Kỳ thi " + status);
+            UUID scheduleId = seedSchedule(examId, status, windowStart, windowEnd);
             seedCandidate(examId, studentId, scheduleId, "ASSIGNED");
         }
 
@@ -112,9 +114,10 @@ class ExamCandidateConflictQueryTests {
 
     @Test
     void should_still_report_blocked_candidates() {
-        // Bị chặn vào phòng vẫn là người thuộc ca đó — chỗ ngồi vẫn bị chiếm.
-        var busyScheduleId = seedSchedule(otherExamId, "DRAFT", windowStart, windowEnd);
-        var candidate = seedCandidateEntity(otherExamId, studentId, busyScheduleId, "ASSIGNED");
+        // Being blocked from the room, the person still belongs to that session -- the seat is
+        // still taken.
+        UUID busyScheduleId = seedSchedule(otherExamId, "DRAFT", windowStart, windowEnd);
+        ExamCandidateJpaEntity candidate = seedCandidateEntity(otherExamId, studentId, busyScheduleId, "ASSIGNED");
         candidate.setBlockedAt(now);
         em.flush();
         em.clear();
@@ -125,7 +128,7 @@ class ExamCandidateConflictQueryTests {
 
     @Test
     void should_honour_the_excluded_schedule_id() {
-        var busyScheduleId = seedSchedule(otherExamId, "PUBLISHED", windowStart, windowEnd);
+        UUID busyScheduleId = seedSchedule(otherExamId, "PUBLISHED", windowStart, windowEnd);
         seedCandidate(otherExamId, studentId, busyScheduleId, "ASSIGNED");
 
         assertThat(examCandidateRepository.findConflictsForStudents(
@@ -134,7 +137,7 @@ class ExamCandidateConflictQueryTests {
 
     @Test
     void should_only_report_the_students_asked_about() {
-        var busyScheduleId = seedSchedule(otherExamId, "PUBLISHED", windowStart, windowEnd);
+        UUID busyScheduleId = seedSchedule(otherExamId, "PUBLISHED", windowStart, windowEnd);
         seedCandidate(otherExamId, UUID.randomUUID(), busyScheduleId, "ASSIGNED");
 
         assertThat(conflicts()).isEmpty();

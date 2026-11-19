@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.exam;
 
+import com.sep.vox.application.response.input.examsession.ExamSessionResponse;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
@@ -80,11 +83,11 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
 
     @Override
     public ExamEntryTicketResponse execute(VerifyExamScheduleOtpCommand input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
-        var candidate = examCandidateRepository.findByExamIdAndStudentId(input.examId(), studentId)
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
+        ExamCandidate candidate = examCandidateRepository.findByExamIdAndStudentId(input.examId(), studentId)
             .orElseThrow(() -> new NotFoundException("Bạn không phải thí sinh của kỳ thi này"));
 
-        var exam = examRepository.findById(input.examId())
+        Exam exam = examRepository.findById(input.examId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
 
         // Chặn ngay ở cổng vào: vào thi được nhưng không ghi được dữ liệu giám sát thì bài thi coi
@@ -97,7 +100,7 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
             throw new IllegalStateException("Bài kiểm tra này không yêu cầu xác thực OTP, vui lòng dùng luồng bắt đầu trực tiếp");
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         if (candidate.getBlockedAt() != null) {
             throw new IllegalStateException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
         }
@@ -118,19 +121,19 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
             throw new IllegalStateException("Bạn chưa được gán đề thi");
         }
 
-        var schedule = examScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
+        ExamSchedule schedule = examScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
             .orElseThrow(() -> new NotFoundException("Ca thi không hợp lệ hoặc đã hết hạn"));
 
         if (!schedule.getExamId().equals(input.examId())) {
             throw new IllegalArgumentException("Ca thi không thuộc bài kiểm tra đã chọn");
         }
 
-        var expectedOtp = cacheManagerPort.get(CacheKey.examScheduleOtpKey(candidate.getScheduleId()));
+        String expectedOtp = cacheManagerPort.get(CacheKey.examScheduleOtpKey(candidate.getScheduleId()));
         if (expectedOtp == null || !expectedOtp.equals(input.otp())) {
             throw new UnauthorizedException("Mã OTP không đúng hoặc đã hết hạn");
         }
 
-        var resumableSession = findResumableSession(candidate.getId());
+        ExamSession resumableSession = findResumableSession(candidate.getId());
         if (resumableSession != null) {
             if (resumableSession.getStatus() == ExamSessionStatus.INTERRUPTED) {
                 updateExamSessionStatusUseCase.execute(
@@ -146,7 +149,7 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
         }
 
         if (exam.getMaxAttempt() != null) {
-            var usedAttempts = countUsedAttempts(candidate.getId());
+            long usedAttempts = countUsedAttempts(candidate.getId());
             if (usedAttempts >= exam.getMaxAttempt()) {
                 throw new DuplicatedException("Đã hết số lượt thi cho phép (" + exam.getMaxAttempt() + " lượt)");
             }
@@ -158,7 +161,7 @@ public class VerifyExamScheduleOtpUseCase implements IUseCase<VerifyExamSchedule
         schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId())
             .ifPresent(subscription -> schoolSubscriptionDebtGuardService.requireSchoolNotLocked(subscription.getSchoolId()));
 
-        var session = createExamSessionUseCase.execute(new CreateExamSessionCommand(
+        ExamSessionResponse session = createExamSessionUseCase.execute(new CreateExamSessionCommand(
             input.examId(),
             candidate.getId(),
             candidate.getAssignedPaperId()

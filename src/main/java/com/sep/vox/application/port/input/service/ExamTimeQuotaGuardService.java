@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.subscription.SchoolSubscription;
+import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -27,13 +29,13 @@ public class ExamTimeQuotaGuardService {
             return;
         }
 
-        var subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
+        SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
             .orElseThrow(() -> new PlanLimitExceededException(
                 "Trường chưa có gói subscription đang hoạt động, không thể gắn cấu trúc đề này."));
-        var plan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói subscription"));
 
-        var maxMinutes = plan.getMaxTimePerAttemptMin();
+        Integer maxMinutes = plan.getMaxTimePerAttemptMin();
         if (maxMinutes == null || maxMinutes <= 0) {
             return;
         }

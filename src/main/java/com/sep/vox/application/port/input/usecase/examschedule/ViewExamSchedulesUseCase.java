@@ -46,18 +46,18 @@ public class ViewExamSchedulesUseCase implements IUseCase<ViewExamSchedulesQuery
     @Override
     @Transactional(readOnly = true)
     public List<ExamScheduleDto> execute(ViewExamSchedulesQuery input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = userContextPort.getCurrentSchoolId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = userContextPort.getCurrentSchoolId();
         List<ExamSchedule> schedules;
         if (input.examId() != null) {
-            var exam = examRepository.findById(input.examId())
+            Exam exam = examRepository.findById(input.examId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
             schedules = resolveExamSchedules(exam, currentUserId, currentSchoolId);
         } else {
             schedules = examScheduleRepository.findBySchoolId(authorizeSchoolWide());
         }
 
-        var filtered = schedules.stream()
+        List<ExamSchedule> filtered = schedules.stream()
             .filter(schedule -> input.status() == null
                 || input.status() == schedule.getStatus())
             .filter(schedule -> input.startDate() == null
@@ -73,8 +73,8 @@ public class ViewExamSchedulesUseCase implements IUseCase<ViewExamSchedulesQuery
      * được phép; trả về schoolId để giới hạn kết quả theo đúng trường của người dùng.
      */
     private UUID authorizeSchoolWide() {
-        var currentSchoolId = userContextPort.getCurrentSchoolId();
-        var schoolAdmin = userContextPort.isSchoolAdmin();
+        UUID currentSchoolId = userContextPort.getCurrentSchoolId();
+        boolean schoolAdmin = userContextPort.isSchoolAdmin();
         if (schoolAdmin && currentSchoolId != null) {
             return currentSchoolId;
         }
@@ -82,19 +82,19 @@ public class ViewExamSchedulesUseCase implements IUseCase<ViewExamSchedulesQuery
     }
 
     private List<ExamSchedule> resolveExamSchedules(Exam exam, UUID currentUserId, UUID currentSchoolId) {
-        var schedules = examScheduleRepository.findByExamId(exam.getId());
+        List<ExamSchedule> schedules = examScheduleRepository.findByExamId(exam.getId());
         if (userContextPort.isSchoolAdmin()
                 && currentSchoolId != null
                 && currentSchoolId.equals(exam.getSchoolId())) {
             return schedules;
         }
         if (userContextPort.isTeacher()) {
-            var isChair = examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR);
+            boolean isChair = examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), currentUserId, ExamMemberRole.CHAIR);
             if (isChair) {
                 return schedules;
             }
-            var scheduleIds = schedules.stream().map(s -> s.getId()).toList();
-            var proctoredScheduleIds = examScheduleProctorRepository.findScheduleIdsByTeacherIdAndScheduleIdIn(currentUserId, scheduleIds);
+            List<UUID> scheduleIds = schedules.stream().map(s -> s.getId()).toList();
+            List<UUID> proctoredScheduleIds = examScheduleProctorRepository.findScheduleIdsByTeacherIdAndScheduleIdIn(currentUserId, scheduleIds);
             return examScheduleRepository.findByIdIn(proctoredScheduleIds);
         }
         throw new ForbiddenException("Quyền truy cập bị từ chối");

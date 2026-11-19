@@ -95,7 +95,7 @@ class AssignExamAppealReviewerUseCaseTests {
         when(examGradingQueryRepository.findTeacherIdsWithHumanEvaluation(candidateResultId))
             .thenReturn(Set.of(teacherWhoGraded));
         when(examGradingAssignmentRepository.save(any())).thenAnswer(invocation -> {
-            var saved = (ExamGradingAssignment) invocation.getArgument(0);
+            ExamGradingAssignment saved = (ExamGradingAssignment) invocation.getArgument(0);
             saved.setId(UUID.randomUUID());
             return saved;
         });
@@ -106,7 +106,7 @@ class AssignExamAppealReviewerUseCaseTests {
     }
 
     private ExamGradingAssignment captureSaved() {
-        var captor = ArgumentCaptor.forClass(ExamGradingAssignment.class);
+        ArgumentCaptor<ExamGradingAssignment> captor = ArgumentCaptor.forClass(ExamGradingAssignment.class);
         verify(examGradingAssignmentRepository).save(captor.capture());
         return captor.getValue();
     }
@@ -115,11 +115,12 @@ class AssignExamAppealReviewerUseCaseTests {
     void should_create_an_appeal_round_assignment() {
         useCase.execute(command(freshTeacher, null));
 
-        var assignment = captureSaved();
+        ExamGradingAssignment assignment = captureSaved();
         assertThat(assignment.getRoundType()).isEqualTo(GradingRoundType.APPEAL);
         assertThat(assignment.getAppealId()).isEqualTo(appealId);
         assertThat(assignment.getTeacherId()).isEqualTo(freshTeacher);
-        // Vòng phúc khảo là một dòng phân công như ba vòng kia — không còn bảng riêng.
+        // The appeal round is a row of assignment like the other three rounds -- there is no
+        // separate table anymore.
         assertThat(assignment.getActiveResultId()).isEqualTo(candidateResultId);
     }
 

@@ -1,10 +1,12 @@
 package com.sep.vox.application.port.input.usecase.examcandidate;
 
+import com.sep.vox.domain.model.exam.ExamSchedule;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -65,40 +67,40 @@ public class UpdateExamCandidatesAttendanceUseCase
     @Override
     @Transactional
     public List<ExamCandidateDto> execute(UpdateExamCandidatesAttendanceCommand input) {
-        var schedule = examScheduleRepository.findById(input.scheduleId())
+        ExamSchedule schedule = examScheduleRepository.findById(input.scheduleId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
         if (schedule.getStatus() != null && !schedule.getStatus().allowsAttendance()) {
             throw new IllegalStateException("Không thể điểm danh ca thi đã bị huỷ, dời hoặc xoá");
         }
-        var candidates = examCandidateRepository.findByScheduleId(schedule.getId());
+        List<ExamCandidate> candidates = examCandidateRepository.findByScheduleId(schedule.getId());
         if (candidates.isEmpty()) {
             return List.of();
         }
 
-        var exam = examRepository.findById(schedule.getExamId())
+        Exam exam = examRepository.findById(schedule.getExamId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của ca thi"));
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!hasAttendanceAccess(exam, schedule.getId(), currentUserId)) {
             throw new ForbiddenException("Bạn không phải giám thị của ca thi này");
         }
 
-        var now = Instant.now();
-        var windowStart = schedule.getStartDate().minus(30, ChronoUnit.MINUTES);
-        var windowEnd = schedule.getEndDate();
+        Instant now = Instant.now();
+        Instant windowStart = schedule.getStartDate().minus(30, ChronoUnit.MINUTES);
+        Instant windowEnd = schedule.getEndDate();
         if (now.isBefore(windowStart) || now.isAfter(windowEnd)) {
             throw new IllegalStateException("Chỉ được điểm danh trong khoảng 30 phút trước giờ bắt đầu đến khi kết thúc ca thi");
         }
 
-        var absentIds = new HashSet<>(input.candidateIds() == null ? List.<UUID>of() : input.candidateIds());
-        var scheduleCandidateIds = candidates.stream().map(candidate -> candidate.getId()).collect(Collectors.toSet());
+        Set<UUID> absentIds = new HashSet<>(input.candidateIds() == null ? List.<UUID>of() : input.candidateIds());
+        Set<UUID> scheduleCandidateIds = candidates.stream().map(candidate -> candidate.getId()).collect(Collectors.toSet());
         if (!scheduleCandidateIds.containsAll(absentIds)) {
             throw new IllegalArgumentException("Danh sách thí sinh điểm danh không hợp lệ");
         }
 
-        var changed = new ArrayList<ExamCandidate>();
-        for (var candidate : candidates) {
-            var shouldBeAbsent = absentIds.contains(candidate.getId());
+        List<ExamCandidate> changed = new ArrayList<ExamCandidate>();
+        for (ExamCandidate candidate : candidates) {
+            boolean shouldBeAbsent = absentIds.contains(candidate.getId());
             if (candidate.getStatus() == ExamCandidateStatus.EXEMPTED
                     || candidate.getStatus() == ExamCandidateStatus.CANCELLED
                     || candidate.getStatus() == ExamCandidateStatus.COMPLETED) {
@@ -132,10 +134,10 @@ public class UpdateExamCandidatesAttendanceUseCase
             return true;
         }
 
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         return isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(exam.getSchoolId());
     }

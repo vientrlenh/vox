@@ -73,7 +73,7 @@ class ExportExamScoresUseCaseTests {
     }
 
     private GradingAssignmentFilter capturedFilter() {
-        var captor = ArgumentCaptor.forClass(GradingAssignmentFilter.class);
+        ArgumentCaptor<GradingAssignmentFilter> captor = ArgumentCaptor.forClass(GradingAssignmentFilter.class);
         verify(examGradingQueryRepository).findScoreRows(captor.capture());
         return captor.getValue();
     }
@@ -89,11 +89,11 @@ class ExportExamScoresUseCaseTests {
 
     @Test
     void should_accept_a_schedule_only_scope() {
-        var scheduleId = UUID.randomUUID();
+        UUID scheduleId = UUID.randomUUID();
 
         useCase.execute(ExportExamScoresQuery.scopedTo(null, scheduleId, null));
 
-        var filter = capturedFilter();
+        GradingAssignmentFilter filter = capturedFilter();
         assertThat(filter.schoolId()).isEqualTo(schoolId);
         assertThat(filter.examId()).isNull();
         assertThat(filter.scheduleId()).isEqualTo(scheduleId);
@@ -127,12 +127,12 @@ class ExportExamScoresUseCaseTests {
 
     @Test
     void should_pass_the_screen_filters_through() {
-        var teacherId = UUID.randomUUID();
+        UUID teacherId = UUID.randomUUID();
 
         useCase.execute(new ExportExamScoresQuery(examId, null, teacherId, "RELEASED", "APPEAL",
             "COMPLETED", true, true, Boolean.TRUE, "  nguyen  ", "CLASS_TEST"));
 
-        var filter = capturedFilter();
+        GradingAssignmentFilter filter = capturedFilter();
         assertThat(filter.teacherId()).isEqualTo(teacherId);
         assertThat(filter.resultStatus()).isEqualTo("RELEASED");
         assertThat(filter.roundType()).isEqualTo("APPEAL");
@@ -143,13 +143,16 @@ class ExportExamScoresUseCaseTests {
         assertThat(filter.keyword()).isEqualTo("nguyen");
     }
 
-    /** Chuỗi rỗng từ query string là "không lọc"; để nguyên thì `cr.status = ''` ra file trống. */
+    /**
+     * An empty string from the query string means "no filter"; if left as it is, `cr.status = ''`
+     * produces an empty file.
+     */
     @Test
     void should_treat_a_blank_filter_as_no_filter() {
         useCase.execute(new ExportExamScoresQuery(examId, null, null, "", "  ", "",
             false, false, null, "   ", null));
 
-        var filter = capturedFilter();
+        GradingAssignmentFilter filter = capturedFilter();
         assertThat(filter.resultStatus()).isNull();
         assertThat(filter.roundType()).isNull();
         assertThat(filter.assignmentStatus()).isNull();
@@ -166,7 +169,7 @@ class ExportExamScoresUseCaseTests {
 
     @Test
     void should_neutralize_the_other_formula_triggers_too() {
-        for (var trigger : List.of("+", "-", "@")) {
+        for (String trigger : List.of("+", "-", "@")) {
             givenRowWithStudentName(trigger + "cmd");
 
             assertThat(export()).contains("\"'" + trigger + "cmd\"");

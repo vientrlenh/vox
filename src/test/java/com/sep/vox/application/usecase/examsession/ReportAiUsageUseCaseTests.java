@@ -58,12 +58,12 @@ class ReportAiUsageUseCaseTests {
         useCase = new ReportAiUsageUseCase(
             userContextPort, examSessionRepository, examCandidateRepository, recordAiUsageUseCase);
 
-        var session = new ExamSession();
+        ExamSession session = new ExamSession();
         session.setId(sessionId);
         session.setCandidateId(candidateId);
         session.setStatus(ExamSessionStatus.IN_PROGRESS);
 
-        var candidate = new ExamCandidate();
+        ExamCandidate candidate = new ExamCandidate();
         candidate.setId(candidateId);
         candidate.setStudentId(userId);
 
@@ -82,7 +82,7 @@ class ReportAiUsageUseCaseTests {
 
     @Test
     void delegatesEachUsageItemToRecordAiUsageUseCase() {
-        var items = List.of(usageItem(), usageItem());
+        List<RecordAiUsageCommand> items = List.of(usageItem(), usageItem());
 
         useCase.execute(new ReportAiUsageCommand(sessionId, items));
 

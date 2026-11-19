@@ -1,5 +1,7 @@
 package com.sep.vox.infrastructure.worker;
 
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamSession;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -40,10 +42,10 @@ public class ExamScheduleTimeoutGradingJob {
 
     @Scheduled(fixedDelay = 60000)
     public void run() {
-        var threshold = Instant.now().minus(GRACE_PERIOD);
-        for (var session : examSessionRepository.findPastScheduleEndCandidates(threshold)) {
+        Instant threshold = Instant.now().minus(GRACE_PERIOD);
+        for (ExamSession session : examSessionRepository.findPastScheduleEndCandidates(threshold)) {
             try {
-                var candidate = examCandidateRepository.findById(session.getCandidateId()).orElse(null);
+                ExamCandidate candidate = examCandidateRepository.findById(session.getCandidateId()).orElse(null);
                 if (candidate == null || candidate.getBlockedAt() != null) {
                     continue;
                 }

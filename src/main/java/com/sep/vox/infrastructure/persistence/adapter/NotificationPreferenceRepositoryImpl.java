@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.NotificationPreferenceJpaEntity;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,8 +30,8 @@ public class NotificationPreferenceRepositoryImpl implements NotificationPrefere
 
     @Override
     public NotificationPreference save(NotificationPreference preference) {
-        var entity = NotificationPreferenceMapper.toJpa(preference);
-        var saved = springDataNotificationPreferenceRepository.save(entity);
+        NotificationPreferenceJpaEntity entity = NotificationPreferenceMapper.toJpa(preference);
+        NotificationPreferenceJpaEntity saved = springDataNotificationPreferenceRepository.save(entity);
         return NotificationPreferenceMapper.toDomain(saved);
     }
 

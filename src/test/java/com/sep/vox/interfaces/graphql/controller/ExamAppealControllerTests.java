@@ -61,7 +61,7 @@ public class ExamAppealControllerTests {
 
         controller.appeals("PENDING", "Nam", 1, 5);
 
-        var captor = ArgumentCaptor.forClass(SearchExamAppealsQuery.class);
+        ArgumentCaptor<SearchExamAppealsQuery> captor = ArgumentCaptor.forClass(SearchExamAppealsQuery.class);
         org.mockito.Mockito.verify(viewExamAppealsUseCase).execute(captor.capture());
         assertThat(captor.getValue().status()).isEqualTo("PENDING");
         assertThat(captor.getValue().keyword()).isEqualTo("Nam");
@@ -72,7 +72,7 @@ public class ExamAppealControllerTests {
     void should_return_stats_from_use_case() {
         when(viewExamAppealStatsUseCase.execute()).thenReturn(new AppealStatsInfo(3, 2, 5, 1, 4));
 
-        var stats = controller.appealStats();
+        AppealStatsInfo stats = controller.appealStats();
 
         assertThat(stats.pending()).isEqualTo(3);
         assertThat(stats.processing()).isEqualTo(2);
@@ -81,14 +81,15 @@ public class ExamAppealControllerTests {
 
     @Test
     void should_pass_appeal_id_when_listing_reviewers() {
-        var appealId = UUID.randomUUID();
+        UUID appealId = UUID.randomUUID();
         when(viewAssignableReviewersUseCase.execute(any())).thenReturn(List.of());
 
         controller.appealReviewers(appealId, "Lan");
 
-        // appealId là bắt buộc để tính cờ xung đột lợi ích — thiếu nó thì ai cũng
-        // hiện conflicted = false và admin sẽ giao nhầm người đã từng chấm bài.
-        var captor = ArgumentCaptor.forClass(ViewAssignableReviewersQuery.class);
+        // appealId is required to compute the conflict-of-interest flag -- without it everyone
+        // shows conflicted = false and the admin will assign someone who has already graded the
+        // submission.
+        ArgumentCaptor<ViewAssignableReviewersQuery> captor = ArgumentCaptor.forClass(ViewAssignableReviewersQuery.class);
         org.mockito.Mockito.verify(viewAssignableReviewersUseCase).execute(captor.capture());
         assertThat(captor.getValue().appealId()).isEqualTo(appealId);
         assertThat(captor.getValue().keyword()).isEqualTo("Lan");
@@ -96,11 +97,11 @@ public class ExamAppealControllerTests {
 
     @Test
     void should_return_reviewers_with_load_and_conflict_flag() {
-        var reviewerId = UUID.randomUUID();
+        UUID reviewerId = UUID.randomUUID();
         when(viewAssignableReviewersUseCase.execute(any()))
             .thenReturn(List.of(new AppealReviewerLiteInfo(reviewerId, "Nguyễn Thị Lan", 3, true)));
 
-        var result = controller.appealReviewers(UUID.randomUUID(), "Lan");
+        List<AppealReviewerLiteInfo> result = controller.appealReviewers(UUID.randomUUID(), "Lan");
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).load()).isEqualTo(3);

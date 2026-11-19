@@ -61,11 +61,11 @@ public record SchoolFundingResponse(
      */
     public static SchoolFundingResponse of(BigDecimal examQuotaTotalVnd, BigDecimal examQuotaUsedVnd,
             BigDecimal committedToUsersVnd, SchoolBalance balance) {
-        var remaining = examQuotaTotalVnd.subtract(examQuotaUsedVnd).max(BigDecimal.ZERO);
-        var balanceVnd = balance == null ? BigDecimal.ZERO : balance.getBalanceVnd();
-        var locked = balance != null && balance.isInDebt();
-        var spendable = remaining.add(balanceVnd.max(BigDecimal.ZERO));
-        var committed = committedToUsersVnd == null ? BigDecimal.ZERO : committedToUsersVnd;
+        BigDecimal remaining = examQuotaTotalVnd.subtract(examQuotaUsedVnd).max(BigDecimal.ZERO);
+        BigDecimal balanceVnd = balance == null ? BigDecimal.ZERO : balance.getBalanceVnd();
+        boolean locked = balance != null && balance.isInDebt();
+        BigDecimal spendable = remaining.add(balanceVnd.max(BigDecimal.ZERO));
+        BigDecimal committed = committedToUsersVnd == null ? BigDecimal.ZERO : committedToUsersVnd;
 
         return new SchoolFundingResponse(
             DecimalText.of(remaining),

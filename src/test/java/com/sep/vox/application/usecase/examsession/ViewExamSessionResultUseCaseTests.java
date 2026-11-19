@@ -24,8 +24,11 @@ import com.sep.vox.application.port.input.usecase.examevaluation.ExamSessionResu
 import com.sep.vox.application.port.input.usecase.examevaluation.ExamSessionResultCalculator.ItemScore;
 import com.sep.vox.application.port.input.usecase.examevaluation.ExamSessionResultCalculator.SectionScore;
 import com.sep.vox.application.port.input.usecase.examsession.ViewExamSessionResultUseCase;
+import com.sep.vox.application.response.input.examsession.ExamCandidateResultResponse;
 import com.sep.vox.domain.model.exam.ExamCandidateResult;
 import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.exam.ExamItemEvaluation;
+import com.sep.vox.domain.model.exam.ExamItemResponse;
 import com.sep.vox.domain.model.exam.ExamSession;
 import com.sep.vox.domain.model.exam.ExamSessionStatus;
 import com.sep.vox.domain.repository.ExamCandidateResultRepository;
@@ -105,7 +108,7 @@ class ViewExamSessionResultUseCaseTests {
         givenAccess(true, false);
         givenResult(ExamCandidateResultStatus.PENDING_REVIEW);
 
-        var response = useCase.execute(new ViewExamSessionResultQuery(SESSION_ID));
+        ExamCandidateResultResponse response = useCase.execute(new ViewExamSessionResultQuery(SESSION_ID));
 
         assertThat(response.scoreVisible()).isFalse();
         assertThat(response.totalScore()).isNull();
@@ -119,9 +122,10 @@ class ViewExamSessionResultUseCaseTests {
         givenAccess(true, false);
         givenResult(ExamCandidateResultStatus.PENDING_REVIEW);
 
-        var response = useCase.execute(new ViewExamSessionResultQuery(SESSION_ID));
+        ExamCandidateResultResponse response = useCase.execute(new ViewExamSessionResultQuery(SESSION_ID));
 
-        // Trang phải mở được để học sinh biết bài đang chờ chấm, thay vì "không tìm thấy".
+        // The page must open so the student knows the submission is waiting for grading, instead of
+        // "not found".
         assertThat(response.status()).isEqualTo("PENDING_REVIEW");
         assertThat(response.sessionId()).isEqualTo(SESSION_ID);
     }
@@ -142,7 +146,7 @@ class ViewExamSessionResultUseCaseTests {
         givenResult(ExamCandidateResultStatus.RELEASED);
         givenCalculatedBreakdown();
 
-        var response = useCase.execute(new ViewExamSessionResultQuery(SESSION_ID));
+        ExamCandidateResultResponse response = useCase.execute(new ViewExamSessionResultQuery(SESSION_ID));
 
         assertThat(response.scoreVisible()).isTrue();
         assertThat(response.totalScore()).isEqualByComparingTo("7.50");
@@ -151,8 +155,8 @@ class ViewExamSessionResultUseCaseTests {
     }
 
     /**
-     * Vị từ cũ chỉ cho FINAL/RELEASED nên bài bị gắn cờ rồi chốt thành PASSED lại bị giấu
-     * khỏi chính chủ — lỗi tiềm ẩn được sửa cùng đợt này.
+     * The old predicate only allowed FINAL/RELEASED, so a submission that was flagged and then
+     * finalized as PASSED was hidden from its own owner -- a latent bug fixed in the same batch.
      */
     @Test
     void should_show_score_to_candidate_when_flagged_result_passed() {
@@ -160,7 +164,7 @@ class ViewExamSessionResultUseCaseTests {
         givenResult(ExamCandidateResultStatus.PASSED);
         givenCalculatedBreakdown();
 
-        var response = useCase.execute(new ViewExamSessionResultQuery(SESSION_ID));
+        ExamCandidateResultResponse response = useCase.execute(new ViewExamSessionResultQuery(SESSION_ID));
 
         assertThat(response.scoreVisible()).isTrue();
         assertThat(response.totalScore()).isEqualByComparingTo("7.50");
@@ -172,7 +176,7 @@ class ViewExamSessionResultUseCaseTests {
         givenResult(ExamCandidateResultStatus.PENDING_REVIEW);
         givenCalculatedBreakdown();
 
-        var response = useCase.execute(new ViewExamSessionResultQuery(SESSION_ID));
+        ExamCandidateResultResponse response = useCase.execute(new ViewExamSessionResultQuery(SESSION_ID));
 
         assertThat(response.scoreVisible()).isTrue();
         assertThat(response.totalScore()).isEqualByComparingTo("7.50");
@@ -184,7 +188,7 @@ class ViewExamSessionResultUseCaseTests {
         givenAccess(true, false);
         givenResult(ExamCandidateResultStatus.INVALID);
 
-        var response = useCase.execute(new ViewExamSessionResultQuery(SESSION_ID));
+        ExamCandidateResultResponse response = useCase.execute(new ViewExamSessionResultQuery(SESSION_ID));
 
         assertThat(response.scoreVisible()).isTrue();
         assertThat(response.sections()).isEmpty();
@@ -197,14 +201,14 @@ class ViewExamSessionResultUseCaseTests {
         givenAccess(true, false);
         givenResult(ExamCandidateResultStatus.RE_GRADING);
 
-        var response = useCase.execute(new ViewExamSessionResultQuery(SESSION_ID));
+        ExamCandidateResultResponse response = useCase.execute(new ViewExamSessionResultQuery(SESSION_ID));
 
         assertThat(response.scoreVisible()).isFalse();
         assertThat(response.status()).isEqualTo("RE_GRADING");
     }
 
     private void givenAccess(boolean candidateOwner, boolean flagged) {
-        var session = new ExamSession(
+        ExamSession session = new ExamSession(
             SESSION_ID, EXAM_ID, CANDIDATE_ID, PAPER_ID, Instant.now(), Instant.now(),
             ExamSessionStatus.GRADED, flagged, flagged ? "nghi vấn" : null);
         when(examResultAccessService.authorizeSession(SESSION_ID))
@@ -212,7 +216,7 @@ class ViewExamSessionResultUseCaseTests {
     }
 
     private void givenResult(ExamCandidateResultStatus status) {
-        var result = new ExamCandidateResult(
+        ExamCandidateResult result = new ExamCandidateResult(
             UUID.randomUUID(), EXAM_ID, CANDIDATE_ID, SESSION_ID, UUID.randomUUID(), 1,
             UUID.randomUUID(), UUID.randomUUID(), null, null,
             new BigDecimal("7.50"), status, null, null, Instant.now(), Instant.now(), null, null);
@@ -220,12 +224,13 @@ class ViewExamSessionResultUseCaseTests {
     }
 
     private void givenCalculatedBreakdown() {
-        // shouldIncludeBreakdown nay hỏi "mọi câu đã có bản chấm chưa" thay vì chỉ nhìn trạng
-        // thái, nên bài có bảng điểm phải có response VÀ evaluation khớp nhau.
-        var response = mock(com.sep.vox.domain.model.exam.ExamItemResponse.class);
+        // shouldIncludeBreakdown now asks "does every item have a graded version" instead of only
+        // looking at the status, so a submission with a score breakdown must have a response AND a
+        // matching evaluation.
+        ExamItemResponse response = mock(com.sep.vox.domain.model.exam.ExamItemResponse.class);
         when(response.getId()).thenReturn(RESPONSE_ID);
         when(examItemResponseRepository.findBySessionId(SESSION_ID)).thenReturn(List.of(response));
-        var evaluation = mock(com.sep.vox.domain.model.exam.ExamItemEvaluation.class);
+        ExamItemEvaluation evaluation = mock(com.sep.vox.domain.model.exam.ExamItemEvaluation.class);
         when(evaluation.getResponseId()).thenReturn(RESPONSE_ID);
         when(examItemEvaluationRepository.findByResponseIdIn(List.of(RESPONSE_ID)))
             .thenReturn(List.of(evaluation));

@@ -5,11 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
@@ -17,6 +14,7 @@ import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionCode;
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * {@code ApplicationRunner} KHÔNG được gọi trong {@code @SpringBootTest} -- đó là lý do một
@@ -26,11 +24,10 @@ import com.sep.vox.domain.valueobject.framework.FrameworkCriterionCode;
  * <p>Vì vậy ở đây gọi thẳng {@code run(null)} trên bean thật, với DB thật: khoá ngoại, ràng
  * buộc unique và phần serialize signals sang JSON chỉ lộ lỗi khi có lượt ghi thật sự.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class FrameworkInitializerTests extends ContainerTestConfig {
+class FrameworkInitializerTests {
 
     private static final String FRAMEWORK_CODE = "KNLNNVN";
     private static final String FRAMEWORK_VERSION_CODE = "KNLNNVN_V1";

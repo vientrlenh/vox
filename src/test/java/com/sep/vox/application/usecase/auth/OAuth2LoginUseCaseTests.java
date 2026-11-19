@@ -8,11 +8,13 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -41,36 +43,25 @@ import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
 
+@ExtendWith(MockitoExtension.class)
 class OAuth2LoginUseCaseTests {
 
+    @Mock
     private UserRepository userRepository;
+    @Mock
     private UserRoleQueryRepository userRoleQueryRepository;
+    @Mock
     private DeviceSessionRepository deviceSessionRepository;
+    @Mock
     private RefreshTokenRepository refreshTokenRepository;
+    @Mock
     private SchoolUserRepository schoolUserRepository;
+    @Mock
     private AuthTokenPort authTokenPort;
+    @Mock
     private SessionTokenManagerPort sessionTokenManagerPort;
+    @InjectMocks
     private OAuth2LoginUseCase oAuth2LoginUseCase;
-
-    @BeforeEach
-    void setUp() {
-        userRepository = mock(UserRepository.class);
-        userRoleQueryRepository = mock(UserRoleQueryRepository.class);
-        deviceSessionRepository = mock(DeviceSessionRepository.class);
-        refreshTokenRepository = mock(RefreshTokenRepository.class);
-        authTokenPort = mock(AuthTokenPort.class);
-        sessionTokenManagerPort = mock(SessionTokenManagerPort.class);
-        schoolUserRepository = mock(SchoolUserRepository.class);
-        oAuth2LoginUseCase = new OAuth2LoginUseCase(
-            userRepository,
-            userRoleQueryRepository,
-            deviceSessionRepository,
-            refreshTokenRepository,
-            authTokenPort,
-            sessionTokenManagerPort,
-            schoolUserRepository
-        );
-    }
 
     @Test
     void oauth2Login_should_return_tokens_when_google_email_matches_active_user() {

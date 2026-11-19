@@ -12,11 +12,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.infrastructure.persistence.entity.RoleJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.SchoolClassUserJpaEntity;
@@ -25,6 +22,7 @@ import com.sep.vox.infrastructure.persistence.entity.GradeLevelJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.SchoolUserJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.UserRoleJpaEntity;
+import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -37,11 +35,10 @@ import jakarta.persistence.PersistenceContext;
  * JPQL dựng bằng EntityManager không được compiler kiểm, sai tên entity/field chỉ nổ
  * lúc chạy.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class JpaExamDirectoryQueryRepositoryTests extends ContainerTestConfig {
+class JpaExamDirectoryQueryRepositoryTests {
 
     @Autowired
     private JpaExamDirectoryQueryRepository repository;

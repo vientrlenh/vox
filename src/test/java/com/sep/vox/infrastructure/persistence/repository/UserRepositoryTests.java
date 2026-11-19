@@ -8,12 +8,8 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
@@ -22,14 +18,13 @@ import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
 import com.sep.vox.infrastructure.persistence.adapter.UserRepositoryImpl;
+import com.sep.vox.support.RepositoryTest;
 
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import({
     UserRepositoryImpl.class
 })
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-public class UserRepositoryTests extends ContainerTestConfig {
+public class UserRepositoryTests {
     
     @Autowired
     private UserRepository userRepository;

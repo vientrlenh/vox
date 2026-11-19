@@ -7,24 +7,19 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.valueobject.LanguageCode;
 import com.sep.vox.infrastructure.persistence.adapter.SupportedLanguageRepositoryImpl;
+import com.sep.vox.support.RepositoryTest;
 
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import({
     SupportedLanguageRepositoryImpl.class
 })
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class SupportedLanguageRepositoryTests extends ContainerTestConfig {
+class SupportedLanguageRepositoryTests {
 
     @Autowired
     private SupportedLanguageRepository supportedLanguageRepository;

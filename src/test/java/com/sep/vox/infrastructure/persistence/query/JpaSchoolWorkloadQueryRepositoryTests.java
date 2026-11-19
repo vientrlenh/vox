@@ -9,13 +9,10 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.application.query.repository.SchoolWorkloadQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
+import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -29,11 +26,9 @@ import jakarta.persistence.PersistenceContext;
  * {@code GRADING_FAILED}. Đếm theo trạng thái phiên là xếp bài đã có người nhận vào nhóm "chưa ai xử
  * lý", và trên giao diện nó sẽ mời quản trị trường bấm chấm lại đè lên bài giáo viên đang chấm dở.
  */
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import(JpaSchoolWorkloadQueryRepository.class)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class JpaSchoolWorkloadQueryRepositoryTests extends ContainerTestConfig {
+class JpaSchoolWorkloadQueryRepositoryTests {
 
     private static final Instant NOW = Instant.parse("2026-09-01T03:00:00Z");
     private static final Instant SUBMITTED = Instant.parse("2026-08-27T02:14:00Z");

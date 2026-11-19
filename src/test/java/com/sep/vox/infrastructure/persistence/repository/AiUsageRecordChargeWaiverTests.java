@@ -8,14 +8,11 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
-import org.springframework.test.context.ActiveProfiles;
-
-import com.sep.vox.config.ContainerTestConfig;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+
+import com.sep.vox.support.RepositoryTest;
 
 /**
  * Chạy SQL THẬT: toàn bộ giá trị của V9 nằm ở chỗ hai câu UPDATE không giẫm lên nhau, và điều đó chỉ
@@ -25,10 +22,8 @@ import jakarta.persistence.PersistenceContext;
  * chấm hỏng không tạo ra gì nên không có gì để thu — nhưng lượt chấm THÀNH CÔNG trước đó thì có, và
  * không được hoàn lại.
  */
-@DataJpaTest
-@ActiveProfiles("test")
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class AiUsageRecordChargeWaiverTests extends ContainerTestConfig {
+@RepositoryTest
+class AiUsageRecordChargeWaiverTests {
 
     @Autowired
     private SpringDataAiUsageRecordRepository repository;

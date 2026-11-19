@@ -10,14 +10,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamScheduleJpaEntity;
+import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -34,11 +32,10 @@ import jakarta.persistence.PersistenceContext;
  * {@code exam_schedules.start_date}/{@code end_date} là NOT NULL, nên trạng thái đó không tồn tại
  * được trong DB -- unit test cũ dựng được nó chỉ vì đã giả lập repository và đi vòng qua schema.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class JpaStudentExamQueryRepositoryTests extends ContainerTestConfig {
+class JpaStudentExamQueryRepositoryTests {
 
     @Autowired
     private JpaStudentExamQueryRepository repository;

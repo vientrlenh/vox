@@ -9,14 +9,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolQuotaPolicy;
 import com.sep.vox.domain.repository.SchoolQuotaPolicyRepository;
+import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -28,11 +26,10 @@ import jakarta.persistence.PersistenceContext;
  * <p>Phép nhân ra "phần được chia" cũng nằm ở đây: nó là con số backend dùng để từ chối, và làm tròn
  * sai chiều một vài phần triệu đồng là đủ để một lần chia đúng luật bị chặn.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class SchoolQuotaPolicyTests extends ContainerTestConfig {
+class SchoolQuotaPolicyTests {
 
     @Autowired
     private SchoolQuotaPolicyRepository schoolQuotaPolicyRepository;

@@ -9,15 +9,13 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.GradingOutcome;
 import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
+import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -38,11 +36,10 @@ import jakarta.persistence.PersistenceContext;
  * <p>{@code SpringDataExamGradingAssignmentRepositoryTests} không phủ được: nó lưu các
  * entity MỚI, tức không có UPDATE nào để xếp sai thứ tự.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class ExamGradingAssignmentRepositoryImplTests extends ContainerTestConfig {
+class ExamGradingAssignmentRepositoryImplTests {
 
     @Autowired
     private ExamGradingAssignmentRepository repository;

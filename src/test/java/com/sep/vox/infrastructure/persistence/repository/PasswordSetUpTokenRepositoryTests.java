@@ -8,25 +8,20 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
 import com.sep.vox.infrastructure.persistence.adapter.PasswordSetUpTokenRepositoryImpl;
+import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
 
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import({
     PasswordSetUpTokenRepositoryImpl.class
 })
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class PasswordSetUpTokenRepositoryTests extends ContainerTestConfig {
+class PasswordSetUpTokenRepositoryTests {
 
     @Autowired
     private PasswordSetUpTokenRepository passwordSetUpTokenRepository;

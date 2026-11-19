@@ -12,19 +12,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.query.dto.GradingAssignmentFilter;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamGradingAssignmentJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamSessionJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
+import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -40,11 +38,10 @@ import jakarta.persistence.PersistenceContext;
  * <p>Phải chạy trên Postgres thật vì đây là JPQL dựng bằng {@code em.createQuery}: sai
  * tên trường chỉ nổ lúc GỌI chứ không lúc biên dịch.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class GradingExamKindFilterQueryTests extends ContainerTestConfig {
+class GradingExamKindFilterQueryTests {
 
     @Autowired
     private ExamGradingQueryRepository examGradingQueryRepository;

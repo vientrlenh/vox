@@ -10,13 +10,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamGradingAssignmentJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamItemCriterionScoreJpaEntity;
@@ -28,6 +25,7 @@ import com.sep.vox.infrastructure.persistence.entity.ExamPaperItemJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamPaperSectionJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.ExamSessionJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.RubricCriterionJpaEntity;
+import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -45,11 +43,10 @@ import jakarta.persistence.PersistenceContext;
  *       {@code ORDER BY} thì số thứ tự câu nhảy lung tung chứ không lỗi.</li>
  * </ul>
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class GradingTaskDetailQueryTests extends ContainerTestConfig {
+class GradingTaskDetailQueryTests {
 
     private static final String AI_SIGNALS_JSON = "{\"audioQuality\":0.82,\"audioGateStatus\":\"PASS\"}";
     private static final String AI_VALIDITY_JSON =

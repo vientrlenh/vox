@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -15,9 +14,12 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.SetUpPasswordCommand;
@@ -33,27 +35,19 @@ import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
 
+@ExtendWith(MockitoExtension.class)
 public class SetUpPasswordUseCaseTests {
 
+    @Mock
     private PasswordSetUpTokenRepository passwordSetUpTokenRepository;
+    @Mock
     private PasswordSetUpTokenPort passwordSetUpTokenPort;
+    @Mock
     private UserRepository userRepository;
+    @Mock
     private PasswordEncoderPort passwordEncoderPort;
+    @InjectMocks
     private SetUpPasswordUseCase setUpPasswordUseCase;
-
-    @BeforeEach
-    void setUp() {
-        passwordSetUpTokenRepository = mock(PasswordSetUpTokenRepository.class);
-        passwordSetUpTokenPort = mock(PasswordSetUpTokenPort.class);
-        userRepository = mock(UserRepository.class);
-        passwordEncoderPort = mock(PasswordEncoderPort.class);
-        setUpPasswordUseCase = new SetUpPasswordUseCase(
-            passwordSetUpTokenRepository,
-            passwordSetUpTokenPort,
-            userRepository,
-            passwordEncoderPort
-        );
-    }
 
     @Test
     void set_up_password_should_consume_token_update_password_and_activate_user() {

@@ -10,15 +10,13 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolDebtEvent;
 import com.sep.vox.domain.model.school.SchoolDebtEventType;
 import com.sep.vox.domain.repository.SchoolDebtEventRepository;
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * {@code chk_school_debt_events_shape_matches_event_type} là chốt chặn giữ cho hai nửa của bản sửa
@@ -37,11 +35,10 @@ import com.sep.vox.domain.repository.SchoolDebtEventRepository;
  *
  * <p>Xem SchoolBalanceQuerySmokeTests về lý do dùng {@code @SpringBootTest} thay vì slice.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class SchoolDebtEventShapeTests extends ContainerTestConfig {
+class SchoolDebtEventShapeTests {
 
     private static final String SHAPE_CONSTRAINT = "chk_school_debt_events_shape_matches_event_type";
 

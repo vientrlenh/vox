@@ -15,16 +15,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.exam.ExamGradingAssignment;
 import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
 import com.sep.vox.domain.model.exam.GradingOutcome;
 import com.sep.vox.domain.model.exam.GradingRoundType;
 import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * Khoá bi quan trên phân công chấm — thứ thay thế cột {@code version} đã bỏ.
@@ -37,10 +35,9 @@ import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
  * <p>Lớp này KHÔNG {@code @Transactional}: hai luồng phải nằm trong hai transaction
  * thật thì khoá mới có gì để chặn.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
-class ExamGradingAssignmentLockingTests extends ContainerTestConfig {
+class ExamGradingAssignmentLockingTests {
 
     /** Trần chờ cho mọi lần join luồng — để bug về khoá thành test đỏ, không thành build treo. */
     private static final int TIMEOUT_SECONDS = 20;

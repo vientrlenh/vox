@@ -2,14 +2,16 @@ package com.sep.vox.application.usecase.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.common.CacheKey;
 import com.sep.vox.application.exception.UnauthorizedException;
@@ -21,27 +23,19 @@ import com.sep.vox.application.port.output.PasswordEncoderPort;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
 
+@ExtendWith(MockitoExtension.class)
 public class ResetPasswordUseCaseTests {
 
+    @Mock
     private CacheManagerPort cacheManagerPort;
+    @Mock
     private UserRepository userRepository;
+    @Mock
     private OneTimePasswordPort oneTimePasswordPort;
+    @Mock
     private PasswordEncoderPort passwordEncoderPort;
+    @InjectMocks
     private ResetPasswordUseCase resetPasswordUseCase;
-
-    @BeforeEach
-    void setUp() {
-        cacheManagerPort = mock(CacheManagerPort.class);
-        userRepository = mock(UserRepository.class);
-        oneTimePasswordPort = mock(OneTimePasswordPort.class);
-        passwordEncoderPort = mock(PasswordEncoderPort.class);
-        resetPasswordUseCase = new ResetPasswordUseCase(
-            cacheManagerPort,
-            userRepository,
-            oneTimePasswordPort,
-            passwordEncoderPort
-        );
-    }
 
     @Test
     void reset_password_should_verify_otp_update_password_and_delete_otp() {

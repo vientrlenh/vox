@@ -11,8 +11,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -21,7 +19,6 @@ import com.sep.vox.application.port.input.command.LogoutCommand;
 import com.sep.vox.application.port.input.usecase.auth.LogoutUseCase;
 import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.domain.model.notification.NotificationDevice;
@@ -30,6 +27,7 @@ import com.sep.vox.domain.model.refreshtoken.RefreshToken;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
 import com.sep.vox.domain.repository.NotificationDeviceRepository;
 import com.sep.vox.domain.repository.RefreshTokenRepository;
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * Đăng xuất phải gỡ luôn thiết bị nhận thông báo của máy vừa đăng xuất.
@@ -55,8 +53,7 @@ import com.sep.vox.domain.repository.RefreshTokenRepository;
  * <p>Mỗi test dùng {@code userId} và {@code installationId} sinh mới, nên các dòng còn sót lại
  * không ảnh hưởng lẫn nhau; schema vốn cũng bị dựng lại theo vòng đời context.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 // application-test.yaml ghim pool ở 2, mà một lần đăng xuất giữ tới BA kết nối cùng lúc: giao dịch
 // ngoài của LogoutUseCase, giao dịch REQUIRES_NEW của revoke (giao dịch ngoài bị treo nhưng vẫn giữ
@@ -64,7 +61,7 @@ import com.sep.vox.domain.repository.RefreshTokenRepository;
 // callback AFTER_COMMIT chạy, vì Spring chỉ trả ở cleanupAfterCompletion. Với pool 2 thì listener
 // chờ hết 30 giây rồi chết vì "Connection is not available", chứ không phải vì lỗi giao dịch.
 @TestPropertySource(properties = "spring.datasource.hikari.maximum-pool-size=5")
-class LogoutNotificationDeviceCleanUpTests extends ContainerTestConfig {
+class LogoutNotificationDeviceCleanUpTests {
 
     private static final String DEVICE_ID = "lab-pc-01";
     private static final String OTHER_DEVICE_ID = "home-laptop";

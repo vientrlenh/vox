@@ -10,13 +10,10 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.application.query.repository.GradingFailureQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
+import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -27,11 +24,9 @@ import jakarta.persistence.PersistenceContext;
  * {@code IS NOT DISTINCT FROM}, {@code COUNT(...) FILTER}, và {@code COUNT(DISTINCT ...)} bỏ qua
  * null. Một test với repository giả sẽ khẳng định đúng những gì nó tự dựng ra.
  */
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import(JpaGradingFailureQueryRepository.class)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class JpaGradingFailureQueryRepositoryTests extends ContainerTestConfig {
+class JpaGradingFailureQueryRepositoryTests {
 
     private static final Instant WINDOW_FROM = Instant.parse("2026-08-17T00:00:00Z");
     private static final Instant WINDOW_TO = Instant.parse("2026-08-31T00:00:00Z");

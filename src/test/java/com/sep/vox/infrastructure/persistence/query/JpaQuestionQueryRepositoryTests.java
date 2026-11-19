@@ -7,12 +7,10 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.query.repository.QuestionQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * Câu JPQL của {@code JpaQuestionQueryRepository} được dựng bằng
@@ -23,11 +21,10 @@ import com.sep.vox.config.ContainerTestConfig;
  * cần query chạy được là đã phủ đúng phần rủi ro (cú pháp, tên entity, tên trường, kiểu
  * tham số). Phần "đếm đúng ai được xem gì" thuộc về test của use case.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class JpaQuestionQueryRepositoryTests extends ContainerTestConfig {
+class JpaQuestionQueryRepositoryTests {
 
     @Autowired
     private QuestionQueryRepository questionQueryRepository;

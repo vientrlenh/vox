@@ -9,16 +9,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanPeriod;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
 import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * Thang gói khởi tạo là thứ mọi buổi demo bắt đầu từ đó, nên hai điều phải chắc: nó dựng ĐỦ sáu gói
@@ -30,10 +28,9 @@ import com.sep.vox.domain.repository.SubscriptionPlanRepository;
  * <p>KHÔNG có {@code @Transactional}: dữ liệu được ghi lúc khởi động context, ngoài mọi transaction
  * của test, nên gói một transaction quanh test chẳng dọn được gì mà chỉ gây hiểu nhầm.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
-class SubscriptionPlanInitializerTests extends ContainerTestConfig {
+class SubscriptionPlanInitializerTests {
 
     /** Ngân sách AI mỗi loại hạn mức, tính bằng USD -- nguồn duy nhất sinh ra cả hạn mức lẫn giá. */
     private static final Map<String, Integer> EXPECTED_QUOTA_USD = Map.of(

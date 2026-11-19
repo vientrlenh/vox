@@ -9,17 +9,14 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
 import com.sep.vox.domain.model.exam.ExamItemEvaluation;
 import com.sep.vox.domain.model.exam.ExamItemEvaluationStatus;
 import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
 import com.sep.vox.infrastructure.persistence.adapter.ExamItemEvaluationRepositoryImpl;
+import com.sep.vox.support.RepositoryTest;
 
 /**
  * {@code findLatestAiByResponseId} cố ý KHÔNG lọc theo status — đó là điểm khác biệt duy
@@ -27,11 +24,9 @@ import com.sep.vox.infrastructure.persistence.adapter.ExamItemEvaluationReposito
  * viên chấm lại, bản AI mang SUPERSEDED nhưng nó vẫn là nơi duy nhất có lượt nói và bằng
  * chứng AI. Viết bằng Testcontainers vì cái cần kiểm là JPQL thật, không phải mock.
  */
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import(ExamItemEvaluationRepositoryImpl.class)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class ExamItemEvaluationRepositoryTests extends ContainerTestConfig {
+class ExamItemEvaluationRepositoryTests {
 
     @Autowired
     private ExamItemEvaluationRepository examItemEvaluationRepository;

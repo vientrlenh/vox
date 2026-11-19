@@ -10,11 +10,13 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -44,39 +46,27 @@ import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
 
+@ExtendWith(MockitoExtension.class)
 class RefreshUseCaseTests {
 
+    @Mock
     private DeviceSessionRepository deviceSessionRepository;
+    @Mock
     private RefreshTokenRepository refreshTokenRepository;
+    @Mock
     private UserRepository userRepository;
+    @Mock
     private UserRoleQueryRepository userRoleQueryRepository;
+    @Mock
     private SchoolUserRepository schoolUserRepository;
+    @Mock
     private SessionManagerPort sessionManagerPort;
-    private RefreshUseCase refreshUseCase;
+    @Mock
     private SessionTokenManagerPort sessionTokenManagerPort;
+    @Mock
     private AuthTokenPort authTokenPort;
-
-    @BeforeEach
-    void setUp() {
-        deviceSessionRepository = mock(DeviceSessionRepository.class);
-        refreshTokenRepository = mock(RefreshTokenRepository.class);
-        userRepository = mock(UserRepository.class);
-        userRoleQueryRepository = mock(UserRoleQueryRepository.class);
-        sessionManagerPort = mock(SessionManagerPort.class);
-        sessionTokenManagerPort = mock(SessionTokenManagerPort.class);
-        authTokenPort = mock(AuthTokenPort.class);
-        schoolUserRepository = mock(SchoolUserRepository.class);
-        refreshUseCase = new RefreshUseCase(
-            deviceSessionRepository,
-            refreshTokenRepository,
-            userRepository,
-            userRoleQueryRepository,
-            sessionTokenManagerPort,
-            sessionManagerPort,
-            authTokenPort,
-            schoolUserRepository
-        );
-    }
+    @InjectMocks
+    private RefreshUseCase refreshUseCase;
 
     @Test
     void refresh_should_rotate_token_when_request_is_valid() {

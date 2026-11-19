@@ -9,12 +9,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-
-import com.sep.vox.config.ContainerTestConfig;
 
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
@@ -24,15 +19,14 @@ import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolClassRepositoryImpl;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolClassUserRepositoryImpl;
+import com.sep.vox.support.RepositoryTest;
 
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import({
     SchoolClassRepositoryImpl.class,
     SchoolClassUserRepositoryImpl.class
 })
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class SchoolClassRepositoryTests extends ContainerTestConfig {
+class SchoolClassRepositoryTests {
 
     @Autowired
     private SchoolClassRepository schoolClassRepository;

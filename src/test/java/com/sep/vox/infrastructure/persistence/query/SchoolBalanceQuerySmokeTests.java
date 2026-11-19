@@ -10,16 +10,14 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolBalanceEntry;
 import com.sep.vox.domain.model.school.SchoolBalanceEntryType;
 import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
 import com.sep.vox.domain.repository.SchoolDebtEventRepository;
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * Hai repository này dựng câu bằng {@code @Query} viết tay, và Spring Data chỉ phân tích chúng lúc
@@ -35,11 +33,10 @@ import com.sep.vox.domain.repository.SchoolDebtEventRepository;
  * ...SmokeTests anh em, và 2,1s khi {@code @DataJpaTest} bắt Spring dựng thêm một context THỨ HAI chỉ
  * cho riêng nó. Trong CI không ai chạy lẻ một lớp, nên con số thứ hai mới là con số thật.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class SchoolBalanceQuerySmokeTests extends ContainerTestConfig {
+class SchoolBalanceQuerySmokeTests {
 
     @Autowired
     private SchoolBalanceEntryRepository schoolBalanceEntryRepository;

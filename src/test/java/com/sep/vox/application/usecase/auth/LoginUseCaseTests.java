@@ -8,13 +8,15 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 
@@ -43,39 +45,27 @@ import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
 
+@ExtendWith(MockitoExtension.class)
 public class LoginUseCaseTests {
 
+    @Mock
     private AuthenticationManagerPort authenticationManagerPort;
+    @Mock
     private UserRepository userRepository;
+    @Mock
     private UserRoleQueryRepository userRoleQueryRepository;
+    @Mock
     private SchoolUserRepository schoolUserRepository;
+    @Mock
     private AuthTokenPort authTokenPort;
+    @Mock
     private SessionTokenManagerPort sessionTokenManagerPort;
+    @Mock
     private DeviceSessionRepository deviceSessionRepository;
+    @Mock
     private RefreshTokenRepository refreshTokenRepository;
+    @InjectMocks
     private LoginUseCase loginUseCase;
-
-    @BeforeEach
-    void setUp() {
-        authenticationManagerPort = mock(AuthenticationManagerPort.class);
-        userRepository = mock(UserRepository.class);
-        userRoleQueryRepository = mock(UserRoleQueryRepository.class);
-        authTokenPort = mock(AuthTokenPort.class);
-        sessionTokenManagerPort = mock(SessionTokenManagerPort.class);
-        deviceSessionRepository = mock(DeviceSessionRepository.class);
-        refreshTokenRepository = mock(RefreshTokenRepository.class);
-        schoolUserRepository = mock(SchoolUserRepository.class);
-        loginUseCase = new LoginUseCase(
-            authenticationManagerPort,
-            userRepository,
-            userRoleQueryRepository,
-            authTokenPort,
-            sessionTokenManagerPort,
-            deviceSessionRepository,
-            refreshTokenRepository,
-            schoolUserRepository
-        );
-    }
 
     @Test
     void login_should_return_tokens_when_credentials_are_valid() {

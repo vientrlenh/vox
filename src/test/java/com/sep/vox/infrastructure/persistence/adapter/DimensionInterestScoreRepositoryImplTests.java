@@ -9,12 +9,10 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.repository.DimensionInterestScoreRepository;
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * Học sinh làm lại quiz sở thích -- mọi lần thứ hai trở đi -- gọi {@code replaceScores} với cùng
@@ -24,11 +22,10 @@ import com.sep.vox.domain.repository.DimensionInterestScoreRepository;
  * bất kể thứ tự gọi trong code -- unit test với repository giả lập không bao giờ thấy được điều
  * này, vì mock không có hàng đợi flush nào cả.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class DimensionInterestScoreRepositoryImplTests extends ContainerTestConfig {
+class DimensionInterestScoreRepositoryImplTests {
 
     @Autowired
     private DimensionInterestScoreRepository repository;

@@ -10,12 +10,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.query.repository.MonitoredExamQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
+import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -31,11 +29,10 @@ import jakarta.persistence.PersistenceContext;
  * <p>Bốn tổ hợp dưới đây là bốn CÂU khác nhau, không phải bốn cách gọi một câu: mỗi tham số nullable
  * ghép hoặc bỏ một mệnh đề, nên chỉ chạy một tổ hợp là để ba câu còn lại không ai đọc.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class MonitoredExamQuerySmokeTests extends ContainerTestConfig {
+class MonitoredExamQuerySmokeTests {
 
     private static final Duration LEAD = Duration.ofMinutes(30);
 

@@ -13,15 +13,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.TypeFilter;
 import org.springframework.graphql.execution.GraphQlSource;
-import org.springframework.test.context.ActiveProfiles;
-
-import com.sep.vox.config.ContainerTestConfig;
 
 import graphql.schema.GraphQLEnumType;
+
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * Mọi enum trong SDL phải liệt kê ĐỦ hằng số của enum Java cùng tên.
@@ -38,10 +36,9 @@ import graphql.schema.GraphQLEnumType;
  * <p>Quét theo TÊN ĐƠN GIẢN. Enum SDL không có enum Java cùng tên thì bỏ qua -- nhiều enum của SDL
  * là hình chiếu riêng của tầng đọc (SchoolRiskBucket, AiCostGranularity...) chứ không mirror cái gì.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
-class GraphQlEnumParityTests extends ContainerTestConfig {
+class GraphQlEnumParityTests {
 
     private static final String DOMAIN_PACKAGE = "com.sep.vox.domain.model";
 

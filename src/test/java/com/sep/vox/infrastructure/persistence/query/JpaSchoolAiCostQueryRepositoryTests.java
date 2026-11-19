@@ -10,13 +10,10 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.application.query.repository.SchoolAiCostQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
+import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -26,11 +23,9 @@ import jakarta.persistence.PersistenceContext;
  * vụ, {@code COALESCE(SUM(...))} trên tập rỗng, và một {@code LEFT JOIN} phải không được nhân đôi
  * tổng tiền.
  */
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import(JpaSchoolAiCostQueryRepository.class)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class JpaSchoolAiCostQueryRepositoryTests extends ContainerTestConfig {
+class JpaSchoolAiCostQueryRepositoryTests {
 
     private static final Instant FROM = Instant.parse("2026-08-01T00:00:00Z");
     private static final Instant TO = Instant.parse("2026-09-01T00:00:00Z");

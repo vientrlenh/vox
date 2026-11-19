@@ -7,24 +7,21 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.school.SchoolDirectoryOrigin;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * Cùng lý do với FrameworkInitializerTests: {@code ApplicationRunner} KHÔNG được gọi trong
  * {@code @SpringBootTest}, nên phải gọi thẳng {@code run(null)} trên bean thật với DB thật --
  * ràng buộc unique trên school_directories.code chỉ lộ khi có lượt ghi thật.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class SchoolDirectoryInitializerTests extends ContainerTestConfig {
+class SchoolDirectoryInitializerTests {
 
     /** Số dòng trong school/school-directory-seed.json, sinh từ file Excel nghiệp vụ. */
     private static final int SEED_COUNT = 71;

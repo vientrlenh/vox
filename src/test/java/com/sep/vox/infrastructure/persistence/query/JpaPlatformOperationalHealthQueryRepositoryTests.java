@@ -10,14 +10,11 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.application.query.repository.PlatformOperationalHealthQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.common.ZoneConstant;
+import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -29,11 +26,9 @@ import jakarta.persistence.PersistenceContext;
  * chỉ lộ ra khi có DB thật — đúng loại bẫy đã gây ClassCastException ở
  * {@code JpaTokenUsageTimeseriesQueryRepository}.
  */
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import(JpaPlatformOperationalHealthQueryRepository.class)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class JpaPlatformOperationalHealthQueryRepositoryTests extends ContainerTestConfig {
+class JpaPlatformOperationalHealthQueryRepositoryTests {
 
     @Autowired
     private PlatformOperationalHealthQueryRepository repository;

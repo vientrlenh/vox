@@ -8,14 +8,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.query.dto.GradingAssignmentFilter;
 import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
 import com.sep.vox.application.query.repository.ExamResultAuditQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * Mọi câu ở hai repository này dựng bằng {@code em.createQuery} — tức chỉ được phân
@@ -27,11 +25,10 @@ import com.sep.vox.config.ContainerTestConfig;
  * <p>Lớp này chạy từng method một lần với phạm vi rỗng. Không kiểm nghiệp vụ — cái đó
  * là việc của test use case — chỉ kiểm "câu này chạy được trên Postgres thật".
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class GradingQueryRepositorySmokeTests extends ContainerTestConfig {
+class GradingQueryRepositorySmokeTests {
 
     @Autowired
     private ExamGradingQueryRepository examGradingQueryRepository;

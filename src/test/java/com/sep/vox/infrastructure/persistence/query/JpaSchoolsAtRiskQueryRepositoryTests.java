@@ -11,15 +11,12 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.application.query.dto.SchoolRiskBucket;
 import com.sep.vox.application.query.repository.PlatformBusinessHealthQueryRepository;
 import com.sep.vox.application.query.repository.SchoolsAtRiskQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
+import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -32,11 +29,9 @@ import jakarta.persistence.PersistenceContext;
  * repository trên cùng một tập dữ liệu và so hai kết quả — đó là lỗi mà bản thiết kế cảnh báo: bấm
  * vào thẻ ghi 5 rồi thấy 9 dòng.
  */
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import({ JpaSchoolsAtRiskQueryRepository.class, JpaPlatformBusinessHealthQueryRepository.class })
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class JpaSchoolsAtRiskQueryRepositoryTests extends ContainerTestConfig {
+class JpaSchoolsAtRiskQueryRepositoryTests {
 
     private static final Instant NOW = Instant.parse("2026-08-30T05:00:00Z");
     private static final Instant EXPIRING_THROUGH = NOW.plus(30, ChronoUnit.DAYS);

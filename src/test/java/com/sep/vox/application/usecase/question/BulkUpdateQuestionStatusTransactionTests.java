@@ -13,15 +13,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.port.input.command.BulkUpdateQuestionStatusCommand;
 import com.sep.vox.application.port.input.usecase.question.BulkUpdateQuestionStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
@@ -32,6 +29,7 @@ import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * Cập nhật trạng thái hàng loạt phải là "thành công một phần", không phải "được ăn cả ngã về không".
@@ -46,10 +44,9 @@ import com.sep.vox.domain.repository.QuestionRepository;
  * <p>Lớp này KHÔNG {@code @Transactional}: transaction của use case phải là transaction ngoài cùng
  * thì mới tới lượt commit — chính là chỗ exception được ném ra.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
-class BulkUpdateQuestionStatusTransactionTests extends ContainerTestConfig {
+class BulkUpdateQuestionStatusTransactionTests {
 
     @Autowired
     private BulkUpdateQuestionStatusUseCase bulkUpdateQuestionStatusUseCase;

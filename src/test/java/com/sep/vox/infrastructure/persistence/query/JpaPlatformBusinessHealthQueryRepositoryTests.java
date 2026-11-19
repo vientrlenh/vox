@@ -11,14 +11,11 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
 import com.sep.vox.application.query.repository.PlatformBusinessHealthQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.common.ZoneConstant;
+import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -31,11 +28,9 @@ import jakarta.persistence.PersistenceContext;
  * đếm theo dòng sẽ vừa cộng trùng vừa xếp một trường đang dùng tốt vào nhóm "đã hết hạn" chỉ vì kỳ
  * năm ngoái của nó đã kết thúc. Đó là chỗ dễ sai nhất trong cả hai repository mới.
  */
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import(JpaPlatformBusinessHealthQueryRepository.class)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class JpaPlatformBusinessHealthQueryRepositoryTests extends ContainerTestConfig {
+class JpaPlatformBusinessHealthQueryRepositoryTests {
 
     @Autowired
     private PlatformBusinessHealthQueryRepository repository;

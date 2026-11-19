@@ -185,10 +185,16 @@ src/main/resources/
   db/migration/      Flyway migrations
   templates/         email templates
 src/test/            unit, slice and architecture tests
+docs/                implementation plans, one HTML file per plan (docs/<plan-name>/index.html)
+.claude/skills/      agent skills: write-plan, implement-plan, verify-plan
 ```
+
+Larger changes are planned first with `write-plan`, executed with `implement-plan` and checked with `verify-plan`.
+The plans live in `docs/` and track the status of every phase and job.
 
 ## CI/CD
 
 - **CI** (`.github/workflows/ci-build.yml`): runs `./gradlew clean build --no-daemon` on JDK 25 for pushes and pull requests to `default`.
 - **CD** (`.github/workflows/cd.yml`): builds the Docker image, pushes it to ECR, and updates the image tag in the Helm repository.
+- **CD Test** (`.github/workflows/cd-test.yml`): the same image build and push, triggered directly by a push to one temporary test branch. It has no CI gate, and the branch name inside the file must match the branch you are working on.
 - **Security**: CodeQL analysis runs from `.github/workflows/codeql-analysis.yml`.

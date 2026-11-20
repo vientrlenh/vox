@@ -79,7 +79,7 @@
 <h1>REST typed request inputs and malformed-request handling plan</h1>
 <div class="meta">
   Repository: <code>vox</code> &middot; Branch: <code>refactor/rewritten</code> &middot; Written 2026-11-20 &middot;
-  Plan status: <span class="status draft" id="plan-status" data-plan-status="draft">Draft</span>
+  Plan status: <span class="status approved" id="plan-status" data-plan-status="approved">Approved</span>
 </div>
 
 <p>REST controllers and the command records behind them still take enum-like and date-like values as <code>String</code>.
@@ -656,7 +656,7 @@ already covered by the in-progress <code>graphql-typed-scalars-plan</code> and a
 
 <h2 id="risks">4. Risks</h2>
 <ul>
-  <li><strong>Breaking REST clients.</strong> Strict dates (D3 = A), exact enum names (D2 = A) and the new 400 bodies change what clients may send and see. Limited by D8: one merge with one frontend change list, and by
+  <li><strong>Breaking REST clients.</strong> Strict dates (D3 = A), the rejection of unknown enum values and the new 400 bodies change what clients may send and see. Limited by D8: one merge with one frontend change list, and by
       job 11.2 listing every changed field.</li>
   <li><strong>Collision with <code>graphql-typed-scalars-plan</code>.</strong> Both edit commands, shared DTOs and mappers. D7 = A sequences them; job 2.1 re-measures before editing.</li>
   <li><strong>REST and GraphQL disagree on case.</strong> With D2 REST accepts <code>sum</code> or <code>SUM</code>, while GraphQL enums stay exact. Documented in the frontend change list (job 11.2); the contract is lenient on input only, responses always use the constant name.</li>
@@ -697,6 +697,8 @@ Run the <code>verify-plan</code> skill after the last phase.</p>
     <tr><td>2026-11-20</td><td>Approval deferred; plan stays Draft</td><td>The user chose to wait until <code>graphql-typed-scalars-plan</code> is done</td></tr>
     <tr><td>2026-11-20</td><td>D5&ndash;D9 answered; no plan edit needed</td><td>Recommended options chosen; phases 9 and 10 stay in, the guard test (11.1) stays in, migration phases wait for the GraphQL plan</td></tr>
     <tr><td>2026-11-20</td><td>D1&ndash;D4 answered; job 1.4 added (case-insensitive enum binding); phase 1 now needs D2</td><td>D2 = case-insensitive needs binding configuration before the migration phases</td></tr>
+    <tr><td>2026-11-20</td><td>Risks: removed stale "exact enum names (D2 = A)" wording</td><td>D2 was answered case-insensitive; the risk text still described the recommended option</td></tr>
+    <tr><td>2026-11-20</td><td>Approved</td><td>The user asked to approve the plan with all nine decisions answered. Phase 1 may start now; phases 2&ndash;11 wait for <code>graphql-typed-scalars-plan</code> (D7)</td></tr>
   </tbody>
 </table></div>
 

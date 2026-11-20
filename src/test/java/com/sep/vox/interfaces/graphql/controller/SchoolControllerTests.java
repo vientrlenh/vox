@@ -209,7 +209,7 @@ class SchoolControllerTests {
         SchoolClassDto response = schoolClassDto(schoolId, UUID.randomUUID(), UUID.randomUUID());
         SchoolDto expected = new SchoolDto(schoolId, "SCH", "School", null, null, null, null, null, 0, true, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
-        DataLoader loader = mock(DataLoader.class);
+        DataLoader<UUID, SchoolDto> loader = mock(DataLoader.class);
         when(env.<UUID, SchoolDto>getDataLoader("schoolByClass")).thenReturn(loader);
         when(loader.load(schoolId)).thenReturn(CompletableFuture.completedFuture(expected));
 
@@ -227,7 +227,7 @@ class SchoolControllerTests {
         SchoolClassDto response = schoolClassDto(schoolId, UUID.randomUUID(), gradeId);
         SchoolGradeDto expected = new SchoolGradeDto(gradeId, schoolId, UUID.randomUUID(), "G10", "Grade 10", null, null, null, "ACTIVE", null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
-        DataLoader loader = mock(DataLoader.class);
+        DataLoader<UUID, SchoolGradeDto> loader = mock(DataLoader.class);
         when(env.<UUID, SchoolGradeDto>getDataLoader("schoolGradeByClass")).thenReturn(loader);
         when(loader.load(gradeId)).thenReturn(CompletableFuture.completedFuture(expected));
 
@@ -244,7 +244,7 @@ class SchoolControllerTests {
         SchoolClassDto response = schoolClassDto(UUID.randomUUID(), languageId, UUID.randomUUID());
         SupportedLanguageDto expected = new SupportedLanguageDto(languageId, "EN", "English", null, true, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
-        DataLoader loader = mock(DataLoader.class);
+        DataLoader<UUID, SupportedLanguageDto> loader = mock(DataLoader.class);
         when(env.<UUID, SupportedLanguageDto>getDataLoader("supportedLanguageByClass")).thenReturn(loader);
         when(loader.load(languageId)).thenReturn(CompletableFuture.completedFuture(expected));
 
@@ -402,7 +402,7 @@ class SchoolControllerTests {
         SchoolUserDto response = schoolUserDto(UUID.randomUUID(), schoolId, userId);
         UserDto expected = new UserDto(userId, "student@example.com", null, "Student", null, null, null, null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
-        DataLoader loader = mock(DataLoader.class);
+        DataLoader<UUID, UserDto> loader = mock(DataLoader.class);
         when(env.<UUID, UserDto>getDataLoader("userBySchoolUser")).thenReturn(loader);
         when(loader.load(userId)).thenReturn(CompletableFuture.completedFuture(expected));
 

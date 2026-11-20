@@ -147,6 +147,18 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateExa
 - When the task itself is a repo-wide rename, change every occurrence (identifiers, files, DB/GraphQL/Kafka/URL names,
   config keys, docs), then report cross-system impact (topics, event types, env vars, DB names, URL paths).
 
+## Memory and sources of truth
+
+- Do not rely on local agent memory (for example `~/.claude/projects/*/memory/`, `MEMORY.md`, or any per-machine notes).
+  It is not shared between people or machines, it can be stale, and it is not reviewed. Do not read it to decide how to
+  work, and do not write to it.
+- Use git as the only source of project context: the working tree, `git log`, `git diff`, `git blame`, and branches.
+  When you need to know why something changed or what was decided, look there first.
+- If something must be remembered for later tasks (a convention, a decision, a rename, a known problem), put it in a file
+  tracked by git (this `AGENTS.md`, `README.md`, or `docs/`) and tell the user in the final report, instead of saving it
+  to local memory. Changing `AGENTS.md` still needs the user's confirmation (see Refactoring stage notice).
+- If local memory and the repository disagree, the repository wins.
+
 ## Coding rules
 
 - **Small functions.** A function or method is at most 25 lines, counted from its signature to its closing brace. A very

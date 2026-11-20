@@ -108,7 +108,7 @@ class MyClassControllerTests {
             "ENG-01", "English 01", null, "ACTIVE", null, null);
         SchoolGradeDto expected = new SchoolGradeDto(gradeId, schoolId, UUID.randomUUID(), "G10", "Grade 10", null, null, null, "ACTIVE", null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
-        DataLoader loader = mock(DataLoader.class);
+        DataLoader<UUID, SchoolGradeDto> loader = mock(DataLoader.class);
         when(env.<UUID, SchoolGradeDto>getDataLoader("schoolGradeByClass")).thenReturn(loader);
         when(loader.load(gradeId)).thenReturn(CompletableFuture.completedFuture(expected));
 
@@ -124,7 +124,7 @@ class MyClassControllerTests {
             "ENG-01", "English 01", null, "ACTIVE", null, null);
         SupportedLanguageDto expected = new SupportedLanguageDto(languageId, "EN", "English", null, true, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
-        DataLoader loader = mock(DataLoader.class);
+        DataLoader<UUID, SupportedLanguageDto> loader = mock(DataLoader.class);
         when(env.<UUID, SupportedLanguageDto>getDataLoader("supportedLanguageByClass")).thenReturn(loader);
         when(loader.load(languageId)).thenReturn(CompletableFuture.completedFuture(expected));
 
@@ -137,7 +137,7 @@ class MyClassControllerTests {
     void my_class_active_member_count_should_load_by_class_id() {
         SchoolClassDto schoolClass = schoolClassDto();
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
-        DataLoader loader = mock(DataLoader.class);
+        DataLoader<UUID, Integer> loader = mock(DataLoader.class);
         when(env.<UUID, Integer>getDataLoader("activeMemberCountByClass")).thenReturn(loader);
         when(loader.load(classId)).thenReturn(CompletableFuture.completedFuture(7));
 
@@ -152,7 +152,7 @@ class MyClassControllerTests {
         SchoolClassUserDto member = memberDto(userId);
         UserDto expected = userDto(userId);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
-        DataLoader loader = mock(DataLoader.class);
+        DataLoader<UUID, UserDto> loader = mock(DataLoader.class);
         when(env.<UUID, UserDto>getDataLoader("userBySchoolClassUser")).thenReturn(loader);
         when(loader.load(userId)).thenReturn(CompletableFuture.completedFuture(expected));
 
@@ -165,7 +165,7 @@ class MyClassControllerTests {
     void my_class_member_role_codes_should_flatten_roles_to_codes() {
         UUID userId = UUID.randomUUID();
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
-        DataLoader loader = mock(DataLoader.class);
+        DataLoader<UserRolesKey, List<RoleDto>> loader = mock(DataLoader.class);
         when(env.<UserRolesKey, List<RoleDto>>getDataLoader("rolesByUser")).thenReturn(loader);
         when(loader.load(new UserRolesKey(userId))).thenReturn(CompletableFuture.completedFuture(List.of(
             new RoleDto(UUID.randomUUID(), "TEACHER", "Giáo viên", null, null),

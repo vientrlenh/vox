@@ -113,7 +113,7 @@ public class CreateExamAppealUseCaseTests {
 
     @SuppressWarnings("unchecked")
     private List<ExamResultAppealItem> captureSavedItems() {
-        ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<List<ExamResultAppealItem>> captor = ArgumentCaptor.forClass(List.class);
         verify(examResultAppealItemRepository).saveAll(captor.capture());
         return captor.getValue();
     }
@@ -335,7 +335,7 @@ public class CreateExamAppealUseCaseTests {
             .isInstanceOf(NotFoundException.class)
             .hasMessageContaining("câu trả lời");
 
-        verify(examResultAppealRepository, never()).save(any());
+        verify(examResultAppealRepository, never()).save(any());    
     }
 
     @Test

@@ -22,8 +22,8 @@ public final class SessionRowMapper {
             row.getAbandonDiagnosis(),
             row.getOverallScore(),
             row.getGradedSeconds(),
-            row.getStartedAt(),
-            row.getEndedAt(),
+            row.getStartedAt().toString(),
+            row.getEndedAt() == null ? null : row.getEndedAt().toString(),
             row.getPendingEvaluations()
         );
     }

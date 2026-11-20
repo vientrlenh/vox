@@ -5,24 +5,21 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
-import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
-
 public record AppealSummaryInfo(
     UUID id,
     String studentName,
     String className,
-    String assessmentName,
-    /** Labels of the parts being appealed; the FE decides how to display them (chips, "+2 more"...). */
+    String examName,
+    /** Nhãn các phần thi được phúc khảo; FE tự quyết cách hiển thị (chip, "+2 more"…). */
     List<String> partLabels,
     BigDecimal originalScore,
-    AssessmentAppealStatus status,
+    String status,
     Instant requestedAt,
     Instant deadline,
-    /** The only grader; null when nobody is assigned yet. */
+    /** Người chấm duy nhất; null khi chưa phân công. */
     String reviewerName,
-    /** Null when nobody is assigned yet. */
-    GradingAssignmentStatus reviewerStatus,
+    /** ASSIGNED | COMPLETED; null khi chưa phân công. */
+    String reviewerStatus,
     boolean overdue
 ) {
 }

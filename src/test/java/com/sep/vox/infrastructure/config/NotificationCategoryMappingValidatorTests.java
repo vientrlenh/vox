@@ -3,7 +3,6 @@ package com.sep.vox.infrastructure.config;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.InitializingBean;
 
 /**
  * Validator chỉ chạy đúng một lần lúc khởi động, nên nếu logic của nó sai chiều (lọc nhầm
@@ -19,7 +18,7 @@ class NotificationCategoryMappingValidatorTests {
 
     @Test
     void should_pass_with_the_real_mapping_tables() {
-        InitializingBean checker = new NotificationCategoryMappingValidator().notificationCategoryMappingChecker();
+        var checker = new NotificationCategoryMappingValidator().notificationCategoryMappingChecker();
 
         assertThatCode(checker::afterPropertiesSet).doesNotThrowAnyException();
     }

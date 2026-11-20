@@ -9,7 +9,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -39,7 +38,7 @@ public class UpdateSystemRubricUseCase implements IUseCase<UpdateSystemRubricCom
     public UUID execute(UpdateSystemRubricCommand command) {
         // 1. Xác thực tài khoản System Admin
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
+        var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {

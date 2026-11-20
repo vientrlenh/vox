@@ -25,7 +25,7 @@ public class AssessmentPolicyDtoMapper {
                 policy.getPassingScore(),
                 policy.getStrictness() != null ? policy.getStrictness().name() : null,
                 policy.getVersion(),
-                policy.getStatus(),
+                policy.getStatus() != null ? policy.getStatus().name() : null,
                 policy.getEffectiveFrom(),
                 policy.getEffectiveTo(),
                 policy.getCreatedAt(),

@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.importfile;
 
-import com.sep.vox.domain.model.school.School;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -53,21 +52,21 @@ public class RejectImportSessionUseCase implements IUseCase<RejectImportSessionC
             throw new IllegalArgumentException("Phiên import không được để trống");
         }
 
-        Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = findCurrentUser(currentUserId);
-        UUID schoolId = getSchoolId(currentUser);
+        var now = Instant.now();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = findCurrentUser(currentUserId);
+        var schoolId = getSchoolId(currentUser);
         validateSchool(schoolId);
 
-        ImportSession session = findSession(input.importSessionId());
+        var session = findSession(input.importSessionId());
         validateSession(session, schoolId, now, currentUserId);
 
-        String reason = normalizeReason(input.reason());
+        var reason = normalizeReason(input.reason());
         session.setStatus(ImportSessionStatus.CANCELLED);
         session.setFailureReason(reason);
         session.setUpdatedAt(now);
         session.setUpdatedBy(currentUserId);
-        ImportSession savedSession = importSessionRepository.save(session);
+        var savedSession = importSessionRepository.save(session);
 
         return new RejectImportSessionResponse(
             savedSession.getId(),
@@ -77,7 +76,7 @@ public class RejectImportSessionUseCase implements IUseCase<RejectImportSessionC
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        User user = userRepository.findById(currentUserId)
+        var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalStateException("Người dùng hiện tại không hoạt động");
@@ -92,7 +91,7 @@ public class RejectImportSessionUseCase implements IUseCase<RejectImportSessionC
     }
 
     private void validateSchool(UUID schoolId) {
-        School school = schoolRepository.findById(schoolId)
+        var school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
@@ -121,7 +120,7 @@ public class RejectImportSessionUseCase implements IUseCase<RejectImportSessionC
     }
 
     private String normalizeReason(String reason) {
-        String normalized = StringNormalization.trimAndCollapseSpaces(reason);
+        var normalized = StringNormalization.trimAndCollapseSpaces(reason);
         return normalized == null || normalized.isBlank() ? null : normalized;
     }
 }

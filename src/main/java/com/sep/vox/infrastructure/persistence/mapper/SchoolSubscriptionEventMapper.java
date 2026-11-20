@@ -22,7 +22,7 @@ public final class SchoolSubscriptionEventMapper {
     }
 
     public static SchoolSubscriptionEventJpaEntity toJpa(SchoolSubscriptionEvent domain) {
-        SchoolSubscriptionEventJpaEntity jpa = new SchoolSubscriptionEventJpaEntity();
+        var jpa = new SchoolSubscriptionEventJpaEntity();
         jpa.setId(domain.getId());
         jpa.setSchoolId(domain.getSchoolId());
         jpa.setSubscriptionId(domain.getSubscriptionId());

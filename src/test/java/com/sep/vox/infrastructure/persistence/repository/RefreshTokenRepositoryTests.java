@@ -4,33 +4,36 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
 import com.sep.vox.domain.repository.RefreshTokenRepository;
 import com.sep.vox.infrastructure.persistence.adapter.RefreshTokenRepositoryImpl;
-import com.sep.vox.support.RepositoryTest;
 
-@RepositoryTest
+@DataJpaTest
+@ActiveProfiles("test")
 @Import({
     RefreshTokenRepositoryImpl.class
 })
-class RefreshTokenRepositoryTests {
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class RefreshTokenRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
 
     @Test
     void whenSave_thenReturnsPersistedRefreshToken() {
-        UUID sessionId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
 
-        RefreshToken saved = refreshTokenRepository.save(newRefreshToken(sessionId, "hash-save"));
+        var saved = refreshTokenRepository.save(newRefreshToken(sessionId, "hash-save"));
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getSessionId()).isEqualTo(sessionId);
@@ -41,9 +44,9 @@ class RefreshTokenRepositoryTests {
 
     @Test
     void whenFindById_thenReturnsRefreshToken() {
-        RefreshToken saved = refreshTokenRepository.save(newRefreshToken(UUID.randomUUID(), "hash-find-id"));
+        var saved = refreshTokenRepository.save(newRefreshToken(UUID.randomUUID(), "hash-find-id"));
 
-        Optional<RefreshToken> found = refreshTokenRepository.findById(saved.getId());
+        var found = refreshTokenRepository.findById(saved.getId());
 
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(saved.getId());
@@ -52,12 +55,12 @@ class RefreshTokenRepositoryTests {
 
     @Test
     void whenFindBySessionId_thenReturnsOnlyTokensForThatSession() {
-        UUID sessionId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
         refreshTokenRepository.save(newRefreshToken(sessionId, "hash-session-1"));
         refreshTokenRepository.save(newRefreshToken(sessionId, "hash-session-2"));
         refreshTokenRepository.save(newRefreshToken(UUID.randomUUID(), "hash-session-other"));
 
-        List<RefreshToken> found = refreshTokenRepository.findBySessionId(sessionId);
+        var found = refreshTokenRepository.findBySessionId(sessionId);
 
         assertThat(found).hasSize(2);
         assertThat(found)
@@ -67,11 +70,11 @@ class RefreshTokenRepositoryTests {
 
     @Test
     void whenFindByTokenHash_thenReturnsMatchingRefreshToken() {
-        UUID sessionId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
         refreshTokenRepository.save(newRefreshToken(sessionId, "hash-token-lookup"));
         refreshTokenRepository.save(newRefreshToken(UUID.randomUUID(), "hash-token-other"));
 
-        Optional<RefreshToken> found = refreshTokenRepository.findByTokenHash("hash-token-lookup");
+        var found = refreshTokenRepository.findByTokenHash("hash-token-lookup");
 
         assertThat(found).isPresent();
         assertThat(found.get().getSessionId()).isEqualTo(sessionId);
@@ -79,7 +82,7 @@ class RefreshTokenRepositoryTests {
     }
 
     private static RefreshToken newRefreshToken(UUID sessionId, String tokenHash) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         return new RefreshToken(
             sessionId,
             tokenHash,

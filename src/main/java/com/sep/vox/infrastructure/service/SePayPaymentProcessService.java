@@ -108,7 +108,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
     }
 
     private static ClientHttpRequestFactory requestFactory() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        var factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(CONNECT_TIMEOUT);
         factory.setReadTimeout(READ_TIMEOUT);
         return factory;
@@ -137,20 +137,20 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
     @Override
     public PaymentCheckoutResult createPaymentLink(CreatePaymentLinkCommand command) {
         requireConfigured();
-        Map<String, String> fields = buildCheckoutFields(command);
+        var fields = buildCheckoutFields(command);
         fields.put("signature", sign(fields));
         return PaymentCheckoutResult.formPost(properties.checkoutUrl(), fields);
     }
 
     /**
-     * The insertion order here IS the signing order, and it follows exactly the order in which the official SDKs
-     * (sepay-pg-php {@code prepareFormFields}, sepay-pg-node {@code signFields}) build the field set:
-     * merchant, currency, order_amount, operation, order_description, and only then the optional group.
-     * Both SDKs sign by the element order of the array and do not sort, so this is a real constraint, not
-     * an aesthetic one — swap two lines and every transaction is rejected by SePay for a wrong signature.
+     * Thứ tự chèn ở đây CHÍNH LÀ thứ tự ký, và nó bám đúng thứ tự mà SDK chính thức
+     * (sepay-pg-php {@code prepareFormFields}, sepay-pg-node {@code signFields}) dựng bộ field:
+     * merchant, currency, order_amount, operation, order_description, rồi mới tới nhóm tùy chọn.
+     * Cả hai SDK đều ký theo thứ tự phần tử của mảng chứ không sort, nên đây là ràng buộc thật chứ
+     * không phải thẩm mỹ — đảo hai dòng là mọi giao dịch bị SePay từ chối vì sai chữ ký.
      */
     private LinkedHashMap<String, String> buildCheckoutFields(CreatePaymentLinkCommand command) {
-        LinkedHashMap<String, String> fields = new LinkedHashMap<String, String>();
+        var fields = new LinkedHashMap<String, String>();
         fields.put("merchant", properties.merchantId());
         fields.put("currency", CURRENCY);
         fields.put("order_amount", formatAmount(command.amount()));
@@ -192,8 +192,8 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
     @Override
     public PaymentLinkStatusResult getPaymentLinkStatus(String providerOrderRef) {
         requireConfigured();
-        // SePay's rate limit is only a few requests/second (429 with the X-SePay-UserApi-Retry-After header),
-        // so the caller — PendingOrderReconciler — must pace itself, see the throttle there.
+        // Rate limit của SePay chỉ vài request/giây (429 kèm header X-SePay-UserApi-Retry-After),
+        // nên phía gọi — PendingOrderReconciler — phải tự giãn nhịp, xem throttle ở đó.
         Map<?, ?> response;
         try {
             response = restClient.get()
@@ -201,18 +201,18 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
                 .retrieve()
                 .body(Map.class);
         } catch (HttpClientErrorException.NotFound e) {
-            // Catch ONLY 404. The other errors -- 429 too fast, 5xx, network lost -- are still thrown: the
-            // caller must tell "SePay says no order carries this code" from "could not ask SePay",
-            // because mapping the latter to NOT_FOUND would allow failing an attempt that is still alive.
+            // CHỈ bắt đúng 404. Các lỗi khác -- 429 quá nhịp, 5xx, mất mạng -- vẫn ném ra ngoài: chỗ
+            // gọi phải phân biệt "SePay nói không có đơn nào mang mã này" với "không hỏi được SePay",
+            // vì cái sau mà quy về NOT_FOUND là tự cho phép đánh hỏng một lần thử đang sống.
             LOGGER.warn("SePay không có đơn nào mang mã {} -- coi như lần thử đã chết", providerOrderRef, e);
             return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND);
         }
 
-        String orderStatus = extractOrderStatus(response);
-        PaymentLinkRemoteStatus status = toRemoteStatus(orderStatus);
+        var orderStatus = extractOrderStatus(response);
+        var status = toRemoteStatus(orderStatus);
         if (status == null) {
-            // Do not guess: mapping an unknown status to FAILED could mark an already-paid invoice as
-            // failed, and mapping it to PAID would grant quota for free. Keep PENDING so the next sweep asks again.
+            // Không đoán: trạng thái lạ mà quy về FAILED thì một hóa đơn đã thu tiền có thể bị đánh
+            // hỏng, còn quy về PAID thì cấp quota không công. Giữ PENDING để lượt quét sau hỏi lại.
             LOGGER.warn("Trạng thái đơn SePay chưa được ánh xạ, giữ nguyên PENDING: orderRef={} order_status={}",
                 providerOrderRef, orderStatus);
             return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.PENDING);
@@ -256,13 +256,13 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
             return CallbackVerificationResult.invalid();
         }
 
-        SePayIpnPayload payload = parseBody(rawBody);
+        var payload = parseBody(rawBody);
         if (payload == null || payload.order() == null) {
             LOGGER.warn("IPN SePay có secret key hợp lệ nhưng payload thiếu phần order");
             return CallbackVerificationResult.invalid();
         }
 
-        String orderRef = payload.order().orderInvoiceNumber();
+        var orderRef = payload.order().orderInvoiceNumber();
         if (orderRef == null || orderRef.isBlank()) {
             LOGGER.warn("IPN SePay thiếu order_invoice_number, không tra được hóa đơn nào");
             return CallbackVerificationResult.invalid();
@@ -277,19 +277,19 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
     }
 
     /**
-     * {@code notification_type} is what SePay commits to in the IPN documentation so it takes priority; only when
-     * an unknown notification type shows up does it fall back to reading {@code order_status}. Returning null means "cannot
-     * conclude yet" — the upper layer will skip it instead of settling the invoice.
+     * {@code notification_type} là thứ SePay cam kết trong tài liệu IPN nên nó được ưu tiên; chỉ khi
+     * gặp loại thông báo lạ mới rơi về đọc {@code order_status}. Trả null nghĩa là "chưa kết luận
+     * được" — tầng trên sẽ bỏ qua chứ không chốt hóa đơn.
      */
     private PaymentLinkRemoteStatus resolveStatus(SePayIpnPayload payload) {
-        String notificationType = payload.notificationType();
+        var notificationType = payload.notificationType();
         if (NOTIFICATION_ORDER_PAID.equalsIgnoreCase(notificationType)) {
             return PaymentLinkRemoteStatus.PAID;
         }
         if (NOTIFICATION_TRANSACTION_VOID.equalsIgnoreCase(notificationType)) {
             return PaymentLinkRemoteStatus.CANCELLED;
         }
-        PaymentLinkRemoteStatus status = toRemoteStatus(payload.order().orderStatus());
+        var status = toRemoteStatus(payload.order().orderStatus());
         if (status == null) {
             LOGGER.warn("IPN SePay có notification_type lạ ({}) và order_status chưa ánh xạ ({}) — bỏ qua",
                 notificationType, payload.order().orderStatus());
@@ -333,13 +333,13 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
 
     // So sánh constant-time để không lộ secret qua thời gian phản hồi.
     private boolean hasValidSecretKey(Map<String, String> headers) {
-        String provided = headers.get(SECRET_KEY_HEADER);
+        var provided = headers.get(SECRET_KEY_HEADER);
         if (provided == null) {
             LOGGER.warn("IPN SePay thiếu header {}", SECRET_KEY_HEADER);
             return false;
         }
-        String expected = properties.ipnSecretKey();
-        // If it is not configured and still accepted, the IPN endpoint becomes an open door for anyone to settle an invoice.
+        var expected = properties.ipnSecretKey();
+        // Không cấu hình mà vẫn chấp nhận thì endpoint IPN thành cửa mở cho bất kỳ ai chốt hóa đơn.
         if (expected == null || expected.isBlank()) {
             LOGGER.error("Chưa cấu hình sepay.pg.ipn-secret-key — từ chối mọi IPN SePay");
             return false;
@@ -351,8 +351,8 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
     }
 
     private String sign(Map<String, String> fields) {
-        StringBuilder data = new StringBuilder();
-        for (Map.Entry<String, String> entry : fields.entrySet()) {
+        var data = new StringBuilder();
+        for (var entry : fields.entrySet()) {
             if (!SIGNED_FIELDS.contains(entry.getKey()) || entry.getValue() == null) {
                 continue;
             }
@@ -362,7 +362,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
             data.append(entry.getKey()).append('=').append(entry.getValue());
         }
         try {
-            Mac mac = Mac.getInstance(HMAC);
+            var mac = Mac.getInstance(HMAC);
             mac.init(getSecretKey());
             return Base64.getEncoder()
                 .encodeToString(mac.doFinal(data.toString().getBytes(StandardCharsets.UTF_8)));
@@ -377,7 +377,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
     }
 
     private static String basicAuth(SePayPaymentProperties properties) {
-        String credentials = properties.merchantId() + ":" + properties.secretKey();
+        var credentials = properties.merchantId() + ":" + properties.secretKey();
         return "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
     }
 

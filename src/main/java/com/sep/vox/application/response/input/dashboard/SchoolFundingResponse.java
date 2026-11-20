@@ -6,25 +6,25 @@ import com.sep.vox.domain.common.DecimalText;
 import com.sep.vox.domain.model.school.SchoolBalance;
 
 /**
- * Whether the school can still open assessment sessions, and how much it can still grade before running out.
+ * Trường còn mở được ca thi hay không, và còn chấm được bao nhiêu trước khi hết.
  *
- * <p>Two DIFFERENT pockets of money, deliberately not merged into one number:
+ * <p>Hai túi tiền KHÁC NHAU, cố ý không gộp thành một con số:
  *
  * <ul>
- *   <li>The plan quota, split by {@code QuotaType} -- only the {@code ASSESSMENT} wallet pays for assessment
- *       grading. A roomy {@code PRACTICE} wallet does not help next week's assessment.
- *   <li>The self-topped-up wallet -- ONE shared number, only deducted when the quota of the corresponding kind is exhausted.
+ *   <li>Hạn mức kèm gói, tách theo {@code QuotaType} — chỉ ví {@code EXAM} trả tiền cho việc chấm
+ *       thi. Ví {@code PRACTICE} còn rộng không giúp gì cho kỳ thi tuần sau.
+ *   <li>Ví tự nạp — MỘT con số dùng chung, chỉ bị trừ khi hạn mức của loại tương ứng đã cạn.
  * </ul>
  *
- * <p>MONEY HERE IS String, unlike {@code tokenAllocated}/{@code tokenUsed} right next to it. The reason is written at the
- * top of school-balance.graphqls: the balance is {@code numeric(18,6)} so a double rounds wrongly exactly where the
- * number has to match absolutely. Mixing Float and String in the SAME money block is harder to understand than being inconsistent with the
- * neighboring block, so every money field here uses one type.
+ * <p>TIỀN Ở ĐÂY LÀ String, khác {@code tokenAllocated}/{@code tokenUsed} ngay cạnh nó. Lý do ghi ở
+ * đầu school-balance.graphqls: số dư là {@code numeric(18,6)} nên double làm tròn sai đúng chỗ con
+ * số phải khớp tuyệt đối. Trộn Float và String trong CÙNG một khối tiền còn khó hiểu hơn là lệch với
+ * khối bên cạnh, nên mọi field tiền ở đây theo một kiểu.
  */
 public record SchoolFundingResponse(
     /** Hạn mức CHẤM THI còn lại. Không bao giờ âm — phần vượt đã chuyển thành nợ trên ví. */
-    String assessmentQuotaRemainingVnd,
-    String assessmentQuotaTotalVnd,
+    String examQuotaRemainingVnd,
+    String examQuotaTotalVnd,
     /** Số dư ví tự nạp. Âm CHÍNH LÀ khoản nợ. */
     String balanceVnd,
     boolean locked,
@@ -59,17 +59,17 @@ public record SchoolFundingResponse(
      * @param balance             null khi trường chưa từng chạm vào ví — ví rỗng và ví 0 đồng là cùng
      *                            một nghĩa.
      */
-    public static SchoolFundingResponse of(BigDecimal assessmentQuotaTotalVnd, BigDecimal assessmentQuotaUsedVnd,
+    public static SchoolFundingResponse of(BigDecimal examQuotaTotalVnd, BigDecimal examQuotaUsedVnd,
             BigDecimal committedToUsersVnd, SchoolBalance balance) {
-        BigDecimal remaining = assessmentQuotaTotalVnd.subtract(assessmentQuotaUsedVnd).max(BigDecimal.ZERO);
-        BigDecimal balanceVnd = balance == null ? BigDecimal.ZERO : balance.getBalanceVnd();
-        boolean locked = balance != null && balance.isInDebt();
-        BigDecimal spendable = remaining.add(balanceVnd.max(BigDecimal.ZERO));
-        BigDecimal committed = committedToUsersVnd == null ? BigDecimal.ZERO : committedToUsersVnd;
+        var remaining = examQuotaTotalVnd.subtract(examQuotaUsedVnd).max(BigDecimal.ZERO);
+        var balanceVnd = balance == null ? BigDecimal.ZERO : balance.getBalanceVnd();
+        var locked = balance != null && balance.isInDebt();
+        var spendable = remaining.add(balanceVnd.max(BigDecimal.ZERO));
+        var committed = committedToUsersVnd == null ? BigDecimal.ZERO : committedToUsersVnd;
 
         return new SchoolFundingResponse(
             DecimalText.of(remaining),
-            DecimalText.of(assessmentQuotaTotalVnd),
+            DecimalText.of(examQuotaTotalVnd),
             DecimalText.of(balanceVnd),
             locked,
             DecimalText.of(spendable),

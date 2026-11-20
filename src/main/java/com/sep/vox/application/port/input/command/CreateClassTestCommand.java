@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.command;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
+import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 
 public record CreateClassTestCommand(
     UUID schoolClassId,
@@ -13,7 +13,7 @@ public record CreateClassTestCommand(
     String closeAt,
     UUID assessmentPolicyId,
     Integer maxAttempt,
-    Integer assessmentTimeDurationSecond,
+    Integer examTimeDurationSecond,
     ResultDecisionMethod resultDecisionMethod,
     List<String> requiredStreamTypes,
     String streamTypePermission,
@@ -22,10 +22,10 @@ public record CreateClassTestCommand(
     UUID schoolRoomId,
 
     /**
-     * AI confidence threshold (0.00-1.00). NULL = not set, the system uses the hard rules as before.
+     * Ngưỡng tin cậy AI (0.00-1.00). NULL = không đặt, hệ thống dùng luật cứng như cũ.
      *
-     * <p>When a threshold is set, a grading result with a lower overall_confidence goes to PENDING_REVIEW, and the whole
-     * internal threshold rule set is ignored -- see RecordAssessmentAttemptEvaluationUseCase.
+     * <p>Đặt ngưỡng thì bản chấm có overall_confidence thấp hơn sẽ sang PENDING_REVIEW, và toàn
+     * bộ luật ngưỡng nội bộ bị bỏ qua -- xem RecordExamAttemptEvaluationUseCase.
      */
     java.math.BigDecimal aiConfidenceThresholdPercent
 ) {

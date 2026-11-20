@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.domain.service.assessment.GradingScopeKind;
+import com.sep.vox.domain.service.exam.GradingScopeKind;
 
 /**
  * Mặc định của màn chấm bài khi client không nói rõ loại bài.

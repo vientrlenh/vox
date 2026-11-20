@@ -3,22 +3,22 @@ package com.sep.vox.application.response.input.subscription;
 import java.math.BigDecimal;
 
 /**
- * The COST price currently in effect, exposed in full for the school to view -- see QuotaPricingPort.
+ * Giá VỐN đang áp dụng, phơi nguyên vẹn cho trường xem -- xem QuotaPricingPort.
  *
- * <p>There is NO serviceFeeRatio: the service fee is our profit margin and may only appear as one
- * fee line added to an order, not as a field that can be looked up. That is also why it lives in
- * a separate ServiceFeePort instead of sharing a port with these three numbers.
+ * <p>KHÔNG có serviceFeeRatio: phí dịch vụ là biên lãi của mình và chỉ được xuất hiện dưới dạng một
+ * dòng phí đã cộng vào đơn hàng, không phải một trường tra cứu được. Đó cũng là lý do nó nằm ở
+ * ServiceFeePort tách riêng chứ không chung cổng với ba con số này.
  *
- * @param estimatedCostPerAssessmentSecondUsd the estimated price per assessment second, preferring the number automatically calibrated from
- *                                          the real cost (QuotaPricingCalibrationJob)
- * @param estimatedCostPerPracticeSecondUsd as above but for speaking practice -- a very different AI pipeline so
- *                                          calibrated separately
- * @param usdToVndRate                      the market exchange rate, WITHOUT margin: folding the margin in here would produce
- *                                          a rate the school cannot reconcile against any
- *                                          external source
+ * @param estimatedCostPerExamSecondUsd     giá ước tính mỗi giây thi, ưu tiên số đã tự calibrate từ
+ *                                          chi phí thật (QuotaPricingCalibrationJob)
+ * @param estimatedCostPerPracticeSecondUsd như trên nhưng cho luyện nói -- pipeline AI khác hẳn nên
+ *                                          calibrate riêng
+ * @param usdToVndRate                      tỷ giá thị trường, KHÔNG cộng lãi: gộp lãi vào đây sẽ ra
+ *                                          một tỷ giá trường không đối chiếu được với bất kỳ nguồn
+ *                                          nào bên ngoài
  */
 public record QuotaPricingResponse(
-    BigDecimal estimatedCostPerAssessmentSecondUsd,
+    BigDecimal estimatedCostPerExamSecondUsd,
     BigDecimal estimatedCostPerPracticeSecondUsd,
     BigDecimal usdToVndRate
 ) {

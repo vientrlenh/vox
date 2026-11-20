@@ -8,10 +8,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricResultBandDto;
 import com.sep.vox.domain.mapper.RubricResultBandDtoMapper;
-import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.model.rubric.RubricResultBand;
-import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
@@ -54,15 +51,15 @@ public class ViewSystemRubricResultBandDetailsUseCase implements IUseCase<ViewSy
         }
 
         // 2. Lấy Result Band
-        RubricResultBand resultBand = rubricResultBandRepository.findById(query.resultBandId())
+        var resultBand = rubricResultBandRepository.findById(query.resultBandId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Dải điểm Kết quả (Result Band) này."));
 
         // 3. Lấy Version
-        RubricVersion version = rubricVersionRepository.findById(resultBand.getRubricVersionId())
+        var version = rubricVersionRepository.findById(resultBand.getRubricVersionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric Version chứa Dải điểm Kết quả này."));
 
         // 4. Lấy Rubric gốc và kiểm tra quyền sở hữu SYSTEM
-        Rubric rubric = rubricRepository.findById(version.getRubricId())
+        var rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {

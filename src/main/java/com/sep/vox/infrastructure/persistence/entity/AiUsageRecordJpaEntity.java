@@ -31,8 +31,8 @@ public class AiUsageRecordJpaEntity {
     )
     private UUID id;
 
-    @Column(name = "assessment_session_id", nullable = false, updatable = false)
-    private UUID assessmentSessionId;
+    @Column(name = "exam_session_id", nullable = false, updatable = false)
+    private UUID examSessionId;
 
     @Column(name = "turn_id", nullable = false, updatable = false)
     private UUID turnId;
@@ -89,15 +89,15 @@ public class AiUsageRecordJpaEntity {
     @Column(name = "occurred_at", nullable = false, updatable = false)
     private Instant occurredAt;
 
-    // NULL = this expense has not been deducted from the school wallet yet. The ONLY column of the table that is not updatable=false,
-    // because it is the only thing that changes after the row is written -- and deliberately NOT in the constructor: a new
-    // row always starts in the uncharged state, and nowhere may a "charged" row be built ready-made.
-    // It is stamped by a bulk UPDATE (markChargedByAssessmentSessionId), not by saving the entity.
+    // NULL = khoản chi này chưa được trừ vào ví trường. Cột DUY NHẤT của bảng không updatable=false,
+    // vì nó là thứ duy nhất thay đổi sau khi dòng đã ghi -- và cố ý KHÔNG nằm trong constructor: dòng
+    // mới luôn bắt đầu ở trạng thái chưa thu, không có chỗ nào được dựng sẵn một dòng "đã thu".
+    // Đóng dấu bằng bulk UPDATE (markChargedByExamSessionId), không qua save entity.
     //
-    // WARNING if a path is later added that rewrites an EXISTING row: AiUsageRecord (domain) does not carry this
-    // column, so the mapper builds a new entity with chargedAt = null and a merge would ERASE the charged stamp -- that
-    // session would be charged again at the next grading. It is safe now because save() is only called with new rows
-    // (RecordAiUsageUseCase); adding an update path requires bringing this column into the domain model first.
+    // CẢNH BÁO nếu sau này có đường ghi lại một dòng ĐÃ TỒN TẠI: AiUsageRecord (domain) không mang cột
+    // này, nên mapper dựng entity mới với chargedAt = null và một lần merge sẽ XÓA dấu đã thu -- phiên
+    // đó bị thu tiền lần nữa ở lần chấm kế tiếp. Hiện an toàn vì save() chỉ được gọi với dòng mới
+    // (RecordAiUsageUseCase); thêm đường cập nhật thì phải mang cột này vào domain model trước.
     @Column(name = "charged_at")
     private Instant chargedAt;
 
@@ -117,12 +117,12 @@ public class AiUsageRecordJpaEntity {
 
     protected AiUsageRecordJpaEntity() {}
 
-    public AiUsageRecordJpaEntity(UUID id, UUID assessmentSessionId, UUID turnId, UUID usageEventId, String usageType,
+    public AiUsageRecordJpaEntity(UUID id, UUID examSessionId, UUID turnId, UUID usageEventId, String usageType,
             String provider, String modelName, Integer inputTokens, Integer outputTokens,
             Integer cacheCreationInputTokens, Integer cacheReadInputTokens, Long durationMs, String unitPriceJson,
             BigDecimal costUsd, BigDecimal costVnd, BigDecimal fxRateUsed, Instant occurredAt) {
         this.id = id;
-        this.assessmentSessionId = assessmentSessionId;
+        this.examSessionId = examSessionId;
         this.turnId = turnId;
         this.usageEventId = usageEventId;
         this.usageType = usageType;
@@ -164,12 +164,12 @@ public class AiUsageRecordJpaEntity {
         this.id = id;
     }
 
-    public UUID getAssessmentSessionId() {
-        return assessmentSessionId;
+    public UUID getExamSessionId() {
+        return examSessionId;
     }
 
-    public void setAssessmentSessionId(UUID assessmentSessionId) {
-        this.assessmentSessionId = assessmentSessionId;
+    public void setExamSessionId(UUID examSessionId) {
+        this.examSessionId = examSessionId;
     }
 
     public UUID getTurnId() {

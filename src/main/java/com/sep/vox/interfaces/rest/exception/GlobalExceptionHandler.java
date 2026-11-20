@@ -3,7 +3,6 @@ package com.sep.vox.interfaces.rest.exception;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -61,20 +60,20 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicatedException.class)
     public ResponseEntity<ErrorResponse> handleDuplicate(DuplicatedException e) {
-        ErrorResponse error = new ErrorResponse(DUPLICATED_ERROR, e.getMessage());
+        var error = new ErrorResponse(DUPLICATED_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException e) {
-        ErrorResponse error = new ErrorResponse(NOT_FOUND_ERROR, e.getMessage());
+        var error = new ErrorResponse(NOT_FOUND_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
-        ErrorResponse error = new ErrorResponse(ILLEGAL_ARGUMENT_ERROR, e.getMessage());
+        var error = new ErrorResponse(ILLEGAL_ARGUMENT_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
@@ -87,30 +86,30 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(DateTimeParseException.class)
     public ResponseEntity<ErrorResponse> handleDateTimeParse(DateTimeParseException e) {
-        ErrorResponse error = new ErrorResponse(ILLEGAL_ARGUMENT_ERROR, "Giá trị thời gian không đúng định dạng ISO-8601");
+        var error = new ErrorResponse(ILLEGAL_ARGUMENT_ERROR, "Giá trị thời gian không đúng định dạng ISO-8601");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException e) {
-        ErrorResponse error = new ErrorResponse(INVALID_STATE_ERROR, e.getMessage());
+        var error = new ErrorResponse(INVALID_STATE_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException e) {
-        ErrorResponse error = new ErrorResponse(UNAUTHORIZED_ERROR, e.getMessage());
+        var error = new ErrorResponse(UNAUTHORIZED_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationErrorResponse> handleValidation(MethodArgumentNotValidException e) {
-        Map<String, String> errors = new HashMap<String, String>();
+        var errors = new HashMap<String, String>();
         e.getBindingResult()
             .getAllErrors()
             .forEach(err -> errors
                 .put(err.getObjectName(), err.getDefaultMessage()));
-        ValidationErrorResponse error = new ValidationErrorResponse(errors, VALIDATION_ERROR);
+        var error = new ValidationErrorResponse(errors, VALIDATION_ERROR);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
@@ -118,60 +117,60 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException e) {
-        ErrorResponse error = new ErrorResponse(FORBIDDEN_ERROR, e.getMessage());
+        var error = new ErrorResponse(FORBIDDEN_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
     @ExceptionHandler(QuotaExceededException.class)
     public ResponseEntity<ErrorResponse> handleQuotaExceeded(QuotaExceededException e) {
-        ErrorResponse error = new ErrorResponse(QUOTA_EXCEEDED_ERROR, e.getMessage());
+        var error = new ErrorResponse(QUOTA_EXCEEDED_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(PlanLimitExceededException.class)
     public ResponseEntity<ErrorResponse> handlePlanLimitExceeded(PlanLimitExceededException e) {
-        ErrorResponse error = new ErrorResponse(PLAN_LIMIT_EXCEEDED_ERROR, e.getMessage());
+        var error = new ErrorResponse(PLAN_LIMIT_EXCEEDED_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(error);
     }
 
     @ExceptionHandler(WalletDrawConfirmationRequiredException.class)
     public ResponseEntity<ErrorResponse> handleWalletDrawConfirmationRequired(
             WalletDrawConfirmationRequiredException e) {
-        ErrorResponse error = new ErrorResponse(WALLET_DRAW_CONFIRMATION_REQUIRED_ERROR, e.getMessage());
+        var error = new ErrorResponse(WALLET_DRAW_CONFIRMATION_REQUIRED_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(error);
     }
 
     @ExceptionHandler(ServiceUnavailableException.class)
     public ResponseEntity<ErrorResponse> handleUnavailable(ServiceUnavailableException e) {
-        ErrorResponse error = new ErrorResponse(SERVICE_UNAVAILABLE_ERROR, e.getMessage());
+        var error = new ErrorResponse(SERVICE_UNAVAILABLE_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception e) {
         LOGGER.error("An unexpected error occurred", e);
-        ErrorResponse error = new ErrorResponse(INTERNAL_ERROR, "Có lỗi xảy ra");
+        var error = new ErrorResponse(INTERNAL_ERROR, "Có lỗi xảy ra");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
     // Spring security exceptions
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException e) {
-        ErrorResponse error = new ErrorResponse(AUTHENTICATION_ERROR, "Sai thông tin đăng nhập");
+        var error = new ErrorResponse(AUTHENTICATION_ERROR, "Sai thông tin đăng nhập");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException e) {
-        ErrorResponse error = new ErrorResponse(AUTHORIZATION_ERROR, "Quyền truy cập không hợp lệ");
+        var error = new ErrorResponse(AUTHORIZATION_ERROR, "Quyền truy cập không hợp lệ");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
 
     @ExceptionHandler(DisabledException.class)
     private ResponseEntity<ErrorResponse> handleDisabled(DisabledException e) {
-        ErrorResponse error = new ErrorResponse(USER_DISABLED_ERROR, e.getMessage());
+        var error = new ErrorResponse(USER_DISABLED_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 }

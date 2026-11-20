@@ -26,8 +26,6 @@ import com.sep.vox.application.port.input.usecase.dashboard.ViewSchoolAdminDashb
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.SchoolUnscoredWorkloadDto;
 import com.sep.vox.application.query.repository.SchoolWorkloadQueryRepository;
-import com.sep.vox.application.response.input.dashboard.SchoolAdminDashboardSummaryResponse;
-import com.sep.vox.application.response.input.dashboard.SchoolFundingResponse;
 import com.sep.vox.application.response.input.dashboard.SchoolMonthlySpendingResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.common.ZoneConstant;
@@ -39,8 +37,8 @@ import com.sep.vox.domain.model.school.SchoolBalance;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
-import com.sep.vox.domain.repository.AssessmentRepository;
-import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
+import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamResultAppealRepository;
 import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.SchoolBalanceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
@@ -61,7 +59,7 @@ class ViewSchoolAdminDashboardUseCaseTests {
     private static final UUID SCHOOL_ID = UUID.randomUUID();
 
     private OrderRepository orderRepository;
-    private AssessmentResultAppealRepository assessmentResultAppealRepository;
+    private ExamResultAppealRepository examResultAppealRepository;
     private SchoolBalanceRepository schoolBalanceRepository;
     private SchoolWorkloadQueryRepository schoolWorkloadQueryRepository;
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
@@ -71,32 +69,30 @@ class ViewSchoolAdminDashboardUseCaseTests {
 
     @BeforeEach
     void setUp() {
-        UserContextPort userContextPort = mock(UserContextPort.class);
-        AssessmentRepository assessmentRepository = mock(AssessmentRepository.class);
-        SubscriptionPlanRepository subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
+        var userContextPort = mock(UserContextPort.class);
+        var examRepository = mock(ExamRepository.class);
+        var subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         subscriptionQuotaRepository = mock(SchoolSubscriptionQuotaRecordRepository.class);
         subscriptionQuotaUserAllocationRepository = mock(SchoolSubscriptionQuotaUserAllocationRepository.class);
-        assessmentResultAppealRepository = mock(AssessmentResultAppealRepository.class);
+        examResultAppealRepository = mock(ExamResultAppealRepository.class);
         schoolBalanceRepository = mock(SchoolBalanceRepository.class);
         schoolWorkloadQueryRepository = mock(SchoolWorkloadQueryRepository.class);
         orderRepository = mock(OrderRepository.class);
 
         when(userContextPort.getCurrentSchoolId()).thenReturn(SCHOOL_ID);
-        // Counting submissions by status goes through findAccessible and then takes totalElements
-        // -- a mock that returns null would throw an NPE right away, so a real empty page must be
-        // returned.
-        when(assessmentRepository.findAccessible(any(), any(), anyBoolean(), anyBoolean(), any(), any(), any(),
+        // Đếm bài theo trạng thái đi qua findAccessible rồi lấy totalElements -- mock trả null thì
+        // NPE ngay, nên phải trả về một trang rỗng thật.
+        when(examRepository.findAccessible(any(), any(), anyBoolean(), anyBoolean(), any(), any(), any(),
             any(), any(), anyInt(), anyInt())).thenReturn(new PageResult<>(List.of(), 0, 1, 0, 0));
-        when(assessmentResultAppealRepository.countBySchoolIdAndStatusIn(any(), any())).thenReturn(0L);
-        when(assessmentResultAppealRepository.findOldestPendingRequestedAt(SCHOOL_ID)).thenReturn(null);
+        when(examResultAppealRepository.countBySchoolIdAndStatusIn(any(), any())).thenReturn(0L);
+        when(examResultAppealRepository.findOldestPendingRequestedAt(SCHOOL_ID)).thenReturn(null);
         when(schoolSubscriptionRepository.findActiveBySchoolId(SCHOOL_ID)).thenReturn(Optional.empty());
         when(subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(any(), any()))
             .thenReturn(Optional.empty());
-        // This port promises NEVER null (COALESCE in the query + clamping again in the adapter), so
-        // the default mock must be ZERO and not Mockito's null -- letting null through gives a
-        // green test for a behavior production cannot have, and hides every addition/subtraction
-        // below.
+        // Cổng này hứa KHÔNG BAO GIỜ null (COALESCE trong truy vấn + kẹp lại ở adapter), nên mock mặc
+        // định phải là ZERO chứ không phải null của Mockito -- để null lọt qua là test xanh với một
+        // hành vi mà production không thể có, và che mất mọi phép cộng/trừ ở dưới.
         when(subscriptionQuotaUserAllocationRepository.sumUnusedAllocation(any(), any()))
             .thenReturn(BigDecimal.ZERO);
         when(orderRepository.findBySchoolIdAndStatusInRange(
@@ -104,11 +100,11 @@ class ViewSchoolAdminDashboardUseCaseTests {
         when(schoolBalanceRepository.findBySchoolId(SCHOOL_ID)).thenReturn(Optional.empty());
         when(schoolWorkloadQueryRepository.countUnscored(eq(SCHOOL_ID), any()))
             .thenReturn(SchoolUnscoredWorkloadDto.empty());
-        when(schoolWorkloadQueryRepository.findAssessmentsAwaitingPublish(eq(SCHOOL_ID), any(), anyInt()))
+        when(schoolWorkloadQueryRepository.findExamsAwaitingPublish(eq(SCHOOL_ID), any(), anyInt()))
             .thenReturn(List.of());
 
         useCase = new ViewSchoolAdminDashboardUseCase(
-            userContextPort, assessmentRepository, assessmentResultAppealRepository,
+            userContextPort, examRepository, examResultAppealRepository,
             schoolSubscriptionRepository, subscriptionQuotaRepository,
             subscriptionQuotaUserAllocationRepository,
             subscriptionPlanRepository, orderRepository, schoolBalanceRepository,
@@ -117,15 +113,15 @@ class ViewSchoolAdminDashboardUseCaseTests {
 
     @Test
     void should_bucket_successful_orders_into_their_month_and_zero_fill_the_rest() {
-        Instant now = Instant.now();
-        Instant fiveMonthsAgo = now.minus(150, ChronoUnit.DAYS);
+        var now = Instant.now();
+        var fiveMonthsAgo = now.minus(150, ChronoUnit.DAYS);
 
         when(orderRepository.findBySchoolIdAndStatusInRange(
             eq(SCHOOL_ID), eq(OrderStatus.SUCCESS), any(), any())).thenReturn(List.of(
             order(OrderType.SUBSCRIPTION_REQUEST, OrderStatus.SUCCESS, new BigDecimal("500000"), now),
             order(OrderType.TOPUP, OrderStatus.SUCCESS, new BigDecimal("200000"), fiveMonthsAgo)));
 
-        SchoolAdminDashboardSummaryResponse result = useCase.execute(null);
+        var result = useCase.execute(null);
 
         assertThat(result.monthlySpending()).hasSize(SPENDING_MONTHS);
         assertThat(monthOf(result.monthlySpending(), month(now)).amount()).isEqualByComparingTo("500000");
@@ -136,20 +132,17 @@ class ViewSchoolAdminDashboardUseCaseTests {
             .allSatisfy(m -> assertThat(m.amount()).isEqualByComparingTo(BigDecimal.ZERO));
     }
 
-    /**
-     * TOPUP is money going into the self-funded wallet, the other orders are plan purchases -- two
-     * separate columns that add up to the total.
-     */
+    /** TOPUP là tiền vào ví tự nạp, đơn còn lại là tiền mua gói -- hai cột riêng, cộng lại bằng tổng. */
     @Test
     void should_split_top_ups_from_subscription_spending() {
-        Instant now = Instant.now();
+        var now = Instant.now();
 
         when(orderRepository.findBySchoolIdAndStatusInRange(
             eq(SCHOOL_ID), eq(OrderStatus.SUCCESS), any(), any())).thenReturn(List.of(
             order(OrderType.SUBSCRIPTION_REQUEST, OrderStatus.SUCCESS, new BigDecimal("500000"), now),
             order(OrderType.TOPUP, OrderStatus.SUCCESS, new BigDecimal("300000"), now)));
 
-        SchoolMonthlySpendingResponse bucket = monthOf(useCase.execute(null).monthlySpending(), month(now));
+        var bucket = monthOf(useCase.execute(null).monthlySpending(), month(now));
 
         assertThat(bucket.subscriptionAmount()).isEqualByComparingTo("500000");
         assertThat(bucket.tokenTopUpAmount()).isEqualByComparingTo("300000");
@@ -178,13 +171,12 @@ class ViewSchoolAdminDashboardUseCaseTests {
     }
 
     /**
-     * A school that has never touched the wallet: an empty wallet and a wallet of 0 VND mean the
-     * SAME thing, so it must not lock and must not throw an NPE -- this is the state of every new
-     * school, not an edge case.
+     * Trường chưa từng chạm vào ví: ví rỗng và ví 0 đồng là CÙNG một nghĩa, nên không khoá và không
+     * được ném NPE — đây là trạng thái của mọi trường mới, không phải ca biên.
      */
     @Test
     void should_treat_a_school_that_never_touched_its_wallet_as_zero_and_unlocked() {
-        SchoolFundingResponse funding = useCase.execute(null).funding();
+        var funding = useCase.execute(null).funding();
 
         assertThat(funding.balanceVnd()).isEqualTo("0");
         assertThat(funding.locked()).isFalse();
@@ -192,55 +184,51 @@ class ViewSchoolAdminDashboardUseCaseTests {
     }
 
     /**
-     * A NEGATIVE wallet is not subtracted from "can still be graded": debt is an amount to pay
-     * back, not a negative quota. Adding it in would draw "3 million left" for a school that is
-     * hard-locked -- exactly the number that reassures the reader wrongly.
+     * Ví ÂM không bị trừ vào "còn chấm được": nợ là khoản phải trả, không phải hạn mức âm. Cộng nó
+     * vào sẽ vẽ ra "còn 3 triệu" cho một trường đang bị khoá cứng, tức đúng con số khiến người đọc
+     * yên tâm sai.
      */
     @Test
-    void should_not_let_a_negative_wallet_eat_into_the_remaining_assessment_quota() {
-        givenAssessmentQuota("12000000", "9000000");
+    void should_not_let_a_negative_wallet_eat_into_the_remaining_exam_quota() {
+        givenExamQuota("12000000", "9000000");
         when(schoolBalanceRepository.findBySchoolId(SCHOOL_ID))
             .thenReturn(Optional.of(balance(new BigDecimal("-1240000"))));
 
-        SchoolFundingResponse funding = useCase.execute(null).funding();
+        var funding = useCase.execute(null).funding();
 
-        assertThat(funding.assessmentQuotaRemainingVnd()).isEqualTo("3000000");
+        assertThat(funding.examQuotaRemainingVnd()).isEqualTo("3000000");
         assertThat(funding.spendableVnd()).isEqualTo("3000000");
         assertThat(funding.locked()).isTrue();
     }
 
-    /**
-     * A positive wallet is added: when the quota is used up but the wallet still has money, the
-     * school can keep grading.
-     */
+    /** Ví dương thì cộng vào: hạn mức cạn mà ví còn tiền là trường vẫn chấm tiếp được. */
     @Test
-    void should_add_a_positive_wallet_to_the_remaining_assessment_quota() {
-        givenAssessmentQuota("12000000", "12000000");
+    void should_add_a_positive_wallet_to_the_remaining_exam_quota() {
+        givenExamQuota("12000000", "12000000");
         when(schoolBalanceRepository.findBySchoolId(SCHOOL_ID))
             .thenReturn(Optional.of(balance(new BigDecimal("500000"))));
 
-        SchoolFundingResponse funding = useCase.execute(null).funding();
+        var funding = useCase.execute(null).funding();
 
-        assertThat(funding.assessmentQuotaRemainingVnd()).isEqualTo("0");
+        assertThat(funding.examQuotaRemainingVnd()).isEqualTo("0");
         assertThat(funding.spendableVnd()).isEqualTo("500000");
         assertThat(funding.locked()).isFalse();
     }
 
     /**
-     * The portion promised to teachers must NOT be subtracted from "can still be graded".
+     * Phần đã hứa cho giáo viên KHÔNG được trừ vào "còn chấm được".
      *
-     * <p>{@code spendable} is the locking predicate: it must match the gate that
-     * ClassTestTokenQuotaGuardService uses to refuse scheduling an assessment, down to the last dong.
-     * Subtracting the personal spending ceilings from it would make the dashboard report that money
-     * has run out while the system still happily lets it be spent -- a discrepancy far worse than
-     * the old number. The promised portion comes out in a SEPARATE field.
+     * <p>{@code spendable} là vị từ khoá: nó phải khớp từng đồng với cửa mà
+     * ClassTestTokenQuotaGuardService dùng để từ chối lên lịch kỳ thi. Trừ trần chi cá nhân vào đó là
+     * làm dashboard báo hết tiền trong khi hệ thống vẫn vui vẻ cho chi — sai lệch tệ hơn hẳn con số
+     * cũ. Phần đã hứa đi ra bằng một field RIÊNG.
      */
     @Test
     void should_report_what_is_promised_to_teachers_without_shrinking_the_spendable_figure() {
-        givenAssessmentQuota("12000000", "2000000");
+        givenExamQuota("12000000", "2000000");
         givenCommittedToUsers("6000000");
 
-        SchoolFundingResponse funding = useCase.execute(null).funding();
+        var funding = useCase.execute(null).funding();
 
         assertThat(funding.spendableVnd()).isEqualTo("10000000");
         assertThat(funding.committedToUsersVnd()).isEqualTo("6000000");
@@ -248,66 +236,62 @@ class ViewSchoolAdminDashboardUseCaseTests {
     }
 
     /**
-     * When the school distributes more to teachers than what is left, "still free" is NEGATIVE and
-     * is not clamped to 0.
+     * Trường chia cho giáo viên nhiều hơn số còn lại thì "còn tự do" ÂM, không kẹp về 0.
      *
-     * <p>This state is reachable without anyone doing anything wrong: DistributeQuotaToUsersService
-     * caps the total allocation by pool.totalAllocated × ratio, i.e. by the TOTAL and not by the
-     * REMAINING part, so distributing everything at the start of the period and then opening a few
-     * centralized assessments lands here by itself. Clamping to 0 hides exactly that warning -- its
-     * consequence (teachers being refused by the school wallet even though their personal ceiling
-     * still has room) shows up nowhere else.
+     * <p>Trạng thái này đạt tới được mà không ai làm sai: DistributeQuotaToUsersService chặn tổng phân
+     * bổ theo pool.totalAllocated × ratio, tức theo TỔNG chứ không theo phần CÒN LẠI, nên chia hết từ
+     * đầu kỳ rồi mở vài kỳ thi tập trung là tự rơi vào đây. Kẹp về 0 là giấu đúng cảnh báo đó đi —
+     * hệ quả (giáo viên bị ví trường từ chối dù trần cá nhân còn chỗ) không hiện ra ở đâu khác.
      */
     @Test
     void should_surface_over_commitment_as_a_negative_free_figure_instead_of_clamping_it() {
-        givenAssessmentQuota("10000000", "4000000");
+        givenExamQuota("10000000", "4000000");
         givenCommittedToUsers("10000000");
 
-        SchoolFundingResponse funding = useCase.execute(null).funding();
+        var funding = useCase.execute(null).funding();
 
         assertThat(funding.spendableVnd()).isEqualTo("6000000");
         assertThat(funding.uncommittedVnd()).isEqualTo("-4000000");
     }
 
     /**
-     * The self-funded wallet can absorb the promised portion: a personal ceiling has no pocket of
-     * its own, so when the plan quota runs out what a teacher spends keeps flowing into the wallet
-     * (chargeOverage never looks at the allocation). "Still free" must therefore be reduced across
-     * BOTH pockets, not only the plan quota.
+     * Ví tự nạp đỡ được phần đã hứa: trần cá nhân không có túi tiền riêng, nên khi hạn mức gói cạn
+     * thì khoản giáo viên tiêu vẫn chạy tiếp sang ví (chargeOverage không hề soi allocation). "Còn tự
+     * do" vì thế phải trừ trên CẢ HAI túi, không chỉ trên hạn mức gói.
      */
     @Test
     void should_count_a_positive_wallet_as_backing_for_what_was_promised_to_teachers() {
-        givenAssessmentQuota("12000000", "12000000");
+        givenExamQuota("12000000", "12000000");
         givenCommittedToUsers("800000");
         when(schoolBalanceRepository.findBySchoolId(SCHOOL_ID))
             .thenReturn(Optional.of(balance(new BigDecimal("2000000"))));
 
-        SchoolFundingResponse funding = useCase.execute(null).funding();
+        var funding = useCase.execute(null).funding();
 
         assertThat(funding.uncommittedVnd()).isEqualTo("1200000");
     }
 
-    /** A school with no running plan has no period to promise anything in -- 0, not an NPE. */
+    /** Trường chưa có gói đang chạy thì không có kỳ nào để hứa — 0, không phải NPE. */
     @Test
     void should_report_nothing_committed_when_the_school_has_no_active_subscription() {
-        SchoolFundingResponse funding = useCase.execute(null).funding();
+        var funding = useCase.execute(null).funding();
 
         assertThat(funding.committedToUsersVnd()).isEqualTo("0");
         assertThat(funding.uncommittedVnd()).isEqualTo("0");
     }
 
     /**
-     * Only asks the ASSESSMENT wallet. The student's speaking-practice spending ceiling lives in the PRACTICE wallet and pays nothing for
-     * assessment grading; adding it here would make the "still free" amount of assessments be reduced by an unrelated pocket of money --
-     * exactly the "merging two pockets" bug that SchoolFundingResponse exists to avoid.
+     * Chỉ hỏi ví EXAM. Trần chi luyện nói của HỌC SINH nằm ở ví PRACTICE và không trả đồng nào cho
+     * việc chấm thi; cộng nó vào đây sẽ làm "còn tự do" của kỳ thi bị trừ bởi một túi tiền không liên
+     * quan — đúng cái lỗi "gộp hai túi" mà SchoolFundingResponse tồn tại để tránh.
      */
     @Test
-    void should_only_ask_about_the_assessment_wallet_when_summing_what_is_promised() {
-        givenAssessmentQuota("12000000", "0");
+    void should_only_ask_about_the_exam_wallet_when_summing_what_is_promised() {
+        givenExamQuota("12000000", "0");
 
         useCase.execute(null);
 
-        verify(subscriptionQuotaUserAllocationRepository).sumUnusedAllocation(any(), eq(QuotaType.ASSESSMENT));
+        verify(subscriptionQuotaUserAllocationRepository).sumUnusedAllocation(any(), eq(QuotaType.EXAM));
         verify(subscriptionQuotaUserAllocationRepository, never())
             .sumUnusedAllocation(any(), eq(QuotaType.PRACTICE));
     }
@@ -321,48 +305,46 @@ class ViewSchoolAdminDashboardUseCaseTests {
     /** Đếm theo NGÀY LỊCH giờ VN: đơn nộp 23:00 hôm qua đọc là "đã sang ngày thứ hai". */
     @Test
     void should_count_appeal_age_in_business_calendar_days() {
-        when(assessmentResultAppealRepository.findOldestPendingRequestedAt(SCHOOL_ID))
+        when(examResultAppealRepository.findOldestPendingRequestedAt(SCHOOL_ID))
             .thenReturn(Instant.now().minus(19, ChronoUnit.DAYS));
 
         assertThat(useCase.execute(null).oldestPendingAppealDays()).isEqualTo(19);
     }
 
     /**
-     * The total card and the per-period card read the SAME point in time. Two separate
-     * {@code Instant.now()} calls could place the same submission "within the deadline" in one
-     * place and "overdue" in another, and two numbers side by side on the same screen disagreeing
-     * by a few milliseconds is the kind of bug nobody can reproduce.
+     * Thẻ tổng và thẻ theo kỳ đọc CÙNG một mốc thời gian. Hai lần {@code Instant.now()} riêng có thể
+     * xếp cùng một bài vào "đang trong hạn" ở chỗ này và "quá hạn" ở chỗ kia, và hai con số cạnh
+     * nhau trên cùng màn hình lệch nhau vì vài mili giây là loại lỗi không ai dựng lại được.
      */
     @Test
     void should_read_both_workload_queries_at_the_same_instant() {
-        ArgumentCaptor<Instant> countedAt = ArgumentCaptor.forClass(Instant.class);
-        ArgumentCaptor<Instant> listedAt = ArgumentCaptor.forClass(Instant.class);
+        var countedAt = ArgumentCaptor.forClass(Instant.class);
+        var listedAt = ArgumentCaptor.forClass(Instant.class);
 
         useCase.execute(null);
 
         verify(schoolWorkloadQueryRepository).countUnscored(eq(SCHOOL_ID), countedAt.capture());
         verify(schoolWorkloadQueryRepository)
-            .findAssessmentsAwaitingPublish(eq(SCHOOL_ID), listedAt.capture(), anyInt());
+            .findExamsAwaitingPublish(eq(SCHOOL_ID), listedAt.capture(), anyInt());
         assertThat(countedAt.getValue()).isEqualTo(listedAt.getValue());
     }
 
-    private void givenAssessmentQuota(String allocated, String used) {
-        SchoolSubscription subscription = new SchoolSubscription();
+    private void givenExamQuota(String allocated, String used) {
+        var subscription = new SchoolSubscription();
         subscription.setId(UUID.randomUUID());
         subscription.setSchoolId(SCHOOL_ID);
-        // status/endDate are not relevant to the money calculation here, but
-        // buildSubscriptionRenewal runs in the same execute() call and reads both -- leaving them
-        // empty is an NPE, not a safe null.
+        // status/endDate không liên quan tới phép tính tiền ở đây, nhưng buildSubscriptionRenewal
+        // chạy trong cùng một lượt execute() và đọc cả hai — bỏ trống là NPE, không phải null an toàn.
         subscription.setStatus(SchoolSubscriptionStatus.ACTIVE);
         subscription.setEndDate(Instant.parse("2026-12-31T00:00:00Z"));
         when(schoolSubscriptionRepository.findActiveBySchoolId(SCHOOL_ID))
             .thenReturn(Optional.of(subscription));
 
-        SchoolSubscriptionQuotaRecord quota = new SchoolSubscriptionQuotaRecord();
+        var quota = new SchoolSubscriptionQuotaRecord();
         quota.setTotalAllocatedAmountVnd(new BigDecimal(allocated));
         quota.setUsedAmountVnd(new BigDecimal(used));
         when(subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(
-            eq(subscription.getId()), eq(QuotaType.ASSESSMENT))).thenReturn(Optional.of(quota));
+            eq(subscription.getId()), eq(QuotaType.EXAM))).thenReturn(Optional.of(quota));
     }
 
     /**
@@ -372,7 +354,7 @@ class ViewSchoolAdminDashboardUseCaseTests {
      * chốt nó là test của tầng persistence. Ở đây thứ đang test là use case dùng con số ấy ra sao.
      */
     private void givenCommittedToUsers(String unusedAllocationVnd) {
-        when(subscriptionQuotaUserAllocationRepository.sumUnusedAllocation(any(), eq(QuotaType.ASSESSMENT)))
+        when(subscriptionQuotaUserAllocationRepository.sumUnusedAllocation(any(), eq(QuotaType.EXAM)))
             .thenReturn(new BigDecimal(unusedAllocationVnd));
     }
 
@@ -393,7 +375,7 @@ class ViewSchoolAdminDashboardUseCaseTests {
     }
 
     private Order order(OrderType type, OrderStatus status, BigDecimal totalVnd, Instant createdAt) {
-        Order built = new Order();
+        var built = new Order();
         built.setId(UUID.randomUUID());
         built.setSchoolId(SCHOOL_ID);
         built.setType(type);

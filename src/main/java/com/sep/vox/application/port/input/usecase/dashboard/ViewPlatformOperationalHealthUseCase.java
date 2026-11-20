@@ -1,14 +1,9 @@
 package com.sep.vox.application.port.input.usecase.dashboard;
 
-import com.sep.vox.application.query.dto.GradingOutcomeBucketDto;
-import com.sep.vox.application.query.dto.LiveSessionCountsDto;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -54,11 +49,11 @@ public class ViewPlatformOperationalHealthUseCase
     @Override
     @Transactional(readOnly = true)
     public PlatformOperationalHealthResponse execute(ViewPlatformOperationalHealthQuery input) {
-        ZoneId zone = ZoneConstant.BUSINESS_ZONE;
-        LiveSessionCountsDto live = platformOperationalHealthQueryRepository.countLiveSessions();
+        var zone = ZoneConstant.BUSINESS_ZONE;
+        var live = platformOperationalHealthQueryRepository.countLiveSessions();
 
-        Instant to = input == null || input.dateTo() == null ? Instant.now() : input.dateTo();
-        Instant from = input == null || input.dateFrom() == null
+        var to = input == null || input.dateTo() == null ? Instant.now() : input.dateTo();
+        var from = input == null || input.dateFrom() == null
             ? to.atZone(zone).toLocalDate().minusDays(DEFAULT_WINDOW_DAYS - 1L).atStartOfDay(zone).toInstant()
             : input.dateFrom();
 
@@ -66,43 +61,43 @@ public class ViewPlatformOperationalHealthUseCase
         // một khoảng rỗng thì thật sự không có ngày nào, và đó là câu trả lời trung thực hơn là 0%.
         if (!from.isBefore(to)) {
             return new PlatformOperationalHealthResponse(
-                live.sessionsInProgress(), live.assessmentsInProgress(), live.gradingQueueDepth(),
+                live.sessionsInProgress(), live.examsInProgress(), live.gradingQueueDepth(),
                 0L, 0L, null, List.of());
         }
 
         // Ngày cuối lấy theo khoảnh khắc CUỐI CÙNG còn nằm trong khoảng, vì `to` là mốc mở: khi
         // `to` rơi đúng 00:00 giờ VN thì ngày của chính nó không có phút nào thuộc cửa sổ.
-        LocalDate lastDay = to.minusMillis(1).atZone(zone).toLocalDate();
-        LocalDate firstDay = from.atZone(zone).toLocalDate();
-        Instant queryFrom = from;
+        var lastDay = to.minusMillis(1).atZone(zone).toLocalDate();
+        var firstDay = from.atZone(zone).toLocalDate();
+        var queryFrom = from;
         if (ChronoUnit.DAYS.between(firstDay, lastDay) >= MAX_WINDOW_DAYS) {
             firstDay = lastDay.minusDays(MAX_WINDOW_DAYS - 1L);
             queryFrom = firstDay.atStartOfDay(zone).toInstant();
         }
 
-        Map<LocalDate, GradingOutcomeBucketDto> byDay = platformOperationalHealthQueryRepository.findGradingOutcomeByDay(queryFrom, to, zone).stream()
+        var byDay = platformOperationalHealthQueryRepository.findGradingOutcomeByDay(queryFrom, to, zone).stream()
             .collect(Collectors.toMap(dto -> dto.day(), Function.identity()));
 
-        List<GradingOutcomeBucketResponse> daily = new ArrayList<GradingOutcomeBucketResponse>();
-        long graded = 0L;
-        long failed = 0L;
-        for (LocalDate day = firstDay; !day.isAfter(lastDay); day = day.plusDays(1)) {
-            GradingOutcomeBucketDto bucket = byDay.get(day);
-            long dayGraded = bucket == null ? 0L : bucket.graded();
-            long dayFailed = bucket == null ? 0L : bucket.failed();
+        var daily = new ArrayList<GradingOutcomeBucketResponse>();
+        var graded = 0L;
+        var failed = 0L;
+        for (var day = firstDay; !day.isAfter(lastDay); day = day.plusDays(1)) {
+            var bucket = byDay.get(day);
+            var dayGraded = bucket == null ? 0L : bucket.graded();
+            var dayFailed = bucket == null ? 0L : bucket.failed();
             graded += dayGraded;
             failed += dayFailed;
-            daily.add(new GradingOutcomeBucketResponse(day, dayGraded, dayFailed));
+            daily.add(new GradingOutcomeBucketResponse(day.toString(), dayGraded, dayFailed));
         }
 
         return new PlatformOperationalHealthResponse(
-            live.sessionsInProgress(), live.assessmentsInProgress(), live.gradingQueueDepth(),
+            live.sessionsInProgress(), live.examsInProgress(), live.gradingQueueDepth(),
             graded, failed, successRatePercent(graded, failed), List.copyOf(daily));
     }
 
     /** Làm tròn 1 chữ số thập phân: 98,7% đọc được, còn 98,66666% thì không thêm thông tin gì. */
     private static Double successRatePercent(long graded, long failed) {
-        long attempted = graded + failed;
+        var attempted = graded + failed;
         if (attempted == 0L) {
             return null;
         }

@@ -13,8 +13,8 @@ public final class ScoringRuleMapper {
     private ScoringRuleMapper() {}
 
     public static ScoringRule toDomain(ScoringRuleJpaEntity jpa) {
-        ScoringRuleConditionType conditionType = fromConditionType(jpa.getConditionType());
-        ScoringRuleActionType actionType = fromActionType(jpa.getActionType());
+        var conditionType = fromConditionType(jpa.getConditionType());
+        var actionType = fromActionType(jpa.getActionType());
         return new ScoringRule(
             jpa.getId(),
             jpa.getPolicyId(),

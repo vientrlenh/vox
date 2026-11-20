@@ -1,10 +1,5 @@
 package com.sep.vox.interfaces.rest.controller;
 
-import com.sep.vox.application.port.input.command.CreateQuestionBankGradeCommand;
-import com.sep.vox.application.port.input.command.CreateSchoolQuestionBankCommand;
-import com.sep.vox.application.port.input.command.CreateSystemQuestionBankCommand;
-import com.sep.vox.application.port.input.command.UpdateQuestionBankCommand;
-import com.sep.vox.application.port.input.command.UpdateQuestionBankStatusCommand;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -106,13 +101,13 @@ public class QuestionBankController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewImportResponse>> previewImport(
             @RequestParam("file") MultipartFile file) throws IOException {
-        UploadedFile uploadedFile = UploadedFile.upload(
+        var uploadedFile = UploadedFile.upload(
             file.getOriginalFilename(),
             file.getContentType(),
             file.getSize(),
             file.getBytes()
         );
-        PreviewImportResponse data = previewQuestionBankImportFromFileUseCase.execute(
+        var data = previewQuestionBankImportFromFileUseCase.execute(
             new PreviewQuestionBankImportFromFileCommand(uploadedFile)
         );
         return ResponseEntity.ok(ApiResponse.success("Xem trước import ngân hàng câu hỏi thành công", data));
@@ -132,18 +127,18 @@ public class QuestionBankController {
     @PostMapping("/system")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<CreateQuestionBankResponse>> createSystem(@Valid @RequestBody CreateSystemQuestionBankRequest request) {
-        CreateSystemQuestionBankCommand command = CreateQuestionBankCommandMapper.fromSystemRequest(request);
-        CreateQuestionBankResponse data = createSystemQuestionBankUseCase.execute(command);
-        ApiResponse<CreateQuestionBankResponse> response = ApiResponse.success("Ngân hàng câu hỏi hệ thống được tạo thành công", data);
+        var command = CreateQuestionBankCommandMapper.fromSystemRequest(request);
+        var data = createSystemQuestionBankUseCase.execute(command);
+        var response = ApiResponse.success("Ngân hàng câu hỏi hệ thống được tạo thành công", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/school")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<CreateQuestionBankResponse>> createSchool(@Valid @RequestBody CreateSchoolQuestionBankRequest request) {
-        CreateSchoolQuestionBankCommand command = CreateQuestionBankCommandMapper.fromSchoolRequest(request);
-        CreateQuestionBankResponse data = createSchoolQuestionBankUseCase.execute(command);
-        ApiResponse<CreateQuestionBankResponse> response = ApiResponse.success("Tạo ngân hàng câu hỏi thành công", data);
+        var command = CreateQuestionBankCommandMapper.fromSchoolRequest(request);
+        var data = createSchoolQuestionBankUseCase.execute(command);
+        var response = ApiResponse.success("Tạo ngân hàng câu hỏi thành công", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -152,9 +147,9 @@ public class QuestionBankController {
     public ResponseEntity<ApiResponse<QuestionBankDto>> update(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionBankRequest request) {
-        UpdateQuestionBankCommand command = UpdateQuestionBankCommandMapper.fromRequest(id, request);
-        QuestionBankDto data = updateQuestionBankUseCase.execute(command);
-        ApiResponse<QuestionBankDto> response = ApiResponse.success("Cập nhật ngân hàng câu hỏi thành công", data);
+        var command = UpdateQuestionBankCommandMapper.fromRequest(id, request);
+        var data = updateQuestionBankUseCase.execute(command);
+        var response = ApiResponse.success("Cập nhật ngân hàng câu hỏi thành công", data);
         return ResponseEntity.ok(response);
     }
 
@@ -163,9 +158,9 @@ public class QuestionBankController {
     public ResponseEntity<ApiResponse<QuestionBankDto>> updateStatus(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionBankStatusRequest request) {
-        UpdateQuestionBankStatusCommand command = UpdateQuestionBankStatusCommandMapper.fromRequest(id, request);
-        QuestionBankDto data = updateQuestionBankStatusUseCase.execute(command);
-        ApiResponse<QuestionBankDto> response = ApiResponse.success("Cập nhật trạng thái ngân hàng câu hỏi thành công", data);
+        var command = UpdateQuestionBankStatusCommandMapper.fromRequest(id, request);
+        var data = updateQuestionBankStatusUseCase.execute(command);
+        var response = ApiResponse.success("Cập nhật trạng thái ngân hàng câu hỏi thành công", data);
         return ResponseEntity.ok(response);
     }
 
@@ -174,17 +169,17 @@ public class QuestionBankController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<BulkUpdateQuestionBankStatusResponse>> bulkUpdateStatus(
             @Valid @RequestBody BulkUpdateQuestionScopeStatusRequest request) {
-        BulkUpdateQuestionBankStatusResponse data = bulkUpdateQuestionBankStatusUseCase.execute(
+        var data = bulkUpdateQuestionBankStatusUseCase.execute(
             new BulkUpdateQuestionScopeStatusCommand(request.ids(), request.action()));
-        ApiResponse<BulkUpdateQuestionBankStatusResponse> response = ApiResponse.success("Cập nhật trạng thái ngân hàng câu hỏi hàng loạt thành công", data);
+        var response = ApiResponse.success("Cập nhật trạng thái ngân hàng câu hỏi hàng loạt thành công", data);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<DeleteQuestionBankResponse>> delete(@PathVariable(name = "id") UUID id) {
-        DeleteQuestionBankResponse data = deleteQuestionBankUseCase.execute(new DeleteQuestionBankCommand(id));
-        ApiResponse<DeleteQuestionBankResponse> response = ApiResponse.success("Xóa ngân hàng câu hỏi thành công", data);
+        var data = deleteQuestionBankUseCase.execute(new DeleteQuestionBankCommand(id));
+        var response = ApiResponse.success("Xóa ngân hàng câu hỏi thành công", data);
         return ResponseEntity.ok(response);
     }
 
@@ -193,9 +188,9 @@ public class QuestionBankController {
     public ResponseEntity<ApiResponse<QuestionBankGradeDto>> createGrade(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody CreateQuestionBankGradeRequest request) {
-        CreateQuestionBankGradeCommand command = CreateQuestionBankGradeCommandMapper.fromRequest(id, request);
-        QuestionBankGradeDto data = createQuestionBankGradeUseCase.execute(command);
-        ApiResponse<QuestionBankGradeDto> response = ApiResponse.success("Gắn khối lớp cho ngân hàng câu hỏi thành công", data);
+        var command = CreateQuestionBankGradeCommandMapper.fromRequest(id, request);
+        var data = createQuestionBankGradeUseCase.execute(command);
+        var response = ApiResponse.success("Gắn khối lớp cho ngân hàng câu hỏi thành công", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

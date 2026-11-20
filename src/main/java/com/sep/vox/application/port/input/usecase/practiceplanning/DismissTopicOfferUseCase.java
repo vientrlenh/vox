@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +34,7 @@ public class DismissTopicOfferUseCase implements IUseCase<DismissTopicOfferComma
     @Override
     @Transactional
     public Boolean execute(DismissTopicOfferCommand input) {
-        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
+        var studentId = userContextPort.getCurrentAuthenticatedUserId();
         if (!practiceTopicRepository.existsActiveById(input.topicId())) {
             throw new NotFoundException("Không tìm thấy chủ đề luyện tập.");
         }

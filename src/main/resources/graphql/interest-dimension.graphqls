@@ -1,25 +1,25 @@
 extend type Query {
-    "Interest dimension catalog, including deactivated dimensions (SYSTEM_ADMIN)."
+    "Danh mục chiều sở thích, kể cả đã tắt (SYSTEM_ADMIN)."
     interestDimensions: [InterestDimension!]!
 }
 
 extend type Mutation {
     createInterestDimension(input: UpsertInterestDimensionInput!): InterestDimension!
     updateInterestDimension(input: UpsertInterestDimensionInput!): InterestDimension!
-    "Soft deactivation -- keeps the historical scores and topics already assigned to this dimension."
+    "Tắt mềm -- giữ nguyên điểm số/chủ đề lịch sử đã gán chiều này."
     deactivateInterestDimension(code: String!): Boolean!
 }
 
 input UpsertInterestDimensionInput {
-    "UPPER_SNAKE, 3-32 characters. Cannot be changed after creation (it is assigned to topics and scores)."
+    "UPPER_SNAKE, 3-32 ký tự. Không đổi được sau khi tạo (đã gán vào chủ đề/điểm số)."
     code: String!
     label: String
     description: String
     active: Boolean
     """
-    Whether it is put to the student in the interest quiz. Set to false for a dimension the system assigns itself
-    (for example ACADEMIC_ASSESSMENT for topics taken from the question bank) -- it is still used to rank topics
-    but is not an interest, so students are not asked about it.
+    Có đem ra hỏi trong quiz sở thích không. Đặt false cho chiều hệ thống tự gán
+    (ví dụ ACADEMIC_EXAM cho chủ đề lấy từ ngân hàng đề) -- vẫn dùng xếp hạng chủ đề
+    nhưng không phải sở thích nên không hỏi học sinh.
     """
     quizEligible: Boolean
     displayOrder: Int
@@ -32,6 +32,6 @@ type InterestDimension {
     active: Boolean!
     quizEligible: Boolean!
     displayOrder: Int!
-    createdAt: DateTime
-    updatedAt: DateTime
+    createdAt: String
+    updatedAt: String
 }

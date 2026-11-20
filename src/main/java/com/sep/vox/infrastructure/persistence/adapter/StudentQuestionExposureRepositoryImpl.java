@@ -22,7 +22,7 @@ public class StudentQuestionExposureRepositoryImpl implements StudentQuestionExp
     @Override
     @Transactional
     public void recordExposure(UUID studentId, UUID questionId) {
-        StudentQuestionExposureJpaEntity exposure = repository
+        var exposure = repository
             .findByStudentIdAndPracticeQuestionId(studentId, questionId)
             .orElse(null);
         if (exposure == null) {

@@ -54,7 +54,7 @@ class GradeLevelBandScopeGuardServiceTests {
         frameworkResultBandRepository = mock(FrameworkResultBandRepository.class);
         schoolGradeRepository = mock(SchoolGradeRepository.class);
         schoolClassRepository = mock(SchoolClassRepository.class);
-        GradeLevelRepository gradeLevelRepository = mock(GradeLevelRepository.class);
+        var gradeLevelRepository = mock(GradeLevelRepository.class);
 
         GradeLevel gradeLevel = mock(GradeLevel.class);
         when(gradeLevel.getName()).thenReturn("Khối 10");

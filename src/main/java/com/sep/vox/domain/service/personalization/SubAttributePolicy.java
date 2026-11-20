@@ -51,7 +51,7 @@ public final class SubAttributePolicy {
         if (PRONUNCIATION_FLUENCY.contains(criterion)) {
             return null;
         }
-        Set<String> allowed = SUB_ATTRIBUTES.get(criterion);
+        var allowed = SUB_ATTRIBUTES.get(criterion);
         return allowed != null
                 && proposedSubAttribute != null
                 && allowed.contains(proposedSubAttribute)

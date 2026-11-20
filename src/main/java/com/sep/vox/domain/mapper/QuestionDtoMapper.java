@@ -1,5 +1,6 @@
 package com.sep.vox.domain.mapper;
 
+import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.common.PageResult;
@@ -29,8 +30,8 @@ public class QuestionDtoMapper {
             question.getStatus().name(),
             question.getConfidentiality().name(),
             question.getSecurePoolId(),
-            question.getCreatedAt(),
-            question.getUpdatedAt(),
+            valueOf(question.getCreatedAt()),
+            valueOf(question.getUpdatedAt()),
             question.getCreatedBy(),
             question.getUpdatedBy()
         );
@@ -50,6 +51,10 @@ public class QuestionDtoMapper {
             page.totalElements(),
             page.totalPages()
         );
+    }
+
+    private static String valueOf(Instant date) {
+        return date == null ? null : date.toString();
     }
 
     private static String valueOf(QuestionSharing sharing) {

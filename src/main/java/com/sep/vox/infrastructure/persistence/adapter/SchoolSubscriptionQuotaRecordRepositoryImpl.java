@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionQuotaRecordJpaEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -31,8 +30,8 @@ public class SchoolSubscriptionQuotaRecordRepositoryImpl implements SchoolSubscr
 
     @Override
     public SchoolSubscriptionQuotaRecord save(SchoolSubscriptionQuotaRecord quota) {
-        SchoolSubscriptionQuotaRecordJpaEntity entity = SchoolSubscriptionQuotaRecordMapper.toJpa(quota);
-        SchoolSubscriptionQuotaRecordJpaEntity saved = springDataSchoolSubscriptionQuotaRecordRepository.save(entity);
+        var entity = SchoolSubscriptionQuotaRecordMapper.toJpa(quota);
+        var saved = springDataSchoolSubscriptionQuotaRecordRepository.save(entity);
         return SchoolSubscriptionQuotaRecordMapper.toDomain(saved);
     }
 

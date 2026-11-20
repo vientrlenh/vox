@@ -6,7 +6,6 @@ import java.util.Map;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
 
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 public class FakeJsonSerializationPort implements JsonSerializationPort {
@@ -73,9 +72,9 @@ public class FakeJsonSerializationPort implements JsonSerializationPort {
             return List.of();
         }
         try {
-            JsonNode root = objectMapper.readTree(json);
-            List<String> result = new java.util.ArrayList<String>();
-            for (JsonNode node : root.path(field)) {
+            var root = objectMapper.readTree(json);
+            var result = new java.util.ArrayList<String>();
+            for (var node : root.path(field)) {
                 if (!node.asString().isBlank()) {
                     result.add(node.asString());
                 }
@@ -87,7 +86,7 @@ public class FakeJsonSerializationPort implements JsonSerializationPort {
     }
 
     private Map<String, String> toStringMap(Map<?, ?> raw) {
-        Map<String, String> result = new LinkedHashMap<String, String>();
+        var result = new LinkedHashMap<String, String>();
         raw.forEach((key, value) -> result.put(
             key == null ? null : key.toString(),
             value == null ? null : value.toString()

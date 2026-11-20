@@ -51,10 +51,10 @@ public class GoogleIdTokenProvider implements GoogleIdTokenVerifierPort {
     public GoogleIdTokenProvider(GoogleIdTokenProperties properties) {
         this.allowedAudiences = properties.allowedAudiences();
 
-        // Warn instead of throwing: this is an ADDED feature, and every deployment currently running has not
-        // set this variable. Dying at startup would take down the whole system because of a login path nobody has
-        // used yet -- unlike CORS or the admin account, which are always required so fail-fast is right.
-        // The real rejection lives in verify(), where a real person is trying to log in and can be told about the error.
+        // Cảnh báo chứ không ném: đây là tính năng THÊM VÀO, và mọi deployment đang chạy đều chưa
+        // đặt biến này. Chết lúc khởi động sẽ hạ nguyên hệ thống chỉ vì một đường đăng nhập chưa ai
+        // dùng -- khác hẳn CORS hay tài khoản admin, những thứ luôn cần thiết nên fail-fast là đúng.
+        // Phần từ chối thật nằm ở verify(), nơi có người thật sự đang cố đăng nhập để mà báo lỗi.
         if (allowedAudiences.isEmpty()) {
             LOGGER.warn(
                 "app.oauth2.google.allowed-audiences đang trống -- đăng nhập Google từ ứng dụng "
@@ -64,7 +64,7 @@ public class GoogleIdTokenProvider implements GoogleIdTokenVerifierPort {
                     + "KHÔNG bị ảnh hưởng.");
         }
 
-        NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(properties.jwkSetUri()).build();
+        var decoder = NimbusJwtDecoder.withJwkSetUri(properties.jwkSetUri()).build();
         decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
             new JwtTimestampValidator(),
             issuerValidator(properties.allowedIssuers()),
@@ -76,10 +76,10 @@ public class GoogleIdTokenProvider implements GoogleIdTokenVerifierPort {
     /**
      * {@inheritDoc}
      *
-     * <p>Every Nimbus error is mapped to ONE generic message, deliberately. {@link JwtException} can tell
-     * "wrong signature", "expired", "wrong aud" apart -- but the person who hits the error here is the one HOLDING the token,
-     * and telling them exactly which check failed is giving directions to probe step by step. The details go into the
-     * log, where operators can read them and attackers cannot.
+     * <p>Mọi lỗi của Nimbus đều quy về MỘT thông báo chung, cố ý. {@link JwtException} phân biệt
+     * được "sai chữ ký", "hết hạn", "sai aud" -- nhưng người đang gặp lỗi ở đây là người CẦM token,
+     * và nói cho họ biết chính xác phép kiểm nào trượt là chỉ đường dò từng bước. Chi tiết đi vào
+     * log, nơi người vận hành đọc được mà kẻ tấn công thì không.
      */
     @Override
     public VerifiedGoogleIdentity verify(String idToken) {
@@ -101,9 +101,9 @@ public class GoogleIdTokenProvider implements GoogleIdTokenVerifierPort {
             throw new UnauthorizedException("Đăng nhập Google thất bại");
         }
 
-        String email = jwt.getClaimAsString(CLAIM_EMAIL);
+        var email = jwt.getClaimAsString(CLAIM_EMAIL);
         if (email == null || email.isBlank()) {
-            // The token is valid but carries no email scope, so there is nothing to look the user up with.
+            // Token hợp lệ nhưng không kèm scope email thì không có gì để tra người dùng.
             LOGGER.warn("ID token Google hợp lệ nhưng thiếu claim email -- client thiếu scope?");
             throw new UnauthorizedException("Đăng nhập Google thất bại");
         }
@@ -118,15 +118,15 @@ public class GoogleIdTokenProvider implements GoogleIdTokenVerifierPort {
     }
 
     /**
-     * {@code email_verified} arrives on the wire sometimes as a JSON boolean, sometimes as the string "true".
+     * {@code email_verified} về dây khi thì là boolean JSON, khi thì là chuỗi "true".
      *
-     * <p>This is not a defensive guess: it is a real difference between Google's token-issuing paths,
-     * and {@code getClaimAsBoolean} on the string "true" returns null. Reading it that way and treating null as
-     * false would reject perfectly valid accounts -- a bug that only appears for some
-     * users, which is the hardest kind to reproduce.
+     * <p>Không phải giả định phòng xa: đây là khác biệt có thật giữa các đường phát token của Google,
+     * và {@code getClaimAsBoolean} trên một chuỗi "true" trả về null. Đọc kiểu đó rồi coi null là
+     * false sẽ từ chối những tài khoản hoàn toàn hợp lệ -- một lỗi chỉ xuất hiện với một phần người
+     * dùng, tức là loại khó dựng lại nhất.
      */
     private static boolean emailVerified(Jwt jwt) {
-        Object claim = jwt.getClaim(CLAIM_EMAIL_VERIFIED);
+        var claim = jwt.getClaim(CLAIM_EMAIL_VERIFIED);
         if (claim instanceof Boolean verified) {
             return verified;
         }

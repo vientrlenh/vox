@@ -1,56 +1,38 @@
 """
-ONE payment ATTEMPT of an order, not the lifecycle of the order.
+MỘT LẦN THỬ thanh toán của một đơn, không phải vòng đời của đơn.
 
-An order can have several rows -- a failed payment followed by a retry is two different attempts --
-but at most one PAID row and at most one PENDING row. Failed attempts are INTENTIONALLY not filtered
-out: when a school asks "why was I charged only once when I pressed pay twice", this list is the
-answer.
+Một đơn có thể có nhiều dòng -- trả hụt rồi trả lại là hai lần thử khác nhau -- nhưng tối đa một
+dòng PAID và tối đa một dòng PENDING. Các lần thất bại CỐ Ý không bị lọc đi: khi trường hỏi "sao tôi
+bấm trả hai lần mà chỉ bị trừ một lần", danh sách này chính là câu trả lời.
 """
 type Payment {
     id: ID!
     orderId: ID!
     amountVnd: Float!
-    "E_BANKING or CARD. Every order currently goes through the third-party gateway, so it is always E_BANKING."
-    method: PaymentMethod
-    provider: PaymentProvider
-    "The lifecycle of THIS attempt. The reason why no money came in lives on Order.status."
-    status: PaymentStatus!
+    "E_BANKING hoặc CARD. Hiện mọi đơn đi qua cổng thứ ba nên luôn là E_BANKING."
+    method: String
+    "PAYOS hoặc SEPAY."
+    provider: String
+    "PENDING | PAID | FAILED -- vòng đời của LẦN THỬ này. Lý do vì sao không ra tiền nằm ở Order.status."
+    status: String!
     """
-    The transaction code on the gateway side. Exposed so that the school and support can look up the
-    same transaction on the PayOS/SePay dashboard when the money has moved but the order has not
-    received it.
+    Mã giao dịch phía cổng. Đưa ra để trường và hỗ trợ cùng tra được một giao dịch trên dashboard
+    PayOS/SePay khi tiền đã chuyển mà đơn chưa nhận.
     """
     providerOrderRef: String
     """
-    The payment link, ONLY present on an attempt that is still PENDING -- the session of a settled
-    attempt is already closed on the gateway side. The frontend uses exactly this field for the
-    "continue paying" button instead of calling the link-creation API again, because every newly
-    issued link is a new order code on the gateway side.
+    Link trả tiền, CHỈ có ở lần thử còn PENDING -- phiên của lần thử đã chốt thì bên cổng đã đóng.
+    FE dùng đúng trường này cho nút "thanh toán tiếp" thay vì gọi lại API tạo link, vì mỗi lần phát
+    link mới là một mã đơn mới phía cổng.
     """
     checkoutUrl: String
-    "The moment the GATEWAY recorded the money, different from createdAt (when we issued the link). Null while the attempt has not brought in money."
-    paidAt: DateTime
-    createdAt: DateTime
+    "Thời điểm CỔNG ghi nhận tiền, khác createdAt (lúc mình phát link). Null khi lần thử chưa ra tiền."
+    paidAt: String
+    createdAt: String
 }
 
-enum PaymentStatus {
-    PENDING
-    PAID
-    FAILED
-}
-
-enum PaymentMethod {
-    E_BANKING
-    CARD
-}
-
-enum PaymentProvider {
-    PAYOS
-    SEPAY
-}
-
-# See the note in invoice.graphqls about why this uses extend.
+# Xem ghi chú ở invoice.graphqls về lý do dùng extend.
 extend type Order {
-    "The payment attempts, NEWEST FIRST. Empty when the school has never pressed pay."
+    "Các lần thử thanh toán, MỚI NHẤT TRƯỚC. Rỗng khi trường chưa bấm thanh toán lần nào."
     payments: [Payment!]
 }

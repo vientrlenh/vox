@@ -9,14 +9,14 @@ public class PostalCodeTests {
 
     @Test
     void should_accept_valid_postal_code() {
-        PostalCode postalCode = new PostalCode("700000");
+        var postalCode = new PostalCode("700000");
 
         assertThat(postalCode.value()).isEqualTo("700000");
     }
 
     @Test
     void should_accept_null_postal_code() {
-        PostalCode postalCode = new PostalCode(null);
+        var postalCode = new PostalCode(null);
 
         assertThat(postalCode.value()).isNull();
     }

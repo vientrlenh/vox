@@ -35,17 +35,17 @@ public class SubscriptionExpiryJob {
     @Scheduled(fixedDelay = 3_600_000, initialDelay = 60_000)
     @Transactional
     public void expireOverdueSubscriptions() {
-        Instant today = Instant.now();
-        int expiredCount = schoolSubscriptionRepository.expireOverdue(today);
+        var today = Instant.now();
+        var expiredCount = schoolSubscriptionRepository.expireOverdue(today);
         if (expiredCount > 0) {
             LOGGER.info("Đã chuyển {} subscription quá hạn sang EXPIRED", expiredCount);
         }
 
-        // The boundary between two periods is the ONLY place where the self-funded amount to carry over can be fixed, and this job is already
-        // what runs at that boundary -- see CarryQuotaFundingAtPeriodStartService and V13. The order relative to the
-        // sweep above does not matter: the carry-over attaches to the start_date of the NEW period, not to the status
-        // of the old one, precisely because the new period can be spent right when its date arrives while the other sweep may lag by an hour.
-        int carriedCount = carryQuotaFundingAtPeriodStartService.carryDueFunding(today);
+        // Ranh giới hai kỳ là chỗ DUY NHẤT chốt được phần tiền tự nạp mang sang, và job này vốn đã là
+        // thứ chạy ở ranh giới đó -- xem CarryQuotaFundingAtPeriodStartService và V13. Thứ tự với lần
+        // quét trên không quan trọng: phép mang sang bám vào start_date của kỳ MỚI, không bám status
+        // của kỳ cũ, đúng vì kỳ mới tiêu được ngay khi tới ngày còn lần quét kia có thể chậm cả giờ.
+        var carriedCount = carryQuotaFundingAtPeriodStartService.carryDueFunding(today);
         if (carriedCount > 0) {
             LOGGER.info("Đã mang tiền tự nạp chưa tiêu sang {} ví hạn mức của kỳ vừa bắt đầu", carriedCount);
         }

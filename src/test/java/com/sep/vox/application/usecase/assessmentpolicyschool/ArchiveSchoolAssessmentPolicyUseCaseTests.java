@@ -55,10 +55,10 @@ class ArchiveSchoolAssessmentPolicyUseCaseTests {
     void setUp() {
         assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
         rubricVersionRepository = mock(RubricVersionRepository.class);
-        SchoolRepository schoolRepository = mock(SchoolRepository.class);
-        SchoolUserRepository schoolUserRepository = mock(SchoolUserRepository.class);
-        UserRepository userRepository = mock(UserRepository.class);
-        UserContextPort userContextPort = mock(UserContextPort.class);
+        var schoolRepository = mock(SchoolRepository.class);
+        var schoolUserRepository = mock(SchoolUserRepository.class);
+        var userRepository = mock(UserRepository.class);
+        var userContextPort = mock(UserContextPort.class);
 
         useCase = new ArchiveSchoolAssessmentPolicyUseCase(
                 assessmentPolicyRepository, rubricVersionRepository, schoolRepository,

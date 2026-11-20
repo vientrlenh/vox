@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.Instant;
@@ -79,11 +78,11 @@ public class TopicSuggestionService {
     // same fix + rationale (HikariCP connection-pool starvation under load). Each repository
     // call here self-transacts via Spring Data's proxy.
     public TopicFromKeywordResult generateFromKeyword(UUID studentId, String keyword) {
-        String normalized = normalize(keyword);
+        var normalized = normalize(keyword);
         if (normalized.isBlank()) {
             return new TopicFromKeywordResult(null, "REJECTED_UNSUITABLE");
         }
-        TopicNameCard existingTopic = findNearExistingTopic(normalized);
+        var existingTopic = findNearExistingTopic(normalized);
         if (existingTopic != null) {
             recordKeywordRequest(studentId, keyword, "MATCHED_EXISTING");
             return new TopicFromKeywordResult(
@@ -94,30 +93,30 @@ public class TopicSuggestionService {
                 "MATCHED_EXISTING"
             );
         }
-        // REMOVED the quota of 3 requests/week (2026-08-07). The old condition was
+        // GỠ hạn mức 3 lượt/tuần (2026-08-07). Điều kiện cũ là
         // `weeklyRequestCount(studentId) >= 3 || unsuitable(normalized)`.
         //
-        // It counted EVERY row that has a keyword in the calendar week, without filtering by result -- but
-        // recordKeywordRequest writes a row in all four branches, so the three branches that cost NO LLM call
-        // (MATCHED_EXISTING, REJECTED_UNSUITABLE, OUT_OF_ASSESSMENT_SCOPE) were still charged against the quota. A student
-        // who typed a keyword pointing exactly at an existing topic also lost one of the three requests.
+        // Nó đếm MỌI dòng có keyword trong tuần lịch, không lọc kết quả -- mà
+        // recordKeywordRequest ghi dòng ở cả bốn nhánh, nên ba nhánh KHÔNG tốn lượt LLM nào
+        // (MATCHED_EXISTING, REJECTED_UNSUITABLE, OUT_OF_EXAM_SCOPE) vẫn bị trừ lượt. Học sinh
+        // gõ một từ khoá trỏ đúng vào chủ đề đã có sẵn cũng mất một lượt trong ba.
         //
-        // The real cost already has its proper place of control: the PRACTICE quota is computed by speaking seconds
-        // (SubmitPracticeTurnUseCase -> ConsumeQuotaService). Blocking here as well tightens the same
-        // pocket of money twice, by an unrelated unit.
+        // Chi phí thật đã có nơi kiểm soát đúng chỗ của nó: quota PRACTICE tính theo giây nói
+        // (SubmitPracticeTurnUseCase -> ConsumeQuotaService). Chặn thêm ở đây là siết hai lần
+        // vào cùng một túi tiền, bằng một đơn vị không liên quan.
         if (unsuitable(normalized)) {
             recordKeywordRequest(studentId, keyword, "REJECTED_UNSUITABLE");
             return new TopicFromKeywordResult(null, "REJECTED_UNSUITABLE");
         }
-        String goal = currentGoal(studentId);
-        if ("ASSESSMENT_PREP".equals(goal)) {
-            // ASSESSMENT_PREP only practices on topics taken from the question bank (question_bank/
-            // question_topic) of exactly the school + grade -- it does not let the AI generate new topics from
-            // free keywords, and keeps the result code OUT_OF_ASSESSMENT_SCOPE (the meaning is still correct).
-            recordKeywordRequest(studentId, keyword, "OUT_OF_ASSESSMENT_SCOPE");
-            return new TopicFromKeywordResult(null, "OUT_OF_ASSESSMENT_SCOPE");
+        var goal = currentGoal(studentId);
+        if ("EXAM_PREP".equals(goal)) {
+            // EXAM_PREP chỉ luyện trên topic lấy từ ngân hàng câu hỏi (question_bank/
+            // question_topic) của đúng trường + khối -- không cho AI tự sinh topic mới từ
+            // từ khoá tự do, giữ nguyên mã kết quả OUT_OF_EXAM_SCOPE (ý nghĩa vẫn đúng).
+            recordKeywordRequest(studentId, keyword, "OUT_OF_EXAM_SCOPE");
+            return new TopicFromKeywordResult(null, "OUT_OF_EXAM_SCOPE");
         }
-        List<TopicGenerationPort.TopicProposal> proposals = topicGenerationPort.propose(
+        var proposals = topicGenerationPort.propose(
             studentId,
             List.of(new KeywordEvidence(keyword, 1)),
             interestScores(studentId),
@@ -131,8 +130,8 @@ public class TopicSuggestionService {
             recordKeywordRequest(studentId, keyword, "REJECTED_UNSUITABLE");
             return new TopicFromKeywordResult(null, "REJECTED_UNSUITABLE");
         }
-        TopicGenerationPort.TopicProposal proposal = proposals.get(0);
-        TopicNameCard duplicateTopic = findNearExistingTopic(normalize(proposal.name()));
+        var proposal = proposals.get(0);
+        var duplicateTopic = findNearExistingTopic(normalize(proposal.name()));
         if (duplicateTopic != null) {
             recordKeywordRequest(studentId, keyword, "MATCHED_EXISTING");
             return new TopicFromKeywordResult(
@@ -147,7 +146,7 @@ public class TopicSuggestionService {
         // riêng có @Transactional (xem KeywordTopicPersistenceService), KHÔNG bọc
         // transaction quanh cả hàm này vì generationClient.propose() ở trên là
         // cuộc gọi LLM chậm.
-        UUID topicId = keywordTopicPersistenceService.createTopicAndRecordRequest(
+        var topicId = keywordTopicPersistenceService.createTopicAndRecordRequest(
             studentId,
             keyword,
             proposal.name(),
@@ -191,10 +190,10 @@ public class TopicSuggestionService {
     // ổn định). Xem chú thích tại lời gọi propose().
 
     public List<PracticeTopicOffer> synchronousOffers(UUID studentId, int requestedCount) {
-        if (requestedCount <= 0 || "ASSESSMENT_PREP".equals(currentGoal(studentId))) {
+        if (requestedCount <= 0 || "EXAM_PREP".equals(currentGoal(studentId))) {
             return List.of();
         }
-        List<TopicGenerationPort.TopicProposal> proposals = topicGenerationPort.propose(
+        var proposals = topicGenerationPort.propose(
             studentId,
             List.of(),
             interestScores(studentId),
@@ -218,25 +217,25 @@ public class TopicSuggestionService {
             requestedCount,
             dimensionCodes()
         );
-        List<PracticePlanningResponses.PracticeTopicOffer> result = new ArrayList<PracticeTopicOffer>();
+        var result = new ArrayList<PracticeTopicOffer>();
         // Nạp ứng viên MỘT lần cho cả vòng lặp. Bản cũ gọi findNearExistingTopic() ngay trong
         // vòng, mà hàm đó tự nạp toàn bộ bảng -- tức tối đa MAX_PROPOSALS_PER_RUN lượt nạp + tokenize
         // lại mọi tên chủ đề, mỗi lượt sinh.
-        List<TopicNameCard> candidates = activeNameCards();
+        var candidates = activeNameCards();
         // Sổ kế toán một lượt sinh -- xem log cuối hàm để biết vì sao cần.
-        List<String> collidedWith = new ArrayList<String>();
-        int skippedOverQuota = 0;
-        for (TopicGenerationPort.TopicProposal proposal : proposals) {
+        var collidedWith = new ArrayList<String>();
+        var skippedOverQuota = 0;
+        for (var proposal : proposals) {
             if (result.size() >= requestedCount) {
                 skippedOverQuota++;
                 continue;
             }
-            TopicNameCard duplicate = findNearExistingTopic(normalize(proposal.name()), candidates);
+            var duplicate = findNearExistingTopic(normalize(proposal.name()), candidates);
             if (duplicate != null) {
                 collidedWith.add(proposal.name() + " ~ " + duplicate.name());
                 continue;
             }
-            UUID topicId = createTopic(
+            var topicId = createTopic(
                 proposal.name(), proposal.interestDimension(), proposal.curriculumGroup(),
                 "AI_SUGGESTED", proposal.temporalAffordance()
             );
@@ -273,11 +272,9 @@ public class TopicSuggestionService {
         return result;
     }
 
-    /**
-     * The catalog of current interest dimensions, sent down to Python to constrain the LLM output.
-     * It includes the system dimension (ACADEMIC_ASSESSMENT) as well because this labels a topic, it is not a question to
-     * the student -- unlike the quiz, which only uses the quiz_eligible dimensions.
-     */
+    /** Danh mục chiều sở thích hiện hành, gửi xuống Python để ràng buộc đầu ra của LLM.
+     * Gồm CẢ chiều hệ thống (ACADEMIC_EXAM) vì đây là gán nhãn cho chủ đề, không phải hỏi
+     * học sinh -- khác với quiz, nơi chỉ dùng chiều quiz_eligible. */
     private List<String> dimensionCodes() {
         return interestDimensionRepository.findActive().stream()
             .map(dimension -> dimension.getCode())
@@ -294,7 +291,7 @@ public class TopicSuggestionService {
         if (value == null) {
             return "";
         }
-        String decomposed = Normalizer.normalize(
+        var decomposed = Normalizer.normalize(
             value.toLowerCase(Locale.ROOT).strip().replace('đ', 'd'),
             Normalizer.Form.NFD
         );
@@ -305,14 +302,14 @@ public class TopicSuggestionService {
     }
 
     static double tokenSimilarity(String left, String right) {
-        Set<String> leftTokens = new HashSet<>(List.of(normalize(left).split(" ")));
-        Set<String> rightTokens = new HashSet<>(List.of(normalize(right).split(" ")));
+        var leftTokens = new HashSet<>(List.of(normalize(left).split(" ")));
+        var rightTokens = new HashSet<>(List.of(normalize(right).split(" ")));
         if (leftTokens.isEmpty() || rightTokens.isEmpty()) {
             return 0;
         }
-        Set<String> intersection = new HashSet<>(leftTokens);
+        var intersection = new HashSet<>(leftTokens);
         intersection.retainAll(rightTokens);
-        Set<String> union = new HashSet<>(leftTokens);
+        var union = new HashSet<>(leftTokens);
         union.addAll(rightTokens);
         return (double) intersection.size() / union.size();
     }
@@ -369,7 +366,7 @@ public class TopicSuggestionService {
             String curriculumGroup,
             String source,
             String temporalAffordance) {
-        PracticeTopic saved = practiceTopicRepository.save(new PracticeTopic(
+        var saved = practiceTopicRepository.save(new PracticeTopic(
             null,
             name,
             normalize(name),

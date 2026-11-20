@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -33,9 +32,9 @@ public class QuestionAssetAnalysisRequestPublisher {
         // (typed by a person or previously written by AI) always wins and is never regenerated
         // here; only the explicit "regenerate" action (RegenerateQuestionAssetAnalysisUseCase)
         // clears a field first so AI is allowed to overwrite it.
-        boolean transcriptNeedsGeneration = supportsAiTranscript(asset.getType())
+        var transcriptNeedsGeneration = supportsAiTranscript(asset.getType())
             && isBlank(asset.getTranscript());
-        boolean descriptionNeedsGeneration = supportsDescription(asset.getType())
+        var descriptionNeedsGeneration = supportsDescription(asset.getType())
             && isBlank(asset.getDescription());
 
         if (!transcriptNeedsGeneration && !descriptionNeedsGeneration) {
@@ -46,8 +45,8 @@ public class QuestionAssetAnalysisRequestPublisher {
     }
 
     public void publish(Question question, QuestionAsset asset) {
-        QuestionEvaluationGuide guide = questionEvaluationGuideRepository.findByQuestionId(question.getId()).orElse(null);
-        QuestionAssetAnalysisRequestedExternalEvent event = new QuestionAssetAnalysisRequestedExternalEvent(
+        var guide = questionEvaluationGuideRepository.findByQuestionId(question.getId()).orElse(null);
+        var event = new QuestionAssetAnalysisRequestedExternalEvent(
             asset.getId().toString(),
             question.getId().toString(),
             new QuestionAssetAnalysisRequestedExternalEvent.Payload(

@@ -30,13 +30,13 @@ public class InterestQuizSeedInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws IOException {
-        ClassPathResource resource = new ClassPathResource("practice/interest-quiz-seed.json");
-        String json = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        List<SeedItemJson> rawItems = jsonMapper.readValue(json, new TypeReference<List<SeedItemJson>>() {
+        var resource = new ClassPathResource("practice/interest-quiz-seed.json");
+        var json = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        var rawItems = jsonMapper.readValue(json, new TypeReference<List<SeedItemJson>>() {
         });
-        List<InterestQuizSeedItem> items = new ArrayList<InterestQuizSeedItem>(rawItems.size());
-        for (int index = 0; index < rawItems.size(); index++) {
-            SeedItemJson item = rawItems.get(index);
+        var items = new ArrayList<InterestQuizSeedItem>(rawItems.size());
+        for (var index = 0; index < rawItems.size(); index++) {
+            var item = rawItems.get(index);
             items.add(new InterestQuizSeedItem(
                 UUID.nameUUIDFromBytes(("interest-quiz-" + index).getBytes(StandardCharsets.UTF_8)),
                 item.dimensionPerStatement(),

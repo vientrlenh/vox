@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.NotificationJpaEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -32,8 +31,8 @@ public class NotificationRepositoryImpl implements NotificationRepository {
 
     @Override
     public Notification save(Notification notification) {
-        NotificationJpaEntity entity = NotificationMapper.toJpa(notification);
-        NotificationJpaEntity saved = springDataNotificationRepository.save(entity);
+        var entity = NotificationMapper.toJpa(notification);
+        var saved = springDataNotificationRepository.save(entity);
         return NotificationMapper.toDomain(saved);
     }
 
@@ -54,7 +53,7 @@ public class NotificationRepositoryImpl implements NotificationRepository {
 
     @Override
     public List<Notification> findByUserIdOrderByIdDesc(UUID userId, int limit) {
-        PageRequest pageable = PageRequest.of(0, limit + 1);
+        var pageable = PageRequest.of(0, limit + 1);
         return springDataNotificationRepository.findByUserIdOrderByIdDesc(userId, pageable).stream()
             .map(NotificationMapper::toDomain)
             .toList();
@@ -62,7 +61,7 @@ public class NotificationRepositoryImpl implements NotificationRepository {
 
     @Override
     public List<Notification> findByUserIdAndIdLessThanOrderByIdDesc(UUID userId, UUID cursor, int limit) {
-        PageRequest pageable = PageRequest.of(0, limit + 1);
+        var pageable = PageRequest.of(0, limit + 1);
         return springDataNotificationRepository
             .findByUserIdAndIdLessThanOrderByIdDesc(userId, cursor, pageable).stream()
             .map(NotificationMapper::toDomain)

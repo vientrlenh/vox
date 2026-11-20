@@ -19,7 +19,6 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -48,9 +47,9 @@ public class ViewSchoolUserUseCaseTests {
 
     @Test
     void view_should_return_school_user_when_caller_authorized() {
-        UUID schoolUserId = UUID.randomUUID();
-        SchoolUser schoolUser = schoolUser(schoolUserId, schoolId, targetId);
-        ViewSchoolUserDetailsQuery query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
+        var schoolUserId = UUID.randomUUID();
+        var schoolUser = schoolUser(schoolUserId, schoolId, targetId);
+        var query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
@@ -58,7 +57,7 @@ public class ViewSchoolUserUseCaseTests {
         when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)).thenReturn(true);
         when(schoolUserRepository.findBySchoolIdAndUserId(schoolId, targetId)).thenReturn(Optional.of(schoolUser));
 
-        SchoolUserDto result = viewSchoolUserUseCase.execute(query);
+        var result = viewSchoolUserUseCase.execute(query);
 
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(schoolUserId);
@@ -68,23 +67,23 @@ public class ViewSchoolUserUseCaseTests {
 
     @Test
     void view_should_return_school_user_for_system_admin() {
-        UUID schoolUserId = UUID.randomUUID();
-        SchoolUser schoolUser = schoolUser(schoolUserId, schoolId, targetId);
-        ViewSchoolUserDetailsQuery query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
+        var schoolUserId = UUID.randomUUID();
+        var schoolUser = schoolUser(schoolUserId, schoolId, targetId);
+        var query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
         when(userContextPort.isSystemAdmin()).thenReturn(true);
         when(schoolUserRepository.findBySchoolIdAndUserId(schoolId, targetId)).thenReturn(Optional.of(schoolUser));
 
-        SchoolUserDto result = viewSchoolUserUseCase.execute(query);
+        var result = viewSchoolUserUseCase.execute(query);
 
         assertThat(result.userId()).isEqualTo(targetId);
     }
 
     @Test
     void view_should_throw_when_caller_is_inactive() {
-        ViewSchoolUserDetailsQuery query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
+        var query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(false);
@@ -94,7 +93,7 @@ public class ViewSchoolUserUseCaseTests {
 
     @Test
     void view_should_throw_when_caller_not_in_school() {
-        ViewSchoolUserDetailsQuery query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
+        var query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
@@ -106,7 +105,7 @@ public class ViewSchoolUserUseCaseTests {
 
     @Test
     void view_should_throw_when_school_user_not_found() {
-        ViewSchoolUserDetailsQuery query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
+        var query = new ViewSchoolUserDetailsQuery(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
@@ -118,7 +117,7 @@ public class ViewSchoolUserUseCaseTests {
     }
 
     private SchoolUser schoolUser(UUID id, UUID userSchoolId, UUID userId) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         return new SchoolUser(id, userSchoolId, userId, now, now.plus(365, ChronoUnit.DAYS));
     }
 }

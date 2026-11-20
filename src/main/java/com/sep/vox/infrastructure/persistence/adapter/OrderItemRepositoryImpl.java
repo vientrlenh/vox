@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.OrderItemJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -29,14 +28,14 @@ public class OrderItemRepositoryImpl implements OrderItemRepository {
 
     @Override
     public OrderItem save(OrderItem item) {
-        OrderItemJpaEntity entity = OrderItemMapper.toJpa(item);
-        OrderItemJpaEntity saved = springDataOrderItemRepository.save(entity);
+        var entity = OrderItemMapper.toJpa(item);
+        var saved = springDataOrderItemRepository.save(entity);
         return OrderItemMapper.toDomain(saved);
     }
 
     @Override
     public List<OrderItem> saveAll(Collection<OrderItem> items) {
-        List<OrderItemJpaEntity> entities = items.stream().map(OrderItemMapper::toJpa).toList();
+        var entities = items.stream().map(OrderItemMapper::toJpa).toList();
         return springDataOrderItemRepository.saveAll(entities).stream()
             .map(OrderItemMapper::toDomain)
             .toList();

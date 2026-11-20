@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.schooldirectory;
 
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -47,15 +46,15 @@ public class AcceptSchoolDirectoryImportUseCase
     public Void execute(AcceptSchoolDirectoryImportCommand input) {
         validateCommand(input);
 
-        Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var now = Instant.now();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        ImportSession session = findSession(input.importSessionId());
+        var session = findSession(input.importSessionId());
         validateSession(session, now);
         validateRequiredMapping(input.confirmedMapping());
 
-        String confirmedMappingJson = jsonSerializationPort.toJson(input.confirmedMapping());
-        int queued = importSessionRepository.markQueued(
+        var confirmedMappingJson = jsonSerializationPort.toJson(input.confirmedMapping());
+        var queued = importSessionRepository.markQueued(
                 input.importSessionId(), SCHOOL_DIRECTORY_TYPE, confirmedMappingJson, now, currentUserId);
         if (queued == 0) {
             throw new IllegalStateException("Phiên import không ở trạng thái cho accept hoặc đã hết hạn");
@@ -92,12 +91,12 @@ public class AcceptSchoolDirectoryImportUseCase
     }
 
     private void validateRequiredMapping(Map<String, String> confirmedMapping) {
-        Set<String> mappedFields = new HashSet<String>();
+        var mappedFields = new HashSet<String>();
         confirmedMapping.values().stream()
                 .filter(Objects::nonNull)
                 .map(f -> f.strip())
                 .forEach(mappedFields::add);
-        List<String> missingFields = REQUIRED_FIELDS.stream()
+        var missingFields = REQUIRED_FIELDS.stream()
                 .filter(field -> !mappedFields.contains(field))
                 .toList();
         if (!missingFields.isEmpty()) {

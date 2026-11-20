@@ -32,7 +32,7 @@ class RecordAiUsageUseCaseTests {
     private QuotaPricingPort quotaPricingPort;
     private RecordAiUsageUseCase useCase;
 
-    private final UUID assessmentSessionId = UUID.randomUUID();
+    private final UUID examSessionId = UUID.randomUUID();
     private final UUID turnId = UUID.randomUUID();
     private final UUID usageEventId = UUID.randomUUID();
 
@@ -47,7 +47,7 @@ class RecordAiUsageUseCaseTests {
 
     private RecordAiUsageCommand llmCommand() {
         return new RecordAiUsageCommand(
-            assessmentSessionId, turnId, usageEventId, AiUsageType.LLM_TOKEN,
+            examSessionId, turnId, usageEventId, AiUsageType.LLM_TOKEN,
             "anthropic", "claude-opus-4-8", 1400, 320, 0, 900,
             null, "{\"inputPerMtok\":5.00}", new BigDecimal("0.0132"), Instant.now()
         );
@@ -73,8 +73,8 @@ class RecordAiUsageUseCaseTests {
 
     @Test
     void rejectsMissingUsageEventId() {
-        RecordAiUsageCommand command = new RecordAiUsageCommand(
-            assessmentSessionId, turnId, null, AiUsageType.DURATION,
+        var command = new RecordAiUsageCommand(
+            examSessionId, turnId, null, AiUsageType.DURATION,
             "azure_stt", null, null, null, null, null,
             4200L, "{\"amount\":0.006}", new BigDecimal("0.0252"), Instant.now()
         );
@@ -86,8 +86,8 @@ class RecordAiUsageUseCaseTests {
     }
 
     @Test
-    void rejectsMissingAssessmentSessionId() {
-        RecordAiUsageCommand command = new RecordAiUsageCommand(
+    void rejectsMissingExamSessionId() {
+        var command = new RecordAiUsageCommand(
             null, turnId, usageEventId, AiUsageType.LLM_TOKEN,
             "anthropic", "claude-opus-4-8", 100, 50, 0, 0,
             null, "{}", new BigDecimal("0.01"), Instant.now()

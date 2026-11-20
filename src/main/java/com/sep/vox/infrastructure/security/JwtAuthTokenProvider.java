@@ -36,7 +36,7 @@ public class JwtAuthTokenProvider implements AuthTokenPort {
 
     @Override
     public String generateJwtToken(String userId, @Nullable UUID schoolId, String email, List<String> roles) {
-        Map<String, Object> claims = new HashMap<String, Object>();
+        var claims = new HashMap<String, Object>();
         claims.put("userId", userId);
         if (schoolId != null) {
             claims.put("schoolId", schoolId.toString());
@@ -48,29 +48,29 @@ public class JwtAuthTokenProvider implements AuthTokenPort {
 
     @Override
     public String getEmailFromToken(String token) {
-        Claims claims = getClaimsFromToken(token);
+        var claims = getClaimsFromToken(token);
         return claims.get("email", String.class);
     }
 
     @Override
     public UUID getUserIdFromToken(String token) {
-       Claims claims = getClaimsFromToken(token);
-       String userIdStr = claims.get("userId", String.class);
+       var claims = getClaimsFromToken(token);
+       var userIdStr = claims.get("userId", String.class);
        return UUID.fromString(userIdStr);
     }
 
     @Override
     public @Nullable UUID getSchoolIdFromToken(String token) {
-       Claims claims = getClaimsFromToken(token);
-       String schoolIdStr = claims.get("schoolId", String.class);
+       var claims = getClaimsFromToken(token);
+       var schoolIdStr = claims.get("schoolId", String.class);
        return schoolIdStr == null ? null : UUID.fromString(schoolIdStr);
     }
 
 
     private String createToken(String userId, Map<String, Object> claims, long expirationMs, String keyBytes) {
-        Date now = new Date();
-        Date expiration = new Date(now.getTime() + expirationMs);
-        SecretKey secretKey = getSecretKey(keyBytes);
+        var now = new Date();
+        var expiration = new Date(now.getTime() + expirationMs);
+        var secretKey = getSecretKey(keyBytes);
         return buildToken(userId, claims, now, expiration, secretKey);
     }
 
@@ -89,7 +89,7 @@ public class JwtAuthTokenProvider implements AuthTokenPort {
     }
 
     private Claims getClaimsFromToken(String token) {
-        SecretKey secretKey = getSecretKey(secret);
+        var secretKey = getSecretKey(secret);
         try {
             return Jwts.parser()
                 .verifyWith(secretKey)

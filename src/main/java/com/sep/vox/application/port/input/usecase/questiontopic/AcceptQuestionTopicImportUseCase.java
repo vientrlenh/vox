@@ -1,14 +1,11 @@
 package com.sep.vox.application.port.input.usecase.questiontopic;
 
-import com.sep.vox.domain.model.importfile.ImportSession;
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,9 +55,9 @@ public class AcceptQuestionTopicImportUseCase implements IUseCase<AcceptQuestion
             throw new IllegalArgumentException("Mapping import không được để trống");
         }
 
-        Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        ImportSession session = importSessionRepository.findById(input.importSessionId())
+        var now = Instant.now();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var session = importSessionRepository.findById(input.importSessionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import với id: " + input.importSessionId()));
 
         if (session.getType() != ImportType.QUESTION_TOPIC) {
@@ -79,7 +76,7 @@ public class AcceptQuestionTopicImportUseCase implements IUseCase<AcceptQuestion
         }
         validateRequiredMapping(input.confirmedMapping());
 
-        int queued = importSessionRepository.markQueued(
+        var queued = importSessionRepository.markQueued(
             input.importSessionId(),
             ImportType.QUESTION_TOPIC.name(),
             jsonSerializationPort.toJson(input.confirmedMapping()),
@@ -93,12 +90,12 @@ public class AcceptQuestionTopicImportUseCase implements IUseCase<AcceptQuestion
     }
 
     private void validateRequiredMapping(Map<String, String> confirmedMapping) {
-        Set<String> mappedFields = new HashSet<String>();
+        var mappedFields = new HashSet<String>();
         confirmedMapping.values().stream()
             .filter(Objects::nonNull)
             .map(s -> s.strip())
             .forEach(mappedFields::add);
-        List<String> missingFields = REQUIRED_FIELDS.stream()
+        var missingFields = REQUIRED_FIELDS.stream()
             .filter(field -> !mappedFields.contains(field))
             .toList();
         if (!missingFields.isEmpty()) {

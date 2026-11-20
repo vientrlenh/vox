@@ -82,7 +82,7 @@ public class PasswordSetUpToken {
     }
 
     public static PasswordSetUpToken create(UUID userId, String tokenHash) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         return new PasswordSetUpToken(
             userId, 
             tokenHash, 

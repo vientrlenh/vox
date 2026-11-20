@@ -1,9 +1,7 @@
 package com.sep.vox.application.port.input.usecase.questiontopic;
 
-import com.sep.vox.domain.model.question.QuestionBank;
 import java.time.Instant;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,15 +43,15 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
     @Override
     @Transactional
     public CreateQuestionTopicResponse execute(CreateQuestionTopicCommand input) {
-        CreateQuestionTopicCommand command = normalize(input);
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        var command = normalize(input);
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        var schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
-        QuestionBank questionBank = questionBankRepository.findById(command.questionBankId())
+        var questionBank = questionBankRepository.findById(command.questionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         if (questionBank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
@@ -64,8 +62,8 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        Instant now = Instant.now();
-        QuestionTopic topic = new QuestionTopic(
+        var now = Instant.now();
+        var topic = new QuestionTopic(
             command.questionBankId(),
             command.code(),
             command.name(),
@@ -76,7 +74,7 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
             currentUserId,
             currentUserId
         );
-        QuestionTopic saved = questionTopicRepository.save(topic);
+        var saved = questionTopicRepository.save(topic);
         return CreateQuestionTopicResponseMapper.toResponse(saved.getId());
     }
 

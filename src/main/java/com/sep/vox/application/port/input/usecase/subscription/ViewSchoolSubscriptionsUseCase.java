@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
-import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -27,7 +26,7 @@ public class ViewSchoolSubscriptionsUseCase implements IUseCase<ViewSchoolSubscr
         if (!userContextPort.isSystemAdmin()) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
-        PageResult<SchoolSubscription> result = schoolSubscriptionRepository.findForAdmin(
+        var result = schoolSubscriptionRepository.findForAdmin(
             input.planId(),
             input.status(),
             input.keyword(),

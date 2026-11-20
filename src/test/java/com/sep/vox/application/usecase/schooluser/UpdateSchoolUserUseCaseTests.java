@@ -24,7 +24,6 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.UpdateSchoolUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.schooluser.UpdateSchoolUserResponse;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -61,7 +60,7 @@ public class UpdateSchoolUserUseCaseTests {
 
     @Test
     void should_throw_illegal_argument_when_no_field_provided() {
-        UpdateSchoolUserCommand command = command(null, false, null, false, null, false, null, false);
+        var command = command(null, false, null, false, null, false, null, false);
 
         assertThrows(IllegalArgumentException.class, () -> updateSchoolUserUseCase.execute(command));
         verify(userRepository, never()).saveAndFlush(any(User.class));
@@ -71,12 +70,12 @@ public class UpdateSchoolUserUseCaseTests {
     void should_update_full_name_only() {
         wireCallerAndTarget(schoolId);
         when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        UpdateSchoolUserCommand command = command("  Nguyen   Van  Updated ", true, null, false, null, false, null, false);
+        var command = command("  Nguyen   Van  Updated ", true, null, false, null, false, null, false);
 
-        UpdateSchoolUserResponse result = updateSchoolUserUseCase.execute(command);
+        var result = updateSchoolUserUseCase.execute(command);
 
         assertThat(result.id()).isEqualTo(targetId);
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        var captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getFullName().value()).isEqualTo("Nguyen Van Updated");
         assertThat(captor.getValue().getUpdatedBy()).isEqualTo(callerId);
@@ -87,12 +86,12 @@ public class UpdateSchoolUserUseCaseTests {
         wireCallerAndTarget(schoolId);
         when(userRepository.findByPhone("0912345678")).thenReturn(Optional.empty());
         when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        UpdateSchoolUserCommand command = command(null, false, "0912345678", true, null, false, null, false);
+        var command = command(null, false, "0912345678", true, null, false, null, false);
 
-        UpdateSchoolUserResponse result = updateSchoolUserUseCase.execute(command);
+        var result = updateSchoolUserUseCase.execute(command);
 
         assertThat(result.id()).isEqualTo(targetId);
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        var captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getPhone().value()).isEqualTo("0912345678");
     }
@@ -101,11 +100,11 @@ public class UpdateSchoolUserUseCaseTests {
     void should_update_address_to_null() {
         wireCallerAndTarget(schoolId);
         when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        UpdateSchoolUserCommand command = command(null, false, null, false, null, true, null, false);
+        var command = command(null, false, null, false, null, true, null, false);
 
         updateSchoolUserUseCase.execute(command);
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        var captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getAddress()).isNull();
     }
@@ -114,12 +113,12 @@ public class UpdateSchoolUserUseCaseTests {
     void should_update_date_of_birth() {
         wireCallerAndTarget(schoolId);
         when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        LocalDate newDob = LocalDate.of(2006, 6, 15);
-        UpdateSchoolUserCommand command = command(null, false, null, false, null, false, newDob, true);
+        var newDob = LocalDate.of(2006, 6, 15);
+        var command = command(null, false, null, false, null, false, newDob, true);
 
         updateSchoolUserUseCase.execute(command);
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        var captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getDateOfBirth().value()).isEqualTo(newDob);
     }
@@ -129,7 +128,7 @@ public class UpdateSchoolUserUseCaseTests {
         wireCallerAndTarget(schoolId);
         when(userRepository.findByPhone("0912345678"))
             .thenReturn(Optional.of(user(UUID.randomUUID(), "0912345678")));
-        UpdateSchoolUserCommand command = command(null, false, "0912345678", true, null, false, null, false);
+        var command = command(null, false, "0912345678", true, null, false, null, false);
 
         assertThrows(DuplicatedException.class, () -> updateSchoolUserUseCase.execute(command));
         verify(userRepository, never()).saveAndFlush(any(User.class));
@@ -141,9 +140,9 @@ public class UpdateSchoolUserUseCaseTests {
         when(userRepository.findByPhone("0987654321"))
             .thenReturn(Optional.of(user(targetId, "0987654321")));
         when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        UpdateSchoolUserCommand command = command(null, false, "0987654321", true, null, false, null, false);
+        var command = command(null, false, "0987654321", true, null, false, null, false);
 
-        UpdateSchoolUserResponse result = updateSchoolUserUseCase.execute(command);
+        var result = updateSchoolUserUseCase.execute(command);
 
         assertThat(result.id()).isEqualTo(targetId);
         verify(userRepository).saveAndFlush(any(User.class));
@@ -155,18 +154,18 @@ public class UpdateSchoolUserUseCaseTests {
         when(userRepository.findByPhone("0912345678")).thenReturn(Optional.empty());
         when(userRepository.saveAndFlush(any(User.class)))
             .thenThrow(new DataIntegrityViolationException("unique constraint idx_user_phone violated"));
-        UpdateSchoolUserCommand command = command(null, false, "0912345678", true, null, false, null, false);
+        var command = command(null, false, "0912345678", true, null, false, null, false);
 
         assertThrows(DuplicatedException.class, () -> updateSchoolUserUseCase.execute(command));
     }
 
     @Test
     void should_throw_illegal_argument_when_caller_in_different_school() {
-        UUID otherSchoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(user(callerId, "0900000000")));
         when(schoolUserRepository.findByUserId(callerId)).thenReturn(Optional.of(schoolUser(otherSchoolId, callerId)));
-        UpdateSchoolUserCommand command = command("Nguyen Van Updated", true, null, false, null, false, null, false);
+        var command = command("Nguyen Van Updated", true, null, false, null, false, null, false);
 
         assertThrows(IllegalArgumentException.class, () -> updateSchoolUserUseCase.execute(command));
         verify(userRepository, never()).saveAndFlush(any(User.class));
@@ -174,9 +173,9 @@ public class UpdateSchoolUserUseCaseTests {
 
     @Test
     void should_throw_not_found_when_target_in_different_school() {
-        UUID otherSchoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
         wireCallerAndTarget(otherSchoolId);
-        UpdateSchoolUserCommand command = command("Nguyen Van Updated", true, null, false, null, false, null, false);
+        var command = command("Nguyen Van Updated", true, null, false, null, false, null, false);
 
         assertThrows(NotFoundException.class, () -> updateSchoolUserUseCase.execute(command));
         verify(userRepository, never()).saveAndFlush(any(User.class));
@@ -186,7 +185,7 @@ public class UpdateSchoolUserUseCaseTests {
     void should_throw_not_found_when_caller_inactive() {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
-        UpdateSchoolUserCommand command = command("Nguyen Van Updated", true, null, false, null, false, null, false);
+        var command = command("Nguyen Van Updated", true, null, false, null, false, null, false);
 
         assertThrows(NotFoundException.class, () -> updateSchoolUserUseCase.execute(command));
         verify(userRepository, never()).saveAndFlush(any(User.class));
@@ -198,7 +197,7 @@ public class UpdateSchoolUserUseCaseTests {
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(user(callerId, "0900000000")));
         when(schoolUserRepository.findByUserId(callerId)).thenReturn(Optional.of(schoolUser(schoolId, callerId)));
         when(userRepository.findByIdForUpdate(targetId)).thenReturn(Optional.empty());
-        UpdateSchoolUserCommand command = command("Nguyen Van Updated", true, null, false, null, false, null, false);
+        var command = command("Nguyen Van Updated", true, null, false, null, false, null, false);
 
         assertThrows(NotFoundException.class, () -> updateSchoolUserUseCase.execute(command));
         verify(userRepository, never()).saveAndFlush(any(User.class));
@@ -243,40 +242,34 @@ public class UpdateSchoolUserUseCaseTests {
     void should_set_avatar_url_when_host_is_allowed() {
         wireCallerAndTarget(schoolId);
         when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        UpdateSchoolUserCommand command = command(null, false, null, false, null, false, null, false, VALID_AVATAR_URL, true);
+        var command = command(null, false, null, false, null, false, null, false, VALID_AVATAR_URL, true);
 
         updateSchoolUserUseCase.execute(command);
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        var captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getAvatarUrl()).isEqualTo(VALID_AVATAR_URL);
     }
 
-    /**
-     * avatarUrl = null but the field WAS sent: that is a request to remove the picture, not to skip
-     * it.
-     */
+    /** avatarUrl = null nhưng CÓ gửi trường: đó là thao tác gỡ ảnh, không phải bỏ qua. */
     @Test
     void should_clear_avatar_url_when_explicitly_null() {
         wireCallerAndTarget(schoolId);
         when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        UpdateSchoolUserCommand command = command(null, false, null, false, null, false, null, false, null, true);
+        var command = command(null, false, null, false, null, false, null, false, null, true);
 
         updateSchoolUserUseCase.execute(command);
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        var captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getAvatarUrl()).isNull();
     }
 
-    /**
-     * Blocks pointing the picture at a foreign host -- see AvatarUrlPolicy for why this is
-     * mandatory.
-     */
+    /** Chặn trỏ ảnh sang host lạ -- xem AvatarUrlPolicy để biết vì sao đây là điều bắt buộc. */
     @Test
     void should_reject_avatar_url_from_foreign_host() {
         wireCallerAndTarget(schoolId);
-        UpdateSchoolUserCommand command = command(null, false, null, false, null, false, null, false,
+        var command = command(null, false, null, false, null, false, null, false,
             "https://evil.example/pixel.gif", true);
 
         assertThrows(IllegalArgumentException.class, () -> updateSchoolUserUseCase.execute(command));
@@ -286,30 +279,27 @@ public class UpdateSchoolUserUseCaseTests {
     @Test
     void should_reject_avatar_url_with_non_https_scheme() {
         wireCallerAndTarget(schoolId);
-        UpdateSchoolUserCommand command = command(null, false, null, false, null, false, null, false,
+        var command = command(null, false, null, false, null, false, null, false,
             "javascript:alert(1)", true);
 
         assertThrows(IllegalArgumentException.class, () -> updateSchoolUserUseCase.execute(command));
         verify(userRepository, never()).saveAndFlush(any(User.class));
     }
 
-    /**
-     * Sending only avatarUrl still counts as "at least one field"; it must not fall into the branch
-     * that throws.
-     */
+    /** Chỉ gửi avatarUrl vẫn là "có ít nhất một trường", không được rơi vào nhánh ném lỗi. */
     @Test
     void should_accept_avatar_url_as_the_only_provided_field() {
         wireCallerAndTarget(schoolId);
         when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        UpdateSchoolUserCommand command = command(null, false, null, false, null, false, null, false, VALID_AVATAR_URL, true);
+        var command = command(null, false, null, false, null, false, null, false, VALID_AVATAR_URL, true);
 
-        UpdateSchoolUserResponse response = updateSchoolUserUseCase.execute(command);
+        var response = updateSchoolUserUseCase.execute(command);
 
         assertThat(response.id()).isEqualTo(targetId);
     }
 
     private User user(UUID id, String phone) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         return new User(id, new Email("user@school.edu.vn"), "hash",
             new Phone(phone), new FullName("Nguyen Van A"), null,
             new DateOfBirth(LocalDate.of(2005, 1, 15)), "123 Street", null,
@@ -317,7 +307,7 @@ public class UpdateSchoolUserUseCaseTests {
     }
 
     private SchoolUser schoolUser(UUID userSchoolId, UUID userId) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         return new SchoolUser(userSchoolId, userId, now, now.plus(36500, ChronoUnit.DAYS));
     }
 }

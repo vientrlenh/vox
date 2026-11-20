@@ -18,7 +18,6 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UnsuspendSubscriptionCommand;
@@ -69,7 +68,7 @@ class UnsuspendSubscriptionUseCaseTests {
     void should_restore_active_and_clear_the_suspension_columns() {
         givenSubscription(SchoolSubscriptionStatus.SUSPENDED);
 
-        UUID result = useCase.execute(new UnsuspendSubscriptionCommand(SUBSCRIPTION_ID, "Đã xác minh lại"));
+        var result = useCase.execute(new UnsuspendSubscriptionCommand(SUBSCRIPTION_ID, "Đã xác minh lại"));
 
         assertThat(result).isEqualTo(SUBSCRIPTION_ID);
         verify(schoolSubscriptionRepository).save(argThat(saved ->
@@ -80,17 +79,14 @@ class UnsuspendSubscriptionUseCaseTests {
         verify(suspensionNotificationService).publishUnsuspended(any(), any(), any());
     }
 
-    /**
-     * Write the ledger first, clear the column after -- the other way round, the suspension reason
-     * would be lost before it could be saved.
-     */
+    /** Ghi sổ trước, xóa cột sau -- đảo lại thì lý do đình chỉ mất trước khi kịp lưu. */
     @Test
     void should_write_the_audit_entry_before_wiping_the_reason() {
         givenSubscription(SchoolSubscriptionStatus.SUSPENDED);
 
         useCase.execute(new UnsuspendSubscriptionCommand(SUBSCRIPTION_ID, null));
 
-        InOrder order = inOrder(schoolSubscriptionEventRepository, schoolSubscriptionRepository);
+        var order = inOrder(schoolSubscriptionEventRepository, schoolSubscriptionRepository);
         order.verify(schoolSubscriptionEventRepository).save(argThat(event ->
             event.getEventType() == SchoolSubscriptionEventType.UNSUSPENDED
                 && ADMIN_ID.equals(event.getActorId())));
@@ -125,7 +121,7 @@ class UnsuspendSubscriptionUseCaseTests {
     }
 
     private void givenSubscription(SchoolSubscriptionStatus status) {
-        SchoolSubscription subscription = new SchoolSubscription();
+        var subscription = new SchoolSubscription();
         subscription.setId(SUBSCRIPTION_ID);
         subscription.setSchoolId(SCHOOL_ID);
         subscription.setStatus(status);

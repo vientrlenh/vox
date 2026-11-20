@@ -1,8 +1,5 @@
 package com.sep.vox.application.port.input.usecase.scoringrule;
 
-import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.school.SchoolUser;
-import com.sep.vox.domain.model.user.User;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -54,20 +51,20 @@ public class DeleteSchoolScoringRuleUseCase implements IUseCase<DeleteSchoolScor
     public Void execute(DeleteSchoolScoringRuleCommand command) {
         // 1. Kiểm tra tài khoản School Admin
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
+        var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
 
         // 2. Kiểm tra tài khoản thuộc đúng trường học yêu cầu
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
         }
 
-        School school = schoolRepository.findById(command.schoolId())
+        var school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");

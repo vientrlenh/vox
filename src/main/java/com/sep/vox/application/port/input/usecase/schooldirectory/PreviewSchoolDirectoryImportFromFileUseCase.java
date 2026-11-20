@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.schooldirectory;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -57,12 +56,12 @@ public class PreviewSchoolDirectoryImportFromFileUseCase
             throw new IllegalArgumentException("File import không được để trống");
         }
 
-        Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var now = Instant.now();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        ParseImportFileResult parsed = fileProcessingPort.parse(input.file(), ImportType.SCHOOL_DIRECTORY);
-        Instant expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
-        ImportSession savedSession = importSessionRepository.save(createSession(input, parsed, currentUserId, now, expiresAt));
+        var parsed = fileProcessingPort.parse(input.file(), ImportType.SCHOOL_DIRECTORY);
+        var expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
+        var savedSession = importSessionRepository.save(createSession(input, parsed, currentUserId, now, expiresAt));
         saveRows(savedSession.getId(), parsed);
 
         return new PreviewSchoolDirectoryImportResponse(
@@ -113,8 +112,8 @@ public class PreviewSchoolDirectoryImportFromFileUseCase
         if (parsed.rows().isEmpty()) {
             return;
         }
-        List<ImportRow> rows = new ArrayList<ImportRow>();
-        long rowNumber = 1L;
+        var rows = new ArrayList<ImportRow>();
+        var rowNumber = 1L;
         for (Map<String, String> rawRow : parsed.rows()) {
             rows.add(new ImportRow(
                 sessionId,

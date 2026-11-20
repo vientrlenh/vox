@@ -3,21 +3,21 @@ package com.sep.vox.application.response.input.dashboard;
 import java.util.List;
 
 /**
- * The operational health of the platform for the system admin dashboard.
+ * Sức khỏe vận hành của nền tảng cho dashboard system admin.
  *
- * <p>Deliberately mixes two kinds of time, and the client must display it exactly that way:
+ * <p>Trộn hai loại thời gian một cách CÓ CHỦ Ý, và client phải hiển thị đúng như vậy:
  *
  * <ul>
- *   <li>{@code sessionsInProgress}, {@code assessmentsInProgress}, {@code gradingQueueDepth} are a snapshot
- *       RIGHT AT THE TIME OF THE CALL -- they do not change with the time window the user selects. "6 assessments
- *       are running now" changing when you click to last month is meaningless.
- *   <li>{@code graded}, {@code gradingFailed}, {@code successRatePercent}, {@code daily} belong to the
- *       window being viewed.
+ *   <li>{@code sessionsInProgress}, {@code examsInProgress}, {@code gradingQueueDepth} là ảnh chụp
+ *       NGAY LÚC GỌI — chúng không đổi theo cửa sổ thời gian người dùng chọn. "Đang có 6 kỳ thi
+ *       chạy" mà lại đổi khi bấm sang tháng trước thì vô nghĩa.
+ *   <li>{@code graded}, {@code gradingFailed}, {@code successRatePercent}, {@code daily} thuộc
+ *       CỬA SỔ đang xem.
  * </ul>
  */
 public record PlatformOperationalHealthResponse(
     long sessionsInProgress,
-    long assessmentsInProgress,
+    long examsInProgress,
     long gradingQueueDepth,
     long graded,
     long gradingFailed,

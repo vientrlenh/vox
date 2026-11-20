@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
-import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import java.time.Instant;
 
 import org.springframework.stereotype.Service;
@@ -28,7 +27,7 @@ public class DeleteSupportedLanguageUseCase implements IUseCase<DeleteSupportedL
     @Override
     @Transactional
     public Void execute(DeleteSupportedLanguageCommand input) {
-        SupportedLanguage language = supportedLanguageRepository.findById(input.id())
+        var language = supportedLanguageRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngôn ngữ"));
 
         language.setActive(false);

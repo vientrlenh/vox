@@ -47,10 +47,10 @@ class PublishSubscriptionPlanUseCaseTests {
     void setUp() {
         subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
         subscriptionPlanQuotaRepository = mock(SubscriptionPlanQuotaRepository.class);
-        UserContextPort userContextPort = mock(UserContextPort.class);
+        var userContextPort = mock(UserContextPort.class);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(ADMIN_ID);
         when(subscriptionPlanQuotaRepository.findBySubscriptionPlanId(PLAN_ID))
-            .thenReturn(List.of(quota(QuotaType.ASSESSMENT, BigDecimal.valueOf(1_000_000))));
+            .thenReturn(List.of(quota(QuotaType.EXAM, BigDecimal.valueOf(1_000_000))));
         when(subscriptionPlanRepository.save(any())).thenAnswer(call -> call.getArgument(0));
 
         useCase = new PublishSubscriptionPlanUseCase(
@@ -65,7 +65,7 @@ class PublishSubscriptionPlanUseCaseTests {
         givenDraftPlan(BigDecimal.valueOf(100_000));
         when(subscriptionPlanRepository.findByReplacedByPlanId(PLAN_ID)).thenReturn(List.of());
 
-        UUID result = useCase.execute(new PublishSubscriptionPlanCommand(PLAN_ID));
+        var result = useCase.execute(new PublishSubscriptionPlanCommand(PLAN_ID));
 
         assertThat(result).isEqualTo(PLAN_ID);
     }
@@ -73,7 +73,7 @@ class PublishSubscriptionPlanUseCaseTests {
     @Test
     void should_block_publish_when_price_is_lower_than_the_plan_it_replaces() {
         givenDraftPlan(BigDecimal.valueOf(50_000));
-        SubscriptionPlan replacedPlan = activePlan(BigDecimal.valueOf(100_000));
+        var replacedPlan = activePlan(BigDecimal.valueOf(100_000));
         when(subscriptionPlanRepository.findByReplacedByPlanId(PLAN_ID)).thenReturn(List.of(replacedPlan));
 
         assertThatThrownBy(() -> useCase.execute(new PublishSubscriptionPlanCommand(PLAN_ID)))
@@ -85,10 +85,10 @@ class PublishSubscriptionPlanUseCaseTests {
     void should_block_publish_when_quota_is_lower_than_the_plan_it_replaces() {
         givenDraftPlan(BigDecimal.valueOf(100_000));
         when(subscriptionPlanQuotaRepository.findBySubscriptionPlanId(PLAN_ID))
-            .thenReturn(List.of(quota(QuotaType.ASSESSMENT, BigDecimal.valueOf(500_000))));
-        SubscriptionPlan replacedPlan = activePlan(BigDecimal.valueOf(100_000));
+            .thenReturn(List.of(quota(QuotaType.EXAM, BigDecimal.valueOf(500_000))));
+        var replacedPlan = activePlan(BigDecimal.valueOf(100_000));
         when(subscriptionPlanQuotaRepository.findBySubscriptionPlanId(REPLACED_PLAN_ID))
-            .thenReturn(List.of(quota(QuotaType.ASSESSMENT, BigDecimal.valueOf(1_000_000))));
+            .thenReturn(List.of(quota(QuotaType.EXAM, BigDecimal.valueOf(1_000_000))));
         when(subscriptionPlanRepository.findByReplacedByPlanId(PLAN_ID)).thenReturn(List.of(replacedPlan));
 
         assertThatThrownBy(() -> useCase.execute(new PublishSubscriptionPlanCommand(PLAN_ID)))
@@ -99,19 +99,19 @@ class PublishSubscriptionPlanUseCaseTests {
     @Test
     void should_publish_when_terms_are_at_least_as_good_as_the_plan_it_replaces() {
         givenDraftPlan(BigDecimal.valueOf(100_000));
-        SubscriptionPlan replacedPlan = activePlan(BigDecimal.valueOf(100_000));
+        var replacedPlan = activePlan(BigDecimal.valueOf(100_000));
         when(subscriptionPlanQuotaRepository.findBySubscriptionPlanId(REPLACED_PLAN_ID))
-            .thenReturn(List.of(quota(QuotaType.ASSESSMENT, BigDecimal.valueOf(1_000_000))));
+            .thenReturn(List.of(quota(QuotaType.EXAM, BigDecimal.valueOf(1_000_000))));
         when(subscriptionPlanRepository.findByReplacedByPlanId(PLAN_ID)).thenReturn(List.of(replacedPlan));
 
-        UUID result = useCase.execute(new PublishSubscriptionPlanCommand(PLAN_ID));
+        var result = useCase.execute(new PublishSubscriptionPlanCommand(PLAN_ID));
 
         assertThat(result).isEqualTo(PLAN_ID);
     }
 
     @Test
     void should_reject_publishing_a_plan_that_is_not_a_draft() {
-        SubscriptionPlan plan = activePlan(BigDecimal.valueOf(100_000));
+        var plan = activePlan(BigDecimal.valueOf(100_000));
         plan.setId(PLAN_ID);
         when(subscriptionPlanRepository.findById(PLAN_ID)).thenReturn(Optional.of(plan));
 
@@ -128,7 +128,7 @@ class PublishSubscriptionPlanUseCaseTests {
     }
 
     private void givenDraftPlan(BigDecimal priceVnd) {
-        SubscriptionPlan plan = plan(PLAN_ID, priceVnd, SubscriptionPlanStatus.DRAFT);
+        var plan = plan(PLAN_ID, priceVnd, SubscriptionPlanStatus.DRAFT);
         when(subscriptionPlanRepository.findById(PLAN_ID)).thenReturn(Optional.of(plan));
     }
 
@@ -137,7 +137,7 @@ class PublishSubscriptionPlanUseCaseTests {
     }
 
     private static SubscriptionPlan plan(UUID id, BigDecimal priceVnd, SubscriptionPlanStatus status) {
-        SubscriptionPlan plan = new SubscriptionPlan();
+        var plan = new SubscriptionPlan();
         plan.setId(id);
         plan.setName("Gói test");
         plan.setTagline("Tagline");

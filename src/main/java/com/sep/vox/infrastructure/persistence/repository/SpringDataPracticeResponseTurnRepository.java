@@ -55,9 +55,9 @@ public interface SpringDataPracticeResponseTurnRepository
         @Param("questionId") UUID questionId
     );
 
-    // A JPQL constructor expression like AssessmentItemResponseRepository cannot be written (PracticeResponseTurnJpaEntity
-    // has no JPA association to PracticeItemResponseJpaEntity) -- native SQL + Object[], mirroring how
-    // JpaSchoolAiCostQueryRepository maps rows of a native query.
+    // Không viết được JPQL constructor-expression như ExamItemResponseRepository (PracticeResponseTurnJpaEntity
+    // không có association JPA tới PracticeItemResponseJpaEntity) -- native SQL + Object[], mirror cách
+    // JpaSchoolAiCostQueryRepository map row native query.
     @Query(value = """
         SELECT response.practice_session_id AS session_id, COALESCE(SUM(turn.duration_seconds), 0) AS total_seconds
         FROM practice_response_turns turn

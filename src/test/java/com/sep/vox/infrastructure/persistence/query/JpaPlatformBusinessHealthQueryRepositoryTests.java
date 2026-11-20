@@ -11,12 +11,14 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.application.query.dto.SchoolSubscriptionHealthDto;
 import com.sep.vox.application.query.repository.PlatformBusinessHealthQueryRepository;
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.common.ZoneConstant;
-import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -29,9 +31,11 @@ import jakarta.persistence.PersistenceContext;
  * đếm theo dòng sẽ vừa cộng trùng vừa xếp một trường đang dùng tốt vào nhóm "đã hết hạn" chỉ vì kỳ
  * năm ngoái của nó đã kết thúc. Đó là chỗ dễ sai nhất trong cả hai repository mới.
  */
-@RepositoryTest
+@DataJpaTest
+@ActiveProfiles("test")
 @Import(JpaPlatformBusinessHealthQueryRepository.class)
-class JpaPlatformBusinessHealthQueryRepositoryTests {
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class JpaPlatformBusinessHealthQueryRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private PlatformBusinessHealthQueryRepository repository;
@@ -52,9 +56,9 @@ class JpaPlatformBusinessHealthQueryRepositoryTests {
     }
 
     private UUID insertSchool() {
-        UUID id = UUID.randomUUID();
-        UUID actor = UUID.randomUUID();
-        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        var id = UUID.randomUUID();
+        var actor = UUID.randomUUID();
+        var now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
             INSERT INTO schools (id, code, name, address, contact_email, contact_phone,
                                  is_active, student_count, created_at, updated_at, created_by, updated_by)
@@ -86,7 +90,7 @@ class JpaPlatformBusinessHealthQueryRepositoryTests {
     }
 
     private void insertBalance(UUID schoolId, String balanceVnd) {
-        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        var now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
             INSERT INTO school_balances (id, school_id, balance_vnd, created_at, updated_at, version)
             VALUES (:id, :schoolId, CAST(:balance AS numeric), :now, :now, 0)
@@ -100,7 +104,7 @@ class JpaPlatformBusinessHealthQueryRepositoryTests {
 
     private void insertAiUsage(Instant occurredAt, String costVnd) {
         em.createNativeQuery("""
-            INSERT INTO ai_usage_records (id, assessment_session_id, turn_id, usage_event_id, usage_type,
+            INSERT INTO ai_usage_records (id, exam_session_id, turn_id, usage_event_id, usage_type,
                                           provider, unit_price_json, cost_usd, cost_vnd, fx_rate_used, occurred_at)
             VALUES (:id, :sessionId, :turnId, :eventId, 'LLM_TOKEN', 'anthropic', '{}', 1.5,
                     CAST(:costVnd AS numeric), 26000, :occurredAt)
@@ -115,83 +119,75 @@ class JpaPlatformBusinessHealthQueryRepositoryTests {
     }
 
     /**
-     * School A has ONE expired period and ONE running period. If counted by row instead of by
-     * school, it would be counted as both in use and expired -- two groups that should be mutually
-     * exclusive.
+     * Trường A có MỘT kỳ đã hết hạn và MỘT kỳ đang chạy. Nếu đếm theo dòng thay vì theo trường, nó
+     * sẽ vừa được tính là đang dùng, vừa bị tính là đã hết hạn — hai nhóm lẽ ra loại trừ nhau.
      */
     @Test
     void classifiesEachSchoolIntoExactlyOneBucket() {
-        UUID schoolA = insertSchool();
+        var schoolA = insertSchool();
         insertSubscription(schoolA, "EXPIRED",
             atVietnamStartOfDay(LocalDate.of(2024, 9, 1)), atVietnamStartOfDay(LocalDate.of(2025, 8, 31)));
         insertSubscription(schoolA, "ACTIVE",
             atVietnamStartOfDay(LocalDate.of(2025, 9, 1)), atVietnamStartOfDay(LocalDate.of(2026, 9, 15)));
 
-        UUID schoolB = insertSchool();
+        var schoolB = insertSchool();
         insertSubscription(schoolB, "EXPIRED",
             atVietnamStartOfDay(LocalDate.of(2024, 9, 1)), atVietnamStartOfDay(LocalDate.of(2025, 8, 31)));
 
-        // CANCELLED only turns off auto-renewal; the school can keep using it until endDate.
-        UUID schoolC = insertSchool();
+        // CANCELLED chỉ tắt gia hạn tự động, trường vẫn dùng được tới hết endDate.
+        var schoolC = insertSchool();
         insertSubscription(schoolC, "CANCELLED",
             atVietnamStartOfDay(LocalDate.of(2025, 9, 1)), atVietnamStartOfDay(LocalDate.of(2026, 12, 31)));
 
-        UUID schoolD = insertSchool();
+        var schoolD = insertSchool();
         insertSubscription(schoolD, "SUSPENDED",
             atVietnamStartOfDay(LocalDate.of(2025, 9, 1)), atVietnamStartOfDay(LocalDate.of(2026, 12, 31)));
 
-        // The next period has been paid for but has NOT reached its run date -> right now there is
-        // still no plan.
-        UUID schoolE = insertSchool();
+        // Đã trả tiền cho kỳ sau nhưng kỳ đó CHƯA tới ngày chạy -> hiện tại vẫn là không có gói.
+        var schoolE = insertSchool();
         insertSubscription(schoolE, "ACTIVE",
             atVietnamStartOfDay(LocalDate.of(2026, 10, 1)), atVietnamStartOfDay(LocalDate.of(2027, 9, 30)));
 
-        SchoolSubscriptionHealthDto health = repository.countSchoolSubscriptionHealth(NOW, EXPIRING_THROUGH);
+        var health = repository.countSchoolSubscriptionHealth(NOW, EXPIRING_THROUGH);
 
         assertThat(health.subscribedSchools()).isEqualTo(2L);   // A, C
-        assertThat(health.expiringSoonSchools()).isEqualTo(1L); // A: expires 15/09, within the 30-day threshold
+        assertThat(health.expiringSoonSchools()).isEqualTo(1L); // A: hết 15/09, trong ngưỡng 30 ngày
         assertThat(health.lapsedSchools()).isEqualTo(2L);       // B, E
         assertThat(health.suspendedSchools()).isEqualTo(1L);    // D
     }
 
-    /**
-     * A period that expires exactly at the threshold mark must still be flagged -- the threshold is
-     * INCLUSIVE.
-     */
+    /** Kỳ hết đúng mốc ngưỡng vẫn phải bị cảnh báo — ngưỡng là BAO GỒM. */
     @Test
     void expiringSoonBoundaryIsInclusive() {
-        Instant start = NOW.minus(180, java.time.temporal.ChronoUnit.DAYS);
+        var start = NOW.minus(180, java.time.temporal.ChronoUnit.DAYS);
 
-        UUID onThreshold = insertSchool();
+        var onThreshold = insertSchool();
         insertSubscription(onThreshold, "ACTIVE", start, EXPIRING_THROUGH);
 
-        UUID justOutside = insertSchool();
+        var justOutside = insertSchool();
         insertSubscription(justOutside, "ACTIVE", start, EXPIRING_THROUGH.plusMillis(1));
 
-        SchoolSubscriptionHealthDto health = repository.countSchoolSubscriptionHealth(NOW, EXPIRING_THROUGH);
+        var health = repository.countSchoolSubscriptionHealth(NOW, EXPIRING_THROUGH);
 
         assertThat(health.subscribedSchools()).isEqualTo(2L);
         assertThat(health.expiringSoonSchools()).isEqualTo(1L);
     }
 
-    /**
-     * A period that ends exactly at the point under consideration is still in effect; one that ends
-     * one tick earlier is not.
-     */
+    /** Kỳ hết đúng mốc đang xét vẫn còn hiệu lực; hết trước đó một nhịp thì không. */
     @Test
     void coverageBoundaryIsInclusiveAtBothEnds() {
-        Instant start = NOW.minus(180, java.time.temporal.ChronoUnit.DAYS);
+        var start = NOW.minus(180, java.time.temporal.ChronoUnit.DAYS);
 
-        UUID endsExactlyNow = insertSchool();
+        var endsExactlyNow = insertSchool();
         insertSubscription(endsExactlyNow, "ACTIVE", start, NOW);
 
-        UUID endedJustBefore = insertSchool();
+        var endedJustBefore = insertSchool();
         insertSubscription(endedJustBefore, "ACTIVE", start, NOW.minusMillis(1));
 
-        UUID startsExactlyNow = insertSchool();
+        var startsExactlyNow = insertSchool();
         insertSubscription(startsExactlyNow, "ACTIVE", NOW, NOW.plus(365, java.time.temporal.ChronoUnit.DAYS));
 
-        SchoolSubscriptionHealthDto health = repository.countSchoolSubscriptionHealth(NOW, EXPIRING_THROUGH);
+        var health = repository.countSchoolSubscriptionHealth(NOW, EXPIRING_THROUGH);
 
         assertThat(health.subscribedSchools()).isEqualTo(2L);
         assertThat(health.lapsedSchools()).isEqualTo(1L);
@@ -199,7 +195,7 @@ class JpaPlatformBusinessHealthQueryRepositoryTests {
 
     @Test
     void countsZeroOnEmptyTable() {
-        SchoolSubscriptionHealthDto health = repository.countSchoolSubscriptionHealth(NOW, EXPIRING_THROUGH);
+        var health = repository.countSchoolSubscriptionHealth(NOW, EXPIRING_THROUGH);
 
         assertThat(health.subscribedSchools()).isZero();
         assertThat(health.expiringSoonSchools()).isZero();
@@ -220,26 +216,23 @@ class JpaPlatformBusinessHealthQueryRepositoryTests {
 
     @Test
     void sumsAiCostInVndOverHalfOpenWindow() {
-        Instant from = Instant.parse("2026-08-01T00:00:00Z");
-        Instant to = Instant.parse("2026-09-01T00:00:00Z");
+        var from = Instant.parse("2026-08-01T00:00:00Z");
+        var to = Instant.parse("2026-09-01T00:00:00Z");
 
         insertAiUsage(from, "1000.50");
         insertAiUsage(Instant.parse("2026-08-15T12:00:00Z"), "2000.25");
-        // Exactly the last point -> EXCLUDED, because `to` is the open boundary.
+        // Đúng mốc cuối -> LOẠI, vì `to` là mốc mở.
         insertAiUsage(to, "9999");
-        // Before the first point -> excluded.
+        // Trước mốc đầu -> loại.
         insertAiUsage(from.minusMillis(1), "8888");
 
         assertThat(repository.sumAiCostVnd(from, to)).isEqualByComparingTo("3000.75");
     }
 
-    /**
-     * A period with no records must return 0, not null -- otherwise the profit margin throws an
-     * NPE.
-     */
+    /** Kỳ không có bản ghi nào phải trả 0, không phải null — nếu không, biên lợi nhuận nổ NPE. */
     @Test
     void aiCostIsZeroWhenNoRecordsInWindow() {
-        BigDecimal result = repository.sumAiCostVnd(
+        var result = repository.sumAiCostVnd(
             Instant.parse("2026-08-01T00:00:00Z"),
             Instant.parse("2026-09-01T00:00:00Z"));
 

@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.query.ViewFrameworksQuery;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworksUseCase;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.dto.FrameworkDto;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.valueobject.FrameworkCode;
@@ -34,18 +33,18 @@ public class ViewFrameworksUseCaseTests {
 
     @Test
     void should_return_paginated_frameworks() {
-        ViewFrameworksQuery query = new ViewFrameworksQuery(1, 10, null, null);
+        var query = new ViewFrameworksQuery(1, 10, null, null);
 
-        Framework fw1 = new Framework(
+        var fw1 = new Framework(
             UUID.randomUUID(), new FrameworkCode("CEFR"), "CEFR Framework", "Description 1",
             true, now, now, null, null
         );
-        Framework fw2 = new Framework(
+        var fw2 = new Framework(
             UUID.randomUUID(), new FrameworkCode("TOEIC"), "TOEIC Framework", "Description 2",
             true, now, now, null, null
         );
 
-        PageResult<Framework> pageResult = new PageResult<>(
+        var pageResult = new PageResult<>(
             List.of(fw1, fw2),
             1,
             10,
@@ -56,7 +55,7 @@ public class ViewFrameworksUseCaseTests {
         when(frameworkRepository.findAll(1, 10, null, null))
             .thenReturn(pageResult);
 
-        PageResult<FrameworkDto> result = useCase.execute(query);
+        var result = useCase.execute(query);
 
         assertThat(result.content()).hasSize(2);
         assertThat(result.page()).isEqualTo(1);
@@ -67,13 +66,13 @@ public class ViewFrameworksUseCaseTests {
 
     @Test
     void should_return_empty_when_no_frameworks() {
-        ViewFrameworksQuery query = new ViewFrameworksQuery(1, 10, null, null);
-        PageResult<Framework> emptyPage = new PageResult<Framework>(List.of(), 1, 10, 0, 0);
+        var query = new ViewFrameworksQuery(1, 10, null, null);
+        var emptyPage = new PageResult<Framework>(List.of(), 1, 10, 0, 0);
 
         when(frameworkRepository.findAll(1, 10, null, null))
             .thenReturn(emptyPage);
 
-        PageResult<FrameworkDto> result = useCase.execute(query);
+        var result = useCase.execute(query);
 
         assertThat(result.content()).isEmpty();
         assertThat(result.totalElements()).isZero();
@@ -81,14 +80,14 @@ public class ViewFrameworksUseCaseTests {
 
     @Test
     void should_convert_page_to_zero_based_index() {
-        ViewFrameworksQuery query = new ViewFrameworksQuery(2, 10, null, null);
+        var query = new ViewFrameworksQuery(2, 10, null, null);
 
-        Framework fw1 = new Framework(
+        var fw1 = new Framework(
             UUID.randomUUID(), new FrameworkCode("CEFR"), "CEFR", "Description",
             true, now, now, null, null
         );
 
-        PageResult<Framework> pageResult = new PageResult<>(
+        var pageResult = new PageResult<>(
             List.of(fw1),
             2,
             10,

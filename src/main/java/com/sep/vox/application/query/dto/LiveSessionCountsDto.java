@@ -10,7 +10,7 @@ package com.sep.vox.application.query.dto;
  */
 public record LiveSessionCountsDto(
     long sessionsInProgress,
-    long assessmentsInProgress,
+    long examsInProgress,
     long gradingQueueDepth
 ) {
 }

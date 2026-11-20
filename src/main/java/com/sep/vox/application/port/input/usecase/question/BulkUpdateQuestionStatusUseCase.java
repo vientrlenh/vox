@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import com.sep.vox.domain.dto.QuestionDto;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -70,24 +69,24 @@ public class BulkUpdateQuestionStatusUseCase
             throw new IllegalArgumentException("Danh sách câu hỏi không được để trống");
         }
 
-        String action = StringNormalization.normalizeCode(input.action());
-        String note = StringNormalization.trimAndCollapseSpaces(input.note());
+        var action = StringNormalization.normalizeCode(input.action());
+        var note = StringNormalization.trimAndCollapseSpaces(input.note());
         // Giữ nguyên thứ tự client gửi lên để response đọc theo được, và bỏ id trùng
         // để không cập nhật hai lần cùng một câu.
-        Set<UUID> questionIds = new LinkedHashSet<>(input.questionIds());
+        var questionIds = new LinkedHashSet<>(input.questionIds());
 
-        QuestionStatusTransition.Actor actor = questionStatusActorResolver.resolve();
-        Map<UUID, Question> questionsById = questionRepository.findByIdIn(questionIds).stream()
+        var actor = questionStatusActorResolver.resolve();
+        var questionsById = questionRepository.findByIdIn(questionIds).stream()
             .collect(Collectors.toMap(question -> question.getId(), question -> question, (first, second) -> first));
-        Map<UUID, QuestionBank> banksById = loadBanks(questionsById);
-        Set<UUID> editableQuestionIds = loadEditableQuestionIds(questionIds, actor.userId());
+        var banksById = loadBanks(questionsById);
+        var editableQuestionIds = loadEditableQuestionIds(questionIds, actor.userId());
 
-        List<BulkUpdateQuestionStatusFailure> failed = new ArrayList<BulkUpdateQuestionStatusFailure>();
-        List<Question> toSave = new ArrayList<Question>();
-        Instant now = Instant.now();
+        var failed = new ArrayList<BulkUpdateQuestionStatusFailure>();
+        var toSave = new ArrayList<Question>();
+        var now = Instant.now();
 
-        for (UUID questionId : questionIds) {
-            Question question = questionsById.get(questionId);
+        for (var questionId : questionIds) {
+            var question = questionsById.get(questionId);
             if (question == null) {
                 failed.add(new BulkUpdateQuestionStatusFailure(
                     questionId, null, null,
@@ -95,14 +94,14 @@ public class BulkUpdateQuestionStatusUseCase
                     QuestionStatusTransition.QUESTION_NOT_FOUND));
                 continue;
             }
-            QuestionBank bank = banksById.get(question.getQuestionBankId());
+            var bank = banksById.get(question.getQuestionBankId());
             if (bank == null) {
                 failed.add(failure(question, RejectionCode.QUESTION_BANK_NOT_FOUND.name(),
                     QuestionStatusTransition.QUESTION_BANK_NOT_FOUND));
                 continue;
             }
 
-            QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
+            var rejection = QuestionStatusTransition.rejectionFor(
                 question, bank, editableQuestionIds.contains(questionId), actor, action, note);
             if (rejection != null) {
                 failed.add(failure(question, rejection.code().name(), rejection.reason()));
@@ -115,7 +114,7 @@ public class BulkUpdateQuestionStatusUseCase
             toSave.add(question);
         }
 
-        List<QuestionDto> updated = questionRepository.saveAll(toSave).stream()
+        var updated = questionRepository.saveAll(toSave).stream()
             .map(QuestionDtoMapper::toQuestionDto)
             .toList();
 
@@ -132,7 +131,7 @@ public class BulkUpdateQuestionStatusUseCase
     }
 
     private Map<UUID, QuestionBank> loadBanks(Map<UUID, Question> questionsById) {
-        Set<UUID> bankIds = questionsById.values().stream()
+        var bankIds = questionsById.values().stream()
             .map(question -> question.getQuestionBankId())
             .collect(Collectors.toSet());
         return questionBankRepository.findByIdIn(bankIds).stream()

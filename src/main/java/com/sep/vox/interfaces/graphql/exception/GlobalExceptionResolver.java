@@ -7,7 +7,6 @@ import org.springframework.graphql.execution.DataFetcherExceptionResolverAdapter
 import org.springframework.graphql.execution.ErrorType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -31,8 +30,8 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
     @Override
     protected GraphQLError resolveToSingleError(Throwable ex, DataFetchingEnvironment env) {
 
-        // The old printStackTrace() only wrote to stderr and bypassed Logback, so it never reached logs/vox.log
-        // -- switched to a real logger so INTERNAL_ERROR (the last branch) can be traced after it happens.
+        // printStackTrace() cũ chỉ in ra stderr, không qua Logback nên không vào được logs/vox.log --
+        // đổi sang logger thật để có thể tra lỗi INTERNAL_ERROR (nhánh dưới cùng) sau khi xảy ra.
         LOGGER.error("Unhandled exception resolving field {}", env.getExecutionStepInfo().getPath(), ex);
 
         if (ex instanceof NotFoundException) {
@@ -90,8 +89,8 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
         }
 
         if (ex instanceof AccessDeniedException) {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            boolean unauthenticated = authentication == null || authentication instanceof AnonymousAuthenticationToken || !authentication.isAuthenticated();
+            var authentication = SecurityContextHolder.getContext().getAuthentication();
+            var unauthenticated = authentication == null || authentication instanceof AnonymousAuthenticationToken || !authentication.isAuthenticated();
             return GraphQLError.newError()
                     .errorType(unauthenticated ? ErrorType.UNAUTHORIZED : ErrorType.FORBIDDEN)
                     .message(ex.getMessage())
@@ -100,6 +99,7 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
                     .build();
         }
 
+        // ĐÃ THÊM: Xử lý ForbiddenException bạn ném ra từ UseCase
         if (ex instanceof ForbiddenException) {
             return GraphQLError.newError()
                     .errorType(ErrorType.FORBIDDEN)

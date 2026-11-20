@@ -1,5 +1,6 @@
 package com.sep.vox.domain.mapper;
 
+import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.common.PageResult;
@@ -16,8 +17,8 @@ public final class FrameworkDtoMapper {
             framework.getName(),
             framework.getDescription(),
             framework.isActive(),
-            framework.getCreatedAt(),
-            framework.getUpdatedAt()
+            valueOf(framework.getCreatedAt()),
+            valueOf(framework.getUpdatedAt())
         );
     }
 
@@ -37,5 +38,9 @@ public final class FrameworkDtoMapper {
 
     private static String valueOf(FrameworkCode code) {
         return code == null ? null : code.value();
+    }
+
+    private static String valueOf(Instant dt) {
+        return dt == null ? null : dt.toString();
     }
 }

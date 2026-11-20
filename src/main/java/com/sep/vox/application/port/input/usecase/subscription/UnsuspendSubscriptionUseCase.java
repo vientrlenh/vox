@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
-import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -52,17 +51,17 @@ public class UnsuspendSubscriptionUseCase implements IUseCase<UnsuspendSubscript
     @Override
     @Transactional
     public UUID execute(UnsuspendSubscriptionCommand input) {
-        SchoolSubscription subscription = schoolSubscriptionRepository.findById(input.subscriptionId())
+        var subscription = schoolSubscriptionRepository.findById(input.subscriptionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
         if (subscription.getStatus() != SchoolSubscriptionStatus.SUSPENDED) {
             throw new IllegalStateException("Gói đăng ký này hiện không bị đình chỉ");
         }
 
-        Instant now = Instant.now();
-        UUID actorId = userContextPort.getCurrentAuthenticatedUserId();
+        var now = Instant.now();
+        var actorId = userContextPort.getCurrentAuthenticatedUserId();
         // Ghi chú không bắt buộc: gỡ đình chỉ là trả lại quyền, không phải tước đi, nên không cần
         // biện minh như lúc đình chỉ. CHECK ở DB cũng chỉ ép reason với SUSPENDED.
-        String note = StringNormalization.trimAndCollapseSpaces(input.note());
+        var note = StringNormalization.trimAndCollapseSpaces(input.note());
 
         // Ghi sổ TRƯỚC khi xóa ba cột suspended_*: sau lệnh save bên dưới thì lý do đình chỉ không
         // còn ở đâu để mà chép lại nữa.
@@ -73,7 +72,7 @@ public class UnsuspendSubscriptionUseCase implements IUseCase<UnsuspendSubscript
         subscription.setSuspendedAt(null);
         subscription.setSuspendedReason(null);
         subscription.setSuspendedBy(null);
-        SchoolSubscription saved = schoolSubscriptionRepository.save(subscription);
+        var saved = schoolSubscriptionRepository.save(subscription);
 
         suspensionNotificationService.publishUnsuspended(saved.getId(), saved.getSchoolId(), now);
 

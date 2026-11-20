@@ -58,17 +58,17 @@ public class CreateSystemRubricResultBandsUseCaseTests {
                 rubricResultBandRepository, rubricVersionRepository, rubricRepository,
                 userContextPort, userRepository);
 
-        RubricVersion version = new RubricVersion(versionId, rubricId, 1, "V1", "Version 1", "Desc", RubricStatus.DRAFT,
+        var version = new RubricVersion(versionId, rubricId, 1, "V1", "Version 1", "Desc", RubricStatus.DRAFT,
                 now, now.plus(30, ChronoUnit.DAYS), BigDecimal.valueOf(0), BigDecimal.valueOf(10),
                 RubricTotalScoreMethod.WEIGHTED_AVERAGE, now, now, userId, userId);
         when(rubricVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
 
-        Rubric rubric = new Rubric(rubricId, UUID.randomUUID(), UUID.randomUUID(), "R1", "Rubric 1", "Desc",
+        var rubric = new Rubric(rubricId, UUID.randomUUID(), UUID.randomUUID(), "R1", "Rubric 1", "Desc",
                 RubricOwnerType.SYSTEM, null);
         when(rubricRepository.findById(rubricId)).thenReturn(Optional.of(rubric));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        User currentUser = mock(User.class);
+        var currentUser = mock(User.class);
         when(currentUser.getStatus()).thenReturn(UserStatus.ACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(currentUser));
 
@@ -96,9 +96,9 @@ public class CreateSystemRubricResultBandsUseCaseTests {
 
     @Test
     void should_create_4_result_bands_successfully() {
-        CreateSystemRubricResultBandsCommand command = new CreateSystemRubricResultBandsCommand(versionId, fourLevels());
+        var command = new CreateSystemRubricResultBandsCommand(versionId, fourLevels());
 
-        List<UUID> ids = useCase.execute(command);
+        var ids = useCase.execute(command);
 
         assertThat(ids).hasSize(4);
         assertThat(ids).allSatisfy(id -> assertThat(id).isNotNull());
@@ -106,51 +106,51 @@ public class CreateSystemRubricResultBandsUseCaseTests {
 
     @Test
     void should_throw_when_version_not_draft() {
-        RubricVersion publishedVersion = new RubricVersion(versionId, rubricId, 1, "V1", "Version 1", "Desc",
+        var publishedVersion = new RubricVersion(versionId, rubricId, 1, "V1", "Version 1", "Desc",
                 RubricStatus.PUBLISHED, now, now.plus(30, ChronoUnit.DAYS), BigDecimal.valueOf(0), BigDecimal.valueOf(10),
                 RubricTotalScoreMethod.WEIGHTED_AVERAGE, now, now, userId, userId);
         when(rubricVersionRepository.findById(versionId)).thenReturn(Optional.of(publishedVersion));
 
-        CreateSystemRubricResultBandsCommand command = new CreateSystemRubricResultBandsCommand(versionId, fourLevels());
+        var command = new CreateSystemRubricResultBandsCommand(versionId, fourLevels());
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(command));
     }
 
     @Test
     void should_throw_forbidden_when_rubric_belongs_to_school() {
-        Rubric schoolRubric = new Rubric(rubricId, UUID.randomUUID(), UUID.randomUUID(), "R1", "Rubric 1", "Desc",
+        var schoolRubric = new Rubric(rubricId, UUID.randomUUID(), UUID.randomUUID(), "R1", "Rubric 1", "Desc",
                 RubricOwnerType.SCHOOL, UUID.randomUUID());
         when(rubricRepository.findById(rubricId)).thenReturn(Optional.of(schoolRubric));
 
-        CreateSystemRubricResultBandsCommand command = new CreateSystemRubricResultBandsCommand(versionId, fourLevels());
+        var command = new CreateSystemRubricResultBandsCommand(versionId, fourLevels());
 
         assertThrows(ForbiddenException.class, () -> useCase.execute(command));
     }
 
     @Test
     void should_throw_when_bands_overlap() {
-        List<CreateSystemRubricResultBandsCommand.ResultBandItemCommand> overlapping = List.of(
+        var overlapping = List.of(
                 band("YEU", "Yếu", 0, 4, 1),
                 band("TB", "Trung bình", 4, 6, 2));
-        CreateSystemRubricResultBandsCommand command = new CreateSystemRubricResultBandsCommand(versionId, overlapping);
+        var command = new CreateSystemRubricResultBandsCommand(versionId, overlapping);
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
 
     @Test
     void should_throw_when_score_out_of_scale() {
-        List<CreateSystemRubricResultBandsCommand.ResultBandItemCommand> outOfScale = List.of(band("YEU", "Yếu", -1, 3, 1));
-        CreateSystemRubricResultBandsCommand command = new CreateSystemRubricResultBandsCommand(versionId, outOfScale);
+        var outOfScale = List.of(band("YEU", "Yếu", -1, 3, 1));
+        var command = new CreateSystemRubricResultBandsCommand(versionId, outOfScale);
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
 
     @Test
     void should_throw_when_duplicate_code_in_batch() {
-        List<CreateSystemRubricResultBandsCommand.ResultBandItemCommand> duplicated = List.of(
+        var duplicated = List.of(
                 band("YEU", "Yếu", 0, 3.99, 1),
                 band("YEU", "Trung bình", 4, 5.99, 2));
-        CreateSystemRubricResultBandsCommand command = new CreateSystemRubricResultBandsCommand(versionId, duplicated);
+        var command = new CreateSystemRubricResultBandsCommand(versionId, duplicated);
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }

@@ -73,7 +73,7 @@ public final class TensePolicy {
      * luôn hợp lệ.
      */
     public static List<String> allowedFor(int targetRank, int bandCount) {
-        int raw = rawForRank(targetRank, bandCount);
+        var raw = rawForRank(targetRank, bandCount);
         return ROTATION.stream()
             .filter(tense -> RAW_FLOOR.get(tense) <= raw)
             .toList();
@@ -101,8 +101,8 @@ public final class TensePolicy {
             int slotIndex,
             int targetRank,
             int bandCount) {
-        List<String> allowed = allowedFor(targetRank, bandCount);
-        String preferred = switch (temporalAffordance == null ? AFFORDANCE_MIXED : temporalAffordance) {
+        var allowed = allowedFor(targetRank, bandCount);
+        var preferred = switch (temporalAffordance == null ? AFFORDANCE_MIXED : temporalAffordance) {
             case AFFORDANCE_PAST -> PAST;
             case AFFORDANCE_FUTURE -> FUTURE;
             default -> null;
@@ -121,16 +121,16 @@ public final class TensePolicy {
      * mọi thì mà không báo lỗi.
      */
     private static int rawForRank(int rank, int bandCount) {
-        int safeBandCount = Math.max(1, bandCount);
-        int safeRank = Math.max(1, Math.min(safeBandCount, rank));
+        var safeBandCount = Math.max(1, bandCount);
+        var safeRank = Math.max(1, Math.min(safeBandCount, rank));
         if (safeBandCount == RAW_MAX) {
             return safeRank;
         }
         if (safeBandCount == 1) {
             return RAW_MIN;
         }
-        double normalized = (double) (safeRank - 1) / (safeBandCount - 1);
-        int raw = RAW_MIN + (int) Math.round(normalized * (RAW_MAX - RAW_MIN));
+        var normalized = (double) (safeRank - 1) / (safeBandCount - 1);
+        var raw = RAW_MIN + (int) Math.round(normalized * (RAW_MAX - RAW_MIN));
         return Math.max(RAW_MIN, Math.min(RAW_MAX, raw));
     }
 }

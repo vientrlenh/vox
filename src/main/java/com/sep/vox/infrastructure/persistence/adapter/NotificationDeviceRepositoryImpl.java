@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.NotificationDeviceJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -34,8 +33,8 @@ public class NotificationDeviceRepositoryImpl implements NotificationDeviceRepos
 
     @Override
     public NotificationDevice save(NotificationDevice notificationDevice) {
-        NotificationDeviceJpaEntity entity = NotificationDeviceMapper.toJpa(notificationDevice);
-        NotificationDeviceJpaEntity saved = springDataNotificationDeviceRepository.save(entity);
+        var entity = NotificationDeviceMapper.toJpa(notificationDevice);
+        var saved = springDataNotificationDeviceRepository.save(entity);
         return NotificationDeviceMapper.toDomain(saved);
     }
 

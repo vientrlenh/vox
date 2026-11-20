@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.config;
 
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -33,12 +32,12 @@ public class NotificationCategoryMappingValidator {
     @Bean
     InitializingBean notificationCategoryMappingChecker() {
         return () -> {
-            List<String> knownEventTypes = EventTypeConstant.all();
+            var knownEventTypes = EventTypeConstant.all();
 
-            // The mapping points at an eventType that no longer exists: usually the trace of a
-            // constant rename where this side was forgotten. A notification of that kind will never
-            // be created, and nothing reports an error unless it is checked here.
-            List<String> unknown = NotificationCategory.mappedEventTypes().stream()
+            // Ánh xạ trỏ tới một eventType không còn tồn tại: thường là dấu vết của một lần
+            // đổi tên hằng số mà quên sửa bên này. Notification cho loại đó sẽ không bao giờ
+            // được tạo, và không có gì báo lỗi nếu không kiểm ở đây.
+            var unknown = NotificationCategory.mappedEventTypes().stream()
                 .filter(eventType -> !knownEventTypes.contains(eventType))
                 .sorted()
                 .toList();
@@ -48,10 +47,10 @@ public class NotificationCategoryMappingValidator {
                     "NotificationCategory ánh xạ eventType không tồn tại trong EventTypeConstant: " + unknown);
             }
 
-            // Without a target renderDrafts throws IllegalArgumentException midway. Since it
-            // sits on the Kafka branch, the message runs the whole retry cycle and falls into the DLT: the
-            // notification never reaches the recipient, and the only place that says so is the error log.
-            List<String> missingTarget = NotificationCategory.mappedEventTypes().stream()
+            // Thiếu target thì renderDrafts ném IllegalArgumentException giữa chừng. Vì nó
+            // nằm trong nhánh Kafka, message sẽ chạy hết vòng retry rồi rơi vào DLT: thông
+            // báo không bao giờ tới người nhận, và chỗ duy nhất nói ra điều đó là log lỗi.
+            var missingTarget = NotificationCategory.mappedEventTypes().stream()
                 .filter(eventType -> !NotificationTarget.isMapped(eventType))
                 .sorted()
                 .toList();
@@ -61,10 +60,10 @@ public class NotificationCategoryMappingValidator {
                     "eventType có NotificationCategory nhưng thiếu NotificationTarget: " + missingTarget);
             }
 
-            // The opposite direction is harmless at runtime but is always a sign of half-finished work: someone
-            // declared a target for a new event and forgot the category, and that event produces no
-            // notification at all -- silent, exactly as if nothing had been done.
-            List<String> targetWithoutCategory = NotificationTarget.mappedEventTypes().stream()
+            // Chiều ngược lại vô hại lúc chạy nhưng luôn là dấu hiệu của một nửa việc: ai đó
+            // khai báo target cho event mới rồi quên category, và event đó không hề sinh
+            // notification -- im lặng đúng như lúc chưa làm gì cả.
+            var targetWithoutCategory = NotificationTarget.mappedEventTypes().stream()
                 .filter(eventType -> !NotificationCategory.isMapped(eventType))
                 .sorted()
                 .toList();

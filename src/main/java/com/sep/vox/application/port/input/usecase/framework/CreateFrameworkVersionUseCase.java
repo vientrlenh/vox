@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.framework;
 
 import java.time.Instant;
 
-import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,17 +38,17 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
     @Override
     @Transactional
     public CreateFrameworkVersionResponse execute(CreateFrameworkVersionCommand input) {
-        CreateFrameworkVersionCommand command = normalize(input);
+        var command = normalize(input);
         if (command.effectiveTo() != null && !command.effectiveTo().isAfter(command.effectiveFrom())) {
             throw new IllegalArgumentException("Ngày hết hiệu lực phải sau ngày hiệu lực");
         }
-        Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var now = Instant.now();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         frameworkRepository.findById(command.frameworkId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
 
-        FrameworkVersion version = new FrameworkVersion(
+        var version = new FrameworkVersion(
             command.frameworkId(),
             command.code(),
             command.name(),
@@ -65,7 +64,7 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
         );
 
         try {
-            FrameworkVersion saved = frameworkVersionRepository.save(version);
+            var saved = frameworkVersionRepository.save(version);
             return CreateFrameworkVersionResponseMapper.toResponse(saved.getId());
         } catch (DataIntegrityViolationException e) {
             throw new DuplicatedException("Phiên bản hoặc mã phiên bản này đã tồn tại trong framework");

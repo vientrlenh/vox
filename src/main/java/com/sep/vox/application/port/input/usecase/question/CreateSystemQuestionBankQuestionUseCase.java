@@ -1,11 +1,8 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import com.sep.vox.domain.model.question.QuestionBank;
-import com.sep.vox.domain.model.question.QuestionTopic;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -75,18 +72,18 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
     @Override
     @Transactional
     public CreateQuestionResponse execute(CreateSystemQuestionBankQuestionCommand input) {
-        CreateSystemQuestionBankQuestionCommand command = normalize(input);
+        var command = normalize(input);
 
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        boolean teacher = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        var teacher = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "TEACHER".equals(role.roleCode()));
 
-        QuestionBank questionBank = questionBankRepository.findById(command.questionBankId())
+        var questionBank = questionBankRepository.findById(command.questionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
-        QuestionTopic questionTopic = questionTopicRepository.findById(command.questionTopicId())
+        var questionTopic = questionTopicRepository.findById(command.questionTopicId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
 
         if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
@@ -107,9 +104,9 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         validateResponseDurationRange(command);
         validateAssetOrders(command.assets());
 
-        Instant now = Instant.now();
-        QuestionSharing sharing = command.sharing() == null ? QuestionSharing.PRIVATE : QuestionSharing.valueOf(command.sharing());
-        Question question = new Question(
+        var now = Instant.now();
+        var sharing = command.sharing() == null ? QuestionSharing.PRIVATE : QuestionSharing.valueOf(command.sharing());
+        var question = new Question(
             command.questionBankId(),
             command.questionTopicId(),
             questionCodeOf(command),
@@ -133,9 +130,9 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             currentUserId
         );
 
-        Question savedQuestion = questionRepository.save(question);
-        List<QuestionAsset> savedAssets = createAssets(savedQuestion.getId(), command.assets());
-        QuestionEvaluationGuide savedEvaluationGuide = createEvaluationGuide(savedQuestion.getId(), command.evaluationGuide());
+        var savedQuestion = questionRepository.save(question);
+        var savedAssets = createAssets(savedQuestion.getId(), command.assets());
+        var savedEvaluationGuide = createEvaluationGuide(savedQuestion.getId(), command.evaluationGuide());
 
         return CreateQuestionResponseMapper.toResponse(
             savedQuestion,
@@ -204,8 +201,8 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
     }
 
     private void validateAssetOrders(List<CreateQuestionAssetCommand> assets) {
-        Set<Integer> orders = new HashSet<Integer>();
-        for (CreateQuestionAssetCommand asset : assets) {
+        var orders = new HashSet<Integer>();
+        for (var asset : assets) {
             if (!orders.add(asset.order())) {
                 throw new IllegalStateException("Thứ tự tài nguyên câu hỏi không được trùng lặp");
             }
@@ -217,7 +214,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             return null;
         }
 
-        QuestionEvaluationGuide evaluationGuide = new QuestionEvaluationGuide(
+        var evaluationGuide = new QuestionEvaluationGuide(
             questionId,
             command.expectedContent(),
             command.keyPoints(),
@@ -244,7 +241,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             return List.of();
         }
 
-        List<QuestionAsset> assets = assetCommands.stream()
+        var assets = assetCommands.stream()
             .map(asset -> new QuestionAsset(
                 questionId,
                 asset.title(),

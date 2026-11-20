@@ -8,10 +8,10 @@ import java.util.UUID;
 import com.sep.vox.domain.model.metering.QuotaType;
 
 /**
- * The AI quota wallet (ASSESSMENT or PRACTICE) of a school has just CROSSED from below to above the EARLY warning
- * threshold (see QuotaUsageWarningProperties/ConsumeQuotaService.checkUsageWarningTransition) -- the quota is NOT
- * exhausted yet, this is only an advance notice so the school can consider renewing or topping up. The recipients are all
- * SCHOOL_ADMINs of the school -- FIXED RIGHT when the event is published, same reason as SchoolLockedDueToDebtPayloadV1.schoolAdminIds.
+ * Ví hạn mức AI (EXAM hoặc PRACTICE) của 1 trường vừa CHUYỂN từ dưới sang vượt ngưỡng cảnh báo SỚM
+ * (xem QuotaUsageWarningProperties/ConsumeQuotaService.checkUsageWarningTransition) -- hạn mức CHƯA
+ * cạn, chỉ là báo trước để trường cân nhắc gia hạn/nạp thêm. Người nhận là mọi SCHOOL_ADMIN của
+ * trường -- CHỐT NGAY lúc phát sự kiện, cùng lý do với SchoolLockedDueToDebtPayloadV1.schoolAdminIds.
  */
 public record SchoolQuotaUsageWarningPayloadV1(
     List<UUID> schoolAdminIds,

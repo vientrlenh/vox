@@ -1,10 +1,7 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
-import com.sep.vox.domain.model.subscription.SchoolSubscription;
-import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.time.Instant;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,22 +51,22 @@ public class PreviewSchoolSubscriptionRenewalUseCase
     @Override
     @Transactional(readOnly = true)
     public SchoolSubscriptionRenewalPreviewResponse execute(Void input) {
-        UUID schoolId = userContextPort.getCurrentSchoolId();
+        var schoolId = userContextPort.getCurrentSchoolId();
 
         // Kỳ GẦN NHẤT, không lọc trạng thái: gia hạn muộn (gói hết hạn tuần trước) là đường phổ biến
         // nhất, mà ở đó không còn kỳ nào ACTIVE để hỏi.
-        SchoolSubscription subscription = schoolSubscriptionRepository.findMostRecentBySchoolId(schoolId)
+        var subscription = schoolSubscriptionRepository.findMostRecentBySchoolId(schoolId)
             .orElseThrow(() -> new NotFoundException(
                 "Trường chưa từng đăng ký gói nào, hãy chọn gói từ danh sách thay vì gia hạn."));
 
-        SubscriptionPlan currentPlan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
+        var currentPlan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
         // Ném lỗi nếu gói đã lưu trữ mà chưa có gói thay thế -- đúng ý: trường cần biết ngay là chưa
         // gia hạn được, thay vì thấy một màn xem trước đẹp đẽ rồi mới hỏng ở bước đặt đơn.
-        SubscriptionPlan renewalPlan = subscriptionPlanResolver.resolveActivePlan(currentPlan);
+        var renewalPlan = subscriptionPlanResolver.resolveActivePlan(currentPlan);
 
-        Instant now = Instant.now();
-        Instant startsAt = schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now).stream()
+        var now = Instant.now();
+        var startsAt = schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now).stream()
             .findFirst()
             .map(s -> s.getEndDate())
             .orElse(now);

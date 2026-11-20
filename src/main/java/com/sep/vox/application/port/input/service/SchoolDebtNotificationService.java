@@ -59,23 +59,23 @@ public class SchoolDebtNotificationService {
     }
 
     /**
-     * @param triggerAssessmentSessionId the ASSESSMENT session that caused the deduction over the ceiling -- null when the source is speaking practice
-     * @param triggerPracticeSessionId the SPEAKING PRACTICE session that caused the deduction -- null when the source is an assessment session
+     * @param triggerExamSessionId ca THI đã gây ra khoản trừ vượt trần -- null khi nguồn là luyện nói
+     * @param triggerPracticeSessionId phiên LUYỆN NÓI đã gây ra khoản trừ -- null khi nguồn là ca thi
      *
-     * <p>Must accept BOTH because the PRACTICE quota wallet can also exceed its ceiling, just like the ASSESSMENT wallet. The previous version only
-     * accepted assessmentSessionId so every CAP_EXCEEDED row caused by speaking practice recorded trigger = NULL: the ledger
-     * knew the school exceeded the ceiling but not because of which expense, exactly when it is needed most.
-     * chk_school_debt_events_shape_matches_event_type now requires EXACTLY ONE of the two, so forgetting to pass
-     * one makes the INSERT fail right away instead of silently writing a row that lost its trace.
+     * <p>Phải nhận CẢ HAI vì ví hạn mức PRACTICE cũng vượt trần được, y như ví EXAM. Bản trước chỉ
+     * nhận examSessionId nên mọi dòng CAP_EXCEEDED do luyện nói gây ra đều ghi trigger = NULL: sổ
+     * biết trường vượt trần mà không biết vì khoản nào, đúng lúc cần tra nhất.
+     * chk_school_debt_events_shape_matches_event_type giờ đòi ĐÚNG MỘT trong hai, nên quên truyền
+     * là INSERT hỏng ngay thay vì âm thầm ghi một dòng mất dấu.
      */
     public void publishDebtCapExceeded(
             UUID subscriptionId, UUID schoolId, QuotaType quotaType,
-            UUID triggerAssessmentSessionId, UUID triggerPracticeSessionId,
+            UUID triggerExamSessionId, UUID triggerPracticeSessionId,
             BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd,
             BigDecimal overageVnd, BigDecimal capVnd, Instant now) {
-        List<UUID> systemAdminIds = userRoleRepository.findActiveUserIdsByRoleCode(RoleConstant.SYSTEM_ADMIN_ROLE);
+        var systemAdminIds = userRoleRepository.findActiveUserIdsByRoleCode(RoleConstant.SYSTEM_ADMIN_ROLE);
 
-        String payload = jsonSerializationPort.toJson(new SchoolDebtCapExceededPayloadV1(
+        var payload = jsonSerializationPort.toJson(new SchoolDebtCapExceededPayloadV1(
             systemAdminIds, schoolId, subscriptionId, quotaType, overageVnd, capVnd, now
         ));
 
@@ -85,7 +85,7 @@ public class SchoolDebtNotificationService {
         ));
 
         logDebtEvent(schoolId, subscriptionId, SchoolDebtEventType.CAP_EXCEEDED, quotaType,
-            triggerAssessmentSessionId, triggerPracticeSessionId, triggerAmountVnd, totalAllocatedVnd,
+            triggerExamSessionId, triggerPracticeSessionId, triggerAmountVnd, totalAllocatedVnd,
             usedAmountVnd, overageVnd, now);
     }
 
@@ -103,11 +103,11 @@ public class SchoolDebtNotificationService {
      */
     public void publishSchoolLockedDueToDebt(
             UUID subscriptionId, UUID schoolId, QuotaType quotaType,
-            UUID triggerAssessmentSessionId, UUID triggerPracticeSessionId,
+            UUID triggerExamSessionId, UUID triggerPracticeSessionId,
             BigDecimal triggerAmountVnd, BigDecimal totalAllocatedVnd, BigDecimal debtVnd, Instant now) {
-        List<UUID> schoolAdminIds = schoolAdminIdsOf(schoolId);
+        var schoolAdminIds = schoolAdminIdsOf(schoolId);
 
-        String payload = jsonSerializationPort.toJson(new SchoolLockedDueToDebtPayloadV1(
+        var payload = jsonSerializationPort.toJson(new SchoolLockedDueToDebtPayloadV1(
             schoolAdminIds, schoolId, subscriptionId, now
         ));
 
@@ -117,7 +117,7 @@ public class SchoolDebtNotificationService {
         ));
 
         logDebtEvent(schoolId, subscriptionId, SchoolDebtEventType.LOCKED, quotaType,
-            triggerAssessmentSessionId, triggerPracticeSessionId,
+            triggerExamSessionId, triggerPracticeSessionId,
             triggerAmountVnd, totalAllocatedVnd, totalAllocatedVnd.add(debtVnd), debtVnd, now);
     }
 
@@ -130,9 +130,9 @@ public class SchoolDebtNotificationService {
      * bỏ trống ở dòng CLEARED, có chk_school_debt_events_shape_matches_event_type canh (V4).
      */
     public void publishSchoolDebtCleared(UUID subscriptionId, UUID schoolId, Instant now) {
-        List<UUID> schoolAdminIds = schoolAdminIdsOf(schoolId);
+        var schoolAdminIds = schoolAdminIdsOf(schoolId);
 
-        String payload = jsonSerializationPort.toJson(new SchoolDebtClearedPayloadV1(
+        var payload = jsonSerializationPort.toJson(new SchoolDebtClearedPayloadV1(
             schoolAdminIds, schoolId, subscriptionId, now
         ));
 
@@ -150,10 +150,10 @@ public class SchoolDebtNotificationService {
 
     private void logDebtEvent(
             UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType, QuotaType quotaType,
-            UUID triggerAssessmentSessionId, UUID triggerPracticeSessionId, BigDecimal triggerAmountVnd,
+            UUID triggerExamSessionId, UUID triggerPracticeSessionId, BigDecimal triggerAmountVnd,
             BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant now) {
         schoolDebtEventRepository.save(new SchoolDebtEvent(
-            schoolId, subscriptionId, eventType, quotaType, triggerAssessmentSessionId,
+            schoolId, subscriptionId, eventType, quotaType, triggerExamSessionId,
             triggerPracticeSessionId, triggerAmountVnd, totalAllocatedVnd, usedAmountVnd, overageVnd, now
         ));
     }

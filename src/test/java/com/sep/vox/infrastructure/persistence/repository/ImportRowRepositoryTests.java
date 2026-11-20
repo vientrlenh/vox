@@ -7,28 +7,32 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.infrastructure.persistence.adapter.ImportRowRepositoryImpl;
-import com.sep.vox.support.RepositoryTest;
 
-@RepositoryTest
+@DataJpaTest
+@ActiveProfiles("test")
 @Import({
     ImportRowRepositoryImpl.class
 })
-class ImportRowRepositoryTests {
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class ImportRowRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private ImportRowRepository importRowRepository;
 
     @Test
     void whenFindBySessionIdWithStatus_thenReturnsMatchingRowsSortedByRowNumber() {
-        UUID sessionId = UUID.randomUUID();
-        UUID otherSessionId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var otherSessionId = UUID.randomUUID();
         importRowRepository.saveAll(List.of(
             row(sessionId, 3L, ImportRowStatus.INVALID),
             row(sessionId, 1L, ImportRowStatus.INVALID),
@@ -36,7 +40,7 @@ class ImportRowRepositoryTests {
             row(otherSessionId, 1L, ImportRowStatus.INVALID)
         ));
 
-        PageResult<ImportRow> found = importRowRepository.findBySessionId(sessionId, ImportRowStatus.INVALID, 1, 10);
+        var found = importRowRepository.findBySessionId(sessionId, ImportRowStatus.INVALID, 1, 10);
 
         assertThat(found.content()).hasSize(2);
         assertThat(found.content()).extracting(row -> row.getRowNumber()).containsExactly(1L, 3L);
@@ -47,14 +51,14 @@ class ImportRowRepositoryTests {
 
     @Test
     void whenFindBySessionIdWithoutStatus_thenReturnsPagedRows() {
-        UUID sessionId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
         importRowRepository.saveAll(List.of(
             row(sessionId, 1L, ImportRowStatus.PENDING),
             row(sessionId, 2L, ImportRowStatus.INVALID),
             row(sessionId, 3L, ImportRowStatus.IMPORTED)
         ));
 
-        PageResult<ImportRow> found = importRowRepository.findBySessionId(sessionId, null, 2, 2);
+        var found = importRowRepository.findBySessionId(sessionId, null, 2, 2);
 
         assertThat(found.content()).hasSize(1);
         assertThat(found.content().get(0).getRowNumber()).isEqualTo(3L);

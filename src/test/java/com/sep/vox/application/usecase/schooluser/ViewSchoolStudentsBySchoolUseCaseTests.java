@@ -25,7 +25,6 @@ import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.domain.valueobject.RoleCode;
-import com.sep.vox.domain.model.user.UserStatus;
 
 class ViewSchoolStudentsBySchoolUseCaseTests {
 
@@ -44,18 +43,18 @@ class ViewSchoolStudentsBySchoolUseCaseTests {
 
     @Test
     void execute_should_delegate_with_student_role_id() {
-        UUID roleId = UUID.randomUUID();
-        Role studentRole = new Role(roleId, new RoleCode(SchoolRoleCodes.STUDENT), "Student", Instant.now(), Instant.now(), null, null);
-        PageResult<SchoolUserDto> page = new PageResult<SchoolUserDto>(List.of(), 1, 20, 0, 0);
+        var roleId = UUID.randomUUID();
+        var studentRole = new Role(roleId, new RoleCode(SchoolRoleCodes.STUDENT), "Student", Instant.now(), Instant.now(), null, null);
+        var page = new PageResult<SchoolUserDto>(List.of(), 1, 20, 0, 0);
 
         when(roleRepository.findByCode(SchoolRoleCodes.STUDENT)).thenReturn(Optional.of(studentRole));
-        when(viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, "an", roleId, UserStatus.ACTIVE)))
+        when(viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, "an", roleId, "ACTIVE")))
             .thenReturn(page);
 
-        PageResult<SchoolUserDto> result = useCase.execute(new ViewSchoolStudentsBySchoolQuery(schoolId, 1, 20, "an", UserStatus.ACTIVE));
+        var result = useCase.execute(new ViewSchoolStudentsBySchoolQuery(schoolId, 1, 20, "an", "ACTIVE"));
 
         assertThat(result).isEqualTo(page);
-        verify(viewSchoolUsersBySchoolUseCase).execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, "an", roleId, UserStatus.ACTIVE));
+        verify(viewSchoolUsersBySchoolUseCase).execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, "an", roleId, "ACTIVE"));
     }
 
     @Test

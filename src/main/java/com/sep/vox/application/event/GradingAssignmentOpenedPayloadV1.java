@@ -3,37 +3,37 @@ package com.sep.vox.application.event;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.exam.ExamKind;
 
 /**
- * A teacher has just been ASSIGNED a specific grading round: first grading, post-check, re-inspection of an
- * invalidated attempt, or an appeal.
+ * Một giáo viên vừa được GIAO một vòng chấm cụ thể: chấm lần đầu, hậu kiểm, soi lại bài vô
+ * hiệu, hoặc phúc khảo.
  *
- * <p>Only published when SOMEONE ELSE made the assignment (school admin manual assignment, automatic assignment,
- * reassignment of the grader). A teacher who claims an attempt from the class test queue themself does not trigger it:
- * they have just pressed the button, and reporting back what they have just done is only noise.
+ * <p>Chỉ phát khi việc do NGƯỜI KHÁC giao (school admin gán tay, gán tự động, chuyển người
+ * chấm). Giáo viên tự nhận bài trong hàng đợi bài kiểm tra trên lớp thì không phát: họ vừa
+ * bấm nút, báo lại chính việc họ vừa làm chỉ là tiếng ồn.
  *
- * <p>One event per ASSIGNMENT, unlike {@link AssessmentHumanGradingRequiredPayloadV1} which batches the
- * whole assessment: here every notification is a specific task for one person, so the count equals the
- * number of real tasks rather than multiplying by the number of candidates.
+ * <p>Một event cho MỘT phân công, khác hẳn {@link ExamHumanGradingRequiredPayloadV1} vốn gộp
+ * cả bài thi: ở đây mỗi thông báo là một việc đích danh của một người, nên số lượng bằng số
+ * việc thật chứ không nhân theo sĩ số.
  *
- * <p>Produces an in-app notification ONLY, no email -- it shares the assessment-grading-review topic, where the
- * mail consumer is not registered.
+ * <p>CHỈ sinh thông báo trong app, không gửi mail -- đi chung topic exam-grading-review, nơi
+ * consumer mail không đăng ký.
  *
- * @param candidateLabel what the teacher uses to recognize the attempt, ALREADY chosen by the anonymity rule at
- *        publish time: the student's name for a class test, the 8-character attempt code for a centralized assessment.
- *        It is decided here rather than letting the consumer choose from {@code assessmentKind} on purpose --
- *        the blind grading of a centralized assessment must not leak (see GradingStudentIdentityQueryTests),
- *        and the payload stays permanently in the notifications.payload column. Never put
- *        a real name here for a centralized assessment.
- * @param deadlineAt grading deadline, null for a class test (no administrative deadline)
+ * @param candidateLabel thứ để giáo viên nhận ra bài, ĐÃ được chọn theo luật ẩn danh ngay lúc
+ *        phát: tên học sinh với bài kiểm tra trên lớp, mã bài 8 ký tự với kỳ thi tập trung.
+ *        Quyết định ở đây chứ không để consumer tự chọn theo {@code examKind} là có chủ ý --
+ *        chấm mù của kỳ thi tập trung không được rò rỉ (xem GradingStudentIdentityQueryTests),
+ *        và payload thì nằm lại vĩnh viễn trong cột notifications.payload. Không bao giờ đặt
+ *        tên thật vào đây cho kỳ thi tập trung.
+ * @param deadlineAt hạn chấm, null với bài trên lớp (không có hạn hành chính)
  */
 public record GradingAssignmentOpenedPayloadV1(
     UUID assignmentId,
     UUID teacherId,
-    UUID assessmentId,
-    String assessmentName,
-    AssessmentKind assessmentKind,
+    UUID examId,
+    String examName,
+    ExamKind examKind,
     String roundType,
     String candidateLabel,
     Instant deadlineAt

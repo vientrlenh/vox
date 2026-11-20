@@ -6,7 +6,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.PracticeAgentAvailabilityPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeSession;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 /**
@@ -34,7 +33,7 @@ public class StartPracticeSessionUseCase implements IUseCase<StartPracticeSessio
 
     @Override
     public PracticeSession execute(StartPracticeSessionCommand input) {
-        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
+        var studentId = userContextPort.getCurrentAuthenticatedUserId();
         agentAvailabilityPort.requireReady();
         return persistenceService.persist(studentId, input.paperId());
     }

@@ -20,7 +20,6 @@ import com.sep.vox.application.port.input.query.ViewMyClassDetailsQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.MyClassAccessGuard;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -59,12 +58,12 @@ class ViewMyClassDetailsUseCaseTests {
 
     @Test
     void should_return_class_when_caller_is_an_active_member() {
-        SchoolClass schoolClass = schoolClass();
+        var schoolClass = schoolClass();
         givenActiveCaller();
         givenMembership(true);
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(schoolClass));
 
-        SchoolClassDto result = useCase.execute(new ViewMyClassDetailsQuery(classId));
+        var result = useCase.execute(new ViewMyClassDetailsQuery(classId));
 
         assertThat(result.id()).isEqualTo(schoolClass.getId());
         assertThat(result.code()).isEqualTo("ENG-01");
@@ -79,8 +78,8 @@ class ViewMyClassDetailsUseCaseTests {
     }
 
     /**
-     * Someone outside the class must get exactly the same message as when the class does not exist
-     * -- if they differed, it would be possible to probe which classes exist in the system.
+     * Người ngoài lớp phải nhận đúng thông báo như khi lớp không tồn tại — nếu
+     * khác nhau thì có thể dò được lớp nào đang tồn tại trong hệ thống.
      */
     @Test
     void should_hide_existence_of_class_the_caller_is_not_in() {
@@ -88,7 +87,7 @@ class ViewMyClassDetailsUseCaseTests {
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(callerId, classId))
             .thenReturn(Optional.empty());
 
-        NotFoundException exception = assertThrows(
+        var exception = assertThrows(
             NotFoundException.class,
             () -> useCase.execute(new ViewMyClassDetailsQuery(classId))
         );
@@ -102,7 +101,7 @@ class ViewMyClassDetailsUseCaseTests {
         givenActiveCaller();
         givenMembership(false);
 
-        NotFoundException exception = assertThrows(
+        var exception = assertThrows(
             NotFoundException.class,
             () -> useCase.execute(new ViewMyClassDetailsQuery(classId))
         );
@@ -138,7 +137,7 @@ class ViewMyClassDetailsUseCaseTests {
     }
 
     private SchoolClass schoolClass() {
-        SchoolClass schoolClass = SchoolClass.create(
+        var schoolClass = SchoolClass.create(
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),

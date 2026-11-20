@@ -1,9 +1,7 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
-import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses;
 import java.util.List;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,13 +32,13 @@ public class SearchPracticeTopicsUseCase implements IUseCase<SearchPracticeTopic
     @Override
     @Transactional(readOnly = true)
     public TopicSearchResult execute(SearchPracticeTopicsQuery input) {
-        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
-        String normalized = input.keyword() == null ? "" : input.keyword().strip().toLowerCase();
+        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        var normalized = input.keyword() == null ? "" : input.keyword().strip().toLowerCase();
         if (normalized.isBlank()) {
             return new TopicSearchResult(List.of(), false);
         }
-        int minutes = enrichmentService.minutesForStudent(studentId);
-        List<PracticePlanningResponses.PracticeTopicOffer> topics = practiceTopicQueryRepository
+        var minutes = enrichmentService.minutesForStudent(studentId);
+        var topics = practiceTopicQueryRepository
             .searchTopics(studentId, "%" + normalized + "%", normalized)
             .stream()
             .map(row -> new PracticeTopicOffer(

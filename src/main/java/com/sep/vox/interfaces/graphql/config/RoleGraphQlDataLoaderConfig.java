@@ -1,13 +1,10 @@
 package com.sep.vox.interfaces.graphql.config;
 
-import com.sep.vox.domain.model.user.User;
-import com.sep.vox.domain.model.user.UserRole;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.dataloader.BatchLoaderEnvironment;
@@ -37,30 +34,30 @@ public class RoleGraphQlDataLoaderConfig {
 
                 keys.forEach(key -> result.put(key, new ArrayList<>()));
 
-                Map<PageKey, List<RoleUsersKey>> keysByPage = keys.stream()
+                var keysByPage = keys.stream()
                     .collect(Collectors.groupingBy(key -> new PageKey(key.page(), key.size()))
                 );
 
-                for (Map.Entry<PageKey, List<RoleUsersKey>> entry : keysByPage.entrySet()) {
-                    PageKey pageKey = entry.getKey();
-                    List<RoleUsersKey> groupedKeys = entry.getValue();
+                for (var entry : keysByPage.entrySet()) {
+                    var pageKey = entry.getKey();
+                    var groupedKeys = entry.getValue();
 
-                    List<UUID> roleIds = groupedKeys.stream()
+                    var roleIds = groupedKeys.stream()
                         .map(k -> k.roleId())
                         .toList();
 
-                    List<UserRole> roleUsers = userRoleRepository.findByRoleIdIn(roleIds, pageKey.page(), pageKey.size());
+                    var roleUsers = userRoleRepository.findByRoleIdIn(roleIds, pageKey.page(), pageKey.size());
                     
-                    List<UUID> userIds = roleUsers.stream()
+                    var userIds = roleUsers.stream()
                         .map(ur -> ur.getUserId())
                         .distinct()
                         .toList();
                     
-                    Map<UUID, User> users = userRepository.findByIdIn(userIds)
+                    var users = userRepository.findByIdIn(userIds)
                         .stream()
                         .collect(Collectors.toMap(u -> u.getId(), u -> u));
 
-                    Map<UUID, List<UserDto>> usersByRoleId = roleUsers.stream()
+                    var usersByRoleId = roleUsers.stream()
                         .filter(ru -> users.containsKey(ru.getUserId()))
                         .collect(Collectors.groupingBy(
                             ur -> ur.getRoleId(), 

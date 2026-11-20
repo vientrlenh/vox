@@ -17,7 +17,7 @@ import com.sep.vox.application.port.input.query.ViewQuestionStatusCountsQuery;
 import com.sep.vox.application.port.input.query.ViewQuestionsQuery;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionStatusCountsUseCase;
-import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForAssessmentPaperUseCase;
+import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForExamPaperUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.QuestionStatusCountInfo;
@@ -33,25 +33,24 @@ import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
-import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlQuestionController")
 public class QuestionController {
 
     private final ViewQuestionsUseCase viewQuestionsUseCase;
-    private final ViewQuestionsForAssessmentPaperUseCase viewQuestionsForAssessmentPaperUseCase;
+    private final ViewQuestionsForExamPaperUseCase viewQuestionsForExamPaperUseCase;
     private final ViewQuestionDetailsUseCase viewQuestionDetailsUseCase;
     private final ViewQuestionStatusCountsUseCase viewQuestionStatusCountsUseCase;
     private final UserContextPort userContextPort;
 
     public QuestionController(
             ViewQuestionsUseCase viewQuestionsUseCase,
-            ViewQuestionsForAssessmentPaperUseCase viewQuestionsForAssessmentPaperUseCase,
+            ViewQuestionsForExamPaperUseCase viewQuestionsForExamPaperUseCase,
             ViewQuestionDetailsUseCase viewQuestionDetailsUseCase,
             ViewQuestionStatusCountsUseCase viewQuestionStatusCountsUseCase,
             UserContextPort userContextPort) {
         this.viewQuestionsUseCase = viewQuestionsUseCase;
-        this.viewQuestionsForAssessmentPaperUseCase = viewQuestionsForAssessmentPaperUseCase;
+        this.viewQuestionsForExamPaperUseCase = viewQuestionsForExamPaperUseCase;
         this.viewQuestionDetailsUseCase = viewQuestionDetailsUseCase;
         this.viewQuestionStatusCountsUseCase = viewQuestionStatusCountsUseCase;
         this.userContextPort = userContextPort;
@@ -90,8 +89,8 @@ public class QuestionController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
-        PageArguments.validate(page, size);
-        ViewQuestionsQuery query = new ViewQuestionsQuery(
+        validatePage(page, size);
+        var query = new ViewQuestionsQuery(
             questionBankId,
             questionTopicId,
             topicName,
@@ -107,8 +106,8 @@ public class QuestionController {
         return viewQuestionsUseCase.execute(query);
     }
 
-    @QueryMapping(name = "questionsForAssessmentPaper")
-    public PageResult<QuestionDto> questionsForAssessmentPaper(
+    @QueryMapping(name = "questionsForExamPaper")
+    public PageResult<QuestionDto> questionsForExamPaper(
             @Argument(name = "questionBankId") UUID questionBankId,
             @Argument(name = "questionTopicId") UUID questionTopicId,
             @Argument(name = "topicName") String topicName,
@@ -120,8 +119,8 @@ public class QuestionController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
-        PageArguments.validate(page, size);
-        ViewQuestionsQuery query = new ViewQuestionsQuery(
+        validatePage(page, size);
+        var query = new ViewQuestionsQuery(
             questionBankId,
             questionTopicId,
             topicName,
@@ -134,7 +133,7 @@ public class QuestionController {
             page,
             size
         );
-        return viewQuestionsForAssessmentPaperUseCase.execute(query);
+        return viewQuestionsForExamPaperUseCase.execute(query);
     }
 
     @QueryMapping(name = "question")
@@ -181,9 +180,9 @@ public class QuestionController {
         return loader.load(source.id());
     }
 
-    @SchemaMapping(typeName = "Question", field = "usableInAssessment")
-    public CompletableFuture<Boolean> usableInAssessment(QuestionDto source, DataFetchingEnvironment env) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+    @SchemaMapping(typeName = "Question", field = "usableInExam")
+    public CompletableFuture<Boolean> usableInExam(QuestionDto source, DataFetchingEnvironment env) {
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (currentUserId.equals(source.createdBy()) || QuestionSharing.SCHOOL_SHARED.name().equals(source.sharing())) {
             return CompletableFuture.completedFuture(true);
         }
@@ -208,5 +207,11 @@ public class QuestionController {
     public CompletableFuture<UserDto> collaboratorUser(QuestionCollaboratorDto source, DataFetchingEnvironment env) {
         DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
         return loader.load(source.userId());
+    }
+
+    private void validatePage(int page, int size) {
+        if (page < 0 || size <= 0) {
+            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+        }
     }
 }

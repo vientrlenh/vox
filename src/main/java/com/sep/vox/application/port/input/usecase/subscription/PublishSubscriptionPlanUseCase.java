@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
-import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -38,7 +37,7 @@ public class PublishSubscriptionPlanUseCase implements IUseCase<PublishSubscript
     @Override
     @Transactional
     public UUID execute(PublishSubscriptionPlanCommand input) {
-        SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
+        var plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
         // ACTIVE thì đã bán rồi, ARCHIVED là đã ngừng bán VĨNH VIỄN -- cho publish lại gói ARCHIVED sẽ
@@ -60,7 +59,7 @@ public class PublishSubscriptionPlanUseCase implements IUseCase<PublishSubscript
         // Gói này có đang là gói thay thế (replacedByPlanId) của gói nào khác không -- nếu có, đây là
         // lúc nó THẬT SỰ nhận vai trò đó (trường sẽ bị chuyển sang gói này lúc gia hạn, không có cơ
         // hội từ chối). Phải đạt cùng chuẩn với luồng archive thủ công trước khi được sống.
-        for (SubscriptionPlan replacedPlan : subscriptionPlanRepository.findByReplacedByPlanId(plan.getId())) {
+        for (var replacedPlan : subscriptionPlanRepository.findByReplacedByPlanId(plan.getId())) {
             replacementValidator.requireCompatibleTerms(plan, replacedPlan);
         }
 
@@ -69,7 +68,7 @@ public class PublishSubscriptionPlanUseCase implements IUseCase<PublishSubscript
         // UpdateSubscriptionPlanUseCase.
         plan.setUpdatedAt(Instant.now());
         plan.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
-        SubscriptionPlan savedPlan = subscriptionPlanRepository.save(plan);
+        var savedPlan = subscriptionPlanRepository.save(plan);
 
         return savedPlan.getId();
     }

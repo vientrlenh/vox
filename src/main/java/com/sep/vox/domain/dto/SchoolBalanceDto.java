@@ -1,48 +1,45 @@
 package com.sep.vox.domain.dto;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.DecimalText;
 import com.sep.vox.domain.model.school.SchoolBalance;
 
 /**
- * The school's self-top-up wallet, in read form.
+ * Ví tiền tự nạp của trường, dạng đọc.
  *
- * <p>{@code id} and {@code version} are not exposed: no screen needs to point at the balance row -- it
- * is a summary, exactly one row per school, with nothing to link to. {@code version} even less: it is
- * Hibernate's optimistic-locking mechanism, and exposing it would invite the client to invent a write
- * flow the backend does not have (the only write path goes through findBySchoolIdForUpdateOrCreate).
+ * <p>Không phơi {@code id} và {@code version}: không màn hình nào cần trỏ tới dòng số dư -- nó là
+ * bản tổng hợp, mỗi trường đúng một dòng, không có gì để liên kết tới. {@code version} càng không,
+ * nó là cơ chế khoá lạc quan của Hibernate; phơi ra là mời client tự nghĩ ra một luồng ghi mà
+ * backend không hề có (đường ghi duy nhất đi qua findBySchoolIdForUpdateOrCreate).
  */
 public record SchoolBalanceDto(
     UUID schoolId,
     String balanceVnd,
     boolean locked,
-    Instant updatedAt
+    String updatedAt
 ) {
 
     public static SchoolBalanceDto toDto(SchoolBalance balance) {
         return new SchoolBalanceDto(
             balance.getSchoolId(),
             DecimalText.of(balance.getBalanceVnd()),
-            // Ask the domain model directly instead of rewriting the comparison with 0: isInDebt() is exactly
-            // the function SchoolSubscriptionDebtGuardService.isSchoolLocked calls to block opening an
-            // assessment session. Retyping the rule here builds a second copy, and that copy would not
-            // change if the other rule changes.
+            // Hỏi thẳng domain model chứ KHÔNG viết lại phép so với 0: isInDebt() đúng là hàm mà
+            // SchoolSubscriptionDebtGuardService.isSchoolLocked gọi để chặn mở ca thi. Gõ lại luật ở
+            // đây là dựng bản sao thứ hai, và bản sao đó sẽ không đổi theo nếu luật kia đổi.
             balance.isInDebt(),
-            balance.getUpdatedAt()
+            balance.getUpdatedAt() == null ? null : balance.getUpdatedAt().toString()
         );
     }
 
     /**
-     * The school has never touched the wallet. The balance row is created lazily (only on the first
-     * write), and an empty wallet and a 0-dong wallet mean the SAME thing -- see
-     * {@link SchoolBalance#emptyFor}. Returning null to GraphQL would only make the client add a branch for
-     * the same state, so a 0-dong copy is built here.
+     * Trường chưa từng chạm vào ví. Dòng số dư được tạo lười (chỉ sinh lúc ghi lần đầu), và ví rỗng
+     * với ví 0 đồng là CÙNG một nghĩa -- xem {@link SchoolBalance#emptyFor}. Trả null ra GraphQL chỉ
+     * bắt client thêm một nhánh cho cùng một trạng thái, nên dựng sẵn bản 0 đồng ở đây.
      *
-     * <p>Do NOT use {@code SchoolBalance.emptyFor} and then map: that function builds an aggregate for
-     * WRITING, and its javadoc forbids using it on the read path.
+     * <p>KHÔNG dùng {@code SchoolBalance.emptyFor} rồi map: hàm đó dựng một aggregate để GHI, và
+     * javadoc của nó cấm dùng cho đường đọc.
      */
     public static SchoolBalanceDto emptyFor(UUID schoolId) {
         return new SchoolBalanceDto(schoolId, DecimalText.of(BigDecimal.ZERO), false, null);

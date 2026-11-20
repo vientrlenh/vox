@@ -44,7 +44,7 @@ public final class StringNormalization {
         if (input == null) {
             return null;
         }
-        String text = trimAndCollapseSpaces(input);
+        var text = trimAndCollapseSpaces(input);
         text = Normalizer.normalize(text, Normalizer.Form.NFD);
         return text.replaceAll("\\p{M}", "");
     }
@@ -63,7 +63,7 @@ public final class StringNormalization {
      * exist". Build sẵn chuỗi này rồi bind thẳng vào LIKE :pattern tránh hẳn lỗi suy luận kiểu đó.
      */
     public static String toLikePattern(String keyword) {
-        String trimmed = trimAndCollapseSpaces(keyword);
+        var trimmed = trimAndCollapseSpaces(keyword);
         if (trimmed == null || trimmed.isEmpty()) {
             return null;
         }

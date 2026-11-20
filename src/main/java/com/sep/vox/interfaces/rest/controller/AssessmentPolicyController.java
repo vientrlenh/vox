@@ -1,10 +1,5 @@
 package com.sep.vox.interfaces.rest.controller;
 
-import com.sep.vox.application.port.input.command.AcceptSchoolAssessmentPolicyImportCommand;
-import com.sep.vox.application.port.input.command.AcceptSystemAssessmentPolicyImportCommand;
-import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
-import com.sep.vox.application.port.input.command.PreviewSchoolAssessmentPolicyImportFromFileCommand;
-import com.sep.vox.application.port.input.command.PreviewSystemAssessmentPolicyImportFromFileCommand;
 import java.util.List;
 import java.util.UUID;
 
@@ -113,7 +108,7 @@ public class AssessmentPolicyController {
     public ResponseEntity<ApiResponse<List<UUID>>> createSystemAssessmentPolicy(
             @Valid @RequestBody List<@Valid CreateSystemAssessmentPolicyRequest> requests
     ) {
-        List<CreateAssessmentPolicyCommand> commands = CreateAssessmentPolicyCommandMapper.fromSystemRequests(requests);
+        var commands = CreateAssessmentPolicyCommandMapper.fromSystemRequests(requests);
         List<UUID> policyIds = createSystemAssessmentPolicyUseCase.execute(commands);
         return ResponseEntity.ok(ApiResponse.success("Tạo Assessment Policy hệ thống thành công", policyIds));
     }
@@ -126,7 +121,7 @@ public class AssessmentPolicyController {
             @PathVariable("schoolId") UUID schoolId,
             @Valid @RequestBody List<@Valid CreateSchoolAssessmentPolicyRequest> requests
     ) {
-        List<CreateAssessmentPolicyCommand> commands = CreateAssessmentPolicyCommandMapper.fromSchoolRequests(schoolId, requests);
+        var commands = CreateAssessmentPolicyCommandMapper.fromSchoolRequests(schoolId, requests);
         List<UUID> policyIds = createSchoolAssessmentPolicyUseCase.execute(commands);
         return ResponseEntity.ok(ApiResponse.success("Tạo Assessment Policy cho trường học thành công", policyIds));
     }
@@ -161,7 +156,7 @@ public class AssessmentPolicyController {
     public ResponseEntity<ApiResponse<UUID>> archiveSystemAssessmentPolicy(
             @PathVariable("policyId") UUID policyId
     ) {
-        UUID policyIdResult = archiveSystemAssessmentPolicyUseCase.execute(new ArchiveSystemAssessmentPolicyCommand(policyId));
+        var policyIdResult = archiveSystemAssessmentPolicyUseCase.execute(new ArchiveSystemAssessmentPolicyCommand(policyId));
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ Assessment Policy hệ thống thành công", policyIdResult));
     }
 
@@ -173,7 +168,7 @@ public class AssessmentPolicyController {
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("policyId") UUID policyId
     ) {
-        UUID policyIdResult = archiveSchoolAssessmentPolicyUseCase.execute(new ArchiveSchoolAssessmentPolicyCommand(schoolId, policyId));
+        var policyIdResult = archiveSchoolAssessmentPolicyUseCase.execute(new ArchiveSchoolAssessmentPolicyCommand(schoolId, policyId));
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ Assessment Policy của trường học thành công", policyIdResult));
     }
 
@@ -184,7 +179,7 @@ public class AssessmentPolicyController {
     public ResponseEntity<ApiResponse<UUID>> publishSystemAssessmentPolicy(
             @PathVariable("policyId") UUID policyId
     ) {
-        UUID policyIdResult = publishSystemAssessmentPolicyUseCase.execute(new PublishSystemAssessmentPolicyCommand(policyId));
+        var policyIdResult = publishSystemAssessmentPolicyUseCase.execute(new PublishSystemAssessmentPolicyCommand(policyId));
         return ResponseEntity.ok(ApiResponse.success("Xuất bản Assessment Policy hệ thống thành công", policyIdResult));
     }
 
@@ -196,7 +191,7 @@ public class AssessmentPolicyController {
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("policyId") UUID policyId
     ) {
-        UUID policyIdResult = publishSchoolAssessmentPolicyUseCase.execute(new PublishSchoolAssessmentPolicyCommand(schoolId, policyId));
+        var policyIdResult = publishSchoolAssessmentPolicyUseCase.execute(new PublishSchoolAssessmentPolicyCommand(schoolId, policyId));
         return ResponseEntity.ok(ApiResponse.success("Xuất bản Assessment Policy của trường học thành công", policyIdResult));
     }
 
@@ -207,7 +202,7 @@ public class AssessmentPolicyController {
     public ResponseEntity<ApiResponse<List<UUID>>> publishSystemAssessmentPoliciesByRubricVersion(
             @PathVariable("rubricVersionId") UUID rubricVersionId
     ) {
-        List<UUID> policyIds = publishSystemAssessmentPoliciesByRubricVersionUseCase.execute(
+        var policyIds = publishSystemAssessmentPoliciesByRubricVersionUseCase.execute(
                 new PublishSystemAssessmentPoliciesByRubricVersionCommand(rubricVersionId));
         return ResponseEntity.ok(ApiResponse.success("Xuất bản hàng loạt Assessment Policy hệ thống thành công", policyIds));
     }
@@ -220,7 +215,7 @@ public class AssessmentPolicyController {
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("rubricVersionId") UUID rubricVersionId
     ) {
-        List<UUID> policyIds = publishSchoolAssessmentPoliciesByRubricVersionUseCase.execute(
+        var policyIds = publishSchoolAssessmentPoliciesByRubricVersionUseCase.execute(
                 new PublishSchoolAssessmentPoliciesByRubricVersionCommand(schoolId, rubricVersionId));
         return ResponseEntity.ok(ApiResponse.success("Xuất bản hàng loạt Assessment Policy của trường học thành công", policyIds));
     }
@@ -231,8 +226,8 @@ public class AssessmentPolicyController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewAssessmentPolicyImportResponse>> previewSystemAssessmentPolicyImport(
             @RequestParam("file") MultipartFile file) {
-        PreviewSystemAssessmentPolicyImportFromFileCommand command = PreviewAssessmentPolicyImportFromFileCommandMapper.fromSystemRequest(file);
-        PreviewAssessmentPolicyImportResponse response = previewSystemAssessmentPolicyImportFromFileUseCase.execute(command);
+        var command = PreviewAssessmentPolicyImportFromFileCommandMapper.fromSystemRequest(file);
+        var response = previewSystemAssessmentPolicyImportFromFileUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Nạp file danh sách Assessment Policy thành công. Tạo phiên làm việc (Session) hoàn tất.", response));
     }
 
@@ -243,8 +238,8 @@ public class AssessmentPolicyController {
     public ResponseEntity<ApiResponse<AcceptAssessmentPolicyImportResponse>> acceptSystemAssessmentPolicyImport(
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
-        AcceptSystemAssessmentPolicyImportCommand command = AcceptAssessmentPolicyImportCommandMapper.fromSystemRequest(sessionId, request);
-        AcceptAssessmentPolicyImportResponse response = acceptSystemAssessmentPolicyImportUseCase.execute(command);
+        var command = AcceptAssessmentPolicyImportCommandMapper.fromSystemRequest(sessionId, request);
+        var response = acceptSystemAssessmentPolicyImportUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Assessment Policy hệ thống vào hàng đợi ngầm xử lý.", response));
     }
 
@@ -255,8 +250,8 @@ public class AssessmentPolicyController {
     public ResponseEntity<ApiResponse<PreviewAssessmentPolicyImportResponse>> previewSchoolAssessmentPolicyImport(
             @PathVariable("schoolId") UUID schoolId,
             @RequestParam("file") MultipartFile file) {
-        PreviewSchoolAssessmentPolicyImportFromFileCommand command = PreviewAssessmentPolicyImportFromFileCommandMapper.fromSchoolRequest(schoolId, file);
-        PreviewAssessmentPolicyImportResponse response = previewSchoolAssessmentPolicyImportFromFileUseCase.execute(command);
+        var command = PreviewAssessmentPolicyImportFromFileCommandMapper.fromSchoolRequest(schoolId, file);
+        var response = previewSchoolAssessmentPolicyImportFromFileUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Nạp file danh sách Assessment Policy thành công. Tạo phiên làm việc (Session) hoàn tất.", response));
     }
 
@@ -268,8 +263,8 @@ public class AssessmentPolicyController {
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
-        AcceptSchoolAssessmentPolicyImportCommand command = AcceptAssessmentPolicyImportCommandMapper.fromSchoolRequest(schoolId, sessionId, request);
-        AcceptAssessmentPolicyImportResponse response = acceptSchoolAssessmentPolicyImportUseCase.execute(command);
+        var command = AcceptAssessmentPolicyImportCommandMapper.fromSchoolRequest(schoolId, sessionId, request);
+        var response = acceptSchoolAssessmentPolicyImportUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Assessment Policy của trường vào hàng đợi ngầm xử lý.", response));
     }
 }

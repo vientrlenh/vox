@@ -1,8 +1,5 @@
 package com.sep.vox.interfaces.rest.controller;
 
-import com.sep.vox.application.port.input.command.CreateQuestionTopicCommand;
-import com.sep.vox.application.port.input.command.UpdateQuestionTopicCommand;
-import com.sep.vox.application.port.input.command.UpdateQuestionTopicStatusCommand;
 import java.io.IOException;
 import java.util.UUID;
 
@@ -84,13 +81,13 @@ public class QuestionTopicController {
     public ResponseEntity<ApiResponse<PreviewImportResponse>> previewImport(
             @RequestParam("file") MultipartFile file,
             @RequestParam("questionBankId") UUID questionBankId) throws IOException {
-        UploadedFile uploadedFile = UploadedFile.upload(
+        var uploadedFile = UploadedFile.upload(
             file.getOriginalFilename(),
             file.getContentType(),
             file.getSize(),
             file.getBytes()
         );
-        PreviewImportResponse data = previewQuestionTopicImportFromFileUseCase.execute(
+        var data = previewQuestionTopicImportFromFileUseCase.execute(
             new PreviewQuestionTopicImportFromFileCommand(questionBankId, uploadedFile)
         );
         return ResponseEntity.ok(ApiResponse.success("Xem trước import chủ đề câu hỏi thành công", data));
@@ -110,9 +107,9 @@ public class QuestionTopicController {
     @PostMapping
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<CreateQuestionTopicResponse>> create(@Valid @RequestBody CreateQuestionTopicRequest request) {
-        CreateQuestionTopicCommand command = CreateQuestionTopicCommandMapper.fromRequest(request);
-        CreateQuestionTopicResponse data = createQuestionTopicUseCase.execute(command);
-        ApiResponse<CreateQuestionTopicResponse> response = ApiResponse.success("Tạo chủ đề câu hỏi thành công", data);
+        var command = CreateQuestionTopicCommandMapper.fromRequest(request);
+        var data = createQuestionTopicUseCase.execute(command);
+        var response = ApiResponse.success("Tạo chủ đề câu hỏi thành công", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -121,9 +118,9 @@ public class QuestionTopicController {
     public ResponseEntity<ApiResponse<QuestionTopicDto>> update(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateQuestionTopicRequest request) {
-        UpdateQuestionTopicCommand command = UpdateQuestionTopicCommandMapper.fromRequest(id, request);
-        QuestionTopicDto data = updateQuestionTopicUseCase.execute(command);
-        ApiResponse<QuestionTopicDto> response = ApiResponse.success("Cập nhật chủ đề câu hỏi thành công", data);
+        var command = UpdateQuestionTopicCommandMapper.fromRequest(id, request);
+        var data = updateQuestionTopicUseCase.execute(command);
+        var response = ApiResponse.success("Cập nhật chủ đề câu hỏi thành công", data);
         return ResponseEntity.ok(response);
     }
 
@@ -132,9 +129,9 @@ public class QuestionTopicController {
     public ResponseEntity<ApiResponse<QuestionTopicDto>> updateStatus(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionTopicStatusRequest request) {
-        UpdateQuestionTopicStatusCommand command = UpdateQuestionTopicStatusCommandMapper.fromRequest(id, request);
-        QuestionTopicDto data = updateQuestionTopicStatusUseCase.execute(command);
-        ApiResponse<QuestionTopicDto> response = ApiResponse.success("Cập nhật trạng thái chủ đề câu hỏi thành công", data);
+        var command = UpdateQuestionTopicStatusCommandMapper.fromRequest(id, request);
+        var data = updateQuestionTopicStatusUseCase.execute(command);
+        var response = ApiResponse.success("Cập nhật trạng thái chủ đề câu hỏi thành công", data);
         return ResponseEntity.ok(response);
     }
 
@@ -148,9 +145,9 @@ public class QuestionTopicController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<BulkUpdateQuestionTopicStatusResponse>> bulkUpdateStatus(
             @Valid @RequestBody BulkUpdateQuestionScopeStatusRequest request) {
-        BulkUpdateQuestionTopicStatusResponse data = bulkUpdateQuestionTopicStatusUseCase.execute(
+        var data = bulkUpdateQuestionTopicStatusUseCase.execute(
             new BulkUpdateQuestionScopeStatusCommand(request.ids(), request.action()));
-        ApiResponse<BulkUpdateQuestionTopicStatusResponse> response = ApiResponse.success("Cập nhật trạng thái chủ đề câu hỏi hàng loạt thành công", data);
+        var response = ApiResponse.success("Cập nhật trạng thái chủ đề câu hỏi hàng loạt thành công", data);
         return ResponseEntity.ok(response);
     }
 

@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.ExchangeRateSnapshotJpaEntity;
 import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
@@ -23,7 +22,7 @@ public class ExchangeRateSnapshotRepositoryImpl implements ExchangeRateSnapshotR
 
     @Override
     public ExchangeRateSnapshot save(ExchangeRateSnapshot snapshot) {
-        ExchangeRateSnapshotJpaEntity saved = springDataExchangeRateSnapshotRepository.save(ExchangeRateSnapshotMapper.toJpa(snapshot));
+        var saved = springDataExchangeRateSnapshotRepository.save(ExchangeRateSnapshotMapper.toJpa(snapshot));
         return ExchangeRateSnapshotMapper.toDomain(saved);
     }
 

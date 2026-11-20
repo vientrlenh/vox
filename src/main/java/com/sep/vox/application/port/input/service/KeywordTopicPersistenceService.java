@@ -46,8 +46,8 @@ public class KeywordTopicPersistenceService {
             String dimension,
             String curriculumGroup,
             String temporalAffordance) {
-        Instant now = Instant.now();
-        PracticeTopic saved = practiceTopicRepository.save(new PracticeTopic(
+        var now = Instant.now();
+        var saved = practiceTopicRepository.save(new PracticeTopic(
             null,
             topicName,
             TopicSuggestionService.normalize(topicName),

@@ -16,7 +16,6 @@ import com.sep.vox.application.port.input.query.ViewSupportedLanguagesQuery;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupportedLanguagesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.valueobject.LanguageCode;
@@ -37,11 +36,11 @@ class ViewSupportedLanguagesUseCaseTests {
     @Test
     void view_should_return_languages_with_normalized_search_and_filter() {
         when(userContextPort.isSystemAdmin()).thenReturn(true);
-        SupportedLanguage language = language("EN", "English", true);
-        PageResult<SupportedLanguage> page = new PageResult<>(List.of(language), 1, 20, 1, 1);
+        var language = language("EN", "English", true);
+        var page = new PageResult<>(List.of(language), 1, 20, 1, 1);
         when(supportedLanguageRepository.findAll("English Language", true, 1, 20)).thenReturn(page);
 
-        PageResult<SupportedLanguageDto> result = useCase.execute(new ViewSupportedLanguagesQuery(1, 20, "  English   Language  ", true));
+        var result = useCase.execute(new ViewSupportedLanguagesQuery(1, 20, "  English   Language  ", true));
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.content().get(0).code()).isEqualTo("EN");
@@ -50,7 +49,7 @@ class ViewSupportedLanguagesUseCaseTests {
     }
 
     private static SupportedLanguage language(String code, String name, boolean active) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         return new SupportedLanguage(
             UUID.randomUUID(),
             new LanguageCode(code),

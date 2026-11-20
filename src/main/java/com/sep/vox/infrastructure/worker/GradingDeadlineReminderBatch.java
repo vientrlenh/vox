@@ -1,12 +1,6 @@
 package com.sep.vox.infrastructure.worker;
 
-import com.sep.vox.domain.model.assessment.Assessment;
-import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
-import com.sep.vox.domain.model.assessment.AssessmentGradingAssignment;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -18,9 +12,9 @@ import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.common.AggregateTypeConstant;
 import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.outbox.Outbox;
-import com.sep.vox.domain.repository.AssessmentCandidateResultRepository;
-import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
-import com.sep.vox.domain.repository.AssessmentRepository;
+import com.sep.vox.domain.repository.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.ExamRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
@@ -40,71 +34,71 @@ import com.sep.vox.domain.repository.OutboxRepository;
 @Component
 public class GradingDeadlineReminderBatch {
 
-    private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
-    private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
-    private final AssessmentRepository assessmentRepository;
+    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
+    private final ExamCandidateResultRepository examCandidateResultRepository;
+    private final ExamRepository examRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
 
     public GradingDeadlineReminderBatch(
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentRepository assessmentRepository,
+            ExamGradingAssignmentRepository examGradingAssignmentRepository,
+            ExamCandidateResultRepository examCandidateResultRepository,
+            ExamRepository examRepository,
             OutboxRepository outboxRepository,
             JsonSerializationPort jsonSerializationPort) {
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentRepository = assessmentRepository;
+        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
+        this.examCandidateResultRepository = examCandidateResultRepository;
+        this.examRepository = examRepository;
         this.outboxRepository = outboxRepository;
         this.jsonSerializationPort = jsonSerializationPort;
     }
 
     /**
-     * {@code reminded_at} and the outbox row are in ONE transaction, so the write order
-     * no longer matters: either both commit, or both are lost and the next batch reminds
-     * again. Previously the mail was sent after commit so the marker had to be set first, and the trade-off was that an SMTP
-     * error lost the reminder of that assignment for good.
+     * {@code reminded_at} và dòng outbox cùng nằm trong MỘT transaction, nên thứ tự ghi
+     * không còn quan trọng: hoặc cả hai cùng commit, hoặc cả hai cùng mất và lô sau nhắc
+     * lại. Trước đây mail gửi sau commit nên phải đánh dấu trước, và đổi lại là một lỗi
+     * SMTP làm mất luôn lượt nhắc của phân công đó.
      *
-     * @return the number of assignments processed; {@code 0} means the backlog is empty
+     * @return số phân công đã xử lý; {@code 0} nghĩa là hết tồn đọng
      */
     @Transactional
     public int remindOnce(Instant threshold) {
-        List<AssessmentGradingAssignment> due = assessmentGradingAssignmentRepository.findDueForReminder(threshold);
+        var due = examGradingAssignmentRepository.findDueForReminder(threshold);
         if (due.isEmpty()) {
             return 0;
         }
-        Instant now = Instant.now();
+        var now = Instant.now();
 
-        // Load results + assessments in bulk: one batch can reach several hundred rows, and calling one
-        // row at a time is an N+1 right inside the background job.
-        Map<UUID, AssessmentCandidateResult> resultsById = assessmentCandidateResultRepository.findByIdIn(
+        // Nạp kết quả + kỳ thi theo lô: một lô có thể tới vài trăm dòng, gọi lẻ từng
+        // dòng là N+1 ngay trong background.
+        var resultsById = examCandidateResultRepository.findByIdIn(
                 due.stream().map(assignment -> assignment.getCandidateResultId()).distinct().toList()).stream()
             .collect(Collectors.toMap(
                 result -> result.getId(), Function.identity(), (left, right) -> left));
-        // Keep the Assessment as is instead of extracting only its name: the notification also needs the id and the assessment kind to open
-        // the right grading screen, and this batch is the only place in the flow still holding the Assessment in hand.
-        Map<UUID, Assessment> assessmentsById = assessmentRepository.findByIdIn(
-                resultsById.values().stream().map(result -> result.getAssessmentId()).distinct().toList()).stream()
+        // Giữ nguyên Exam thay vì chỉ rút lấy tên: thông báo còn cần id và loại bài để mở
+        // đúng màn hình chấm, mà lô này là chỗ duy nhất trong luồng còn cầm Exam trong tay.
+        var examsById = examRepository.findByIdIn(
+                resultsById.values().stream().map(result -> result.getExamId()).distinct().toList()).stream()
             .collect(Collectors.toMap(
-                assessment -> assessment.getId(), Function.identity(), (left, right) -> left));
+                exam -> exam.getId(), Function.identity(), (left, right) -> left));
 
-        for (AssessmentGradingAssignment assignment : due) {
+        for (var assignment : due) {
             assignment.setRemindedAt(now);
-            assessmentGradingAssignmentRepository.save(assignment);
+            examGradingAssignmentRepository.save(assignment);
 
-            AssessmentCandidateResult result = resultsById.get(assignment.getCandidateResultId());
-            Assessment assessment = result == null ? null : assessmentsById.get(result.getAssessmentId());
-            GradingDeadlineReminderPayloadV1 payload = new GradingDeadlineReminderPayloadV1(
+            var result = resultsById.get(assignment.getCandidateResultId());
+            var exam = result == null ? null : examsById.get(result.getExamId());
+            var payload = new GradingDeadlineReminderPayloadV1(
                 assignment.getId(),
                 assignment.getTeacherId(),
-                assessment == null ? null : assessment.getName(),
+                exam == null ? null : exam.getName(),
                 assignment.getRoundType() == null ? null : assignment.getRoundType().name(),
                 assignment.getDeadlineAt(),
-                result == null ? null : result.getAssessmentId(),
-                assessment == null ? null : assessment.getKind()
+                result == null ? null : result.getExamId(),
+                exam == null ? null : exam.getKind()
             );
             outboxRepository.save(Outbox.create(
-                AggregateTypeConstant.ASSESSMENT_GRADING_ASSIGNMENT,
+                AggregateTypeConstant.EXAM_GRADING_ASSIGNMENT,
                 assignment.getId(),
                 EventTypeConstant.GRADING_DEADLINE_REMINDER,
                 jsonSerializationPort.toJson(payload),

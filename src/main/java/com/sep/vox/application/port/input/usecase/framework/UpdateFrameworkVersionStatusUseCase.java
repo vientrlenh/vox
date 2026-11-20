@@ -2,8 +2,6 @@ package com.sep.vox.application.port.input.usecase.framework;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -94,7 +92,7 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
     private void validateEveryCriterionHasBandsWithSignals(UUID versionId) {
         List<FrameworkCriterion> criteria = frameworkCriterionRepository.findByFrameworkVersionId(versionId);
 
-        Set<String> presentCodes = criteria.stream().map(fc -> fc.getCode()).collect(Collectors.toSet());
+        var presentCodes = criteria.stream().map(fc -> fc.getCode()).collect(Collectors.toSet());
         if (!presentCodes.equals(FrameworkCriterionCode.ALLOWED_CODES)) {
             throw new IllegalStateException(
                     "Phiên bản framework phải có đầy đủ và chỉ có 5 tiêu chí: " + FrameworkCriterionCode.ALLOWED_CODES);
@@ -103,7 +101,7 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
         List<UUID> criterionIds = criteria.stream().map(fc -> fc.getId()).collect(Collectors.toList());
         List<FrameworkCriterionBand> bands = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds);
 
-        Map<UUID, List<FrameworkCriterionBand>> bandsByCriterion = bands.stream().collect(Collectors.groupingBy(fcb -> fcb.getFrameworkCriterionId()));
+        var bandsByCriterion = bands.stream().collect(Collectors.groupingBy(fcb -> fcb.getFrameworkCriterionId()));
 
         for (FrameworkCriterion criterion : criteria) {
             List<FrameworkCriterionBand> criterionBands = bandsByCriterion.getOrDefault(criterion.getId(), List.of());
@@ -122,7 +120,7 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
     }
 
     private void validateNoConflictingPublished(UUID frameworkId, UUID versionId, Instant effectiveFrom, Instant effectiveTo) {
-        List<FrameworkVersion> published = frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED);
+        var published = frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED);
         boolean hasConflict = published.stream()
             .filter(v -> !v.getId().equals(versionId))
             .anyMatch(v -> rangesOverlap(effectiveFrom, effectiveTo, v.getEffectiveFrom(), v.getEffectiveTo()));

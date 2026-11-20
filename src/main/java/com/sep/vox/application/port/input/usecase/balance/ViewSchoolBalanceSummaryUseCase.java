@@ -44,8 +44,8 @@ public class ViewSchoolBalanceSummaryUseCase
     public SchoolBalanceSummaryResponse execute(ViewSchoolBalanceSummaryQuery input) {
         schoolScopedReadGuard.requireCanRead(input.schoolId());
 
-        Instant from = input.from() == null ? Instant.EPOCH : input.from();
-        Instant to = input.to() == null ? Instant.now() : input.to();
+        var from = input.from() == null ? Instant.EPOCH : input.from();
+        var to = input.to() == null ? Instant.now() : input.to();
 
         return SchoolBalanceSummaryResponse.of(
             sum(input, SchoolBalanceEntryType.TOP_UP, from, to),

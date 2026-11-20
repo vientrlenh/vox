@@ -1,13 +1,11 @@
 package com.sep.vox.application.port.input.usecase.schoolclassuser;
 
-import com.sep.vox.domain.model.school.School;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -71,33 +69,33 @@ public class BulkCreateSchoolClassUsersUseCase
     @Override
     @Transactional
     public BulkCreateSchoolClassUsersResponse execute(BulkCreateSchoolClassUsersCommand input) {
-        List<UUID> requestedUserIds = validateCommand(input);
-        Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = findCurrentUser(currentUserId);
-        UUID schoolId = getSchoolId(currentUser);
+        var requestedUserIds = validateCommand(input);
+        var now = Instant.now();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = findCurrentUser(currentUserId);
+        var schoolId = getSchoolId(currentUser);
 
         validateRequestedSchool(input.schoolId(), schoolId);
         validateSchool(schoolId);
         validateSchoolClass(input.classId(), schoolId);
 
         // Nạp theo lô để số truy vấn không tăng theo số người dùng được chọn.
-        Map<UUID, User> usersById = userRepository.findByIdIn(requestedUserIds).stream()
+        var usersById = userRepository.findByIdIn(requestedUserIds).stream()
             .collect(Collectors.toMap(user -> user.getId(), user -> user, (first, second) -> first));
-        Map<UUID, UUID> schoolIdsByUserId = schoolUserRepository.findByUserIdIn(requestedUserIds).stream()
+        var schoolIdsByUserId = schoolUserRepository.findByUserIdIn(requestedUserIds).stream()
             .collect(Collectors.toMap(
                 schoolUser -> schoolUser.getUserId(), schoolUser -> schoolUser.getSchoolId(), (first, second) -> first));
-        Map<UUID, SchoolClassUser> membershipsByUserId = schoolClassUserRepository
+        var membershipsByUserId = schoolClassUserRepository
             .findByUserIdInAndSchoolClassIdIn(requestedUserIds, List.of(input.classId())).stream()
             .collect(Collectors.toMap(
                 membership -> membership.getUserId(), membership -> membership, (first, second) -> first));
 
-        List<UUID> addedUserIds = new ArrayList<UUID>();
-        List<BulkCreateSchoolClassUserFailure> failed = new ArrayList<BulkCreateSchoolClassUserFailure>();
-        List<SchoolClassUser> toSave = new ArrayList<SchoolClassUser>();
+        var addedUserIds = new ArrayList<UUID>();
+        var failed = new ArrayList<BulkCreateSchoolClassUserFailure>();
+        var toSave = new ArrayList<SchoolClassUser>();
 
-        for (UUID userId : requestedUserIds) {
-            String reason = rejectionReason(userId, usersById, schoolIdsByUserId, membershipsByUserId, schoolId);
+        for (var userId : requestedUserIds) {
+            var reason = rejectionReason(userId, usersById, schoolIdsByUserId, membershipsByUserId, schoolId);
             if (reason != null) {
                 failed.add(new BulkCreateSchoolClassUserFailure(userId, reason));
                 continue;
@@ -105,7 +103,7 @@ public class BulkCreateSchoolClassUsersUseCase
 
             // Thêm thành viên = join hoặc re-join: học sinh đã rời lớp được kích hoạt lại
             // thay vì tạo bản ghi mới, vì (userId, classId) là duy nhất.
-            SchoolClassUser existing = membershipsByUserId.get(userId);
+            var existing = membershipsByUserId.get(userId);
             if (existing != null) {
                 existing.activate();
                 toSave.add(existing);
@@ -133,7 +131,7 @@ public class BulkCreateSchoolClassUsersUseCase
             Map<UUID, UUID> schoolIdsByUserId,
             Map<UUID, SchoolClassUser> membershipsByUserId,
             UUID schoolId) {
-        User targetUser = usersById.get(userId);
+        var targetUser = usersById.get(userId);
         if (targetUser == null) {
             return "Không tìm thấy người dùng";
         }
@@ -143,7 +141,7 @@ public class BulkCreateSchoolClassUsersUseCase
         if (!Objects.equals(schoolIdsByUserId.get(userId), schoolId)) {
             return "Người dùng không thuộc trường hiện tại";
         }
-        SchoolClassUser existing = membershipsByUserId.get(userId);
+        var existing = membershipsByUserId.get(userId);
         if (existing != null && existing.isActive()) {
             return "Người dùng đã thuộc lớp học";
         }
@@ -161,7 +159,7 @@ public class BulkCreateSchoolClassUsersUseCase
             throw new IllegalArgumentException("Danh sách người dùng không được để trống");
         }
 
-        Set<UUID> distinctUserIds = input.userIds().stream()
+        var distinctUserIds = input.userIds().stream()
             .filter(Objects::nonNull)
             .collect(Collectors.toCollection(LinkedHashSet::new));
         if (distinctUserIds.isEmpty()) {
@@ -171,7 +169,7 @@ public class BulkCreateSchoolClassUsersUseCase
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        User user = userRepository.findById(currentUserId)
+        var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalStateException("Người dùng hiện tại không hoạt động");
@@ -192,7 +190,7 @@ public class BulkCreateSchoolClassUsersUseCase
     }
 
     private void validateSchool(UUID schoolId) {
-        School school = schoolRepository.findById(schoolId)
+        var school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
@@ -200,7 +198,7 @@ public class BulkCreateSchoolClassUsersUseCase
     }
 
     private SchoolClass validateSchoolClass(UUID classId, UUID schoolId) {
-        SchoolClass schoolClass = schoolClassRepository.findById(classId)
+        var schoolClass = schoolClassRepository.findById(classId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
             throw new NotFoundException("Không tìm thấy lớp học");

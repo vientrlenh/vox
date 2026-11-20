@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolClassUserJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -9,7 +8,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -17,7 +15,6 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolClassUserMapper;
-import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassUserRepository;
 
 @Repository
@@ -66,8 +63,8 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
 
     @Override
     public PageResult<SchoolClassUser> findBySchoolClassId(UUID schoolClassId, int page, int size) {
-        PageRequest pageRequest = OneBasedPaging.toPageRequest(page, size);
-        Page<SchoolClassUserJpaEntity> pageable = springDataSchoolClassUserRepository.findBySchoolClassId(schoolClassId, pageRequest);
+        var pageRequest = PageRequest.of(page - 1, size);
+        var pageable = springDataSchoolClassUserRepository.findBySchoolClassId(schoolClassId, pageRequest);
         return new PageResult<>(
             pageable.getContent().stream().map(SchoolClassUserMapper::toDomain).toList(),
             page,
@@ -80,10 +77,10 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
     @Override
     public PageResult<SchoolClassUser> findBySchoolClassId(UUID schoolClassId, String roleCode, String search,
             int page, int size) {
-        // The sort is already in the ORDER BY of the @Query, so the PageRequest here is left unsorted.
-        PageRequest pageRequest = OneBasedPaging.toPageRequest(page, size);
-        String normalizedSearch = blankToNull(search);
-        Page<SchoolClassUserJpaEntity> pageable = springDataSchoolClassUserRepository.findBySchoolClassIdWithFilters(
+        // Sort nằm sẵn trong ORDER BY của @Query nên PageRequest ở đây để unsorted.
+        var pageRequest = PageRequest.of(page - 1, size);
+        var normalizedSearch = blankToNull(search);
+        var pageable = springDataSchoolClassUserRepository.findBySchoolClassIdWithFilters(
             schoolClassId,
             blankToNull(roleCode),
             normalizedSearch == null ? null : "%" + normalizedSearch.toLowerCase() + "%",
@@ -122,8 +119,8 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
 
     @Override
     public SchoolClassUser save(SchoolClassUser schoolClassUser) {
-        SchoolClassUserJpaEntity entity = SchoolClassUserMapper.toJpa(schoolClassUser);
-        SchoolClassUserJpaEntity saved = springDataSchoolClassUserRepository.save(entity);
+        var entity = SchoolClassUserMapper.toJpa(schoolClassUser);
+        var saved = springDataSchoolClassUserRepository.save(entity);
         return SchoolClassUserMapper.toDomain(saved);
     }
 
@@ -142,10 +139,10 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
         if (schoolClassUsers == null || schoolClassUsers.isEmpty()) {
             return List.of();
         }
-        List<SchoolClassUserJpaEntity> entities = schoolClassUsers.stream()
+        var entities = schoolClassUsers.stream()
             .map(SchoolClassUserMapper::toJpa)
             .toList();
-        List<SchoolClassUserJpaEntity> saved = springDataSchoolClassUserRepository.saveAll(entities);
+        var saved = springDataSchoolClassUserRepository.saveAll(entities);
         return saved.stream()
             .map(SchoolClassUserMapper::toDomain)
             .toList();

@@ -17,19 +17,19 @@ import com.sep.vox.application.port.output.QuotaPricingConfigPort;
  */
 @ConfigurationProperties(prefix = "vox.quota")
 public record QuotaPricingProperties(
-    BigDecimal estimatedCostPerAssessmentSecondUsd,
-    // Separate from estimatedCostPerAssessmentSecondUsd -- PRACTICE uses a much lighter AI pipeline than ASSESSMENT
-    // (realtimeCorrectionGraph vs evalGraph), see QuotaPricingCalibrationService/QuotaPricingSource.
+    BigDecimal estimatedCostPerExamSecondUsd,
+    // Tách riêng khỏi estimatedCostPerExamSecondUsd -- PRACTICE dùng pipeline AI nhẹ hơn hẳn EXAM
+    // (realtimeCorrectionGraph vs evalGraph), xem QuotaPricingCalibrationService/QuotaPricingSource.
     BigDecimal estimatedCostPerPracticeSecondUsd
 ) implements QuotaPricingConfigPort {
 
-    private static final BigDecimal DEFAULT_ESTIMATED_COST_PER_ASSESSMENT_SECOND_USD = new BigDecimal("0.01");
+    private static final BigDecimal DEFAULT_ESTIMATED_COST_PER_EXAM_SECOND_USD = new BigDecimal("0.01");
     private static final BigDecimal DEFAULT_ESTIMATED_COST_PER_PRACTICE_SECOND_USD = new BigDecimal("0.01");
 
     public QuotaPricingProperties {
-        estimatedCostPerAssessmentSecondUsd = estimatedCostPerAssessmentSecondUsd == null
-            ? DEFAULT_ESTIMATED_COST_PER_ASSESSMENT_SECOND_USD
-            : estimatedCostPerAssessmentSecondUsd;
+        estimatedCostPerExamSecondUsd = estimatedCostPerExamSecondUsd == null
+            ? DEFAULT_ESTIMATED_COST_PER_EXAM_SECOND_USD
+            : estimatedCostPerExamSecondUsd;
         estimatedCostPerPracticeSecondUsd = estimatedCostPerPracticeSecondUsd == null
             ? DEFAULT_ESTIMATED_COST_PER_PRACTICE_SECOND_USD
             : estimatedCostPerPracticeSecondUsd;

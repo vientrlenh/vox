@@ -7,44 +7,45 @@ import java.util.UUID;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 
 /**
- * ONE PAGE of the personal quota allocation screen, with two totals for the whole set.
+ * MỘT TRANG của màn chia hạn mức cá nhân, kèm hai con số tổng cho cả tập.
  *
- * <p>Replaces {@code QuotaUserAllocationSummaryResponse}, which returned ALL eligible people in
- * one go: a school with several thousand students means several thousand rows each time the page opens, and the UI
- * cannot build that many rows either.
+ * <p>Thay cho {@code QuotaUserAllocationSummaryResponse} vốn trả về TOÀN BỘ người đủ điều kiện trong
+ * một lượt: một trường có vài nghìn học sinh thì đó là vài nghìn dòng cho mỗi lần mở trang, và giao
+ * diện cũng không dựng nổi ngần ấy hàng.
  *
- * <p><b>Why {@code distributedAmountVnd} has to be here.</b> Previously the UI summed the allocation column of
- * every row itself to know how much the school had distributed and how much remained. When only one page
- * is in hand that sum gives a WRONG number -- so the total must be computed on the server over the whole set,
- * in the same mold as {@code SchoolBalanceSummaryResponse}.
+ * <p><b>Vì sao phải có {@code distributedAmountVnd} ở đây.</b> Trước đây giao diện tự cộng cột phân
+ * bổ của mọi dòng để biết trường đã chia hết bao nhiêu và còn lại bao nhiêu. Khi chỉ còn một trang
+ * trong tay thì phép cộng đó cho ra số SAI -- nên tổng phải do phía máy chủ tính trên toàn bộ tập,
+ * cùng khuôn với {@code SchoolBalanceSummaryResponse}.
  *
- * @param pool                   the school-level quota wallet -- ASSESSMENT when distributing to teachers, PRACTICE when
- *                               distributing to students
- * @param distributedAmountVnd   the total distributed to people who are STILL eligible, over the whole set and
- *                               not just this page. People who have left/graduated are NOT added
- *                               -- see {@code orphanedAmountVnd}
- * @param orphanedAmountVnd      the part still held under the names of people who are NO LONGER eligible (deactivated,
- *                               left the school, changed role). It does not count toward the ceiling and does not appear on
- *                               any page of the table, so it has to be said in words here: otherwise the total on screen and the sum of the rows
- *                               differ and nobody can explain why. Usually 0
- * @param distributableRatio     the school's distribution ceiling for this quota type, 0..1
- * @param distributableAmountVnd the part of the wallet allowed to be distributed = pool x distributableRatio. Returned ready-made instead
- *                               of letting the client multiply: this is the number the backend uses to reject, so
- *                               a second multiplication on the client is a chance for the two sides to diverge
- *                               by a few millionths of a dong and then report an error where the user cannot understand why
- * @param spendableFundsVnd      the money the school can REALLY still pay for this quota type = remaining plan
- *                               quota + self-topped-up wallet balance (clamped to 0). COMPLETELY DIFFERENT from
- *                               distributableAmountVnd, which is computed on total_allocated and does not
- *                               decrease when the wallet is spent: a school that has spent its wallet can still distribute
- *                               within the ceiling, and that ceiling says nothing about the ability to pay.
- *                               The UI uses it to WARN, not to block -- a spending ceiling is a
- *                               ceiling, and the real block already exists at the gates when opening an assessment / building a practice
- *                               paper (ClassTestTokenQuotaGuardService, findPracticeSpendableFundsVnd)
- * @param walletBalanceVnd       the part of the school's SELF-TOPPED-UP wallet (school_balances) that CAN be eaten into beyond
- *                               distributableAmountVnd when loosening the personal ceiling of ONE person -- not
- *                               a reserved pocket of money, and SHARED by both ASSESSMENT and PRACTICE
- *                               (see WalletDrawConfirmationRequiredException). Clamped to 0, negative is debt.
- * @param content                the eligible people on the page being viewed, including those who have been allocated nothing
+ * @param pool                   ví hạn mức cấp trường -- EXAM khi chia cho giáo viên, PRACTICE khi
+ *                               chia cho học sinh
+ * @param distributedAmountVnd   tổng đã chia cho những người CÒN đủ điều kiện, trên toàn bộ tập chứ
+ *                               không phải chỉ trang này. Người đã nghỉ/ra trường KHÔNG được cộng vào
+ *                               -- xem {@code orphanedAmountVnd}
+ * @param orphanedAmountVnd      phần đang đứng tên những người KHÔNG còn đủ điều kiện (đã vô hiệu
+ *                               hoá, rời trường, đổi vai trò). Không tính vào trần và không hiện ở
+ *                               bất kỳ trang nào của bảng, nên phải nói thành lời ở đây: nếu không,
+ *                               tổng trên màn hình và tổng các dòng lệch nhau mà không ai giải thích
+ *                               được. Thường là 0
+ * @param distributableRatio     trần phân phối của trường cho loại hạn mức này, 0..1
+ * @param distributableAmountVnd phần ví được phép chia ra = pool x distributableRatio. Trả sẵn thay
+ *                               vì để client tự nhân: đây là con số mà backend dùng để từ chối, nên
+ *                               một phép nhân thứ hai ở client là một cơ hội để hai bên lệch nhau
+ *                               vài phần triệu đồng rồi báo lỗi ở chỗ người dùng không hiểu nổi
+ * @param spendableFundsVnd      số tiền trường THẬT SỰ còn trả được cho loại hạn mức này = hạn mức
+ *                               kèm gói còn lại + số dư ví tự nạp (kẹp 0). KHÁC HẲN
+ *                               distributableAmountVnd, vốn tính trên total_allocated và không hề
+ *                               giảm khi ví bị tiêu: một trường đã tiêu cạn ví vẫn chia tiếp được
+ *                               trong trần, và trần đó không nói lên điều gì về khả năng chi trả.
+ *                               Giao diện dùng nó để CẢNH BÁO, không phải để chặn -- trần chi là
+ *                               trần chi, còn chặn thì đã có cửa chặn thật lúc mở kỳ thi / dựng đề
+ *                               luyện (ClassTestTokenQuotaGuardService, findPracticeSpendableFundsVnd)
+ * @param walletBalanceVnd       phần ví TỰ NẠP của trường (school_balances) CÓ THỂ ăn thêm ngoài
+ *                               distributableAmountVnd khi nới trần cá nhân của MỘT người -- không
+ *                               phải một túi tiền dành riêng, và dùng CHUNG cho cả EXAM lẫn PRACTICE
+ *                               (xem WalletDrawConfirmationRequiredException). Đã kẹp về 0, âm là nợ.
+ * @param content                người đủ điều kiện ở trang đang xem, kể cả người chưa được chia gì
  */
 public record QuotaUserAllocationPageResponse(
     SchoolSubscriptionQuotaRecordDto pool,

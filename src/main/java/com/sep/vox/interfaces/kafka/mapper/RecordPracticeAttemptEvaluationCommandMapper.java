@@ -1,8 +1,5 @@
 package com.sep.vox.interfaces.kafka.mapper;
 
-import com.sep.vox.interfaces.kafka.dto.EvaluationSignalsDto;
-import com.sep.vox.interfaces.kafka.dto.PracticeAttemptEvaluationCompletedPayloadDto;
-import com.sep.vox.interfaces.kafka.dto.ValidityResultDto;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -24,15 +21,14 @@ public final class RecordPracticeAttemptEvaluationCommandMapper {
     }
 
     public static RecordPracticeAttemptEvaluationCommand toCommand(PracticeAttemptEvaluationCompletedEventDto dto) {
-        PracticeAttemptEvaluationCompletedPayloadDto payload = dto.payload();
-        ValidityResultDto validity = payload == null ? null : payload.validity();
-        EvaluationSignalsDto signals = payload == null ? null : payload.signals();
-        List<PracticeCriterionScoreInput> criteria = payload == null || payload.criteria() == null
+        var payload = dto.payload();
+        var validity = payload == null ? null : payload.validity();
+        var signals = payload == null ? null : payload.signals();
+        var criteria = payload == null || payload.criteria() == null
             ? List.<PracticeCriterionScoreInput>of()
             : payload.criteria().entrySet().stream()
-                // Ignore matchedBandCode even if Python sends it: practice grading compares against EXACTLY the
-                // one band the student chose, so only the score within that band is needed, not a
-                // classification.
+                // Bỏ qua matchedBandCode dù Python có gửi: luyện tập chấm đối chiếu ĐÚNG
+                // một bậc học sinh đã chọn, chỉ cần điểm trong bậc đó, không xếp loại.
                 .map(entry -> new PracticeCriterionScoreInput(
                     entry.getKey(),
                     entry.getValue() == null ? null : entry.getValue().score()
@@ -47,12 +43,12 @@ public final class RecordPracticeAttemptEvaluationCommandMapper {
             signals == null || signals.wordCount() == null ? 0 : signals.wordCount(),
             criteria,
             payload == null ? null : payload.evaluatedAt()
-            // rawCriteria/turns/signals are NO LONGER mapped into the command. Those three fields only served
-            // deriving weak-point observations (removed) -- the use case does not read them, so keeping them
-            // would build three structures on every grading for nobody to use.
+            // KHÔNG còn map rawCriteria/turns/signals sang command. Ba trường đó chỉ phục vụ
+            // việc suy quan sát điểm yếu (đã gỡ) -- use case không đọc chúng, nên giữ lại là
+            // dựng ba cấu trúc mỗi lần chấm cho không ai dùng.
             //
-            // The Kafka wire DTO STAYS UNCHANGED: Python still emits all fields as before, Java just ignores
-            // them. Not touching the payload shape means nothing has to change on the grading side.
+            // Wire DTO của Kafka GIỮ NGUYÊN: Python vẫn phát đủ trường như cũ, chỉ là Java bỏ
+            // qua. Không đụng vào hình dạng payload thì không phải đổi gì bên chấm.
         );
     }
 

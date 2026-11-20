@@ -3,15 +3,16 @@ package com.sep.vox.infrastructure.persistence.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.valueobject.Email;
@@ -20,22 +21,23 @@ import com.sep.vox.domain.valueobject.SchoolCode;
 import com.sep.vox.domain.valueobject.SchoolDomain;
 import com.sep.vox.domain.valueobject.StudentCount;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolRepositoryImpl;
-import com.sep.vox.support.RepositoryTest;
 
-@RepositoryTest
+@DataJpaTest
+@ActiveProfiles("test")
 @Import({
     SchoolRepositoryImpl.class
 })
-class SchoolRepositoryTests {
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class SchoolRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private SchoolRepository schoolRepository;
 
     @Test
     void whenSave_thenReturnsPersistedSchool() {
-        School school = newSchool("VOX_HCM", "Vox Ho Chi Minh", "vox-hcm.edu.vn", "school-hcm@example.com", "0987654301");
+        var school = newSchool("VOX_HCM", "Vox Ho Chi Minh", "vox-hcm.edu.vn", "school-hcm@example.com", "0987654301");
 
-        School saved = schoolRepository.save(school);
+        var saved = schoolRepository.save(school);
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getCode().value()).isEqualTo("VOX_HCM");
@@ -45,9 +47,9 @@ class SchoolRepositoryTests {
 
     @Test
     void whenFindById_thenReturnsSchool() {
-        School saved = schoolRepository.save(newSchool("VOX_DN", "Vox Da Nang", "vox-dn.edu.vn", "school-dn@example.com", "0987654302"));
+        var saved = schoolRepository.save(newSchool("VOX_DN", "Vox Da Nang", "vox-dn.edu.vn", "school-dn@example.com", "0987654302"));
 
-        Optional<School> found = schoolRepository.findById(saved.getId());
+        var found = schoolRepository.findById(saved.getId());
 
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(saved.getId());
@@ -58,7 +60,7 @@ class SchoolRepositoryTests {
     void whenFindByCode_thenReturnsSchool() {
         schoolRepository.save(newSchool("VOX_HN", "Vox Ha Noi", "vox-hn.edu.vn", "school-hn@example.com", "0987654303"));
 
-        Optional<School> found = schoolRepository.findByCode("VOX_HN");
+        var found = schoolRepository.findByCode("VOX_HN");
 
         assertThat(found).isPresent();
         assertThat(found.get().getName()).isEqualTo("Vox Ha Noi");
@@ -68,23 +70,23 @@ class SchoolRepositoryTests {
     void whenFindByDomain_thenReturnsSchool() {
         schoolRepository.save(newSchool("VOX_CT", "Vox Can Tho", "vox-ct.edu.vn", "school-ct@example.com", "0987654304"));
 
-        List<School> found = schoolRepository.findByDomain("vox-ct.edu.vn");
+        var found = schoolRepository.findByDomain("vox-ct.edu.vn");
 
         assertThat(found).hasSize(1);
         assertThat(found.get(0).getCode().value()).isEqualTo("VOX_CT");
     }
 
     /**
-     * Several campuses of the same school share a domain -- they can be saved and ALL looked up,
-     * without a NonUniqueResultException. This is why findByDomain returns a List instead of an
-     * Optional, and why V34 dropped the unique (code, domain) constraint.
+     * Nhiều cơ sở của cùng một trường dùng chung tên miền -- lưu được và tra ra ĐỦ, không nổ
+     * NonUniqueResultException. Đây là lý do findByDomain trả List thay vì Optional, và là lý do
+     * V34 bỏ ràng buộc unique (code, domain).
      */
     @Test
     void whenFindByDomain_withMultipleCampuses_thenReturnsAll() {
         schoolRepository.save(newSchool("VOX_MC_1", "Vox Co So 1", "vox-mc.edu.vn", "school-mc1@example.com", "0987654321"));
         schoolRepository.save(newSchool("VOX_MC_2", "Vox Co So 2", "vox-mc.edu.vn", "school-mc2@example.com", "0987654322"));
 
-        List<School> found = schoolRepository.findByDomain("vox-mc.edu.vn");
+        var found = schoolRepository.findByDomain("vox-mc.edu.vn");
 
         assertThat(found).hasSize(2);
         assertThat(found).extracting(school -> school.getCode().value())
@@ -98,7 +100,7 @@ class SchoolRepositoryTests {
         schoolRepository.save(newSchool("VOX_PG_3", "Vox Page 3", "vox-pg-3.edu.vn", "school-pg3@example.com", "0987654307"));
 
 
-        PageResult<School> found = schoolRepository.findAll(1, 2, null, null);
+        var found = schoolRepository.findAll(1, 2, null, null);
 
         assertThat(found.content()).hasSize(2);
         assertThat(found.page()).isEqualTo(1);
@@ -112,8 +114,8 @@ class SchoolRepositoryTests {
         schoolRepository.save(newSchool("VOX_SEARCH_A", "Truong Alpha", "vox-search-a.edu.vn", "school-search-a@example.com", "0987654320"));
         schoolRepository.save(newSchool("VOX_SEARCH_B", "Truong Beta", "vox-search-b.edu.vn", "school-search-b@example.com", "0987654321"));
 
-        PageResult<School> byCode = schoolRepository.findAll(1, 10, "search_a", null);
-        PageResult<School> byName = schoolRepository.findAll(1, 10, "beta", null);
+        var byCode = schoolRepository.findAll(1, 10, "search_a", null);
+        var byName = schoolRepository.findAll(1, 10, "beta", null);
 
         assertThat(byCode.content()).extracting(school -> school.getCode().value()).containsExactly("VOX_SEARCH_A");
         assertThat(byName.content()).extracting(school -> school.getCode().value()).containsExactly("VOX_SEARCH_B");
@@ -121,14 +123,14 @@ class SchoolRepositoryTests {
 
     @Test
     void whenFindAll_withIsActiveFilter_thenOnlyMatchingStatusReturned() {
-        School active = newSchool("VOX_ACTIVE_1", "Truong Dang Hoat Dong", "vox-active-1.edu.vn", "school-active1@example.com", "0987654322");
-        School inactive = newSchool("VOX_INACTIVE_1", "Truong Da Khoa", "vox-inactive-1.edu.vn", "school-inactive1@example.com", "0987654323");
+        var active = newSchool("VOX_ACTIVE_1", "Truong Dang Hoat Dong", "vox-active-1.edu.vn", "school-active1@example.com", "0987654322");
+        var inactive = newSchool("VOX_INACTIVE_1", "Truong Da Khoa", "vox-inactive-1.edu.vn", "school-inactive1@example.com", "0987654323");
         inactive.setActive(false);
         schoolRepository.save(active);
         schoolRepository.save(inactive);
 
-        PageResult<School> activeOnly = schoolRepository.findAll(1, 50, null, true);
-        PageResult<School> inactiveOnly = schoolRepository.findAll(1, 50, null, false);
+        var activeOnly = schoolRepository.findAll(1, 50, null, true);
+        var inactiveOnly = schoolRepository.findAll(1, 50, null, false);
 
         assertThat(activeOnly.content()).extracting(school -> school.getCode().value()).contains("VOX_ACTIVE_1");
         assertThat(activeOnly.content()).extracting(school -> school.getCode().value()).doesNotContain("VOX_INACTIVE_1");
@@ -138,14 +140,14 @@ class SchoolRepositoryTests {
 
     @Test
     void whenExistsById_thenReturnsTrueOnlyForExistingSchool() {
-        School saved = schoolRepository.save(newSchool("VOX_EXIST", "Vox Exists", "vox-exist.edu.vn", "school-exist@example.com", "0987654308"));
+        var saved = schoolRepository.save(newSchool("VOX_EXIST", "Vox Exists", "vox-exist.edu.vn", "school-exist@example.com", "0987654308"));
 
         assertThat(schoolRepository.existsById(saved.getId())).isTrue();
         assertThat(schoolRepository.existsById(UUID.randomUUID())).isFalse();
     }
 
     private static School newSchool(String code, String name, String domain, String email, String phone) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         return new School(
             new SchoolCode(code),
             name,

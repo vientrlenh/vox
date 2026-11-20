@@ -61,7 +61,7 @@ class PayOSServiceTests {
 
     @Test
     void acceptsWebhookMatchingIndependentlyComputedSignature() {
-        CallbackVerificationResult result = verify(webhook(DATA_JSON, EXPECTED_SIGNATURE));
+        var result = verify(webhook(DATA_JSON, EXPECTED_SIGNATURE));
 
         assertThat(result.valid()).isTrue();
         assertThat(result.providerOrderRef()).isEqualTo("123");
@@ -71,49 +71,47 @@ class PayOSServiceTests {
 
     @Test
     void rejectsTamperedSignature() {
-        String tampered = EXPECTED_SIGNATURE.substring(0, EXPECTED_SIGNATURE.length() - 1) + "0";
+        var tampered = EXPECTED_SIGNATURE.substring(0, EXPECTED_SIGNATURE.length() - 1) + "0";
 
         assertThat(verify(webhook(DATA_JSON, tampered)).valid()).isFalse();
     }
 
     @Test
     void rejectsPayloadTamperedAfterSigning() {
-        String tampered = "{\"orderCode\":123,\"amount\":1,\"code\":\"00\",\"desc\":null}";
+        var tampered = "{\"orderCode\":123,\"amount\":1,\"code\":\"00\",\"desc\":null}";
 
         assertThat(verify(webhook(tampered, EXPECTED_SIGNATURE)).valid()).isFalse();
     }
 
     /**
-     * PayOS signs over the query string sorted by field name, while the order of keys in the JSON
-     * received is arbitrary -- if the sort step were dropped, every real webhook would fail the
-     * signature.
+     * PayOS ký trên chuỗi query đã sắp xếp theo tên field, còn thứ tự key trong JSON nhận được là
+     * bất kỳ — nếu bỏ bước sort thì mọi webhook thật sẽ trượt chữ ký.
      */
     @Test
     void ignoresKeyOrderOfIncomingPayload() {
-        String reordered = "{\"desc\":null,\"code\":\"00\",\"amount\":3000,\"orderCode\":123}";
+        var reordered = "{\"desc\":null,\"code\":\"00\",\"amount\":3000,\"orderCode\":123}";
 
         assertThat(verify(webhook(reordered, EXPECTED_SIGNATURE)).valid()).isTrue();
     }
 
-    /** A null field must be signed as an empty string, not the word "null". */
+    /** Field null phải ký thành chuỗi rỗng, không phải chữ "null". */
     @Test
     void treatsNullValueAsEmptyString() {
-        String withEmptyString = "{\"orderCode\":123,\"amount\":3000,\"code\":\"00\",\"desc\":\"\"}";
+        var withEmptyString = "{\"orderCode\":123,\"amount\":3000,\"code\":\"00\",\"desc\":\"\"}";
 
         assertThat(verify(webhook(withEmptyString, EXPECTED_SIGNATURE)).valid()).isTrue();
     }
 
     /**
-     * A valid webhook but with a code other than "00" is a failed transaction -- it must come out
-     * as FAILED, not PAID. The signature was computed separately for this payload over
-     * {@code amount=3000&code=99&desc=&orderCode=123}.
+     * Webhook hợp lệ nhưng code khác "00" là giao dịch thất bại — phải ra FAILED, không phải PAID.
+     * Chữ ký tính riêng cho payload này trên {@code amount=3000&code=99&desc=&orderCode=123}.
      */
     @Test
     void mapsNonSuccessCodeToFailedInsteadOfPaid() {
-        String failedData = "{\"orderCode\":123,\"amount\":3000,\"code\":\"99\",\"desc\":null}";
-        String failedSignature = "c660e09fea828e1c944f8638ff82b1053c15baf01269a9c2d603db7258273975";
+        var failedData = "{\"orderCode\":123,\"amount\":3000,\"code\":\"99\",\"desc\":null}";
+        var failedSignature = "c660e09fea828e1c944f8638ff82b1053c15baf01269a9c2d603db7258273975";
 
-        CallbackVerificationResult result = verify(webhook(failedData, failedSignature));
+        var result = verify(webhook(failedData, failedSignature));
 
         assertThat(result.valid()).isTrue();
         assertThat(result.status()).isEqualTo(PaymentLinkRemoteStatus.FAILED);
@@ -133,17 +131,16 @@ class PayOSServiceTests {
     }
 
     /**
-     * The PayOS webhook payload sometimes contains invalid UTF-8 bytes in the Vietnamese text part
-     * (desc). The requirement is not to crash -- decode leniently and then fail the signature,
-     * rather than throwing a StreamReadException.
+     * Payload webhook của PayOS đôi khi chứa byte UTF-8 không hợp lệ ở phần text tiếng Việt (desc).
+     * Yêu cầu là không crash — decode lenient rồi trượt chữ ký, chứ không ném StreamReadException.
      */
     @Test
     void rejectsInvalidUtf8BytesWithoutThrowing() {
-        byte[] prefix = "{\"data\":{\"orderCode\":123,\"desc\":\"".getBytes(StandardCharsets.UTF_8);
-        byte[] suffix = "\"},\"signature\":\"abc\"}".getBytes(StandardCharsets.UTF_8);
-        byte[] body = new byte[prefix.length + 2 + suffix.length];
+        var prefix = "{\"data\":{\"orderCode\":123,\"desc\":\"".getBytes(StandardCharsets.UTF_8);
+        var suffix = "\"},\"signature\":\"abc\"}".getBytes(StandardCharsets.UTF_8);
+        var body = new byte[prefix.length + 2 + suffix.length];
         System.arraycopy(prefix, 0, body, 0, prefix.length);
-        body[prefix.length] = (byte) 0xFF;      // invalid UTF-8 byte
+        body[prefix.length] = (byte) 0xFF;      // byte không hợp lệ trong UTF-8
         body[prefix.length + 1] = (byte) 0xFE;
         System.arraycopy(suffix, 0, body, prefix.length + 2, suffix.length);
 

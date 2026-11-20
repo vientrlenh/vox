@@ -1,8 +1,5 @@
 package com.sep.vox.application.port.input.usecase.schoolclassuser;
 
-import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.school.SchoolClass;
-import com.sep.vox.domain.model.school.SchoolClassUser;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -53,15 +50,15 @@ public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUser
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolClassUserDto> execute(ViewSchoolClassUsersQuery input) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
         }
-        UUID schoolId = getSchoolId(currentUserId);
+        var schoolId = getSchoolId(currentUserId);
         validateSchool(schoolId);
         validateSchoolClass(input.schoolClassId(), schoolId);
 
-        PageResult<SchoolClassUser> result = schoolClassUserRepository.findBySchoolClassId(input.schoolClassId(), input.page(), input.size());
+        var result = schoolClassUserRepository.findBySchoolClassId(input.schoolClassId(), input.page(), input.size());
 
         return SchoolClassUserDtoMapper.toSchoolClassUserDtoPage(result);
     }
@@ -73,7 +70,7 @@ public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUser
     }
 
     private void validateSchool(UUID schoolId) {
-        School school = schoolRepository.findById(schoolId)
+        var school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
@@ -81,7 +78,7 @@ public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUser
     }
 
     private void validateSchoolClass(UUID schoolClassId, UUID schoolId) {
-        SchoolClass schoolClass = schoolClassRepository.findById(schoolClassId)
+        var schoolClass = schoolClassRepository.findById(schoolClassId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
             throw new NotFoundException("Không tìm thấy lớp học");

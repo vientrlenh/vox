@@ -13,7 +13,7 @@ public class StatusController {
 
     @GetMapping("/v1/status")
     public ResponseEntity<ApiResponse<Object>> ping() {
-        ApiResponse<Object> response = ApiResponse.success("Máy chủ đang hoạt động");
+        var response = ApiResponse.success("Máy chủ đang hoạt động");
         return ResponseEntity.ok(response);
     }
 }

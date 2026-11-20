@@ -1,8 +1,5 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
-import com.sep.vox.application.query.dto.UserRoleInfo;
-import com.sep.vox.domain.model.school.SchoolUser;
-import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,11 +20,11 @@ import com.sep.vox.domain.repository.UserRepository;
 import java.util.UUID;
 
 /**
- * Serves the `schoolUsersBySchool` query for both SCHOOL_ADMIN and TEACHER (the colleague-search picker in Question
- * Share / Assessment Member). Fully separated from {@link ViewSchoolUsersBySchoolUseCase} (does not call/inject that use
- * case) so the 2 branches do not constrain each other: SCHOOL_ADMIN/SYSTEM_ADMIN are filtered by the passed-in `role`
- * as before; TEACHER is always forced to `role=TEACHER` at this layer, independent of the input, so they cannot browse the
- * list of students in the school.
+ * Phục vụ query `schoolUsersBySchool` cho cả SCHOOL_ADMIN lẫn TEACHER (picker tìm đồng nghiệp ở Question
+ * Share / Exam Member). Tách hoàn toàn khỏi {@link ViewSchoolUsersBySchoolUseCase} (không gọi/inject use
+ * case đó) để 2 nhánh không ràng buộc lẫn nhau: SCHOOL_ADMIN/SYSTEM_ADMIN được lọc theo `role` truyền vào
+ * như cũ; TEACHER luôn bị ép `role=TEACHER` ở tầng này, không phụ thuộc input, nên không thể duyệt danh
+ * sách học sinh trong trường.
  */
 @Service
 public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUsersBySchoolQuery, PageResult<SchoolUserDto>> {
@@ -51,7 +48,7 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolUserDto> execute(ViewSchoolUsersBySchoolQuery input) {
-        UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
+        var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
@@ -60,8 +57,8 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
             throw new ForbiddenException("Quyền truy cập không hợp lệ");
         }
 
-        List<UserRoleInfo> callerRoles = userRoleQueryRepository.findByUserIdWithRoleInfo(callerId);
-        boolean isSchoolAdmin = callerRoles.stream()
+        var callerRoles = userRoleQueryRepository.findByUserIdWithRoleInfo(callerId);
+        var isSchoolAdmin = callerRoles.stream()
             .anyMatch(r -> "SYSTEM_ADMIN".equals(r.roleCode()) || "SCHOOL_ADMIN".equals(r.roleCode()));
 
         // Admin: filter by whatever role the caller passes (null = all); sees everyone.
@@ -72,8 +69,8 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
             roleId = input.roleId();
             excludeUserId = null;
         } else {
-            // A TEACHER must hold the TEACHER role; otherwise reject instead of leaving roleId=null
-            // (roleId=null would make the query return every role and expose the student list).
+            // TEACHER bắt buộc phải có role TEACHER; nếu không, từ chối thay vì để roleId=null
+            // (roleId=null sẽ khiến truy vấn trả về mọi role, lộ danh sách học sinh).
             roleId = callerRoles.stream()
                 .filter(r -> "TEACHER".equals(r.roleCode()))
                 .map(r -> r.roleId())
@@ -82,9 +79,9 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
             excludeUserId = callerId;
         }
 
-        String status = input.status() == null ? null : input.status().name();
+        var status = validateStatus(input.status());
 
-        PageResult<SchoolUser> schoolUsersPage = schoolUserRepository.searchBySchoolId(
+        var schoolUsersPage = schoolUserRepository.searchBySchoolId(
             input.schoolId(),
             excludeUserId,
             StringNormalization.trimAndCollapseSpaces(input.search()),
@@ -95,5 +92,17 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
         );
 
         return SchoolUserDtoMapper.toSchoolUserPageDto(schoolUsersPage);
+    }
+
+    private String validateStatus(String status) {
+        var normalized = StringNormalization.trimAndCollapseSpaces(status);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return UserStatus.valueOf(normalized.toUpperCase()).name();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái người dùng không hợp lệ");
+        }
     }
 }

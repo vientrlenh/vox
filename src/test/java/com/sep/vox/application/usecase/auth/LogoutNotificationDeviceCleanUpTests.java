@@ -11,6 +11,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -19,6 +21,7 @@ import com.sep.vox.application.port.input.command.LogoutCommand;
 import com.sep.vox.application.port.input.usecase.auth.LogoutUseCase;
 import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.domain.model.notification.NotificationDevice;
@@ -27,7 +30,6 @@ import com.sep.vox.domain.model.refreshtoken.RefreshToken;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
 import com.sep.vox.domain.repository.NotificationDeviceRepository;
 import com.sep.vox.domain.repository.RefreshTokenRepository;
-import com.sep.vox.support.IntegrationTest;
 
 /**
  * Đăng xuất phải gỡ luôn thiết bị nhận thông báo của máy vừa đăng xuất.
@@ -53,7 +55,8 @@ import com.sep.vox.support.IntegrationTest;
  * <p>Mỗi test dùng {@code userId} và {@code installationId} sinh mới, nên các dòng còn sót lại
  * không ảnh hưởng lẫn nhau; schema vốn cũng bị dựng lại theo vòng đời context.
  */
-@IntegrationTest
+@SpringBootTest
+@ActiveProfiles("test")
 @AutoConfigureTestGrpcTransport
 // application-test.yaml ghim pool ở 2, mà một lần đăng xuất giữ tới BA kết nối cùng lúc: giao dịch
 // ngoài của LogoutUseCase, giao dịch REQUIRES_NEW của revoke (giao dịch ngoài bị treo nhưng vẫn giữ
@@ -61,7 +64,7 @@ import com.sep.vox.support.IntegrationTest;
 // callback AFTER_COMMIT chạy, vì Spring chỉ trả ở cleanupAfterCompletion. Với pool 2 thì listener
 // chờ hết 30 giây rồi chết vì "Connection is not available", chứ không phải vì lỗi giao dịch.
 @TestPropertySource(properties = "spring.datasource.hikari.maximum-pool-size=5")
-class LogoutNotificationDeviceCleanUpTests {
+class LogoutNotificationDeviceCleanUpTests extends ContainerTestConfig {
 
     private static final String DEVICE_ID = "lab-pc-01";
     private static final String OTHER_DEVICE_ID = "home-laptop";
@@ -103,7 +106,7 @@ class LogoutNotificationDeviceCleanUpTests {
 
         userId = UUID.randomUUID();
         rawRefreshToken = "raw-refresh-token-" + UUID.randomUUID();
-        Instant now = Instant.now();
+        var now = Instant.now();
 
         sessionId = transactionTemplate.execute(status -> deviceSessionRepository.save(new DeviceSession(
             userId, DEVICE_ID, "Lab PC", SessionPlatform.WEB,
@@ -137,10 +140,10 @@ class LogoutNotificationDeviceCleanUpTests {
     }
 
     private void registerNotificationDevice(String deviceId) {
-        Instant now = Instant.now();
-        // installationId is unique across the whole table (the ON CONFLICT of registerDevice relies
-        // on it), so it must be generated fresh for each row rather than using a constant.
-        String installationId = UUID.randomUUID().toString();
+        var now = Instant.now();
+        // installationId là duy nhất trên toàn bảng (ON CONFLICT của registerDevice dựa vào đó),
+        // nên phải sinh mới cho từng dòng chứ không dùng hằng số.
+        var installationId = UUID.randomUUID().toString();
         transactionTemplate.executeWithoutResult(status -> notificationDeviceRepository.save(
             NotificationDevice.create(
                 userId, deviceId, NotificationDevicePlatform.WEB, installationId, now)));

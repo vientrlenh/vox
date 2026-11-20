@@ -1,9 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.domain.repository.PendingEvaluationResponse;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -58,9 +56,9 @@ public class PracticeGradingFlushService {
      * @return số câu đã bắn lại.
      */
     public int sweepEndedSessions(Instant since) {
-        List<UUID> sessionIds = practiceItemResponseRepository.findEndedSessionsWithUngradedResponses(since);
-        int total = 0;
-        for (UUID sessionId : sessionIds) {
+        var sessionIds = practiceItemResponseRepository.findEndedSessionsWithUngradedResponses(since);
+        var total = 0;
+        for (var sessionId : sessionIds) {
             total += flush(sessionId);
         }
         if (total > 0) {
@@ -88,11 +86,11 @@ public class PracticeGradingFlushService {
 
     /** @return số câu đã bắn yêu cầu chấm bổ sung. */
     public int flush(UUID sessionId) {
-        List<PendingEvaluationResponse> pending = practiceItemResponseRepository.findResponsesAwaitingFlush(
+        var pending = practiceItemResponseRepository.findResponsesAwaitingFlush(
             sessionId, Instant.now().minus(REQUEST_COOLDOWN), MAX_GRADING_ATTEMPTS
         );
-        int flushed = 0;
-        for (PendingEvaluationResponse row : pending) {
+        var flushed = 0;
+        for (var row : pending) {
             try {
                 eventPublisher.publish(evaluationRequestFactory.build(
                     sessionId, row.getResponseId(), row.getQuestionId()

@@ -1,10 +1,7 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import com.sep.vox.domain.model.question.Question;
-import com.sep.vox.domain.model.question.QuestionBank;
 import java.time.Instant;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,29 +43,29 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
     @Override
     @Transactional
     public DeleteQuestionResponse execute(DeleteQuestionCommand input) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        boolean schoolAdmin = !userContextPort.isSystemAdmin()
+        var schoolAdmin = !userContextPort.isSystemAdmin()
             && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
                 .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
-        Question question = questionRepository.findById(input.questionId())
+        var question = questionRepository.findById(input.questionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
-        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
+        var bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        boolean owner = currentUserId.equals(question.getCreatedBy());
-        boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
+        var owner = currentUserId.equals(question.getCreatedBy());
+        var systemAdminOnSystemBank = userContextPort.isSystemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
-        boolean schoolAdminOnSchoolBank = bank.getOwnerType() == QuestionBankOwnerType.SCHOOL
+        var schoolAdminOnSchoolBank = bank.getOwnerType() == QuestionBankOwnerType.SCHOOL
             && schoolAdmin
             && currentSchoolId != null
             && currentSchoolId.equals(bank.getSchoolId());
-        boolean usedInAssessment = questionRepository.existsUsedInAssessment(question.getId());
+        var usedInExam = questionRepository.existsUsedInExam(question.getId());
 
-        if (owner && question.getStatus() == QuestionStatus.DRAFT && !usedInAssessment) {
+        if (owner && question.getStatus() == QuestionStatus.DRAFT && !usedInExam) {
             questionRepository.deleteById(question.getId());
             return new DeleteQuestionResponse(true, false);
         }
@@ -77,7 +74,7 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        if (usedInAssessment) {
+        if (usedInExam) {
             question.setStatus(QuestionStatus.ARCHIVED);
             question.setUpdatedAt(Instant.now());
             question.setUpdatedBy(currentUserId);

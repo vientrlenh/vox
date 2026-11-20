@@ -1,9 +1,5 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
-import com.sep.vox.domain.model.rubric.Rubric;
-import com.sep.vox.domain.model.rubric.RubricVersion;
-import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
@@ -68,31 +64,31 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }
 
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản chưa liên kết với trường học."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa dữ liệu của trường khác.");
         }
 
-        School school = schoolRepository.findById(command.schoolId())
+        var school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Trường học này đang bị vô hiệu hóa.");
         }
 
         // 2. Lấy Result Band
-        RubricResultBand resultBand = rubricResultBandRepository.findById(command.resultBandId())
+        var resultBand = rubricResultBandRepository.findById(command.resultBandId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Dải điểm Kết quả (Result Band) này."));
 
         // 3. Lấy Version và kiểm tra trạng thái DRAFT
-        RubricVersion version = rubricVersionRepository.findById(resultBand.getRubricVersionId())
+        var version = rubricVersionRepository.findById(resultBand.getRubricVersionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric Version chứa Dải điểm Kết quả này."));
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalStateException("Chỉ có thể sửa Dải điểm Kết quả khi phiên bản Rubric đang ở trạng thái DRAFT.");
         }
 
         // 4. Lấy Rubric gốc và kiểm tra quyền SCHOOL & khớp SchoolId
-        Rubric rubric = rubricRepository.findById(version.getRubricId())
+        var rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("Hành động bị từ chối: Dải điểm Kết quả này không thuộc về trường học của bạn.");

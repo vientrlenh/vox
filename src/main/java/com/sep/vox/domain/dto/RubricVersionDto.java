@@ -3,8 +3,6 @@ package com.sep.vox.domain.dto;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
-import com.sep.vox.domain.model.rubric.RubricStatus;
-import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 
 public record RubricVersionDto(
         UUID id,
@@ -13,19 +11,19 @@ public record RubricVersionDto(
         String code,
         String name,
         String description,
-        RubricStatus status,
+        String status,
         Instant effectiveFrom,
         Instant effectiveTo,
         BigDecimal scoringScaleMin,
         BigDecimal scoringScaleMax,
-        RubricTotalScoreMethod totalScoreMethod,
+        String totalScoreMethod,
         Instant createdAt,
         /**
-         * The template version this one was copied from, or null if the owner wrote it themselves.
+         * Phiên bản mẫu mà bản này được sao ra, hoặc null nếu do chính chủ sở hữu soạn.
          *
-         * <p>With it the version page can say "Copied from the system's template criteria set" instead
-         * of leaving the copy looking exactly like a self-written one, and later it can be compared
-         * when the system publishes a version newer than the one the school is using.
+         * <p>Có nó thì trang phiên bản nói được "Bản sao từ bộ tiêu chí mẫu của hệ thống" thay vì để
+         * bản sao trông y hệt một bản tự soạn, và về sau đối chiếu được khi hệ thống ban hành bản
+         * mới hơn bản mà trường đang dùng.
          */
         UUID sourceRubricVersionId
 ) {}

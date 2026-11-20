@@ -1,10 +1,8 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -41,19 +39,19 @@ public class LearnerProfileCommandService {
                 "Quiz sở thích phải có từ 5 đến 7 câu trả lời"
             );
         }
-        Map<String, Integer> raw = new HashMap<String, Integer>();
-        for (QuizAnswer answer : answers) {
+        var raw = new HashMap<String, Integer>();
+        for (var answer : answers) {
             if (answer.getMostStatementIndex()
                     == answer.getLeastStatementIndex()) {
                 throw new IllegalArgumentException(
                     "Lựa chọn giống nhất và ít giống nhất phải khác nhau"
                 );
             }
-            InterestQuizSeedItem item = quizItemRepository.findActiveQuizItem(answer.getItemId())
+            var item = quizItemRepository.findActiveQuizItem(answer.getItemId())
                 .orElseThrow(() -> new NotFoundException(
                     "Không tìm thấy item quiz sở thích"
                 ));
-            List<String> dimensions = item.getDimensionPerStatement();
+            var dimensions = item.getDimensionPerStatement();
             if (dimensions.size() != 3
                     || dimensions.stream().distinct().count() != 3) {
                 throw new IllegalStateException(
@@ -71,7 +69,7 @@ public class LearnerProfileCommandService {
                 (current, delta) -> current + delta
             );
         }
-        LearnerProfile saved = upsertProfile(studentId, null, null, Instant.now());
+        var saved = upsertProfile(studentId, null, null, Instant.now());
         dimensionScoreRepository.replaceScores(
             saved.getId(),
             interestQuizScorer.normalize(raw)
@@ -84,7 +82,7 @@ public class LearnerProfileCommandService {
     // ánh xạ (cột trong DB giữ nguyên, xem chú thích ở LearnerProfileJpaEntity).
 
     public void setGoal(UUID studentId, String goalType) {
-        if (!"ASSESSMENT_PREP".equals(goalType)
+        if (!"EXAM_PREP".equals(goalType)
                 && !"ABILITY_IMPROVEMENT".equals(goalType)) {
             throw new IllegalArgumentException(
                 "Mục tiêu luyện tập không hợp lệ"
@@ -103,7 +101,7 @@ public class LearnerProfileCommandService {
             String goalType,
             Boolean autoUpdate,
             Instant quizCompletedAt) {
-        LearnerProfile profile = repository.findCurrentForUpdate(studentId)
+        var profile = repository.findCurrentForUpdate(studentId)
             .orElseGet(() -> LearnerProfile.forStudent(studentId));
         profile.applyChanges(goalType, autoUpdate, quizCompletedAt);
         return repository.save(profile);

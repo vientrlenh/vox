@@ -1,10 +1,9 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
-import com.sep.vox.domain.model.school.SchoolClass;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewMySchoolClassesQuery;
@@ -13,6 +12,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -40,7 +40,7 @@ public class ViewMySchoolClassesUseCase implements IUseCase<ViewMySchoolClassesQ
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolClassDto> execute(ViewMySchoolClassesQuery input) {
-        UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
+        var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
@@ -49,14 +49,26 @@ public class ViewMySchoolClassesUseCase implements IUseCase<ViewMySchoolClassesQ
             throw new ForbiddenException("Quyền truy cập không hợp lệ");
         }
 
-        PageResult<SchoolClass> schoolClassesPage = schoolClassRepository.findByUserId(
+        var schoolClassesPage = schoolClassRepository.findByUserId(
             input.schoolId(),
             callerId,
-            input.status(),
+            parseStatus(input.status()),
             input.page(),
             input.size()
         );
 
         return SchoolClassDtoMapper.toDtoPage(schoolClassesPage);
+    }
+
+    private SchoolClassStatus parseStatus(String status) {
+        var normalized = StringNormalization.trimAndCollapseSpaces(status);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return SchoolClassStatus.valueOf(normalized);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái lớp học không hợp lệ");
+        }
     }
 }

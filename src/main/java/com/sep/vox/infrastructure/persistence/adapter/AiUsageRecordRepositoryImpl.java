@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.AiUsageRecordJpaEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -30,14 +29,14 @@ public class AiUsageRecordRepositoryImpl implements AiUsageRecordRepository {
 
     @Override
     public AiUsageRecord save(AiUsageRecord record) {
-        AiUsageRecordJpaEntity entity = AiUsageRecordMapper.toJpa(record);
-        AiUsageRecordJpaEntity saved = springDataAiUsageRecordRepository.save(entity);
+        var entity = AiUsageRecordMapper.toJpa(record);
+        var saved = springDataAiUsageRecordRepository.save(entity);
         return AiUsageRecordMapper.toDomain(saved);
     }
 
     @Override
-    public List<AiUsageRecord> findByAssessmentSessionId(UUID assessmentSessionId) {
-        return springDataAiUsageRecordRepository.findByAssessmentSessionId(assessmentSessionId).stream()
+    public List<AiUsageRecord> findByExamSessionId(UUID examSessionId) {
+        return springDataAiUsageRecordRepository.findByExamSessionId(examSessionId).stream()
             .map(AiUsageRecordMapper::toDomain)
             .toList();
     }
@@ -48,24 +47,24 @@ public class AiUsageRecordRepositoryImpl implements AiUsageRecordRepository {
     }
 
     @Override
-    public int markChargedByAssessmentSessionId(UUID assessmentSessionId, Instant chargedAt) {
-        return springDataAiUsageRecordRepository.markChargedByAssessmentSessionId(assessmentSessionId, chargedAt);
+    public int markChargedByExamSessionId(UUID examSessionId, Instant chargedAt) {
+        return springDataAiUsageRecordRepository.markChargedByExamSessionId(examSessionId, chargedAt);
     }
 
     @Override
-    public int markWaivedByAssessmentSessionId(UUID assessmentSessionId, Instant waivedAt) {
-        return springDataAiUsageRecordRepository.markWaivedByAssessmentSessionId(assessmentSessionId, waivedAt);
+    public int markWaivedByExamSessionId(UUID examSessionId, Instant waivedAt) {
+        return springDataAiUsageRecordRepository.markWaivedByExamSessionId(examSessionId, waivedAt);
     }
 
     @Override
-    public BigDecimal sumCostVndByAssessmentSessionIdAndChargedAt(UUID assessmentSessionId, Instant chargedAt) {
+    public BigDecimal sumCostVndByExamSessionIdAndChargedAt(UUID examSessionId, Instant chargedAt) {
         return springDataAiUsageRecordRepository
-            .sumCostVndByAssessmentSessionIdAndChargedAt(assessmentSessionId, chargedAt);
+            .sumCostVndByExamSessionIdAndChargedAt(examSessionId, chargedAt);
     }
 
     @Override
-    public BigDecimal sumCostUsdByAssessmentSessionIdAndChargedAt(UUID assessmentSessionId, Instant chargedAt) {
+    public BigDecimal sumCostUsdByExamSessionIdAndChargedAt(UUID examSessionId, Instant chargedAt) {
         return springDataAiUsageRecordRepository
-            .sumCostUsdByAssessmentSessionIdAndChargedAt(assessmentSessionId, chargedAt);
+            .sumCostUsdByExamSessionIdAndChargedAt(examSessionId, chargedAt);
     }
 }

@@ -8,7 +8,6 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.response.output.CallbackVerificationResult;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
 import com.sep.vox.domain.model.payment.PaymentProvider;
 import com.sep.vox.infrastructure.properties.SePayPaymentProperties;
@@ -28,7 +27,7 @@ class SePayPaymentProcessServiceTests {
 
     @BeforeEach
     void setUp() {
-        SePayPaymentProperties properties = new SePayPaymentProperties(
+        var properties = new SePayPaymentProperties(
             SePayPaymentProperties.SePayEnvironment.SANDBOX,
             "merchant-1",
             "sepay-test-signing-secret",
@@ -90,7 +89,7 @@ class SePayPaymentProcessServiceTests {
 
     @Test
     void acceptsIpnWhoseCustomDataIsAnArray() {
-        CallbackVerificationResult result = service.verifyCallback(ipnWithArrayCustomData("ORDER_PAID", "CAPTURED"), validHeaders());
+        var result = service.verifyCallback(ipnWithArrayCustomData("ORDER_PAID", "CAPTURED"), validHeaders());
 
         assertThat(result.valid()).isTrue();
         assertThat(result.providerOrderRef()).isEqualTo("1754380800000");
@@ -98,16 +97,13 @@ class SePayPaymentProcessServiceTests {
         assertThat(result.amount()).isEqualByComparingTo("5000000");
     }
 
-    /**
-     * custom_data can also be an array of objects -- it must not break because of the type of a
-     * field that is not used.
-     */
+    /** custom_data cũng có thể là mảng object — không được vỡ vì kiểu của một field không dùng tới. */
     @Test
     void acceptsIpnWhoseCustomDataIsAnArrayOfObjects() {
-        String body = new String(ipnWithArrayCustomData("ORDER_PAID", "CAPTURED"), StandardCharsets.UTF_8)
+        var body = new String(ipnWithArrayCustomData("ORDER_PAID", "CAPTURED"), StandardCharsets.UTF_8)
             .replace("\"custom_data\": []", "\"custom_data\": [{\"name\":\"k\",\"value\":\"v\"}]");
 
-        CallbackVerificationResult result = service.verifyCallback(body.getBytes(StandardCharsets.UTF_8), validHeaders());
+        var result = service.verifyCallback(body.getBytes(StandardCharsets.UTF_8), validHeaders());
 
         assertThat(result.valid()).isTrue();
         assertThat(result.providerOrderRef()).isEqualTo("1754380800000");
@@ -115,7 +111,7 @@ class SePayPaymentProcessServiceTests {
 
     @Test
     void rejectsIpnWithWrongSecretKey() {
-        CallbackVerificationResult result = service.verifyCallback(
+        var result = service.verifyCallback(
             ipnWithArrayCustomData("ORDER_PAID", "CAPTURED"), Map.of("X-Secret-Key", "sai-secret"));
 
         assertThat(result.valid()).isFalse();
@@ -123,19 +119,18 @@ class SePayPaymentProcessServiceTests {
 
     @Test
     void rejectsIpnWithoutSecretKeyHeader() {
-        CallbackVerificationResult result = service.verifyCallback(ipnWithArrayCustomData("ORDER_PAID", "CAPTURED"), Map.of());
+        var result = service.verifyCallback(ipnWithArrayCustomData("ORDER_PAID", "CAPTURED"), Map.of());
 
         assertThat(result.valid()).isFalse();
     }
 
     /**
-     * An unknown status must come out as null (= no conclusion yet) so the upper layer keeps
-     * PENDING, and must not be lumped into failure and then close the invoice of a transaction that
-     * may still be running.
+     * Trạng thái lạ phải ra null (= chưa kết luận) để tầng trên giữ nguyên PENDING, chứ không được
+     * gom thành thất bại rồi đóng hóa đơn của một giao dịch có thể vẫn đang chạy.
      */
     @Test
     void leavesUnmappedStatusUndecidedInsteadOfFailing() {
-        CallbackVerificationResult result = service.verifyCallback(
+        var result = service.verifyCallback(
             ipnWithArrayCustomData("SOMETHING_NEW", "MOT_TRANG_THAI_LA"), validHeaders());
 
         assertThat(result.valid()).isTrue();

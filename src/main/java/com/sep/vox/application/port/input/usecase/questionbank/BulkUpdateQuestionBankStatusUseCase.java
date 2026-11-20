@@ -1,13 +1,9 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
-import com.sep.vox.domain.dto.QuestionBankDto;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -64,25 +60,25 @@ public class BulkUpdateQuestionBankStatusUseCase
             throw new IllegalArgumentException("Danh sách ngân hàng câu hỏi không được để trống");
         }
 
-        String action = StringNormalization.normalizeCode(input.action());
+        var action = StringNormalization.normalizeCode(input.action());
         // LinkedHashSet: giữ thứ tự client gửi lên để đọc response theo được, và bỏ id trùng để
         // không đổi hai lần cùng một mục.
-        Set<UUID> ids = new LinkedHashSet<>(input.ids());
+        var ids = new LinkedHashSet<>(input.ids());
 
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
 
-        Map<UUID, QuestionBank> banksById = questionBankRepository.findByIdIn(ids).stream()
+        var banksById = questionBankRepository.findByIdIn(ids).stream()
             .collect(Collectors.toMap(bank -> bank.getId(), bank -> bank, (first, second) -> first));
 
-        List<BulkUpdateQuestionScopeStatusFailure> failed = new ArrayList<BulkUpdateQuestionScopeStatusFailure>();
-        List<QuestionBank> toSave = new ArrayList<QuestionBank>();
-        Instant now = Instant.now();
+        var failed = new ArrayList<BulkUpdateQuestionScopeStatusFailure>();
+        var toSave = new ArrayList<QuestionBank>();
+        var now = Instant.now();
 
-        for (UUID id : ids) {
-            QuestionBank bank = banksById.get(id);
+        for (var id : ids) {
+            var bank = banksById.get(id);
             if (bank == null) {
                 failed.add(new BulkUpdateQuestionScopeStatusFailure(
                     id, null, null,
@@ -96,7 +92,7 @@ public class BulkUpdateQuestionBankStatusUseCase
                 continue;
             }
 
-            QuestionScopeStatusTransition.Rejection rejection = QuestionScopeStatusTransition.rejectionFor(
+            var rejection = QuestionScopeStatusTransition.rejectionFor(
                 bank.getStatus().name(), action, "ngân hàng câu hỏi");
             if (rejection != null) {
                 failed.add(failure(bank, rejection.code().name(), rejection.reason()));
@@ -111,8 +107,8 @@ public class BulkUpdateQuestionBankStatusUseCase
 
         // save() từng mục thay vì saveAll: repository này chưa có saveAll, mà trong cùng một
         // transaction thì số câu lệnh sinh ra không khác nhau.
-        List<QuestionBankDto> updated = new ArrayList<com.sep.vox.domain.dto.QuestionBankDto>();
-        for (QuestionBank bank : toSave) {
+        var updated = new ArrayList<com.sep.vox.domain.dto.QuestionBankDto>();
+        for (var bank : toSave) {
             updated.add(QuestionBankDtoMapper.toDto(questionBankRepository.save(bank)));
         }
 

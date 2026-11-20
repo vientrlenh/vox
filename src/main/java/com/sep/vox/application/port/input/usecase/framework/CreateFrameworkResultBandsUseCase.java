@@ -50,7 +50,7 @@ public class CreateFrameworkResultBandsUseCase
         validateRequest(command, version);
 
         List<FrameworkResultBand> bandsToSave = new ArrayList<>();
-        for (CreateFrameworkResultBandsCommand.ResultBandItemCommand bandCmd : command.bands()) {
+        for (var bandCmd : command.bands()) {
             String safeCode = StringNormalization.normalizeCode(bandCmd.code());
             String safeLabel = StringNormalization.trimAndCollapseSpaces(bandCmd.label());
             bandsToSave.add(new FrameworkResultBand(
@@ -86,7 +86,7 @@ public class CreateFrameworkResultBandsUseCase
         Set<String> requestLabels = new HashSet<>();
         Set<Integer> allOrders = frameworkResultBandRepository.findByFrameworkVersionId(command.versionId())
                 .stream().map(frb -> frb.getOrder()).collect(Collectors.toCollection(HashSet::new));
-        for (CreateFrameworkResultBandsCommand.ResultBandItemCommand bandCmd : command.bands()) {
+        for (var bandCmd : command.bands()) {
             String safeCode = StringNormalization.normalizeCode(bandCmd.code());
             String safeLabel = StringNormalization.trimAndCollapseSpaces(bandCmd.label());
 

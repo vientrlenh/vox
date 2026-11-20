@@ -64,7 +64,7 @@ public class OrderController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> placeSubscriptionOrder(
             @Valid @RequestBody CreateSubscriptionOrderRequest request) {
-        UUID data = createSubscriptionOrderUseCase.execute(
+        var data = createSubscriptionOrderUseCase.execute(
             new CreateSubscriptionOrderCommand(request.subscriptionPlanId()));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Đặt đơn đăng ký gói thành công", data));
@@ -78,7 +78,7 @@ public class OrderController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> placeTopUpOrder(
             @Valid @RequestBody CreateTopUpOrderRequest request) {
-        UUID data = createTopUpOrderUseCase.execute(new CreateTopUpOrderCommand(request.creditAmountVnd()));
+        var data = createTopUpOrderUseCase.execute(new CreateTopUpOrderCommand(request.creditAmountVnd()));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Đặt đơn nạp thêm thành công", data));
     }
@@ -95,7 +95,7 @@ public class OrderController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> placeRenewalOrder(
             @Valid @RequestBody RenewSchoolSubscriptionRequest request) {
-        UUID data = renewSchoolSubscriptionUseCase.execute(new RenewSchoolSubscriptionCommand(request.acceptedPlanId()));
+        var data = renewSchoolSubscriptionUseCase.execute(new RenewSchoolSubscriptionCommand(request.acceptedPlanId()));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Đặt đơn gia hạn thành công", data));
     }
@@ -112,7 +112,7 @@ public class OrderController {
     @PatchMapping("/{orderId}/cancellation")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> cancelOrder(@PathVariable(name = "orderId") UUID orderId) {
-        UUID data = cancelOrderUseCase.execute(new CancelOrderCommand(orderId));
+        var data = cancelOrderUseCase.execute(new CancelOrderCommand(orderId));
         return ResponseEntity.ok(ApiResponse.success("Hủy đơn hàng thành công", data));
     }
 }

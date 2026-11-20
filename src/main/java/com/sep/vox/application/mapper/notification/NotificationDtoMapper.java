@@ -1,5 +1,6 @@
 package com.sep.vox.application.mapper.notification;
 
+import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.application.query.dto.NotificationDto;
@@ -18,8 +19,8 @@ public final class NotificationDtoMapper {
             notification.getTitle(),
             notification.getBody(),
             notification.getPayload(),
-            notification.getReadAt(),
-            notification.getCreatedAt()
+            format(notification.getReadAt()),
+            format(notification.getCreatedAt())
         );
     }
 
@@ -27,5 +28,9 @@ public final class NotificationDtoMapper {
         return notifications.stream()
             .map(NotificationDtoMapper::toNotificationDto)
             .toList();
+    }
+
+    private static String format(Instant instant) {
+        return instant == null ? null : instant.toString();
     }
 }

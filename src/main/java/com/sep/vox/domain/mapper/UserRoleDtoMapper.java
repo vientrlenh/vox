@@ -13,7 +13,7 @@ public final class UserRoleDtoMapper {
             userRole.getId(), 
             userRole.getUserId(), 
             userRole.getRoleId(), 
-            userRole.getCreatedAt()
+            userRole.getCreatedAt().toString()
         );
     }
 

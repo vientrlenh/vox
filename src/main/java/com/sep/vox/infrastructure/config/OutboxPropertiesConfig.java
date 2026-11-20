@@ -1,7 +1,5 @@
 package com.sep.vox.infrastructure.config;
 
-import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -22,12 +20,12 @@ public class OutboxPropertiesConfig {
     @Bean
     InitializingBean outboxTopicsValidator(OutboxTopicProperties properties) {
         return () -> {
-            Map<String, String> topics = properties.topics();
+            var topics = properties.topics();
             if (topics.isEmpty()) {
                 throw new InfrastructureException("app.outbox.topics chưa được cấu hình -- outbox không publish được event nào");
             }
 
-            List<String> missing = EventTypeConstant.all().stream()
+            var missing = EventTypeConstant.all().stream()
                 .filter(eventType -> !topics.containsKey(eventType))
                 .toList();
             if (!missing.isEmpty()) {

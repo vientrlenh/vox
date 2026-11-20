@@ -28,10 +28,10 @@ public class PracticeCriterionScoreRepositoryImpl implements PracticeCriterionSc
             UUID practiceEvaluationId,
             String criterionCode,
             double finalScore) {
-        PracticeCriterionScoreJpaEntity existing = repository
+        var existing = repository
             .findByPracticeEvaluationIdAndCriterionCode(practiceEvaluationId, criterionCode)
             .orElse(null);
-        BigDecimal scoreValue = BigDecimal.valueOf(finalScore);
+        var scoreValue = BigDecimal.valueOf(finalScore);
         if (existing == null) {
             repository.save(new PracticeCriterionScoreJpaEntity(
                 UUID.randomUUID(),

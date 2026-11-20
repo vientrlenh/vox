@@ -37,7 +37,7 @@ public class PracticeQuestionGenerationClient implements PracticeQuestionGenerat
             .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(3))
             .build();
-        String base = agentsBaseUrl.replaceAll("/+$", "");
+        var base = agentsBaseUrl.replaceAll("/+$", "");
         this.generationEndpoint = URI.create(
             base + "/internal/practice-generation/questions"
         );
@@ -47,10 +47,10 @@ public class PracticeQuestionGenerationClient implements PracticeQuestionGenerat
     }
 
     /**
-     * @param bandCount  the number of bands of the scale in use -- Python uses it to map difficulty_rank onto
-     *                    the right scale, instead of defaulting to 6 VSTEP-style bands.
-     * @param bandLadder a description of each band, so the grading prompt speaks the school's own scale. When empty
-     *                    Python falls back to its own default ladder.
+     * @param bandCount  số bậc của thang đang áp -- Python dùng để ánh xạ difficulty_rank ra
+     *                   đúng thang, thay vì mặc định 6 bậc kiểu VSTEP.
+     * @param bandLadder mô tả từng bậc, để prompt chấm nói đúng thang của trường. Rỗng thì
+     *                   Python tự lùi về ladder mặc định của nó.
      */
     @Override
     public List<GeneratedQuestion> generate(
@@ -65,30 +65,30 @@ public class PracticeQuestionGenerationClient implements PracticeQuestionGenerat
             List<FrameworkResultBand> bandLadder,
             List<UUID> excludeQuestionIds) {
         try {
-            Map<String, Object> payload = new java.util.LinkedHashMap<String, Object>();
+            var payload = new java.util.LinkedHashMap<String, Object>();
             payload.put("topic_id", topic.id().toString());
             payload.put("topic_name", topic.name());
-            // SINGULAR. Python declares `interest_dimension: str` with NO default value
-            // (schemas/question_generation.py). If the name is wrong Pydantic silently ignores the unknown field
-            // and then reports a missing required field -- every practice question generation call returns 422, and the student
-            // only sees an "error" when opening a topic that has no questions in the bank yet.
+            // SỐ ÍT. Python khai `interest_dimension: str` và KHÔNG có giá trị mặc định
+            // (schemas/question_generation.py). Gửi sai tên thì Pydantic lặng lẽ bỏ qua trường lạ
+            // rồi báo thiếu trường bắt buộc -- toàn bộ lượt sinh câu luyện tập trả 422, và học sinh
+            // chỉ thấy "lỗi" khi mở một chủ đề chưa có câu nào trong kho.
             payload.put("interest_dimension", topic.interestDimension());
             payload.put("curriculum_group", topic.curriculumGroup());
             payload.put("target_criterion_code", criterionCode);
             payload.put("target_sub_attribute", subAttribute);
-            // The grammatical tense the question must force the student to use. The generation prompt is responsible for setting a TIME MARKER
-            // so that this tense is the only natural answer -- a bare instruction cannot force it.
+            // Thì mà câu phải ép học sinh dùng. Prompt soạn có nhiệm vụ đặt MỐC THỜI GIAN sao
+            // cho thì đó là cách trả lời tự nhiên duy nhất -- ra lệnh suông không ép được.
             payload.put("target_tense", targetTense);
             payload.put("target_rank", targetRank);
-            // Send EXACTLY the configured number. There used to be Math.min(3, count) here -- a second cap
-            // that was declared nowhere, silently overriding application.yaml: set 5 and still
-            // only get 3, no log, no error. The real cap already exists on the Python side (DRAFTER_CANDIDATES),
-            // and there it blows up as a readable 422 error instead of cutting silently.
+            // Gửi ĐÚNG con số cấu hình. Trước đây có Math.min(3, count) ở đây -- một cái trần
+            // thứ hai không ai khai báo ở đâu, âm thầm đè lên application.yaml: đặt 5 thì vẫn
+            // chỉ nhận 3, không log, không lỗi. Trần thật đã có bên Python (DRAFTER_CANDIDATES),
+            // và ở đó nó nổ thành lỗi 422 đọc được chứ không cắt lặng lẽ.
             payload.put("count", count);
             payload.put("band_count", bandCount);
-            // Questions that are permanently dead for this very student -- Python excludes them from the duplicate
-            // comparison. If they are not sent, the duplicate gate compares against the whole bank, including questions this student will never
-            // see again, and every new draft is thrown away for being "similar to an existing question".
+            // Câu đã chết vĩnh viễn với chính học sinh này -- Python loại chúng khỏi phép so
+            // trùng. Không gửi thì cổng chặn trùng so với cả kho, kể cả câu em ấy không bao
+            // giờ được thấy lại, và mọi bản nháp mới đều bị vứt vì "giống câu đã có".
             payload.put(
                 "exclude_question_ids",
                 (excludeQuestionIds == null ? List.<UUID>of() : excludeQuestionIds)
@@ -105,14 +105,14 @@ public class PracticeQuestionGenerationClient implements PracticeQuestionGenerat
                     ))
                     .toList()
             );
-            HttpRequest request = HttpRequest.newBuilder(generationEndpoint)
+            var request = HttpRequest.newBuilder(generationEndpoint)
                 .timeout(timeout)
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(
                     jsonMapper.writeValueAsString(payload)
                 ))
                 .build();
-            HttpResponse<String> response = httpClient.send(
+            var response = httpClient.send(
                 request,
                 HttpResponse.BodyHandlers.ofString()
             );
@@ -122,8 +122,8 @@ public class PracticeQuestionGenerationClient implements PracticeQuestionGenerat
                         + response.statusCode() + ": " + response.body()
                 );
             }
-            List<PracticeQuestionGenerationPort.GeneratedQuestion> result = new ArrayList<GeneratedQuestion>();
-            for (JsonNode item : jsonMapper.readTree(response.body()).path("questions")) {
+            var result = new ArrayList<GeneratedQuestion>();
+            for (var item : jsonMapper.readTree(response.body()).path("questions")) {
                 result.add(toQuestion(item));
             }
             return result;
@@ -138,7 +138,7 @@ public class PracticeQuestionGenerationClient implements PracticeQuestionGenerat
     @Override
     public void index(GeneratedQuestion question) {
         try {
-            HttpRequest request = HttpRequest.newBuilder(indexEndpoint)
+            var request = HttpRequest.newBuilder(indexEndpoint)
                 .timeout(Duration.ofSeconds(10))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(
@@ -147,7 +147,7 @@ public class PracticeQuestionGenerationClient implements PracticeQuestionGenerat
                     ))
                 ))
                 .build();
-            HttpResponse<String> response = httpClient.send(
+            var response = httpClient.send(
                 request,
                 HttpResponse.BodyHandlers.ofString()
             );

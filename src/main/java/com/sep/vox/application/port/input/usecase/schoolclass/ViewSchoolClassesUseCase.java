@@ -1,7 +1,5 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
-import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.school.SchoolClass;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -15,6 +13,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -48,15 +47,15 @@ public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolClassDto> execute(ViewSchoolClassesQuery input) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = findCurrentUser(currentUserId);
-        UUID schoolId = getSchoolId(currentUser);
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = findCurrentUser(currentUserId);
+        var schoolId = getSchoolId(currentUser);
         validateSchool(schoolId);
 
-        PageResult<SchoolClass> result = schoolClassRepository.findBySchoolId(
+        var result = schoolClassRepository.findBySchoolId(
             schoolId,
             StringNormalization.trimAndCollapseSpaces(input.search()),
-            input.status(),
+            parseStatus(input.status()),
             input.languageId(),
             input.schoolGradeId(),
             input.page(), 
@@ -66,7 +65,7 @@ public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        User user = userRepository.findById(currentUserId)
+        var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         validateCurrentUserIsActive(user);
         return user;
@@ -85,10 +84,22 @@ public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery
     }
 
     private void validateSchool(UUID schoolId) {
-        School school = schoolRepository.findById(schoolId)
+        var school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
+        }
+    }
+
+    private SchoolClassStatus parseStatus(String status) {
+        var normalized = StringNormalization.trimAndCollapseSpaces(status);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return SchoolClassStatus.valueOf(normalized);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái lớp học không hợp lệ");
         }
     }
 }

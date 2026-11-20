@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
-import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -52,17 +51,17 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
     @Override
     @Transactional
     public LoginResponse execute(OAuth2LoginCommand input) {
-        User user = userRepository.findByEmailAndStatus(input.email(), UserStatus.ACTIVE)
+        var user = userRepository.findByEmailAndStatus(input.email(), UserStatus.ACTIVE)
             .orElseThrow(() -> new UnauthorizedException("Người dùng hiện chưa tồn tại. Vui lòng gửi đơn đăng ký hoặc liên hệ bên nhà trường để được hỗ trợ"));
 
-        Instant now = Instant.now();
-        List<String> userRoles = getUserRoles(user.getId());
-        DeviceSession deviceSession = createDeviceSession(user.getId(), input);
-        UUID schoolId = schoolUserRepository.findByUserId(user.getId())
+        var now = Instant.now();
+        var userRoles = getUserRoles(user.getId());
+        var deviceSession = createDeviceSession(user.getId(), input);
+        var schoolId = schoolUserRepository.findByUserId(user.getId())
             .map(su -> su.getSchoolId())
             .orElse(null);
-        String accessToken = authTokenPort.generateJwtToken(user.getId().toString(), schoolId, user.getEmail().value(), userRoles);
-        GeneratedSessionToken sessionToken = sessionTokenManagerPort.generateToken();
+        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), schoolId, user.getEmail().value(), userRoles);
+        var sessionToken = sessionTokenManagerPort.generateToken();
         createRefreshToken(deviceSession, sessionToken, now);
 
         return LoginResponseMapper.toResponse(accessToken, sessionToken.rawToken(), userRoles);
@@ -86,7 +85,7 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
     }
 
     private DeviceSession createDeviceSession(UUID userId, OAuth2LoginCommand command) {
-        DeviceSession deviceSession = DeviceSession.create(
+        var deviceSession = DeviceSession.create(
             userId, 
             command.device().deviceId(), 
             command.device().deviceName(), 
@@ -98,7 +97,7 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
     }
 
     private void createRefreshToken(DeviceSession deviceSession, GeneratedSessionToken sessionToken, Instant now) {
-        RefreshToken refreshToken = RefreshToken.createFresh(deviceSession.getId(), sessionToken.hashedToken(), now);
+        var refreshToken = RefreshToken.createFresh(deviceSession.getId(), sessionToken.hashedToken(), now);
         refreshTokenRepository.save(refreshToken);
     }
     

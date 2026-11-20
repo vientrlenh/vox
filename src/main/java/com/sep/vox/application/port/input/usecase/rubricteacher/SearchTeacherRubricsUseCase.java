@@ -9,8 +9,6 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RubricDto;
 import com.sep.vox.domain.mapper.RubricDtoMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
-import com.sep.vox.domain.model.school.SchoolUser;
-import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -45,7 +43,7 @@ public class SearchTeacherRubricsUseCase implements IUseCase<SearchTeacherRubric
 
         // 1. Xác thực tài khoản
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
+        var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
@@ -53,7 +51,7 @@ public class SearchTeacherRubricsUseCase implements IUseCase<SearchTeacherRubric
         }
 
         // 2. Suy ra trường học của Teacher từ SchoolUser (không nhận schoolId từ client)
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
         // 3. Gọi DB (Repository xử lý SQL lọc động, chỉ lấy rubric của trường Teacher)

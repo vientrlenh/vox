@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record UpdateClassTestSectionCommand(
-    UUID assessmentId,
+    UUID examId,
     UUID sectionId,
     String title,
     String instruction,

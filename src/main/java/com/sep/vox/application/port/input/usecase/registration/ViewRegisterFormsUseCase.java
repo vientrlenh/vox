@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.registration;
 
-import com.sep.vox.domain.model.registerform.RegisterForm;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +22,7 @@ public class ViewRegisterFormsUseCase implements IUseCase<ViewRegisterFormsQuery
     @Override
     @Transactional(readOnly = true)
     public PageResult<RegisterFormDto> execute(ViewRegisterFormsQuery input) {
-        PageResult<RegisterForm> forms = registerFormRepository.findAll(input.page(), input.size());
+        var forms = registerFormRepository.findAll(input.page(), input.size());
         return RegisterFormDtoMapper.toRegisterFormPage(forms);
     }
     

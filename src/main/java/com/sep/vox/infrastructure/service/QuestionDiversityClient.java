@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import com.sep.vox.application.port.output.QuestionDiversityPort;
@@ -52,23 +51,23 @@ public class QuestionDiversityClient implements QuestionDiversityPort {
             List<UUID> candidateIds,
             List<UUID> selectedIds) {
         if (selectedIds.isEmpty()) {
-            Map<UUID, Double> result = new HashMap<UUID, Double>();
+            var result = new HashMap<UUID, Double>();
             candidateIds.forEach(id -> result.put(id, 0.0));
             return result;
         }
         try {
-            String body = jsonMapper.writeValueAsString(Map.of(
+            var body = jsonMapper.writeValueAsString(Map.of(
                 "candidate_ids",
                 candidateIds.stream().map(id -> id.toString()).toList(),
                 "selected_ids",
                 selectedIds.stream().map(id -> id.toString()).toList()
             ));
-            HttpRequest request = HttpRequest.newBuilder(endpoint)
+            var request = HttpRequest.newBuilder(endpoint)
                 .timeout(Duration.ofSeconds(5))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
-            HttpResponse<String> response = httpClient.send(
+            var response = httpClient.send(
                 request,
                 HttpResponse.BodyHandlers.ofString()
             );
@@ -77,10 +76,10 @@ public class QuestionDiversityClient implements QuestionDiversityPort {
                     "Similarity endpoint returned " + response.statusCode() + ": " + response.body()
                 );
             }
-            JsonNode values = jsonMapper.readTree(response.body())
+            var values = jsonMapper.readTree(response.body())
                 .path("max_similarity");
-            Map<UUID, Double> result = new HashMap<UUID, Double>();
-            for (Map.Entry<String, JsonNode> entry : values.properties()) {
+            var result = new HashMap<UUID, Double>();
+            for (var entry : values.properties()) {
                 result.put(
                     UUID.fromString(entry.getKey()),
                     entry.getValue().asDouble(1.0)

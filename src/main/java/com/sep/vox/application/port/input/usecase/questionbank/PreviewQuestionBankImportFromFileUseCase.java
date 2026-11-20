@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
-import com.sep.vox.application.response.output.ParseImportFileResult;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -71,7 +70,7 @@ public class PreviewQuestionBankImportFromFileUseCase
             throw new IllegalArgumentException("File import không được để trống");
         }
 
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         UUID schoolId = null;
         if (!userContextPort.isSystemAdmin()) {
             schoolId = schoolUserRepository.findByUserId(currentUserId)
@@ -79,10 +78,10 @@ public class PreviewQuestionBankImportFromFileUseCase
                 .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
         }
 
-        ParseImportFileResult parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION_BANK);
-        Instant now = Instant.now();
-        Instant expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
-        ImportSession savedSession = importSessionRepository.save(new ImportSession(
+        var parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION_BANK);
+        var now = Instant.now();
+        var expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
+        var savedSession = importSessionRepository.save(new ImportSession(
             schoolId,
             ImportType.QUESTION_BANK,
             safeFileName(input.file().fileName()),
@@ -124,9 +123,9 @@ public class PreviewQuestionBankImportFromFileUseCase
         if (rows.isEmpty()) {
             return;
         }
-        List<ImportRow> importRows = new ArrayList<ImportRow>();
+        var importRows = new ArrayList<ImportRow>();
         long rowNumber = 1L;
-        for (Map<String, String> row : rows) {
+        for (var row : rows) {
             importRows.add(new ImportRow(
                 sessionId,
                 rowNumber,

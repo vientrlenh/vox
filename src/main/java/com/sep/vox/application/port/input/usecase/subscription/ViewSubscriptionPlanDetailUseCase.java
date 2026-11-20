@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
-import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +27,7 @@ public class ViewSubscriptionPlanDetailUseCase implements IUseCase<ViewSubscript
     @Override
     @Transactional(readOnly = true)
     public SubscriptionPlanDto execute(ViewSubscriptionPlanDetailQuery input) {
-        SubscriptionPlan plan = subscriptionPlanRepository.findById(input.id())
+        var plan = subscriptionPlanRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
         // Chỉ System Admin mới quản lý gói nên được xem mọi trạng thái (DRAFT/ARCHIVED để biết

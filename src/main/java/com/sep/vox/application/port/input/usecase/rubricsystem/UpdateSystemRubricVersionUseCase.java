@@ -1,7 +1,5 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
-import com.sep.vox.domain.model.rubric.Rubric;
-import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
@@ -12,6 +10,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
+import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
@@ -56,15 +55,15 @@ public class UpdateSystemRubricVersionUseCase
     @Override
     @Transactional
     public UUID execute(UpdateSystemRubricVersionCommand command) {
-        // 1. Authenticate the System Admin account
+        // 1. Xác thực tài khoản System Admin
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }
 
-        // 2. Load the Rubric Version and check its status
-        RubricVersion version = rubricVersionRepository.findById(command.versionId())
+        // 2. Lấy Rubric Version và kiểm tra trạng thái
+        var version = rubricVersionRepository.findById(command.versionId())
                 .orElseThrow(() ->
                         new NotFoundException("Không tìm thấy Rubric Version.")
                 );
@@ -75,8 +74,8 @@ public class UpdateSystemRubricVersionUseCase
             );
         }
 
-        // 3. Check that the Rubric belongs to SYSTEM
-        Rubric rubric = rubricRepository.findById(version.getRubricId())
+        // 3. Kiểm tra Rubric phải thuộc SYSTEM
+        var rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() ->
                         new NotFoundException("Không tìm thấy bộ Rubric gốc.")
                 );
@@ -87,7 +86,7 @@ public class UpdateSystemRubricVersionUseCase
             );
         }
 
-        // 4. Normalize and validate the data.
+        //4. Chuẩn hóa và validate dữ liệu.
 
 
         String safeName = normalizeRequiredText(
@@ -95,16 +94,16 @@ public class UpdateSystemRubricVersionUseCase
                 "Tên phiên bản Rubric không được để trống."
         );
 
-        // Empty (null or blank) is treated as unchanged -- keep the old description (SQL COALESCE),
-        // consistent with UpdateSystemRubricCriterionUseCase/UpdateSystemRubricResultBandUseCase. It used
-        // to use normalizeRequiredText(), which required a description, contradicting the "partial update"
-        // comment right below for the other fields of the version.
+        // Để trống (null hoặc rỗng) thì coi như không đổi -- giữ nguyên description cũ (SQL COALESCE),
+        // đồng nhất với UpdateSystemRubricCriterionUseCase/UpdateSystemRubricResultBandUseCase. Trước
+        // đây dùng normalizeRequiredText() bắt buộc description, mâu thuẫn với chính comment "cập nhật
+        // một phần" ngay bên dưới cho các field khác của version.
         String safeDescription = (command.description() != null && !command.description().isBlank())
                 ? StringNormalization.trimAndCollapseSpaces(command.description())
                 : null;
 
-        // Partial update: any field that is not passed (null) keeps the current value of the version
-        // (updateRubricVersionAtomic uses COALESCE(:param, v.field) at the SQL layer).
+        // Cập nhật một phần: field nào không được truyền (null) thì giữ nguyên giá trị hiện tại của version
+        // (updateRubricVersionAtomic dùng COALESCE(:param, v.field) ở tầng SQL).
         Instant finalEffectiveFrom = command.effectiveFrom() != null
                 ? command.effectiveFrom() : version.getEffectiveFrom();
 
@@ -130,7 +129,7 @@ public class UpdateSystemRubricVersionUseCase
             );
         }
 
-        // Block narrowing the scoring scale so that ResultBands/Criteria created earlier would fall outside the new scale
+        // Chặn thu hẹp thang điểm làm ResultBand/Criterion đã tạo trước đó bị lọt ra ngoài thang mới
         rubricResultBandRepository.findByRubricVersionId(command.versionId()).forEach(band ->
                 ScoreRangeValidator.assertWithinScale(finalScoreMin, finalScoreMax,
                         band.getScoreMin(), band.getScoreMax(), band.getName()));
@@ -138,13 +137,15 @@ public class UpdateSystemRubricVersionUseCase
                 ScoreRangeValidator.assertWithinScale(finalScoreMin, finalScoreMax,
                         criterion.getMinScore(), criterion.getMaxScore(), criterion.getName()));
 
-        String safeMethod = command.totalScoreMethod() == null ? null : command.totalScoreMethod().name();
-        // 5. Atomic update: pass null for the code to keep the old code. For the fields that support
-        // partial updates (effectiveFrom/effectiveTo/scoringScaleMin/scoringScaleMax), pass the original value
-        // (possibly null) straight from the command so the SQL COALESCE keeps the value currently in the DB at the
-        // time of the update -- this avoids overwriting with the `version` snapshot read earlier (a lost update when
-        // another request updates these fields concurrently). finalEffectiveFrom/finalEffectiveTo/finalScoreMin/
-        // finalScoreMax are still used above to validate business rules against the values after merging.
+        String safeMethod = parseOptionalTotalScoreMethod(
+                command.totalScoreMethod()
+        );
+        // 5. Update atomic: truyền null cho code để giữ nguyên code cũ. Với các field hỗ trợ cập nhật
+        // một phần (effectiveFrom/effectiveTo/scoringScaleMin/scoringScaleMax), truyền thẳng giá trị gốc
+        // (có thể null) từ command để tầng SQL COALESCE tự giữ nguyên giá trị hiện có trong DB tại thời
+        // điểm update — tránh việc ghi đè bằng snapshot `version` đã đọc trước đó (lost update khi có
+        // request khác cập nhật đồng thời các field này). finalEffectiveFrom/finalEffectiveTo/finalScoreMin/
+        // finalScoreMax vẫn được dùng ở trên để validate business rule dựa trên giá trị sau khi merge.
         try {
             rubricVersionRepository.updateRubricVersionAtomic(
                     command.versionId(),
@@ -180,5 +181,19 @@ public class UpdateSystemRubricVersionUseCase
         }
 
         return normalizedValue;
+    }
+
+    private String parseOptionalTotalScoreMethod(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        try {
+            return RubricTotalScoreMethod.valueOf(value.trim()).name();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    "Phương pháp tính tổng điểm không hợp lệ. Chỉ nhận SUM hoặc WEIGHTED_AVERAGE."
+            );
+        }
     }
 }

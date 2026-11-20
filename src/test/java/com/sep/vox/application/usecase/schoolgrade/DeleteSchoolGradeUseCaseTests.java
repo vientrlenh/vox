@@ -75,12 +75,12 @@ class DeleteSchoolGradeUseCaseTests {
 
         useCase.execute(new DeleteSchoolGradeCommand(schoolId, gradeId));
 
-        // Deactivates memberships + archives the classes that belong to the school year.
+        // Vô hiệu hóa membership + archive lớp thuộc năm học
         verify(schoolClassUserRepository).deactivateByGradeId(eq(gradeId), any(Instant.class));
         verify(schoolClassRepository).archiveByGradeId(eq(gradeId), any(Instant.class), eq(currentUserId));
 
-        // Archives the school year itself (soft delete), no hard delete.
-        ArgumentCaptor<SchoolGrade> captor = ArgumentCaptor.forClass(SchoolGrade.class);
+        // Archive chính năm học (xóa mềm), không hard-delete
+        var captor = ArgumentCaptor.forClass(SchoolGrade.class);
         verify(schoolGradeRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(SchoolGradeStatus.ARCHIVED);
         verify(schoolGradeRepository, never()).deleteById(any());
@@ -100,7 +100,7 @@ class DeleteSchoolGradeUseCaseTests {
     }
 
     private SchoolGrade grade(SchoolGradeStatus status) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         return new SchoolGrade(
             gradeId, schoolId, gradeLevelId, "NH2024", "Năm học 2024", "desc",
             LocalDate.of(2024, 9, 1), LocalDate.of(2025, 6, 30), status,

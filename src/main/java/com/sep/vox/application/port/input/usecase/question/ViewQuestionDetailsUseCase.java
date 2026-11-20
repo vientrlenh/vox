@@ -1,7 +1,5 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import com.sep.vox.domain.model.question.Question;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,19 +36,19 @@ public class ViewQuestionDetailsUseCase implements IUseCase<ViewQuestionDetailsQ
     @Override
     @Transactional(readOnly = true)
     public QuestionDto execute(ViewQuestionDetailsQuery input) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        boolean systemAdmin = userContextPort.isSystemAdmin();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var systemAdmin = userContextPort.isSystemAdmin();
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        boolean schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         if (!systemAdmin && currentSchoolId == null) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        Question question = questionRepository.findAccessibleById(
+        var question = questionRepository.findAccessibleById(
             input.id(),
             currentUserId,
             currentSchoolId,

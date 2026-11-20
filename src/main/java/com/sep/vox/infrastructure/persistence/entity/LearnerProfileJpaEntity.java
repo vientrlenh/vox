@@ -45,12 +45,12 @@ public class LearnerProfileJpaEntity {
     // Không còn cột `version`: một học sinh một hồ sơ, cập nhật tại chỗ. V16 drop cột này khỏi
     // DB -- xem chú thích đầu migration đó.
 
-    // REMOVED 2026-08-07: flsaScore / flsaRawAnswersJson -- the foreign language anxiety self-assessment scale.
-    // The two columns `flsa_score` / `flsa_raw_answers_json` are also no longer in the DB -- V14 dropped
-    // them (together with target_assessment / target_date) from the table created by V13.
-    // They WERE written (through the submitFlsaSelfReport mutation) but were never READ to change
-    // behavior: no question generation, difficulty selection or topic ranking flow looks them up. The client also
-    // dropped the questionnaire screen earlier -- Flutter only keeps a note reminding that the mutation still exists in case it needs to come back.
+    // GỠ 2026-08-07: flsaScore / flsaRawAnswersJson -- thang tự đánh giá lo lắng ngoại ngữ.
+    // Hai cột `flsa_score` / `flsa_raw_answers_json` nay cũng không còn trong DB -- V14 drop
+    // chúng (cùng target_exam / target_date) khỏi bảng do V13 tạo.
+    // Chúng ĐƯỢC ghi (qua mutation submitFlsaSelfReport) nhưng chưa từng được ĐỌC để đổi hành
+    // vi: không luồng sinh câu hỏi, chọn độ khó hay xếp hạng chủ đề nào tra tới. Client cũng đã
+    // bỏ màn hỏi từ trước -- Flutter chỉ còn chú thích nhắc rằng mutation vẫn còn nếu cần quay lại.
 
     @Column(name = "auto_update_interest", nullable = false)
     private boolean autoUpdateInterest = true;

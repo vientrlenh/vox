@@ -12,9 +12,9 @@ public record GradeLevelDto(
                 String name,
                 String description,
                 int order,
-                GradeLevelStatus status,
-                Instant createdAt,
-                Instant updatedAt) {
+                String status,
+                String createdAt,
+                String updatedAt) {
         public static GradeLevelDto toDto(GradeLevel level) {
                 return new GradeLevelDto(
                                 level.getId(),
@@ -22,9 +22,18 @@ public record GradeLevelDto(
                                 level.getName(), 
                                 level.getDescription(), 
                                 level.getOrder(), 
-                                level.getStatus(),
-                                level.getCreatedAt(),
-                                level.getUpdatedAt()
+                                valueOf(level.getStatus()),
+                                toIso(level.getCreatedAt()),
+                                toIso(level.getUpdatedAt())
                 );
+        }
+
+        private static String valueOf(GradeLevelStatus status) {
+                return status == null ? null : status.name();
+        }
+
+        // createdAt/updatedAt có thể null với entity chưa flush -- .toString() trực tiếp sẽ NPE.
+        private static String toIso(Instant instant) {
+                return instant == null ? null : instant.toString();
         }
 }

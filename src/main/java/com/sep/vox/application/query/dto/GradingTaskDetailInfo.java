@@ -5,50 +5,48 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
-
 /**
- * The teacher's grading screen.
+ * Màn chấm của giáo viên.
  *
- * <p>For a {@code CENTRALIZED} assessment, {@code studentName}/{@code className} are always
- * {@code null} — blind grading guarantees fairness. A class test carries them, because the
- * grader is the very teacher who teaches that class.
+ * <p>Với kỳ thi {@code CENTRALIZED}, {@code studentName}/{@code className} luôn
+ * {@code null} — chấm mù là bảo đảm công bằng. Bài kiểm tra trên lớp thì có, vì
+ * người chấm chính là giáo viên dạy lớp đó.
  *
- * <p>{@code allowedOutcomes} is decided by the BE according to {@code GradingRoundPolicy}: the FE builds
- * exactly the buttons allowed in this round and does not derive them from {@code roundType} — deriving them
- * in two places means the two places drift apart sooner or later.
+ * <p>{@code allowedOutcomes} do BE quyết theo {@code GradingRoundPolicy}: FE dựng
+ * đúng những nút được phép của vòng này, không tự suy từ {@code roundType} — nếu suy
+ * ở hai nơi thì sớm muộn hai nơi lệch nhau.
  */
 public record GradingTaskDetailInfo(
     UUID assignmentId,
     UUID candidateResultId,
     String resultCode,
-    String assessmentName,
+    String examName,
     String roundType,
     String assignmentStatus,
-    AssessmentCandidateResultStatus resultStatus,
+    String resultStatus,
     boolean flagged,
     String flagReason,
     BigDecimal currentTotalScore,
-    /** The score when the assignment was given — the reference point so the teacher knows what they are editing from. */
+    /** Điểm lúc được giao — mốc để giáo viên biết mình đang sửa từ đâu. */
     BigDecimal scoreBefore,
     Instant deadlineAt,
     boolean overdue,
-    /** Read-only flag decided by the BE: true only when the assignment is still ASSIGNED and the attempt is in the right round. */
+    /** Cờ chỉ-đọc do BE quyết: chỉ true khi phân công còn ASSIGNED và bài đúng vòng. */
     boolean editable,
     List<String> allowedOutcomes,
-    /** Only in the APPEAL round: the reason the student gave in the appeal. */
+    /** Chỉ có ở vòng APPEAL: lý do học sinh nêu trong đơn. */
     String appealReason,
     List<GradingTaskItemInfo> items,
     List<GradingCriterionMetaInfo> criteria,
-    /** Only has a value for class tests; always null for a centralized assessment. */
+    /** Chỉ có giá trị với bài kiểm tra trên lớp; kỳ thi tập trung luôn null. */
     String studentName,
-    /** Only has a value for class tests; always null for a centralized assessment. */
+    /** Chỉ có giá trị với bài kiểm tra trên lớp; kỳ thi tập trung luôn null. */
     String className,
-    /** The session being graded. Two attempts of the same student differ here. */
+    /** Phiên thi đang chấm. Hai lượt của cùng một em khác nhau ở đây. */
     UUID sessionId,
-    /** Which attempt this is, counted from 1 by the time the student started the assessment. */
+    /** Lượt thi thứ mấy, đếm từ 1 theo thời điểm bắt đầu làm bài. */
     int attemptNo,
-    /** Total number of attempts that student has made on this assessment. 1 means no retake. */
+    /** Tổng số lượt em đó đã làm ở bài thi này. Bằng 1 nghĩa là không có thi lại. */
     int attemptCount
 ) {
 }

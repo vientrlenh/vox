@@ -3,18 +3,16 @@ package com.sep.vox.application.usecase.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ClientDeviceCommand;
@@ -27,30 +25,32 @@ import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.output.VerifiedGoogleIdentity;
 
 /**
- * The Google login path of the native app.
+ * Đường đăng nhập Google của ứng dụng native.
  *
- * <p>This class is deliberately thin, so what is worth pinning is not what it computes but that it
- * does NOT build a session itself: all of that must fall through to {@link OAuth2LoginUseCase}, the
- * very class the web path uses. Having two definitions of "login succeeded" is a mistake that only
- * shows up much later, when a new session rule is applied to web and native is forgotten.
+ * <p>Lớp này cố ý mỏng, nên thứ đáng chốt không phải nó tính ra gì mà là nó KHÔNG tự dựng phiên:
+ * toàn bộ việc đó phải rơi về {@link OAuth2LoginUseCase}, đúng lớp mà đường web đang dùng. Hai định
+ * nghĩa của "đăng nhập thành công" là một sai lầm chỉ lộ ra rất lâu về sau, khi một luật phiên mới
+ * được áp cho web và quên mất native.
  */
-@ExtendWith(MockitoExtension.class)
 class GoogleTokenLoginUseCaseTests {
 
     private static final ClientDeviceCommand DEVICE =
         new ClientDeviceCommand("device-1", "May tinh cua Nhat", "DESKTOP");
 
-    @Mock
     private GoogleIdTokenVerifierPort googleIdTokenVerifierPort;
-    @Mock
     private OAuth2LoginUseCase oAuth2LoginUseCase;
-    @InjectMocks
     private GoogleTokenLoginUseCase useCase;
 
+    @BeforeEach
+    void setUp() {
+        googleIdTokenVerifierPort = mock(GoogleIdTokenVerifierPort.class);
+        oAuth2LoginUseCase = mock(OAuth2LoginUseCase.class);
+        useCase = new GoogleTokenLoginUseCase(googleIdTokenVerifierPort, oAuth2LoginUseCase);
+    }
+
     /**
-     * The verified identity must pass INTACT into OAuth2LoginCommand -- the same shape that
-     * OAuth2AuthenticationSuccessHandler builds for the web path, so both paths create the same kind
-     * of session.
+     * Danh tính đã kiểm chứng phải đi NGUYÊN VẸN sang OAuth2LoginCommand -- cùng hình dạng mà
+     * OAuth2AuthenticationSuccessHandler dựng cho đường web, để hai đường tạo ra cùng một loại phiên.
      */
     @Test
     void should_hand_the_verified_identity_to_the_shared_login_use_case() {
@@ -59,9 +59,9 @@ class GoogleTokenLoginUseCaseTests {
         when(oAuth2LoginUseCase.execute(any()))
             .thenReturn(new LoginResponse("access", "refresh", List.of("STUDENT")));
 
-        LoginResponse result = useCase.execute(command("id-token"));
+        var result = useCase.execute(command("id-token"));
 
-        ArgumentCaptor<OAuth2LoginCommand> sent = ArgumentCaptor.forClass(OAuth2LoginCommand.class);
+        var sent = ArgumentCaptor.forClass(OAuth2LoginCommand.class);
         verify(oAuth2LoginUseCase).execute(sent.capture());
         assertThat(sent.getValue().provider()).isEqualTo("google");
         assertThat(sent.getValue().providerUserId()).isEqualTo("google-sub-1");
@@ -71,11 +71,11 @@ class GoogleTokenLoginUseCaseTests {
     }
 
     /**
-     * An unverified email is rejected BEFORE the user lookup.
+     * Email chưa xác minh bị chặn TRƯỚC khi tra người dùng.
      *
-     * <p>The email is OAuth2LoginUseCase's user lookup key, and a Google account with an unverified
-     * email can carry someone else's address. Dropping this check turns "log in with Google" into
-     * "log in with any email you can type". It is the same rule CustomOidcUserService applies to web.
+     * <p>Email là khoá tra người dùng của OAuth2LoginUseCase, và một tài khoản Google chưa xác minh
+     * email có thể mang địa chỉ của người khác. Bỏ phép kiểm này là biến "đăng nhập bằng Google"
+     * thành "đăng nhập bằng bất kỳ email nào gõ ra được". Cùng luật CustomOidcUserService áp cho web.
      */
     @Test
     void should_refuse_an_unverified_google_email_before_looking_the_user_up() {
@@ -88,7 +88,7 @@ class GoogleTokenLoginUseCaseTests {
         verify(oAuth2LoginUseCase, never()).execute(any());
     }
 
-    /** A broken token stops at the verification gate; no session is built. */
+    /** Token hỏng thì dừng ở cửa kiểm, không có phiên nào được dựng. */
     @Test
     void should_not_open_a_session_when_the_token_fails_verification() {
         when(googleIdTokenVerifierPort.verify(any()))
@@ -105,6 +105,6 @@ class GoogleTokenLoginUseCaseTests {
     }
 
     private static GoogleTokenLoginCommand command(String idToken) {
-        return new GoogleTokenLoginCommand(idToken, "1.2.3.4", "VoxOralAssessment/1.0", DEVICE);
+        return new GoogleTokenLoginCommand(idToken, "1.2.3.4", "VoxOralExam/1.0", DEVICE);
     }
 }

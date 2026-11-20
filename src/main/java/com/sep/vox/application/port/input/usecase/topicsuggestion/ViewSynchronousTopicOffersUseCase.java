@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.topicsuggestion;
 
 import java.util.List;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.query.ViewSynchronousTopicOffersQuery;
@@ -43,7 +42,7 @@ public class ViewSynchronousTopicOffersUseCase implements IUseCase<ViewSynchrono
      */
     @Override
     public List<PracticeTopicOffer> execute(ViewSynchronousTopicOffersQuery input) {
-        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
+        var studentId = userContextPort.getCurrentAuthenticatedUserId();
         return topicSuggestionRepository.synchronousOffers(studentId, input.requestedCount());
     }
 }

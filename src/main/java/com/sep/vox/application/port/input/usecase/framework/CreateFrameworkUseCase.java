@@ -31,13 +31,13 @@ public class CreateFrameworkUseCase implements IUseCase<CreateFrameworkCommand, 
     @Override
     @Transactional
     public UUID execute(CreateFrameworkCommand input) {
-        String code = StringNormalization.normalizeCode(input.code());
-        String name = StringNormalization.trimAndCollapseSpaces(input.name());
-        String description = StringNormalization.trimAndCollapseSpaces(input.description());
-        Instant now = Instant.now();
-        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
+        var code = StringNormalization.normalizeCode(input.code());
+        var name = StringNormalization.trimAndCollapseSpaces(input.name());
+        var description = StringNormalization.trimAndCollapseSpaces(input.description());
+        var now = Instant.now();
+        var userId = userContextPort.getCurrentAuthenticatedUserId();
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             new FrameworkCode(code), 
             name, 
             description, 

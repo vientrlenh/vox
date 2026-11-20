@@ -1,137 +1,128 @@
-# Scope: the school's SELF-TOP-UP WALLET (SchoolBalance) and its ledger (SchoolBalanceEntry).
+# Phạm vi: VÍ TIỀN TỰ NẠP của trường (SchoolBalance) và sổ cái của nó (SchoolBalanceEntry).
 #
-# It does NOT hold the quota that comes with a plan -- that is SchoolSubscriptionQuotaRecord in
-# subscription.graphqls, a completely different pocket: split by QuotaType, re-issued every period,
-# and its used amount is always clamped at total. This wallet is ONE number, lives across periods,
-# and is only charged once the quota of the matching type is exhausted.
+# KHÔNG chứa hạn mức kèm gói -- đó là SchoolSubscriptionQuotaRecord bên subscription.graphqls, một
+# túi khác hẳn: tách theo QuotaType, cấp lại mỗi kỳ, và used luôn bị kẹp tại total. Ví này là MỘT
+# con số, sống xuyên kỳ, chỉ bị trừ khi hạn mức của loại tương ứng đã cạn.
 #
-# The debt log (SchoolDebtEvent) is also here, moved over from school.graphqls: debt is the flip side of
-# this very wallet -- a negative balance IS the debt -- so the two ledgers must be read in one place.
-# They answer two different questions about the same wallet: the statement says "where did the money
-# go", the debt log says "why is the school locked".
+# Nhật ký nợ (SchoolDebtEvent) cũng ở đây, chuyển sang từ school.graphqls: nợ là mặt trái của chính
+# cái ví này -- số dư âm CHÍNH LÀ khoản nợ -- nên hai sổ phải đọc chung một chỗ. Chúng trả lời hai
+# câu hỏi khác nhau về cùng một ví: sao kê nói "tiền đi đâu", nhật ký nợ nói "vì sao trường bị khoá".
 #
-# MONEY IN THIS FILE IS String, NOT Float -- an intentional deviation from the common convention.
-# The Float convention written at the top of subscription.graphqls rests on one premise: "VND is
-# always whole, numeric(15,0) stays below 2^53 so a JS client reads it without losing precision".
-# That premise is NOT true here: school_balances.balance_vnd and school_balance_entries.amount_vnd are
-# numeric(18,6), deliberately keeping 6 decimal places because one practice session can cost only a
-# few hundredths of a dong (see the column comment in V2). 128440.95 cannot be represented exactly as
-# a double, and this is exactly the place where the numbers must match absolutely: the ledger
-# invariant is SUM(amount_vnd) = balance_vnd.
+# TIỀN Ở FILE NÀY LÀ String, KHÔNG PHẢI Float -- cố ý lệch khỏi quy ước chung.
+# Quy ước Float ghi ở đầu subscription.graphqls dựa trên một tiền đề: "VND luôn nguyên, numeric(15,0)
+# nằm dưới 2^53 nên client JS đọc không mất độ chính xác". Tiền đề đó KHÔNG đúng ở đây:
+# school_balances.balance_vnd và school_balance_entries.amount_vnd là numeric(18,6), cố ý giữ 6 số lẻ
+# vì một lượt ôn luyện có thể chỉ tốn vài phần trăm đồng (xem chú thích của cột trong V2). 128440.95
+# không biểu diễn chính xác được bằng double, mà đây lại đúng là chỗ con số phải khớp tuyệt đối:
+# bất biến của sổ cái là SUM(amount_vnd) = balance_vnd.
 #
-# The returned value is the COMPLETE decimal string built by BigDecimal.toPlainString() -- no
-# scientific notation, no thousands separators, keeping the stored scale ("-128440.950000"). Clients
-# parse it with a decimal library or Number() for display, and must never add up amountVnd to rebuild
-# the balance: balanceAfterVnd is stored precisely so that nobody has to add up.
+# Giá trị trả về là chuỗi thập phân NGUYÊN VẸN do BigDecimal.toPlainString() dựng -- không ký hiệu
+# khoa học, không dấu phân cách nghìn, giữ nguyên scale đã lưu ("-128440.950000"). Client parse bằng
+# thư viện thập phân hoặc Number() để hiển thị, và tuyệt đối không cộng dồn amountVnd để dựng lại số
+# dư: balanceAfterVnd đã lưu sẵn chính là để không ai phải cộng.
 #
-# When the project moves all 24 schemas to a BigDecimal scalar, this is the group of fields that
-# changes first, and these Strings disappear at the same time.
+# Khi nào dự án đổi cả 24 schema sang scalar BigDecimal thì đây là nhóm field đổi trước tiên, và
+# String này biến mất cùng lúc.
 
 enum SchoolBalanceEntryType {
-    "The school tops up the wallet -- always tied to an order that has been fully paid."
+    "Trường nạp tiền vào ví -- luôn gắn với một đơn đã thu đủ."
     TOP_UP
     """
-    Deducts the part of the AI cost that EXCEEDS the quota that comes with the plan. The part that is
-    still within the quota is NOT recorded here -- it is already counted in
-    school_subscription_quota_records.used_amount_vnd, and recording it again would count the same
-    dong twice. That is why the sum of this ledger's amount column is NOT the school's total AI cost.
+    Trừ phần chi phí AI VƯỢT hạn mức kèm gói. Phần còn nằm trong hạn mức KHÔNG ghi ở đây -- nó đã
+    được đếm ở school_subscription_quota_records.used_amount_vnd, ghi lại là đếm hai lần cùng một
+    đồng tiền. Vì thế tổng cột số tiền của sổ này KHÔNG phải tổng chi phí AI của trường.
     """
     OVERAGE_CHARGE
     """
-    The school moves money from the self-top-up wallet into the QUOTA wallet of one quota type. The
-    money LEAVES the wallet but is NOT an AI expense -- it goes to another pocket of the same school, so
-    it has no costUsd/fxRateUsed and is not tied to any session. quotaType and actorId are mandatory (V12).
+    Trường chuyển tiền từ ví tự nạp sang ví HẠN MỨC của một loại quota. Tiền RỜI ví nhưng KHÔNG phải
+    một khoản chi cho AI -- nó sang một túi khác của cùng nhà trường, nên không có costUsd/fxRateUsed
+    và không gắn phiên nào. Bắt buộc có quotaType và actorId (V12).
 
-    ONE-WAY and currently not undoable: no transfer back to the wallet, no transfer to the other quota
-    type, and an ADJUSTMENT row is NOT a way to fix it. See FundQuotaFromBalanceUseCase.
+    MỘT CHIỀU và hiện chưa gỡ được: không chuyển ngược về ví, không chuyển sang loại quota kia, và
+    một dòng ADJUSTMENT KHÔNG phải cách sửa. Xem FundQuotaFromBalanceUseCase.
     """
     QUOTA_FUNDING
-    "A refund -- always tied to the original order."
+    "Hoàn tiền -- luôn gắn với đơn gốc."
     REFUND
-    "A manual correction by the system admin. The person who did it and the reason are mandatory."
+    "Quản trị hệ thống sửa tay. Bắt buộc có người thực hiện và lý do."
     ADJUSTMENT
 }
 
 """
-The school's SELF-TOP-UP wallet. It lives across every renewal/plan change and never expires.
+Ví tiền TỰ NẠP của trường. Sống xuyên qua mọi lần gia hạn/đổi gói và không bao giờ hết hạn.
 
-It is NOT "the remaining quota". The wallet is only charged WHEN the quota that comes with the plan
-for the matching type is exhausted -- merging the two numbers into one silently erases the per-type
-limit.
+KHÔNG phải "hạn mức còn lại". Ví chỉ bị trừ KHI hạn mức kèm gói của loại tương ứng đã cạn -- gộp
+hai con số làm một là âm thầm xoá mất giới hạn theo loại.
 """
 type SchoolBalance {
     schoolId: ID!
-    "Negative = in debt. The DB column intentionally has no CHECK >= 0 -- the negative part IS the debt."
+    "Âm = đang nợ. Cột DB cố ý không có CHECK >= 0 -- phần âm CHÍNH LÀ khoản nợ."
     balanceVnd: String!
     """
-    balanceVnd < 0. Returned ready-made instead of letting the client compare with 0: this is exactly
-    the rule SchoolSubscriptionDebtGuardService uses to block opening an assessment session and
-    entering one with an OTP, and a rule should be defined in only one place. It is also the right
-    home for isLocked -- the field that was removed from SchoolSubscriptionQuotaRecord because the lock
-    is a SCHOOL-level fact, not a property of each quota wallet.
+    balanceVnd < 0. Trả sẵn thay vì để client tự so với 0: đây đúng là luật mà
+    SchoolSubscriptionDebtGuardService dùng để chặn mở ca thi và vào ca thi bằng OTP, và một luật thì
+    chỉ nên có một nơi định nghĩa. Cũng chính là chỗ đúng cho isLocked -- field đã bị gỡ khỏi
+    SchoolSubscriptionQuotaRecord vì khoá là sự thật cấp TRƯỜNG, không phải của từng ví hạn mức.
     """
     locked: Boolean!
-    "null when the school has never touched the wallet."
-    updatedAt: DateTime
+    "null khi trường chưa từng chạm vào ví."
+    updatedAt: String
 }
 
 """
-One entry of the wallet ledger. Append-only: no edits, no deletes, no mutation at all.
+Một bút toán trên sổ cái ví. Append-only: không sửa, không xoá, không có mutation nào.
 """
 type SchoolBalanceEntry {
     id: ID!
     schoolId: ID!
     entryType: SchoolBalanceEntryType!
-    "Positive = top-up / refund / upward adjustment. Negative = deduction."
+    "Dương = nạp / hoàn / điều chỉnh tăng. Âm = trừ."
     amountVnd: String!
     """
-    The balance RIGHT AFTER this entry, taken as the stored value.
+    Số dư NGAY SAU bút toán này, lấy nguyên giá trị đã lưu.
 
-    Build a statement by reading this column, not by adding up amountVnd: the ledger is paginated, so
-    adding up over one page gives a wrong number from the very first row of the second page.
+    Dựng sao kê phải đọc cột này chứ đừng cộng dồn amountVnd: sổ có phân trang, nên cộng dồn trên
+    một trang cho ra số sai ngay từ dòng đầu tiên của trang thứ hai.
     """
     balanceAfterVnd: String!
-    occurredAt: DateTime!
+    occurredAt: String!
 
-    "The subscription period that was running when this happened. For tracing ONLY -- the balance does not belong to any plan."
+    "Kỳ đăng ký đang chạy lúc phát sinh. CHỈ để truy vết -- số dư không thuộc về gói nào."
     subscriptionId: ID
 
-    # Source. Which field has a value is decided by entryType, and the DB already has a CHECK that
-    # enforces exactly that combination. The client branches on entryType, not on "which other field
-    # is not null".
+    # Nguồn. Field nào có giá trị là do entryType quyết định, và DB đã có CHECK ép đúng tổ hợp đó.
+    # Client rẽ nhánh theo entryType, không phải theo "field nào khác null".
 
     "TOP_UP, REFUND."
     orderId: ID
-    "OVERAGE_CHARGE. EXACTLY ONE of the two session fields has a value."
-    assessmentSessionId: ID
-    "OVERAGE_CHARGE. EXACTLY ONE of the two session fields has a value."
+    "OVERAGE_CHARGE. Đúng MỘT trong hai field session có giá trị."
+    examSessionId: ID
+    "OVERAGE_CHARGE. Đúng MỘT trong hai field session có giá trị."
     practiceSessionId: ID
     """
-    OVERAGE_CHARGE: the quota wallet that pushed this amount over -- the REPORTING direction, not a
-    separate wallet.
-    QUOTA_FUNDING: the quota wallet the money has just GONE INTO -- the opposite direction, and
-    information that cannot be derived from anywhere else on the row. Mandatory for both types.
+    OVERAGE_CHARGE: ví hạn mức đã đẩy khoản này sang -- chiều BÁO CÁO, không phải ví riêng.
+    QUOTA_FUNDING: ví hạn mức tiền vừa ĐI VÀO -- chiều ngược lại, và là thông tin không thể suy ra từ
+    đâu khác trên dòng. Bắt buộc có ở cả hai loại.
     """
     quotaType: QuotaType
-    "OVERAGE_CHARGE. The ORIGINAL cost computed by the provider. Kept in USD to reconcile back against the Azure invoice."
+    "OVERAGE_CHARGE. Chi phí GỐC nhà cung cấp tính. Giữ USD để đối soát ngược với hoá đơn Azure."
     costUsd: String
     """
-    OVERAGE_CHARGE. The exchange rate LOCKED at the time of the charge, not today's rate -- and the
-    weighted average over the whole session, so costUsd * fxRateUsed matches the amountVnd of this very
-    entry exactly. Taking the rate of a single call would make the back-reconciliation come out wrong.
+    OVERAGE_CHARGE. Tỷ giá đã CHỐT lúc phát sinh, không phải tỷ giá hôm nay -- và là bình quân gia
+    quyền của cả phiên, nên costUsd * fxRateUsed khớp đúng amountVnd của chính bút toán này. Lấy tỷ
+    giá của một lượt gọi lẻ thì phép đối soát ngược không ra.
     """
     fxRateUsed: String
-    "ADJUSTMENT: mandatory. REFUND, QUOTA_FUNDING: may be present."
+    "ADJUSTMENT: bắt buộc có. REFUND, QUOTA_FUNDING: có thể có."
     reason: String
     """
-    ADJUSTMENT: the SYSTEM admin made a manual correction. QUOTA_FUNDING: the SCHOOL admin pressed
-    top-up. null for every other type -- they are written by the system, not by anyone pressing a
-    button. The two roles differ, so the client must branch on entryType to pick the label, rather
-    than reading only actorId != null.
+    ADJUSTMENT: quản trị HỆ THỐNG đã sửa tay. QUOTA_FUNDING: quản trị TRƯỜNG đã bấm nạp. null với
+    mọi loại còn lại -- chúng do hệ thống ghi, không do ai bấm. Hai vai khác nhau nên client phải rẽ
+    theo entryType để đặt nhãn, đừng đọc mỗi actorId != null.
 
-    A raw id rather than a name, the same way SchoolDebtEvent returns triggerAssessmentSessionId: showing
-    the name needs a LEFT JOIN to users, and then the DTO can no longer be built from the domain model
-    alone. Worth doing when a real screen needs it, not something to prepare in advance.
+    Id thô chứ không phải tên, cùng cách SchoolDebtEvent trả triggerExamSessionId: hiện tên đòi một
+    LEFT JOIN sang users, và khi đó DTO không còn dựng được từ một mình domain model. Đáng làm khi có
+    màn hình thật sự cần, không phải làm sẵn.
     """
     actorId: ID
 }
@@ -145,46 +136,43 @@ type SchoolBalanceEntryPage {
 }
 
 """
-Totals over a TIME RANGE, computed in the DB.
+Cộng dồn theo KHOẢNG THỜI GIAN, tính ở DB.
 
-It cannot be built on the client: the client holds only one page of 20 rows, while the range to add up
-can be thousands. It is also the source of the "Deducted in the last 30 days" figure on the wallet
-balance page.
+Không dựng được ở client: client chỉ cầm một trang 20 dòng, còn dải cần cộng có thể hàng nghìn.
+Đây cũng là nguồn cho con số "Đã trừ trong 30 ngày qua" trên trang Số dư ví.
 """
 type SchoolBalanceSummary {
-    "TOP_UP + REFUND. Always >= 0."
+    "TOP_UP + REFUND. Luôn >= 0."
     creditedVnd: String!
-    "OVERAGE_CHARGE. Always <= 0."
+    "OVERAGE_CHARGE. Luôn <= 0."
     overageChargedVnd: String!
     """
-    QUOTA_FUNDING. Always <= 0.
+    QUOTA_FUNDING. Luôn <= 0.
 
-    A SEPARATE group, not merged into overageChargedVnd even though the sign is the same: this amount
-    is NOT money that has been spent, it is still the school's money, only sitting in the quota wallet
-    instead of the self-top-up wallet. Merging the two would tell the principal that the school has
-    spent an amount it never spent.
+    Nhóm RIÊNG, không gộp vào overageChargedVnd dù cùng dấu: khoản này KHÔNG phải tiền đã tiêu, nó
+    vẫn là tiền của trường, chỉ nằm ở ví hạn mức thay vì ví tự nạp. Gộp hai thứ làm một là nói với
+    hiệu trưởng rằng trường đã chi một khoản chưa hề chi.
 
-    It is here because these four groups must explain EVERY change of the balance within the range.
-    If any group is missing, the statement shows a wallet that dropped with no total cell saying why --
-    exactly the place where a reconciliation ledger must not stay silent.
+    Có mặt ở đây vì bốn nhóm này phải giải thích ĐỦ mọi thay đổi của số dư trong dải. Thiếu nhóm nào
+    thì sao kê hiện một ví tụt đi mà không ô tổng nào nói vì sao -- đúng chỗ một sổ đối soát không
+    được phép im lặng.
     """
     quotaFundedVnd: String!
-    "ADJUSTMENT. Either sign is possible."
+    "ADJUSTMENT. Dấu nào cũng có thể."
     adjustedVnd: String!
 }
 
 # =============================================================================================
-# The AI quota debt log, moved over from school.graphqls.
+# Nhật ký nợ hạn mức AI, chuyển sang từ school.graphqls.
 #
-# Four money columns changed from Float to String at the same time as the file move, for exactly the
-# same reason as the ledger above: school_debt_events is also numeric(18,6). Keeping Float here would
-# make the two ledgers describe the SAME debt with two different types, and the debt figure on the log
-# would not match the balance on the statement exactly -- precisely where a reconciliation ledger must
-# not drift.
+# Bốn cột tiền đổi từ Float sang String cùng lúc với việc dời file, vì đúng một lý do như sổ cái ở
+# trên: school_debt_events cũng là numeric(18,6). Giữ Float ở đây thì hai sổ nói về CÙNG một khoản
+# nợ bằng hai kiểu khác nhau, và con số nợ trên nhật ký sẽ không khớp tuyệt đối với số dư trên sao
+# kê -- đúng chỗ mà một sổ đối soát không được phép lệch.
 #
-# This IS a breaking contract change, safe only because there is currently no caller: the query has
-# been runnable for a long time but no screen uses it. Changing it now is the cheapest; once the Debt
-# Log page goes live it no longer is.
+# Đây LÀ một thay đổi phá vỡ hợp đồng, chỉ an toàn vì hiện chưa có bên gọi nào: query đã chạy được
+# từ lâu mà chưa màn hình nào dùng tới. Đổi bây giờ là rẻ nhất; sau khi trang Nhật ký nợ lên thì
+# không còn rẻ nữa.
 # =============================================================================================
 
 enum SchoolDebtEventType {
@@ -194,52 +182,47 @@ enum SchoolDebtEventType {
 }
 
 """
-The audit ledger "cause of AI quota debt" -- each row is exactly 1 quota bucket of the school that has
-just changed state (over the quota / over the warning ceiling / debt cleared), together with the
-session and the VND amount that caused that transition.
-See SchoolDebtEvent (domain model) / SchoolDebtNotificationService.
+Sổ audit "nguyên nhân nợ hạn mức AI" -- mỗi dòng là đúng 1 bucket quota của trường vừa đổi trạng
+thái (vượt hạn mức / vượt trần cảnh báo / hết nợ), kèm session và số VND đã gây ra transition đó.
+Xem SchoolDebtEvent (domain model) / SchoolDebtNotificationService.
 
-Written only on a state CHANGE, not on every deduction: a gap between two rows does not mean the
-debt has stopped. And an empty ledger is a NORMAL state -- a school that regularly spends beyond its
-quota but whose wallet always stays positive produces no rows.
+Chỉ ghi lúc ĐỔI trạng thái, không ghi mỗi lần trừ tiền: khoảng trống giữa hai dòng không có nghĩa
+là nợ đã dừng lại. Và sổ trống là trạng thái BÌNH THƯỜNG -- một trường tiêu vượt hạn mức đều đặn
+nhưng ví luôn còn dương thì không sinh dòng nào.
 """
 type SchoolDebtEvent {
     id: ID!
     schoolId: ID!
-    # The name subscriptionId is kept ON PURPOSE: this column holds the id of the SUBSCRIPTION, even
-    # though the domain model names the field subscriptionPlanId. The model is the wrong side; do not
-    # rename it here before the model is fixed, otherwise it would have to be renamed twice in
-    # opposite directions.
+    # CỐ Ý giữ tên subscriptionId: cột này đang chứa id của ĐĂNG KÝ, dù domain model đặt tên trường
+    # là subscriptionPlanId. Model mới là chỗ sai; đừng đổi tên ở đây trước khi model được sửa,
+    # không thì phải đổi hai lần theo hai hướng ngược nhau.
     subscriptionId: ID!
     eventType: SchoolDebtEventType!
     """
-    null for CLEARED: clearing the debt is a SCHOOL-level event. The balance is ONE number shared by
-    both quota wallets, so "which wallet just cleared its debt" has no answer -- inventing a value to
-    fill the gap would dirty the very book used for reconciliation. See
-    chk_school_debt_events_shape_matches_event_type.
+    null với CLEARED: hết nợ là sự kiện cấp TRƯỜNG. Số dư là MỘT con số dùng chung cho cả hai ví
+    hạn mức, nên "ví nào vừa hết nợ" không có câu trả lời -- bịa ra một giá trị để lấp chỗ trống là
+    làm bẩn chính quyển sổ dùng để đối soát. Xem chk_school_debt_events_shape_matches_event_type.
     """
     quotaType: QuotaType
-    "LOCKED/CAP_EXCEEDED: EXACTLY ONE of the two session fields has a value. CLEARED: both are null."
-    triggerAssessmentSessionId: ID
+    "LOCKED/CAP_EXCEEDED: ĐÚNG MỘT trong hai field session có giá trị. CLEARED: cả hai null."
+    triggerExamSessionId: ID
     triggerPracticeSessionId: ID
-    # The four columns below were renamed from ...Usd to VND at the same time as school_debt_events
-    # (V2 section 15) and SchoolDebtEventDto: every number that comes in here is already in VND from
-    # ConsumeQuotaService, and keeping the Usd suffix would only make the client misread the unit of an
-    # amount of money.
+    # Bốn cột dưới đây đổi từ ...Usd sang VND cùng lúc với school_debt_events (V2 mục 15) và
+    # SchoolDebtEventDto: mọi con số đi vào đây đã là VND từ ConsumeQuotaService, giữ hậu tố Usd chỉ
+    # làm client hiểu sai đơn vị của một khoản tiền.
     #
-    # String, not Float -- same reason as the ledger above, see the comment block at the top of the file.
-    "null for a CLEARED row: clearing the debt is not caused by any single deduction."
+    # String chứ không Float -- cùng lý do như sổ cái ở trên, xem khối chú thích đầu file.
+    "null với dòng CLEARED: hết nợ không do một khoản trừ nào gây ra."
     triggerAmountVnd: String
-    "null for CLEARED, same reason as quotaType."
+    "null với CLEARED, cùng lý do như quotaType."
     totalAllocatedVnd: String
-    # NOT a value read from the quota record, but a figure REBUILT as totalAllocated + debt. The real
-    # record is always clamped at exactly the quota (the excess was pushed to the wallet), so copying it
-    # here would make every row show "used = quota, debt = 0" -- see the javadoc of
-    # publishSchoolLockedDueToDebt.
+    # KHÔNG phải giá trị đọc từ bản ghi hạn mức, mà là con số DỰNG LẠI bằng totalAllocated + nợ. Bản
+    # ghi thật luôn bị kẹp tại đúng hạn mức (phần vượt đã đẩy sang ví), nên chép thẳng nó vào đây thì
+    # mọi dòng đều hiện "đã dùng = hạn mức, nợ = 0" -- xem javadoc publishSchoolLockedDueToDebt.
     usedAmountVnd: String
-    "The debt at that moment. Always 0 for a CLEARED row, by the very definition of cleared."
+    "Số nợ tại thời điểm đó. Luôn 0 với dòng CLEARED, theo đúng định nghĩa hết nợ."
     overageVnd: String!
-    occurredAt: DateTime
+    occurredAt: String
 }
 
 type SchoolDebtEventPage {
@@ -252,17 +235,16 @@ type SchoolDebtEventPage {
 
 extend type Query {
     """
-    The wallet of one school. A SCHOOL_ADMIN can only read their own school, a SYSTEM_ADMIN can read
-    every school -- the same check as schoolDebtEvents.
+    Ví của một trường. SCHOOL_ADMIN chỉ đọc được trường của chính mình, SYSTEM_ADMIN đọc được mọi
+    trường -- cùng phép kiểm tra như schoolDebtEvents.
 
-    NOT null: a school that has never touched the wallet receives a 0-dong copy built on the spot. The
-    balance row is created lazily (only the first time the wallet is touched), and an empty wallet and a
-    0-dong wallet mean the same thing -- see SchoolBalance.emptyFor. Returning null here would only make
-    the client add a branch for the same state.
+    KHÔNG null: trường chưa từng chạm vào ví nhận một bản 0 đồng dựng tại chỗ. Dòng số dư được tạo
+    lười (chỉ sinh lúc chạm vào ví lần đầu), và ví rỗng với ví 0 đồng là cùng một nghĩa -- xem
+    SchoolBalance.emptyFor. Trả null ở đây chỉ bắt client thêm một nhánh cho cùng một trạng thái.
     """
     schoolBalance(schoolId: ID!): SchoolBalance!
 
-    "The wallet statement, newest first. Leave entryType empty to not filter by type."
+    "Sao kê ví, mới nhất trước. Bỏ trống entryType thì không lọc theo loại."
     schoolBalanceEntries(
         schoolId: ID!,
         entryType: SchoolBalanceEntryType,
@@ -271,20 +253,19 @@ extend type Query {
     ): SchoolBalanceEntryPage!
 
     """
-    Totals over a time range. from/to are DateTime values (for example "2026-08-01T00:00:00Z"); leave
-    one empty to leave that end unbounded.
+    Cộng dồn cho một dải thời gian. from/to là ISO-8601 (vd "2026-08-01T00:00:00Z"), bỏ trống là
+    không chặn đầu đó.
 
-    to is NOT inclusive: two adjacent ranges (July ending 01/08, August starting 01/08) would count an
-    entry that falls exactly on the boundary twice if <= were used.
+    to KHÔNG bao gồm mốc cuối: hai dải liền nhau (tháng 7 kết thúc 01/08, tháng 8 bắt đầu 01/08) sẽ
+    đếm trùng bút toán rơi đúng vào ranh giới nếu dùng <=.
     """
-    schoolBalanceSummary(schoolId: ID!, from: DateTime, to: DateTime): SchoolBalanceSummary!
+    schoolBalanceSummary(schoolId: ID!, from: String, to: String): SchoolBalanceSummary!
 
     """
-    The quota debt log. The same permission check as the three queries above.
+    Nhật ký nợ hạn mức. Cùng phép kiểm quyền như ba query trên.
 
-    The signature is kept EXACTLY as it was in school.graphqls (page/size are nullable Int, not Int!) --
-    moving the file and changing the money type is already enough for one step, there is no need to add
-    one more difference to remember.
+    Chữ ký giữ NGUYÊN như hồi ở school.graphqls (page/size là Int nullable, không phải Int!) -- dời
+    file và đổi kiểu tiền đã đủ cho một bước, không cần thêm một khác biệt nữa để phải nhớ.
     """
     schoolDebtEvents(schoolId: ID!, page: Int = 1, size: Int = 20): SchoolDebtEventPage!
 }

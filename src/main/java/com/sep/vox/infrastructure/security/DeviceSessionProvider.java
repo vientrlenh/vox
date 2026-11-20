@@ -1,8 +1,6 @@
 package com.sep.vox.infrastructure.security;
 
-import com.sep.vox.domain.model.devicesession.DeviceSession;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
@@ -30,12 +28,12 @@ public class DeviceSessionProvider implements SessionManagerPort {
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void revoke(UUID sessionId, Instant now) {
-        // Read before revoking: userId + deviceId are needed to remove the device that receives notifications,
-        // and the record still exists after revoke so the order is not mandatory -- reading first is only
-        // so we do not depend on whether revoke keeps the row intact.
-        Optional<DeviceSession> session = deviceSessionRepository.findById(sessionId);
+        // Đọc trước khi thu hồi: cần userId + deviceId để gỡ thiết bị nhận thông báo,
+        // và bản ghi vẫn còn sau khi revoke nên thứ tự không bắt buộc -- đọc trước chỉ
+        // để không phụ thuộc vào việc revoke có giữ nguyên dòng hay không.
+        var session = deviceSessionRepository.findById(sessionId);
 
-        int revoked = deviceSessionRepository.revokeDeviceSession(sessionId, now);
+        var revoked = deviceSessionRepository.revokeDeviceSession(sessionId, now);
         if (revoked == 0 || session.isEmpty()) {
             return;
         }

@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.learnerprofile;
 
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -61,13 +60,13 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
     // repository bên dưới tự transact riêng qua Spring Data proxy.
     @Override
     public List<InterestQuizItem> execute(Void input) {
-        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
+        var studentId = userContextPort.getCurrentAuthenticatedUserId();
 
         if (quizItemRepository.hasQuizItemsForStudent(studentId)) {
             return toResponse(selectForStudent(studentId));
         }
 
-        List<InterestQuizSeedItem> sharedPool = selectBalanced(quizItemRepository.findAllActiveQuizItems());
+        var sharedPool = selectBalanced(quizItemRepository.findAllActiveQuizItems());
 
         // Đã có tín hiệu interest thật (từ tương tác/luyện tập trước đó) -- không cần sinh quiz
         // riêng nữa, dùng bộ tĩnh gốc. Cá nhân hoá không nên nằm ở bước sinh quiz (mục 0 của
@@ -90,9 +89,9 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
      * trong, giữ transaction suốt quãng đó từng làm cạn pool kết nối.
      */
     public List<InterestQuizItem> regenerate() {
-        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
+        var studentId = userContextPort.getCurrentAuthenticatedUserId();
 
-        Boolean completed = learnerProfileRepository.findCurrent(studentId)
+        var completed = learnerProfileRepository.findCurrent(studentId)
             .map(profile -> profile.getQuizCompletedAt() != null)
             .orElse(false);
         if (!completed) {
@@ -101,14 +100,14 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
         }
 
         quizItemRepository.deactivateGeneratedForStudent(studentId);
-        List<InterestQuizSeedItem> sharedPool = selectBalanced(quizItemRepository.findAllActiveQuizItems());
+        var sharedPool = selectBalanced(quizItemRepository.findAllActiveQuizItems());
         return generateForStudent(studentId, sharedPool);
     }
 
     /** Sinh bộ câu riêng rồi lưu. Rỗng thì lùi về bộ tĩnh dùng chung thay vì trả rỗng. */
     private List<InterestQuizItem> generateForStudent(
             UUID studentId, List<InterestQuizSeedItem> sharedPool) {
-        List<String> existingStatements = sharedPool.stream()
+        var existingStatements = sharedPool.stream()
             .flatMap(item -> item.getStatements().stream())
             .toList();
         // Sinh ĐỒNG BỘ rồi ghi rồi trả -- học sinh nhận đúng bộ riêng ngay lượt đầu.
@@ -122,7 +121,7 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
         // model tự cân bằng chiều -- 46,8 giây đo được, vượt cả trần Tomcat lẫn trần client.
         // Nay Python chia thành 7 lượt song song, mỗi lượt một item với bộ ba chiều và bối
         // cảnh đã phân công sẵn, ở mức suy luận thấp.
-        List<InterestQuizSeedItem> generated = quizGenerationPort.generate(
+        var generated = quizGenerationPort.generate(
             quizConfig.itemCount(),
             existingStatements,
             interestQuizScorer.quizDimensionCodes()
@@ -149,11 +148,11 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
      * thay ứng viên khi điểm CAO HƠN hẳn, nên hoà thì giữ cái đứng trước).
      */
     private List<InterestQuizSeedItem> selectForStudent(UUID studentId) {
-        Map<UUID, InterestQuizSeedItem> pool = new LinkedHashMap<UUID, InterestQuizSeedItem>();
-        for (InterestQuizSeedItem item : quizItemRepository.findAllActiveQuizItemsForStudent(studentId)) {
+        var pool = new LinkedHashMap<UUID, InterestQuizSeedItem>();
+        for (var item : quizItemRepository.findAllActiveQuizItemsForStudent(studentId)) {
             pool.put(item.getId(), item);
         }
-        for (InterestQuizSeedItem item : quizItemRepository.findAllActiveQuizItems()) {
+        for (var item : quizItemRepository.findAllActiveQuizItems()) {
             pool.putIfAbsent(item.getId(), item);
         }
         return selectBalanced(List.copyOf(pool.values()));

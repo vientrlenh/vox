@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.query;
 
-import com.sep.vox.infrastructure.persistence.entity.LearnerProfileJpaEntity;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -32,33 +31,33 @@ public class JpaLearnerProfileQueryRepository
     }
 
     /**
-     * The target band now comes from the ACTIVE FRAMEWORK, no longer looked up in {@code assessment_policies}
-     * by the student's class -- and when missing it returns null instead of throwing.
+     * Bậc mục tiêu nay lấy từ KHUNG đang hoạt động, không còn tra {@code assessment_policies}
+     * theo lớp của học sinh -- và thiếu thì trả null chứ không ném.
      *
-     * <p>The old path was wrong on two stacked levels.
+     * <p>Đường cũ sai ở hai tầng chồng lên nhau.
      *
-     * <p><b>Wrong scope.</b> This was the last piece of practice still tied to the school scope, even though
-     * the rest had moved to the system-wide framework since V13 (see
-     * {@code PracticeTopicOfferEnrichmentService.frameworkBandCount/frameworkBandLadder}). Keeping it
-     * meant the number of bands came from the framework while the suggested band came from the policy -- two sources that may point to
-     * two different scales without anyone noticing.
+     * <p><b>Sai phạm vi.</b> Đây là mảnh cuối cùng của luyện tập còn dính vào phạm vi trường, dù
+     * phần còn lại đã chuyển sang khung toàn hệ từ V13 (xem
+     * {@code PracticeTopicOfferEnrichmentService.frameworkBandCount/frameworkBandLadder}). Giữ lại
+     * nghĩa là số bậc lấy từ khung mà bậc gợi ý lại lấy từ chính sách -- hai nguồn có thể trỏ vào
+     * hai thang khác nhau mà không ai phát hiện.
      *
-     * <p><b>Throwing in the wrong place.</b> The four use cases that call this function all follow "WRITE first, then READ back to build
-     * the response", and all four are {@code @Transactional}. Throwing at the read step rolls back the write step too.
-     * Measured in practice: a student of THPT Trần Thông submitted the interest quiz, {@code interest_quiz_items} still had
-     * 7 rows but {@code learner_profiles} had 0 rows. The cause was only that the school's policy pointed
-     * at a school year with no classes -- one leftover admin misconfiguration swallowed the student's work,
-     * and dragged topic generation, schedule viewing and result viewing down with it.
+     * <p><b>Ném sai chỗ.</b> Bốn use case gọi hàm này đều theo dạng "GHI xong rồi ĐỌC lại để dựng
+     * phản hồi", và cả bốn đều {@code @Transactional}. Ném ở bước đọc là rollback luôn bước ghi.
+     * Đo thực tế: học sinh THPT Trần Thông nộp quiz sở thích xong, {@code interest_quiz_items} còn
+     * 7 dòng nhưng {@code learner_profiles} 0 dòng. Nguyên nhân chỉ là chính sách của trường trỏ
+     * vào một niên khoá không có lớp nào -- một cấu hình sót của quản trị nuốt mất bài làm của
+     * học sinh, và kéo theo cả sinh chủ đề, xem lịch, xem kết quả đứng theo.
      *
-     * <p>What is missing is only a LABEL: the suggested band's code and name on the difficulty selection screen. The student can still choose the
-     * band themselves, so null here leaves the UI without a suggestion but breaks nothing.
+     * <p>Thứ thiếu chỉ là một NHÃN: mã và tên bậc gợi ý sẵn ở màn chọn độ khó. Học sinh vẫn tự
+     * chọn được bậc, nên null ở đây làm giao diện thiếu gợi ý chứ không làm hỏng việc gì.
      */
     @Override
     public LearnerProfileInfo findCurrent(UUID studentId) {
-        LearnerProfileJpaEntity current = repository
+        var current = repository
             .findByStudentId(studentId)
             .orElse(null);
-        FrameworkResultBandJpaEntity target = repository.findDefaultTargetBand(practiceFrameworkVersionCode)
+        var target = repository.findDefaultTargetBand(practiceFrameworkVersionCode)
             .stream()
             .findFirst()
             .orElse(null);
@@ -69,7 +68,9 @@ public class JpaLearnerProfileQueryRepository
             target == null ? null : target.getCode(),
             target == null ? null : label(target),
             current == null || current.isAutoUpdateInterest(),
-            current == null ? null : current.getQuizCompletedAt()
+            current == null || current.getQuizCompletedAt() == null
+                ? null
+                : current.getQuizCompletedAt().toString()
         );
     }
 

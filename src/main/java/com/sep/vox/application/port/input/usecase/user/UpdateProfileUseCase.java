@@ -1,10 +1,7 @@
 package com.sep.vox.application.port.input.usecase.user;
 
-import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 
-import java.util.Optional;
-import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -62,17 +59,17 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
             throw new IllegalArgumentException("Cần cung cấp ít nhất một trường để cập nhật");
         }
 
-        Instant now = Instant.now();
-        UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
+        var now = Instant.now();
+        var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
-        User target = userRepository.findByIdForUpdate(callerId)
+        var target = userRepository.findByIdForUpdate(callerId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         if (target.getStatus() != UserStatus.ACTIVE) {
             throw new ForbiddenException("Tài khoản không ở trạng thái hoạt động");
         }
 
         if (input.fullNameProvided()) {
-            String normalized = StringNormalization.trimAndCollapseSpaces(input.fullName());
+            var normalized = StringNormalization.trimAndCollapseSpaces(input.fullName());
             if (normalized == null || normalized.isBlank()) {
                 throw new IllegalArgumentException("Họ tên không được để trống");
             }
@@ -80,11 +77,11 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
         }
 
         if (input.phoneProvided()) {
-            String normalized = StringNormalization.normalizePhone(input.phone());
+            var normalized = StringNormalization.normalizePhone(input.phone());
             if (normalized == null || normalized.isBlank()) {
                 throw new IllegalArgumentException("Số điện thoại không được để trống");
             }
-            Optional<User> existing = userRepository.findByPhone(normalized);
+            var existing = userRepository.findByPhone(normalized);
             if (existing.isPresent() && !existing.get().getId().equals(target.getId())) {
                 throw new DuplicatedException("Số điện thoại đã tồn tại");
             }
@@ -128,7 +125,7 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
      * tài khoản không mang vai nào cũng bị từ chối, thay vì lọt qua vì "không phải học sinh".
      */
     private String resolveAvatarUrl(String rawUrl) {
-        boolean mayManageOwnAvatar = userContextPort.isSystemAdmin()
+        var mayManageOwnAvatar = userContextPort.isSystemAdmin()
             || userContextPort.isSchoolAdmin()
             || userContextPort.isTeacher();
         if (!mayManageOwnAvatar) {

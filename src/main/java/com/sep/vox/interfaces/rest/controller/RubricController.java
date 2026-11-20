@@ -1,33 +1,6 @@
 package com.sep.vox.interfaces.rest.controller;
 
 
-import com.sep.vox.application.port.input.command.AcceptRubricCriterionImportCommand;
-import com.sep.vox.application.port.input.command.AcceptRubricResultBandImportCommand;
-import com.sep.vox.application.port.input.command.AcceptSchoolRubricVersionImportCommand;
-import com.sep.vox.application.port.input.command.AcceptSystemRubricVersionImportCommand;
-import com.sep.vox.application.port.input.command.AddSchoolRubricVersionsCommand;
-import com.sep.vox.application.port.input.command.AddSystemRubricVersionsCommand;
-import com.sep.vox.application.port.input.command.ChangeSchoolRubricVersionStatusCommand;
-import com.sep.vox.application.port.input.command.ChangeSystemRubricVersionStatusCommand;
-import com.sep.vox.application.port.input.command.CloneSystemRubricToSchoolCommand;
-import com.sep.vox.application.port.input.command.CreateSchoolRubricCommand;
-import com.sep.vox.application.port.input.command.CreateSchoolRubricCriteriaCommand;
-import com.sep.vox.application.port.input.command.CreateSchoolRubricResultBandsCommand;
-import com.sep.vox.application.port.input.command.CreateSystemRubricCommand;
-import com.sep.vox.application.port.input.command.CreateSystemRubricCriteriaCommand;
-import com.sep.vox.application.port.input.command.CreateSystemRubricResultBandsCommand;
-import com.sep.vox.application.port.input.command.DeleteSchoolRubricCommand;
-import com.sep.vox.application.port.input.command.DeleteSchoolRubricCriterionCommand;
-import com.sep.vox.application.port.input.command.DeleteSchoolRubricResultBandCommand;
-import com.sep.vox.application.port.input.command.DeleteSchoolRubricVersionCommand;
-import com.sep.vox.application.port.input.command.DeleteSystemRubricCommand;
-import com.sep.vox.application.port.input.command.DeleteSystemRubricCriterionCommand;
-import com.sep.vox.application.port.input.command.DeleteSystemRubricResultBandCommand;
-import com.sep.vox.application.port.input.command.DeleteSystemRubricVersionCommand;
-import com.sep.vox.application.port.input.command.PreviewRubricCriterionImportCommand;
-import com.sep.vox.application.port.input.command.PreviewRubricResultBandImportCommand;
-import com.sep.vox.application.port.input.command.PreviewRubricVersionImportFromFileCommand;
-import com.sep.vox.application.port.input.command.PreviewSchoolRubricVersionImportCommand;
 import java.util.List;
 import java.util.UUID;
 
@@ -210,12 +183,12 @@ public class RubricController {
     //Tạo mới 1 rubric cho 1 hệ thống đã tối ưu / => đã check đợt 2
     @Operation(summary = "Tạo mới một (Rubric) cho hệ thống")
     @PostMapping("/system/rubrics")
-    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')") // Phân quyền cao hơn
     public ResponseEntity<ApiResponse<UUID>> createSystemRubric(
             @Valid @RequestBody CreateSystemRubricRequest request
     ) {
-        CreateSystemRubricCommand command = CreateSystemRubricCommandMapper.fromRequest(request);
-        UUID response = createSystemRubricUseCase.execute(command);
+        var command = CreateSystemRubricCommandMapper.fromRequest(request);
+        var response = createSystemRubricUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Khởi tạo Rubric hệ thống thành công", response));
     }
 
@@ -228,8 +201,8 @@ public class RubricController {
             @PathVariable("rubricId") UUID rubricId,
             @RequestParam("file") MultipartFile file) {
 
-        PreviewRubricVersionImportFromFileCommand command = PreviewRubricVersionImportFromFileCommandMapper.fromSystemRequest(rubricId, file);
-        PreviewRubricVersionImportResponse sessionId = previewSystemRubricVersionImportFromFileUseCase.execute(command);
+        var command = PreviewRubricVersionImportFromFileCommandMapper.fromSystemRequest(rubricId, file);
+        var sessionId = previewSystemRubricVersionImportFromFileUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Nạp file danh sách phiên bản thành công. Tạo phiên làm việc (Session) hoàn tất.", sessionId));
     }
 
@@ -241,8 +214,9 @@ public class RubricController {
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
 
-        AcceptSystemRubricVersionImportCommand command = AcceptRubricVersionImportCommandMapper.fromSystemRequest(sessionId, request);
-        AcceptRubricVersionImportResponse response = acceptSystemRubricVersionImportUseCase.execute(command);
+        // 1. Map dữ liệu
+        var command = AcceptRubricVersionImportCommandMapper.fromSystemRequest(sessionId, request);
+        var response = acceptSystemRubricVersionImportUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Phiên bản hệ thống vào hàng đợi ngầm xử lý.", response));
     }
 
@@ -255,8 +229,8 @@ public class RubricController {
             @PathVariable("rubricId") UUID rubricId,
             @Valid @RequestBody AddRubricVersionsRequest request
     ) {
-        AddSystemRubricVersionsCommand command = AddRubricVersionsCommandMapper.fromSystemRequest(rubricId, request);
-        List<UUID> newVersionIds = addSystemRubricVersionsUseCase.execute(command);
+        var command = AddRubricVersionsCommandMapper.fromSystemRequest(rubricId, request);
+        var newVersionIds = addSystemRubricVersionsUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Đã thêm thành công " + newVersionIds.size() + " phiên bản mới vào Rubric.", newVersionIds));
     }
 
@@ -268,8 +242,8 @@ public class RubricController {
             @PathVariable("schoolId") UUID schoolId,
             @Valid @RequestBody CreateSchoolRubricRequest request
     ) {
-        CreateSchoolRubricCommand command = CreateSchoolRubricCommandMapper.fromRequest(schoolId, request);
-        UUID response = createSchoolRubricUseCase.execute(command);
+        var command = CreateSchoolRubricCommandMapper.fromRequest(schoolId, request);
+        var response = createSchoolRubricUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Khởi tạo bộ tiêu chí nháp thành công", response));
     }
 
@@ -289,8 +263,8 @@ public class RubricController {
             @PathVariable("schoolId") UUID schoolId,
             @Valid @RequestBody CloneSystemRubricRequest request
     ) {
-        CloneSystemRubricToSchoolCommand command = CloneSystemRubricCommandMapper.fromRequest(schoolId, request);
-        UUID versionId = cloneSystemRubricToSchoolUseCase.execute(command);
+        var command = CloneSystemRubricCommandMapper.fromRequest(schoolId, request);
+        var versionId = cloneSystemRubricToSchoolUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success(
                 "Sao chép bộ tiêu chí mẫu thành công. Phiên bản mới đang ở trạng thái nháp.", versionId));
     }
@@ -305,8 +279,8 @@ public class RubricController {
             @PathVariable("rubricId") UUID rubricId,
             @RequestParam("file") MultipartFile file) {
 
-        PreviewSchoolRubricVersionImportCommand command = PreviewRubricVersionImportFromFileCommandMapper.fromSchoolRequest(schoolId, rubricId, file);
-        PreviewRubricVersionImportResponse sessionId = previewSchoolRubricVersionImportFromFileUseCase.execute(command);
+        var command = PreviewRubricVersionImportFromFileCommandMapper.fromSchoolRequest(schoolId, rubricId, file);
+        var sessionId = previewSchoolRubricVersionImportFromFileUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Nạp file danh sách phiên bản thành công. Tạo phiên làm việc (Session) hoàn tất.", sessionId));
     }
 
@@ -318,8 +292,8 @@ public class RubricController {
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
-        AcceptSchoolRubricVersionImportCommand command = AcceptRubricVersionImportCommandMapper.fromSchoolRequestId(schoolId, sessionId, request);
-        AcceptRubricVersionImportResponse response = acceptSchoolRubricVersionImportUseCase.execute(command);
+        var command = AcceptRubricVersionImportCommandMapper.fromSchoolRequestId(schoolId, sessionId, request);
+        var response = acceptSchoolRubricVersionImportUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Phiên bản của trường vào hàng đợi ngầm xử lý.", response));
     }
 
@@ -332,8 +306,8 @@ public class RubricController {
             @PathVariable("rubricId") UUID rubricId,
             @Valid @RequestBody AddRubricVersionsRequest request
     ) {
-        AddSchoolRubricVersionsCommand command = AddRubricVersionsCommandMapper.fromSchoolRequest(schoolId, rubricId, request);
-        List<UUID> newVersionIds = addSchoolRubricVersionsUseCase.execute(command);
+        var command = AddRubricVersionsCommandMapper.fromSchoolRequest(schoolId, rubricId, request);
+        var newVersionIds = addSchoolRubricVersionsUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Đã thêm thành công " + newVersionIds.size() + " phiên bản mới vào Rubric của trường học.", newVersionIds));
     }
 
@@ -346,7 +320,7 @@ public class RubricController {
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("versionId") UUID versionId
     ) {
-        DeleteSchoolRubricVersionCommand command = DeleteSchoolRubricCommandMapper.versionFromRequest(schoolId, versionId);
+        var command = DeleteSchoolRubricCommandMapper.versionFromRequest(schoolId, versionId);
         deleteSchoolRubricVersionUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Xóa phiên bản Rubric thành công"));
     }
@@ -360,7 +334,7 @@ public class RubricController {
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("rubricId") UUID rubricId
     ) {
-        DeleteSchoolRubricCommand command = DeleteSchoolRubricCommandMapper.fromRequest(schoolId, rubricId);
+        var command = DeleteSchoolRubricCommandMapper.fromRequest(schoolId, rubricId);
         deleteSchoolRubricUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Xóa bộ Rubric của trường thành công"));
     }
@@ -368,13 +342,13 @@ public class RubricController {
 
     //  dc xoa rubric gốc => Check đợt 2
     @Operation(summary = "Xóa toàn bộ Rubric của hệ thống (Chỉ cho phép khi chưa có bản nào được PUBLISHED/ARCHIVED)")
-    @DeleteMapping("/system/rubrics/{rubricId}")
+    @DeleteMapping("/system/rubrics/{rubricId}") // SỬA PATH Ở ĐÂY CHO CHUẨN
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSystemRubric(
             @PathVariable("rubricId") UUID rubricId
     ) {
-        DeleteSystemRubricCommand command = DeleteSystemRubricCommandMapper.fromRequest(rubricId);
-        deleteSystemRubricUseCase.execute(command);
+        var command = DeleteSystemRubricCommandMapper.fromRequest(rubricId);
+        deleteSystemRubricUseCase.execute(command); // UseCase trả về Void nên ko cần gán biến
         return ResponseEntity.ok(ApiResponse.success("Xóa bộ Rubric hệ thống thành công"));
     }
 
@@ -386,7 +360,7 @@ public class RubricController {
     public ResponseEntity<ApiResponse<Void>> manageSystemRubricVersion(
             @PathVariable("versionId") UUID versionId
     ) {
-        DeleteSystemRubricVersionCommand command = DeleteSystemRubricCommandMapper.versionFromRequest(versionId);
+        var command = DeleteSystemRubricCommandMapper.versionFromRequest(versionId);
         deleteSystemRubricVersionUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Xử lý phiên bản hệ thống thành công"));
     }
@@ -399,8 +373,8 @@ public class RubricController {
             @PathVariable("versionId") UUID versionId,
             @RequestParam(name = "status") RubricStatus status
     ) {
-        ChangeSystemRubricVersionStatusCommand command = ChangeRubricVersionStatusCommandMapper.fromSystemRequest(versionId, status);
-        UUID responseId = changeSystemRubricVersionStatusUseCase.execute(command);
+        var command = ChangeRubricVersionStatusCommandMapper.fromSystemRequest(versionId, status);
+        var responseId = changeSystemRubricVersionStatusUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Chuyển trạng thái phiên bản thành công!", responseId));
     }
 
@@ -413,8 +387,8 @@ public class RubricController {
             @PathVariable("versionId") UUID versionId,
             @RequestParam(name = "status") RubricStatus status
     ) {
-        ChangeSchoolRubricVersionStatusCommand command = ChangeRubricVersionStatusCommandMapper.fromSchoolRequest(schoolId, versionId, status);
-        UUID responseId = changeSchoolRubricVersionStatusUseCase.execute(command);
+        var command = ChangeRubricVersionStatusCommandMapper.fromSchoolRequest(schoolId, versionId, status);
+        var responseId = changeSchoolRubricVersionStatusUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Chuyển trạng thái phiên bản thành công!", responseId));
     }
 
@@ -425,7 +399,7 @@ public class RubricController {
     public ResponseEntity<ApiResponse<UUID>> archiveSystemRubricVersion(
             @PathVariable("versionId") UUID versionId
     ) {
-        UUID responseId = archiveSystemRubricVersionUseCase.execute(new ArchiveSystemRubricVersionCommand(versionId));
+        var responseId = archiveSystemRubricVersionUseCase.execute(new ArchiveSystemRubricVersionCommand(versionId));
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ phiên bản Rubric hệ thống thành công", responseId));
     }
 
@@ -437,7 +411,7 @@ public class RubricController {
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("versionId") UUID versionId
     ) {
-        UUID responseId = archiveSchoolRubricVersionUseCase.execute(new ArchiveSchoolRubricVersionCommand(schoolId, versionId));
+        var responseId = archiveSchoolRubricVersionUseCase.execute(new ArchiveSchoolRubricVersionCommand(schoolId, versionId));
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ phiên bản Rubric của trường học thành công", responseId));
     }
 
@@ -452,8 +426,8 @@ public class RubricController {
             @PathVariable("versionId") UUID versionId,
             @Valid @RequestBody CreateSchoolRubricCriteriaRequest request
     ) {
-        CreateSchoolRubricCriteriaCommand command = CreateSchoolRubricCriteriaCommandMapper.fromRequest(schoolId, versionId, request);
-        List<UUID> newCriterionId = createSchoolRubricCriterionUseCase.execute(command);
+        var command = CreateSchoolRubricCriteriaCommandMapper.fromRequest(schoolId, versionId, request);
+        var newCriterionId = createSchoolRubricCriterionUseCase.execute(command);
 
         return ResponseEntity.ok(ApiResponse.success("Thêm tiêu chí thành công", newCriterionId));
     }
@@ -468,8 +442,9 @@ public class RubricController {
             @PathVariable("versionId") UUID versionId,
             @Valid @RequestBody CreateSystemRubricCriteriaRequest request
     ) {
-        CreateSystemRubricCriteriaCommand command = CreateSystemRubricCriteriaCommandMapper.fromRequest(versionId, request);
-        List<UUID> result = createSystemRubricCriteriaUseCase.execute(command);
+        // Truyền versionId vào mapper
+        var command = CreateSystemRubricCriteriaCommandMapper.fromRequest(versionId, request);
+        var result = createSystemRubricCriteriaUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Thêm tiêu chí hệ thống thành công", result));
     }
 
@@ -482,8 +457,8 @@ public class RubricController {
             @PathVariable("versionId") UUID versionId,
             @RequestParam("file") MultipartFile file) {
 
-        PreviewRubricCriterionImportCommand command = PreviewRubricCriterionImportCommandMapper.fromSystemRequest(versionId, file);
-        PreviewRubricCriterionImportResponse response = previewSystemRubricCriterionImportFromFileUseCase.execute(command);
+        var command = PreviewRubricCriterionImportCommandMapper.fromSystemRequest(versionId, file);
+        var response = previewSystemRubricCriterionImportFromFileUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Nạp file danh sách Tiêu chí thành công. Vui lòng kiểm tra màn hình Preview.", response));
     }
 
@@ -496,9 +471,9 @@ public class RubricController {
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
 
-        AcceptRubricCriterionImportCommand command = AcceptRubricCriterionImportCommandMapper.fromSystemRequest(sessionId, request);
+        var command = AcceptRubricCriterionImportCommandMapper.fromSystemRequest(sessionId, request);
 
-        AcceptRubricCriterionImportResponse response = acceptSystemRubricCriterionImportUseCase.execute(command);
+        var response = acceptSystemRubricCriterionImportUseCase.execute(command);
 
         return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Tiêu chí hệ thống vào hàng đợi ngầm xử lý.", response));
     }
@@ -512,8 +487,8 @@ public class RubricController {
             @PathVariable("versionId") UUID versionId,
             @RequestParam("file") MultipartFile file) {
 
-        PreviewRubricCriterionImportCommand command = PreviewRubricCriterionImportCommandMapper.fromSchoolRequest(schoolId, versionId, file);
-        PreviewRubricCriterionImportResponse response = previewSchoolRubricCriterionImportFromFileUseCase.execute(command);
+        var command = PreviewRubricCriterionImportCommandMapper.fromSchoolRequest(schoolId, versionId, file);
+        var response = previewSchoolRubricCriterionImportFromFileUseCase.execute(command);
         return ResponseEntity.ok(response);
     }
 
@@ -526,9 +501,10 @@ public class RubricController {
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
 
-        AcceptRubricCriterionImportCommand command = AcceptRubricCriterionImportCommandMapper.fromSchoolRequest(schoolId, sessionId, request);
+        // Sử dụng chính xác Mapper từ School Request của bác để tạo Command dùng chung
+        var command = AcceptRubricCriterionImportCommandMapper.fromSchoolRequest(schoolId, sessionId, request);
 
-        AcceptRubricCriterionImportResponse response = acceptSchoolRubricCriterionImportUseCase.execute(command);
+        var response = acceptSchoolRubricCriterionImportUseCase.execute(command);
         return ResponseEntity.ok(response);
     }
 
@@ -544,7 +520,7 @@ public class RubricController {
             @PathVariable("versionId") UUID versionId,
             @PathVariable("criterionId") UUID criterionId
     ) {
-        DeleteSchoolRubricCriterionCommand command = DeleteSchoolRubricCommandMapper.criterionFromRequest(schoolId, versionId, criterionId);
+        var command = DeleteSchoolRubricCommandMapper.criterionFromRequest(schoolId, versionId, criterionId);
         deleteSchoolRubricCriterionUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Xóa tiêu chí thành công"));
     }
@@ -560,7 +536,7 @@ public class RubricController {
             @PathVariable("versionId") UUID versionId,
             @PathVariable("criterionId") UUID criterionId
     ) {
-        DeleteSystemRubricCriterionCommand command = DeleteSystemRubricCommandMapper.criterionFromRequest(versionId, criterionId);
+        var command = DeleteSystemRubricCommandMapper.criterionFromRequest(versionId, criterionId);
         deleteSystemRubricCriterionUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Xóa tiêu chí hệ thống thành công"));
     }
@@ -576,10 +552,10 @@ public class RubricController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSystemRubricResultBand(
             @PathVariable("versionId") UUID versionId,
-            @Valid @RequestBody CreateSystemRubricResultBandsRequest request
+            @Valid @RequestBody CreateSystemRubricResultBandsRequest request // Nhớ tạo thêm Request này nhé
     ) {
-        CreateSystemRubricResultBandsCommand command = CreateSystemRubricResultBandsCommandMapper.fromRequest(versionId, request);
-        List<UUID> resultId = createSystemRubricResultBandsUseCase.execute(command);
+        var command = CreateSystemRubricResultBandsCommandMapper.fromRequest(versionId, request);
+        var resultId = createSystemRubricResultBandsUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Thêm thang điểm hệ thống thành công", resultId));
     }
 
@@ -595,8 +571,8 @@ public class RubricController {
             @PathVariable("versionId") UUID versionId,
             @Valid @RequestBody CreateSchoolRubricResultBandsRequest request
     ) {
-        CreateSchoolRubricResultBandsCommand command = CreateSchoolRubricResultBandsCommandMapper.fromRequest(schoolId, versionId, request);
-        List<UUID> newResultBandId = createSchoolRubricResultBandsUseCase.execute(command);
+        var command = CreateSchoolRubricResultBandsCommandMapper.fromRequest(schoolId, versionId, request);
+        var newResultBandId = createSchoolRubricResultBandsUseCase.execute(command);
 
         return ResponseEntity.ok(ApiResponse.success("Thêm thang điểm kết quả thành công", newResultBandId));
     }
@@ -612,7 +588,7 @@ public class RubricController {
             @PathVariable("versionId") UUID versionId,
             @PathVariable("resultBandId") UUID resultBandId
     ) {
-        DeleteSchoolRubricResultBandCommand command = DeleteSchoolRubricCommandMapper.resultBandFromRequest(schoolId, versionId, resultBandId);
+        var command = DeleteSchoolRubricCommandMapper.resultBandFromRequest(schoolId, versionId, resultBandId);
         deleteSchoolRubricResultBandUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Xóa thang điểm thành công"));
     }
@@ -626,7 +602,7 @@ public class RubricController {
             @PathVariable("versionId") UUID versionId,
             @PathVariable("resultBandId") UUID resultBandId
     ) {
-        DeleteSystemRubricResultBandCommand command = DeleteSystemRubricCommandMapper.resultBandFromRequest(versionId, resultBandId);
+        var command = DeleteSystemRubricCommandMapper.resultBandFromRequest(versionId, resultBandId);
         deleteSystemRubricResultBandUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Xóa thang điểm hệ thống thành công"));
     }
@@ -639,8 +615,9 @@ public class RubricController {
             @PathVariable("versionId") UUID versionId,
             @RequestParam("file") MultipartFile file) {
 
-        PreviewRubricResultBandImportCommand command = PreviewRubricResultBandImportCommandMapper.fromSystemRequest(versionId, file);
-        PreviewRubricResultBandImportResponse response = previewSystemRubricResultBandImportFromFileUseCase.execute(command);
+        // Gọi đúng hàm fromSystemRequest (truyền schoolId = null)
+        var command = PreviewRubricResultBandImportCommandMapper.fromSystemRequest(versionId, file);
+        var response = previewSystemRubricResultBandImportFromFileUseCase.execute(command);
 
         return ResponseEntity.ok(ApiResponse.success("Nạp cấu trúc file xếp loại hệ thống thành công.", response));
     }
@@ -653,8 +630,8 @@ public class RubricController {
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
 
-        AcceptRubricResultBandImportCommand command = AcceptRubricResultBandImportCommandMapper.fromSystemRequest(sessionId, request);
-        AcceptRubricResultBandImportResponse response = acceptSystemRubricResultBandImportUseCase.execute(command);
+        var command = AcceptRubricResultBandImportCommandMapper.fromSystemRequest(sessionId, request);
+        var response = acceptSystemRubricResultBandImportUseCase.execute(command);
 
         return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu import xếp loại hệ thống vào hàng đợi ngầm xử lý.", response));
     }
@@ -672,8 +649,9 @@ public class RubricController {
             @PathVariable("versionId") UUID versionId,
             @RequestParam("file") MultipartFile file) {
 
-        PreviewRubricResultBandImportCommand command = PreviewRubricResultBandImportCommandMapper.fromSchoolRequest(schoolId, versionId, file);
-        PreviewRubricResultBandImportResponse response = previewSchoolRubricResultBandImportFromFileUseCase.execute(command);
+        // Gọi Mapper bóc tách dữ liệu từ file và đính kèm schoolId bảo mật
+        var command = PreviewRubricResultBandImportCommandMapper.fromSchoolRequest(schoolId, versionId, file);
+        var response = previewSchoolRubricResultBandImportFromFileUseCase.execute(command);
 
         return ResponseEntity.ok(response);
     }
@@ -690,8 +668,9 @@ public class RubricController {
             @PathVariable("sessionId") UUID sessionId,
             @Valid @RequestBody AcceptImportRequest request) {
 
-        AcceptRubricResultBandImportCommand command = AcceptRubricResultBandImportCommandMapper.fromSchoolRequest(schoolId, sessionId, request);
-        AcceptRubricResultBandImportResponse response = acceptSchoolRubricResultBandImportUseCase.execute(command);
+        // Gọi Mapper đóng gói lệnh đồng ý import ngầm từ School
+        var command = AcceptRubricResultBandImportCommandMapper.fromSchoolRequest(schoolId, sessionId, request);
+        var response = acceptSchoolRubricResultBandImportUseCase.execute(command);
 
         return ResponseEntity.ok(response);
     }

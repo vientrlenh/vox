@@ -21,7 +21,6 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.framework.CreateFrameworkVersionUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.framework.CreateFrameworkVersionResponse;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.repository.FrameworkRepository;
@@ -49,11 +48,11 @@ public class CreateFrameworkVersionUseCaseTests {
 
     @Test
     void should_create_framework_version_when_framework_exists() {
-        CreateFrameworkVersionCommand command = new CreateFrameworkVersionCommand(
+        var command = new CreateFrameworkVersionCommand(
             frameworkId, "V1_0", "Version 1.0", "Initial version", 1, now, now.plus(30, ChronoUnit.DAYS)
         );
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test Framework", "Description",
             true, now, now, null, null
         );
@@ -66,7 +65,7 @@ public class CreateFrameworkVersionUseCaseTests {
                 return version;
             });
 
-        CreateFrameworkVersionResponse result = useCase.execute(command);
+        var result = useCase.execute(command);
 
         assertThat(result.versionId()).isNotNull();
         verify(frameworkRepository).findById(frameworkId);
@@ -75,7 +74,7 @@ public class CreateFrameworkVersionUseCaseTests {
 
     @Test
     void should_throw_not_found_when_framework_does_not_exist() {
-        CreateFrameworkVersionCommand command = new CreateFrameworkVersionCommand(
+        var command = new CreateFrameworkVersionCommand(
             frameworkId, "V1_0", "Version 1.0", "Initial version", 1, now, now.plus(30, ChronoUnit.DAYS)
         );
 
@@ -86,11 +85,11 @@ public class CreateFrameworkVersionUseCaseTests {
 
     @Test
     void should_throw_duplicated_when_version_number_exists() {
-        CreateFrameworkVersionCommand command = new CreateFrameworkVersionCommand(
+        var command = new CreateFrameworkVersionCommand(
             frameworkId, "V1_0", "Version 1.0", "Initial version", 1, now, now.plus(30, ChronoUnit.DAYS)
         );
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test Framework", "Description",
             true, now, now, null, null
         );

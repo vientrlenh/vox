@@ -39,7 +39,7 @@ public class PaymentController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<PaymentCheckoutResponse>> createCheckoutUrl(
             @Valid @RequestBody CreatePaymentCheckoutUrlRequest request) {
-        PaymentCheckoutResponse data = createPaymentCheckoutUrlUseCase.execute(
+        var data = createPaymentCheckoutUrlUseCase.execute(
             new CreatePaymentCheckoutUrlCommand(request.orderId(), request.provider()));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo liên kết thanh toán thành công", data));

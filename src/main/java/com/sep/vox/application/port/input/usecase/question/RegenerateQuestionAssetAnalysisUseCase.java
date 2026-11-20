@@ -1,7 +1,5 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import com.sep.vox.domain.model.question.Question;
-import com.sep.vox.domain.model.question.QuestionBank;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -53,41 +51,41 @@ public class RegenerateQuestionAssetAnalysisUseCase implements IUseCase<Regenera
     @Override
     @Transactional
     public QuestionAssetDto execute(Command input) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        Question question = questionRepository.findById(input.questionId())
+        var question = questionRepository.findById(input.questionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
-        QuestionAsset sourceAsset = questionAssetRepository.findById(input.assetId())
+        var sourceAsset = questionAssetRepository.findById(input.assetId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy tài nguyên câu hỏi"));
         if (!sourceAsset.getQuestionId().equals(question.getId())) {
             throw new ForbiddenException("Tài nguyên không thuộc câu hỏi này");
         }
 
-        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
+        var bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        boolean owner = currentUserId.equals(question.getCreatedBy());
-        boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
+        var owner = currentUserId.equals(question.getCreatedBy());
+        var editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
             .isPresent();
-        boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
+        var systemAdminOnSystemBank = userContextPort.isSystemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
         if (!systemAdminOnSystemBank && !owner && !editorCollaborator) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED
+        var immutable = question.getStatus() == QuestionStatus.PUBLISHED
             || question.isLocked()
-            || questionRepository.existsUsedInAssessment(question.getId());
-        Question targetQuestion = immutable
+            || questionRepository.existsUsedInExam(question.getId());
+        var targetQuestion = immutable
             ? questionCloneService.cloneAsDraftWithDetails(question, currentUserId)
             : question;
-        QuestionAsset targetAsset = immutable
+        var targetAsset = immutable
             ? resolveClonedAsset(targetQuestion.getId(), sourceAsset.getOrder())
             : sourceAsset;
 
         resetForAnalysis(targetAsset);
-        QuestionAsset saved = questionAssetRepository.save(targetAsset);
+        var saved = questionAssetRepository.save(targetAsset);
         questionAssetAnalysisRequestPublisher.publish(targetQuestion, saved);
         return QuestionAssetDtoMapper.toDto(saved);
     }

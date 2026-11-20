@@ -15,10 +15,7 @@ import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
-import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.model.rubric.RubricVersion;
-import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
@@ -70,16 +67,16 @@ public class PreviewSystemRubricResultBandImportFromFileUseCase implements IUseC
     public PreviewRubricResultBandImportResponse execute(PreviewRubricResultBandImportCommand command) {
         // Bước 1: Xác thực tài khoản Admin hệ thống
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
+        var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
         }
 
         // Bước 2: Bảo mật dữ liệu - Truy ngược kiểm tra quyền sở hữu Rubric
-        RubricVersion version = rubricVersionRepository.findById(command.rubricVersionId())
+        var version = rubricVersionRepository.findById(command.rubricVersionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric yêu cầu."));
-        Rubric rubric = rubricRepository.findById(version.getRubricId())
+        var rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc tương ứng."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {

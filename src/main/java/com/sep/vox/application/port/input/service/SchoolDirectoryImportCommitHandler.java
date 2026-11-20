@@ -50,34 +50,34 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
 
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
-        Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
+        var mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         return processRows(rows, mapping, session.getCreatedBy());
     }
 
     private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID currentUserId) {
-        long createdRows = 0L;
-        long updatedRows = 0L;
-        long skippedRows = 0L;
-        long invalidRows = 0L;
-        Set<String> seenCodes = new HashSet<String>();
-        List<RowContext> rowContexts = new ArrayList<RowContext>();
-        Set<String> codes = new HashSet<String>();
+        var createdRows = 0L;
+        var updatedRows = 0L;
+        var skippedRows = 0L;
+        var invalidRows = 0L;
+        var seenCodes = new HashSet<String>();
+        var rowContexts = new ArrayList<RowContext>();
+        var codes = new HashSet<String>();
 
-        for (ImportRow row : rows) {
-            Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-            Map<String, String> mappedData = mapRawData(rawData, confirmedMapping);
-            Map<String, String> normalized = normalize(mappedData);
+        for (var row : rows) {
+            var rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
+            var mappedData = mapRawData(rawData, confirmedMapping);
+            var normalized = normalize(mappedData);
             row.setMappedDataJson(jsonSerializationPort.toJson(normalized));
             rowContexts.add(new RowContext(row, normalized));
             addIfPresent(codes, normalized.get("code"));
         }
 
-        Map<String, SchoolDirectory> existingByCode = findByCode(codes);
+        var existingByCode = findByCode(codes);
 
-        for (RowContext rowContext : rowContexts) {
-            ImportRow row = rowContext.row();
-            Map<String, String> normalized = rowContext.normalized();
-            List<Map<String, String>> errors = validateRow(normalized, seenCodes);
+        for (var rowContext : rowContexts) {
+            var row = rowContext.row();
+            var normalized = rowContext.normalized();
+            var errors = validateRow(normalized, seenCodes);
 
             if (!errors.isEmpty()) {
                 row.setErrorsJson(jsonSerializationPort.toJson(errors));
@@ -86,7 +86,7 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
                 continue;
             }
 
-            SchoolDirectory existing = existingByCode.get(normalized.get("code"));
+            var existing = existingByCode.get(normalized.get("code"));
             
             if (existing != null && existing.isCurated()) {
                 row.setErrorsJson(null);
@@ -120,7 +120,7 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
     }
 
     private void createDirectory(Map<String, String> data, UUID currentUserId) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         schoolDirectoryRepository.save(SchoolDirectory.createByImport(
                 data.get("code"),
                 data.get("name"),
@@ -134,7 +134,7 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
     }
 
     private void updateDirectory(SchoolDirectory existing, Map<String, String> data, UUID currentUserId) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         existing.applyImportUpdate(
                 data.get("name"),
                 data.get("provinceCode"),
@@ -148,16 +148,16 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
     }
 
     private Map<String, SchoolDirectory> findByCode(Set<String> codes) {
-        Map<String, SchoolDirectory> map = new LinkedHashMap<String, SchoolDirectory>();
+        var map = new LinkedHashMap<String, SchoolDirectory>();
         schoolDirectoryRepository.findByCodeIn(codes)
                 .forEach(sd -> map.putIfAbsent(sd.getCode(), sd));
         return map;
     }
 
     private Map<String, String> mapRawData(Map<String, String> rawData, Map<String, String> confirmedMapping) {
-        Map<String, String> mappedData = new LinkedHashMap<String, String>();
+        var mappedData = new LinkedHashMap<String, String>();
         rawData.forEach((originalHeader, value) -> {
-            String systemField = confirmedMapping.get(originalHeader);
+            var systemField = confirmedMapping.get(originalHeader);
             if (systemField != null) {
                 systemField = systemField.strip();
             }
@@ -169,7 +169,7 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
     }
 
     private Map<String, String> normalize(Map<String, String> mappedData) {
-        Map<String, String> normalized = new LinkedHashMap<String, String>();
+        var normalized = new LinkedHashMap<String, String>();
         normalized.put("code", StringNormalization.normalizeCode(mappedData.get("code")));
         normalized.put("name", StringNormalization.trimAndCollapseSpaces(mappedData.get("name")));
         normalized.put("provinceCode", StringNormalization.normalizeCode(mappedData.get("provinceCode")));
@@ -181,7 +181,7 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
     }
 
     private List<Map<String, String>> validateRow(Map<String, String> data, Set<String> seenCodes) {
-        List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
+        var errors = new ArrayList<Map<String, String>>();
 
         addMissingError(errors, data, "code", "Mã trường không được để trống");
         addMissingError(errors, data, "name", "Tên trường không được để trống");
@@ -190,12 +190,12 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
         addMissingError(errors, data, "districtName", "Tên quận/huyện không được để trống");
         addMissingError(errors, data, "address", "Địa chỉ không được để trống");
 
-        String code = data.get("code");
+        var code = data.get("code");
         if (isPresent(code) && !seenCodes.add(code)) {
             errors.add(error("code", "Mã trường bị trùng trong file import"));
         }
 
-        String domain = data.get("domain");
+        var domain = data.get("domain");
         if (isPresent(domain) && !DOMAIN_PATTERN.matcher(domain).matches()) {
             errors.add(error("domain", "Tên miền trường không hợp lệ (phải kết thúc bằng .edu.vn)"));
         }
@@ -221,7 +221,7 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
     }
 
     private String domainOrNull(String value) {
-        String normalized = StringNormalization.normalizeDomain(value);
+        var normalized = StringNormalization.normalizeDomain(value);
         return normalized == null || normalized.isBlank() ? null : normalized;
     }
 

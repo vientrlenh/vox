@@ -16,8 +16,8 @@ type Framework {
     name: String!
     description: String
     isActive: Boolean!
-    createdAt: DateTime
-    updatedAt: DateTime
+    createdAt: String
+    updatedAt: String
 }
 
 type FrameworkPage {
@@ -35,11 +35,11 @@ type FrameworkVersion {
     name: String!
     description: String
     version: Int!
-    effectiveFrom: DateTime!
-    effectiveTo: DateTime
+    effectiveFrom: String!
+    effectiveTo: String
     status: FrameworkVersionStatus!
-    createdAt: DateTime
-    updatedAt: DateTime
+    createdAt: String
+    updatedAt: String
     criteria: [FrameworkCriterion!]!
     resultBands: [FrameworkResultBand!]!
 }
@@ -95,8 +95,8 @@ input UpdateFrameworkVersionInput {
     code: String!
     name: String!
     description: String
-    effectiveFrom: DateTime!
-    effectiveTo: DateTime
+    effectiveFrom: String!
+    effectiveTo: String
 }
 
 input UpdateFrameworkCriterionInput {
@@ -129,15 +129,15 @@ input UpdateFrameworkResultBandInput {
 extend type Query {
     frameworks(page: Int = 1, size: Int = 20, search: String, isActive: Boolean): FrameworkPage!
     framework(id: ID!): Framework
-    frameworkVersions(frameworkId: ID!, status: FrameworkVersionStatus, page: Int = 1, size: Int = 20): FrameworkVersionPage!
+    frameworkVersions(frameworkId: ID!, status: String, page: Int = 1, size: Int = 20): FrameworkVersionPage!
     frameworkVersion(id: ID!): FrameworkVersion
-    # Root query that fetches FrameworkCriterion (System Admin, no limit on the Version status)
+    # Query gốc lấy FrameworkCriterion (System Admin, không giới hạn trạng thái Version)
     frameworkCriteria(frameworkVersionId: ID!): [FrameworkCriterion!]!
     frameworkCriterion(id: ID!): FrameworkCriterion
     schoolFrameworks(page: Int = 1, size: Int = 20): FrameworkPage!
     schoolFrameworkVersions(frameworkId: ID!, page: Int = 1, size: Int = 20): FrameworkVersionPage!
     schoolFrameworkVersion(id: ID!): FrameworkVersion
-    # Root query that fetches FrameworkCriterion (School Admin, only PUBLISHED versions)
+    # Query gốc lấy FrameworkCriterion (School Admin, chỉ Version đã PUBLISHED)
     schoolFrameworkCriteria(frameworkVersionId: ID!): [FrameworkCriterion!]!
     schoolFrameworkCriterion(id: ID!): FrameworkCriterion
 }

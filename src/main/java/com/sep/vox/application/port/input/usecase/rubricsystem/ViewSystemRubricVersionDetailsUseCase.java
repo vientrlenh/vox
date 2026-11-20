@@ -8,9 +8,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricVersionDto;
 import com.sep.vox.domain.mapper.RubricVersionDtoMapper;
-import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
@@ -49,11 +47,11 @@ public class ViewSystemRubricVersionDetailsUseCase implements IUseCase<ViewSyste
         }
 
         // 2. Lấy Version
-        RubricVersion version = rubricVersionRepository.findById(query.versionId())
+        var version = rubricVersionRepository.findById(query.versionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric Version."));
 
         // 3. Lấy Rubric gốc và đảm bảo đây là Rubric của Hệ thống
-        Rubric rubric = rubricRepository.findById(version.getRubricId())
+        var rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {

@@ -4,7 +4,6 @@ import java.util.UUID;
 import java.util.Map;
 
 import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
-import com.sep.vox.domain.model.school.SchoolClassStatus;
 
 public final class UpdateSchoolClassCommandMapper {
 
@@ -18,13 +17,9 @@ public final class UpdateSchoolClassCommandMapper {
             input.containsKey("name"),
             valueOf(input.get("description")),
             input.containsKey("description"),
-            statusOf(input.get("status")),
+            valueOf(input.get("status")),
             input.containsKey("status")
         );
-    }
-
-    private static SchoolClassStatus statusOf(Object value) {
-        return value == null ? null : SchoolClassStatus.valueOf(value.toString());
     }
 
     private static String valueOf(Object value) {

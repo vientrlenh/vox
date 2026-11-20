@@ -1,29 +1,28 @@
 """
-A receipt issued after the money has arrived.
+Chứng từ phát hành sau khi tiền đã về.
 
-This is NOT a VAT invoice: it has no tax code, no seller information, no digital signature, and
-invoiceNumber is an internal code that does not belong to a serial range registered with the tax
-authority. Do not build a UI that promises school accountants this is a deductible document.
+KHÔNG phải hóa đơn GTGT: không có MST, không có thông tin đơn vị bán, không ký số, và invoiceNumber
+là mã nội bộ chứ không thuộc dải serial đã đăng ký với cơ quan thuế. Đừng dựng UI hứa với kế toán
+trường rằng đây là chứng từ khấu trừ được.
 
-It has only two fields, and that is everything the invoice knows by itself: the amount, what was
-bought and how it was paid all live on Order and Payment. That is why it has no query of its own --
-always read it through Order.invoice.
+Chỉ có hai trường, và đó là tất cả những gì hóa đơn tự nó biết: số tiền, mua gì, trả bằng cách nào
+đều nằm ở Order và Payment. Vì vậy nó không có query riêng -- luôn đọc qua Order.invoice.
 """
 type Invoice {
-    "Unique across the whole system, in the form INV-{year}-{12 hex characters}. This is the code the school reads out to support when something needs to be looked up."
+    "Duy nhất toàn hệ thống, dạng INV-{năm}-{12 ký tự hex}. Đây là mã trường đọc cho hỗ trợ khi cần tra."
     invoiceNumber: String!
-    "The year inside invoiceNumber is taken in Vietnam time, so it always matches the date shown here when this timestamp is read in Vietnam time."
-    issueDate: DateTime!
+    "Năm trong invoiceNumber lấy theo giờ Việt Nam, nên luôn khớp với ngày hiển thị ở đây."
+    issueDate: String!
 }
 
-# Declared with extend so that order.graphqls does not need to know about invoices: the relation is
-# 1-1 and the invoice is the dependent side. Spring GraphQL merges every .graphqls file into one
-# schema, so a type in another file can still be attached.
+# Khai bằng extend để order.graphqls không phải biết tới hóa đơn: quan hệ là 1-1 và hóa đơn mới là
+# bên phụ thuộc. Spring GraphQL gộp mọi file .graphqls thành một schema nên type ở file khác vẫn nối
+# vào được.
 extend type Order {
     """
-    NULL when the order has not collected any money yet, and that is the correct answer rather than
-    missing data: only a SUCCESS order gets an invoice. Use the presence of this field to mark which
-    rows in the history actually brought in money.
+    NULL khi đơn chưa thu được tiền, và đó là câu trả lời đúng chứ không phải nạp hụt dữ liệu: chỉ
+    đơn SUCCESS mới được phát hóa đơn. Dùng luôn sự có mặt của trường này để đánh dấu dòng nào trong
+    lịch sử thật sự đã ra tiền.
     """
     invoice: Invoice
 }

@@ -28,8 +28,8 @@ public class QuotaPricingCalibration {
     // Lý do applied khác raw (bị làm mượt hoặc chặn biên) -- null nếu 2 số bằng nhau, không cần
     // điều chỉnh gì.
     private String note;
-    // The data source used to calibrate this row -- ASSESSMENT (join assessment_item_responses) or PRACTICE
-    // (join practice_response_turns), see QuotaPricingSource.
+    // Nguồn dữ liệu đã dùng để calibrate row này -- EXAM (join exam_item_responses) hay PRACTICE
+    // (join practice_response_turns), xem QuotaPricingSource.
     private QuotaPricingSource pricingSource;
 
     public QuotaPricingCalibration() {}

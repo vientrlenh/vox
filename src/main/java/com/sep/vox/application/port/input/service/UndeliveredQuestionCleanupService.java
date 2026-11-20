@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -77,11 +76,11 @@ public class UndeliveredQuestionCleanupService {
         if (paperId == null) {
             return false;
         }
-        List<UUID> questionIds = paperItemRepository.findQuestionIdsForPaper(paperId);
+        var questionIds = paperItemRepository.findQuestionIdsForPaper(paperId);
         if (questionIds.isEmpty()) {
             return false;
         }
-        UUID lastQuestionId = questionIds.getLast();
+        var lastQuestionId = questionIds.getLast();
         if (practiceItemResponseRepository.existsResponse(sessionId, lastQuestionId)) {
             // Học sinh ĐÃ trả lời câu cuối -- không có gì thừa.
             return false;
@@ -91,7 +90,7 @@ public class UndeliveredQuestionCleanupService {
         // chèn thêm slot mới xen vào giữa, câu vừa đọc không còn là slot cuối và câu lệnh trả 0.
         // Lúc đó phải dừng -- gỡ exposure của một câu vẫn đang được dùng là đẩy nó quay lại kho
         // trong khi học sinh sắp được hỏi chính nó.
-        int deleted = paperItemRepository.deleteLastItemForPaper(paperId, lastQuestionId);
+        var deleted = paperItemRepository.deleteLastItemForPaper(paperId, lastQuestionId);
         if (deleted == 0) {
             return false;
         }

@@ -53,15 +53,15 @@ public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCom
     @Override
     @Transactional
     public PracticeSession execute(EndPracticeSessionCommand input) {
-        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID sessionId = input.sessionId();
+        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        var sessionId = input.sessionId();
         requireOwnedInProgress(sessionId, studentId);
         // Xả chấm TRƯỚC khi đọc điểm: câu học sinh bỏ dở chưa từng được chấm, và nếu không
         // bắn ở đây thì không bao giờ có ai bắn nữa. Kết quả về sau vài chục giây --
         // RecordPracticeAttemptEvaluationUseCase sẽ tự cập nhật lại overall_score lúc đó.
         gradingFlushService.flush(sessionId);
-        Double lastScore = practiceItemEvaluationRepository.findLastValidNormalizedScore(sessionId);
-        com.sep.vox.domain.model.personalization.PracticeSession session = practiceSessionRepository.findById(sessionId)
+        var lastScore = practiceItemEvaluationRepository.findLastValidNormalizedScore(sessionId);
+        var session = practiceSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
         // COMPLETED = học sinh CÓ NÓI, không phải "đã chấm xong".
         //
@@ -80,8 +80,8 @@ public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCom
         //
         // gradedSeconds là giây VAD nghe thấy tiếng, cùng con số quota trừ. Mở phiên rồi
         // thoát mà chưa nói gì thì vẫn ABANDONED -- đúng nghĩa bỏ dở.
-        String status = session.getGradedSeconds() > 0 ? "COMPLETED" : "ABANDONED";
-        String diagnosis = "ABANDONED".equals(status)
+        var status = session.getGradedSeconds() > 0 ? "COMPLETED" : "ABANDONED";
+        var diagnosis = "ABANDONED".equals(status)
             ? SessionDiagnosisPolicy.diagnose(lastScore, input.helpRequestCount(), input.longPauseCount())
             : null;
         practiceSessionRepository.save(session.ended(

@@ -30,14 +30,14 @@ public final class TopicSuggestionMapper {
 
     public static TopicSuggestionJpaEntity toJpa(
             TopicSuggestion suggestion) {
-        TopicSuggestionJpaEntity entity = new TopicSuggestionJpaEntity(
-            // Generate the id here when the calling layer leaves it null. TopicSuggestionJpaEntity only has @Id and NO
-            // @GeneratedValue, so persist() with a null id makes Hibernate throw
-            // IdentifierGenerationException -- and TopicSuggestionService.refreshSuggestions
-            // does pass null. That means TopicSuggestionRefreshJob has never been able to create a suggestion:
-            // every run died on the first save line.
+        var entity = new TopicSuggestionJpaEntity(
+            // Sinh id ở đây khi tầng gọi để null. TopicSuggestionJpaEntity chỉ có @Id, KHÔNG
+            // có @GeneratedValue, nên persist() với id null thì Hibernate ném
+            // IdentifierGenerationException -- và TopicSuggestionService.refreshSuggestions
+            // đúng là truyền null. Nghĩa là TopicSuggestionRefreshJob chưa từng tạo được gợi ý
+            // nào: mỗi lượt chạy đều chết ở dòng save đầu tiên.
             //
-            // Generated in the mapping layer, the same way the other adapters in the repo do it
+            // Sinh ở tầng ánh xạ, cùng cách các adapter khác trong repo đang làm
             // (PracticeItemResponseRepositoryImpl, TopicInterestScoreRepositoryImpl).
             suggestion.getId() == null ? UUID.randomUUID() : suggestion.getId(),
             suggestion.getStudentId(),

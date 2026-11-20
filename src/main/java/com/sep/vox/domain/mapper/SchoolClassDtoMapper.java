@@ -1,10 +1,12 @@
 package com.sep.vox.domain.mapper;
 
+import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.model.school.SchoolClass;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.valueobject.ClassCode;
 
 public final class SchoolClassDtoMapper {
@@ -21,9 +23,9 @@ public final class SchoolClassDtoMapper {
             valueOf(schoolClass.getCode()),
             schoolClass.getName(),
             schoolClass.getDescription(),
-            schoolClass.getStatus(),
-            schoolClass.getCreatedAt(),
-            schoolClass.getUpdatedAt()
+            valueOf(schoolClass.getStatus()),
+            valueOf(schoolClass.getCreatedAt()),
+            valueOf(schoolClass.getUpdatedAt())
         );
     }
 
@@ -45,5 +47,13 @@ public final class SchoolClassDtoMapper {
 
     private static String valueOf(ClassCode code) {
         return code == null ? null : code.value();
+    }
+
+    private static String valueOf(SchoolClassStatus status) {
+        return status == null ? null : status.name();
+    }
+
+    private static String valueOf(Instant dateTime) {
+        return dateTime == null ? null : dateTime.toString();
     }
 }

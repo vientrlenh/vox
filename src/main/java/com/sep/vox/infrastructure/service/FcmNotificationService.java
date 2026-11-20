@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.service;
 
-import com.google.firebase.messaging.SendResponse;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,7 +62,7 @@ public class FcmNotificationService implements PushNotificationPort {
             return PushDispatchResult.empty();
         }
 
-        List<String> targets = installationIds.stream()
+        var targets = installationIds.stream()
             .filter(id -> id != null && !id.isBlank())
             .distinct()
             .toList();
@@ -72,9 +71,9 @@ public class FcmNotificationService implements PushNotificationPort {
             return PushDispatchResult.empty();
         }
 
-        PushDispatchResult result = PushDispatchResult.empty();
+        var result = PushDispatchResult.empty();
         for (int start = 0; start < targets.size(); start += MAX_BATCH_SIZE) {
-            List<String> batch = targets.subList(start, Math.min(start + MAX_BATCH_SIZE, targets.size()));
+            var batch = targets.subList(start, Math.min(start + MAX_BATCH_SIZE, targets.size()));
             result = result.merge(sendBatch(message, batch));
         }
         return result;
@@ -85,27 +84,27 @@ public class FcmNotificationService implements PushNotificationPort {
         try {
             response = firebaseMessaging.sendEachForMulticast(buildMessage(message, batch));
         } catch (FirebaseMessagingException e) {
-            // A batch-level failure (network lost, quota exhausted, wrong credentials) says nothing about
-            // any single device, so the whole batch goes into the retryable group -- never delete.
+            // Lỗi ở mức cả lô (mất mạng, hết quota, credentials sai) không nói gì về
+            // từng thiết bị, nên toàn bộ lô vào nhóm retryable -- tuyệt đối không xoá.
             LOGGER.warn("FCM multicast failed for {} device(s), errorCode={}",
                 batch.size(), e.getMessagingErrorCode(), e);
             return new PushDispatchResult(0, List.of(), batch);
         }
 
-        List<String> stale = new ArrayList<String>();
-        List<String> retryable = new ArrayList<String>();
+        var stale = new ArrayList<String>();
+        var retryable = new ArrayList<String>();
 
-        // getResponses() keeps exactly the order of the FID list given to addAllFids, so the index
-        // is the only bridge to tell which response belongs to which device.
-        List<SendResponse> responses = response.getResponses();
+        // getResponses() giữ đúng thứ tự của danh sách FID đã addAllFids, nên chỉ số
+        // là cầu nối duy nhất để biết response nào ứng với thiết bị nào.
+        var responses = response.getResponses();
         for (int i = 0; i < responses.size(); i++) {
-            SendResponse sendResponse = responses.get(i);
+            var sendResponse = responses.get(i);
             if (sendResponse.isSuccessful()) {
                 continue;
             }
 
-            String installationId = batch.get(i);
-            MessagingErrorCode errorCode = errorCodeOf(sendResponse.getException());
+            var installationId = batch.get(i);
+            var errorCode = errorCodeOf(sendResponse.getException());
             if (isStale(errorCode)) {
                 stale.add(installationId);
             } else {
@@ -143,8 +142,8 @@ public class FcmNotificationService implements PushNotificationPort {
     }
 
     private MulticastMessage buildMessage(PushMessage message, List<String> installationIds) {
-        MulticastMessage.Builder builder = MulticastMessage.builder()
-            // addAllFids instead of addAllTokens: version 9.10.0 has @Deprecated the token branch.
+        var builder = MulticastMessage.builder()
+            // addAllFids thay cho addAllTokens: bản 9.10.0 đã @Deprecated nhánh token.
             .addAllFids(installationIds)
             .setNotification(Notification.builder()
                 .setTitle(message.title())
@@ -160,7 +159,7 @@ public class FcmNotificationService implements PushNotificationPort {
                     .build())
                 .build());
 
-        String link = webpushLink(message);
+        var link = webpushLink(message);
         if (link != null) {
             builder.setWebpushConfig(WebpushConfig.builder()
                 .setFcmOptions(WebpushFcmOptions.withLink(link))
@@ -189,7 +188,7 @@ public class FcmNotificationService implements PushNotificationPort {
             return null;
         }
 
-        String notificationId = message.data().get("notificationId");
+        var notificationId = message.data().get("notificationId");
         if (notificationId == null || notificationId.isBlank()) {
             return null;
         }
@@ -200,7 +199,7 @@ public class FcmNotificationService implements PushNotificationPort {
             return null;
         }
 
-        String prefix = notificationUrl.endsWith("/")
+        var prefix = notificationUrl.endsWith("/")
             ? notificationUrl.substring(0, notificationUrl.length() - 1)
             : notificationUrl;
         return prefix + "/" + notificationId;

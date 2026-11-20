@@ -72,7 +72,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
     }
 
     private List<FrameworkCriterionBand> buildValidBands(List<FrameworkCriterion> criteria) {
-        FrameworkCriterionSignals signals = new FrameworkCriterionSignals(List.of(
+        var signals = new FrameworkCriterionSignals(List.of(
                 new FrameworkCriterionSignal("S1", "desc", FrameworkCriterionSignalImportance.HIGH, null)));
         return criteria.stream()
                 .map(criterion -> new FrameworkCriterionBand(
@@ -83,15 +83,15 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
     @Test
     void should_publish_version_when_no_conflict() {
-        UpdateFrameworkVersionStatusCommand command = new UpdateFrameworkVersionStatusCommand(
+        var command = new UpdateFrameworkVersionStatusCommand(
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        FrameworkVersion version = new FrameworkVersion();
+        var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setEffectiveFrom(now);
@@ -119,15 +119,15 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
     @Test
     void should_throw_when_criterion_has_no_bands() {
-        UpdateFrameworkVersionStatusCommand command = new UpdateFrameworkVersionStatusCommand(
+        var command = new UpdateFrameworkVersionStatusCommand(
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        FrameworkVersion version = new FrameworkVersion();
+        var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setEffectiveFrom(now);
@@ -152,15 +152,15 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
     @Test
     void should_throw_when_criterion_band_missing_signals() {
-        UpdateFrameworkVersionStatusCommand command = new UpdateFrameworkVersionStatusCommand(
+        var command = new UpdateFrameworkVersionStatusCommand(
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        FrameworkVersion version = new FrameworkVersion();
+        var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setEffectiveFrom(now);
@@ -168,7 +168,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
         List<FrameworkCriterion> criteria = buildValidCriteria();
-        FrameworkCriterionSignals emptySignals = new FrameworkCriterionSignals(List.of());
+        var emptySignals = new FrameworkCriterionSignals(List.of());
         List<FrameworkCriterionBand> bands = buildValidBands(criteria).stream()
             .map(band -> band.getFrameworkCriterionId().equals(criteria.get(0).getId())
                 ? new FrameworkCriterionBand(band.getId(), band.getFrameworkCriterionId(), band.getFrameworkResultBandId(),
@@ -189,15 +189,15 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
     @Test
     void should_throw_when_publishing_without_criteria() {
-        UpdateFrameworkVersionStatusCommand command = new UpdateFrameworkVersionStatusCommand(
+        var command = new UpdateFrameworkVersionStatusCommand(
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        FrameworkVersion version = new FrameworkVersion();
+        var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setEffectiveFrom(now);
@@ -213,15 +213,15 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
     @Test
     void should_throw_when_publishing_without_result_bands() {
-        UpdateFrameworkVersionStatusCommand command = new UpdateFrameworkVersionStatusCommand(
+        var command = new UpdateFrameworkVersionStatusCommand(
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        FrameworkVersion version = new FrameworkVersion();
+        var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setEffectiveFrom(now);
@@ -238,15 +238,15 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
     @Test
     void should_archive_version() {
-        UpdateFrameworkVersionStatusCommand command = new UpdateFrameworkVersionStatusCommand(
+        var command = new UpdateFrameworkVersionStatusCommand(
             frameworkId, versionId, FrameworkVersionStatus.ARCHIVED
         );
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        FrameworkVersion version = new FrameworkVersion();
+        var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setStatus(FrameworkVersionStatus.PUBLISHED);
@@ -262,7 +262,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
     @Test
     void should_throw_not_found_when_framework_missing() {
-        UpdateFrameworkVersionStatusCommand command = new UpdateFrameworkVersionStatusCommand(
+        var command = new UpdateFrameworkVersionStatusCommand(
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
@@ -273,11 +273,11 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
     @Test
     void should_throw_not_found_when_version_missing() {
-        UpdateFrameworkVersionStatusCommand command = new UpdateFrameworkVersionStatusCommand(
+        var command = new UpdateFrameworkVersionStatusCommand(
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
@@ -290,16 +290,16 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
     @Test
     void should_throw_when_version_not_belongs_to_framework() {
-        UUID otherFrameworkId = UUID.randomUUID();
-        UpdateFrameworkVersionStatusCommand command = new UpdateFrameworkVersionStatusCommand(
+        var otherFrameworkId = UUID.randomUUID();
+        var command = new UpdateFrameworkVersionStatusCommand(
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        FrameworkVersion version = new FrameworkVersion();
+        var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(otherFrameworkId);
 
@@ -311,22 +311,22 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
     @Test
     void should_throw_when_date_range_overlaps_with_published() {
-        UpdateFrameworkVersionStatusCommand command = new UpdateFrameworkVersionStatusCommand(
+        var command = new UpdateFrameworkVersionStatusCommand(
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        FrameworkVersion version = new FrameworkVersion();
+        var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setEffectiveFrom(now);
         version.setEffectiveTo(now.plus(30, ChronoUnit.DAYS));
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
-        FrameworkVersion publishedVersion = new FrameworkVersion();
+        var publishedVersion = new FrameworkVersion();
         publishedVersion.setId(UUID.randomUUID());
         publishedVersion.setFrameworkId(frameworkId);
         publishedVersion.setEffectiveFrom(now.plus(15, ChronoUnit.DAYS));
@@ -345,15 +345,15 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
     @Test
     void should_throw_when_archiving_draft_version() {
-        UpdateFrameworkVersionStatusCommand command = new UpdateFrameworkVersionStatusCommand(
+        var command = new UpdateFrameworkVersionStatusCommand(
             frameworkId, versionId, FrameworkVersionStatus.ARCHIVED
         );
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        FrameworkVersion version = new FrameworkVersion();
+        var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setStatus(FrameworkVersionStatus.DRAFT);
@@ -366,22 +366,22 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
     @Test
     void should_allow_publish_when_date_ranges_do_not_overlap() {
-        UpdateFrameworkVersionStatusCommand command = new UpdateFrameworkVersionStatusCommand(
+        var command = new UpdateFrameworkVersionStatusCommand(
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        FrameworkVersion version = new FrameworkVersion();
+        var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setEffectiveFrom(now);
         version.setEffectiveTo(now.plus(10, ChronoUnit.DAYS));
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
-        FrameworkVersion publishedVersion = new FrameworkVersion();
+        var publishedVersion = new FrameworkVersion();
         publishedVersion.setId(UUID.randomUUID());
         publishedVersion.setFrameworkId(frameworkId);
         publishedVersion.setEffectiveFrom(now.plus(20, ChronoUnit.DAYS));

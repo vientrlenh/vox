@@ -7,7 +7,7 @@ import tools.jackson.databind.JsonNode;
 
 public record AiUsageRecordedEventDto(
     String eventType,
-    String assessmentSessionId,
+    String examSessionId,
     String turnId,
     List<AiUsageEventItemDto> usageEvents
 ) {

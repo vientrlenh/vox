@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.initializer;
 
-import com.sep.vox.domain.common.PageResult;
 import java.time.Instant;
 import java.util.List;
 
@@ -81,17 +80,17 @@ public class GradeLevelInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
-        // findAll takes the page 1-based (GradeLevelRepositoryImpl calls PageRequest.of(page - 1,
-        // size)), so the first page is 1, not 0. Size 1 is used because only totalElements is needed.
-        PageResult<GradeLevel> existing = gradeLevelRepository.findAll(null, null, 1, 1);
+        // findAll nhận page theo lối 1-based (GradeLevelRepositoryImpl gọi PageRequest.of(page - 1,
+        // size)), nên trang đầu là 1 chứ không phải 0. Lấy size 1 vì chỉ cần totalElements.
+        var existing = gradeLevelRepository.findAll(null, null, 1, 1);
         if (existing.totalElements() > 0) {
             LOGGER.info("Catalog khối lớp đã có {} bản ghi. Bỏ qua khởi tạo khối lớp mặc định",
                 existing.totalElements());
             return;
         }
 
-        Instant now = Instant.now();
-        for (GradeLevelSeed seed : GRADE_LEVELS) {
+        var now = Instant.now();
+        for (var seed : GRADE_LEVELS) {
             gradeLevelRepository.save(new GradeLevel(
                 seed.code(),
                 seed.name(),
@@ -100,8 +99,8 @@ public class GradeLevelInitializer implements ApplicationRunner {
                 GradeLevelStatus.ACTIVE,
                 now,
                 now,
-                // No login session exists at startup, so there is no identity to write into
-                // created_by/updated_by. Null here reads correctly: built by the system.
+                // Lúc khởi động chưa có phiên đăng nhập nào nên không có danh tính để ghi vào
+                // created_by/updated_by. Null ở đây đọc đúng nghĩa: do hệ thống dựng.
                 null,
                 null
             ));

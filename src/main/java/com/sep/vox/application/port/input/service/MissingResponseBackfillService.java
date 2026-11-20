@@ -1,23 +1,21 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.domain.model.assessment.AssessmentPaperItem;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.domain.model.assessment.AssessmentEvaluationEngineType;
-import com.sep.vox.domain.model.assessment.AssessmentItemEvaluation;
-import com.sep.vox.domain.model.assessment.AssessmentItemEvaluationStatus;
-import com.sep.vox.domain.model.assessment.AssessmentItemResponse;
-import com.sep.vox.domain.repository.AssessmentItemEvaluationRepository;
-import com.sep.vox.domain.repository.AssessmentItemResponseRepository;
-import com.sep.vox.domain.repository.AssessmentItemResponseTurnRepository;
-import com.sep.vox.domain.repository.AssessmentPaperItemRepository;
+import com.sep.vox.domain.model.exam.ExamEvaluationEngineType;
+import com.sep.vox.domain.model.exam.ExamItemEvaluation;
+import com.sep.vox.domain.model.exam.ExamItemEvaluationStatus;
+import com.sep.vox.domain.model.exam.ExamItemResponse;
+import com.sep.vox.domain.repository.ExamItemEvaluationRepository;
+import com.sep.vox.domain.repository.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.ExamItemResponseTurnRepository;
+import com.sep.vox.domain.repository.ExamPaperItemRepository;
 
 
 @Service
@@ -41,20 +39,20 @@ public class MissingResponseBackfillService {
      */
     private static final String GRADED_BY = "SYSTEM_NO_RECORDING";
 
-    private final AssessmentPaperItemRepository assessmentPaperItemRepository;
-    private final AssessmentItemResponseRepository assessmentItemResponseRepository;
-    private final AssessmentItemResponseTurnRepository assessmentItemResponseTurnRepository;
-    private final AssessmentItemEvaluationRepository assessmentItemEvaluationRepository;
+    private final ExamPaperItemRepository examPaperItemRepository;
+    private final ExamItemResponseRepository examItemResponseRepository;
+    private final ExamItemResponseTurnRepository examItemResponseTurnRepository;
+    private final ExamItemEvaluationRepository examItemEvaluationRepository;
 
     public MissingResponseBackfillService(
-            AssessmentPaperItemRepository assessmentPaperItemRepository,
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            AssessmentItemResponseTurnRepository assessmentItemResponseTurnRepository,
-            AssessmentItemEvaluationRepository assessmentItemEvaluationRepository) {
-        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.assessmentItemResponseTurnRepository = assessmentItemResponseTurnRepository;
-        this.assessmentItemEvaluationRepository = assessmentItemEvaluationRepository;
+            ExamPaperItemRepository examPaperItemRepository,
+            ExamItemResponseRepository examItemResponseRepository,
+            ExamItemResponseTurnRepository examItemResponseTurnRepository,
+            ExamItemEvaluationRepository examItemEvaluationRepository) {
+        this.examPaperItemRepository = examPaperItemRepository;
+        this.examItemResponseRepository = examItemResponseRepository;
+        this.examItemResponseTurnRepository = examItemResponseTurnRepository;
+        this.examItemEvaluationRepository = examItemEvaluationRepository;
     }
 
     /**
@@ -69,11 +67,11 @@ public class MissingResponseBackfillService {
      * câu "Thí sinh không đưa ra câu trả lời nào cho câu hỏi này" (đo được 2026-08-17, phiên
      * 01a0101d). Một vị từ, một nơi định nghĩa.
      */
-    public boolean isSilentAnswer(AssessmentItemResponse response) {
+    public boolean isSilentAnswer(ExamItemResponse response) {
         if (response.getTranscript() != null && !response.getTranscript().isBlank()) {
             return false;
         }
-        return assessmentItemResponseTurnRepository.findByAssessmentItemResponseId(response.getId()).stream()
+        return examItemResponseTurnRepository.findByExamItemResponseId(response.getId()).stream()
             .noneMatch(turn -> turn.getTranscript() != null && !turn.getTranscript().isBlank());
     }
 
@@ -96,7 +94,7 @@ public class MissingResponseBackfillService {
      *         không được phép cho 0
      */
     public boolean recordSilentAnswer(UUID responseId, UUID paperItemId) {
-        AssessmentItemResponse response = assessmentItemResponseRepository.findById(responseId).orElse(null);
+        var response = examItemResponseRepository.findById(responseId).orElse(null);
         if (response != null && !isSilentAnswer(response)) {
             LOGGER.warn(
                 "Từ chối ghi 0 điểm cho câu {}: câu này CÓ nội dung trả lời, phải để người chấm xử lý.",
@@ -104,10 +102,10 @@ public class MissingResponseBackfillService {
             );
             return false;
         }
-        assessmentItemEvaluationRepository.save(new AssessmentItemEvaluation(
+        examItemEvaluationRepository.save(new ExamItemEvaluation(
             responseId,
             paperItemId,
-            AssessmentEvaluationEngineType.AI_SINGLE,
+            ExamEvaluationEngineType.AI_SINGLE,
             GRADED_BY,
             null,
             null,
@@ -123,7 +121,7 @@ public class MissingResponseBackfillService {
             "Thí sinh không đưa ra câu trả lời nào cho câu hỏi này.",
             null,
             null,
-            AssessmentItemEvaluationStatus.FINALIZED,
+            ExamItemEvaluationStatus.FINALIZED,
             Instant.now()
         ));
         LOGGER.info("Câu {} không có nội dung trả lời -- ghi 0 điểm, không gọi LLM.", responseId);
@@ -137,38 +135,38 @@ public class MissingResponseBackfillService {
         if (paperId == null) {
             return 0;
         }
-        Set<UUID> answeredPaperItemIds = assessmentItemResponseRepository.findBySessionId(sessionId).stream()
+        var answeredPaperItemIds = examItemResponseRepository.findBySessionId(sessionId).stream()
             .map(response -> response.getPaperItemId())
             .filter(java.util.Objects::nonNull)
             .collect(java.util.stream.Collectors.toSet());
 
-        Instant now = Instant.now();
-        int created = 0;
-        for (AssessmentPaperItem paperItem : assessmentPaperItemRepository.findByPaperId(paperId)) {
+        var now = Instant.now();
+        var created = 0;
+        for (var paperItem : examPaperItemRepository.findByPaperId(paperId)) {
             if (answeredPaperItemIds.contains(paperItem.getId())) {
                 continue;
             }
-            // The id must be generated here. {@code assessment_item_responses.id} is a plain @Id, NOT
-            // @GeneratedValue -- unlike {@code assessment_item_evaluations.id} right below it, which has
-            // @Generated(INSERT) + DEFAULT uuidv7(). This is deliberate: the id of a response is the answerId generated by
-            // the Python side (deterministic UUID v5) and RecordAnswerTurnUseCase writes that value
-            // straight in, so this column must not be left for the DB to decide -- if the id diverges, every findById(answerId)
-            // misses.
+            // Id phải tự sinh ở đây. {@code exam_item_responses.id} là @Id trần, KHÔNG
+            // @GeneratedValue -- khác với {@code exam_item_evaluations.id} ngay bên dưới vốn có
+            // @Generated(INSERT) + DEFAULT uuidv7(). Cố ý: id của response chính là answerId do
+            // phía Python sinh (UUID v5 deterministic) và RecordAnswerTurnUseCase ghi thẳng giá
+            // trị đó vào, nên cột này không được để DB quyết -- id lệch thì mọi findById(answerId)
+            // đều trượt.
             //
-            // Using the 7-parameter constructor (without id) makes Hibernate throw
-            // IdentifierGenerationException on persist(). Because SubmitAssessmentSessionUseCase.execute()
-            // is @Transactional and calls backfill RIGHT BEFORE the loop that fires AssessmentAttemptEvaluationRequested,
-            // the exception here rolls back the whole transaction and swallows the event-firing loop too: the Python side
-            // publishes AnswerTurnsRecorded and then waits forever with no grading request coming back. The symptom
-            // is "the attempt is not graded", not "backfill is broken", so it is very easy to blame Kafka by mistake.
-            AssessmentItemResponse response = assessmentItemResponseRepository.save(new AssessmentItemResponse(
+            // Dùng constructor 7 tham số (bỏ id) khiến Hibernate ném
+            // IdentifierGenerationException lúc persist(). Vì SubmitExamSessionUseCase.execute()
+            // là @Transactional và gọi backfill NGAY TRƯỚC vòng bắn ExamAttemptEvaluationRequested,
+            // exception ở đây rollback cả transaction và nuốt luôn vòng bắn sự kiện: phía Python
+            // publish AnswerTurnsRecorded xong chờ mãi không có request chấm quay lại. Triệu chứng
+            // là "bài không được chấm", không phải "backfill hỏng", nên rất dễ đổ nhầm cho Kafka.
+            var response = examItemResponseRepository.save(new ExamItemResponse(
                 UUID.randomUUID(),
                 sessionId, paperItem.getId(), null, 0, null, NO_RECORDING, now
             ));
-            assessmentItemEvaluationRepository.save(new AssessmentItemEvaluation(
+            examItemEvaluationRepository.save(new ExamItemEvaluation(
                 response.getId(),
                 paperItem.getId(),
-                AssessmentEvaluationEngineType.AI_SINGLE,
+                ExamEvaluationEngineType.AI_SINGLE,
                 GRADED_BY,
                 null,
                 null,
@@ -196,7 +194,7 @@ public class MissingResponseBackfillService {
                 "Không thu được bản ghi cho câu này.",
                 null,
                 null,
-                AssessmentItemEvaluationStatus.FINALIZED,
+                ExamItemEvaluationStatus.FINALIZED,
                 now
             ));
             created++;

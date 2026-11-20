@@ -27,7 +27,7 @@ public class CustomUserDetails implements UserDetails {
     private static final String AUTHORITY_ROLE_PREFIX = "ROLE_";
 
     public static CustomUserDetails createFromUser(User user, UUID schoolId, List<String> roleCodes) {
-        List<SimpleGrantedAuthority> authorities = roleCodes.stream()
+        var authorities = roleCodes.stream()
             .map(role -> new SimpleGrantedAuthority(AUTHORITY_ROLE_PREFIX + role))
             .collect(Collectors.toList());
         

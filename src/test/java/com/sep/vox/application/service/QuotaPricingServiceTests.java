@@ -22,14 +22,14 @@ class QuotaPricingServiceTests {
 
     @Test
     void usdToVndRateUsesLatestSnapshotWhenPresent() {
-        QuotaPricingCalibrationRepository quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
-        ExchangeRateSnapshotRepository exchangeRateSnapshotRepository = mock(ExchangeRateSnapshotRepository.class);
-        QuotaPricingProperties quotaPricingProperties = new QuotaPricingProperties(null, null);
-        QuotaSellingPriceProperties quotaSellingPriceProperties = new QuotaSellingPriceProperties(new BigDecimal("25500"), new BigDecimal("0.05"));
+        var quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
+        var exchangeRateSnapshotRepository = mock(ExchangeRateSnapshotRepository.class);
+        var quotaPricingProperties = new QuotaPricingProperties(null, null);
+        var quotaSellingPriceProperties = new QuotaSellingPriceProperties(new BigDecimal("25500"), new BigDecimal("0.05"));
         when(exchangeRateSnapshotRepository.findLatest(CurrencyCode.USD)).thenReturn(
             Optional.of(new ExchangeRateSnapshot(CurrencyCode.USD, new BigDecimal("26777"), Instant.now(), "https://example.test")));
 
-        QuotaPricingService service = new QuotaPricingService(
+        var service = new QuotaPricingService(
             quotaPricingCalibrationRepository, exchangeRateSnapshotRepository, quotaPricingProperties,
             quotaSellingPriceProperties);
 
@@ -38,13 +38,13 @@ class QuotaPricingServiceTests {
 
     @Test
     void usdToVndRateFallsBackToConfiguredMarketRateWhenNoSnapshot() {
-        QuotaPricingCalibrationRepository quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
-        ExchangeRateSnapshotRepository exchangeRateSnapshotRepository = mock(ExchangeRateSnapshotRepository.class);
-        QuotaPricingProperties quotaPricingProperties = new QuotaPricingProperties(null, null);
-        QuotaSellingPriceProperties quotaSellingPriceProperties = new QuotaSellingPriceProperties(new BigDecimal("25500"), new BigDecimal("0.05"));
+        var quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
+        var exchangeRateSnapshotRepository = mock(ExchangeRateSnapshotRepository.class);
+        var quotaPricingProperties = new QuotaPricingProperties(null, null);
+        var quotaSellingPriceProperties = new QuotaSellingPriceProperties(new BigDecimal("25500"), new BigDecimal("0.05"));
         when(exchangeRateSnapshotRepository.findLatest(CurrencyCode.USD)).thenReturn(Optional.empty());
 
-        QuotaPricingService service = new QuotaPricingService(
+        var service = new QuotaPricingService(
             quotaPricingCalibrationRepository, exchangeRateSnapshotRepository, quotaPricingProperties,
             quotaSellingPriceProperties);
 
@@ -53,13 +53,13 @@ class QuotaPricingServiceTests {
 
     @Test
     void usdToVndRateFallsBackToPlaceholderDefaultWhenUnset() {
-        QuotaPricingCalibrationRepository quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
-        ExchangeRateSnapshotRepository exchangeRateSnapshotRepository = mock(ExchangeRateSnapshotRepository.class);
-        QuotaPricingProperties quotaPricingProperties = new QuotaPricingProperties(null, null);
-        QuotaSellingPriceProperties quotaSellingPriceProperties = new QuotaSellingPriceProperties(null, null);
+        var quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
+        var exchangeRateSnapshotRepository = mock(ExchangeRateSnapshotRepository.class);
+        var quotaPricingProperties = new QuotaPricingProperties(null, null);
+        var quotaSellingPriceProperties = new QuotaSellingPriceProperties(null, null);
         when(exchangeRateSnapshotRepository.findLatest(CurrencyCode.USD)).thenReturn(Optional.empty());
 
-        QuotaPricingService service = new QuotaPricingService(
+        var service = new QuotaPricingService(
             quotaPricingCalibrationRepository, exchangeRateSnapshotRepository, quotaPricingProperties,
             quotaSellingPriceProperties);
 

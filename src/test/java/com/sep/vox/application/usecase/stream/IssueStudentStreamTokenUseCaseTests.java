@@ -22,82 +22,81 @@ import com.sep.vox.application.port.input.command.IssueStudentStreamTokenCommand
 import com.sep.vox.application.port.input.usecase.stream.IssueStudentStreamTokenUseCase;
 import com.sep.vox.application.port.output.StreamTokenProvider;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.stream.IssueStudentStreamTokenResponse;
-import com.sep.vox.domain.model.assessment.Assessment;
-import com.sep.vox.domain.model.assessment.AssessmentCandidate;
-import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
-import com.sep.vox.domain.model.assessment.AssessmentSchedule;
-import com.sep.vox.domain.model.assessment.AssessmentSession;
-import com.sep.vox.domain.model.assessment.AssessmentSessionStatus;
-import com.sep.vox.domain.model.assessment.AssessmentStreamTypePermission;
-import com.sep.vox.domain.repository.AssessmentCandidateRepository;
-import com.sep.vox.domain.repository.AssessmentRepository;
-import com.sep.vox.domain.repository.AssessmentScheduleRepository;
-import com.sep.vox.domain.repository.AssessmentSessionRepository;
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidate;
+import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
+import com.sep.vox.domain.model.exam.ExamSchedule;
+import com.sep.vox.domain.model.exam.ExamSession;
+import com.sep.vox.domain.model.exam.ExamSessionStatus;
+import com.sep.vox.domain.model.exam.ExamStreamTypePermission;
+import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.repository.ExamSessionRepository;
 
 class IssueStudentStreamTokenUseCaseTests {
 
     private UserContextPort userContextPort;
-    private AssessmentScheduleRepository assessmentScheduleRepository;
-    private AssessmentRepository assessmentRepository;
-    private AssessmentCandidateRepository assessmentCandidateRepository;
-    private AssessmentSessionRepository assessmentSessionRepository;
+    private ExamScheduleRepository examScheduleRepository;
+    private ExamRepository examRepository;
+    private ExamCandidateRepository examCandidateRepository;
+    private ExamSessionRepository examSessionRepository;
     private StreamTokenProvider streamTokenProvider;
     private IssueStudentStreamTokenUseCase useCase;
 
     private final UUID userId = UUID.randomUUID();
-    private final UUID assessmentId = UUID.randomUUID();
+    private final UUID examId = UUID.randomUUID();
     private final UUID sessionId = UUID.randomUUID();
     private final UUID candidateId = UUID.randomUUID();
     private final UUID scheduleId = UUID.randomUUID();
 
-    private Assessment assessment;
-    private AssessmentSession session;
+    private Exam exam;
+    private ExamSession session;
 
     @BeforeEach
     void setUp() {
         userContextPort = mock(UserContextPort.class);
-        assessmentScheduleRepository = mock(AssessmentScheduleRepository.class);
-        assessmentRepository = mock(AssessmentRepository.class);
-        assessmentCandidateRepository = mock(AssessmentCandidateRepository.class);
-        assessmentSessionRepository = mock(AssessmentSessionRepository.class);
+        examScheduleRepository = mock(ExamScheduleRepository.class);
+        examRepository = mock(ExamRepository.class);
+        examCandidateRepository = mock(ExamCandidateRepository.class);
+        examSessionRepository = mock(ExamSessionRepository.class);
         streamTokenProvider = mock(StreamTokenProvider.class);
         useCase = new IssueStudentStreamTokenUseCase(
             userContextPort,
-            assessmentScheduleRepository,
-            assessmentRepository,
-            assessmentCandidateRepository,
-            assessmentSessionRepository,
+            examScheduleRepository,
+            examRepository,
+            examCandidateRepository,
+            examSessionRepository,
             streamTokenProvider
         );
 
-        assessment = new Assessment();
-        assessment.setId(assessmentId);
-        assessment.setRequiredStreamType(AssessmentRequiredStreamType.CAMERA_AND_SCREEN);
+        exam = new Exam();
+        exam.setId(examId);
+        exam.setRequiredStreamType(ExamRequiredStreamType.CAMERA_AND_SCREEN);
 
-        session = new AssessmentSession();
+        session = new ExamSession();
         session.setId(sessionId);
-        session.setAssessmentId(assessmentId);
+        session.setExamId(examId);
         session.setCandidateId(candidateId);
-        session.setStatus(AssessmentSessionStatus.IN_PROGRESS);
+        session.setStatus(ExamSessionStatus.IN_PROGRESS);
 
-        AssessmentCandidate candidate = new AssessmentCandidate();
+        var candidate = new ExamCandidate();
         candidate.setId(candidateId);
         candidate.setStudentId(userId);
         candidate.setScheduleId(scheduleId);
 
-        Instant now = Instant.now();
-        AssessmentSchedule schedule = new AssessmentSchedule();
+        var now = Instant.now();
+        var schedule = new ExamSchedule();
         schedule.setId(scheduleId);
         schedule.setStartDate(now.minus(1, ChronoUnit.HOURS));
         schedule.setEndDate(now.plus(1, ChronoUnit.HOURS));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        when(assessmentSessionRepository.findByIdAndResumable(sessionId)).thenReturn(Optional.of(session));
-        when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment));
-        when(assessmentCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate));
-        when(assessmentScheduleRepository.findByIdAndInSchedule(eq(scheduleId), any())).thenReturn(Optional.of(schedule));
-        when(assessmentSessionRepository.lockChosenStreamType(eq(sessionId), any())).thenReturn(1);
+        when(examSessionRepository.findByIdAndResumable(sessionId)).thenReturn(Optional.of(session));
+        when(examRepository.findById(examId)).thenReturn(Optional.of(exam));
+        when(examCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate));
+        when(examScheduleRepository.findByIdAndInSchedule(eq(scheduleId), any())).thenReturn(Optional.of(schedule));
+        when(examSessionRepository.lockChosenStreamType(eq(sessionId), any())).thenReturn(1);
         when(streamTokenProvider.generateStreamToken(any(), any(), any(), any(), any(), any(), any(), any()))
             .thenReturn("jwt");
     }
@@ -107,55 +106,55 @@ class IssueStudentStreamTokenUseCaseTests {
     }
 
     @Test
-    void should_fall_back_to_assessment_required_stream_type_when_request_omits_it() {
-        IssueStudentStreamTokenResponse response = useCase.execute(command(null));
+    void should_fall_back_to_exam_required_stream_type_when_request_omits_it() {
+        var response = useCase.execute(command(null));
 
         assertThat(response.streamTypes()).containsExactly("camera", "screen");
-        verify(assessmentSessionRepository).lockChosenStreamType(sessionId, AssessmentRequiredStreamType.CAMERA_AND_SCREEN);
+        verify(examSessionRepository).lockChosenStreamType(sessionId, ExamRequiredStreamType.CAMERA_AND_SCREEN);
     }
 
     @Test
     void should_let_student_pick_a_single_stream_when_permission_is_any() {
-        assessment.setStreamTypePermission(AssessmentStreamTypePermission.ANY);
+        exam.setStreamTypePermission(ExamStreamTypePermission.ANY);
 
-        IssueStudentStreamTokenResponse response = useCase.execute(command("SCREEN"));
+        var response = useCase.execute(command("SCREEN"));
 
         assertThat(response.streamTypes()).containsExactly("screen");
-        verify(assessmentSessionRepository).lockChosenStreamType(sessionId, AssessmentRequiredStreamType.SCREEN);
+        verify(examSessionRepository).lockChosenStreamType(sessionId, ExamRequiredStreamType.SCREEN);
     }
 
     @Test
     void should_reject_a_single_stream_when_permission_is_all() {
-        assessment.setStreamTypePermission(AssessmentStreamTypePermission.ALL);
+        exam.setStreamTypePermission(ExamStreamTypePermission.ALL);
 
         assertThatThrownBy(() -> useCase.execute(command("CAMERA")))
             .isInstanceOf(IllegalArgumentException.class);
-        verify(assessmentSessionRepository, never()).lockChosenStreamType(any(), any());
+        verify(examSessionRepository, never()).lockChosenStreamType(any(), any());
     }
 
     /**
-     * vox-streaming and WPF both use lowercase "camera"/"screen" for these same values, so
-     * reissuing the token from the client side must not fail just because of letter case.
+     * vox-streaming và WPF đều dùng "camera"/"screen" chữ thường cho cùng những giá trị này, nên
+     * việc phát lại token từ phía client không được fail chỉ vì kiểu chữ.
      */
     @Test
     void should_accept_a_lowercase_stream_type() {
-        assessment.setStreamTypePermission(AssessmentStreamTypePermission.ANY);
+        exam.setStreamTypePermission(ExamStreamTypePermission.ANY);
 
-        IssueStudentStreamTokenResponse response = useCase.execute(command("camera"));
+        var response = useCase.execute(command("camera"));
 
         assertThat(response.streamTypes()).containsExactly("camera");
-        verify(assessmentSessionRepository).lockChosenStreamType(sessionId, AssessmentRequiredStreamType.CAMERA);
+        verify(examSessionRepository).lockChosenStreamType(sessionId, ExamRequiredStreamType.CAMERA);
     }
 
     @Test
     void should_reuse_the_locked_choice_on_a_later_token_request() {
-        assessment.setStreamTypePermission(AssessmentStreamTypePermission.ANY);
-        session.setChosenStreamType(AssessmentRequiredStreamType.SCREEN);
+        exam.setStreamTypePermission(ExamStreamTypePermission.ANY);
+        session.setChosenStreamType(ExamRequiredStreamType.SCREEN);
 
-        IssueStudentStreamTokenResponse response = useCase.execute(command(null));
+        var response = useCase.execute(command(null));
 
         assertThat(response.streamTypes()).containsExactly("screen");
-        verify(assessmentSessionRepository, never()).lockChosenStreamType(any(), any());
+        verify(examSessionRepository, never()).lockChosenStreamType(any(), any());
     }
 
     /**
@@ -164,8 +163,8 @@ class IssueStudentStreamTokenUseCaseTests {
      */
     @Test
     void should_reject_switching_stream_type_after_the_session_locked_one() {
-        assessment.setStreamTypePermission(AssessmentStreamTypePermission.ANY);
-        session.setChosenStreamType(AssessmentRequiredStreamType.CAMERA_AND_SCREEN);
+        exam.setStreamTypePermission(ExamStreamTypePermission.ANY);
+        session.setChosenStreamType(ExamRequiredStreamType.CAMERA_AND_SCREEN);
 
         assertThatThrownBy(() -> useCase.execute(command("CAMERA")))
             .isInstanceOf(ForbiddenException.class);
@@ -173,14 +172,14 @@ class IssueStudentStreamTokenUseCaseTests {
 
     @Test
     void should_follow_the_winner_when_it_loses_the_lock_race() {
-        assessment.setStreamTypePermission(AssessmentStreamTypePermission.ANY);
-        AssessmentSession winner = new AssessmentSession();
+        exam.setStreamTypePermission(ExamStreamTypePermission.ANY);
+        var winner = new ExamSession();
         winner.setId(sessionId);
-        winner.setChosenStreamType(AssessmentRequiredStreamType.SCREEN);
-        when(assessmentSessionRepository.lockChosenStreamType(eq(sessionId), any())).thenReturn(0);
-        when(assessmentSessionRepository.findById(sessionId)).thenReturn(Optional.of(winner));
+        winner.setChosenStreamType(ExamRequiredStreamType.SCREEN);
+        when(examSessionRepository.lockChosenStreamType(eq(sessionId), any())).thenReturn(0);
+        when(examSessionRepository.findById(sessionId)).thenReturn(Optional.of(winner));
 
-        IssueStudentStreamTokenResponse response = useCase.execute(command(null));
+        var response = useCase.execute(command(null));
 
         assertThat(response.streamTypes()).containsExactly("screen");
     }
@@ -195,6 +194,6 @@ class IssueStudentStreamTokenUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command("CAMERA")))
             .isInstanceOf(ForbiddenException.class);
-        verify(assessmentSessionRepository, never()).lockChosenStreamType(any(), any());
+        verify(examSessionRepository, never()).lockChosenStreamType(any(), any());
     }
 }

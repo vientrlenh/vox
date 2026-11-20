@@ -1,10 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.model.school.SchoolBalance;
-import com.sep.vox.domain.model.school.SchoolUser;
-import com.sep.vox.domain.model.subscription.SubscriptionPlan;
-import com.sep.vox.domain.model.user.Role;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.List;
@@ -147,7 +142,7 @@ public class OrderSettlementService {
         // Khóa đơn TRƯỚC khi đọc trạng thái: hai luồng cùng đọc "đơn còn PENDING" rồi cùng đi cộng
         // tiền là đúng kịch bản mà uq_payment_records_one_paid_per_order không chặn được, vì mỗi
         // luồng thao tác trên một dòng payment_records khác nhau của cùng một đơn.
-        Order order = orderRepository.findByIdForUpdate(payment.getOrderId())
+        var order = orderRepository.findByIdForUpdate(payment.getOrderId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng của lần thanh toán"));
 
         if (order.getStatus() == OrderStatus.SUCCESS) {
@@ -179,7 +174,7 @@ public class OrderSettlementService {
 
         // Giao hàng TRƯỚC khi phát hóa đơn: hóa đơn là chứng từ cho thứ đã giao. Cùng transaction
         // nên thứ tự này không đổi kết quả khi lỗi, nhưng nó nói đúng ý định cho người đọc sau.
-        UUID subscriptionId = fulfil(order, paidAt);
+        var subscriptionId = fulfil(order, paidAt);
 
         // Chỉ báo khi hóa đơn THẬT SỰ vừa được phát: Optional rỗng nghĩa là đơn này đã có hóa đơn
         // từ một lần chốt trước, và một callback lặp không được sinh mail/thông báo lần hai.
@@ -218,7 +213,7 @@ public class OrderSettlementService {
      */
     @Transactional
     public boolean expireIfOverdue(UUID orderId, Instant now) {
-        Order order = orderRepository.findByIdForUpdate(orderId)
+        var order = orderRepository.findByIdForUpdate(orderId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng cần hết hạn"));
 
         if (order.getStatus() != OrderStatus.PENDING || now.isBefore(order.getExpiresAt())) {
@@ -256,16 +251,16 @@ public class OrderSettlementService {
         // Khóa ví: một trường có thể có nhiều đơn nạp cùng lúc (uq_orders_one_open_subscription_order
         // cố ý KHÔNG chặn TOPUP), nên hai callback về gần nhau sẽ cùng đọc một số dư cũ rồi cùng ghi
         // đè -- mất hẳn một lần nạp mà không có lỗi nào nổi lên.
-        SchoolBalance balance = schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(order.getSchoolId(), now);
+        var balance = schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(order.getSchoolId(), now);
 
-        BigDecimal credited = order.getSubtotalAmountVnd();
-        BigDecimal balanceBefore = balance.getBalanceVnd();
-        BigDecimal balanceAfter = balance.apply(credited, now);
+        var credited = order.getSubtotalAmountVnd();
+        var balanceBefore = balance.getBalanceVnd();
+        var balanceAfter = balance.apply(credited, now);
         schoolBalanceRepository.save(balance);
 
         // subscriptionId chỉ để truy vết "lúc nạp trường đang dùng gói nào" -- số dư không thuộc về
         // gói nào cả, và trường chưa có gói vẫn nạp được nên null là hợp lệ.
-        UUID activeSubscriptionId = schoolSubscriptionRepository.findActiveBySchoolId(order.getSchoolId())
+        var activeSubscriptionId = schoolSubscriptionRepository.findActiveBySchoolId(order.getSchoolId())
             .map(s -> s.getId())
             .orElse(null);
 
@@ -330,22 +325,22 @@ public class OrderSettlementService {
         // Chốt kỳ nguồn TRƯỚC mọi thao tác ghi: cutOverToUpgrade sẽ kéo endDate của các kỳ chưa kết
         // thúc về hiện tại, và save() bên dưới thêm một kỳ mới -- hỏi "kỳ gần đây nhất" sau bất kỳ
         // việc nào trong hai việc đó là hỏi về một thế giới đã đổi.
-        UUID previousSubscriptionId = schoolSubscriptionRepository
+        var previousSubscriptionId = schoolSubscriptionRepository
             .findMostRecentBySchoolId(order.getSchoolId())
             .map(previous -> previous.getId())
             .orElse(null);
 
-        UUID planId = orderItemRepository.findByOrderId(order.getId()).stream()
+        var planId = orderItemRepository.findByOrderId(order.getId()).stream()
             .filter(item -> item.getType() == OrderItemType.SUBSCRIPTION)
             .map(item -> item.getItemId())
             .findFirst()
             .orElseThrow(() -> new IllegalStateException(
                 "Đơn đăng ký " + order.getId() + " không có dòng SUBSCRIPTION nào để kích hoạt"));
 
-        SubscriptionPlan plan = subscriptionPlanRepository.findById(planId)
+        var plan = subscriptionPlanRepository.findById(planId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói dịch vụ của đơn đăng ký"));
 
-        Instant startsAt = order.getType() == OrderType.SUBSCRIPTION_UPGRADE
+        var startsAt = order.getType() == OrderType.SUBSCRIPTION_UPGRADE
             ? cutOverToUpgrade(order.getSchoolId(), now)
             : nextPeriodStart(order.getSchoolId(), now);
 
@@ -353,12 +348,12 @@ public class OrderSettlementService {
         // đơn nằm chờ, mà thứ phải lưu lại là con số trường thật sự trả. Dùng subtotal (giá niêm yết)
         // chứ không phải total: khoản bù nâng cấp là chuyện của LẦN MUA này, không phải giá trị của
         // kỳ -- ghi total thì lần nâng cấp sau lại bù dựa trên một con số đã bị bù một lần rồi.
-        SchoolSubscription subscription = schoolSubscriptionRepository.save(SchoolSubscription.activate(
+        var subscription = schoolSubscriptionRepository.save(SchoolSubscription.activate(
             order.getSchoolId(), plan, order.getSubtotalAmountVnd(), startsAt, now));
 
         // Gia hạn SỚM: kỳ cũ còn chạy tới startsAt, nên phần tiền tự nạp chưa tiêu của nó CHƯA chốt
         // được -- xem seedQuotaRecords và CarryQuotaFundingAtPeriodStartService.
-        Map<QuotaType, BigDecimal> seededPoolTotals = seedQuotaRecords(
+        var seededPoolTotals = seedQuotaRecords(
             subscription.getId(), planId, previousSubscriptionId, startsAt.isAfter(now));
         carryForwardUserAllocations(
             previousSubscriptionId, subscription.getId(), order.getSchoolId(), seededPoolTotals);
@@ -407,8 +402,8 @@ public class OrderSettlementService {
      * lần nữa là bù hai lần cho cùng một thứ.
      */
     private Instant cutOverToUpgrade(UUID schoolId, Instant now) {
-        List<SchoolSubscription> unfinished = schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now);
-        for (SchoolSubscription previous : unfinished) {
+        var unfinished = schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now);
+        for (var previous : unfinished) {
             previous.setStatus(SchoolSubscriptionStatus.EXPIRED);
             previous.setEndDate(now);
             schoolSubscriptionRepository.save(previous);
@@ -448,7 +443,7 @@ public class OrderSettlementService {
     private Map<QuotaType, BigDecimal> seedQuotaRecords(UUID subscriptionId, UUID planId,
             UUID previousSubscriptionId, boolean deferFundingCarry) {
         // KHÔNG đọc ví kỳ cũ ở nhánh hoãn: đọc là chốt, và chốt sớm chính là lỗi đang sửa.
-        Map<QuotaType, BigDecimal> carriedByType = deferFundingCarry
+        var carriedByType = deferFundingCarry
             ? Map.<QuotaType, BigDecimal>of()
             : unspentFundingByQuotaType(previousSubscriptionId);
 
@@ -474,7 +469,7 @@ public class OrderSettlementService {
             .forEach(record -> LOGGER.info("Chuyển {}đ tiền tự nạp chưa tiêu của ví {} sang kỳ {}",
                 record.getFundedFromBalanceVnd(), record.getQuotaType(), subscriptionId));
 
-        Map<QuotaType, BigDecimal> seededPoolTotals = new EnumMap<QuotaType, BigDecimal>(QuotaType.class);
+        var seededPoolTotals = new EnumMap<QuotaType, BigDecimal>(QuotaType.class);
         records.forEach(record ->
             seededPoolTotals.put(record.getQuotaType(), record.getTotalAllocatedAmountVnd()));
 
@@ -501,9 +496,9 @@ public class OrderSettlementService {
         if (previousSubscriptionId == null) {
             return Map.of();
         }
-        Map<QuotaType, BigDecimal> carried = new EnumMap<QuotaType, BigDecimal>(QuotaType.class);
-        for (SchoolSubscriptionQuotaRecord record : quotaRecordRepository.findBySchoolSubscriptionId(previousSubscriptionId)) {
-            BigDecimal unspent = record.unspentFundedVnd();
+        var carried = new EnumMap<QuotaType, BigDecimal>(QuotaType.class);
+        for (var record : quotaRecordRepository.findBySchoolSubscriptionId(previousSubscriptionId)) {
+            var unspent = record.unspentFundedVnd();
             if (unspent.signum() > 0) {
                 carried.put(record.getQuotaType(), unspent);
             }
@@ -512,53 +507,53 @@ public class OrderSettlementService {
     }
 
     /**
-     * Copies the PERSONAL spending ceilings of the old period to the new period.
+     * Chép trần chi CÁ NHÂN của kỳ cũ sang kỳ mới.
      *
-     * <p>The allocation record is attached to {@code school_subscription_id}, and every period is a new subscription
-     * row, so without copying, every personal ceiling DISAPPEARS exactly when the new period starts -- and the two wallets break
-     * in two opposite directions, equally silently:
-     *
-     * <ul>
-     *   <li>PRACTICE: {@code findPracticeSpendableFundsVnd} takes LEAST with COALESCE(...,0), so a missing
-     *       row means 0 -- THE WHOLE SCHOOL loses the right to practice speaking until someone goes in to redistribute,
-     *       right after the school has just paid for the renewal.</li>
-     *   <li>ASSESSMENT: {@code ClassTestTokenQuotaGuardService.remainingUserAllocation} returns null when there is no
-     *       row, and the guard skips null -- every teacher ends up with no spending ceiling at all.</li>
-     * </ul>
-     *
-     * <p>Copies the CEILING, NOT what has been spent: {@code upsertAllocation} builds the new row with
-     * {@code used = 0}, exactly the way {@link #seedQuotaRecords} restarts the school-level wallet from 0.
-     * A new period is a new budget, at both levels.
-     *
-     * <p><b>The snapshot is taken at PAYMENT time, not when the new period starts running.</b> With an early renewal the two
-     * moments are far apart and any allocation change in between will not carry over. This is accepted on purpose:
-     * following the start moment exactly would need another job that sweeps periods coming due, while the cost of the mismatch
-     * is only a few stale numbers that the school administrator can fix at any time -- whereas the cost of
-     * copying nothing is the whole school freezing.
-     *
-     * <p><b>The copy is FILTERED and CLAMPED</b>, not copied verbatim. Three conditions, each closing a bug that the
-     * first verbatim copy left open:
+     * <p>Bản ghi phân bổ gắn với {@code school_subscription_id}, mà mỗi kỳ là một dòng subscription
+     * mới, nên nếu không chép thì mọi trần cá nhân BIẾN MẤT đúng lúc kỳ mới bắt đầu -- và hai ví hỏng
+     * theo hai chiều ngược nhau, cùng im lặng như nhau:
      *
      * <ul>
-     *   <li>Only wallet types that the NEW period really has -- iterating {@code QuotaType.values()} and upserting
-     *       unconditionally would give a school that switched to a plan without PRACTICE a batch of ceiling rows pointing at
-     *       a wallet that does not exist, whereas {@link #seedQuotaRecords} already handles the symmetric case on the
-     *       MONEY side with a WARN line.</li>
-     *   <li>Only people who are STILL eligible -- allocation rows are not deleted when a teacher leaves or a
-     *       student graduates, so copying everything would rebuild the whole staffing history every period plus the newly departed.
-     *       With no way to delete, the table only bloats and {@code orphanedAmountVnd}
-     *       on the screen only grows. Same filter as {@code sumAllocatedForEligibleUsers}: if the two
-     *       sides count different sets we are back to exactly bug Q-5.</li>
-     *   <li>The copied total does not exceed the new period's wallet -- after a downgrade (or the end of a promotion) the total of the old ceilings
-     *       may be larger than the whole new wallet, and the school would open the period already over its own ceiling:
-     *       every manual edit afterwards is rejected with "exceeds the distributable part" even though nobody lowered the
-     *       ceiling. Scale down PROPORTIONALLY to keep the ratios between individuals.</li>
+     *   <li>PRACTICE: {@code findPracticeSpendableFundsVnd} lấy LEAST với COALESCE(...,0), nên không
+     *       có dòng nghĩa là 0 -- CẢ TRƯỜNG mất quyền luyện nói cho tới khi có người vào chia lại,
+     *       ngay sau khi trường vừa trả tiền gia hạn.</li>
+     *   <li>EXAM: {@code ClassTestTokenQuotaGuardService.remainingUserAllocation} trả null khi không
+     *       có dòng, và cửa chặn bỏ qua null -- mọi giáo viên thành không còn trần chi nào.</li>
      * </ul>
      *
-     * <p>The clamp here is the wallet ceiling ({@code total_allocated}), not the distributable part
-     * ({@code SchoolQuotaPolicy.distributableAmountOf}, which is stricter because it also multiplies by the school's ratio).
-     * That policy sits in a repository this service does not hold; clamping to the wallet is enough so that the new period does not open
-     * in a broken state, and the school administrator can fix the rest on the screen.
+     * <p>Chép TRẦN, KHÔNG chép phần đã tiêu: {@code upsertAllocation} dựng dòng mới với
+     * {@code used = 0}, đúng bằng cách {@link #seedQuotaRecords} cho ví cấp trường bắt đầu lại từ 0.
+     * Kỳ mới là một ngân sách mới, ở cả hai cấp.
+     *
+     * <p><b>Ảnh chụp lấy tại thời điểm TRẢ TIỀN, không phải lúc kỳ mới chạy.</b> Với gia hạn sớm, hai
+     * mốc đó cách nhau và mọi thay đổi phân bổ trong quãng giữa sẽ không theo sang. Chấp nhận có ý:
+     * bám đúng mốc bắt đầu thì phải có thêm một job quét kỳ tới hạn, trong khi cái giá của việc lệch
+     * chỉ là vài con số cũ mà quản trị trường sửa lại được bất cứ lúc nào -- còn cái giá của việc
+     * không chép gì cả là cả trường đứng hình.
+     *
+     * <p><b>Chép có LỌC và có KẸP</b>, không chép nguyên xi. Ba điều kiện, mỗi cái đóng một lỗi mà
+     * bản chép nguyên xi đầu tiên để hở:
+     *
+     * <ul>
+     *   <li>Chỉ những loại ví kỳ MỚI thật sự có -- duyệt {@code QuotaType.values()} rồi upsert vô
+     *       điều kiện sẽ để trường đổi sang gói không kèm PRACTICE nhận một loạt dòng trần trỏ vào
+     *       một ví không tồn tại, trong khi {@link #seedQuotaRecords} đã xử đúng ca đối xứng ở phía
+     *       TIỀN bằng một dòng WARN.</li>
+     *   <li>Chỉ người CÒN đủ điều kiện -- dòng phân bổ không bị xoá khi giáo viên nghỉ việc hay học
+     *       sinh ra trường, nên chép tất là mỗi kỳ lại dựng lại toàn bộ lịch sử nhân sự cộng thêm
+     *       người mới nghỉ. Không có đường xoá, nên bảng chỉ có phình và {@code orphanedAmountVnd}
+     *       trên màn hình chỉ có tăng. Cùng phép lọc với {@code sumAllocatedForEligibleUsers}: hai
+     *       bên đếm lệch tập là quay lại đúng lỗi Q-5.</li>
+     *   <li>Tổng chép sang không vượt ví của kỳ mới -- hạ gói (hoặc hết khuyến mãi) thì tổng trần cũ
+     *       có thể lớn hơn cả ví mới, và trường mở kỳ trong trạng thái đã vượt trần của chính mình:
+     *       mọi lần sửa tay sau đó bị từ chối bằng "vượt quá phần được phép chia" dù không ai hạ
+     *       trần. Thu nhỏ theo TỈ LỆ để giữ tương quan giữa các cá nhân.</li>
+     * </ul>
+     *
+     * <p>Mức kẹp ở đây là trần của ví ({@code total_allocated}), không phải phần được phép chia
+     * ({@code SchoolQuotaPolicy.distributableAmountOf}, chặt hơn vì còn nhân tỉ lệ của trường).
+     * Chính sách đó nằm ở một repository service này chưa cầm; kẹp theo ví đã đủ để kỳ mới không mở
+     * ra trong trạng thái hỏng, phần còn lại quản trị trường sửa được trên màn hình.
      */
     private void carryForwardUserAllocations(UUID previousSubscriptionId, UUID newSubscriptionId,
             UUID schoolId, Map<QuotaType, BigDecimal> seededPoolTotals) {
@@ -566,18 +561,18 @@ public class OrderSettlementService {
             return;
         }
 
-        for (Map.Entry<QuotaType, BigDecimal> seededPool : seededPoolTotals.entrySet()) {
-            QuotaType quotaType = seededPool.getKey();
-            BigDecimal poolTotalVnd = orZero(seededPool.getValue());
+        for (var seededPool : seededPoolTotals.entrySet()) {
+            var quotaType = seededPool.getKey();
+            var poolTotalVnd = orZero(seededPool.getValue());
 
-            List<SchoolSubscriptionQuotaUserAllocation> carried = quotaUserAllocationRepository
+            var carried = quotaUserAllocationRepository
                 .findBySchoolSubscriptionIdAndQuotaType(previousSubscriptionId, quotaType);
             if (carried.isEmpty()) {
                 continue;
             }
 
-            Optional<Set<UUID>> eligible = eligibleUserIds(schoolId, quotaType);
-            List<SchoolSubscriptionQuotaUserAllocation> kept = eligible
+            var eligible = eligibleUserIds(schoolId, quotaType);
+            var kept = eligible
                 .map(userIds -> carried.stream()
                     .filter(allocation -> userIds.contains(allocation.getUserId()))
                     .toList())
@@ -587,8 +582,8 @@ public class OrderSettlementService {
                     carried.size() - kept.size(), quotaType, newSubscriptionId);
             }
 
-            BigDecimal scale = carryScaleFor(kept, poolTotalVnd, quotaType, previousSubscriptionId, newSubscriptionId);
-            for (SchoolSubscriptionQuotaUserAllocation allocation : kept) {
+            var scale = carryScaleFor(kept, poolTotalVnd, quotaType, previousSubscriptionId, newSubscriptionId);
+            for (var allocation : kept) {
                 quotaUserAllocationRepository.upsertAllocation(newSubscriptionId, quotaType,
                     allocation.getUserId(), scaled(orZero(allocation.getAllocatedAmountVnd()), scale));
             }
@@ -612,15 +607,15 @@ public class OrderSettlementService {
      * không cùng hạng.
      */
     private Optional<Set<UUID>> eligibleUserIds(UUID schoolId, QuotaType quotaType) {
-        String roleCode = quotaType.allocationRoleCode();
-        Optional<Role> role = roleRepository.findByCode(roleCode);
+        var roleCode = quotaType.allocationRoleCode();
+        var role = roleRepository.findByCode(roleCode);
         if (role.isEmpty()) {
             LOGGER.error("Không tìm thấy vai trò {} -- chép TOÀN BỘ trần {} sang kỳ mới thay vì lọc,"
                 + " để không lấy mất trần của người còn đang dạy/học.", roleCode, quotaType);
             return Optional.empty();
         }
 
-        PageResult<SchoolUser> page = schoolUserRepository.findBySchoolId(schoolId, null, role.get().getId(),
+        var page = schoolUserRepository.findBySchoolId(schoolId, null, role.get().getId(),
             UserStatus.ACTIVE.name(), null, false, 1, MAX_CARRY_FORWARD_USERS);
         if (page.totalElements() > page.content().size()) {
             LOGGER.error("Trường {} có {} người đủ điều kiện nhận trần {} nhưng chỉ đọc được {} --"
@@ -642,7 +637,7 @@ public class OrderSettlementService {
      */
     private BigDecimal carryScaleFor(List<SchoolSubscriptionQuotaUserAllocation> kept,
             BigDecimal poolTotalVnd, QuotaType quotaType, UUID previousSubscriptionId, UUID newSubscriptionId) {
-        BigDecimal totalCarriedVnd = kept.stream()
+        var totalCarriedVnd = kept.stream()
             .map(allocation -> orZero(allocation.getAllocatedAmountVnd()))
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
@@ -679,7 +674,7 @@ public class OrderSettlementService {
         if (invoiceRepository.existsByOrderId(order.getId())) {
             return Optional.empty();
         }
-        Invoice invoice = invoiceRepository.save(Invoice.issueFor(order.getId(), payment.getId(), now));
+        var invoice = invoiceRepository.save(Invoice.issueFor(order.getId(), payment.getId(), now));
         LOGGER.info("Phát hành hóa đơn {} cho đơn {}", invoice.getInvoiceNumber(), order.getId());
 
         return Optional.of(invoice);
@@ -701,7 +696,7 @@ public class OrderSettlementService {
      * {@code existsByOrderId} nên một callback lặp không phát sự kiện lần hai.
      */
     private void publishInvoicePaid(Order order, Invoice invoice, Instant now, UUID subscriptionId) {
-        List<UUID> schoolAdminIds = schoolUserRepository
+        var schoolAdminIds = schoolUserRepository
             .findBySchoolIdWithRole(order.getSchoolId(), RoleConstant.SCHOOL_ADMIN_ROLE)
             .stream()
             .map(schoolUser -> schoolUser.getUserId())
@@ -710,7 +705,7 @@ public class OrderSettlementService {
         // Chốt danh sách người nhận NGAY LÚC phát, không để consumer truy vấn lại -- giống hệt các
         // event nợ hạn mức. Nhờ vậy mỗi lần chạy lại (retry, replay từ DLT) đều ra đúng tập người
         // nhận cũ và uk_notifications_user_event chặn được trùng.
-        String payload = jsonSerializationPort.toJson(new InvoicePaidPayloadV1(
+        var payload = jsonSerializationPort.toJson(new InvoicePaidPayloadV1(
             schoolAdminIds,
             order.getSchoolId(),
             subscriptionId,

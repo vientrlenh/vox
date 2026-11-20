@@ -9,12 +9,14 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolQuotaPolicy;
 import com.sep.vox.domain.repository.SchoolQuotaPolicyRepository;
-import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -26,10 +28,11 @@ import jakarta.persistence.PersistenceContext;
  * <p>Phép nhân ra "phần được chia" cũng nằm ở đây: nó là con số backend dùng để từ chối, và làm tròn
  * sai chiều một vài phần triệu đồng là đủ để một lần chia đúng luật bị chặn.
  */
-@IntegrationTest
+@SpringBootTest
+@ActiveProfiles("test")
 @AutoConfigureTestGrpcTransport
 @Transactional
-class SchoolQuotaPolicyTests {
+class SchoolQuotaPolicyTests extends ContainerTestConfig {
 
     @Autowired
     private SchoolQuotaPolicyRepository schoolQuotaPolicyRepository;
@@ -41,9 +44,9 @@ class SchoolQuotaPolicyTests {
 
     @Test
     void should_default_to_fully_distributable_when_the_school_never_set_anything() {
-        // No row in the DB. A school that has never touched the configuration screen must see
-        // behavior identical to before V5 -- the whole wallet can be distributed.
-        SchoolQuotaPolicy policy = schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, QuotaType.ASSESSMENT);
+        // Không có dòng nào trong DB. Trường chưa đụng tới màn cấu hình phải thấy hành vi y hệt
+        // trước V5 -- chia được toàn bộ ví.
+        var policy = schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, QuotaType.EXAM);
 
         assertThat(policy.getDistributableRatio()).isEqualByComparingTo(BigDecimal.ONE);
         assertThat(policy.distributableAmountOf(new BigDecimal("10000")))
@@ -52,21 +55,20 @@ class SchoolQuotaPolicyTests {
 
     @Test
     void should_take_the_configured_share_of_the_pool() {
-        SchoolQuotaPolicy policy = new SchoolQuotaPolicy(schoolId, QuotaType.ASSESSMENT, new BigDecimal("0.8000"), null, null);
+        var policy = new SchoolQuotaPolicy(schoolId, QuotaType.EXAM, new BigDecimal("0.8000"), null, null);
 
-        // A 10,000 VND wallet, 80% ceiling -> 8,000 VND can be distributed. Exactly the agreed
-        // example.
+        // Ví 10.000đ, trần 80% -> chia được 8.000đ. Đúng ví dụ đã thống nhất.
         assertThat(policy.distributableAmountOf(new BigDecimal("10000")))
             .isEqualByComparingTo(new BigDecimal("8000"));
     }
 
     @Test
     void should_round_the_distributable_share_down_not_up() {
-        // Rounding UP would allow distributing a few millionths of a dong more than the ceiling --
-        // breaking the very constraint this policy was created to set.
-        SchoolQuotaPolicy policy = new SchoolQuotaPolicy(schoolId, QuotaType.ASSESSMENT, new BigDecimal("0.3333"), null, null);
+        // Làm tròn LÊN sẽ cho chia nhiều hơn trần vài phần triệu đồng -- tức phá đúng cái ràng buộc
+        // mà chính sách này sinh ra để đặt.
+        var policy = new SchoolQuotaPolicy(schoolId, QuotaType.EXAM, new BigDecimal("0.3333"), null, null);
 
-        BigDecimal distributable = policy.distributableAmountOf(new BigDecimal("10000.0000005"));
+        var distributable = policy.distributableAmountOf(new BigDecimal("10000.0000005"));
 
         assertThat(distributable).isLessThanOrEqualTo(new BigDecimal("10000.0000005").multiply(new BigDecimal("0.3333")));
         assertThat(distributable.scale()).isEqualTo(6);
@@ -74,25 +76,25 @@ class SchoolQuotaPolicyTests {
 
     @Test
     void should_keep_one_policy_per_school_and_quota_type() {
-        schoolQuotaPolicyRepository.upsertRatio(schoolId, QuotaType.ASSESSMENT, new BigDecimal("0.8000"));
-        schoolQuotaPolicyRepository.upsertRatio(schoolId, QuotaType.ASSESSMENT, new BigDecimal("0.5000"));
+        schoolQuotaPolicyRepository.upsertRatio(schoolId, QuotaType.EXAM, new BigDecimal("0.8000"));
+        schoolQuotaPolicyRepository.upsertRatio(schoolId, QuotaType.EXAM, new BigDecimal("0.5000"));
         em.flush();
 
         // Lần đặt thứ hai GHI ĐÈ chứ không thêm dòng -- nếu không, hai dòng cùng (trường, loại) sẽ
         // cho ra trần khác nhau tuỳ dòng nào đọc trúng trước.
         assertThat(schoolQuotaPolicyRepository.findBySchoolId(schoolId)).hasSize(1);
-        assertThat(schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, QuotaType.ASSESSMENT)
+        assertThat(schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, QuotaType.EXAM)
             .getDistributableRatio()).isEqualByComparingTo(new BigDecimal("0.5000"));
     }
 
     @Test
     void should_hold_a_separate_policy_for_each_quota_type() {
         // Cả lý do tách theo loại: giữ lại 30% ví thi mà chia hết ví luyện nói.
-        schoolQuotaPolicyRepository.upsertRatio(schoolId, QuotaType.ASSESSMENT, new BigDecimal("0.7000"));
+        schoolQuotaPolicyRepository.upsertRatio(schoolId, QuotaType.EXAM, new BigDecimal("0.7000"));
         schoolQuotaPolicyRepository.upsertRatio(schoolId, QuotaType.PRACTICE, BigDecimal.ONE);
         em.flush();
 
-        assertThat(schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, QuotaType.ASSESSMENT)
+        assertThat(schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, QuotaType.EXAM)
             .getDistributableRatio()).isEqualByComparingTo(new BigDecimal("0.7000"));
         assertThat(schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, QuotaType.PRACTICE)
             .getDistributableRatio()).isEqualByComparingTo(BigDecimal.ONE);
@@ -107,7 +109,7 @@ class SchoolQuotaPolicyTests {
         // DEFAULT uuidv7(), nên Hibernate phải chạy INSERT ... RETURNING id ngay lúc lưu để đọc lại
         // giá trị vừa sinh. Bọc flush() thì test xanh vì lý do sai -- xem SchoolDebtEventShapeTests.
         assertThatThrownBy(() ->
-            schoolQuotaPolicyRepository.upsertRatio(schoolId, QuotaType.ASSESSMENT, new BigDecimal("1.5000")))
+            schoolQuotaPolicyRepository.upsertRatio(schoolId, QuotaType.EXAM, new BigDecimal("1.5000")))
             .hasMessageContaining("chk_school_quota_policies_ratio_in_range");
     }
 

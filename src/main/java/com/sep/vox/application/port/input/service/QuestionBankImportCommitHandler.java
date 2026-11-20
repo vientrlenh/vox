@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import java.util.Set;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.StringNormalization;
@@ -57,33 +55,33 @@ public class QuestionBankImportCommitHandler implements ImportCommitHandler {
 
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
-        UUID schoolId = session.getSchoolId();
-        QuestionBankOwnerType ownerType = schoolId == null ? QuestionBankOwnerType.SYSTEM : QuestionBankOwnerType.SCHOOL;
-        Map<String, String> mapping = resolveMapping(session);
+        var schoolId = session.getSchoolId();
+        var ownerType = schoolId == null ? QuestionBankOwnerType.SYSTEM : QuestionBankOwnerType.SCHOOL;
+        var mapping = resolveMapping(session);
 
-        Map<String, QuestionBank> existingByCode = new HashMap<String, QuestionBank>();
-        for (QuestionBank bank : questionBankRepository.findByOwnerScope(ownerType, schoolId)) {
+        var existingByCode = new HashMap<String, QuestionBank>();
+        for (var bank : questionBankRepository.findByOwnerScope(ownerType, schoolId)) {
             existingByCode.putIfAbsent(normalizeCode(bank.getCode()), bank);
         }
 
-        List<QuestionBank> toSave = new ArrayList<QuestionBank>();
-        Set<String> codesInThisFile = new HashSet<String>();
+        var toSave = new ArrayList<QuestionBank>();
+        var codesInThisFile = new HashSet<String>();
         long importedCount = 0;
         long invalidCount = 0;
-        Instant now = Instant.now();
+        var now = Instant.now();
 
-        for (ImportRow row : rows) {
+        for (var row : rows) {
             if (row.getStatus() != ImportRowStatus.PENDING) {
                 continue;
             }
 
-            List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
+            var errors = new ArrayList<Map<String, String>>();
             try {
-                Map<String, String> mappedData = mapRow(row, mapping);
-                String code = StringNormalization.normalizeCode(mappedData.get("code"));
-                String name = StringNormalization.trimAndCollapseSpaces(mappedData.get("name"));
-                String description = StringNormalization.trimAndCollapseSpaces(mappedData.get("description"));
-                String languageValue = StringNormalization.trimAndCollapseSpaces(mappedData.get("language"));
+                var mappedData = mapRow(row, mapping);
+                var code = StringNormalization.normalizeCode(mappedData.get("code"));
+                var name = StringNormalization.trimAndCollapseSpaces(mappedData.get("name"));
+                var description = StringNormalization.trimAndCollapseSpaces(mappedData.get("description"));
+                var languageValue = StringNormalization.trimAndCollapseSpaces(mappedData.get("language"));
 
                 if (isBlank(code)) {
                     errors.add(error("code", "Thiếu mã ngân hàng câu hỏi."));
@@ -95,7 +93,7 @@ public class QuestionBankImportCommitHandler implements ImportCommitHandler {
                     errors.add(error("code", "Mã ngân hàng '" + code + "' bị lặp ngay trong file."));
                 }
 
-                QuestionBank existing = errors.isEmpty() ? existingByCode.get(normalizeCode(code)) : null;
+                var existing = errors.isEmpty() ? existingByCode.get(normalizeCode(code)) : null;
 
                 // Ngôn ngữ bắt buộc khi TẠO MỚI (questionBank.languageId không nullable). Khi cập
                 // nhật thì bỏ trống được -- giữ nguyên ngôn ngữ cũ, để file chỉ sửa tên/mô tả
@@ -154,7 +152,7 @@ public class QuestionBankImportCommitHandler implements ImportCommitHandler {
             }
         }
 
-        for (QuestionBank bank : toSave) {
+        for (var bank : toSave) {
             questionBankRepository.save(bank);
         }
         return new ImportCommitResult(importedCount, 0, 0, invalidCount);
@@ -179,10 +177,10 @@ public class QuestionBankImportCommitHandler implements ImportCommitHandler {
     }
 
     private Map<String, String> mapRow(ImportRow row, Map<String, String> mapping) {
-        Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-        Map<String, String> mappedData = new HashMap<String, String>();
-        for (Map.Entry<String, String> entry : rawData.entrySet()) {
-            String systemField = mapping.get(entry.getKey());
+        var rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
+        var mappedData = new HashMap<String, String>();
+        for (var entry : rawData.entrySet()) {
+            var systemField = mapping.get(entry.getKey());
             if (systemField != null) {
                 mappedData.put(systemField, entry.getValue());
             }

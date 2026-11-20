@@ -1,5 +1,6 @@
 package com.sep.vox.application.mapper.importfile;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -11,6 +12,8 @@ import com.sep.vox.application.response.input.importfile.ImportSessionDetailsRes
 import com.sep.vox.application.response.input.importfile.ImportSessionSummaryResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportSession;
+import com.sep.vox.domain.model.importfile.ImportSessionStatus;
+import com.sep.vox.domain.model.importfile.ImportType;
 
 @Component
 public class ImportSessionResponseMapper {
@@ -25,7 +28,7 @@ public class ImportSessionResponseMapper {
         return new ImportSessionDetailsResponse(
             session.getId(),
             session.getSchoolId(),
-            session.getType(),
+            valueOf(session.getType()),
             session.getFileName(),
             jsonSerializationPort.toStringList(session.getOriginalHeadersJson()),
             toMappingEntries(jsonSerializationPort.toStringMap(session.getSuggestedMappingJson())),
@@ -36,11 +39,11 @@ public class ImportSessionResponseMapper {
             session.getSkippedRows(),
             session.getTotalRows(),
             session.getFailureReason(),
-            session.getStatus(),
+            valueOf(session.getStatus()),
             session.getImportedEntityId(),
-            session.getExpiresAt(),
-            session.getCreatedAt(),
-            session.getUpdatedAt()
+            valueOf(session.getExpiresAt()),
+            valueOf(session.getCreatedAt()),
+            valueOf(session.getUpdatedAt())
         );
     }
 
@@ -48,17 +51,17 @@ public class ImportSessionResponseMapper {
         return new ImportSessionSummaryResponse(
             session.getId(),
             session.getSchoolId(),
-            session.getType(),
+            valueOf(session.getType()),
             session.getFileName(),
             session.getTotalRows(),
             session.getValidRows(),
             session.getInvalidRows(),
             session.getImportedRows(),
             session.getSkippedRows(),
-            session.getStatus(),
-            session.getExpiresAt(),
-            session.getCreatedAt(),
-            session.getUpdatedAt()
+            valueOf(session.getStatus()),
+            valueOf(session.getExpiresAt()),
+            valueOf(session.getCreatedAt()),
+            valueOf(session.getUpdatedAt())
         );
     }
 
@@ -79,5 +82,17 @@ public class ImportSessionResponseMapper {
             .stream()
             .map(entry -> new ImportMappingEntryResponse(entry.getKey(), entry.getValue()))
             .toList();
+    }
+
+    private String valueOf(ImportType type) {
+        return type == null ? null : type.name();
+    }
+
+    private String valueOf(ImportSessionStatus status) {
+        return status == null ? null : status.name();
+    }
+
+    private String valueOf(Instant dateTime) {
+        return dateTime == null ? null : dateTime.toString();
     }
 }

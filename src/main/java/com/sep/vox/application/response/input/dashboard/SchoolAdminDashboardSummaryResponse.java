@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record SchoolAdminDashboardSummaryResponse (
-    AssessmentStatusCountResponse assessmentStatusCounts,
-    AssessmentAppealStatsResponse appealStats,
+    ExamStatusCountResponse examStatusCounts,
+    ExamAppealStatsResponse appealStats,
     BigDecimal revenue,
     List<SchoolMonthlySpendingResponse> monthlySpending,
     BigDecimal tokenAllocated,
@@ -13,7 +13,7 @@ public record SchoolAdminDashboardSummaryResponse (
     SchoolSubscriptionRenewalResponse subscriptionRenewal,
     SchoolFundingResponse funding,
     UnscoredWorkloadResponse unscored,
-    List<AssessmentAwaitingPublishResponse> assessmentsAwaitingPublish,
+    List<ExamAwaitingPublishResponse> examsAwaitingPublish,
     /** Số ngày đơn khiếu nại chờ lâu nhất đã chờ; null khi hàng đợi sạch. */
     Integer oldestPendingAppealDays
 ) {

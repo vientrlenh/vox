@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.domain.model.importfile.ImportSession;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -35,13 +34,13 @@ public class ImportCommitService {
     }
     
     public void commit(UUID sessionId) {
-        ImportSession session = importSessionRepository.findById(sessionId).orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import yêu cầu"));
-        ImportCommitHandler handler = handlers.get(session.getType());
+        var session = importSessionRepository.findById(sessionId).orElseThrow(() -> new NotFoundException("Không tìm thấy phiên import yêu cầu"));
+        var handler = handlers.get(session.getType());
         if (handler == null) throw new IllegalStateException("Thiếu handler cho " + session.getType());
 
-        List<ImportRow> rows = importRowRepository.findBySessionId(sessionId);
+        var rows = importRowRepository.findBySessionId(sessionId);
         try {
-            ImportCommitResult result = handler.commit(session, rows);
+            var result = handler.commit(session, rows);
             session.setImportedRows(result.created());
             session.setSkippedRows(result.skipped());
             session.setInvalidRows(result.invalid());

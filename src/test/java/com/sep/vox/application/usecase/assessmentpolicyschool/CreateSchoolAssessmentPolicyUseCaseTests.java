@@ -69,24 +69,23 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
     @BeforeEach
     void setUp() {
         assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
-        FrameworkVersionRepository frameworkVersionRepository = mock(FrameworkVersionRepository.class);
-        FrameworkResultBandRepository frameworkResultBandRepository = mock(FrameworkResultBandRepository.class);
-        RubricVersionRepository rubricVersionRepository = mock(RubricVersionRepository.class);
-        RubricRepository rubricRepository = mock(RubricRepository.class);
-        SupportedLanguageRepository languageRepository = mock(SupportedLanguageRepository.class);
-        GradeLevelRepository gradeLevelRepository = mock(GradeLevelRepository.class);
-        SchoolGradeRepository schoolGradeRepository = mock(SchoolGradeRepository.class);
+        var frameworkVersionRepository = mock(FrameworkVersionRepository.class);
+        var frameworkResultBandRepository = mock(FrameworkResultBandRepository.class);
+        var rubricVersionRepository = mock(RubricVersionRepository.class);
+        var rubricRepository = mock(RubricRepository.class);
+        var languageRepository = mock(SupportedLanguageRepository.class);
+        var gradeLevelRepository = mock(GradeLevelRepository.class);
+        var schoolGradeRepository = mock(SchoolGradeRepository.class);
         schoolClassRepository = mock(SchoolClassRepository.class);
-        SchoolUserRepository schoolUserRepository = mock(SchoolUserRepository.class);
-        UserRepository userRepository = mock(UserRepository.class);
-        UserContextPort userContextPort = mock(UserContextPort.class);
+        var schoolUserRepository = mock(SchoolUserRepository.class);
+        var userRepository = mock(UserRepository.class);
+        var userContextPort = mock(UserContextPort.class);
 
-        // Real guard, fake repository: no ceiling row is stubbed, so
-        // findByGradeLevelIdAndFrameworkVersionId returns Optional.empty() -> the guard blocks
-        // nothing. That is exactly what the tests below need, because they check the scope boundary
-        // and not the band ceiling. The band ceiling has its own test suite in
-        // GradeLevelBandScopeGuardServiceTests.
-        GradeLevelBandScopeGuardService gradeLevelBandScopeGuardService = new GradeLevelBandScopeGuardService(
+        // Guard thật, repository giả: chưa stub dòng trần nào nên
+        // findByGradeLevelIdAndFrameworkVersionId trả Optional.empty() -> guard không chặn gì.
+        // Đúng cái các test dưới đây cần, vì chúng kiểm ranh giới phạm vi chứ không phải trần
+        // bậc. Trần bậc có bộ test riêng ở GradeLevelBandScopeGuardServiceTests.
+        var gradeLevelBandScopeGuardService = new GradeLevelBandScopeGuardService(
                 mock(GradeLevelBandScopeRepository.class), frameworkResultBandRepository,
                 gradeLevelRepository, schoolGradeRepository, schoolClassRepository);
 

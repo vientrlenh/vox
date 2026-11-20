@@ -139,9 +139,9 @@ class CarryQuotaFundingAtPeriodStartServiceTests {
 
     @Test
     void a_quota_type_the_new_plan_dropped_is_left_alone_rather_than_carried_somewhere_else() {
-        // The old period still has money in the ASSESSMENT wallet, the new period only has PRACTICE. There is no commitment for ASSESSMENT, so that amount
-        // stays behind -- the service must NOT wrongly push it into the other wallet.
-        givenSourcePool(QuotaType.ASSESSMENT, 10_000_000, 0, 4_000_000);
+        // Kỳ cũ còn tiền ở ví EXAM, kỳ mới chỉ có PRACTICE. Không có hẹn nào cho EXAM, nên khoản đó
+        // nằm lại -- service phải KHÔNG đẩy nhầm nó sang ví còn lại.
+        givenSourcePool(QuotaType.EXAM, 10_000_000, 0, 4_000_000);
         givenSourcePool(QuotaType.PRACTICE, 15_000_000, 0, 5_000_000);
         givenDueCarry(QuotaType.PRACTICE);
 
@@ -167,12 +167,9 @@ class CarryQuotaFundingAtPeriodStartServiceTests {
         givenDueCarry(quotaType, 0);
     }
 
-    /**
-     * A wallet for the new period that has reached its run date and is still scheduled.
-     * {@code alreadyFundedVnd} = what the school topped up on its own while waiting.
-     */
+    /** Ví của kỳ mới, đã tới ngày chạy và còn hẹn. {@code alreadyFundedVnd} = trường tự nạp trong lúc chờ. */
     private void givenDueCarry(QuotaType quotaType, long alreadyFundedVnd) {
-        SchoolSubscriptionQuotaRecord target = new SchoolSubscriptionQuotaRecord(
+        var target = new SchoolSubscriptionQuotaRecord(
             newPracticePoolId, newSubscriptionId, quotaType,
             BigDecimal.valueOf(10_000_000 + alreadyFundedVnd), BigDecimal.ZERO,
             BigDecimal.valueOf(alreadyFundedVnd));

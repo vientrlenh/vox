@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.usecase.dashboard.ViewSystemAdminDashboardUseCase;
 import com.sep.vox.application.response.input.dashboard.MonthlyRevenueResponse;
-import com.sep.vox.application.response.input.dashboard.SystemAdminDashboardSummaryResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.order.Order;
@@ -51,13 +50,13 @@ class ViewSystemAdminDashboardUseCaseTests {
 
     @BeforeEach
     void setUp() {
-        SchoolRepository schoolRepository = mock(SchoolRepository.class);
+        var schoolRepository = mock(SchoolRepository.class);
         registerFormRepository = mock(RegisterFormRepository.class);
         orderRepository = mock(OrderRepository.class);
-        RoleRepository roleRepository = mock(RoleRepository.class);
-        UserRoleRepository userRoleRepository = mock(UserRoleRepository.class);
-        FrameworkRepository frameworkRepository = mock(FrameworkRepository.class);
-        RubricRepository rubricRepository = mock(RubricRepository.class);
+        var roleRepository = mock(RoleRepository.class);
+        var userRoleRepository = mock(UserRoleRepository.class);
+        var frameworkRepository = mock(FrameworkRepository.class);
+        var rubricRepository = mock(RubricRepository.class);
 
         useCase = new ViewSystemAdminDashboardUseCase(
             schoolRepository, registerFormRepository, orderRepository,
@@ -78,19 +77,19 @@ class ViewSystemAdminDashboardUseCaseTests {
 
     @Test
     void should_bucket_successful_orders_into_24_months_zero_filled() {
-        Instant now = Instant.now();
-        Instant thirteenMonthsAgo = now.minus(395, ChronoUnit.DAYS);
+        var now = Instant.now();
+        var thirteenMonthsAgo = now.minus(395, ChronoUnit.DAYS);
 
         when(orderRepository.findByStatusInRange(any(), any(), any())).thenReturn(List.of(
             successfulOrder(new BigDecimal("200000"), now),
             successfulOrder(new BigDecimal("300000"), thirteenMonthsAgo)));
 
-        SystemAdminDashboardSummaryResponse result = useCase.execute(null);
+        var result = useCase.execute(null);
 
         assertThat(result.monthlyRevenue()).hasSize(REVENUE_MONTHS);
 
-        String currentMonth = YearMonth.now(ZoneConstant.BUSINESS_ZONE).toString();
-        String pastMonth = YearMonth.from(thirteenMonthsAgo.atZone(ZoneConstant.BUSINESS_ZONE)).toString();
+        var currentMonth = YearMonth.now(ZoneConstant.BUSINESS_ZONE).toString();
+        var pastMonth = YearMonth.from(thirteenMonthsAgo.atZone(ZoneConstant.BUSINESS_ZONE)).toString();
 
         assertThat(amountOf(result.monthlyRevenue(), currentMonth)).isEqualByComparingTo("200000");
         assertThat(amountOf(result.monthlyRevenue(), pastMonth)).isEqualByComparingTo("300000");
@@ -102,16 +101,15 @@ class ViewSystemAdminDashboardUseCaseTests {
     }
 
     /**
-     * An order outside the 24-month window must not be added anywhere. computeIfPresent is what
-     * guarantees that: its month is not in the map, so the amount is skipped instead of creating a
-     * 25th column.
+     * Đơn nằm ngoài cửa sổ 24 tháng không được cộng vào đâu cả. computeIfPresent là thứ giữ điều đó:
+     * tháng của nó không có sẵn trong map nên khoản tiền bị bỏ qua thay vì tạo ra một cột thứ 25.
      */
     @Test
     void should_ignore_orders_outside_the_24_month_window() {
         when(orderRepository.findByStatusInRange(any(), any(), any()))
             .thenReturn(List.of(successfulOrder(new BigDecimal("999999"), Instant.now().minus(800, ChronoUnit.DAYS))));
 
-        SystemAdminDashboardSummaryResponse result = useCase.execute(null);
+        var result = useCase.execute(null);
 
         assertThat(result.monthlyRevenue()).hasSize(REVENUE_MONTHS);
         assertThat(result.monthlyRevenue()).allSatisfy(m -> assertThat(m.amount()).isEqualByComparingTo(BigDecimal.ZERO));
@@ -137,12 +135,10 @@ class ViewSystemAdminDashboardUseCaseTests {
         assertThat(useCase.execute(null).oldestPendingRegistrationDays()).isNull();
     }
 
-    /**
-     * Counting is by the business time zone's CALENDAR DAY, not elapsed time divided by 24 hours.
-     */
+    /** Đếm theo NGÀY LỊCH giờ nghiệp vụ, không phải elapsed chia 24 giờ. */
     @Test
     void should_count_oldest_pending_registration_in_business_zone_calendar_days() {
-        Instant sixDaysAgo = LocalDate.now(ZoneConstant.BUSINESS_ZONE)
+        var sixDaysAgo = LocalDate.now(ZoneConstant.BUSINESS_ZONE)
             .minusDays(6)
             .atTime(9, 30)
             .atZone(ZoneConstant.BUSINESS_ZONE)
@@ -153,13 +149,12 @@ class ViewSystemAdminDashboardUseCaseTests {
     }
 
     /**
-     * A request filed late yesterday is already in the second day of the queue even though only a
-     * few hours have passed -- dividing by 24 hours would return 0 and make the KPI card look as if
-     * the queue were still clean.
+     * Đơn nộp cuối ngày hôm qua đã sang ngày thứ hai của hàng đợi, dù mới trôi qua vài tiếng — phép
+     * chia cho 24 giờ sẽ trả 0 và làm thẻ KPI trông như hàng đợi vẫn sạch.
      */
     @Test
     void should_count_yesterday_late_night_submission_as_one_day() {
-        Instant lateYesterday = LocalDate.now(ZoneConstant.BUSINESS_ZONE)
+        var lateYesterday = LocalDate.now(ZoneConstant.BUSINESS_ZONE)
             .minusDays(1)
             .atTime(23, 50)
             .atZone(ZoneConstant.BUSINESS_ZONE)
@@ -178,7 +173,7 @@ class ViewSystemAdminDashboardUseCaseTests {
     }
 
     private Order successfulOrder(BigDecimal totalVnd, Instant createdAt) {
-        Order order = new Order();
+        var order = new Order();
         order.setId(UUID.randomUUID());
         order.setSchoolId(UUID.randomUUID());
         order.setType(OrderType.SUBSCRIPTION_REQUEST);

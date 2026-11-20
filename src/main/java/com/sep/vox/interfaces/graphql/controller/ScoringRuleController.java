@@ -1,7 +1,5 @@
 package com.sep.vox.interfaces.graphql.controller;
 
-import com.sep.vox.application.port.input.command.UpdateSchoolScoringRuleCommand;
-import com.sep.vox.application.port.input.command.UpdateScoringRuleCommand;
 import java.util.UUID;
 
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -30,7 +28,6 @@ import com.sep.vox.domain.dto.ScoringRuleDto;
 import com.sep.vox.domain.mapper.ScoringRuleParamsMapper;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateScoringRuleInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateScoringRuleGraphQLMapper;
-import com.sep.vox.interfaces.shared.PageArguments;
 
 
 @Controller("graphqlScoringRuleController")
@@ -72,9 +69,10 @@ public class ScoringRuleController {
             @Argument(name = "isActive") Boolean isActive,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
+        int validPage = (page != null && page > 0) ? page : 1;
+        int validSize = (size != null && size > 0) ? size : 10;
         return searchSystemScoringRuleUseCase.execute(
-                new SearchScoringRuleQuery(policyId, keyword, isActive, page, size));
+                new SearchScoringRuleQuery(policyId, keyword, isActive, validPage, validSize));
     }
 
     @QueryMapping(name = "searchSchoolScoringRules")
@@ -86,9 +84,10 @@ public class ScoringRuleController {
             @Argument(name = "isActive") Boolean isActive,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
+        int validPage = (page != null && page > 0) ? page : 1;
+        int validSize = (size != null && size > 0) ? size : 10;
         return searchSchoolScoringRuleUseCase.execute(
-                new SearchSchoolScoringRuleQuery(schoolId, policyId, keyword, isActive, page, size));
+                new SearchSchoolScoringRuleQuery(schoolId, policyId, keyword, isActive, validPage, validSize));
     }
 
     // Xem toàn bộ (phân trang) danh sách Scoring Rule thuộc 1 Assessment Policy hệ thống.
@@ -98,8 +97,9 @@ public class ScoringRuleController {
             @Argument(name = "policyId") UUID policyId,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
-        return viewAllSystemScoringRuleUseCase.execute(new ViewAllScoringRuleQuery(policyId, page, size));
+        int validPage = (page != null && page > 0) ? page : 1;
+        int validSize = (size != null && size > 0) ? size : 10;
+        return viewAllSystemScoringRuleUseCase.execute(new ViewAllScoringRuleQuery(policyId, validPage, validSize));
     }
 
     // Xem toàn bộ (phân trang) danh sách Scoring Rule thuộc 1 Assessment Policy của trường học.
@@ -110,9 +110,10 @@ public class ScoringRuleController {
             @Argument(name = "policyId") UUID policyId,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
+        int validPage = (page != null && page > 0) ? page : 1;
+        int validSize = (size != null && size > 0) ? size : 10;
         return viewAllSchoolScoringRuleUseCase.execute(
-                new ViewAllSchoolScoringRuleQuery(schoolId, policyId, page, size));
+                new ViewAllSchoolScoringRuleQuery(schoolId, policyId, validPage, validSize));
     }
 
     // Xem chi tiết 1 Scoring Rule của Assessment Policy hệ thống.
@@ -141,7 +142,7 @@ public class ScoringRuleController {
             @Argument(name = "policyId") UUID policyId,
             @Argument(name = "ruleId") UUID ruleId,
             @Argument(name = "input") UpdateScoringRuleInput input) {
-        UpdateScoringRuleCommand command = UpdateScoringRuleGraphQLMapper.fromInput(policyId, ruleId, input);
+        var command = UpdateScoringRuleGraphQLMapper.fromInput(policyId, ruleId, input);
         return updateSystemScoringRuleUseCase.execute(command);
     }
 
@@ -152,7 +153,7 @@ public class ScoringRuleController {
             @Argument(name = "policyId") UUID policyId,
             @Argument(name = "ruleId") UUID ruleId,
             @Argument(name = "input") UpdateScoringRuleInput input) {
-        UpdateSchoolScoringRuleCommand command = UpdateScoringRuleGraphQLMapper.fromSchoolInput(schoolId, policyId, ruleId, input);
+        var command = UpdateScoringRuleGraphQLMapper.fromSchoolInput(schoolId, policyId, ruleId, input);
         return updateSchoolScoringRuleUseCase.execute(command);
     }
 

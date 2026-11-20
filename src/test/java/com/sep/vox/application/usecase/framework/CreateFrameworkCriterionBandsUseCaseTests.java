@@ -59,14 +59,14 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
                 frameworkVersionRepository, frameworkCriterionRepository,
                 frameworkCriterionBandRepository, frameworkResultBandRepository, userContextPort);
 
-        FrameworkVersion version = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plus(30, ChronoUnit.DAYS),
+        var version = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plus(30, ChronoUnit.DAYS),
                 FrameworkVersionStatus.DRAFT, now, now, userId, userId);
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
 
-        FrameworkCriterion criterion = new FrameworkCriterion(criterionId, versionId, "C1", "Criterion 1", "Desc", 1, now, now, userId, userId);
+        var criterion = new FrameworkCriterion(criterionId, versionId, "C1", "Criterion 1", "Desc", 1, now, now, userId, userId);
         when(frameworkCriterionRepository.findById(criterionId)).thenReturn(Optional.of(criterion));
 
-        FrameworkResultBand resultBand = new FrameworkResultBand(UUID.randomUUID(), versionId, "RB1", "Label", "Desc", 1, now, now, userId, userId);
+        var resultBand = new FrameworkResultBand(UUID.randomUUID(), versionId, "RB1", "Label", "Desc", 1, now, now, userId, userId);
         when(frameworkResultBandRepository.findByFrameworkVersionIdAndCodeIn(any(), any())).thenAnswer(invocation -> {
             Set<String> codes = invocation.getArgument(1);
             return List.of(resultBand).stream().filter(rb -> codes.contains(rb.getCode())).collect(Collectors.toList());
@@ -88,8 +88,8 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
             return bands;
         });
 
-        CreateFrameworkCriterionBandsCommand command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
-        List<UUID> ids = useCase.execute(command);
+        var command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
+        var ids = useCase.execute(command);
 
         assertThat(ids).hasSize(1);
         assertThat(ids.get(0)).isNotNull();
@@ -98,40 +98,40 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
     @Test
     void should_throw_not_found_when_version_missing() {
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.empty());
-        CreateFrameworkCriterionBandsCommand command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
+        var command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
 
         assertThrows(NotFoundException.class, () -> useCase.execute(command));
     }
 
     @Test
     void should_throw_when_version_not_draft() {
-        FrameworkVersion activeVersion = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plus(30, ChronoUnit.DAYS),
+        var activeVersion = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plus(30, ChronoUnit.DAYS),
                 FrameworkVersionStatus.PUBLISHED, now, now, userId, userId);
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(activeVersion));
-        CreateFrameworkCriterionBandsCommand command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
+        var command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(command));
     }
 
     @Test
     void should_throw_when_criterion_belongs_to_different_version() {
-        FrameworkCriterion otherCriterion = new FrameworkCriterion(criterionId, UUID.randomUUID(), "C1", "Criterion 1", "Desc", 1, now, now, userId, userId);
+        var otherCriterion = new FrameworkCriterion(criterionId, UUID.randomUUID(), "C1", "Criterion 1", "Desc", 1, now, now, userId, userId);
         when(frameworkCriterionRepository.findById(criterionId)).thenReturn(Optional.of(otherCriterion));
-        CreateFrameworkCriterionBandsCommand command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
+        var command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
 
     @Test
     void should_throw_when_result_band_code_unknown() {
-        CreateFrameworkCriterionBandsCommand command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("unknown")));
+        var command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("unknown")));
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
 
     @Test
     void should_throw_when_duplicate_result_band_code_in_batch() {
-        CreateFrameworkCriterionBandsCommand command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId,
+        var command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId,
                 List.of(bandItem("rb1"), bandItem("RB1")));
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));

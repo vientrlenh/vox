@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.domain.model.personalization.PracticePaper;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -36,13 +35,13 @@ public class StartPracticeSessionPersistenceService {
 
     @Transactional
     public PracticeSession persist(UUID studentId, UUID paperId) {
-        Instant now = Instant.now();
-        PracticePaper paper = practicePaperRepository
+        var now = Instant.now();
+        var paper = practicePaperRepository
             .findReservedPaper(paperId, studentId, now)
             .orElseThrow(() -> new NotFoundException(
                 "Đề luyện không tồn tại hoặc đã hết thời gian giữ chỗ."
             ));
-        UUID sessionId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
         practiceSessionRepository.save(new com.sep.vox.domain.model.personalization.PracticeSession(
             sessionId,
             studentId,
@@ -88,8 +87,8 @@ public class StartPracticeSessionPersistenceService {
     }
 
     private String offerEvidenceJson(String current, String previous) {
-        String currentJson = current == null || current.isBlank() ? "[]" : current;
-        String previousJson = previous == null || previous.isBlank() ? "[]" : previous;
+        var currentJson = current == null || current.isBlank() ? "[]" : current;
+        var previousJson = previous == null || previous.isBlank() ? "[]" : previous;
         return "{\"current\":%s,\"previous\":%s}".formatted(currentJson, previousJson);
     }
 }

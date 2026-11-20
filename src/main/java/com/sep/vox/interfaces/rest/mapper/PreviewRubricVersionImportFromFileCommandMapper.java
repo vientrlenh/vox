@@ -12,7 +12,8 @@ public class PreviewRubricVersionImportFromFileCommandMapper {
 
     public static PreviewRubricVersionImportFromFileCommand fromSystemRequest(UUID rubricId, MultipartFile file) {
         try {
-            UploadedFile uploadedFile = new UploadedFile(
+            // Chuyển đổi từ MultipartFile của Spring sang UploadedFile của Domain
+            var uploadedFile = new UploadedFile(
                     file.getOriginalFilename(),
                     file.getContentType(),
                     file.getSize(),
@@ -27,7 +28,8 @@ public class PreviewRubricVersionImportFromFileCommandMapper {
 
     public static PreviewSchoolRubricVersionImportCommand fromSchoolRequest(UUID schoolId, UUID rubricId,  MultipartFile file) {
         try {
-            UploadedFile uploadedFile = new UploadedFile(
+            // Chuyển đổi từ MultipartFile của Spring sang UploadedFile của Domain
+            var uploadedFile = new UploadedFile(
                     file.getOriginalFilename(),
                     file.getContentType(),
                     file.getSize(),

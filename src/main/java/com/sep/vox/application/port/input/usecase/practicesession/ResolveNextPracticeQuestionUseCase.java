@@ -123,7 +123,7 @@ public class ResolveNextPracticeQuestionUseCase {
         // Cổng TRONG: khoá JVM. Giữ lại dù đã có khoá Redis vì hai lời gọi trùng CÙNG pod chặn
         // nhau ngay tại đây, không tốn một vòng mạng nào -- mà từ khi bật sticky session thì đa số
         // trùng lặp đúng là cùng pod. Hành vi trong phạm vi một pod vì vậy giống hệt bản cũ.
-        ReentrantLock lock = sessionLocks.computeIfAbsent(sessionId, ignored -> new ReentrantLock());
+        var lock = sessionLocks.computeIfAbsent(sessionId, ignored -> new ReentrantLock());
         lock.lock();
         try {
             return executeWithClusterLock(sessionId);
@@ -145,11 +145,11 @@ public class ResolveNextPracticeQuestionUseCase {
      * thứ hai -- đúng lỗi vừa sửa.
      */
     private Result executeWithClusterLock(UUID sessionId) {
-        String key = CLUSTER_LOCK_KEY_PREFIX + sessionId;
+        var key = CLUSTER_LOCK_KEY_PREFIX + sessionId;
         // Token riêng mỗi lượt để lúc nhả còn chứng minh được quyền sở hữu.
-        String token = UUID.randomUUID().toString();
-        Duration ttl = clusterLockTtl();
-        Instant deadline = Instant.now().plus(ttl).plusSeconds(5);
+        var token = UUID.randomUUID().toString();
+        var ttl = clusterLockTtl();
+        var deadline = Instant.now().plus(ttl).plusSeconds(5);
 
         while (true) {
             if (token.equals(cacheManagerPort.saveIfAbsentAndGet(key, token, ttl))) {
@@ -194,7 +194,7 @@ public class ResolveNextPracticeQuestionUseCase {
     }
 
     private Result doExecute(UUID sessionId) {
-        ResolveNextPracticeQuestionClaimService.Claim claim = claimService.claim(sessionId);
+        var claim = claimService.claim(sessionId);
         if (claim.idempotentQuestion() != null) {
             return Result.ok(
                 toPayload(
@@ -212,7 +212,7 @@ public class ResolveNextPracticeQuestionUseCase {
             );
         }
 
-        PracticeQuestionSelectionService.NextQuestionSelection selection = selectionService
+        var selection = selectionService
             .resolveNextQuestion(
                 claim.topic(), claim.studentId(), claim.focus(),
                 claim.targetBandOrder(), claim.targetBandCount(),
@@ -228,7 +228,7 @@ public class ResolveNextPracticeQuestionUseCase {
         // Không còn chốt ngân sách ở đây: nó đã chuyển lên ResolveNextPracticeQuestionClaimService,
         // chạy TRƯỚC resolveNextQuestion. Đặt sau như cũ nghĩa là có thể sinh câu bằng LLM
         // (10-40 giây) rồi vứt đi vì hết ngân sách.
-        PracticeQuestion question = selection.question();
+        var question = selection.question();
 
         persistenceService.persist(claim.studentId(), claim.practicePaperId(), selection);
         return Result.ok(
@@ -252,9 +252,9 @@ public class ResolveNextPracticeQuestionUseCase {
         // > 1 chứ không > 0: còn đúng 1 giây thì cắt ra sàn = trần = 1, mà sàn phải NHỎ HƠN
         // trần -- bằng nhau thì SignalNode coi mọi câu trả lời là chưa đạt và hỏi mãi.
         // Dưới ngưỡng đó cứ giữ nguyên số của câu; phiên sẽ đóng ở chốt ngân sách lần sau.
-        boolean last = remainingSeconds > 1 && remainingSeconds < question.getMaxResponseSeconds();
-        int maxSeconds = last ? remainingSeconds : question.getMaxResponseSeconds();
-        int minSeconds = Math.max(1, Math.min(
+        var last = remainingSeconds > 1 && remainingSeconds < question.getMaxResponseSeconds();
+        var maxSeconds = last ? remainingSeconds : question.getMaxResponseSeconds();
+        var minSeconds = Math.max(1, Math.min(
             last ? remainingSeconds / 2 : question.getMinResponseSeconds(),
             maxSeconds - 1
         ));

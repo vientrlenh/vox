@@ -4,37 +4,41 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.infrastructure.persistence.adapter.ImportSessionRepositoryImpl;
-import com.sep.vox.support.RepositoryTest;
 
-@RepositoryTest
+@DataJpaTest
+@ActiveProfiles("test")
 @Import({
     ImportSessionRepositoryImpl.class
 })
-class ImportSessionRepositoryTests {
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class ImportSessionRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private ImportSessionRepository importSessionRepository;
 
     @Test
     void whenSaveCancelledSession_thenPersistsStatus() {
-        ImportSession session = session(ImportSessionStatus.CANCELLED);
+        var session = session(ImportSessionStatus.CANCELLED);
 
-        ImportSession saved = importSessionRepository.save(session);
-        Optional<ImportSession> found = importSessionRepository.findById(saved.getId());
+        var saved = importSessionRepository.save(session);
+        var found = importSessionRepository.findById(saved.getId());
 
         assertThat(found).isPresent();
         assertThat(found.get().getStatus()).isEqualTo(ImportSessionStatus.CANCELLED);
@@ -43,10 +47,10 @@ class ImportSessionRepositoryTests {
     @ParameterizedTest
     @EnumSource(ImportType.class)
     void should_persist_every_import_type(ImportType type) {
-        ImportSession session = session(ImportSessionStatus.PREVIEWED, type);
+        var session = session(ImportSessionStatus.PREVIEWED, type);
 
-        ImportSession saved = importSessionRepository.save(session);
-        Optional<ImportSession> found = importSessionRepository.findById(saved.getId());
+        var saved = importSessionRepository.save(session);
+        var found = importSessionRepository.findById(saved.getId());
 
         assertThat(found).isPresent();
         assertThat(found.get().getType()).isEqualTo(type);
@@ -57,8 +61,8 @@ class ImportSessionRepositoryTests {
     }
 
     private static ImportSession session(ImportSessionStatus status, ImportType type) {
-        Instant now = Instant.now();
-        UUID userId = UUID.randomUUID();
+        var now = Instant.now();
+        var userId = UUID.randomUUID();
         return new ImportSession(
             UUID.randomUUID(),
             type,

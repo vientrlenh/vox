@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
-import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
@@ -53,7 +52,7 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
     public List<UUID> execute(CreateSystemRubricResultBandsCommand command) {
         // 1. Xác thực tài khoản
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
+        var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {

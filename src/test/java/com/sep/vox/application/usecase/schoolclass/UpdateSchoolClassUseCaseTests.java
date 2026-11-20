@@ -21,7 +21,6 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
@@ -59,10 +58,10 @@ class UpdateSchoolClassUseCaseTests {
 
     @Test
     void update_name_only_should_return_id_when_atomic_update_succeeds() {
-        UUID userId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        UpdateSchoolClassCommand command = new UpdateSchoolClassCommand(classId, "  English   02  ", true, null, false, null, false);
+        var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var command = new UpdateSchoolClassCommand(classId, "  English   02  ", true, null, false, null, false);
         stubActiveContext(userId, schoolId);
         when(schoolClassRepository.updateMutableFields(
             eq(classId),
@@ -77,7 +76,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(userId)
         )).thenReturn(1);
 
-        UpdateSchoolClassResponse response = useCase.execute(command);
+        var response = useCase.execute(command);
 
         assertThat(response.schoolClassId()).isEqualTo(classId);
         verify(schoolClassRepository).updateMutableFields(
@@ -96,9 +95,9 @@ class UpdateSchoolClassUseCaseTests {
 
     @Test
     void update_status_only_should_return_id_when_atomic_update_succeeds() {
-        UUID userId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
         stubActiveContext(userId, schoolId);
         when(schoolClassRepository.updateMutableFields(
             eq(classId),
@@ -113,16 +112,16 @@ class UpdateSchoolClassUseCaseTests {
             eq(userId)
         )).thenReturn(1);
 
-        UpdateSchoolClassResponse response = useCase.execute(new UpdateSchoolClassCommand(classId, null, false, null, false, SchoolClassStatus.INACTIVE, true));
+        var response = useCase.execute(new UpdateSchoolClassCommand(classId, null, false, null, false, "INACTIVE", true));
 
         assertThat(response.schoolClassId()).isEqualTo(classId);
     }
 
     @Test
     void update_description_null_should_pass_provided_flag_and_null_value() {
-        UUID userId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
         stubActiveContext(userId, schoolId);
         when(schoolClassRepository.updateMutableFields(
             eq(classId),
@@ -137,7 +136,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(userId)
         )).thenReturn(1);
 
-        UpdateSchoolClassResponse response = useCase.execute(new UpdateSchoolClassCommand(classId, null, false, null, true, null, false));
+        var response = useCase.execute(new UpdateSchoolClassCommand(classId, null, false, null, true, null, false));
 
         assertThat(response.schoolClassId()).isEqualTo(classId);
     }
@@ -154,9 +153,9 @@ class UpdateSchoolClassUseCaseTests {
 
     @Test
     void update_should_throw_when_no_rows_are_updated() {
-        UUID userId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
         stubActiveContext(userId, schoolId);
         when(schoolClassRepository.updateMutableFields(
             eq(classId),
@@ -178,10 +177,10 @@ class UpdateSchoolClassUseCaseTests {
     }
 
     @Test
-    void update_should_throw_when_status_is_provided_without_a_value() {
+    void update_should_throw_when_status_is_invalid() {
         assertThrows(
             IllegalArgumentException.class,
-            () -> useCase.execute(new UpdateSchoolClassCommand(UUID.randomUUID(), null, false, null, false, null, true))
+            () -> useCase.execute(new UpdateSchoolClassCommand(UUID.randomUUID(), null, false, null, false, "DELETED", true))
         );
 
         verifyNoInteractions(userContextPort, userRepository, schoolRepository, schoolClassRepository);
@@ -219,10 +218,10 @@ class UpdateSchoolClassUseCaseTests {
 
     @Test
     void update_should_throw_when_current_user_is_inactive() {
-        UUID userId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        User _u2 = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
+        var _u2 = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_u2));
 
         assertThrows(
@@ -235,10 +234,10 @@ class UpdateSchoolClassUseCaseTests {
 
     @Test
     void update_should_throw_when_current_user_has_no_school() {
-        UUID userId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        User _user = user(userId, null, UserStatus.ACTIVE);
+        var _user = user(userId, null, UserStatus.ACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
 
         assertThrows(
@@ -251,13 +250,13 @@ class UpdateSchoolClassUseCaseTests {
 
     @Test
     void update_should_throw_when_school_is_inactive() {
-        UUID userId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        School school = activeSchool(schoolId);
+        var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var school = activeSchool(schoolId);
         school.setActive(false);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        User _user1 = user(userId, schoolId, UserStatus.ACTIVE);
+        var _user1 = user(userId, schoolId, UserStatus.ACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
 
@@ -271,13 +270,13 @@ class UpdateSchoolClassUseCaseTests {
 
     private void stubActiveContext(UUID userId, UUID schoolId) {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        User _user2 = user(userId, schoolId, UserStatus.ACTIVE);
+        var _user2 = user(userId, schoolId, UserStatus.ACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user2));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
     }
 
     private User user(UUID id, UUID schoolId, UserStatus status) {
-        User user = new User();
+        var user = new User();
         user.setId(id);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
@@ -287,7 +286,7 @@ class UpdateSchoolClassUseCaseTests {
     }
 
     private static School activeSchool(UUID id) {
-        School school = new School();
+        var school = new School();
         school.setId(id);
         school.setActive(true);
         return school;

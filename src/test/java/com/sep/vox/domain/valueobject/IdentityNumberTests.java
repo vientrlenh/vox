@@ -9,21 +9,21 @@ public class IdentityNumberTests {
 
     @Test
     void should_accept_valid_nine_digit_identity_number() {
-        IdentityNumber identityNumber = new IdentityNumber("123456789");
+        var identityNumber = new IdentityNumber("123456789");
 
         assertThat(identityNumber.value()).isEqualTo("123456789");
     }
 
     @Test
     void should_accept_valid_twelve_digit_identity_number() {
-        IdentityNumber identityNumber = new IdentityNumber("123456789012");
+        var identityNumber = new IdentityNumber("123456789012");
 
         assertThat(identityNumber.value()).isEqualTo("123456789012");
     }
 
     @Test
     void should_accept_null_identity_number() {
-        IdentityNumber identityNumber = new IdentityNumber(null);
+        var identityNumber = new IdentityNumber(null);
 
         assertThat(identityNumber.value()).isNull();
     }

@@ -11,9 +11,9 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 /**
- * A REST path parallel to the Kafka topic ai-usage-recorded (AiUsageRecordedConsumer) -- for
- * sources with no direct Kafka connection, for example the desktop app that aggregates TTS itself on the learner's machine
- * (the desktop app, LocalAvatarSpeaker.cs) instead of going through the Agentic AI. The same schema, feeding the same
+ * Đường REST song song với Kafka topic ai-usage-recorded (AiUsageRecordedConsumer) -- dùng cho
+ * nguồn không có kết nối Kafka trực tiếp, ví dụ desktop app tự tổng hợp TTS trên máy học viên
+ * (VoxExamDesktop/LocalAvatarSpeaker.cs) thay vì qua Agentic AI. Cùng schema, cùng đổ vào
  * RecordAiUsageUseCase.
  */
 public record ReportAiUsageRequest(

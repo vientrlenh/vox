@@ -6,18 +6,17 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.application.query.dto.AiCostBucketDto;
-import com.sep.vox.application.query.dto.UserAiSpendDto;
 import com.sep.vox.application.query.repository.SchoolAiCostQueryRepository;
-import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.support.RepositoryTest;
+import com.sep.vox.config.ContainerTestConfig;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -27,9 +26,11 @@ import jakarta.persistence.PersistenceContext;
  * vụ, {@code COALESCE(SUM(...))} trên tập rỗng, và một {@code LEFT JOIN} phải không được nhân đôi
  * tổng tiền.
  */
-@RepositoryTest
+@DataJpaTest
+@ActiveProfiles("test")
 @Import(JpaSchoolAiCostQueryRepository.class)
-class JpaSchoolAiCostQueryRepositoryTests {
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class JpaSchoolAiCostQueryRepositoryTests extends ContainerTestConfig {
 
     private static final Instant FROM = Instant.parse("2026-08-01T00:00:00Z");
     private static final Instant TO = Instant.parse("2026-09-01T00:00:00Z");
@@ -41,41 +42,38 @@ class JpaSchoolAiCostQueryRepositoryTests {
     private EntityManager em;
 
     /**
-     * THE TRAP THE OLD VERSION FELL INTO: cutting the boundary by UTC.
+     * CÁI BẪY BẢN CŨ MẮC PHẢI: cắt mốc theo UTC.
      *
-     * <p>18:00Z on 27/08 is 01:00 in the MORNING of 28/08 Vietnam time. Cutting by UTC would pile
-     * it into the 27/08 column, so every charge between 00:00 and 07:00 Vietnam time is pushed to
-     * the previous day and the last column of the chart is always missing a piece.
+     * <p>18:00Z ngày 27/08 là 01:00 SÁNG ngày 28/08 giờ Việt Nam. Cắt theo UTC sẽ dồn nó vào cột
+     * 27/08, tức mọi khoản phát sinh từ 00:00 tới 07:00 giờ Việt Nam đều bị đẩy sang ngày hôm trước
+     * và cột cuối biểu đồ luôn thiếu một mẩu.
      */
     @Test
     void shouldBucketByVietnameseCalendarDayNotUtc() {
-        UUID school = insertSchool();
-        insertAssessmentSpend(school, Instant.parse("2026-08-27T18:00:00Z"), "40000", null);
+        var school = insertSchool();
+        insertExamSpend(school, Instant.parse("2026-08-27T18:00:00Z"), "40000", null);
 
-        List<AiCostBucketDto> buckets = repository.findBucketedCost(school, FROM, TO, "day");
+        var buckets = repository.findBucketedCost(school, FROM, TO, "day");
 
         assertThat(buckets).hasSize(1);
-        // 00:00 on 28/08 Vietnam time = 17:00Z on 27/08.
+        // 00:00 ngày 28/08 giờ Việt Nam = 17:00Z ngày 27/08.
         assertThat(buckets.get(0).bucket()).isEqualTo(Instant.parse("2026-08-27T17:00:00Z"));
         assertThat(buckets.get(0).costVnd()).isEqualByComparingTo("40000");
     }
 
-    /**
-     * The two wallet types are two separate lines on the chart, so they must not be merged into one
-     * point.
-     */
+    /** Hai loại ví là hai đường riêng trên biểu đồ, nên không được gộp vào một mốc. */
     @Test
     void shouldKeepEachQuotaTypeAsItsOwnSeries() {
-        UUID school = insertSchool();
-        Instant sameDay = Instant.parse("2026-08-20T03:00:00Z");
-        insertAssessmentSpend(school, sameDay, "100000", null);
+        var school = insertSchool();
+        var sameDay = Instant.parse("2026-08-20T03:00:00Z");
+        insertExamSpend(school, sameDay, "100000", null);
         insertPracticeSpend(school, sameDay, "7000", insertUser("Nguyễn Minh Anh"));
 
-        List<AiCostBucketDto> buckets = repository.findBucketedCost(school, FROM, TO, "day");
+        var buckets = repository.findBucketedCost(school, FROM, TO, "day");
 
         assertThat(buckets).hasSize(2);
         assertThat(buckets).anySatisfy(bucket -> {
-            assertThat(bucket.quotaType()).isEqualTo("ASSESSMENT");
+            assertThat(bucket.quotaType()).isEqualTo("EXAM");
             assertThat(bucket.costVnd()).isEqualByComparingTo("100000");
         });
         assertThat(buckets).anySatisfy(bucket -> {
@@ -84,18 +82,15 @@ class JpaSchoolAiCostQueryRepositoryTests {
         });
     }
 
-    /**
-     * A HALF-OPEN window: two adjacent ranges must not double-count an amount that falls exactly on
-     * the boundary.
-     */
+    /** Cửa sổ NỬA MỞ: hai dải liền nhau không được đếm trùng khoản rơi đúng ranh giới. */
     @Test
     void shouldUseAHalfOpenWindow() {
-        UUID school = insertSchool();
-        insertAssessmentSpend(school, FROM.minusSeconds(1), "1000", null);
-        insertAssessmentSpend(school, FROM, "2000", null);
-        insertAssessmentSpend(school, TO, "4000", null);
+        var school = insertSchool();
+        insertExamSpend(school, FROM.minusSeconds(1), "1000", null);
+        insertExamSpend(school, FROM, "2000", null);
+        insertExamSpend(school, TO, "4000", null);
 
-        List<AiCostBucketDto> buckets = repository.findBucketedCost(school, FROM, TO, "day");
+        var buckets = repository.findBucketedCost(school, FROM, TO, "day");
 
         assertThat(buckets).hasSize(1);
         assertThat(buckets.get(0).costVnd()).isEqualByComparingTo("2000");
@@ -103,14 +98,14 @@ class JpaSchoolAiCostQueryRepositoryTests {
 
     @Test
     void shouldRankUsersByHowMuchTheySpent() {
-        UUID school = insertSchool();
-        UUID heavy = insertUser("Phạm Thu Hằng");
-        UUID light = insertUser("Lê Quang Vinh");
-        insertAssessmentSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "900000", heavy);
-        insertAssessmentSpend(school, Instant.parse("2026-08-12T03:00:00Z"), "1010000", heavy);
-        insertAssessmentSpend(school, Instant.parse("2026-08-11T03:00:00Z"), "840000", light);
+        var school = insertSchool();
+        var heavy = insertUser("Phạm Thu Hằng");
+        var light = insertUser("Lê Quang Vinh");
+        insertExamSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "900000", heavy);
+        insertExamSpend(school, Instant.parse("2026-08-12T03:00:00Z"), "1010000", heavy);
+        insertExamSpend(school, Instant.parse("2026-08-11T03:00:00Z"), "840000", light);
 
-        PageResult<UserAiSpendDto> page = repository.findSpendByUser(school, FROM, TO, null, 1, 20);
+        var page = repository.findSpendByUser(school, FROM, TO, null, 1, 20);
 
         assertThat(page.totalElements()).isEqualTo(2L);
         assertThat(page.content().get(0).fullName()).isEqualTo("Phạm Thu Hằng");
@@ -119,18 +114,17 @@ class JpaSchoolAiCostQueryRepositoryTests {
     }
 
     /**
-     * A charge from a centralized assessment carries a null user_id and must stay OUTSIDE the ranking --
-     * in almost every school it is the largest item and would take the top of the table, hiding
-     * exactly what this table exists to show.
+     * Khoản của kỳ thi tập trung mang user_id null và phải nằm NGOÀI bảng xếp hạng — ở gần như mọi
+     * trường nó là khoản lớn nhất và sẽ chiếm đỉnh bảng, che mất đúng thứ bảng này sinh ra để thấy.
      */
     @Test
     void shouldKeepSchoolWideSpendingOutOfTheUserRanking() {
-        UUID school = insertSchool();
-        UUID teacher = insertUser("Phạm Thu Hằng");
-        insertAssessmentSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "5000000", null);
-        insertAssessmentSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "300000", teacher);
+        var school = insertSchool();
+        var teacher = insertUser("Phạm Thu Hằng");
+        insertExamSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "5000000", null);
+        insertExamSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "300000", teacher);
 
-        PageResult<UserAiSpendDto> page = repository.findSpendByUser(school, FROM, TO, null, 1, 20);
+        var page = repository.findSpendByUser(school, FROM, TO, null, 1, 20);
 
         assertThat(page.totalElements()).isEqualTo(1L);
         assertThat(page.content().get(0).spentVnd()).isEqualByComparingTo("300000");
@@ -145,49 +139,42 @@ class JpaSchoolAiCostQueryRepositoryTests {
     }
 
     /**
-     * The {@code LEFT JOIN} to the spending ceiling must NOT double the total -- the unique key of
-     * that table guarantees at most one row per ledger entry, and this test guards exactly that
-     * assumption.
+     * {@code LEFT JOIN} sang trần chi KHÔNG được nhân đôi tổng tiền — khoá duy nhất của bảng đó đảm
+     * bảo tối đa một dòng mỗi bút toán, và test này canh đúng giả định ấy.
      */
     @Test
     void shouldAttachThePersonalCapWithoutInflatingTheTotal() {
-        UUID school = insertSchool();
-        UUID teacher = insertUser("Phạm Thu Hằng");
-        UUID subscriptionId = UUID.randomUUID();
-        insertAssessmentSpend(school, subscriptionId, Instant.parse("2026-08-10T03:00:00Z"), "700000", teacher);
-        insertAssessmentSpend(school, subscriptionId, Instant.parse("2026-08-11T03:00:00Z"), "500000", teacher);
-        insertAllocation(subscriptionId, "ASSESSMENT", teacher, "2000000");
+        var school = insertSchool();
+        var teacher = insertUser("Phạm Thu Hằng");
+        var subscriptionId = UUID.randomUUID();
+        insertExamSpend(school, subscriptionId, Instant.parse("2026-08-10T03:00:00Z"), "700000", teacher);
+        insertExamSpend(school, subscriptionId, Instant.parse("2026-08-11T03:00:00Z"), "500000", teacher);
+        insertAllocation(subscriptionId, "EXAM", teacher, "2000000");
 
-        UserAiSpendDto row = repository.findSpendByUser(school, FROM, TO, null, 1, 20).content().get(0);
+        var row = repository.findSpendByUser(school, FROM, TO, null, 1, 20).content().get(0);
 
         assertThat(row.spentVnd()).isEqualByComparingTo("1200000");
         assertThat(row.allocatedAmountVnd()).isEqualByComparingTo("2000000");
     }
 
-    /**
-     * Having no spending ceiling must still show up: that person still spends the school's money,
-     * there is just no level to compare against.
-     */
+    /** Không có trần chi vẫn phải hiện: người đó vẫn tiêu tiền của trường, chỉ là không có mức để so. */
     @Test
     void shouldListAUserWhoHasNoPersonalCap() {
-        UUID school = insertSchool();
-        insertAssessmentSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "700000", insertUser("Lê Quang Vinh"));
+        var school = insertSchool();
+        insertExamSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "700000", insertUser("Lê Quang Vinh"));
 
-        UserAiSpendDto row = repository.findSpendByUser(school, FROM, TO, null, 1, 20).content().get(0);
+        var row = repository.findSpendByUser(school, FROM, TO, null, 1, 20).content().get(0);
 
         assertThat(row.spentVnd()).isEqualByComparingTo("700000");
         assertThat(row.allocatedAmountVnd()).isNull();
     }
 
-    /**
-     * A person who spends in both wallets is TWO rows -- the spending ceiling is also split by
-     * wallet type.
-     */
+    /** Một người tiêu ở cả hai ví là HAI hàng — trần chi cũng chia theo loại ví. */
     @Test
     void shouldSplitOneUserAcrossBothQuotaTypes() {
-        UUID school = insertSchool();
-        UUID user = insertUser("Nguyễn Minh Anh");
-        insertAssessmentSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "700000", user);
+        var school = insertSchool();
+        var user = insertUser("Nguyễn Minh Anh");
+        insertExamSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "700000", user);
         insertPracticeSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "50000", user);
 
         assertThat(repository.findSpendByUser(school, FROM, TO, null, 1, 20).totalElements()).isEqualTo(2L);
@@ -196,9 +183,9 @@ class JpaSchoolAiCostQueryRepositoryTests {
 
     @Test
     void shouldReportWhenTheLedgerStartedForThisSchool() {
-        UUID school = insertSchool();
-        insertAssessmentSpend(school, Instant.parse("2026-08-19T03:00:00Z"), "1000", null);
-        insertAssessmentSpend(school, Instant.parse("2026-08-04T03:00:00Z"), "1000", null);
+        var school = insertSchool();
+        insertExamSpend(school, Instant.parse("2026-08-19T03:00:00Z"), "1000", null);
+        insertExamSpend(school, Instant.parse("2026-08-04T03:00:00Z"), "1000", null);
 
         assertThat(repository.findFirstRecordedAt(school)).isEqualTo(Instant.parse("2026-08-04T03:00:00Z"));
         assertThat(repository.findFirstRecordedAt(insertSchool())).isNull();
@@ -206,9 +193,9 @@ class JpaSchoolAiCostQueryRepositoryTests {
 
     @Test
     void shouldNotLeakSpendingFromAnotherSchool() {
-        UUID school = insertSchool();
-        insertAssessmentSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "1000", null);
-        insertAssessmentSpend(insertSchool(), Instant.parse("2026-08-10T03:00:00Z"), "9000", null);
+        var school = insertSchool();
+        insertExamSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "1000", null);
+        insertExamSpend(insertSchool(), Instant.parse("2026-08-10T03:00:00Z"), "9000", null);
 
         assertThat(repository.findBucketedCost(school, FROM, TO, "day").get(0).costVnd())
             .isEqualByComparingTo("1000");
@@ -217,9 +204,9 @@ class JpaSchoolAiCostQueryRepositoryTests {
     // ---------- fixtures ----------
 
     private UUID insertSchool() {
-        UUID id = UUID.randomUUID();
-        UUID actor = UUID.randomUUID();
-        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        var id = UUID.randomUUID();
+        var actor = UUID.randomUUID();
+        var now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
             INSERT INTO schools (id, code, name, address, contact_email, contact_phone,
                                  is_active, student_count, created_at, updated_at, created_by, updated_by)
@@ -235,8 +222,8 @@ class JpaSchoolAiCostQueryRepositoryTests {
     }
 
     private UUID insertUser(String fullName) {
-        UUID id = UUID.randomUUID();
-        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        var id = UUID.randomUUID();
+        var now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
             INSERT INTO users (id, email, full_name, password_hash, date_of_birth, status, created_at, updated_at)
             VALUES (:id, :email, :fullName, 'x', DATE '1990-01-01', 'ACTIVE', :now, :now)
@@ -249,13 +236,13 @@ class JpaSchoolAiCostQueryRepositoryTests {
         return id;
     }
 
-    private void insertAssessmentSpend(UUID schoolId, Instant occurredAt, String amountVnd, UUID userId) {
-        insertAssessmentSpend(schoolId, UUID.randomUUID(), occurredAt, amountVnd, userId);
+    private void insertExamSpend(UUID schoolId, Instant occurredAt, String amountVnd, UUID userId) {
+        insertExamSpend(schoolId, UUID.randomUUID(), occurredAt, amountVnd, userId);
     }
 
-    private void insertAssessmentSpend(UUID schoolId, UUID subscriptionId, Instant occurredAt,
+    private void insertExamSpend(UUID schoolId, UUID subscriptionId, Instant occurredAt,
             String amountVnd, UUID userId) {
-        insertSpend(schoolId, subscriptionId, "ASSESSMENT", occurredAt, amountVnd, userId,
+        insertSpend(schoolId, subscriptionId, "EXAM", occurredAt, amountVnd, userId,
             UUID.randomUUID(), null);
     }
 
@@ -265,19 +252,19 @@ class JpaSchoolAiCostQueryRepositoryTests {
     }
 
     private void insertSpend(UUID schoolId, UUID subscriptionId, String quotaType, Instant occurredAt,
-            String amountVnd, UUID userId, UUID assessmentSessionId, UUID practiceSessionId) {
+            String amountVnd, UUID userId, UUID examSessionId, UUID practiceSessionId) {
         em.createNativeQuery("""
             INSERT INTO school_ai_spend_entries (id, school_id, subscription_id, quota_type, user_id,
-                                                 assessment_session_id, practice_session_id, amount_vnd, occurred_at)
+                                                 exam_session_id, practice_session_id, amount_vnd, occurred_at)
             VALUES (:id, :schoolId, :subscriptionId, :quotaType, :userId,
-                    :assessmentSessionId, :practiceSessionId, :amountVnd, :occurredAt)
+                    :examSessionId, :practiceSessionId, :amountVnd, :occurredAt)
             """)
             .setParameter("id", UUID.randomUUID())
             .setParameter("schoolId", schoolId)
             .setParameter("subscriptionId", subscriptionId)
             .setParameter("quotaType", quotaType)
             .setParameter("userId", userId)
-            .setParameter("assessmentSessionId", assessmentSessionId)
+            .setParameter("examSessionId", examSessionId)
             .setParameter("practiceSessionId", practiceSessionId)
             .setParameter("amountVnd", new BigDecimal(amountVnd))
             .setParameter("occurredAt", occurredAt)

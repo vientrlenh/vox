@@ -9,13 +9,11 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import com.sep.vox.application.port.output.InterestQuizGenerationPort;
@@ -44,31 +42,31 @@ public class InterestQuizGenerationClient implements InterestQuizGenerationPort 
             .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(2))
             .build();
-        String base = agentsBaseUrl.replaceAll("/+$", "");
+        var base = agentsBaseUrl.replaceAll("/+$", "");
         this.generateUri = URI.create(base + "/internal/practice-generation/interest-quiz-items");
     }
 
     /**
-     * @param dimensions the current catalogue of interest dimensions (read from interest_dimensions). Sent
-     *                   down instead of being hard-coded in Python, so that when a SYSTEM_ADMIN adds a new dimension
-     *                   it takes effect immediately, with no need to redeploy the Python service.
+     * @param dimensions danh mục chiều sở thích hiện hành (đọc từ interest_dimensions). Gửi
+     *                   xuống thay vì để Python gắn cứng, nhờ vậy SYSTEM_ADMIN thêm chiều mới
+     *                   là có hiệu lực ngay, không phải deploy lại service Python.
      */
     @Override
     public List<InterestQuizSeedItem> generate(
             int maxItems,
             List<String> existingStatements,
             List<String> dimensions) {
-        Map<String, Object> body = new LinkedHashMap<String, Object>();
+        var body = new LinkedHashMap<String, Object>();
         body.put("max_items", maxItems);
         body.put("existing_statements", existingStatements);
         body.put("dimensions", dimensions);
         try {
-            HttpRequest request = HttpRequest.newBuilder(generateUri)
+            var request = HttpRequest.newBuilder(generateUri)
                 .timeout(Duration.ofSeconds(45))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(jsonMapper.writeValueAsString(body)))
                 .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 != 2) {
                 LOGGER.warn(
                     "Interest quiz generation endpoint returned status {}: {}",
@@ -88,15 +86,15 @@ public class InterestQuizGenerationClient implements InterestQuizGenerationPort 
     }
 
     private List<InterestQuizSeedItem> toItems(String responseBody) throws Exception {
-        JsonNode root = jsonMapper.readTree(responseBody);
-        List<InterestQuizSeedItem> items = new ArrayList<InterestQuizSeedItem>();
-        for (JsonNode node : root.path("items")) {
-            List<String> dimensions = new ArrayList<String>();
-            for (JsonNode dimension : node.path("dimension_per_statement")) {
+        var root = jsonMapper.readTree(responseBody);
+        var items = new ArrayList<InterestQuizSeedItem>();
+        for (var node : root.path("items")) {
+            var dimensions = new ArrayList<String>();
+            for (var dimension : node.path("dimension_per_statement")) {
                 dimensions.add(dimension.asString());
             }
-            List<String> statements = new ArrayList<String>();
-            for (JsonNode statement : node.path("statements")) {
+            var statements = new ArrayList<String>();
+            for (var statement : node.path("statements")) {
                 statements.add(statement.asString());
             }
             items.add(new InterestQuizSeedItem(

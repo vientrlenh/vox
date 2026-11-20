@@ -1,10 +1,5 @@
 package com.sep.vox.infrastructure.initializer;
 
-import com.sep.vox.domain.model.framework.Framework;
-import com.sep.vox.domain.model.framework.FrameworkResultBand;
-import com.sep.vox.domain.model.rubric.Rubric;
-import com.sep.vox.domain.model.rubric.RubricVersion;
-import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -35,63 +30,63 @@ import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 
 /**
- * Builds the system's six SAMPLE grading policies up front: for each sample high-school criteria set created by
- * {@link SystemRubricTemplateInitializer} there is a standard version (Level 3, declared by Grade) and a version
- * for specialized classes (Level 4, no scope declared).
+ * Dựng sẵn sáu chính sách chấm MẪU của hệ thống: mỗi bộ tiêu chí mẫu THPT do
+ * {@link SystemRubricTemplateInitializer} tạo ra có một bản chuẩn (Bậc 3, khai theo Khối) và một bản
+ * cho lớp chuyên (Bậc 4, không khai phạm vi).
  *
- * <p>This is what gives {@code CloneSystemRubricToSchoolUseCase} a policy to copy along with the criteria
- * set. Before this file existed, a school that wanted to use a template had to copy the rubric and then retype all the policy
- * parameters itself -- exactly the manual step that the copy path was created to remove.
+ * <p>Đây là thứ làm cho {@code CloneSystemRubricToSchoolUseCase} có chính sách để sao kèm bộ tiêu
+ * chí. Trước khi có file này, trường muốn dùng bản mẫu phải sao rubric rồi tự gõ lại toàn bộ thông
+ * số chính sách -- chính là bước thủ công mà đường sao chép sinh ra để bỏ đi.
  *
- * <h2>PUBLISHED right away, and why it goes around the use case</h2>
+ * <h2>PUBLISHED ngay, và vì sao phải đi vòng qua use case</h2>
  *
- * <p>{@code CloneSystemRubricToSchoolUseCase} rejects every template that has not been published, so a sample policy
- * in the draft state is a policy nobody can copy.
+ * <p>{@code CloneSystemRubricToSchoolUseCase} từ chối mọi bản mẫu chưa ban hành, nên chính sách mẫu
+ * ở trạng thái nháp là chính sách không ai sao được.
  *
- * <p>{@code CreateSystemAssessmentPolicyUseCase} cannot be called, for two reasons. One, at startup there is no
- * login session yet from which that use case takes the system admin identity. Two, that use case requires the rubric version
- * to still be DRAFT ("A Policy may only be attached while the Rubric Version is DRAFT") because the real flow is to
- * create a draft policy on a draft rubric and publish both at the same time; while the sample criteria set here is built by
- * {@link SystemRubricTemplateInitializer} directly in the PUBLISHED state. The final state this file
- * writes -- a PUBLISHED policy pointing at a PUBLISHED rubric -- equals the result of the real flow, it only
- * skips the intermediate step.
+ * <p>Không gọi {@code CreateSystemAssessmentPolicyUseCase} được vì hai lẽ. Một, lúc khởi động chưa có
+ * phiên đăng nhập nào để use case đó lấy danh tính system admin. Hai, use case đó bắt phiên bản rubric
+ * phải còn DRAFT ("Chỉ được gán Policy khi Phiên bản Rubric còn ở trạng thái DRAFT") vì luồng thật là
+ * tạo chính sách nháp trên rubric nháp rồi ban hành cả hai cùng lúc; còn bộ tiêu chí mẫu ở đây do
+ * {@link SystemRubricTemplateInitializer} dựng thẳng ở trạng thái PUBLISHED. Trạng thái cuối mà file
+ * này ghi ra -- chính sách PUBLISHED trỏ vào rubric PUBLISHED -- đúng bằng kết quả của luồng thật, chỉ
+ * bỏ qua bước trung gian.
  *
- * <p>In return, the invariants of the real creation path have to be kept by hand here: the framework is still PUBLISHED, the
- * target level belongs to the right framework version, the rubric is owned by SYSTEM and has the same framework as the policy.
+ * <p>Đổi lại, các bất biến của đường tạo thật phải giữ bằng tay ở đây: khung còn PUBLISHED, bậc mục
+ * tiêu thuộc đúng phiên bản khung, rubric thuộc sở hữu SYSTEM và cùng khung với chính sách.
  *
- * <h2>The standard version declares a Grade, the specialized version leaves the scope empty</h2>
+ * <h2>Bản chuẩn khai theo Khối, bản chuyên để trống phạm vi</h2>
  *
- * <p>Grade levels are a global catalog and are not tied to any school year, so a sample policy declared by Grade
- * stays correct when the school opens next year's school year -- it does not have to be declared again every year. That is also why
- * the use case that copies resolves scope ({@code resolveScope}) requires the copy to KEEP the grade of the template: changing the grade is
- * keeping the parameters written for Grade 10 and pasting a Grade 12 label on them.
+ * <p>Khối lớp là catalog toàn cục và không gắn với niên khóa nào, nên chính sách mẫu khai theo Khối
+ * vẫn đúng khi trường mở niên khóa năm sau -- không phải khai lại hằng năm. Đó cũng là lý do
+ * {@code resolveScope} của use case sao chép bắt bản sao GIỮ NGUYÊN khối của bản mẫu: đổi khối là
+ * giữ nguyên thông số soạn cho Khối 10 rồi dán nhãn Khối 12.
  *
- * <p>That is exactly why the SPECIALIZED version must not declare a Grade: the copy would be pinned to a whole grade, while
- * what the school needs is to apply it only to the specialized class. In addition each scope may only have one policy in
- * effect, so the standard version and the specialized version cannot coexist at Grade scope. Leaving the scope empty is the
- * only way for a school to copy the standard version for a Grade/School Year and the specialized version for exactly the specialized class.
+ * <p>Chính điều đó khiến bản CHUYÊN không được khai Khối: bản sao sẽ bị ghim vào cả khối, trong khi
+ * thứ trường cần là áp riêng cho lớp chuyên. Thêm nữa mỗi phạm vi chỉ được một chính sách còn hiệu
+ * lực, nên bản chuẩn và bản chuyên không cùng tồn tại ở phạm vi Khối được. Để trống phạm vi là cách
+ * duy nhất để trường sao bản chuẩn cho Khối/Niên khóa và bản chuyên cho đúng lớp chuyên.
  *
- * <h2>Two target levels, not three grades x three levels</h2>
+ * <h2>Hai bậc mục tiêu, không phải ba khối ba bậc</h2>
  *
- * <p>The standard version of all three grades uses the same {@code BAC_3}. According to Circular 32/2018/TT-BGDĐT the output standard is
- * Level 3 by the end of high school, not split by grade. See {@link GradeLevelBandScopeInitializer} for why
- * the original 6-level framework cannot express the 3.1/3.2/3.3 difference between the three grades.
+ * <p>Bản chuẩn của cả ba khối cùng {@code BAC_3}. Theo Thông tư 32/2018/TT-BGDĐT thì chuẩn đầu ra là
+ * hết THPT đạt Bậc 3, không phân theo từng lớp. Xem {@link GradeLevelBandScopeInitializer} để biết vì
+ * sao khung 6 bậc nguyên không diễn đạt được khác biệt 3.1/3.2/3.3 giữa ba khối.
  *
- * <p>The specialized version targets {@code BAC_4} (CEFR B2) -- exactly the HARD CEILING that the ceiling table sets for all three grades,
- * so the copy always passes {@code GradeLevelBandScopeGuardService}. B2 is the practice of specialized schools, not
- * a regulation (Circular 05/2023/TT-BGDĐT sets no foreign-language standard for specialized classes), so
- * it is here as an optional template: a school without specialized classes does not copy this one.
+ * <p>Bản chuyên nhắm {@code BAC_4} (CEFR B2) -- đúng bằng TRẦN CỨNG mà bảng trần đặt cho cả ba khối,
+ * nên bản sao luôn lọt {@code GradeLevelBandScopeGuardService}. B2 là thông lệ của trường chuyên chứ
+ * không phải quy định (Thông tư 05/2023/TT-BGDĐT không đặt chuẩn ngoại ngữ nào cho lớp chuyên), nên
+ * nó ở đây dưới dạng bản mẫu tuỳ chọn: trường nào không có lớp chuyên thì không sao bản này.
  *
- * <p>The target level decides which descriptor set is sent to the AI for grading
- * ({@code SubmitAssessmentSessionUseCase.buildCriteriaFrameworks}), so two levels mean two different yardsticks --
- * the raw scores of a specialized class and a regular class cannot be compared directly. That is intended: these are two
- * groups of students with different targets to reach.
+ * <p>Bậc mục tiêu quyết định bộ mô tả nào được gửi sang AI chấm
+ * ({@code SubmitExamSessionUseCase.buildCriteriaFrameworks}), nên hai bậc nghĩa là hai thước đo khác
+ * nhau -- điểm thô của lớp chuyên và lớp thường không so trực tiếp được. Đó là chủ đích: đây là hai
+ * nhóm học sinh có đích cần đạt khác nhau.
  *
- * <h2>No passing score is set</h2>
+ * <h2>Không đặt điểm đạt</h2>
  *
- * <p>{@code passingScore} is left null (meaning the pass score is not checked). The official documents specify the LEVEL to be
- * reached, not a score threshold; setting a number here would be the only part of the seed with no
- * basis behind it. The school sets it itself after copying.
+ * <p>{@code passingScore} để null (nghĩa là không kiểm điểm đạt). Văn bản chính thức quy định BẬC cần
+ * đạt chứ không quy định ngưỡng điểm; đặt sẵn một con số ở đây là phần duy nhất của bộ seed không có
+ * căn cứ nào đứng sau. Trường tự đặt sau khi sao về.
  */
 @Component
 @Order(9)
@@ -168,35 +163,35 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
     }
 
     /**
-     * Idempotent per TEMPLATE, keyed by the pair (rubric version, target band) -- see
-     * {@link #createPolicy}. That means a template that already exists is skipped, the remaining ones are still built, and
-     * running it many times produces nothing extra.
+     * Idempotent theo từng BẢN MẪU, khoá là cặp (phiên bản bộ tiêu chí, bậc mục tiêu) -- xem
+     * {@link #createPolicy}. Nghĩa là bản nào đã có thì bỏ qua, các bản còn lại vẫn được dựng, và
+     * chạy lại nhiều lần không sinh thêm gì.
      */
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
-        SupportedLanguage language = supportedLanguageRepository.findByCode(LANGUAGE_CODE).orElse(null);
+        var language = supportedLanguageRepository.findByCode(LANGUAGE_CODE).orElse(null);
         if (language == null) {
             LOGGER.warn("Chưa có ngôn ngữ {}. Bỏ qua khởi tạo chính sách chấm mẫu của hệ thống", LANGUAGE_CODE);
             return;
         }
 
-        Framework framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
+        var framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
         if (framework == null || !framework.isActive()) {
             LOGGER.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo chính sách chấm mẫu", FRAMEWORK_CODE);
             return;
         }
 
-        FrameworkVersion frameworkVersion = latestPublishedVersion(framework.getId());
+        var frameworkVersion = latestPublishedVersion(framework.getId());
         if (frameworkVersion == null) {
             LOGGER.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo chính sách chấm mẫu",
                 FRAMEWORK_CODE);
             return;
         }
 
-        Instant now = Instant.now();
-        int created = 0;
-        for (PolicySeed seed : POLICIES) {
+        var now = Instant.now();
+        var created = 0;
+        for (var seed : POLICIES) {
             if (createPolicy(seed, language.getId(), framework.getId(), frameworkVersion, now)) {
                 created++;
             }
@@ -210,7 +205,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
             created, LANGUAGE_CODE, frameworkVersion.getCode());
     }
 
-    /** @return true if a new policy was written. */
+    /** @return true nếu có ghi ra một chính sách mới. */
     private boolean createPolicy(
             PolicySeed seed,
             UUID languageId,
@@ -218,7 +213,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
             FrameworkVersion frameworkVersion,
             Instant now) {
 
-        FrameworkResultBand targetBand = frameworkResultBandRepository
+        var targetBand = frameworkResultBandRepository
             .findByVersionIdAndCode(frameworkVersion.getId(), seed.targetBandCode()).orElse(null);
         if (targetBand == null) {
             LOGGER.warn("Phiên bản khung {} thiếu bậc {}. Bỏ qua chính sách chấm mẫu tương ứng",
@@ -226,7 +221,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
             return false;
         }
 
-        // The specialized template declares no Grade: with an empty scope the school chooses when copying it over.
+        // Bản chuyên không khai Khối: phạm vi để trống thì trường tự chọn lúc sao về.
         GradeLevel gradeLevel = null;
         if (seed.gradeLevelCode() != null) {
             gradeLevel = gradeLevelRepository.findByCode(seed.gradeLevelCode()).orElse(null);
@@ -238,38 +233,38 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
         }
         UUID gradeLevelId = gradeLevel == null ? null : gradeLevel.getId();
 
-        RubricVersion rubricVersion = rubricVersionRepository.findByCode(seed.rubricVersionCode()).orElse(null);
+        var rubricVersion = rubricVersionRepository.findByCode(seed.rubricVersionCode()).orElse(null);
         if (rubricVersion == null) {
             LOGGER.warn("Không tìm thấy phiên bản bộ tiêu chí mẫu {}. Bỏ qua chính sách chấm mẫu bậc {}",
                 seed.rubricVersionCode(), seed.targetBandCode());
             return false;
         }
-        Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId()).orElse(null);
+        var rubric = rubricRepository.findById(rubricVersion.getRubricId()).orElse(null);
         if (rubric == null || rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             LOGGER.warn("Bộ tiêu chí của phiên bản {} không thuộc sở hữu SYSTEM. Bỏ qua chính sách chấm mẫu"
                 + " bậc {}", seed.rubricVersionCode(), seed.targetBandCode());
             return false;
         }
-        // The same check CreateSystemAssessmentPolicyUseCase applies: the rubric is tied to the FRAMEWORK (not
-        // the framework version), so compare against getFrameworkId of the version in use.
+        // Cùng phép kiểm CreateSystemAssessmentPolicyUseCase áp: rubric gắn với FRAMEWORK (không
+        // phải phiên bản khung), nên so với getFrameworkId của phiên bản đang dùng.
         if (!rubric.getFrameworkId().equals(frameworkId)) {
             LOGGER.warn("Bộ tiêu chí {} không cùng khung với chính sách. Bỏ qua chính sách chấm mẫu bậc {}",
                 seed.rubricVersionCode(), seed.targetBandCode());
             return false;
         }
 
-        // Idempotent by EXACTLY the identity of a template: (rubric version, target band).
+        // Idempotent theo ĐÚNG danh tính của một bản mẫu: (phiên bản bộ tiêu chí, bậc mục tiêu).
         //
-        // This place used to use existsActiveForScopeAnyRubricVersion -- the "one policy per scope"
-        // check of the real creation path. That rule is an invariant of SCHOOL policies (each class may only be
-        // graded by one policy), not of the template directory: two templates of the same grade with different bands
-        // are exactly what we want to build. Keeping it would silently skip the specialized template, and the three
-        // specialized templates (none of which declares a grade) would also overwrite each other because they share the same empty scope.
+        // Trước đây chỗ này dùng existsActiveForScopeAnyRubricVersion -- phép kiểm "mỗi phạm vi một
+        // chính sách" của đường tạo thật. Luật đó là bất biến của chính sách TRƯỜNG (mỗi lớp chỉ được
+        // chấm theo một chính sách), không phải của thư mục bản mẫu: hai bản mẫu cùng khối khác bậc
+        // là đúng thứ ta muốn dựng ra. Giữ nguyên nó thì bản chuyên bị bỏ qua âm thầm, và ba bản
+        // chuyên (đều không khai khối) còn đè lên nhau vì cùng một phạm vi rỗng.
         //
-        // Dropping that rule here affects NOTHING: a system policy does not grade attempts (the grading path reads
-        // assessments.assessment_policy_id), findActivePolicy has no remaining callers, and idx_assessment_policies
-        // _scope_version does not catch any row that has NULL in its key. The manual creation path of the system admin
-        // (CreateSystemAssessmentPolicyUseCase) keeps the old rule.
+        // Bỏ luật đó ở đây KHÔNG ảnh hưởng gì: chính sách hệ thống không đi chấm bài (đường chấm đọc
+        // exams.assessment_policy_id), findActivePolicy không còn nơi gọi, và idx_assessment_policies
+        // _scope_version không bắt được hàng nào có NULL trong khoá. Đường tạo tay của system admin
+        // (CreateSystemAssessmentPolicyUseCase) vẫn giữ nguyên luật cũ.
         boolean alreadySeeded = assessmentPolicyRepository
             .findPublishedSystemWideByRubricVersionId(rubricVersion.getId()).stream()
             .anyMatch(existing -> targetBand.getId().equals(existing.getTargetFrameworkBandId()));
@@ -281,23 +276,23 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
             null, languageId, frameworkVersion.getId(), gradeLevelId, null, null) + 1;
 
         assessmentPolicyRepository.save(new AssessmentPolicy(
-            // schoolId null = a system policy, belonging to no school.
+            // schoolId null = chính sách của hệ thống, không thuộc trường nào.
             null,
             gradeLevelId,
-            // School year and Class belong to the scope of a specific school, so a system policy always leaves them empty.
+            // Niên khóa và Lớp thuộc phạm vi của một trường cụ thể nên chính sách hệ thống luôn để trống.
             null,
             null,
             languageId,
             frameworkVersion.getId(),
             rubricVersion.getId(),
             targetBand.getId(),
-            // See the class javadoc: the regulation dictates the band, not the score threshold.
+            // Xem javadoc lớp: văn bản quy định bậc, không quy định ngưỡng điểm.
             null,
             AssessmentPolicyStrictness.STANDARD,
             nextVersion,
             AssessmentPolicyStatus.PUBLISHED,
-            // effectiveTo null = unlimited. A template is only for reading and copying so there is no reason for it to expire;
-            // the real validity range is what the school sets itself when copying it over.
+            // effectiveTo null = không giới hạn. Bản mẫu chỉ để đọc và sao nên không có lý do hết hạn;
+            // khoảng hiệu lực thật là thứ trường tự đặt lúc sao về.
             now,
             null,
             now,

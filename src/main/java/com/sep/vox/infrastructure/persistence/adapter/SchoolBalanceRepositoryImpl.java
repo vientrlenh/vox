@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolBalanceJpaEntity;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,8 +45,8 @@ public class SchoolBalanceRepositoryImpl implements SchoolBalanceRepository {
 
     @Override
     public SchoolBalance save(SchoolBalance balance) {
-        SchoolBalanceJpaEntity entity = SchoolBalanceMapper.toJpa(balance);
-        SchoolBalanceJpaEntity saved = springDataSchoolBalanceRepository.save(entity);
+        var entity = SchoolBalanceMapper.toJpa(balance);
+        var saved = springDataSchoolBalanceRepository.save(entity);
         return SchoolBalanceMapper.toDomain(saved);
     }
 }

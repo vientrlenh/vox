@@ -8,12 +8,9 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.AcceptRubricVersionImportResponse;
-import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
-import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
@@ -51,11 +48,11 @@ public class AcceptSystemRubricVersionImportUseCase implements IUseCase<AcceptSy
     public AcceptRubricVersionImportResponse execute(AcceptSystemRubricVersionImportCommand command) {
         // 1. Xác thực tài khoản
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
         // 2. Kiểm tra tính hợp lệ của phiên Import (ImportSession)
-        ImportSession session = importSessionRepository.findById(command.sessionId())
+        var session = importSessionRepository.findById(command.sessionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import (Session ID không hợp lệ)."));
 
         if (session.getType() != ImportType.RUBRIC_VERSION || session.getImportedEntityId() == null) {
@@ -66,8 +63,8 @@ public class AcceptSystemRubricVersionImportUseCase implements IUseCase<AcceptSy
         }
 
         // 3. Kiểm tra bảo mật đích đến (Rubric gốc phải thuộc hệ thống)
-        UUID rubricId = session.getImportedEntityId();
-        Rubric rubric = rubricRepository.findById(rubricId).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+        var rubricId = session.getImportedEntityId();
+        var rubric = rubricRepository.findById(rubricId).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Bảo mật: Bộ Rubric này thuộc trường học. System Admin không được phép can thiệp.");
         }

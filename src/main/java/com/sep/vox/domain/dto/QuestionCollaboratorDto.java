@@ -1,6 +1,5 @@
 package com.sep.vox.domain.dto;
 
-import java.time.Instant;
 import java.util.UUID;
 
 public record QuestionCollaboratorDto(
@@ -8,6 +7,6 @@ public record QuestionCollaboratorDto(
     UUID userId,
     UUID questionId,
     String permission,
-    Instant assignedAt
+    String assignedAt
 ) {
 }

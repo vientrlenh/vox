@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
-import com.sep.vox.domain.model.question.QuestionBank;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +22,7 @@ public class ViewQuestionBankDetailsUseCase implements IUseCase<ViewQuestionBank
     @Override
     @Transactional(readOnly = true)
     public QuestionBankDto execute(ViewQuestionBankDetailsQuery input) {
-        QuestionBank questionBank = questionBankRepository.findById(input.id())
+        var questionBank = questionBankRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
         return QuestionBankDtoMapper.toDto(questionBank);
     }

@@ -27,7 +27,7 @@ public class RegisterFormGraphQlDataLoaderConfig {
         registry.<UUID, List<RegisterFormDocumentDto>>forName("documentsByRegisterForm").registerMappedBatchLoader((Set<UUID> ids, BatchLoaderEnvironment env) -> Mono.fromSupplier(() -> {
             Map<UUID, List<RegisterFormDocumentDto>> result = new HashMap<>();
 
-            Map<UUID, List<RegisterFormDocumentDto>> documentsByRegisterFormId = registerFormDocumentRepository.findByRegisterFormIdIn(ids)
+            var documentsByRegisterFormId = registerFormDocumentRepository.findByRegisterFormIdIn(ids)
                 .stream()
                 .map(RegisterFormDocumentDtoMapper::toRegisterFormDocumentDto)
                 .collect(Collectors.groupingBy(d -> d.registerFormId()));

@@ -1,13 +1,11 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -16,7 +14,6 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolMapper;
-import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolRepository;
 
 @Repository
@@ -49,23 +46,26 @@ public class SchoolRepositoryImpl implements SchoolRepository {
 
     @Override
     public PageResult<School> findAll(int page, int size, String search, Boolean isActive) {
-        PageRequest pageRequest = OneBasedPaging.toPageRequest(page, size);
-        String pattern = StringNormalization.toLikePattern(search);
-        Page<SchoolJpaEntity> pageable = isActive != null
+        var pageRequest = PageRequest.of(page - 1, size);
+        var pattern = StringNormalization.toLikePattern(search);
+        var pageable = isActive != null
             ? springDataSchoolRepository.findAllBySearchAndIsActive(pattern, isActive, pageRequest)
             : springDataSchoolRepository.findAllBySearch(pattern, pageRequest);
-        return OneBasedPaging.toPageResult(
-            pageable,
+        return new PageResult<>(
             pageable.getContent().stream()
                 .map(SchoolMapper::toDomain)
-                .toList()
+                .toList(),
+            pageable.getNumber() + 1,
+            pageable.getSize(),
+            pageable.getTotalElements(),
+            pageable.getTotalPages()
         );
     }
 
     @Override
     public School save(School school) {
-        SchoolJpaEntity entity = SchoolMapper.toJpa(school);
-        SchoolJpaEntity saved = springDataSchoolRepository.save(entity);
+        var entity = SchoolMapper.toJpa(school);
+        var saved = springDataSchoolRepository.save(entity);
         return SchoolMapper.toDomain(saved);
     }
 
@@ -133,8 +133,8 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     }
 
     @Override
-    public List<UUID> findIdsWithOngoingAssessment(Instant now) {
-        return springDataSchoolRepository.findIdsWithOngoingAssessment(now);
+    public List<UUID> findIdsWithOngoingExam(Instant now) {
+        return springDataSchoolRepository.findIdsWithOngoingExam(now);
     }
 
 }

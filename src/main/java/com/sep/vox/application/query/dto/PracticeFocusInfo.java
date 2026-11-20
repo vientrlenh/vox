@@ -37,7 +37,7 @@ public record PracticeFocusInfo(
      * phải may rủi.
      */
     public String criterionForSlot(int slotIndex) {
-        int safeIndex = Math.max(0, slotIndex);
+        var safeIndex = Math.max(0, slotIndex);
         return switch (safeIndex % 4) {
             case 0, 1 -> at(0);
             case 2 -> at(1);
@@ -65,12 +65,12 @@ public record PracticeFocusInfo(
      * phụ không bao giờ tới lượt.
      */
     public String subAttributeForSlot(int slotIndex) {
-        String criterion = criterionForSlot(slotIndex);
-        List<String> candidates = subAttributesByCriterion.get(criterion);
+        var criterion = criterionForSlot(slotIndex);
+        var candidates = subAttributesByCriterion.get(criterion);
         if (candidates == null || candidates.isEmpty()) {
             return null;
         }
-        int occurrence = occurrenceOfCriterion(criterion, slotIndex);
+        var occurrence = occurrenceOfCriterion(criterion, slotIndex);
         if (candidates.size() == 1 || occurrence % 3 != 2) {
             return candidates.get(0);
         }
@@ -79,8 +79,8 @@ public record PracticeFocusInfo(
 
     /** Đây là lần thứ mấy tiêu chí này được hỏi, tính từ ô 0. */
     private int occurrenceOfCriterion(String criterion, int slotIndex) {
-        int count = 0;
-        for (int index = 0; index < slotIndex; index++) {
+        var count = 0;
+        for (var index = 0; index < slotIndex; index++) {
             if (criterion.equals(criterionForSlot(index))) {
                 count++;
             }

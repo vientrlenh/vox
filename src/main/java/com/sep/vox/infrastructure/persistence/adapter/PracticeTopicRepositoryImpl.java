@@ -53,7 +53,7 @@ public class PracticeTopicRepositoryImpl implements PracticeTopicRepository {
 
     @Override
     public long countOfferablePool() {
-        return repository.countByActiveTrueAndSourceNot("ASSESSMENT_QUESTION_BANK");
+        return repository.countByActiveTrueAndSourceNot("EXAM_QUESTION_BANK");
     }
 
     @Override
@@ -69,7 +69,7 @@ public class PracticeTopicRepositoryImpl implements PracticeTopicRepository {
 
     @Override
     public Map<String, Double> findInterestScoresByDimension(UUID studentId) {
-        Map<String, Double> result = new HashMap<String, Double>();
+        var result = new HashMap<String, Double>();
         repository.findInterestScores(studentId)
             .forEach(row -> result.put(row.getDimension(), row.getScore()));
         return result;

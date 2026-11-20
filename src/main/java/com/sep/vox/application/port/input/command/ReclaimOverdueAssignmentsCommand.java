@@ -5,14 +5,14 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Reclaims overdue assignments and (optionally) reassigns them right away to another group.
+ * Thu hồi các phân công quá hạn và (tuỳ chọn) giao lại ngay cho nhóm khác.
  *
- * @param assignmentIds empty = reclaim every overdue assignment within the scope of
- *        {@code assessmentId}; with a value = only exactly the selected rows
- * @param reassignToTeacherIds empty = reclaim only, the attempts go back to the unassigned queue
+ * @param assignmentIds bỏ trống = thu hồi mọi phân công quá hạn trong phạm vi
+ *        {@code examId}; có giá trị = chỉ đúng các dòng được chọn
+ * @param reassignToTeacherIds bỏ trống = chỉ thu hồi, bài về hàng chưa giao
  */
 public record ReclaimOverdueAssignmentsCommand(
-    UUID assessmentId,
+    UUID examId,
     List<UUID> assignmentIds,
     List<UUID> reassignToTeacherIds,
     Instant newDeadlineAt

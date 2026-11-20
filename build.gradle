@@ -21,7 +21,6 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-graphql'
-	implementation 'com.graphql-java:graphql-java-extended-scalars:24.0'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -54,12 +53,11 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-graphql-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
 	testImplementation 'org.assertj:assertj-core:3.27.7'
 	testImplementation 'com.tngtech.archunit:archunit-junit5:1.5.0'
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-	testImplementation 'org.testcontainers:testcontainers-postgresql'
-	testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+	testImplementation 'org.testcontainers:postgresql:1.21.4'
+	testImplementation 'org.testcontainers:testcontainers-junit-jupiter:2.0.5'
 	testImplementation 'org.springframework.boot:spring-boot-starter-grpc-client-test'
   	testImplementation 'org.springframework.boot:spring-boot-starter-grpc-server-test'
 	testCompileOnly 'org.projectlombok:lombok'
@@ -67,29 +65,8 @@ dependencies {
 	testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
-tasks.withType(Test).configureEach {
+tasks.named('test') {
+	useJUnitPlatform()
 	systemProperty 'user.timezone', 'Asia/Ho_Chi_Minh'
 	maxHeapSize = '4g'
-}
-
-tasks.named('test') {
-	description = 'Runs unit and web-slice tests (no Docker)'
-	useJUnitPlatform {
-		excludeTags 'integration'
-	}
-}
-
-def integrationTest = tasks.register('integrationTest', Test) {
-	description = 'Runs tests that need Docker or the full Spring context'
-	group = 'verification'
-	testClassesDirs = sourceSets.test.output.classesDirs
-	classpath = sourceSets.test.runtimeClasspath
-	useJUnitPlatform {
-		includeTags 'integration'
-	}
-	shouldRunAfter tasks.named('test')
-}
-
-tasks.named('check') {
-	dependsOn integrationTest
 }

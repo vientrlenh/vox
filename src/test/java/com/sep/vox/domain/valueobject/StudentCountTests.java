@@ -9,7 +9,7 @@ public class StudentCountTests {
 
     @Test
     void should_accept_positive_student_count() {
-        StudentCount studentCount = new StudentCount(1);
+        var studentCount = new StudentCount(1);
 
         assertThat(studentCount.value()).isEqualTo(1);
     }

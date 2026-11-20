@@ -5,14 +5,13 @@ import com.sep.vox.application.port.input.command.AddSchoolRubricVersionsCommand
 import com.sep.vox.application.port.input.command.AddSystemRubricVersionsCommand;
 import com.sep.vox.interfaces.rest.dto.request.AddRubricVersionsRequest; // Có thể đổi tên DTO này thành AddRubricVersionsRequest
 
-import java.util.List;
 import java.util.UUID;
 
 public class AddRubricVersionsCommandMapper {
 
     //DÀNH CHO SYSTEM ADMIN
     public static AddSystemRubricVersionsCommand fromSystemRequest(UUID rubricId, AddRubricVersionsRequest request) {
-        List<AddSystemRubricVersionsCommand.RubricVersionItemCommand> items = request.versions().stream()
+        var items = request.versions().stream()
                 .map(v -> new AddSystemRubricVersionsCommand.RubricVersionItemCommand(
                         v.version(), v.name(), v.scoringScaleMin(), v.scoringScaleMax(), v.totalScoreMethod(),
                         DateMapper.toInstant(v.effectiveFrom()), DateMapper.toInstant(v.effectiveTo())
@@ -22,7 +21,7 @@ public class AddRubricVersionsCommandMapper {
 
     //DÀNH CHO SCHOOL ADMIN
     public static AddSchoolRubricVersionsCommand fromSchoolRequest(UUID schoolId, UUID rubricId, AddRubricVersionsRequest request) {
-        List<AddSchoolRubricVersionsCommand.RubricVersionItemCommand> items = request.versions().stream()
+        var items = request.versions().stream()
                 .map(v -> new AddSchoolRubricVersionsCommand.RubricVersionItemCommand(
                         v.version(), v.name(), v.scoringScaleMin(), v.scoringScaleMax(), v.totalScoreMethod(),
                         DateMapper.toInstant(v.effectiveFrom()), DateMapper.toInstant(v.effectiveTo())

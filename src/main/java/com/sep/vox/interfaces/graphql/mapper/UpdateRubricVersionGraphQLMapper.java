@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.mapper;
 
+import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.UpdateSchoolRubricVersionCommand;
 import com.sep.vox.application.port.input.command.UpdateSystemRubricVersionCommand;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateRubricVersionInput;
@@ -12,8 +13,8 @@ public class UpdateRubricVersionGraphQLMapper {
                 versionId,
                 input.name(),
                 input.description(),
-                input.effectiveFrom(),
-                input.effectiveTo(),
+                DateMapper.toInstant(input.effectiveFrom()),
+                DateMapper.toInstant(input.effectiveTo()),
                 input.scoringScaleMin(),
                 input.scoringScaleMax(),
                 input.totalScoreMethod()
@@ -26,8 +27,8 @@ public class UpdateRubricVersionGraphQLMapper {
                 versionId,
                 input.name(),
                 input.description(),
-                input.effectiveFrom(),
-                input.effectiveTo(),
+                DateMapper.toInstant(input.effectiveFrom()),
+                DateMapper.toInstant(input.effectiveTo()),
                 input.scoringScaleMin(),
                 input.scoringScaleMax(),
                 input.totalScoreMethod()

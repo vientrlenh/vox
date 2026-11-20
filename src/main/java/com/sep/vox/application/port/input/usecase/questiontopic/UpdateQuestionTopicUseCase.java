@@ -1,10 +1,7 @@
 package com.sep.vox.application.port.input.usecase.questiontopic;
 
-import com.sep.vox.domain.model.question.QuestionBank;
-import com.sep.vox.domain.model.question.QuestionTopic;
 import java.time.Instant;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,15 +39,15 @@ public class UpdateQuestionTopicUseCase implements IUseCase<UpdateQuestionTopicC
     @Override
     @Transactional
     public QuestionTopicDto execute(UpdateQuestionTopicCommand input) {
-        UpdateQuestionTopicCommand command = normalize(input);
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        var command = normalize(input);
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
 
-        QuestionTopic topic = questionTopicRepository.findById(command.id())
+        var topic = questionTopicRepository.findById(command.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
-        QuestionBank bank = questionBankRepository.findById(topic.getQuestionBankId())
+        var bank = questionBankRepository.findById(topic.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         if (bank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
@@ -72,7 +69,7 @@ public class UpdateQuestionTopicUseCase implements IUseCase<UpdateQuestionTopicC
         topic.setUpdatedAt(Instant.now());
         topic.setUpdatedBy(currentUserId);
 
-        QuestionTopic saved = questionTopicRepository.save(topic);
+        var saved = questionTopicRepository.save(topic);
         return QuestionTopicDtoMapper.toDto(saved);
     }
 

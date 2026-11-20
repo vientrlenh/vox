@@ -18,23 +18,23 @@ public interface StoragePort {
     PresignedUpload presignUpload(String key, String contentType, Duration ttl);
 
     /**
-     * An EXPIRING read link for an object in a SPECIFIED bucket -- to play directly in a
-     * {@code <video>} tag, not to download.
+     * Link ĐỌC có hạn cho một object ở bucket CHỈ ĐỊNH -- để phát thẳng trong thẻ
+     * {@code <video>}, không phải để tải về.
      *
-     * <p>S3 returns this link with HTTP Range support, so the browser can play and SEEK without
-     * downloading the whole file first. That is why this approach was chosen over proxying through the server: assessment recordings
-     * run for tens of minutes, and pushing them through the backend is useless bandwidth.
+     * <p>S3 trả link này kèm hỗ trợ HTTP Range, nên trình duyệt phát và TUA được mà không phải
+     * tải hết file trước. Đó là lý do chọn hướng này thay vì proxy qua server: bản ghi buổi thi
+     * dài hàng chục phút, đẩy qua backend là gánh băng thông vô ích.
      *
-     * <p>Different from every other method in two points, and both are mandatory: the bucket is passed in instead of
-     * taken from configuration, and the key is used verbatim without prepending {@code keyPrefix}.
+     * <p>Khác mọi method còn lại ở hai điểm, và cả hai đều bắt buộc: bucket truyền vào thay vì
+     * lấy từ cấu hình, và key dùng nguyên văn không gắn thêm {@code keyPrefix}.
      *
-     * <p>The assessment recording is written by vox-streaming straight to its own bucket
-     * ({@code STORAGE_RECORDING_BUCKET}), different from the application's upload bucket
-     * ({@code AWS_S3_BUCKET}), and the full key is already in {@code assessment_recordings.s3_key}.
-     * Reusing {@code resolveUrl} would both point at the wrong bucket and insert an extra {@code dev/} prefix.
+     * <p>Bản ghi buổi thi do vox-streaming ghi thẳng lên bucket riêng của nó
+     * ({@code STORAGE_RECORDING_BUCKET}), khác bucket tải lên của ứng dụng
+     * ({@code AWS_S3_BUCKET}), và key đầy đủ đã nằm sẵn trong {@code exam_recordings.s3_key}.
+     * Dùng lại {@code resolveUrl} sẽ vừa trỏ sai bucket vừa chèn thừa tiền tố {@code dev/}.
      *
-     * @param bucket the bucket that holds the object -- throws if empty, because guessing the bucket is the surest way
-     *               to produce a 404 link that nobody understands
+     * @param bucket bucket chứa object -- rỗng thì ném, vì đoán bucket là cách chắc chắn nhất
+     *               để tạo ra một link 404 mà không ai hiểu vì sao
      */
     String presignRead(String bucket, String key, Duration ttl);
 }

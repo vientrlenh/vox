@@ -1,9 +1,7 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
-import com.sep.vox.domain.model.question.QuestionBank;
 import java.time.Instant;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,13 +35,13 @@ public class UpdateQuestionBankUseCase implements IUseCase<UpdateQuestionBankCom
     @Override
     @Transactional
     public QuestionBankDto execute(UpdateQuestionBankCommand input) {
-        UpdateQuestionBankCommand command = normalize(input);
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        var command = normalize(input);
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
 
-        QuestionBank questionBank = questionBankRepository.findById(command.id())
+        var questionBank = questionBankRepository.findById(command.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         validateAccess(questionBank.getOwnerType(), questionBank.getSchoolId(), currentSchoolId);
@@ -59,7 +57,7 @@ public class UpdateQuestionBankUseCase implements IUseCase<UpdateQuestionBankCom
         questionBank.setUpdatedAt(Instant.now());
         questionBank.setUpdatedBy(currentUserId);
 
-        QuestionBank saved = questionBankRepository.save(questionBank);
+        var saved = questionBankRepository.save(questionBank);
         return QuestionBankDtoMapper.toDto(saved);
     }
 

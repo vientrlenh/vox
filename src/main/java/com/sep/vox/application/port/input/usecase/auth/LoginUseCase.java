@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
-import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -62,21 +61,21 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
     @Override
     @Transactional
     public LoginResponse execute(LoginCommand input) {
-        LoginCommand command = normalize(input);
-        Instant now = Instant.now();
+        var command = normalize(input);
+        var now = Instant.now();
 
-        UUID userId = authenticationManagerPort.setAuthenticationAndGetUserId(command.login(), command.password());
-        User user = userRepository.findById(userId)
+        var userId = authenticationManagerPort.setAuthenticationAndGetUserId(command.login(), command.password());
+        var user = userRepository.findById(userId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
 
-        List<String> userRoles = getUserRoles(user.getId());
+        var userRoles = getUserRoles(user.getId());
         
-        DeviceSession deviceSession = createDeviceSession(userId, command);
-        UUID schoolId = schoolUserRepository.findByUserId(user.getId())
+        var deviceSession = createDeviceSession(userId, command);
+        var schoolId = schoolUserRepository.findByUserId(user.getId())
             .map(su -> su.getSchoolId())
             .orElse(null);
-        String accessToken = authTokenPort.generateJwtToken(user.getId().toString(), schoolId, user.getEmail().value(), userRoles);
-        GeneratedSessionToken sessionToken = sessionTokenManagerPort.generateToken();
+        var accessToken = authTokenPort.generateJwtToken(user.getId().toString(), schoolId, user.getEmail().value(), userRoles);
+        var sessionToken = sessionTokenManagerPort.generateToken();
         createRefreshToken(deviceSession, sessionToken, now);
 
         return LoginResponseMapper.toResponse(accessToken, sessionToken.rawToken(), userRoles);
@@ -113,7 +112,7 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
     }
 
     private DeviceSession createDeviceSession(UUID userId, LoginCommand command) {
-        DeviceSession deviceSession = DeviceSession.create(
+        var deviceSession = DeviceSession.create(
             userId, 
             command.device().deviceId(), 
             command.device().deviceName(), 
@@ -125,7 +124,7 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
     }
 
     private void createRefreshToken(DeviceSession deviceSession, GeneratedSessionToken sessionToken, Instant now) {
-        RefreshToken refreshToken = RefreshToken.createFresh(deviceSession.getId(), sessionToken.hashedToken(), now);
+        var refreshToken = RefreshToken.createFresh(deviceSession.getId(), sessionToken.hashedToken(), now);
         refreshTokenRepository.save(refreshToken);
     }
 }

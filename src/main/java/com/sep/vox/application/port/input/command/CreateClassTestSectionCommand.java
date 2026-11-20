@@ -8,7 +8,7 @@ import java.util.UUID;
  * @param paperId mã đề nhận section mới. Bỏ trống chỉ hợp lệ khi bài có đúng một mã đề.
  */
 public record CreateClassTestSectionCommand(
-    UUID assessmentId,
+    UUID examId,
     UUID paperId,
     String title,
     String instruction,

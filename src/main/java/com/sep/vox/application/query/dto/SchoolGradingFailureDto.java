@@ -4,26 +4,26 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * An attempt whose AI grading failed that NOBODY has handled yet, seen from the school's side.
+ * Một bài AI chấm lỗi mà CHƯA ai xử lý, nhìn từ phía nhà trường.
  *
- * <p>No score: a {@code GRADING_FAILED} session never produced an {@code assessment_candidate_results}
- * row. What replaces it are the fields that help decide between the two exits -- ask the AI to regrade or assign a
- * teacher to grade by hand.
+ * <p>Không có điểm: phiên {@code GRADING_FAILED} chưa từng sinh dòng {@code exam_candidate_results}
+ * nào. Thứ thay thế là những trường giúp quyết định giữa hai lối ra — nhờ AI chấm lại hay xếp giáo
+ * viên chấm tay.
  *
- * <p>Two DIFFERENT counters, do not merge them:
+ * <p>Hai bộ đếm KHÁC NHAU, đừng gộp:
  *
  * <ul>
- *   <li>{@code aiRetryCount} is the number of times the grading service retried by itself inside ONE attempt, taken from the Kafka
- *       payload. It speaks to how persistent the incident is, not to who pressed what.
- *   <li>{@code schoolRetryLeft} is derived from {@code assessment_sessions.school_regrade_count} -- the school's allowance of
- *       one AI regrade request. This is what decides which button can still be pressed.
+ *   <li>{@code aiRetryCount} là số lần dịch vụ chấm tự thử lại bên trong MỘT lượt, lấy từ payload
+ *       Kafka. Nó nói về độ dai của sự cố, không nói ai đã bấm gì.
+ *   <li>{@code schoolRetryLeft} suy từ {@code exam_sessions.school_regrade_count} — định mức một
+ *       lượt nhờ AI chấm lại của nhà trường. Đây mới là thứ quyết định nút nào còn bấm được.
  * </ul>
  */
 public record SchoolGradingFailureDto(
     UUID sessionId,
-    UUID assessmentId,
-    String assessmentCode,
-    String assessmentName,
+    UUID examId,
+    String examCode,
+    String examName,
     String candidateName,
     /** null khi học sinh chưa được xếp vào lớp đang hoạt động nào. */
     String className,

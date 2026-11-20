@@ -16,7 +16,6 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewSupportedLanguageDetailsQuery;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupportedLanguageDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.valueobject.LanguageCode;
@@ -36,10 +35,10 @@ class ViewSupportedLanguageDetailsUseCaseTests {
 
     @Test
     void details_should_return_language_when_found() {
-        UUID id = UUID.randomUUID();
+        var id = UUID.randomUUID();
         when(supportedLanguageRepository.findById(id)).thenReturn(Optional.of(language(id, true)));
 
-        SupportedLanguageDto result = useCase.execute(new ViewSupportedLanguageDetailsQuery(id));
+        var result = useCase.execute(new ViewSupportedLanguageDetailsQuery(id));
 
         assertThat(result.id()).isEqualTo(id);
         assertThat(result.code()).isEqualTo("EN");
@@ -47,10 +46,10 @@ class ViewSupportedLanguageDetailsUseCaseTests {
 
     @Test
     void details_should_throw_when_language_not_found() {
-        UUID id = UUID.randomUUID();
+        var id = UUID.randomUUID();
         when(supportedLanguageRepository.findById(id)).thenReturn(Optional.empty());
 
-        NotFoundException exception = Assertions.assertThrows(
+        var exception = Assertions.assertThrows(
             NotFoundException.class,
             () -> useCase.execute(new ViewSupportedLanguageDetailsQuery(id))
         );
@@ -60,10 +59,10 @@ class ViewSupportedLanguageDetailsUseCaseTests {
 
     @Test
     void details_should_throw_when_active_only_and_language_is_inactive() {
-        UUID id = UUID.randomUUID();
+        var id = UUID.randomUUID();
         when(supportedLanguageRepository.findById(id)).thenReturn(Optional.of(language(id, false)));
 
-        NotFoundException exception = org.junit.jupiter.api.Assertions.assertThrows(
+        var exception = org.junit.jupiter.api.Assertions.assertThrows(
             NotFoundException.class,
             () -> useCase.execute(new ViewSupportedLanguageDetailsQuery(id))
         );
@@ -72,7 +71,7 @@ class ViewSupportedLanguageDetailsUseCaseTests {
     }
 
     private static SupportedLanguage language(UUID id, boolean active) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         return new SupportedLanguage(
             id,
             new LanguageCode("EN"),

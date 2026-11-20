@@ -54,22 +54,22 @@ public class CancelSchoolSubscriptionUseCase implements IUseCase<Void, UUID> {
         // KHÔNG nhận subscriptionId: trường chỉ có đúng một kỳ đang hiệu lực, và nhận id từ ngoài thì
         // hasRole('SCHOOL_ADMIN') không trả lời được "kỳ này có thuộc trường đó không" -- lại phải
         // dựng thêm một lớp kiểm quyền sở hữu. Không nhận id thì không có gì để kiểm.
-        UUID schoolId = userContextPort.getCurrentSchoolId();
+        var schoolId = userContextPort.getCurrentSchoolId();
 
-        SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
+        var subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
             .orElseThrow(() -> new NotFoundException("Trường không có gói nào đang hoạt động để hủy."));
 
         if (subscription.getCancelledAt() != null) {
             throw new IllegalStateException("Gói đăng ký đã được hủy trước đó.");
         }
 
-        Instant now = Instant.now();
+        var now = Instant.now();
 
         // Có kỳ đã trả tiền đang xếp hàng chờ thì từ chối. Đánh dấu "sẽ không gia hạn" trong khi một
         // lần gia hạn ĐÃ được trả tiền và đang chờ chạy là một trạng thái tự mâu thuẫn: gói mang cờ
         // đã hủy rồi vẫn lặng lẽ mở ra một kỳ mới. Hệ thống chưa có luồng hoàn tiền nên cũng không
         // thể tự hủy kỳ đó thay trường.
-        SchoolSubscription queued = queuedPeriod(schoolId, now, subscription.getId());
+        var queued = queuedPeriod(schoolId, now, subscription.getId());
         if (queued != null) {
             throw new IllegalStateException(
                 "Trường đã thanh toán cho một kỳ tiếp theo (chạy tới " + DISPLAY_DATE.format(queued.getEndDate())

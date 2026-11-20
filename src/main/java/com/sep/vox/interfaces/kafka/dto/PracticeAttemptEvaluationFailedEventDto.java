@@ -1,17 +1,17 @@
 package com.sep.vox.interfaces.kafka.dto;
 
 /**
- * The agents report that grading a practice answer did NOT FINISH.
+ * Agents báo chấm một câu luyện tập KHÔNG XONG.
  *
- * <p>The agents have been firing this event for a long time ({@code publish_practice_attempt_evaluation_failed}),
- * but before 2026-08-12 the Java side fell into the branch "Skip unknown practice evaluation event type"
- * and dropped it outright. Consequence: when grading failed nobody knew, that answer was permanently "not graded",
- * the sweep job re-fired every 5 minutes, grading failed again -- an infinite loop, and the summary screen spun forever waiting for
- * a result that would never come. The ASSESSMENT side handled it properly from the start
- * ({@code AssessmentAttemptEvaluationFailed}); only the practice side was missing it.
+ * <p>Sự kiện này agents đã bắn từ lâu ({@code publish_practice_attempt_evaluation_failed}),
+ * nhưng phía Java trước 2026-08-12 rơi vào nhánh "Skip unknown practice evaluation event type"
+ * nên bị vứt thẳng. Hậu quả: chấm hỏng thì không ai biết, câu đó vĩnh viễn "chưa có bản chấm",
+ * job quét bắn lại mỗi 5 phút, chấm hỏng lại -- vòng lặp vô hạn, và màn tổng kết quay mãi chờ
+ * một kết quả sẽ không bao giờ tới. Bên THI thì xử lý đàng hoàng từ đầu
+ * ({@code ExamAttemptEvaluationFailed}); chỉ bên luyện tập là thiếu.
  *
- * <p>The field names follow exactly what the agents send: {@code practice_event_body} changes
- * assessmentAttemptId/answerId/questionId into the practice* set before publishing.
+ * <p>Tên trường theo đúng thứ agents gửi: {@code practice_event_body} đổi
+ * examAttemptId/answerId/questionId thành bộ practice* trước khi publish.
  */
 public record PracticeAttemptEvaluationFailedEventDto(
     String eventType,

@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.notification;
 
-import com.sep.vox.domain.model.notification.Notification;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -27,12 +26,12 @@ public class MarkNotificationAsReadUseCase implements IUseCase<MarkNotificationA
     @Override
     @Transactional
     public UUID execute(MarkNotificationAsReadCommand input) {
-        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
-        Instant now = Instant.now();
+        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        var now = Instant.now();
 
-        Notification notification = notificationRepository.findByIdAndUserId(input.id(), userId)
+        var notification = notificationRepository.findByIdAndUserId(input.id(), userId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thông báo"));
-        notificationRepository.markRead(userId, input.id(), now);
+        var _ = notificationRepository.markRead(userId, input.id(), now);
 
         return notification.getId();
     }

@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.ProcessedEventJpaEntity;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -26,8 +25,8 @@ public class ProcessedEventRepositoryImpl implements ProcessedEventRepository {
 
     @Override
     public ProcessedEvent save(ProcessedEvent event) {
-        ProcessedEventJpaEntity entity = ProcessedEventMapper.toJpa(event);
-        ProcessedEventJpaEntity saved = springDataProcessedEventRepository.save(entity);
+        var entity = ProcessedEventMapper.toJpa(event);
+        var saved = springDataProcessedEventRepository.save(entity);
         return ProcessedEventMapper.toDomain(saved);
     }
     

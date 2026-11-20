@@ -121,12 +121,12 @@ public class PracticeTopicOfferEnrichmentService {
      * khó ánh xạ lệch mà không có lỗi nào.
      */
     public int frameworkBandCount(UUID frameworkVersionId) {
-        List<Integer> values = learnerProfileRepository.findFrameworkBandCount(
+        var values = learnerProfileRepository.findFrameworkBandCount(
             frameworkVersionId == null ? NO_FRAMEWORK : frameworkVersionId);
         if (values.isEmpty()) {
             return DEFAULT_BAND_COUNT;
         }
-        Integer bandCount = values.get(0);
+        var bandCount = values.get(0);
         return bandCount == null || bandCount < 1 ? DEFAULT_BAND_COUNT : bandCount;
     }
 
@@ -175,7 +175,7 @@ public class PracticeTopicOfferEnrichmentService {
     public int sessionSecondsCapForBand(int bandOrder, int bandCount) {
         // Chia theo TỈ LỆ vị trí trên thang, không cắt cứng ở bậc 2/3: với 6 bậc cho ra đúng
         // 720/720/900/1200/1200/1200 như trước, với thang khác thì tự giãn theo.
-        double ratio = (double) bandOrder / Math.max(1, bandCount);
+        var ratio = (double) bandOrder / Math.max(1, bandCount);
         if (ratio <= 1.0 / 3) {
             return 720;
         }
@@ -199,7 +199,7 @@ public class PracticeTopicOfferEnrichmentService {
 
     /** Số phút mỗi lượt luyện theo đúng gói subscription đang hoạt động -- 0 nếu không có gói. */
     public int minutesForStudent(UUID studentId) {
-        Integer minutes = schoolSubscriptionRepository.findMaxTimePerAttemptMinForUser(studentId);
+        var minutes = schoolSubscriptionRepository.findMaxTimePerAttemptMinForUser(studentId);
         return minutes == null ? 0 : minutes;
     }
 

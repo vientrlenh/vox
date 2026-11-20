@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.practiceevaluation;
 
-import com.sep.vox.application.port.input.command.practiceevaluation.PracticeCriterionScoreInput;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
@@ -40,27 +39,27 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
     @Override
     @Transactional
     public Void execute(RecordPracticeAttemptEvaluationCommand input) {
-        boolean markedInvalid = !input.validForScoring();
-        double itemScore = input.criteria().stream()
+        var markedInvalid = !input.validForScoring();
+        var itemScore = input.criteria().stream()
             .mapToDouble(criterion -> {
-                Double score = criterion.score();
+                var score = criterion.score();
                 return score == null ? 0 : score;
             })
             .average()
             .orElse(0);
-        Instant evaluatedAt = input.evaluatedAt() == null || input.evaluatedAt().isBlank()
+        var evaluatedAt = input.evaluatedAt() == null || input.evaluatedAt().isBlank()
             ? Instant.now()
             : Instant.parse(input.evaluatedAt());
 
-        UUID evaluationId = evaluationRepository.upsert(
+        var evaluationId = evaluationRepository.upsert(
             input.practiceResponseId(),
             itemScore,
             markedInvalid,
             evaluatedAt
         );
 
-        for (PracticeCriterionScoreInput criterion : input.criteria()) {
-            String code = criterion.criterionCode() == null
+        for (var criterion : input.criteria()) {
+            var code = criterion.criterionCode() == null
                 ? ""
                 : criterion.criterionCode().trim().toUpperCase(Locale.ROOT);
             if (code.isBlank()) {
@@ -70,7 +69,7 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
                 );
                 continue;
             }
-            Double score = criterion.score();
+            var score = criterion.score();
             criterionScoreRepository.upsertByCode(
                 evaluationId,
                 code,
@@ -88,7 +87,7 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
 
     private void refreshSessionScore(UUID responseId) {
         try {
-            UUID sessionId = responseRepository.findSessionIdByResponseId(responseId);
+            var sessionId = responseRepository.findSessionIdByResponseId(responseId);
             if (sessionId == null) {
                 return;
             }

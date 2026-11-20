@@ -21,7 +21,7 @@ public final class UpdateSchoolUserCommandMapper {
             input.containsKey("phone"),
             valueOf(input.get("address")),
             input.containsKey("address"),
-            (LocalDate) input.get("dateOfBirth"),
+            parseDateOfBirth(input.get("dateOfBirth")),
             input.containsKey("dateOfBirth"),
             valueOf(input.get("avatarUrl")),
             input.containsKey("avatarUrl")
@@ -30,5 +30,10 @@ public final class UpdateSchoolUserCommandMapper {
 
     private static String valueOf(Object value) {
         return value == null ? null : value.toString();
+    }
+
+    private static LocalDate parseDateOfBirth(Object value) {
+        if (value == null) return null;
+        return LocalDate.parse(value.toString());
     }
 }

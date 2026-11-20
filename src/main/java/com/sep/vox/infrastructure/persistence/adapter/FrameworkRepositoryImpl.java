@@ -1,12 +1,10 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.FrameworkJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -15,7 +13,6 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.infrastructure.persistence.mapper.FrameworkMapper;
-import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkRepository;
 
 @Repository
@@ -46,25 +43,37 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
 
     @Override
     public PageResult<Framework> findAll(int pageNumber, int size, String search, Boolean isActive) {
-        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
+        var pageable = PageRequest.of(pageNumber - 1, size);
         String pattern = StringNormalization.toLikePattern(search);
-        Page<FrameworkJpaEntity> page = isActive != null
+        var page = isActive != null
             ? springDataFrameworkRepository.findAllBySearchAndIsActive(pattern, isActive, pageable)
             : springDataFrameworkRepository.findAllBySearch(pattern, pageable);
-        return OneBasedPaging.toPageResult(page, page.getContent().stream().map(FrameworkMapper::toDomain).toList());
+        return new PageResult<>(
+                page.getContent().stream().map(FrameworkMapper::toDomain).toList(),
+                page.getNumber() + 1,
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
+        );
     }
 
     @Override
     public PageResult<Framework> findAllActive(int pageNumber, int size) {
-        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
-        Page<FrameworkJpaEntity> page = springDataFrameworkRepository.findAllActive(pageable);
-        return OneBasedPaging.toPageResult(page, page.getContent().stream().map(FrameworkMapper::toDomain).toList());
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataFrameworkRepository.findAllActive(pageable);
+        return new PageResult<>(
+                page.getContent().stream().map(FrameworkMapper::toDomain).toList(),
+                page.getNumber() + 1,
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
+        );
     }
 
     @Override
     public Framework save(Framework framework) {
-        FrameworkJpaEntity entity = FrameworkMapper.toJpa(framework);
-        FrameworkJpaEntity saved = springDataFrameworkRepository.save(entity);
+        var entity = FrameworkMapper.toJpa(framework);
+        var saved = springDataFrameworkRepository.save(entity);
         return FrameworkMapper.toDomain(saved);
     }
 

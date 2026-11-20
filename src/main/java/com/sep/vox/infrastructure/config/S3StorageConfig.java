@@ -27,7 +27,7 @@ public class S3StorageConfig {
 
     @Bean
     public S3Client s3Client(AwsS3StorageProperties properties) {
-        S3ClientBuilder builder = S3Client.builder()
+        var builder = S3Client.builder()
             .region(Region.of(properties.getRegion()))
             .serviceConfiguration(S3Configuration.builder()
                 .pathStyleAccessEnabled(properties.isPathStyleAccessEnabled())
@@ -49,7 +49,7 @@ public class S3StorageConfig {
 
     @Bean
     public S3Presigner s3Presigner(AwsS3StorageProperties properties) {
-        S3Presigner.Builder builder = S3Presigner.builder()
+        var builder = S3Presigner.builder()
             .region(Region.of(properties.getRegion()));
 
         configureCredentialsAndEndpoint(properties, builder);

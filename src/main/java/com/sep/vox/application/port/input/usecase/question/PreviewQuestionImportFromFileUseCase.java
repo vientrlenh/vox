@@ -1,13 +1,9 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import com.sep.vox.application.response.output.ParseImportFileResult;
-import com.sep.vox.domain.model.question.QuestionBank;
-import com.sep.vox.domain.model.question.QuestionTopic;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -82,17 +78,17 @@ public class PreviewQuestionImportFromFileUseCase
         // Bỏ trống CẢ HAI = chế độ hàng loạt: mỗi dòng trong tệp tự khai mã ngân hàng + mã chủ đề,
         // nên một tệp rải được sang nhiều chủ đề. Khai một cái mà thiếu cái kia thì không rõ ý định,
         // chặn luôn thay vì đoán.
-        boolean bulkMode = input.questionBankId() == null && input.questionTopicId() == null;
+        var bulkMode = input.questionBankId() == null && input.questionTopicId() == null;
         if (!bulkMode && (input.questionBankId() == null || input.questionTopicId() == null)) {
             throw new IllegalArgumentException(
                 "Phải chọn cả ngân hàng câu hỏi và chủ đề, hoặc bỏ trống cả hai để import hàng loạt");
         }
 
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        boolean teacher = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        var teacher = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "TEACHER".equals(role.roleCode()));
 
         UUID sessionSchoolId;
@@ -109,9 +105,9 @@ public class PreviewQuestionImportFromFileUseCase
                 sessionSchoolId = currentSchoolId;
             }
         } else {
-            QuestionBank questionBank = questionBankRepository.findById(input.questionBankId())
+            var questionBank = questionBankRepository.findById(input.questionBankId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
-            QuestionTopic questionTopic = questionTopicRepository.findById(input.questionTopicId())
+            var questionTopic = questionTopicRepository.findById(input.questionTopicId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
 
             if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
@@ -132,10 +128,10 @@ public class PreviewQuestionImportFromFileUseCase
                 : null;
         }
 
-        ParseImportFileResult parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION);
-        Instant now = Instant.now();
-        Instant expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
-        ImportSession savedSession = importSessionRepository.save(new ImportSession(
+        var parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION);
+        var now = Instant.now();
+        var expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
+        var savedSession = importSessionRepository.save(new ImportSession(
             sessionSchoolId,
             ImportType.QUESTION,
             safeFileName(input.file().fileName()),
@@ -181,10 +177,10 @@ public class PreviewQuestionImportFromFileUseCase
         if (rows.isEmpty()) {
             return;
         }
-        List<ImportRow> importRows = new ArrayList<ImportRow>();
+        var importRows = new ArrayList<ImportRow>();
         long rowNumber = 1L;
-        for (Map<String, String> row : rows) {
-            Map<String, String> rawData = new LinkedHashMap<String, String>(row);
+        for (var row : rows) {
+            var rawData = new LinkedHashMap<String, String>(row);
             // Ghim ĐỘC LẬP từng cái: chọn được ngân hàng mà chưa chọn chủ đề thì vẫn ghim ngân
             // hàng, phần còn lại QuestionImportCommitHandler lấy theo mã trong file. Trước đây chỉ
             // ghim khi có ĐỦ cả hai, nên "chọn ngân hàng, để trống chủ đề" rơi hết về chế độ hàng

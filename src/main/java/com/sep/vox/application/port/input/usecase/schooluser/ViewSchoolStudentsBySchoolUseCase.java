@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
-import com.sep.vox.domain.model.user.Role;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +28,7 @@ public class ViewSchoolStudentsBySchoolUseCase implements IUseCase<ViewSchoolStu
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolUserDto> execute(ViewSchoolStudentsBySchoolQuery input) {
-        Role role = roleRepository.findByCode(SchoolRoleCodes.STUDENT)
+        var role = roleRepository.findByCode(SchoolRoleCodes.STUDENT)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò học sinh"));
 
         return viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(

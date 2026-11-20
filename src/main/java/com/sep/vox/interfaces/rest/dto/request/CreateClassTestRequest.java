@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
+import com.sep.vox.domain.model.exam.ResultDecisionMethod;
 
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.DecimalMax;
@@ -37,7 +37,7 @@ public record CreateClassTestRequest(
     Integer maxAttempt,
 
     @Min(value = 1, message = "Thời lượng bài thi phải lớn hơn 0 giây")
-    Integer assessmentTimeDurationSecond,
+    Integer examTimeDurationSecond,
 
     ResultDecisionMethod resultDecisionMethod,
 
@@ -57,11 +57,11 @@ public record CreateClassTestRequest(
     /** Phòng thi. Có thể bỏ trống lúc tạo và chọn sau, nhưng phải có trước khi lên lịch. */
     UUID schoolRoomId,
     /**
-     * The AI confidence threshold as a PERCENTAGE (0-100), set by the school itself. Empty = not set, the system uses the hard
-     * threshold rules as before.
+     * Ngưỡng tin cậy AI theo PHẦN TRĂM (0-100), nhà trường tự đặt. Bỏ trống = không đặt, hệ thống dùng luật
+     * ngưỡng cứng như trước.
      *
-     * <p>Once set, any grading result whose overall_confidence is below the threshold goes to PENDING_REVIEW,
-     * and the internal hard rules are ignored -- see RecordAssessmentAttemptEvaluationUseCase.
+     * <p>Đặt rồi thì bản chấm nào có overall_confidence thấp hơn ngưỡng sẽ sang PENDING_REVIEW,
+     * và các luật cứng nội bộ bị bỏ qua -- xem RecordExamAttemptEvaluationUseCase.
      */
     @DecimalMin(value = "0.0", message = "Ngưỡng tin cậy phải từ 0 đến 100")
     @DecimalMax(value = "100.0", message = "Ngưỡng tin cậy phải từ 0 đến 100")

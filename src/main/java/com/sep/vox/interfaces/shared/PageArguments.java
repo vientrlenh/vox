@@ -1,35 +1,30 @@
 package com.sep.vox.interfaces.shared;
 
 /**
- * The single place that validates paging arguments, shared by every entry point (GraphQL and REST).
+ * Một chỗ duy nhất kiểm tham số phân trang, dùng chung cho mọi entry point (GraphQL lẫn REST).
  *
- * <p>Why the check lives at the boundary and not as "normalisation" in the repositories: an earlier
- * version had every query repository call {@code Math.max(page, 0)} and then {@code Math.min(size, MAX)}.
- * That hides wrong input instead of reporting it -- a client sending page 0 still got 200 OK with the
- * data of another page, and nobody noticed. Worse, that very {@code Math.max(page, 0)} legitimised
- * zero-based counting and hid an off-by-one-page bug for a long time (see {@code PagingConventionTests}).
+ * <p>Vì sao kiểm ở biên chứ không "chuẩn hoá" ở repository: bản trước mỗi query repository tự gọi
+ * {@code Math.max(page, 0)} rồi {@code Math.min(size, MAX)}. Cách đó che mất đầu vào sai thay vì
+ * báo lỗi -- một client gửi page 0 vẫn nhận về 200 OK kèm dữ liệu của trang khác, và không ai biết.
+ * Tệ hơn, chính phép {@code Math.max(page, 0)} đó đã hợp thức hoá lối đếm từ 0 và giấu đi lỗi lệch
+ * một trang suốt thời gian dài (xem {@code PagingConventionTests}).
  *
- * <p>The boundary is now the ONLY place that decides whether the input is valid; repositories trust it
- * and do exactly one thing: subtract 1 to get the zero-based index (see {@code OneBasedPaging}).
+ * <p>Nay biên là chỗ DUY NHẤT quyết định đầu vào có hợp lệ hay không; repository tin vào đó và chỉ
+ * còn đúng một việc: trừ 1 để đổi sang offset.
  */
 public final class PageArguments {
 
     /**
-     * The ceiling on rows per page. Not a business number but a safe upper bound: without it, a
-     * request with {@code size=1000000} pulls the whole table into memory. Set to 200 because the desktop client deliberately asks for a
-     * page of 200 rows for the assessment picking screen ({@code GET /api/v1/assessments}).
+     * Trần số dòng mỗi trang. Không phải con số nghiệp vụ mà là chặn trên an toàn: thiếu nó, một
+     * yêu cầu {@code size=1000000} kéo cả bảng vào bộ nhớ. Đặt 200 vì client desktop cố ý xin một
+     * trang 200 dòng cho màn chọn bài thi ({@code GET /api/v1/exams}).
      */
     public static final int MAX_PAGE_SIZE = 200;
 
     private PageArguments() {
     }
 
-    /**
-     * Pages are counted from 1.
-     *
-     * @throws IllegalArgumentException if the page is missing or below 1, or if the size is missing,
-     *     below 1 or above {@link #MAX_PAGE_SIZE}
-     */
+    /** Trang đếm từ 1. Ném {@link IllegalArgumentException} nếu thiếu hoặc ngoài khoảng cho phép. */
     public static void validate(Integer page, Integer size) {
         if (page == null || page <= 0) {
             throw new IllegalArgumentException("Số trang yêu cầu không hợp lệ");

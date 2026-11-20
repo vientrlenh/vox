@@ -50,8 +50,8 @@ public class InterestDimensionRepositoryImpl implements InterestDimensionReposit
 
     @Override
     public InterestDimension save(InterestDimension dimension) {
-        Instant now = Instant.now();
-        InterestDimensionJpaEntity saved = repository.save(new InterestDimensionJpaEntity(
+        var now = Instant.now();
+        var saved = repository.save(new InterestDimensionJpaEntity(
             dimension.getCode(),
             dimension.getLabel(),
             dimension.getDescription(),

@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.event.internal.consumer;
 
-import com.sep.vox.domain.model.user.User;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -90,7 +89,7 @@ public class SchoolDebtEmailConsumer {
         containerFactory = "stringKafkaListenerContainerFactory"
     )
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        UUID eventId = KafkaEventHeaders.readEventId(record);
+        var eventId = KafkaEventHeaders.readEventId(record);
 
         LOGGER.info("Receive event school-debt: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
@@ -101,11 +100,11 @@ public class SchoolDebtEmailConsumer {
             return;
         }
 
-        String eventType = KafkaEventHeaders.readEventType(record);
+        var eventType = KafkaEventHeaders.readEventType(record);
 
-        Mail mail = switch (eventType) {
+        var mail = switch (eventType) {
             case EventTypeConstant.SCHOOL_DEBT_CAP_EXCEEDED -> {
-                SchoolDebtCapExceededPayloadV1 payload = parse(record.value(), SchoolDebtCapExceededPayloadV1.class, eventId);
+                var payload = parse(record.value(), SchoolDebtCapExceededPayloadV1.class, eventId);
                 yield new Mail(
                     payload.systemAdminIds(),
                     "Cảnh báo: nợ hạn mức AI vượt trần",
@@ -113,7 +112,7 @@ public class SchoolDebtEmailConsumer {
                 );
             }
             case EventTypeConstant.SCHOOL_LOCKED_DUE_TO_DEBT -> {
-                SchoolLockedDueToDebtPayloadV1 payload = parse(record.value(), SchoolLockedDueToDebtPayloadV1.class, eventId);
+                var payload = parse(record.value(), SchoolLockedDueToDebtPayloadV1.class, eventId);
                 yield new Mail(
                     payload.schoolAdminIds(),
                     "Trường đang bị khóa do nợ hạn mức AI",
@@ -121,7 +120,7 @@ public class SchoolDebtEmailConsumer {
                 );
             }
             case EventTypeConstant.SCHOOL_DEBT_CLEARED -> {
-                SchoolDebtClearedPayloadV1 payload = parse(record.value(), SchoolDebtClearedPayloadV1.class, eventId);
+                var payload = parse(record.value(), SchoolDebtClearedPayloadV1.class, eventId);
                 yield new Mail(
                     payload.schoolAdminIds(),
                     "Trường đã hết nợ hạn mức AI",
@@ -129,7 +128,7 @@ public class SchoolDebtEmailConsumer {
                 );
             }
             case EventTypeConstant.SCHOOL_SUBSCRIPTION_SUSPENDED -> {
-                SchoolSubscriptionSuspendedPayloadV1 payload = parse(record.value(), SchoolSubscriptionSuspendedPayloadV1.class, eventId);
+                var payload = parse(record.value(), SchoolSubscriptionSuspendedPayloadV1.class, eventId);
                 yield new Mail(
                     payload.schoolAdminIds(),
                     "Gói subscription bị đình chỉ",
@@ -138,7 +137,7 @@ public class SchoolDebtEmailConsumer {
                 );
             }
             case EventTypeConstant.SCHOOL_SUBSCRIPTION_UNSUSPENDED -> {
-                SchoolSubscriptionUnsuspendedPayloadV1 payload = parse(record.value(), SchoolSubscriptionUnsuspendedPayloadV1.class, eventId);
+                var payload = parse(record.value(), SchoolSubscriptionUnsuspendedPayloadV1.class, eventId);
                 yield new Mail(
                     payload.schoolAdminIds(),
                     "Gói subscription đã được gỡ đình chỉ",
@@ -156,11 +155,11 @@ public class SchoolDebtEmailConsumer {
             return;
         }
 
-        // One bad address must not block the others: collect the errors and throw ONCE at the end,
-        // the same way InvoiceEmailConsumer does it.
-        int failed = 0;
-        for (UUID recipientId : mail.recipientIds()) {
-            User recipient = userRepository.findById(recipientId).orElse(null);
+        // Một địa chỉ hỏng không được chặn những người còn lại: gom lỗi rồi ném MỘT lần ở cuối,
+        // cùng cách InvoiceEmailConsumer đang làm.
+        var failed = 0;
+        for (var recipientId : mail.recipientIds()) {
+            var recipient = userRepository.findById(recipientId).orElse(null);
             if (recipient == null) {
                 LOGGER.warn("Bỏ qua người nhận không còn tồn tại: eventId={}, userId={}", eventId, recipientId);
                 continue;
@@ -187,7 +186,7 @@ public class SchoolDebtEmailConsumer {
 
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
-        UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
+        var eventId = KafkaEventHeaders.readEventIdOrNull(record);
         LOGGER.error("school-debt event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
             eventId, record.topic(), record.partition(), record.offset(), record.value());
     }
@@ -213,7 +212,7 @@ public class SchoolDebtEmailConsumer {
             return "--";
         }
         return switch (quotaType) {
-            case ASSESSMENT -> "Bài kiểm tra";
+            case EXAM -> "Bài kiểm tra";
             case PRACTICE -> "Lượt ôn luyện cá nhân";
         };
     }

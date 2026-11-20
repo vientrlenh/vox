@@ -62,20 +62,19 @@ public final class RubricScoringConsistencyValidator {
 
         assertEveryCriterionCoversScale(scaleMin, scaleMax, criteria);
 
-        BigDecimal weightSum = criteria.stream()
+        var weightSum = criteria.stream()
                 .map(criterion -> criterion.getWeight())
                 .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
         if (method == RubricTotalScoreMethod.WEIGHTED_AVERAGE) {
-            // Average: every criterion is balanced at 100% -> the total equals the number of criteria.
+            // Trung bình: mọi tiêu chí cân bằng ở 100% -> tổng bằng đúng số tiêu chí.
             //
-            // Using "equals the number of criteria" instead of "equals 1" is deliberate: the weight
-            // column is numeric(6,2), so splitting evenly against 1 gives 0.33+0.33+0.33 = 0.99 for 3
-            // criteria, which never matches and forces a skewed 0.34/0.33/0.33. Against n all three
-            // are 1.00, which matches exactly for any number of criteria, and adding a criterion does
-            // not require rewriting the existing ones.
-            BigDecimal expected = BigDecimal.valueOf(criteria.size());
+            // Dùng mốc "bằng số tiêu chí" thay vì "bằng 1" là có chủ ý: cột weight là numeric(6,2),
+            // nên chia đều theo mốc 1 thì 3 tiêu chí ra 0.33+0.33+0.33 = 0.99, không bao giờ khớp,
+            // buộc phải gõ lệch 0.34/0.33/0.33. Theo mốc n thì cả ba đều là 1.00, khớp chằn chặn
+            // với mọi số tiêu chí, và thêm tiêu chí mới không phải viết lại các tiêu chí cũ.
+            var expected = BigDecimal.valueOf(criteria.size());
             if (weightSum.compareTo(expected) != 0) {
                 throw new IllegalStateException(String.format(
                         "Không thể ban hành: phương pháp Trung bình yêu cầu mọi tiêu chí cân bằng ở"
@@ -86,6 +85,7 @@ public final class RubricScoringConsistencyValidator {
             return;
         }
 
+        // Phân bổ: trọng số là phần chia của tiêu chí trong tổng, cộng lại đúng 100%.
         if (weightSum.compareTo(BigDecimal.ONE) != 0) {
             throw new IllegalStateException(String.format(
                     "Không thể ban hành: phương pháp Phân bổ yêu cầu tổng trọng số của %d tiêu chí"
@@ -111,7 +111,7 @@ public final class RubricScoringConsistencyValidator {
      */
     private static void assertEveryCriterionCoversScale(
             BigDecimal scaleMin, BigDecimal scaleMax, List<RubricCriterion> criteria) {
-        RubricCriterion mismatched = criteria.stream()
+        var mismatched = criteria.stream()
                 .filter(criterion -> criterion.getMinScore() == null
                         || criterion.getMaxScore() == null
                         || criterion.getMinScore().compareTo(scaleMin) != 0

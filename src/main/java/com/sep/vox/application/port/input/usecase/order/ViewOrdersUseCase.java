@@ -1,22 +1,23 @@
 package com.sep.vox.application.port.input.usecase.order;
 
-import com.sep.vox.domain.model.order.Order;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.query.ViewOrdersQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.OrderDto;
+import com.sep.vox.domain.model.order.OrderStatus;
+import com.sep.vox.domain.model.order.OrderType;
 import com.sep.vox.domain.repository.OrderRepository;
 
 /**
- * The system-wide order list for the System Admin.
+ * Danh sách đơn hàng toàn hệ thống cho System Admin.
  *
- * <p>A PENDING order is DIAGNOSTIC information on the admin side, not garbage to filter out: a pile of
- * pending orders at the same time is a sign that the gateway is not calling the callback back, and one
- * unusually long-pending order means a school is locked out of placing a new order (see
- * CreateSubscriptionOrderUseCase).
+ * <p>Đơn PENDING là thông tin CHẨN ĐOÁN ở phía admin chứ không phải rác cần lọc: một đống đơn treo
+ * cùng lúc là dấu hiệu cổng không gọi callback về, còn một đơn treo lâu bất thường là trường đang bị
+ * khóa không đặt được đơn mới (xem CreateSubscriptionOrderUseCase).
  */
 @Service
 public class ViewOrdersUseCase implements IUseCase<ViewOrdersQuery, PageResult<OrderDto>> {
@@ -30,10 +31,10 @@ public class ViewOrdersUseCase implements IUseCase<ViewOrdersQuery, PageResult<O
     @Override
     @Transactional(readOnly = true)
     public PageResult<OrderDto> execute(ViewOrdersQuery input) {
-        PageResult<Order> page = orderRepository.findForAdmin(
+        var page = orderRepository.findForAdmin(
             input.schoolId(),
-            input.status(),
-            input.type(),
+            statusOf(input.status()),
+            typeOf(input.type()),
             input.keyword(),
             input.page(),
             input.size()
@@ -46,5 +47,31 @@ public class ViewOrdersUseCase implements IUseCase<ViewOrdersQuery, PageResult<O
             page.totalElements(),
             page.totalPages()
         );
+    }
+
+    // null/rỗng = không lọc theo tiêu chí này. Chuẩn hóa CHỮ HOA vì đằng sau là Enum.valueOf phân biệt
+    // hoa thường: "pending" trên query string sẽ ném lỗi dù người dùng không sai gì.
+    private static OrderStatus statusOf(String status) {
+        var normalized = StringNormalization.normalizeCode(status);
+        if (normalized == null || normalized.isEmpty()) {
+            return null;
+        }
+        try {
+            return OrderStatus.valueOf(normalized);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái đơn hàng không hợp lệ: " + status);
+        }
+    }
+
+    private static OrderType typeOf(String type) {
+        var normalized = StringNormalization.normalizeCode(type);
+        if (normalized == null || normalized.isEmpty()) {
+            return null;
+        }
+        try {
+            return OrderType.valueOf(normalized);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Loại đơn hàng không hợp lệ: " + type);
+        }
     }
 }

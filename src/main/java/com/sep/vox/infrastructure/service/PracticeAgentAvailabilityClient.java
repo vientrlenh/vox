@@ -33,11 +33,11 @@ public class PracticeAgentAvailabilityClient implements PracticeAgentAvailabilit
     @Override
     public void requireReady() {
         try {
-            HttpRequest request = HttpRequest.newBuilder(readinessUri)
+            var request = HttpRequest.newBuilder(readinessUri)
                 .timeout(Duration.ofSeconds(12))
                 .POST(HttpRequest.BodyPublishers.noBody())
                 .build();
-            HttpResponse<String> response = httpClient.send(
+            var response = httpClient.send(
                 request,
                 HttpResponse.BodyHandlers.ofString()
             );

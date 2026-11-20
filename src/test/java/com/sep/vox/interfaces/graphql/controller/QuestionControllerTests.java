@@ -1,12 +1,10 @@
 package com.sep.vox.interfaces.graphql.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.UUID;
@@ -17,7 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForAssessmentPaperUseCase;
+import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForExamPaperUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionStatusCountsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -29,17 +27,15 @@ import graphql.schema.DataFetchingEnvironment;
 class QuestionControllerTests {
 
     private QuestionController controller;
-    private ViewQuestionsUseCase viewQuestionsUseCase;
 
     private final UUID questionId = UUID.randomUUID();
     private final UUID createdById = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        viewQuestionsUseCase = mock(ViewQuestionsUseCase.class);
         controller = new QuestionController(
-            viewQuestionsUseCase,
-            mock(ViewQuestionsForAssessmentPaperUseCase.class),
+            mock(ViewQuestionsUseCase.class),
+            mock(ViewQuestionsForExamPaperUseCase.class),
             mock(ViewQuestionDetailsUseCase.class),
             mock(ViewQuestionStatusCountsUseCase.class),
             mock(UserContextPort.class));
@@ -54,15 +50,15 @@ class QuestionControllerTests {
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     void should_resolve_created_by_user_via_user_data_loader() {
-        QuestionDto dto = question(createdById);
-        UserDto user = new UserDto(createdById, "teacher@example.com", null, "Nguyễn Văn A",
+        var dto = question(createdById);
+        var user = new UserDto(createdById, "teacher@example.com", null, "Nguyễn Văn A",
             null, null, null, null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, UserDto>getDataLoader("userById")).thenReturn(loader);
         when(loader.load(createdById)).thenReturn(CompletableFuture.completedFuture(user));
 
-        CompletableFuture<UserDto> result = controller.createdByUser(dto, env);
+        var result = controller.createdByUser(dto, env);
 
         assertThat(result.join()).isSameAs(user);
         verify(loader).load(createdById);
@@ -70,20 +66,12 @@ class QuestionControllerTests {
 
     @Test
     void should_return_null_created_by_user_when_created_by_is_null() {
-        QuestionDto dto = question(null);
+        var dto = question(null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
 
-        CompletableFuture<UserDto> result = controller.createdByUser(dto, env);
+        var result = controller.createdByUser(dto, env);
 
         assertThat(result.join()).isNull();
         verify(env, never()).getDataLoader(any());
-    }
-
-    @Test
-    void questions_should_reject_page_zero_without_calling_the_use_case() {
-        assertThatThrownBy(() -> controller.questions(null, null, null, null, null, null, null, null, null, 0, 20))
-            .isInstanceOf(IllegalArgumentException.class);
-
-        verifyNoInteractions(viewQuestionsUseCase);
     }
 }

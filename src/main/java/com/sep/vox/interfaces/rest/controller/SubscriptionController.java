@@ -22,7 +22,7 @@ import com.sep.vox.application.port.input.command.ForceSuspendSubscriptionComman
 import com.sep.vox.application.port.input.command.UnsuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.command.DeleteDraftSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.PublishSubscriptionPlanCommand;
-import com.sep.vox.application.port.input.usecase.subscription.AllocateAssessmentQuotaToTeachersUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.AllocateExamQuotaToTeachersUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.AllocatePracticeQuotaToStudentsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ArchiveSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreateSubscriptionPlanReplacementUseCase;
@@ -66,7 +66,7 @@ public class SubscriptionController {
     private final CancelSchoolSubscriptionUseCase cancelSchoolSubscriptionUseCase;
     private final ForceSuspendSubscriptionUseCase forceSuspendSubscriptionUseCase;
     private final UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase;
-    private final AllocateAssessmentQuotaToTeachersUseCase allocateAssessmentQuotaToTeachersUseCase;
+    private final AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase;
     private final AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase;
     private final SetQuotaDistributionPolicyUseCase setQuotaDistributionPolicyUseCase;
     private final FundQuotaFromBalanceUseCase fundQuotaFromBalanceUseCase;
@@ -81,7 +81,7 @@ public class SubscriptionController {
             CancelSchoolSubscriptionUseCase cancelSchoolSubscriptionUseCase,
             ForceSuspendSubscriptionUseCase forceSuspendSubscriptionUseCase,
             UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase,
-            AllocateAssessmentQuotaToTeachersUseCase allocateAssessmentQuotaToTeachersUseCase,
+            AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase,
             AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase,
             SetQuotaDistributionPolicyUseCase setQuotaDistributionPolicyUseCase,
             FundQuotaFromBalanceUseCase fundQuotaFromBalanceUseCase) {
@@ -94,7 +94,7 @@ public class SubscriptionController {
         this.cancelSchoolSubscriptionUseCase = cancelSchoolSubscriptionUseCase;
         this.forceSuspendSubscriptionUseCase = forceSuspendSubscriptionUseCase;
         this.unsuspendSubscriptionUseCase = unsuspendSubscriptionUseCase;
-        this.allocateAssessmentQuotaToTeachersUseCase = allocateAssessmentQuotaToTeachersUseCase;
+        this.allocateExamQuotaToTeachersUseCase = allocateExamQuotaToTeachersUseCase;
         this.allocatePracticeQuotaToStudentsUseCase = allocatePracticeQuotaToStudentsUseCase;
         this.setQuotaDistributionPolicyUseCase = setQuotaDistributionPolicyUseCase;
         this.fundQuotaFromBalanceUseCase = fundQuotaFromBalanceUseCase;
@@ -103,7 +103,7 @@ public class SubscriptionController {
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createPlan(@Valid @RequestBody CreateSubscriptionPlanRequest request) {
-        UUID data = createSubscriptionPlanUseCase.execute(CreatePlanCommandMapper.fromRequest(request));
+        var data = createSubscriptionPlanUseCase.execute(CreatePlanCommandMapper.fromRequest(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo gói đăng ký thành công", data));
     }
 
@@ -118,7 +118,7 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> createPlanReplacement(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody CreateSubscriptionPlanRequest request) {
-        UUID data = createSubscriptionPlanReplacementUseCase.execute(
+        var data = createSubscriptionPlanReplacementUseCase.execute(
             new CreateSubscriptionPlanReplacementCommand(id, CreatePlanCommandMapper.fromRequest(request)));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo gói thay thế thành công", data));
     }
@@ -128,7 +128,7 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> archivePlan(
             @PathVariable(name = "id") UUID id,
             @RequestParam(name = "replacedByPlanId", required = false) UUID replacedByPlanId) {
-        UUID data = archiveSubscriptionPlanUseCase.execute(new ArchiveSubscriptionPlanCommand(id, replacedByPlanId));
+        var data = archiveSubscriptionPlanUseCase.execute(new ArchiveSubscriptionPlanCommand(id, replacedByPlanId));
         return ResponseEntity.ok(ApiResponse.success("Lưu trữ gói đăng ký thành công", data));
     }
 
@@ -144,7 +144,7 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> updatePlanReplacement(
             @PathVariable(name = "id") UUID id,
             @RequestParam(name = "replacedByPlanId") UUID replacedByPlanId) {
-        UUID data = updateSubscriptionPlanReplacementUseCase.execute(
+        var data = updateSubscriptionPlanReplacementUseCase.execute(
             new UpdateSubscriptionPlanReplacementCommand(id, replacedByPlanId));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật gói thay thế thành công", data));
     }
@@ -155,7 +155,7 @@ public class SubscriptionController {
     @PatchMapping("/{id}/publish")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> publishPlan(@PathVariable(name = "id") UUID id) {
-        UUID data = publishSubscriptionPlanUseCase.execute(new PublishSubscriptionPlanCommand(id));
+        var data = publishSubscriptionPlanUseCase.execute(new PublishSubscriptionPlanCommand(id));
         return ResponseEntity.ok(ApiResponse.success("Xuất bản gói đăng ký thành công", data));
     }
 
@@ -174,7 +174,7 @@ public class SubscriptionController {
     @PatchMapping("/cancellation")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> cancelSubscription() {
-        UUID data = cancelSchoolSubscriptionUseCase.execute(null);
+        var data = cancelSchoolSubscriptionUseCase.execute(null);
         return ResponseEntity.ok(ApiResponse.success("Đã ghi nhận yêu cầu không gia hạn gói", data));
     }
 
@@ -188,7 +188,7 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> suspendSubscription(
             @PathVariable(name = "id") UUID id,
             @RequestBody @Valid SuspendSubscriptionRequest request) {
-        UUID data = forceSuspendSubscriptionUseCase.execute(
+        var data = forceSuspendSubscriptionUseCase.execute(
             new ForceSuspendSubscriptionCommand(id, request.reason()));
         return ResponseEntity.ok(ApiResponse.success("Đình chỉ gói đăng ký thành công", data));
     }
@@ -198,23 +198,23 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<UUID>> unsuspendSubscription(
             @PathVariable(name = "id") UUID id,
             @RequestBody @Valid UnsuspendSubscriptionRequest request) {
-        UUID data = unsuspendSubscriptionUseCase.execute(
+        var data = unsuspendSubscriptionUseCase.execute(
             new UnsuspendSubscriptionCommand(id, request.note()));
         return ResponseEntity.ok(ApiResponse.success("Gỡ đình chỉ gói đăng ký thành công", data));
     }
 
-    // The two READ paths for allocated quota (GET .../teachers/assessment-quota and GET .../students/practice-quota)
-    // have been removed: they moved to GraphQL as schoolAssessmentQuotaUserAllocations /
-    // schoolPracticeQuotaUserAllocations, which have paging and can join user names through a data
-    // loader. The WRITE path stays on REST following the convention "read through GraphQL, write through REST".
+    // Hai đường ĐỌC hạn mức đã chia (GET .../teachers/exam-quota và GET .../students/practice-quota)
+    // đã bỏ: chúng chuyển sang GraphQL thành schoolExamQuotaUserAllocations /
+    // schoolPracticeQuotaUserAllocations, nơi có phân trang và nối được tên người dùng qua data
+    // loader. Đường GHI ở lại REST theo đúng quy ước "đọc GraphQL, ghi REST".
 
-    @PutMapping("/schools/{schoolId}/teachers/assessment-quota")
+    @PutMapping("/schools/{schoolId}/teachers/exam-quota")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> allocateAssessmentQuotaToTeachers(
+    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> allocateExamQuotaToTeachers(
             @PathVariable(name = "schoolId") UUID schoolId,
             @Valid @RequestBody AllocateQuotaRequest request) {
-        QuotaUserAllocationSummaryResponse data = allocateAssessmentQuotaToTeachersUseCase.execute(
-            AllocateQuotaCommandMapper.toAssessmentCommand(schoolId, request));
+        var data = allocateExamQuotaToTeachersUseCase.execute(
+            AllocateQuotaCommandMapper.toExamCommand(schoolId, request));
         return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức thi cho giáo viên thành công", data));
     }
 
@@ -223,7 +223,7 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> allocatePracticeQuotaToStudents(
             @PathVariable(name = "schoolId") UUID schoolId,
             @Valid @RequestBody AllocateQuotaRequest request) {
-        QuotaUserAllocationSummaryResponse data = allocatePracticeQuotaToStudentsUseCase.execute(
+        var data = allocatePracticeQuotaToStudentsUseCase.execute(
             AllocateQuotaCommandMapper.toPracticeCommand(schoolId, request));
         return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức luyện tập cho học sinh thành công", data));
     }
@@ -252,7 +252,7 @@ public class SubscriptionController {
             @PathVariable(name = "schoolId") UUID schoolId,
             @PathVariable(name = "quotaType") String quotaType,
             @Valid @RequestBody FundQuotaFromBalanceRequest request) {
-        QuotaFundingResponse data = fundQuotaFromBalanceUseCase.execute(
+        var data = fundQuotaFromBalanceUseCase.execute(
             new FundQuotaFromBalanceCommand(schoolId, quotaType, request.amountVnd(), request.reason()));
         return ResponseEntity.ok(ApiResponse.success("Nạp tiền vào hạn mức thành công", data));
     }
@@ -263,7 +263,7 @@ public class SubscriptionController {
             @PathVariable(name = "schoolId") UUID schoolId,
             @PathVariable(name = "quotaType") String quotaType,
             @Valid @RequestBody SetQuotaDistributionPolicyRequest request) {
-        BigDecimal data = setQuotaDistributionPolicyUseCase.execute(
+        var data = setQuotaDistributionPolicyUseCase.execute(
             new SetQuotaDistributionPolicyCommand(schoolId, quotaType, request.distributableRatio()));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trần phân phối hạn mức thành công", data));
     }

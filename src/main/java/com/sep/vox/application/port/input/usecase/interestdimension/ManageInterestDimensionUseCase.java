@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.interestdimension;
 
-import com.sep.vox.application.response.input.interestdimension.InterestDimensionResponses;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -46,12 +45,12 @@ public class ManageInterestDimensionUseCase {
 
     @Transactional
     public InterestDimensionResponse create(UpsertInterestDimensionCommand input) {
-        String code = normalizeCode(input.code());
+        var code = normalizeCode(input.code());
         if (repository.findByCode(code).isPresent()) {
             throw new DuplicatedException("Mã chiều sở thích đã tồn tại: " + code);
         }
         requireLabel(input.label());
-        InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(new InterestDimension(
+        var saved = toResponse(repository.save(new InterestDimension(
             code,
             input.label().strip(),
             input.description() == null ? null : input.description().strip(),
@@ -72,12 +71,12 @@ public class ManageInterestDimensionUseCase {
 
     @Transactional
     public InterestDimensionResponse update(UpsertInterestDimensionCommand input) {
-        String code = normalizeCode(input.code());
-        InterestDimension existing = repository.findByCode(code)
+        var code = normalizeCode(input.code());
+        var existing = repository.findByCode(code)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chiều sở thích: " + code));
         // Mã là khoá và đã được gán vào practice_topics/dimension_interest_scores -- không cho
         // đổi, chỉ sửa phần hiển thị và cờ. Muốn đổi mã thì tạo mới rồi tắt cái cũ.
-        InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(new InterestDimension(
+        var saved = toResponse(repository.save(new InterestDimension(
             existing.getCode(),
             input.label() == null ? existing.getLabel() : input.label().strip(),
             input.description() == null ? existing.getDescription() : input.description().strip(),
@@ -89,7 +88,7 @@ public class ManageInterestDimensionUseCase {
         )));
         // Bật lại một chiều từng tắt cũng cần kiểm tra phủ: trong lúc nó tắt, kho có thể đã
         // được sinh thêm mà bỏ qua chiều này.
-        boolean becameUsable = saved.active() && saved.quizEligible()
+        var becameUsable = saved.active() && saved.quizEligible()
             && (!existing.isActive() || !existing.isQuizEligible());
         if (becameUsable) {
             quizBankTopUpService.topUpAsync();
@@ -99,7 +98,7 @@ public class ManageInterestDimensionUseCase {
 
     @Transactional
     public boolean deactivate(String code) {
-        String normalized = normalizeCode(code);
+        var normalized = normalizeCode(code);
         repository.findByCode(normalized)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chiều sở thích: " + normalized));
         // Tắt mềm, không xoá: điểm số và chủ đề đã gán chiều này vẫn phải đọc được.
@@ -111,7 +110,7 @@ public class ManageInterestDimensionUseCase {
         if (code == null || code.isBlank()) {
             throw new IllegalArgumentException("Mã chiều sở thích không được để trống");
         }
-        String normalized = code.strip().toUpperCase(Locale.ROOT);
+        var normalized = code.strip().toUpperCase(Locale.ROOT);
         if (!CODE_PATTERN.matcher(normalized).matches()) {
             throw new IllegalArgumentException(
                 "Mã chiều sở thích phải viết HOA, 3-32 ký tự, chỉ gồm chữ/số/gạch dưới"
@@ -134,8 +133,8 @@ public class ManageInterestDimensionUseCase {
             dimension.isActive(),
             dimension.isQuizEligible(),
             dimension.getDisplayOrder(),
-            dimension.getCreatedAt(),
-            dimension.getUpdatedAt()
+            dimension.getCreatedAt() == null ? null : dimension.getCreatedAt().toString(),
+            dimension.getUpdatedAt() == null ? null : dimension.getUpdatedAt().toString()
         );
     }
 }

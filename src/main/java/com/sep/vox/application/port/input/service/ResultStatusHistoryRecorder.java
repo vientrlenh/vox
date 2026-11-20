@@ -10,36 +10,36 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
-import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
-import com.sep.vox.domain.model.assessment.AssessmentResultStatusHistory;
-import com.sep.vox.domain.model.assessment.ResultStatusChangeSource;
-import com.sep.vox.domain.repository.AssessmentResultStatusHistoryRepository;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.exam.ExamResultStatusHistory;
+import com.sep.vox.domain.model.exam.ResultStatusChangeSource;
+import com.sep.vox.domain.repository.ExamResultStatusHistoryRepository;
 
 /**
- * The ONLY audit write point for every status change / score change of an attempt.
+ * Chỗ ghi audit DUY NHẤT cho mọi lần đổi trạng thái / đổi điểm của một bài.
  *
- * <p>Having two write points means losing the audit: a score dispute would land exactly where nothing is recorded.
- * Every use case that touches {@link AssessmentCandidateResult#setStatus} or changes the total score
- * has to go through here.
+ * <p>Có hai chỗ ghi là mất audit: tranh chấp điểm sẽ rơi vào đúng cái chỗ không ghi.
+ * Mọi use case chạm {@link ExamCandidateResult#setStatus} hoặc làm tổng điểm thay đổi
+ * đều phải đi qua đây.
  *
- * <p>Usage: take {@link #snapshot(AssessmentCandidateResult)} <em>before</em> editing,
- * call {@link #record} once the new result exists.
+ * <p>Cách dùng: chụp {@link #snapshot(ExamCandidateResult)} <em>trước</em> khi sửa,
+ * gọi {@link #record} sau khi đã có kết quả mới.
  */
 @Service
 public class ResultStatusHistoryRecorder {
 
-    private final AssessmentResultStatusHistoryRepository assessmentResultStatusHistoryRepository;
+    private final ExamResultStatusHistoryRepository examResultStatusHistoryRepository;
 
-    public ResultStatusHistoryRecorder(AssessmentResultStatusHistoryRepository assessmentResultStatusHistoryRepository) {
-        this.assessmentResultStatusHistoryRepository = assessmentResultStatusHistoryRepository;
+    public ResultStatusHistoryRecorder(ExamResultStatusHistoryRepository examResultStatusHistoryRepository) {
+        this.examResultStatusHistoryRepository = examResultStatusHistoryRepository;
     }
 
     /** Ảnh chụp trạng thái + điểm trước khi thao tác. */
-    public record Snapshot(UUID candidateResultId, AssessmentCandidateResultStatus status, BigDecimal totalScore) {
+    public record Snapshot(UUID candidateResultId, ExamCandidateResultStatus status, BigDecimal totalScore) {
     }
 
-    public Snapshot snapshot(AssessmentCandidateResult result) {
+    public Snapshot snapshot(ExamCandidateResult result) {
         if (result == null) {
             return null;
         }
@@ -54,17 +54,17 @@ public class ResultStatusHistoryRecorder {
      * {@code outcome} của dòng phân công.
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public AssessmentResultStatusHistory record(Snapshot before, AssessmentCandidateResult after,
+    public ExamResultStatusHistory record(Snapshot before, ExamCandidateResult after,
             ResultStatusChangeSource source, UUID actorId, String reason) {
         if (before == null || after == null) {
             return null;
         }
-        boolean statusChanged = before.status() != after.getStatus();
-        boolean scoreChanged = !equalScores(before.totalScore(), after.getTotalScore());
+        var statusChanged = before.status() != after.getStatus();
+        var scoreChanged = !equalScores(before.totalScore(), after.getTotalScore());
         if (!statusChanged && !scoreChanged) {
             return null;
         }
-        return assessmentResultStatusHistoryRepository.save(new AssessmentResultStatusHistory(
+        return examResultStatusHistoryRepository.save(new ExamResultStatusHistory(
             after.getId(),
             before.status(),
             after.getStatus(),
@@ -83,12 +83,12 @@ public class ResultStatusHistoryRecorder {
      * phạm) hay giáo viên trả lại phân công.
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public AssessmentResultStatusHistory recordAlways(Snapshot before, AssessmentCandidateResult after,
+    public ExamResultStatusHistory recordAlways(Snapshot before, ExamCandidateResult after,
             ResultStatusChangeSource source, UUID actorId, String reason) {
         if (before == null || after == null) {
             return null;
         }
-        return assessmentResultStatusHistoryRepository.save(new AssessmentResultStatusHistory(
+        return examResultStatusHistoryRepository.save(new ExamResultStatusHistory(
             after.getId(),
             before.status(),
             after.getStatus(),
@@ -103,8 +103,8 @@ public class ResultStatusHistoryRecorder {
 
     /** Ghi hàng loạt — chốt sổ cả kỳ thi không được đẻ ra N insert lẻ. */
     @Transactional(propagation = Propagation.MANDATORY)
-    public List<AssessmentResultStatusHistory> recordAll(List<AssessmentResultStatusHistory> histories) {
-        return assessmentResultStatusHistoryRepository.saveAll(histories);
+    public List<ExamResultStatusHistory> recordAll(List<ExamResultStatusHistory> histories) {
+        return examResultStatusHistoryRepository.saveAll(histories);
     }
 
     /**

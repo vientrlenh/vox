@@ -59,7 +59,7 @@ public class InterestQuizItemRepositoryImpl
         if (repository.count() > 0) {
             return;
         }
-        Instant now = Instant.now();
+        var now = Instant.now();
         repository.saveAll(items.stream()
             .map(item -> new InterestQuizItemJpaEntity(
                 jsonSerialization.toJson(item.getDimensionPerStatement()),
@@ -74,7 +74,7 @@ public class InterestQuizItemRepositoryImpl
 
     @Override
     public void saveGeneratedForStudent(UUID studentId, List<InterestQuizSeedItem> items) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         repository.saveAll(items.stream()
             .map(item -> new InterestQuizItemJpaEntity(
                 jsonSerialization.toJson(item.getDimensionPerStatement()),

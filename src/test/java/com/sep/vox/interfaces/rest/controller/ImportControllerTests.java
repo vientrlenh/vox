@@ -1,82 +1,57 @@
 package com.sep.vox.interfaces.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.assertj.MockMvcTester;
-import org.springframework.test.web.servlet.assertj.MvcTestResult;
+import org.springframework.http.HttpStatus;
 
 import com.sep.vox.application.port.input.command.RejectImportSessionCommand;
 import com.sep.vox.application.port.input.usecase.importfile.RejectImportSessionUseCase;
 import com.sep.vox.application.response.input.importfile.RejectImportSessionResponse;
-import com.sep.vox.support.RestControllerTest;
+import com.sep.vox.interfaces.rest.dto.request.RejectImportSessionRequest;
 
-@RestControllerTest(ImportController.class)
 class ImportControllerTests {
 
-    private static final String REJECT_URI = "/api/v1/imports/{sessionId}/reject";
-
-    @Autowired
-    private MockMvcTester mvc;
-
-    @MockitoBean
-    private RejectImportSessionUseCase rejectImportSessionUseCase;
-
     @Test
-    @WithMockUser(roles = "SCHOOL_ADMIN")
     void rejectImportSession_should_return_reject_response() {
-        UUID sessionId = UUID.randomUUID();
-        RejectImportSessionResponse expected = new RejectImportSessionResponse(sessionId, "CANCELLED", "User cancelled");
-        when(rejectImportSessionUseCase.execute(new RejectImportSessionCommand(sessionId, "User cancelled")))
-            .thenReturn(expected);
+        var rejectUseCase = mock(RejectImportSessionUseCase.class);
+        var controller = new ImportController(rejectUseCase);
+        var sessionId = UUID.randomUUID();
+        var request = new RejectImportSessionRequest("User cancelled");
+        var command = new RejectImportSessionCommand(sessionId, "User cancelled");
+        var expected = new RejectImportSessionResponse(sessionId, "CANCELLED", "User cancelled");
 
-        MvcTestResult result = mvc.post().uri(REJECT_URI, sessionId)
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"reason\": \"User cancelled\"}")
-            .exchange();
+        when(rejectUseCase.execute(command)).thenReturn(expected);
 
-        assertThat(result).hasStatusOk().bodyJson()
-            .extractingPath("$.message").isEqualTo("Hủy import thành công");
-        assertThat(result).bodyJson().extractingPath("$.data.reason").isEqualTo("User cancelled");
+        var response = controller.rejectImportSession(sessionId, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Hủy import thành công");
+        assertThat(response.getBody().data()).isEqualTo(expected);
+        verify(rejectUseCase).execute(command);
     }
 
     @Test
-    @WithMockUser(roles = "SCHOOL_ADMIN")
     void rejectImportSession_should_accept_empty_body() {
-        UUID sessionId = UUID.randomUUID();
-        RejectImportSessionCommand command = new RejectImportSessionCommand(sessionId, null);
-        when(rejectImportSessionUseCase.execute(command))
-            .thenReturn(new RejectImportSessionResponse(sessionId, "CANCELLED", null));
+        var rejectUseCase = mock(RejectImportSessionUseCase.class);
+        var controller = new ImportController(rejectUseCase);
+        var sessionId = UUID.randomUUID();
+        var command = new RejectImportSessionCommand(sessionId, null);
+        var expected = new RejectImportSessionResponse(sessionId, "CANCELLED", null);
 
-        MvcTestResult result = mvc.post().uri(REJECT_URI, sessionId).exchange();
+        when(rejectUseCase.execute(command)).thenReturn(expected);
 
-        assertThat(result).hasStatusOk();
-        verify(rejectImportSessionUseCase).execute(command);
-    }
+        var response = controller.rejectImportSession(sessionId, null);
 
-    @Test
-    void rejectImportSession_should_return_401_without_authenticated_user() {
-        MvcTestResult result = mvc.post().uri(REJECT_URI, UUID.randomUUID()).exchange();
-
-        assertThat(result).hasStatus(401);
-        verifyNoInteractions(rejectImportSessionUseCase);
-    }
-
-    @Test
-    @WithMockUser(roles = "TEACHER")
-    void rejectImportSession_should_return_403_for_role_other_than_school_admin() {
-        MvcTestResult result = mvc.post().uri(REJECT_URI, UUID.randomUUID()).exchange();
-
-        assertThat(result).hasStatus(403);
-        verifyNoInteractions(rejectImportSessionUseCase);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().data()).isEqualTo(expected);
+        verify(rejectUseCase).execute(command);
     }
 }

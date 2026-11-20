@@ -1,9 +1,5 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
-import com.sep.vox.domain.model.question.Question;
-import com.sep.vox.domain.model.question.QuestionBank;
-import com.sep.vox.domain.model.question.QuestionTopic;
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -63,12 +59,12 @@ public class DeleteQuestionBankUseCase implements IUseCase<DeleteQuestionBankCom
     @Override
     @Transactional
     public DeleteQuestionBankResponse execute(DeleteQuestionBankCommand input) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
 
-        QuestionBank questionBank = questionBankRepository.findById(input.id())
+        var questionBank = questionBankRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         validateAccess(questionBank.getOwnerType(), questionBank.getSchoolId(), currentSchoolId);
@@ -79,8 +75,8 @@ public class DeleteQuestionBankUseCase implements IUseCase<DeleteQuestionBankCom
             return new DeleteQuestionBankResponse(false, true);
         }
 
-        List<QuestionTopic> topics = questionTopicRepository.findByQuestionBankId(questionBank.getId());
-        for (QuestionTopic topic : topics) {
+        var topics = questionTopicRepository.findByQuestionBankId(questionBank.getId());
+        for (var topic : topics) {
             deleteQuestionsOfTopic(topic.getId());
             questionTopicRepository.deleteById(topic.getId());
         }
@@ -90,8 +86,8 @@ public class DeleteQuestionBankUseCase implements IUseCase<DeleteQuestionBankCom
     }
 
     private void deleteQuestionsOfTopic(UUID topicId) {
-        List<Question> questions = questionRepository.findByQuestionTopicId(topicId);
-        for (Question question : questions) {
+        var questions = questionRepository.findByQuestionTopicId(topicId);
+        for (var question : questions) {
             questionAssetRepository.deleteByQuestionId(question.getId());
             questionEvaluationGuideRepository.deleteByQuestionId(question.getId());
             questionCollaboratorRepository.deleteByQuestionId(question.getId());

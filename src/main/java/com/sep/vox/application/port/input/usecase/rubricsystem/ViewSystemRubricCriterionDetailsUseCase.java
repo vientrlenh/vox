@@ -8,10 +8,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricCriterionDto;
 import com.sep.vox.domain.mapper.RubricCriterionDtoMapper;
-import com.sep.vox.domain.model.rubric.Rubric;
-import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
@@ -54,15 +51,15 @@ public class ViewSystemRubricCriterionDetailsUseCase implements IUseCase<ViewSys
         }
 
         // 2. Lấy Criterion ra
-        RubricCriterion criterion = rubricCriterionRepository.findById(query.criterionId())
+        var criterion = rubricCriterionRepository.findById(query.criterionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
 
         // 3. Lấy Version
-        RubricVersion version = rubricVersionRepository.findById(criterion.getRubricVersionId())
+        var version = rubricVersionRepository.findById(criterion.getRubricVersionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric Version chứa tiêu chí này."));
 
         // 4. Lấy Rubric gốc và kiểm tra phải là SYSTEM
-        Rubric rubric = rubricRepository.findById(version.getRubricId())
+        var rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {

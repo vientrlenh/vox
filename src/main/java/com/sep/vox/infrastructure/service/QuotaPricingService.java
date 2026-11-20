@@ -14,15 +14,15 @@ import com.sep.vox.infrastructure.properties.QuotaPricingProperties;
 import com.sep.vox.infrastructure.properties.QuotaSellingPriceProperties;
 
 /**
- * The only READ source for pricing-related config -- estimatedCostPerAssessmentSecondUsd (preferring the price automatically
- * calibrated from real data through QuotaPricingCalibrationService/Job, falling back to the static constant in
- * .env/QuotaPricingProperties when no calibration has succeeded yet) and usdToVndRate (the market
- * exchange rate, shared by every plan -- see QuotaSellingPriceProperties). Used by both
- * ClassTestTokenQuotaGuardService (the pre-check) and SubscriptionController (the quotaPricing query for the FE)
- * so that every place always sees the SAME value.
+ * Nguồn ĐỌC duy nhất cho pricing-related config -- estimatedCostPerExamSecondUsd (ưu tiên giá đã tự
+ * calibrate từ dữ liệu thật qua QuotaPricingCalibrationService/Job, fallback về hằng số tĩnh trong
+ * .env/QuotaPricingProperties khi chưa có lần calibrate nào thành công) và usdToVndRate (tỷ giá thị
+ * trường, dùng chung mọi gói -- xem QuotaSellingPriceProperties). Dùng ở cả
+ * ClassTestTokenQuotaGuardService (chặn trước) lẫn SubscriptionController (query quotaPricing cho FE)
+ * để mọi nơi luôn thấy CÙNG 1 giá trị.
  *
- * <p>It sits in infrastructure because it reads @ConfigurationProperties directly; the application/interfaces side calls
- * through QuotaPricingPort so it does not depend back up on this layer.
+ * <p>Nằm ở infrastructure vì đọc trực tiếp @ConfigurationProperties; phía application/interfaces gọi
+ * qua QuotaPricingPort để không phụ thuộc ngược lên tầng này.
  */
 @Service
 public class QuotaPricingService implements QuotaPricingPort, ServiceFeePort {
@@ -44,10 +44,10 @@ public class QuotaPricingService implements QuotaPricingPort, ServiceFeePort {
     }
 
     @Override
-    public BigDecimal currentEstimatedCostPerAssessmentSecondUsd() {
-        return quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.ASSESSMENT)
+    public BigDecimal currentEstimatedCostPerExamSecondUsd() {
+        return quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.EXAM)
             .map(calibration -> calibration.getAppliedRateUsdPerSecond())
-            .orElseGet(quotaPricingProperties::estimatedCostPerAssessmentSecondUsd);
+            .orElseGet(quotaPricingProperties::estimatedCostPerExamSecondUsd);
     }
 
     @Override

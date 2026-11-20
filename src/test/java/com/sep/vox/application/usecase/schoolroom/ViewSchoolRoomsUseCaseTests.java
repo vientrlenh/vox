@@ -19,7 +19,6 @@ import com.sep.vox.application.port.input.usecase.schoolclass.MyClassAccessGuard
 import com.sep.vox.application.port.input.usecase.schoolroom.ViewSchoolRoomsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
@@ -45,8 +44,8 @@ class ViewSchoolRoomsUseCaseTests {
     void setUp() {
         schoolRoomRepository = mock(SchoolRoomRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
-        UserRepository userRepository = mock(UserRepository.class);
-        UserContextPort userContextPort = mock(UserContextPort.class);
+        var userRepository = mock(UserRepository.class);
+        var userContextPort = mock(UserContextPort.class);
 
         useCase = new ViewSchoolRoomsUseCase(
             schoolRoomRepository,
@@ -67,7 +66,7 @@ class ViewSchoolRoomsUseCaseTests {
         when(schoolRoomRepository.findBySchoolId(SCHOOL_ID, 1, 10))
             .thenReturn(new PageResult<>(List.of(room()), 1, 10, 1, 1));
 
-        PageResult<SchoolRoomFromDto> result = useCase.execute(new ViewSchoolRoomsQuery(SCHOOL_ID, 1, 10));
+        var result = useCase.execute(new ViewSchoolRoomsQuery(SCHOOL_ID, 1, 10));
 
         assertThat(result.content()).hasSize(1);
     }
@@ -83,7 +82,7 @@ class ViewSchoolRoomsUseCaseTests {
     }
 
     private SchoolRoom room() {
-        SchoolRoom room = new SchoolRoom();
+        var room = new SchoolRoom();
         room.setId(UUID.randomUUID());
         room.setSchoolId(SCHOOL_ID);
         room.setCode("P101");

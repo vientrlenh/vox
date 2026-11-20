@@ -87,7 +87,7 @@ public class RegisterVerificationOtpEmailConsumer {
         containerFactory = "stringKafkaListenerContainerFactory"
     )
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        UUID eventId = KafkaEventHeaders.readEventId(record);
+        var eventId = KafkaEventHeaders.readEventId(record);
 
         LOGGER.info("Receive event register-verification-otp: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
@@ -107,8 +107,8 @@ public class RegisterVerificationOtpEmailConsumer {
                 "Payload register-verification-otp không hợp lệ, eventId=" + eventId, e);
         }
 
-        String key = CacheKey.registerVerificationKey(payload.to());
-        CachePayload.RegisterVerificationPayload cached = cacheManagerPort.get(key, CachePayload.RegisterVerificationPayload.class);
+        var key = CacheKey.registerVerificationKey(payload.to());
+        var cached = cacheManagerPort.get(key, CachePayload.RegisterVerificationPayload.class);
         if (cached == null) {
             LOGGER.warn("Bỏ qua OTP đăng ký, hồ sơ trong cache đã hết hạn: eventId={}", eventId);
             markProcessed(eventId);
@@ -116,11 +116,11 @@ public class RegisterVerificationOtpEmailConsumer {
             return;
         }
 
-        String otp = oneTimePasswordPort.generate(OTP_SIZE);
+        var otp = oneTimePasswordPort.generate(OTP_SIZE);
         cacheManagerPort.save(key, withOtpHash(cached, oneTimePasswordPort.hash(otp)), TTL);
 
         try {
-            String html = mailTemplatePort.renderRegisterVerificationOtpEmail(otp, EXPIRES_IN);
+            var html = mailTemplatePort.renderRegisterVerificationOtpEmail(otp, EXPIRES_IN);
             mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
         } catch (Exception e) {
             LOGGER.error("Send mail error: eventId={}", eventId, e);
@@ -152,7 +152,7 @@ public class RegisterVerificationOtpEmailConsumer {
 
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
-        UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
+        var eventId = KafkaEventHeaders.readEventIdOrNull(record);
         LOGGER.error("register-verification-otp event sent to DLT: eventId={}, topic={}, partition={}, offset={}",
             eventId, record.topic(), record.partition(), record.offset());
     }

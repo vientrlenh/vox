@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.FrameworkCriterionBandJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +28,7 @@ public class FrameworkCriterionBandRepositoryImpl implements FrameworkCriterionB
 
     @Override
     public List<FrameworkCriterionBand> findByFrameworkCriterionIdIn(Collection<UUID> frameworkCriterionIds) {
-        List<FrameworkCriterionBandJpaEntity> result = springDataFrameworkCriterionBandRepository.findByFrameworkCriterionIdIn(frameworkCriterionIds);
+        var result = springDataFrameworkCriterionBandRepository.findByFrameworkCriterionIdIn(frameworkCriterionIds);
             
         if (result == null || result.isEmpty()) {
             return List.of();
@@ -39,14 +38,14 @@ public class FrameworkCriterionBandRepositoryImpl implements FrameworkCriterionB
 
     @Override
     public FrameworkCriterionBand save(FrameworkCriterionBand band) {
-        FrameworkCriterionBandJpaEntity entity = FrameworkCriterionBandMapper.toJpa(band);
-        FrameworkCriterionBandJpaEntity saved = springDataFrameworkCriterionBandRepository.save(entity);
+        var entity = FrameworkCriterionBandMapper.toJpa(band);
+        var saved = springDataFrameworkCriterionBandRepository.save(entity);
         return FrameworkCriterionBandMapper.toDomain(saved);
     }
 
     @Override
     public List<FrameworkCriterionBand> saveAll(List<FrameworkCriterionBand> bands) {
-        List<FrameworkCriterionBandJpaEntity> entities = bands.stream().map(FrameworkCriterionBandMapper::toJpa).toList();
+        var entities = bands.stream().map(FrameworkCriterionBandMapper::toJpa).toList();
         return springDataFrameworkCriterionBandRepository.saveAll(entities)
             .stream().map(FrameworkCriterionBandMapper::toDomain).toList();
     }

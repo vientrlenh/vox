@@ -1,9 +1,7 @@
 package com.sep.vox.infrastructure.service;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -39,16 +37,16 @@ public class ExchangeRateRefreshService {
     }
 
     public void refresh() {
-        Optional<BigDecimal> rate = exchangeRateApiClient.fetchUsdToVndRate();
+        var rate = exchangeRateApiClient.fetchUsdToVndRate();
         if (rate.isEmpty()) {
             LOGGER.info("[exchange-rate] Bỏ qua lần refresh này -- giữ nguyên snapshot mới nhất hiện có");
             return;
         }
 
-        // This job only fetches the USD rate (ExchangeRateApiProperties.baseUrl points to .../latest/USD), so
-        // currency_code is hard-coded to USD -- adding a second currency means fetching separately, not attaching
-        // another label to the same number.
-        ExchangeRateSnapshot snapshot = new ExchangeRateSnapshot(
+        // Job này chỉ fetch tỷ giá USD (ExchangeRateApiProperties.baseUrl trỏ .../latest/USD), nên
+        // currency_code đóng cứng USD -- thêm đồng tiền thứ hai thì phải fetch riêng chứ không gắn
+        // nhãn khác cho cùng một con số.
+        var snapshot = new ExchangeRateSnapshot(
             CurrencyCode.USD, rate.get(), Instant.now(), exchangeRateApiProperties.baseUrl());
         exchangeRateSnapshotRepository.save(snapshot);
         LOGGER.info("[exchange-rate] Đã lưu snapshot tỷ giá mới: {}", rate.get());

@@ -82,12 +82,12 @@ class SchoolUserImportCommitHandlerTests {
 
     @Test
     void should_create_new_user_for_new_email() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        Role role = role("STUDENT");
-        User savedUser = user(UUID.randomUUID(), "student@example.com");
-        List<ImportRow> rows = List.of(row(sessionId, 1L, studentData("student@example.com")));
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var role = role("STUDENT");
+        var savedUser = user(UUID.randomUUID(), "student@example.com");
+        var rows = List.of(row(sessionId, 1L, studentData("student@example.com")));
 
         mockSchool(schoolId);
         when(userRepository.findByEmailIn(Set.of("student@example.com"))).thenReturn(List.of());
@@ -110,12 +110,12 @@ class SchoolUserImportCommitHandlerTests {
 
     @Test
     void should_create_school_user_for_new_teacher() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        Role role = role("TEACHER");
-        User savedUser = user(UUID.randomUUID(), "teacher@example.com");
-        List<ImportRow> rows = List.of(row(sessionId, 1L, teacherData("teacher@example.com")));
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var role = role("TEACHER");
+        var savedUser = user(UUID.randomUUID(), "teacher@example.com");
+        var rows = List.of(row(sessionId, 1L, teacherData("teacher@example.com")));
 
         mockSchool(schoolId);
         when(userRepository.findByEmailIn(Set.of("teacher@example.com"))).thenReturn(List.of());
@@ -134,13 +134,13 @@ class SchoolUserImportCommitHandlerTests {
 
     @Test
     void should_update_existing_user_profile_when_email_exists() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID existingUserId = UUID.randomUUID();
-        User existingUser = user(existingUserId, "teacher@example.com");
-        Role role = role("TEACHER");
-        List<ImportRow> rows = List.of(row(sessionId, 1L, teacherData("teacher@example.com")));
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var existingUserId = UUID.randomUUID();
+        var existingUser = user(existingUserId, "teacher@example.com");
+        var role = role("TEACHER");
+        var rows = List.of(row(sessionId, 1L, teacherData("teacher@example.com")));
 
         mockSchool(schoolId);
         when(userRepository.findByEmailIn(Set.of("teacher@example.com"))).thenReturn(List.of(existingUser));
@@ -161,18 +161,18 @@ class SchoolUserImportCommitHandlerTests {
 
     @Test
     void should_update_school_user_dates_when_student_already_in_school() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID existingUserId = UUID.randomUUID();
-        User existingUser = user(existingUserId, "student@example.com");
-        Role role = role("STUDENT");
-        SchoolUser existingSchoolUser = new SchoolUser(
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var existingUserId = UUID.randomUUID();
+        var existingUser = user(existingUserId, "student@example.com");
+        var role = role("STUDENT");
+        var existingSchoolUser = new SchoolUser(
             UUID.randomUUID(), schoolId, existingUserId,
             Instant.parse("2024-09-01T00:00:00Z"),
             Instant.parse("2025-06-30T00:00:00Z")
         );
-        List<ImportRow> rows = List.of(row(sessionId, 1L, studentData("student@example.com")));
+        var rows = List.of(row(sessionId, 1L, studentData("student@example.com")));
 
         mockSchool(schoolId);
         when(userRepository.findByEmailIn(Set.of("student@example.com"))).thenReturn(List.of(existingUser));
@@ -185,10 +185,9 @@ class SchoolUserImportCommitHandlerTests {
 
         assertThat(result.created()).isZero();
         assertThat(result.updated()).isEqualTo(1L);
-        // An Excel cell holds only a date, so it is interpreted as midnight in Vietnam time (+07),
-        // not midnight UTC: 2025-09-01 00:00+07 == 2025-08-31T17:00Z. The UTC instant is written
-        // out directly here on purpose, instead of being rebuilt from DEFAULT_INPUT_ZONE, so that
-        // if anyone changes the interpretation zone this test turns red.
+        // Ô Excel chỉ có ngày nên được diễn giải là nửa đêm theo giờ Việt Nam (+07), không phải nửa
+        // đêm UTC: 2025-09-01 00:00+07 == 2025-08-31T17:00Z. Cố tình ghi thẳng mốc UTC ở đây thay vì
+        // dựng lại bằng DEFAULT_INPUT_ZONE, để nếu ai đó đổi múi giờ diễn giải thì test này phải đỏ.
         assertThat(existingSchoolUser.getStartDate()).isEqualTo(Instant.parse("2025-08-31T17:00:00Z"));
         assertThat(existingSchoolUser.getEndDate()).isEqualTo(Instant.parse("2026-06-29T17:00:00Z"));
         verify(schoolUserRepository).save(existingSchoolUser);
@@ -197,13 +196,13 @@ class SchoolUserImportCommitHandlerTests {
 
     @Test
     void should_create_school_user_when_student_exists_but_not_in_school() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID existingUserId = UUID.randomUUID();
-        User existingUser = user(existingUserId, "student@example.com");
-        Role role = role("STUDENT");
-        List<ImportRow> rows = List.of(row(sessionId, 1L, studentData("student@example.com")));
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var existingUserId = UUID.randomUUID();
+        var existingUser = user(existingUserId, "student@example.com");
+        var role = role("STUDENT");
+        var rows = List.of(row(sessionId, 1L, studentData("student@example.com")));
 
         mockSchool(schoolId);
         when(userRepository.findByEmailIn(Set.of("student@example.com"))).thenReturn(List.of(existingUser));
@@ -222,19 +221,19 @@ class SchoolUserImportCommitHandlerTests {
 
     @Test
     void should_mark_invalid_when_email_belongs_to_user_in_another_school() {
-        UUID schoolId = UUID.randomUUID();
-        UUID otherSchoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID existingUserId = UUID.randomUUID();
-        User existingUser = user(existingUserId, "student@example.com");
-        Role role = role("STUDENT");
-        SchoolUser otherSchoolUser = new SchoolUser(
+        var schoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var existingUserId = UUID.randomUUID();
+        var existingUser = user(existingUserId, "student@example.com");
+        var role = role("STUDENT");
+        var otherSchoolUser = new SchoolUser(
             UUID.randomUUID(), otherSchoolId, existingUserId,
             Instant.parse("2024-09-01T00:00:00Z"),
             Instant.parse("2025-06-30T00:00:00Z")
         );
-        List<ImportRow> rows = List.of(row(sessionId, 1L, studentData("student@example.com")));
+        var rows = List.of(row(sessionId, 1L, studentData("student@example.com")));
 
         mockSchool(schoolId);
         when(userRepository.findByEmailIn(Set.of("student@example.com"))).thenReturn(List.of(existingUser));
@@ -258,17 +257,17 @@ class SchoolUserImportCommitHandlerTests {
 
     @Test
     void should_not_require_dates_for_teacher_rows() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        Role role = role("TEACHER");
-        User savedUser = user(UUID.randomUUID(), "teacher@example.com");
-        Map<String, String> teacherWithoutDates = Map.of(
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var role = role("TEACHER");
+        var savedUser = user(UUID.randomUUID(), "teacher@example.com");
+        var teacherWithoutDates = Map.of(
             "Email", "teacher@example.com", "Họ tên", "Nguyễn Văn B", "Vai trò", "TEACHER",
             "Điện thoại", "0901234568", "Ngày sinh", "1990-05-15",
             "Địa chỉ", "Hà Nội"
         );
-        List<ImportRow> rows = List.of(row(sessionId, 1L, teacherWithoutDates));
+        var rows = List.of(row(sessionId, 1L, teacherWithoutDates));
 
         mockSchool(schoolId);
         when(userRepository.findByEmailIn(Set.of("teacher@example.com"))).thenReturn(List.of());
@@ -287,17 +286,17 @@ class SchoolUserImportCommitHandlerTests {
 
     @Test
     void should_mark_invalid_when_student_start_date_not_before_end_date() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        Role role = role("STUDENT");
-        Map<String, String> badDates = Map.of(
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var role = role("STUDENT");
+        var badDates = Map.of(
             "Email", "student@example.com", "Họ tên", "Nguyễn Văn A", "Vai trò", "STUDENT",
             "Điện thoại", "0901234567", "Ngày sinh", "2000-01-01",
             "Ngày bắt đầu", "2026-06-30", "Ngày kết thúc", "2026-06-30",
             "Địa chỉ", "Hà Nội"
         );
-        List<ImportRow> rows = List.of(row(sessionId, 1L, badDates));
+        var rows = List.of(row(sessionId, 1L, badDates));
 
         mockSchool(schoolId);
         when(userRepository.findByEmailIn(Set.of("student@example.com"))).thenReturn(List.of());
@@ -314,12 +313,12 @@ class SchoolUserImportCommitHandlerTests {
 
     @Test
     void should_mark_duplicate_email_within_file_as_invalid() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        Role role = role("STUDENT");
-        User savedUser = user(UUID.randomUUID(), "student@example.com");
-        List<ImportRow> rows = List.of(
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var role = role("STUDENT");
+        var savedUser = user(UUID.randomUUID(), "student@example.com");
+        var rows = List.of(
             row(sessionId, 1L, studentData("student@example.com")),
             row(sessionId, 2L, studentData("student@example.com"))
         );
@@ -344,17 +343,17 @@ class SchoolUserImportCommitHandlerTests {
 
     @Test
     void should_mark_invalid_when_role_not_allowed() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        Role systemAdminRole = role("SYSTEM_ADMIN");
-        Map<String, String> data = Map.of(
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var systemAdminRole = role("SYSTEM_ADMIN");
+        var data = Map.of(
             "Email", "admin@example.com", "Họ tên", "Kẻ Gian", "Vai trò", "SYSTEM_ADMIN",
             "Điện thoại", "0901234599", "Ngày sinh", "1990-01-01",
             "Ngày bắt đầu", "2025-09-01", "Ngày kết thúc", "2026-06-30",
             "Địa chỉ", "Hà Nội"
         );
-        List<ImportRow> rows = List.of(row(sessionId, 1L, data));
+        var rows = List.of(row(sessionId, 1L, data));
 
         mockSchool(schoolId);
         when(userRepository.findByEmailIn(Set.of("admin@example.com"))).thenReturn(List.of());
@@ -375,12 +374,12 @@ class SchoolUserImportCommitHandlerTests {
 
     @Test
     void should_handle_phone_conflict_per_row() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        Role role = role("STUDENT");
-        User savedUser = user(UUID.randomUUID(), "success@example.com");
-        List<ImportRow> rows = List.of(
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var role = role("STUDENT");
+        var savedUser = user(UUID.randomUUID(), "success@example.com");
+        var rows = List.of(
             row(sessionId, 1L, studentData("conflict@example.com")),
             row(sessionId, 2L, studentData("success@example.com"))
         );
@@ -406,18 +405,18 @@ class SchoolUserImportCommitHandlerTests {
 
     @Test
     void should_isolate_invalid_value_object_per_row() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        Role role = role("STUDENT");
-        User savedUser = user(UUID.randomUUID(), "good@example.com");
-        Map<String, String> badPhoneData = Map.of(
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var role = role("STUDENT");
+        var savedUser = user(UUID.randomUUID(), "good@example.com");
+        var badPhoneData = Map.of(
             "Email", "bad@example.com", "Họ tên", "Nguyễn Văn A", "Vai trò", "STUDENT",
             "Điện thoại", "123", "Ngày sinh", "2000-01-01",
             "Ngày bắt đầu", "2025-09-01", "Ngày kết thúc", "2026-06-30",
             "Địa chỉ", "Hà Nội"
         );
-        List<ImportRow> rows = List.of(
+        var rows = List.of(
             row(sessionId, 1L, badPhoneData),
             row(sessionId, 2L, studentData("good@example.com"))
         );
@@ -439,7 +438,7 @@ class SchoolUserImportCommitHandlerTests {
     }
 
     private void mockSchool(UUID schoolId) {
-        School school = new School();
+        var school = new School();
         school.setId(schoolId);
         school.setName("Trường Test");
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
@@ -487,14 +486,14 @@ class SchoolUserImportCommitHandlerTests {
     }
 
     private static Role role(String code) {
-        Role role = new Role();
+        var role = new Role();
         role.setId(UUID.randomUUID());
         role.setCode(new RoleCode(code));
         return role;
     }
 
     private static User user(UUID id, String email) {
-        User user = new User();
+        var user = new User();
         user.setId(id);
         user.setEmail(new Email(email));
         user.setStatus(UserStatus.ACTIVE);

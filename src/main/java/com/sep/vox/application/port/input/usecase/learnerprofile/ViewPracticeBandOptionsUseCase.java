@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.learnerprofile;
 
-import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,7 +45,7 @@ public class ViewPracticeBandOptionsUseCase implements IUseCase<Void, List<Pract
         // Danh sách bậc là khái niệm TOÀN HỆ, không phụ thuộc học sinh nào -- nên không cần
         // studentId ở đây. Việc chặn người lạ do @PreAuthorize("hasRole('STUDENT')") ở
         // PracticeController lo, không phải bằng cách gọi UserContextPort rồi vứt kết quả.
-        List<FrameworkResultBand> ladder = frameworkVersionId == null
+        var ladder = frameworkVersionId == null
             ? enrichmentService.frameworkBandLadder()
             : enrichmentService.frameworkBandLadder(frameworkVersionId);
         return ladder.stream()

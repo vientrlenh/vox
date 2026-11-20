@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
-import com.sep.vox.application.response.output.VerifiedGoogleIdentity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,7 +54,7 @@ public class GoogleTokenLoginUseCase implements IUseCase<GoogleTokenLoginCommand
     @Override
     @Transactional
     public LoginResponse execute(GoogleTokenLoginCommand input) {
-        VerifiedGoogleIdentity identity = googleIdTokenVerifierPort.verify(input.idToken());
+        var identity = googleIdTokenVerifierPort.verify(input.idToken());
 
         if (!identity.emailVerified()) {
             throw new UnauthorizedException("Người dùng chưa được xác thực để đăng nhập");

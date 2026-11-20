@@ -106,7 +106,7 @@ class PendingOrderReconcilerTests {
     }
 
     private void givenPendingAttempt(Instant createdAt, PaymentLinkRemoteStatus remoteStatus) {
-        PaymentRecord attempt = PaymentRecord.forEBankingCheckout(
+        var attempt = PaymentRecord.forEBankingCheckout(
             ORDER_ID, new BigDecimal("500000"), PaymentProvider.PAYOS, "orphan-ref", createdAt);
         attempt.setId(UUID.randomUUID());
         when(paymentRecordRepository.findPendingByOrderId(ORDER_ID)).thenReturn(Optional.of(attempt));
@@ -115,7 +115,7 @@ class PendingOrderReconcilerTests {
     }
 
     private static Order overdueOrder() {
-        Order order = new Order();
+        var order = new Order();
         order.setId(ORDER_ID);
         order.setSchoolId(UUID.randomUUID());
         order.setType(OrderType.SUBSCRIPTION_REQUEST);

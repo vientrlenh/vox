@@ -70,7 +70,7 @@ public class JpaPlatformBusinessHealthQueryRepository implements PlatformBusines
 
     @Override
     public BigDecimal sumAiCostVnd(Instant from, Instant to) {
-        Object total = em.createNativeQuery("""
+        var total = em.createNativeQuery("""
             SELECT COALESCE(SUM(cost_vnd), 0)
             FROM ai_usage_records
             WHERE occurred_at >= :fromInstant

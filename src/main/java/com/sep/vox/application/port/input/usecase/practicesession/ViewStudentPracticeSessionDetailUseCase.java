@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +35,7 @@ public class ViewStudentPracticeSessionDetailUseCase
     @Override
     @Transactional(readOnly = true)
     public TeacherPracticeSessionDetail execute(ViewStudentPracticeSessionDetailQuery input) {
-        UUID teacherId = userContextPort.getCurrentAuthenticatedUserId();
+        var teacherId = userContextPort.getCurrentAuthenticatedUserId();
         if (!practiceSessionQueryRepository.canTeacherReadSession(teacherId, input.sessionId())) {
             throw new ForbiddenException("Bạn không được xem phiên luyện này.");
         }

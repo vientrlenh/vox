@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import com.sep.vox.domain.model.framework.Framework;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.query.ViewFrameworksQuery;
@@ -21,7 +20,7 @@ public class ViewFrameworksUseCase implements IUseCase<ViewFrameworksQuery, Page
 
     @Override
     public PageResult<FrameworkDto> execute(ViewFrameworksQuery input) {
-        PageResult<Framework> result = frameworkRepository.findAll(input.page(), input.size(), input.search(), input.isActive());
+        var result = frameworkRepository.findAll(input.page(), input.size(), input.search(), input.isActive());
         return FrameworkDtoMapper.toDtoPage(result);
     }
 }

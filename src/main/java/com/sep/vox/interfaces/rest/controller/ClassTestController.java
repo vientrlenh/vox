@@ -16,28 +16,28 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sep.vox.application.port.input.command.DeleteClassTestSectionCommand;
-import com.sep.vox.application.port.input.usecase.assessmentgrading.ClaimClassTestGradingUseCase;
-import com.sep.vox.application.port.input.command.DeleteAssessmentCommand;
-import com.sep.vox.application.port.input.usecase.assessment.ChangeClassTestBlueprintUseCase;
-import com.sep.vox.application.port.input.usecase.assessment.CreateClassTestSectionUseCase;
-import com.sep.vox.application.port.input.usecase.assessment.CreateClassTestUseCase;
-import com.sep.vox.application.port.input.usecase.assessment.DeleteClassTestSectionUseCase;
-import com.sep.vox.application.port.input.usecase.assessment.DeleteAssessmentUseCase;
-import com.sep.vox.application.port.input.usecase.assessment.UpdateClassTestQuestionsUseCase;
-import com.sep.vox.application.port.input.usecase.assessment.UpdateClassTestSectionUseCase;
-import com.sep.vox.application.port.input.usecase.assessment.UpdateAssessmentStatusUseCase;
-import com.sep.vox.application.port.input.usecase.assessment.UpdateAssessmentUseCase;
-import com.sep.vox.application.response.input.assessment.CreateClassTestResponse;
-import com.sep.vox.application.response.input.assessment.DeleteAssessmentResponse;
-import com.sep.vox.domain.dto.AssessmentDto;
+import com.sep.vox.application.port.input.usecase.examgrading.ClaimClassTestGradingUseCase;
+import com.sep.vox.application.port.input.command.DeleteExamCommand;
+import com.sep.vox.application.port.input.usecase.exam.ChangeClassTestBlueprintUseCase;
+import com.sep.vox.application.port.input.usecase.exam.CreateClassTestSectionUseCase;
+import com.sep.vox.application.port.input.usecase.exam.CreateClassTestUseCase;
+import com.sep.vox.application.port.input.usecase.exam.DeleteClassTestSectionUseCase;
+import com.sep.vox.application.port.input.usecase.exam.DeleteExamUseCase;
+import com.sep.vox.application.port.input.usecase.exam.UpdateClassTestQuestionsUseCase;
+import com.sep.vox.application.port.input.usecase.exam.UpdateClassTestSectionUseCase;
+import com.sep.vox.application.port.input.usecase.exam.UpdateExamStatusUseCase;
+import com.sep.vox.application.port.input.usecase.exam.UpdateExamUseCase;
+import com.sep.vox.application.response.input.exam.CreateClassTestResponse;
+import com.sep.vox.application.response.input.exam.DeleteExamResponse;
+import com.sep.vox.domain.dto.ExamDto;
 import com.sep.vox.interfaces.rest.dto.request.ChangeClassTestBlueprintRequest;
 import com.sep.vox.interfaces.rest.dto.request.ClaimClassTestGradingRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateClassTestRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateClassTestSectionRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateClassTestQuestionsRequest;
 import com.sep.vox.interfaces.rest.dto.request.UpdateClassTestSectionRequest;
-import com.sep.vox.interfaces.rest.dto.request.UpdateAssessmentRequest;
-import com.sep.vox.interfaces.rest.dto.request.UpdateAssessmentStatusRequest;
+import com.sep.vox.interfaces.rest.dto.request.UpdateExamRequest;
+import com.sep.vox.interfaces.rest.dto.request.UpdateExamStatusRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 import com.sep.vox.interfaces.rest.mapper.ChangeClassTestBlueprintCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.ClaimClassTestGradingCommandMapper;
@@ -45,8 +45,8 @@ import com.sep.vox.interfaces.rest.mapper.CreateClassTestCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.CreateClassTestSectionCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateClassTestQuestionsCommandMapper;
 import com.sep.vox.interfaces.rest.mapper.UpdateClassTestSectionCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateAssessmentCommandMapper;
-import com.sep.vox.interfaces.rest.mapper.UpdateAssessmentStatusCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.UpdateExamCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.UpdateExamStatusCommandMapper;
 
 import jakarta.validation.Valid;
 
@@ -55,9 +55,9 @@ import jakarta.validation.Valid;
 public class ClassTestController {
 
     private final CreateClassTestUseCase createClassTestUseCase;
-    private final UpdateAssessmentUseCase updateAssessmentUseCase;
-    private final UpdateAssessmentStatusUseCase updateAssessmentStatusUseCase;
-    private final DeleteAssessmentUseCase deleteAssessmentUseCase;
+    private final UpdateExamUseCase updateExamUseCase;
+    private final UpdateExamStatusUseCase updateExamStatusUseCase;
+    private final DeleteExamUseCase deleteExamUseCase;
     private final UpdateClassTestQuestionsUseCase updateClassTestQuestionsUseCase;
     private final CreateClassTestSectionUseCase createClassTestSectionUseCase;
     private final UpdateClassTestSectionUseCase updateClassTestSectionUseCase;
@@ -67,9 +67,9 @@ public class ClassTestController {
 
     public ClassTestController(
             CreateClassTestUseCase createClassTestUseCase,
-            UpdateAssessmentUseCase updateAssessmentUseCase,
-            UpdateAssessmentStatusUseCase updateAssessmentStatusUseCase,
-            DeleteAssessmentUseCase deleteAssessmentUseCase,
+            UpdateExamUseCase updateExamUseCase,
+            UpdateExamStatusUseCase updateExamStatusUseCase,
+            DeleteExamUseCase deleteExamUseCase,
             UpdateClassTestQuestionsUseCase updateClassTestQuestionsUseCase,
             CreateClassTestSectionUseCase createClassTestSectionUseCase,
             UpdateClassTestSectionUseCase updateClassTestSectionUseCase,
@@ -77,9 +77,9 @@ public class ClassTestController {
             ChangeClassTestBlueprintUseCase changeClassTestBlueprintUseCase,
             ClaimClassTestGradingUseCase claimClassTestGradingUseCase) {
         this.createClassTestUseCase = createClassTestUseCase;
-        this.updateAssessmentUseCase = updateAssessmentUseCase;
-        this.updateAssessmentStatusUseCase = updateAssessmentStatusUseCase;
-        this.deleteAssessmentUseCase = deleteAssessmentUseCase;
+        this.updateExamUseCase = updateExamUseCase;
+        this.updateExamStatusUseCase = updateExamStatusUseCase;
+        this.deleteExamUseCase = deleteExamUseCase;
         this.updateClassTestQuestionsUseCase = updateClassTestQuestionsUseCase;
         this.createClassTestSectionUseCase = createClassTestSectionUseCase;
         this.updateClassTestSectionUseCase = updateClassTestSectionUseCase;
@@ -91,82 +91,82 @@ public class ClassTestController {
     @PostMapping
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<CreateClassTestResponse>> create(@Valid @RequestBody CreateClassTestRequest request) {
-        CreateClassTestResponse data = createClassTestUseCase.execute(CreateClassTestCommandMapper.fromRequest(request));
+        var data = createClassTestUseCase.execute(CreateClassTestCommandMapper.fromRequest(request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo bài kiểm tra trên lớp thành công", data));
     }
 
-    @PutMapping("/{assessmentId}")
+    @PutMapping("/{examId}")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<ApiResponse<AssessmentDto>> update(
-            @PathVariable("assessmentId") UUID assessmentId,
-            @Valid @RequestBody UpdateAssessmentRequest request) {
-        AssessmentDto data = updateAssessmentUseCase.execute(UpdateAssessmentCommandMapper.fromRequest(assessmentId, request));
+    public ResponseEntity<ApiResponse<ExamDto>> update(
+            @PathVariable("examId") UUID examId,
+            @Valid @RequestBody UpdateExamRequest request) {
+        var data = updateExamUseCase.execute(UpdateExamCommandMapper.fromRequest(examId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật bài kiểm tra trên lớp thành công", data));
     }
 
-    @PutMapping("/{assessmentId}/questions")
+    @PutMapping("/{examId}/questions")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<ApiResponse<AssessmentDto>> updateQuestions(
-            @PathVariable("assessmentId") UUID assessmentId,
+    public ResponseEntity<ApiResponse<ExamDto>> updateQuestions(
+            @PathVariable("examId") UUID examId,
             @Valid @RequestBody UpdateClassTestQuestionsRequest request) {
-        AssessmentDto data = updateClassTestQuestionsUseCase.execute(UpdateClassTestQuestionsCommandMapper.fromRequest(assessmentId, request));
+        var data = updateClassTestQuestionsUseCase.execute(UpdateClassTestQuestionsCommandMapper.fromRequest(examId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật danh sách câu hỏi thành công", data));
     }
 
-    @PatchMapping("/{assessmentId}/status")
+    @PatchMapping("/{examId}/status")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<ApiResponse<AssessmentDto>> updateStatus(
-            @PathVariable("assessmentId") UUID assessmentId,
-            @Valid @RequestBody UpdateAssessmentStatusRequest request) {
-        AssessmentDto data = updateAssessmentStatusUseCase.execute(UpdateAssessmentStatusCommandMapper.fromRequest(assessmentId, request));
+    public ResponseEntity<ApiResponse<ExamDto>> updateStatus(
+            @PathVariable("examId") UUID examId,
+            @Valid @RequestBody UpdateExamStatusRequest request) {
+        var data = updateExamStatusUseCase.execute(UpdateExamStatusCommandMapper.fromRequest(examId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái bài kiểm tra trên lớp thành công", data));
     }
 
-    @DeleteMapping("/{assessmentId}")
+    @DeleteMapping("/{examId}")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<ApiResponse<DeleteAssessmentResponse>> delete(@PathVariable("assessmentId") UUID assessmentId) {
-        DeleteAssessmentResponse data = deleteAssessmentUseCase.execute(new DeleteAssessmentCommand(assessmentId));
+    public ResponseEntity<ApiResponse<DeleteExamResponse>> delete(@PathVariable("examId") UUID examId) {
+        var data = deleteExamUseCase.execute(new DeleteExamCommand(examId));
         return ResponseEntity.ok(ApiResponse.success("Xóa bài kiểm tra trên lớp thành công", data));
     }
 
-    @PostMapping("/{assessmentId}/sections")
+    @PostMapping("/{examId}/sections")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<ApiResponse<AssessmentDto>> createSection(
-            @PathVariable("assessmentId") UUID assessmentId,
+    public ResponseEntity<ApiResponse<ExamDto>> createSection(
+            @PathVariable("examId") UUID examId,
             @Valid @RequestBody CreateClassTestSectionRequest request) {
-        AssessmentDto data = createClassTestSectionUseCase.execute(CreateClassTestSectionCommandMapper.fromRequest(assessmentId, request));
+        var data = createClassTestSectionUseCase.execute(CreateClassTestSectionCommandMapper.fromRequest(examId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo section thành công", data));
     }
 
-    @PutMapping("/{assessmentId}/sections/{sectionId}")
+    @PutMapping("/{examId}/sections/{sectionId}")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<ApiResponse<AssessmentDto>> updateSection(
-            @PathVariable("assessmentId") UUID assessmentId,
+    public ResponseEntity<ApiResponse<ExamDto>> updateSection(
+            @PathVariable("examId") UUID examId,
             @PathVariable("sectionId") UUID sectionId,
             @RequestBody UpdateClassTestSectionRequest request) {
-        AssessmentDto data = updateClassTestSectionUseCase.execute(
-            UpdateClassTestSectionCommandMapper.fromRequest(assessmentId, sectionId, request)
+        var data = updateClassTestSectionUseCase.execute(
+            UpdateClassTestSectionCommandMapper.fromRequest(examId, sectionId, request)
         );
         return ResponseEntity.ok(ApiResponse.success("Cập nhật section thành công", data));
     }
 
-    @DeleteMapping("/{assessmentId}/sections/{sectionId}")
+    @DeleteMapping("/{examId}/sections/{sectionId}")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<ApiResponse<AssessmentDto>> deleteSection(
-            @PathVariable("assessmentId") UUID assessmentId,
+    public ResponseEntity<ApiResponse<ExamDto>> deleteSection(
+            @PathVariable("examId") UUID examId,
             @PathVariable("sectionId") UUID sectionId) {
-        AssessmentDto data = deleteClassTestSectionUseCase.execute(new DeleteClassTestSectionCommand(assessmentId, sectionId));
+        var data = deleteClassTestSectionUseCase.execute(new DeleteClassTestSectionCommand(examId, sectionId));
         return ResponseEntity.ok(ApiResponse.success("Xóa section thành công", data));
     }
 
-    @PatchMapping("/{assessmentId}/blueprint")
+    @PatchMapping("/{examId}/blueprint")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<ApiResponse<AssessmentDto>> changeBlueprint(
-            @PathVariable("assessmentId") UUID assessmentId,
+    public ResponseEntity<ApiResponse<ExamDto>> changeBlueprint(
+            @PathVariable("examId") UUID examId,
             @RequestBody ChangeClassTestBlueprintRequest request) {
-        AssessmentDto data = changeClassTestBlueprintUseCase.execute(ChangeClassTestBlueprintCommandMapper.fromRequest(assessmentId, request));
+        var data = changeClassTestBlueprintUseCase.execute(ChangeClassTestBlueprintCommandMapper.fromRequest(examId, request));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật blueprint cho bài kiểm tra trên lớp thành công", data));
     }
 
@@ -175,13 +175,13 @@ public class ClassTestController {
      * {@code /api/v1/grading-assignments}: chỗ đó nới là mở cho mọi giáo viên trên mọi
      * kỳ thi, còn ở đây phạm vi đóng đúng bằng bài mà người gọi làm CHAIR.
      */
-    @PostMapping("/{assessmentId}/grading/claim")
+    @PostMapping("/{examId}/grading/claim")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<List<UUID>>> claimGrading(
-            @PathVariable("assessmentId") UUID assessmentId,
+            @PathVariable("examId") UUID examId,
             @Valid @RequestBody ClaimClassTestGradingRequest request) {
-        List<UUID> data = claimClassTestGradingUseCase.execute(
-            ClaimClassTestGradingCommandMapper.fromRequest(assessmentId, request));
+        var data = claimClassTestGradingUseCase.execute(
+            ClaimClassTestGradingCommandMapper.fromRequest(examId, request));
         return ResponseEntity.ok(ApiResponse.success("Nhận chấm bài thành công", data));
     }
 }

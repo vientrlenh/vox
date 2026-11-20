@@ -20,8 +20,8 @@ public class PaymentProcessResolver {
 
     public PaymentProcessResolver(List<PaymentProcessPort> paymentProcessors) {
         this.paymentProcessors = new EnumMap<>(PaymentProvider.class);
-        for (PaymentProcessPort processor : paymentProcessors) {
-            PaymentProcessPort existing = this.paymentProcessors.put(processor.provider(), processor);
+        for (var processor : paymentProcessors) {
+            var existing = this.paymentProcessors.put(processor.provider(), processor);
             if (existing != null) {
                 throw new IllegalStateException(
                     "Có hai adapter cùng khai provider() = " + processor.provider() + ": "
@@ -31,7 +31,7 @@ public class PaymentProcessResolver {
     }
 
     public PaymentProcessPort resolve(PaymentProvider provider) {
-        PaymentProcessPort port = paymentProcessors.get(provider);
+        var port = paymentProcessors.get(provider);
         if (port == null) {
             throw new IllegalArgumentException("Chưa hỗ trợ cổng thanh toán: " + provider);
         }

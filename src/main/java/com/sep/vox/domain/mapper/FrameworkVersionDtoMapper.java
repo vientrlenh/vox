@@ -1,5 +1,6 @@
 package com.sep.vox.domain.mapper;
 
+import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.common.PageResult;
@@ -16,11 +17,11 @@ public final class FrameworkVersionDtoMapper {
             version.getName(),
             version.getDescription(),
             version.getVersion(),
-            version.getEffectiveFrom(),
-            version.getEffectiveTo(),
-            version.getStatus(),
-            version.getCreatedAt(),
-            version.getUpdatedAt(),
+            valueOf(version.getEffectiveFrom()),
+            valueOf(version.getEffectiveTo()),
+            version.getStatus().name(),
+            valueOf(version.getCreatedAt()),
+            valueOf(version.getUpdatedAt()),
             List.of(),
             List.of()
         );
@@ -34,5 +35,9 @@ public final class FrameworkVersionDtoMapper {
             page.totalElements(),
             page.totalPages()
         );
+    }
+
+    private static String valueOf(Instant dt) {
+        return dt == null ? null : dt.toString();
     }
 }

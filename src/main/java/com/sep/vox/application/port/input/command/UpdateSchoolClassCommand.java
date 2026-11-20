@@ -2,14 +2,12 @@ package com.sep.vox.application.port.input.command;
 
 import java.util.UUID;
 
-import com.sep.vox.domain.model.school.SchoolClassStatus;
-
 public record UpdateSchoolClassCommand(
         UUID id,
         String name,
         boolean nameProvided,
         String description,
         boolean descriptionProvided,
-        SchoolClassStatus status,
+        String status,
         boolean statusProvided) {
 }

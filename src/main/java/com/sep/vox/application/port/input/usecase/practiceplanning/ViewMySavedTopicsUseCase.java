@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.practiceplanning;
 
 import java.util.List;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,8 +30,8 @@ public class ViewMySavedTopicsUseCase implements IUseCase<Void, List<PracticeTop
     @Override
     @Transactional(readOnly = true)
     public List<PracticeTopicOffer> execute(Void input) {
-        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
-        int minutes = enrichmentService.minutesForStudent(studentId);
+        var studentId = userContextPort.getCurrentAuthenticatedUserId();
+        var minutes = enrichmentService.minutesForStudent(studentId);
         return practiceTopicQueryRepository.findSavedTopics(studentId).stream()
             .map(row -> new PracticeTopicOffer(
                 row.getId(),

@@ -30,9 +30,9 @@ class RoundRobinLoadBalancerTests {
     }
 
     private Map<UUID, Long> countByAssignee(List<UUID> picked) {
-        Map<UUID, Long> counts = new java.util.HashMap<UUID, Long>();
-        for (UUID assignee : picked) {
-            Long current = counts.get(assignee);
+        var counts = new java.util.HashMap<UUID, Long>();
+        for (var assignee : picked) {
+            var current = counts.get(assignee);
             counts.put(assignee, current == null ? 1L : current + 1L);
         }
         return counts;
@@ -40,16 +40,16 @@ class RoundRobinLoadBalancerTests {
 
     @Test
     void should_split_evenly_when_the_count_divides() {
-        List<UUID> picked = balancer.distribute(work(6), List.of(anh, binh, chi), Map.of());
+        var picked = balancer.distribute(work(6), List.of(anh, binh, chi), Map.of());
 
         assertThat(countByAssignee(picked).values()).containsExactly(2L, 2L, 2L);
     }
 
     @Test
     void should_give_the_remainder_to_the_first_assignees_in_order() {
-        List<UUID> picked = balancer.distribute(work(7), List.of(anh, binh, chi), Map.of());
+        var picked = balancer.distribute(work(7), List.of(anh, binh, chi), Map.of());
 
-        Map<UUID, Long> counts = countByAssignee(picked);
+        var counts = countByAssignee(picked);
         assertThat(counts.get(anh)).isEqualTo(3L);
         assertThat(counts.get(binh)).isEqualTo(2L);
         assertThat(counts.get(chi)).isEqualTo(2L);
@@ -57,12 +57,11 @@ class RoundRobinLoadBalancerTests {
 
     @Test
     void should_start_from_current_load_instead_of_zero() {
-        // Anh is holding 5 jobs; if the second run still started from 0 it would pile onto Anh
-        // again.
-        List<UUID> picked = balancer.distribute(
+        // Anh đang giữ 5 việc; chạy lần hai mà vẫn chia từ 0 sẽ dồn tiếp vào Anh.
+        var picked = balancer.distribute(
             work(3), List.of(anh, binh, chi), Map.of(anh, 5L, binh, 0L, chi, 0L));
 
-        Map<UUID, Long> counts = countByAssignee(picked);
+        var counts = countByAssignee(picked);
         assertThat(counts).doesNotContainKey(anh);
         assertThat(counts.get(binh)).isEqualTo(2L);
         assertThat(counts.get(chi)).isEqualTo(1L);
@@ -70,16 +69,16 @@ class RoundRobinLoadBalancerTests {
 
     @Test
     void should_treat_a_missing_load_entry_as_zero() {
-        List<UUID> picked = balancer.distribute(work(2), List.of(anh, binh), Map.of(anh, 3L));
+        var picked = balancer.distribute(work(2), List.of(anh, binh), Map.of(anh, 3L));
 
         assertThat(countByAssignee(picked).get(binh)).isEqualTo(2L);
     }
 
     @Test
     void should_return_one_assignee_per_work_item_in_order() {
-        List<UUID> items = work(4);
+        var items = work(4);
 
-        List<UUID> picked = balancer.distribute(items, List.of(anh, binh), Map.of());
+        var picked = balancer.distribute(items, List.of(anh, binh), Map.of());
 
         assertThat(picked).hasSize(items.size());
     }

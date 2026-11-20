@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.service;
 
-import com.sep.vox.grpc.proto.HealthResponse;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -28,7 +27,7 @@ public class HealthCheckGrpcService implements HealthCheckPort {
     @Override
     public void checkStreamingOk() {
         try {
-            HealthResponse response = streamingHealthServiceBlockingStub
+            var response = streamingHealthServiceBlockingStub
             .withDeadlineAfter(2, TimeUnit.SECONDS)
             .ping(HealthRequest.getDefaultInstance());
             if (!response.getAlive()) {

@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.schoolclassuser;
 
-import com.sep.vox.domain.model.school.School;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -54,15 +53,15 @@ public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassU
     @Transactional
     public DeleteSchoolClassUserResponse execute(DeleteSchoolClassUserCommand input) {
         validateCommand(input);
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = findCurrentUser(currentUserId);
-        UUID schoolId = getSchoolId(currentUser);
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = findCurrentUser(currentUserId);
+        var schoolId = getSchoolId(currentUser);
 
         validateRequestedSchool(input.schoolId(), schoolId);
         validateSchool(schoolId);
         validateSchoolClass(input.classId(), schoolId);
         validateTargetUser(input.userId(), schoolId);
-        SchoolClassUser membership = findMembership(input.userId(), input.classId());
+        var membership = findMembership(input.userId(), input.classId());
 
         if (membership.isActive()) {
             membership.deactivate(Instant.now());
@@ -85,7 +84,7 @@ public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassU
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        User user = userRepository.findById(currentUserId)
+        var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         validateCurrentUserIsActive(user);
         return user;
@@ -110,7 +109,7 @@ public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassU
     }
 
     private void validateSchool(UUID schoolId) {
-        School school = schoolRepository.findById(schoolId)
+        var school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
@@ -118,7 +117,7 @@ public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassU
     }
 
     private SchoolClass validateSchoolClass(UUID classId, UUID schoolId) {
-        SchoolClass schoolClass = schoolClassRepository.findById(classId)
+        var schoolClass = schoolClassRepository.findById(classId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
             throw new NotFoundException("Không tìm thấy lớp học");
@@ -130,7 +129,7 @@ public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassU
     }
 
     private void validateTargetUser(UUID userId, UUID schoolId) {
-        User targetUser = userRepository.findById(userId)
+        var targetUser = userRepository.findById(userId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         if (targetUser.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalStateException("Người dùng không hoạt động");

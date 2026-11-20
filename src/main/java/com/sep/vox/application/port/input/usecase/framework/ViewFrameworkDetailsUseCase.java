@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import com.sep.vox.domain.model.framework.Framework;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +22,7 @@ public class ViewFrameworkDetailsUseCase implements IUseCase<ViewFrameworkDetail
     @Override
     @Transactional(readOnly = true)
     public FrameworkDto execute(ViewFrameworkDetailsQuery input) {
-        Framework framework = frameworkRepository.findById(input.frameworkId())
+        var framework = frameworkRepository.findById(input.frameworkId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
         return FrameworkDtoMapper.toDto(framework);
     }

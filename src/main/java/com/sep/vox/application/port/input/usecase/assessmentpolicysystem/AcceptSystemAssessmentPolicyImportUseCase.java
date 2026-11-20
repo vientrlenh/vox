@@ -7,10 +7,8 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.AcceptAssessmentPolicyImportResponse;
-import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
-import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -43,10 +41,10 @@ public class AcceptSystemAssessmentPolicyImportUseCase implements IUseCase<Accep
     @Transactional
     public AcceptAssessmentPolicyImportResponse execute(AcceptSystemAssessmentPolicyImportCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
-        ImportSession session = importSessionRepository.findById(command.sessionId())
+        var session = importSessionRepository.findById(command.sessionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import (Session ID không hợp lệ)."));
 
         if (session.getType() != ImportType.ASSESSMENT_POLICY || session.getSchoolId() != null) {

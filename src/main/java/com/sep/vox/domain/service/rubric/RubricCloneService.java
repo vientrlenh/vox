@@ -62,12 +62,11 @@ public class RubricCloneService {
             RubricTotalScoreMethod targetMethod,
             UUID currentUserId) {
 
-        Instant now = Instant.now();
+        var now = Instant.now();
 
-        // languageId and frameworkId follow the template and must NOT be chosen again: the criteria
-        // below point to the frameworkCriterionId of the source framework, so changing the framework
-        // would leave all of those references dangling.
-        Rubric clonedRubric = rubricRepository.save(new Rubric(
+        // languageId và frameworkId đi theo bản mẫu, KHÔNG cho chọn lại: tiêu chí bên dưới trỏ tới
+        // frameworkCriterionId của khung gốc, đổi khung là làm treo toàn bộ tham chiếu đó.
+        var clonedRubric = rubricRepository.save(new Rubric(
             sourceRubric.getLanguageId(),
             sourceRubric.getFrameworkId(),
             code,
@@ -77,18 +76,18 @@ public class RubricCloneService {
             schoolId
         ));
 
-        RubricVersion clonedVersion = new RubricVersion(
+        var clonedVersion = new RubricVersion(
             clonedRubric.getId(),
-            // A new rubric always restarts versioning at 1. The version number is the TIME axis within
-            // one rubric, not something inherited from the template -- a clone of "template v3" is
-            // still the school's first version.
+            // Rubric mới thì phiên bản luôn bắt đầu lại từ 1. Số hiệu phiên bản là trục THỜI GIAN
+            // trong phạm vi một rubric, không phải thứ kế thừa từ bản mẫu -- bản sao của "bản mẫu v3"
+            // vẫn là phiên bản đầu tiên của trường.
             1,
             code,
             name,
             description,
-            // DRAFT is mandatory, not a convention: CreateSchoolAssessmentPolicyUseCase rejects
-            // attaching a policy to an already PUBLISHED version, so a clone created directly as
-            // PUBLISHED would be one the school can never attach any policy to -- i.e. useless.
+            // DRAFT không phải quy ước mà là bắt buộc: CreateSchoolAssessmentPolicyUseCase từ chối
+            // gắn chính sách vào phiên bản đã PUBLISHED, nên bản sao ra thẳng PUBLISHED sẽ là bản mà
+            // trường vĩnh viễn không gắn được chính sách nào -- tức vô dụng.
             RubricStatus.DRAFT,
             now,
             null,
@@ -101,7 +100,7 @@ public class RubricCloneService {
             currentUserId
         );
         clonedVersion.setSourceRubricVersionId(sourceVersion.getId());
-        RubricVersion savedVersion = rubricVersionRepository.save(clonedVersion);
+        var savedVersion = rubricVersionRepository.save(clonedVersion);
 
         cloneCriteria(sourceVersion.getId(), savedVersion.getId(), targetMethod, currentUserId, now);
         cloneResultBands(sourceVersion.getId(), savedVersion.getId(), currentUserId, now);

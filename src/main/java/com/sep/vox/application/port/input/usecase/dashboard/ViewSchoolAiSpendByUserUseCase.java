@@ -1,12 +1,8 @@
 package com.sep.vox.application.port.input.usecase.dashboard;
 
-import com.sep.vox.application.query.dto.UserAiSpendDto;
-import com.sep.vox.domain.common.PageResult;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,14 +32,14 @@ public class ViewSchoolAiSpendByUserUseCase
     @Override
     @Transactional(readOnly = true)
     public SchoolAiSpendByUserPageResponse execute(SearchSchoolAiSpendByUserQuery input) {
-        UUID schoolId = userContextPort.getCurrentSchoolId();
-        Instant to = input.to() == null ? Instant.now() : input.to();
-        Instant from = input.from() == null ? to.minus(DEFAULT_WINDOW_DAYS, ChronoUnit.DAYS) : input.from();
-        String quotaType = input.quotaType() == null ? null : input.quotaType().name();
+        var schoolId = userContextPort.getCurrentSchoolId();
+        var to = input.to() == null ? Instant.now() : input.to();
+        var from = input.from() == null ? to.minus(DEFAULT_WINDOW_DAYS, ChronoUnit.DAYS) : input.from();
+        var quotaType = input.quotaType() == null ? null : input.quotaType().name();
 
-        PageResult<UserAiSpendDto> page = schoolAiCostQueryRepository.findSpendByUser(
+        var page = schoolAiCostQueryRepository.findSpendByUser(
             schoolId, from, to, quotaType, input.page(), input.size());
-        BigDecimal schoolWide = schoolAiCostQueryRepository.sumSchoolWideCost(schoolId, from, to, quotaType);
+        var schoolWide = schoolAiCostQueryRepository.sumSchoolWideCost(schoolId, from, to, quotaType);
 
         return new SchoolAiSpendByUserPageResponse(
             page.content().stream()

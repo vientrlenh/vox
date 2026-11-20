@@ -1,7 +1,5 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
-import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.school.SchoolClass;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -59,13 +57,13 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
     @Override
     @Transactional
     public DeleteSchoolClassResponse execute(DeleteSchoolClassCommand input) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = findCurrentUser(currentUserId);
-        UUID schoolId = getSchoolId(currentUser);
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = findCurrentUser(currentUserId);
+        var schoolId = getSchoolId(currentUser);
         validateRequestedSchool(input.schoolId(), schoolId);
         validateSchool(schoolId);
 
-        SchoolClass schoolClass = schoolClassRepository.findById(input.id())
+        var schoolClass = schoolClassRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
             throw new NotFoundException("Không tìm thấy lớp học");
@@ -82,12 +80,12 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
         }
 
         // Xóa mềm: archive lớp và deactivate toàn bộ thành viên đang active trong cùng transaction.
-        Instant now = Instant.now();
+        var now = Instant.now();
         schoolClassUserRepository.deactivateBySchoolClassId(input.id(), now);
         schoolClass.setStatus(SchoolClassStatus.ARCHIVED);
         schoolClass.setUpdatedAt(now);
         schoolClass.setUpdatedBy(currentUserId);
-        SchoolClass saved = schoolClassRepository.save(schoolClass);
+        var saved = schoolClassRepository.save(schoolClass);
         return new DeleteSchoolClassResponse(
             saved.getId(),
             SOFT_DELETE,
@@ -97,7 +95,7 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        User user = userRepository.findById(currentUserId)
+        var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         validateCurrentUserIsActive(user);
         return user;
@@ -116,7 +114,7 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
     }
 
     private void validateSchool(UUID schoolId) {
-        School school = schoolRepository.findById(schoolId)
+        var school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");

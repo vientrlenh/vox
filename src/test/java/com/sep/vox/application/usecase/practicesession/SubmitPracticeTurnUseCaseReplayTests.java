@@ -27,7 +27,6 @@ import com.sep.vox.application.port.input.usecase.practicesession.SubmitPractice
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
 import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses;
 import com.sep.vox.application.response.input.subscription.ConsumeQuotaResponse;
 import com.sep.vox.domain.model.personalization.PracticeSession;
 import com.sep.vox.domain.model.personalization.SubmitPracticeTurn;
@@ -79,15 +78,14 @@ class SubmitPracticeTurnUseCaseReplayTests {
         consumeQuotaService = mock(ConsumeQuotaService.class);
         eventPublisher = mock(ExternalEventPublisherPort.class);
 
-        SchoolSubscriptionRepository schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
-        PracticeEvaluationRequestFactory evaluationRequestFactory = mock(PracticeEvaluationRequestFactory.class);
-        PracticeTopicOfferEnrichmentService enrichmentService = mock(PracticeTopicOfferEnrichmentService.class);
-        UserContextPort userContextPort = mock(UserContextPort.class);
-        QuotaPricingPort quotaPricingPort = mock(QuotaPricingPort.class);
-        PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
+        var schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
+        var evaluationRequestFactory = mock(PracticeEvaluationRequestFactory.class);
+        var enrichmentService = mock(PracticeTopicOfferEnrichmentService.class);
+        var userContextPort = mock(UserContextPort.class);
+        var quotaPricingPort = mock(QuotaPricingPort.class);
+        var transactionManager = mock(PlatformTransactionManager.class);
 
-        // A real TransactionTemplate running on a fake manager: getTransaction -> run the callback
-        // -> commit.
+        // TransactionTemplate thật chạy trên manager giả: getTransaction -> chạy callback -> commit.
         when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
 
         when(practiceSessionRepository.existsByIdAndStudentIdAndStatus(SESSION_ID, STUDENT_ID, "IN_PROGRESS"))
@@ -149,15 +147,14 @@ class SubmitPracticeTurnUseCaseReplayTests {
     }
 
     /**
-     * Skipping the WRITE does not mean skipping the RETURN: the client resends because it did not
-     * receive the result the first time, so it must still get the full list of corrections -- the
-     * retry payload is exactly the first payload.
+     * Bỏ GHI không có nghĩa là bỏ TRẢ VỀ: client gửi lại vì chưa nhận được kết quả lần đầu, nên nó vẫn
+     * phải nhận đủ danh sách sửa lỗi -- payload retry chính là payload lần đầu.
      */
     @Test
     void should_still_return_corrections_on_a_resend() {
         givenTurnWrite(false);
 
-        PracticeSessionResponses.SubmitTurnResult result = useCase.execute(STUDENT_ID, turn());
+        var result = useCase.execute(STUDENT_ID, turn());
 
         assertThat(result.corrections()).hasSize(1);
     }
@@ -169,14 +166,13 @@ class SubmitPracticeTurnUseCaseReplayTests {
     }
 
     private SubmitPracticeTurn turn() {
-        SubmitPracticeTurn turn = new SubmitPracticeTurn();
+        var turn = new SubmitPracticeTurn();
         turn.setSessionId(SESSION_ID);
         turn.setQuestionId(QUESTION_ID);
         turn.setTurnOrder(1);
         turn.setTurnType("ANSWER");
         turn.setTranscript("I go to school yesterday.");
-        // > 0 to enter the charging branch, and questionComplete to enter the branch that fires the
-        // grading request.
+        // > 0 để đi vào nhánh trừ tiền, và questionComplete để đi vào nhánh bắn yêu cầu chấm.
         turn.setDurationSeconds(30);
         turn.setTurnCostUsd(new BigDecimal("0.0125"));
         turn.setQuestionComplete(true);

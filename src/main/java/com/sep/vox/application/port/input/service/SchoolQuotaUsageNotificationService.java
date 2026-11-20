@@ -18,13 +18,13 @@ import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Publishes the EARLY warning event when the AI quota wallet (ASSESSMENT/PRACTICE) of a school has just crossed the warning threshold --
- * mirrors exactly how {@link SchoolDebtNotificationService#publishSchoolLockedDueToDebt} writes the outbox:
- * FIXES the recipient list RIGHT AT publish time, embedded directly in the payload, not left for the consumer to query again.
+ * Phát event cảnh báo SỚM khi ví hạn mức AI (EXAM/PRACTICE) của 1 trường vừa vượt ngưỡng cảnh báo --
+ * mirror đúng cách {@link SchoolDebtNotificationService#publishSchoolLockedDueToDebt} ghi outbox:
+ * CHỐT danh sách người nhận NGAY LÚC publish, nhúng thẳng vào payload, không để consumer truy vấn lại.
  *
- * <p>Must be called in the same transaction as the place that detects the transition
- * ({@link ConsumeQuotaService#checkUsageWarningTransition}), exactly like how
- * {@code SchoolDebtNotificationService} writes the outbox inside the main business transaction.
+ * <p>Phải được gọi trong cùng transaction với nơi phát hiện transition
+ * ({@link ConsumeQuotaService#checkUsageWarningTransition}), giống hệt cách
+ * {@code SchoolDebtNotificationService} ghi outbox ngay trong transaction xử lý nghiệp vụ chính.
  */
 @Service
 public class SchoolQuotaUsageNotificationService {
@@ -45,9 +45,9 @@ public class SchoolQuotaUsageNotificationService {
     public void publishQuotaUsageWarning(
             UUID subscriptionId, UUID schoolId, QuotaType quotaType,
             BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, Instant now) {
-        List<UUID> schoolAdminIds = schoolAdminIdsOf(schoolId);
+        var schoolAdminIds = schoolAdminIdsOf(schoolId);
 
-        String payload = jsonSerializationPort.toJson(new SchoolQuotaUsageWarningPayloadV1(
+        var payload = jsonSerializationPort.toJson(new SchoolQuotaUsageWarningPayloadV1(
             schoolAdminIds, schoolId, subscriptionId, quotaType, totalAllocatedVnd, usedAmountVnd, now
         ));
 

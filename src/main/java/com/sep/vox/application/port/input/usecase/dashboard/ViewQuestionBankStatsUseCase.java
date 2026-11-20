@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.dashboard;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +25,7 @@ public class ViewQuestionBankStatsUseCase implements IUseCase<Void, QuestionBank
     @Override
     @Transactional(readOnly = true)
     public QuestionBankStatsDto execute(Void input) {
-        UUID schoolId = userContextPort.getCurrentSchoolId();
+        var schoolId = userContextPort.getCurrentSchoolId();
         return questionBankStatsQueryRepository.countForSchool(schoolId);
     }
 }

@@ -1,11 +1,10 @@
-# Scope of this file: the PLAN (SubscriptionPlan) and the SCHOOL'S SUBSCRIPTION (SchoolSubscription) together
-# with the quota that comes with them. Invoices / orders / payments are NOT here -- they are separate
-# aggregates (Order, PaymentRecord, Invoice, SchoolBalance) and have their own schemas.
+# Phạm vi file này: GÓI (SubscriptionPlan) và ĐĂNG KÝ CỦA TRƯỜNG (SchoolSubscription) cùng hạn mức
+# đi kèm. Hóa đơn / đơn hàng / thanh toán KHÔNG nằm ở đây -- chúng là tổng hợp riêng (Order,
+# PaymentRecord, Invoice, SchoolBalance) và sẽ có schema riêng.
 #
-# Currency: every VND field is Float because the project has not declared any dedicated scalar for it. VND has no
-# fractional unit so values are always whole, and numeric(15,0) at most still stays below 2^53, so a JS
-# client reads them without losing precision. Moving to a BigDecimal scalar is a job for all 24 schemas
-# together, not something to do piecemeal here.
+# Tiền tệ: mọi trường VND đều là Float vì dự án chưa khai báo scalar riêng nào. VND không có đơn vị
+# lẻ nên giá trị luôn nguyên, và numeric(15,0) tối đa vẫn nằm dưới 2^53 nên client JS đọc không mất
+# độ chính xác. Đổi sang scalar BigDecimal là việc chung của cả 24 schema, không làm lẻ ở đây.
 
 enum SubscriptionPlanStatus {
     DRAFT
@@ -23,22 +22,22 @@ enum SchoolSubscriptionStatus {
     ACTIVE
     EXPIRED
     CANCELLED
-    "The System Admin forces loss of access IMMEDIATELY -- unlike CANCELLED, which only turns off renewal and still allows use until endDate"
+    "System Admin cưỡng chế mất quyền dùng NGAY -- khác CANCELLED chỉ tắt gia hạn, vẫn dùng được tới hết endDate"
     SUSPENDED
 }
 
 """
-Two school-level quota WALLETS, both in VND. Each activity is deducted from EXACTLY ONE wallet, and spending one
-wallet does not touch the other -- so an unusually heavy week of speaking practice does not eat the assessment budget.
+Hai VÍ hạn mức cấp trường, đều tính bằng VND. Mỗi hoạt động chỉ trừ vào ĐÚNG MỘT ví, và tiêu hết ví
+này không đụng tới ví kia -- để một tuần luyện nói nhiều bất thường không ăn mất ngân sách kỳ thi.
 
-CLASS_TEST was removed: it is a SPENDING CEILING inside the ASSESSMENT wallet, not a third wallet, and it was charged the same amount
-twice as ASSESSMENT for every class test. The ceiling per teacher still exists, in
-SchoolSubscriptionQuotaUserAllocation with quotaType = ASSESSMENT.
+CLASS_TEST đã bị bỏ: nó là TRẦN CHI nằm trong ví EXAM chứ không phải ví thứ ba, và bị trừ trùng
+cùng một khoản với EXAM cho mỗi bài kiểm tra trên lớp. Trần theo từng giáo viên vẫn còn, ở
+SchoolSubscriptionQuotaUserAllocation với quotaType = EXAM.
 """
 enum QuotaType {
-    "Grading assessments -- both centralized assessments and in-class tests are deducted from here"
-    ASSESSMENT
-    "Students practicing speaking on their own"
+    "Chấm thi -- cả kỳ thi tập trung lẫn bài kiểm tra trên lớp đều trừ vào đây"
+    EXAM
+    "Học sinh tự luyện nói"
     PRACTICE
 }
 
@@ -47,10 +46,9 @@ type SubscriptionPlanQuota {
     subscriptionPlanId: ID!
     quotaType: QuotaType!
     """
-    The allowance included in the plan price, converted to VND. There is no longer a tokenUnitPrice next to it: the
-    "VND per $1" unit price used to be an exchange rate with a margin added, which made the display differ from the
-    real rate. Usage beyond the allowance is deducted straight from the school's balance at the rate recorded
-    on each usage.
+    Định mức bao gồm trong giá gói, quy ra VND. Không còn tokenUnitPrice đi kèm: đơn giá "VND cho
+    mỗi $1" trước đây là tỷ giá đã cộng lãi nên hiển thị ra sai lệch với tỷ giá thật. Phần dùng vượt
+    định mức trừ thẳng vào số dư của trường theo tỷ giá ghi ở từng lượt dùng.
     """
     includedAmountVnd: Float!
 }
@@ -61,19 +59,19 @@ type SubscriptionPlan {
     tagline: String
     priceVnd: Float!
     """
-    Plan cycle = periodType x periodCount (e.g. MONTH x 12). Replaces the old validityDays: a plan counted
-    in months/years must expire on the matching calendar day, and adding a raw number of days drifts further over time.
+    Chu kỳ gói = periodType x periodCount (vd. MONTH x 12). Thay cho validityDays cũ: gói tính theo
+    tháng/năm thì hạn phải rơi đúng ngày tương ứng, cộng thô theo số ngày sẽ lệch dần.
     """
     periodType: SubscriptionPlanPeriod!
     periodCount: Int!
     maxTimePerAttemptMin: Int!
     status: SubscriptionPlanStatus!
     version: Int!
-    createdAt: DateTime
-    updatedAt: DateTime
+    createdAt: String
+    updatedAt: String
     createdBy: ID
     updatedBy: ID
-    "The replacement plan once this plan is ARCHIVED -- follow this chain to find a plan that can still be sold"
+    "Gói thay thế khi gói này đã ARCHIVED -- theo dây chuyền này để tìm gói còn bán được"
     replacedByPlanId: ID
     quotas: [SubscriptionPlanQuota!]!
 }
@@ -87,18 +85,18 @@ type SubscriptionPlanPage {
 }
 
 """
-One row in the plan list: the plan itself, together with the "most popular" label.
+Một dòng trong danh sách gói: chính gói, kèm nhãn "phổ biến nhất".
 
-That label lives HERE and not on SubscriptionPlan because it is not a property of the plan -- it is the
-result of comparing this plan with every other plan, and only has meaning in the context of a list. Ask for a
-single plan (subscriptionPlan) and the question "is it the most popular" has no context to be answered in.
+Nhãn đó nằm ở ĐÂY chứ không phải trên SubscriptionPlan vì nó không phải thuộc tính của gói -- nó là
+kết quả so gói này với mọi gói khác, chỉ có nghĩa trong ngữ cảnh một danh sách. Hỏi một gói lẻ
+(subscriptionPlan) thì câu hỏi "có phải phổ biến nhất không" không có ngữ cảnh để trả lời.
 """
 type SubscriptionPlanListItem {
     subscription: SubscriptionPlan!
     """
-    The plan used by the most schools ACROSS THE WHOLE SYSTEM (not the most in the current page), and not
-    counted by the number of payments: a replaced plan gets a new id, so the transaction history stays on the
-    old ARCHIVED plan. false for every plan while no school has subscribed.
+    Gói đang có nhiều trường dùng nhất TOÀN HỆ THỐNG (không phải nhiều nhất trong trang hiện tại),
+    và không đếm theo số lần thanh toán: gói được thay thế sinh ra id mới nên lịch sử giao dịch nằm
+    lại ở gói cũ đã ARCHIVED. false ở mọi gói khi chưa trường nào đăng ký.
     """
     isMostPopular: Boolean!
 }
@@ -107,17 +105,17 @@ type SchoolSubscription {
     id: ID!
     schoolId: ID!
     subscriptionPlanId: ID!
-    startDate: DateTime
-    endDate: DateTime
+    startDate: String
+    endDate: String
     status: SchoolSubscriptionStatus!
-    "The price paid at the time of purchase -- fixed, does not change with the plan price later"
+    "Giá đã trả tại thời điểm mua -- chốt cứng, không đổi theo giá gói sau này"
     pricePaidSnapshot: Float!
-    cancelledAt: DateTime
-    createdAt: DateTime
-    # The 3 suspended_* columns are wiped when the suspension is lifted, so they only reflect the suspension
-    # that is CURRENTLY in effect, not the history. The durable history lives in school_subscription_events
-    # (V2 section 12), written by ForceSuspend/UnsuspendSubscriptionUseCase -- not FinancialEvent, which was dropped.
-    suspendedAt: DateTime
+    cancelledAt: String
+    createdAt: String
+    # 3 cột suspended_* bị xóa trắng khi gỡ đình chỉ nên chỉ phản ánh lần đình chỉ ĐANG hiệu lực,
+    # không phải lịch sử. Lịch sử bền vững nằm ở school_subscription_events (V2 mục 12), do
+    # ForceSuspend/UnsuspendSubscriptionUseCase ghi -- không phải FinancialEvent, thứ đã bị bỏ.
+    suspendedAt: String
     suspendedReason: String
     suspendedBy: ID
     plan: SubscriptionPlan
@@ -136,56 +134,55 @@ type SchoolSubscriptionQuotaRecord {
     id: ID!
     schoolSubscriptionId: ID!
     quotaType: QuotaType!
-    "The allowance granted for this period, converted to VND"
+    "Định mức được cấp cho kỳ này, quy ra VND"
     totalAllocatedAmountVnd: Float!
     """
-    How many VND of the allowance above have been used. NEVER exceeds totalAllocatedAmountVnd: the part spent
-    beyond the quota is moved by ConsumeQuotaService to the school's self-top-up wallet as an
-    OVERAGE_CHARGE entry, rather than pushing this number above the ceiling.
+    Đã dùng bao nhiêu VND trong định mức trên. KHÔNG BAO GIỜ vượt totalAllocatedAmountVnd: phần chi
+    vượt hạn mức được ConsumeQuotaService chuyển sang ví tự nạp của trường thành một bút toán
+    OVERAGE_CHARGE, chứ không đẩy con số này lên quá trần.
     """
     usedAmountVnd: Float!
     """
-    The part of totalAllocatedAmountVnd that the SCHOOL moved over from the wallet itself, instead of being granted by the plan (V12).
+    Phần của totalAllocatedAmountVnd do TRƯỜNG tự nạp từ ví sang, thay vì do gói cấp (V12).
 
-    After the first top-up, totalAllocatedAmountVnd mixes two sources, so this is the only number that
-    answers "how much did the plan give, how much did the school add". It is also the ONLY part that survives
-    the next renewal: the plan allowance is re-issued according to the new plan, while this part is carried
-    over by the amount NOT YET SPENT (convention: plan money is spent first, self-topped-up money second).
+    Sau lần nạp đầu tiên thì totalAllocatedAmountVnd đã trộn hai nguồn, nên đây là con số duy nhất
+    trả lời được "gói cho bao nhiêu, trường bỏ thêm bao nhiêu". Cũng là phần DUY NHẤT sống sót qua
+    lần gia hạn kế tiếp: định mức gói được cấp lại theo gói mới, còn phần này được mang sang theo
+    số CHƯA TIÊU (quy ước: tiền gói tiêu trước, tiền tự nạp tiêu sau).
     """
     fundedFromBalanceVnd: Float!
-    # There is NO isLocked here anymore. It used to be the comparison usedAmountVnd > totalAllocatedAmountVnd,
-    # a condition that can no longer happen (see above). "Is the school locked" is a SCHOOL-level fact --
-    # the self-top-up wallet balance is negative, see SchoolSubscriptionDebtGuardService -- not a property of each
-    # quota wallet, so this type has no right place for it.
+    # KHÔNG còn isLocked ở đây. Nó từng là phép so usedAmountVnd > totalAllocatedAmountVnd, mà điều
+    # kiện đó giờ không thể xảy ra nữa (xem trên). "Trường có đang bị khóa không" là một sự thật cấp
+    # TRƯỜNG -- số dư ví tự nạp âm, xem SchoolSubscriptionDebtGuardService -- chứ không phải thuộc
+    # tính của từng ví hạn mức, nên không có chỗ đúng cho nó trên type này.
 }
 
 """
-What the school gets if it renews right now -- seen BEFORE placing the order.
+Gia hạn ngay bây giờ thì trường nhận được gì -- xem TRƯỚC khi đặt đơn.
 
-There is NO offset for leftover days: the new period CONTINUES the running one instead of overlapping it, so a
-school that renews early loses no days and has nothing to be compensated for. startsAt states clearly when the
-new period starts.
+KHÔNG có phần bù trừ ngày thừa: kỳ mới NỐI TIẾP kỳ đang chạy chứ không đè lên, nên trường gia hạn
+sớm không mất ngày nào và cũng không có gì để bù. startsAt nói rõ kỳ mới bắt đầu lúc nào.
 """
 type SchoolSubscriptionRenewalPreview {
-    "true = the renewal plan differs from the current plan, i.e. the school is being moved to a replacement plan. The frontend should highlight this."
+    "true = gói gia hạn khác gói đang dùng, tức trường đang bị chuyển sang gói thay thế. FE nên làm nổi bật."
     planChanged: Boolean!
-    "The plan the school is on / has just been on"
+    "Gói trường đang/vừa dùng"
     currentPlan: SubscriptionPlan!
-    "The plan that will be bought on renewal -- its id is exactly the acceptedPlanId that must be sent when placing the order"
+    "Gói sẽ được mua khi gia hạn -- id của nó chính là acceptedPlanId phải gửi lên khi đặt đơn"
     renewalPlan: SubscriptionPlan!
-    "When the new period starts running: right now if no period is in effect, or the end date of the current period"
-    startsAt: DateTime!
-    "The price of the renewal plan, NOT including the service fee -- the fee is added when the order is placed"
+    "Kỳ mới bắt đầu chạy khi nào: ngay bây giờ nếu không còn kỳ nào hiệu lực, hoặc ngày hết hạn của kỳ hiện tại"
+    startsAt: String!
+    "Giá gói gia hạn, CHƯA gồm phí dịch vụ -- phí cộng vào lúc đặt đơn"
     amountDue: Float!
 }
 
 """
-The PERSONAL quota of a user within a school-level wallet -- the spending ceiling the school places on the part of the wallet
-this person may spend, NOT a separate wallet: the money still sits in the school-level wallet.
+Hạn mức CÁ NHÂN của một người dùng trong một ví cấp trường -- trần chi nhà trường đặt lên phần ví
+người này được tiêu, KHÔNG phải một ví riêng: tiền vẫn nằm ở ví cấp trường.
 
-quotaType = ASSESSMENT only exists for teachers (the ceiling for the class tests they author), PRACTICE only exists for
-students. Replaces the old pair MyClassTestQuotaAllocation/MyPracticeQuotaAllocation -- the same concept
-needs only one type.
+quotaType = EXAM chỉ có ở giáo viên (trần cho bài kiểm tra trên lớp họ ra đề), PRACTICE chỉ có ở học
+sinh. Thay cho cặp MyClassTestQuotaAllocation/MyPracticeQuotaAllocation cũ -- cùng một khái niệm thì
+một kiểu là đủ.
 """
 type SchoolSubscriptionQuotaUserAllocation {
     id: ID!
@@ -197,7 +194,7 @@ type SchoolSubscriptionQuotaUserAllocation {
 }
 
 type QuotaPricing {
-    estimatedCostPerAssessmentSecondUsd: Float!
+    estimatedCostPerExamSecondUsd: Float!
     estimatedCostPerPracticeSecondUsd: Float!
     usdToVndRate: Float!
 }
@@ -211,7 +208,7 @@ input UpdateSubscriptionPlanInput {
     name: String
     tagline: String
     priceVnd: Float
-    "periodType CANNOT be edited after creation (the period_type column is updatable = false) -- to change it, create a new plan and point replacedByPlanId at it"
+    "periodType KHÔNG sửa được sau khi tạo (cột period_type là updatable = false) -- muốn đổi thì tạo gói mới rồi trỏ replacedByPlanId"
     periodCount: Int
     maxTimePerAttemptMin: Int
     quotas: [SubscriptionPlanQuotaInput!]
@@ -233,101 +230,101 @@ extend type Query {
     schoolSubscriptionHistory(schoolId: ID!): [SchoolSubscription!]!
 
     subscriptionUsage(schoolId: ID!): [SchoolSubscriptionQuotaRecord!]!
-    "null = the teacher has no separate personal quota, i.e. only the school's ASSESSMENT wallet applies"
-    myAssessmentQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
-    "null = the school has NOT given this student a separate PRACTICE quota, i.e. the student is blocked completely"
+    "null = giáo viên không có hạn mức cá nhân riêng, tức chỉ ví EXAM của trường áp dụng"
+    myExamQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
+    "null = trường CHƯA phân hạn mức PRACTICE riêng cho học sinh này, tức bị chặn hoàn toàn"
     myPracticeQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
 
     """
-    What the school gets if it renews right now. Takes NO parameter: the plan to renew is the most recent
-    plan of the school of the logged-in user.
+    Gia hạn ngay bây giờ thì trường nhận được gì. KHÔNG nhận tham số: gói cần gia hạn là gói gần nhất
+    của chính trường đang đăng nhập.
 
-    This query must be called BEFORE placing a renewal order: renewalPlan.id is exactly the acceptedPlanId that must be
-    sent to POST /api/v1/orders/renewal. The plan in use may already be archived and assigned a replacement plan,
-    in which case renewal switches to the new plan automatically -- the school must see it and agree first.
+    Phải gọi query này TRƯỚC khi đặt đơn gia hạn: renewalPlan.id chính là acceptedPlanId phải gửi lên
+    ở POST /api/v1/orders/renewal. Gói đang dùng có thể đã bị lưu trữ và được gán gói thay thế, khi đó
+    gia hạn tự chuyển sang gói mới -- trường phải nhìn thấy và đồng ý trước.
     """
     schoolSubscriptionRenewalPreview: SchoolSubscriptionRenewalPreview!
 }
 
 extend type Mutation {
-    "Returns the id of the plan that was edited, not the whole object: the client queries again if needed -- see UpdateSubscriptionPlanUseCase."
+    "Trả id gói vừa sửa, không trả cả object: client tự query lại nếu cần -- xem UpdateSubscriptionPlanUseCase."
     updateSubscriptionPlan(id: ID!, input: UpdateSubscriptionPlanInput!): ID!
 }
 
 """
-One person on the school's personal quota distribution screen.
+Một người trong màn chia hạn mức cá nhân của trường.
 
-A personal quota is a SPENDING CEILING that the school divides up internally, not a separate pocket of money: it holds
-no money and produces no ledger entry. A person WITHOUT an allocation row is not blocked at the personal level, only the
-school's quota wallet applies -- see ConsumeQuotaService.
+Hạn mức cá nhân là TRẦN CHI mà trường tự chia nội bộ, không phải một túi tiền riêng: nó không giữ
+tiền và không sinh bút toán nào. Người KHÔNG có dòng phân bổ thì không bị chặn theo cá nhân, chỉ ví
+hạn mức của trường áp dụng -- xem ConsumeQuotaService.
 """
 type SchoolQuotaUserAllocation {
     userId: ID!
     """
-    null = NOT YET DISTRIBUTED (no row in the DB), completely different from 0 -- the two states give OPPOSITE
-    behavior at the blocking gate.
+    null = CHƯA CHIA (không có dòng trong DB), khác hẳn 0 -- hai trạng thái này cho hành vi NGƯỢC
+    NHAU ở cửa chặn.
 
-    Not distributed means no personal blocking: a teacher spends freely from the school wallet
-    (remainingUserAllocation returns null so the gate is skipped), while a student is the other way round --
-    LEAST(...) in findPracticeSpendableFundsVnd pulls it down to 0 so not a single practice session is possible. A row
-    that exists and equals 0 is blocked outright, for both types.
+    Chưa chia thì không bị chặn theo cá nhân: giáo viên tiêu thoải mái trong ví trường
+    (remainingUserAllocation trả null thì cửa chặn bỏ qua), còn học sinh thì ngược lại -- LEAST(...)
+    trong findPracticeSpendableFundsVnd kéo về 0 nên không luyện được lượt nào. Có dòng và bằng 0 thì
+    bị chặn hẳn, ở cả hai loại.
 
-    The client must show two different labels. Collapsing them into the same 0 would hide the fact that half
-    of the school's teachers currently have no spending ceiling at all.
+    Client phải hiện hai nhãn khác nhau. Gộp thành cùng một số 0 sẽ giấu mất việc nửa số giáo viên
+    của trường đang không có trần chi nào.
     """
     allocatedAmountVnd: Float
     usedAmountVnd: Float!
     """
-    The person the allocation belongs to. Joined through the userById data loader, so a page of N rows costs EXACTLY ONE
-    extra users query, not N. null when the account has been removed from the system but the allocation row remains.
+    Người được chia. Nối qua data loader userById nên một trang N dòng chỉ tốn thêm ĐÚNG MỘT truy vấn
+    users, không phải N. null khi tài khoản đã bị xoá khỏi hệ thống nhưng dòng phân bổ còn lại.
     """
     user: User
 }
 
 """
-One PAGE of the quota distribution screen, together with two totals for the whole set.
+Một TRANG của màn chia hạn mức, kèm hai con số tổng cho cả tập.
 
-distributedAmountVnd must be computed by the server over the WHOLE set: the UI holds only one page, so adding up the
-allocation column of that page gives a wrong number from the second page onward.
+distributedAmountVnd phải do máy chủ tính trên TOÀN BỘ tập: giao diện chỉ cầm một trang, nên cộng
+cột phân bổ của trang đó ra số sai ngay từ trang thứ hai.
 """
 type SchoolQuotaUserAllocationPage {
-    "The school-level quota wallet -- ASSESSMENT when distributing to teachers, PRACTICE when distributing to students."
+    "Ví hạn mức cấp trường -- EXAM khi chia cho giáo viên, PRACTICE khi chia cho học sinh."
     pool: SchoolSubscriptionQuotaRecord!
     """
-    The total distributed to people who are STILL eligible, over the whole set and not only this page.
-    People who have left / graduated / changed role are NOT added -- see orphanedAmountVnd.
+    Tổng đã chia cho những người CÒN đủ điều kiện, trên toàn bộ tập chứ không phải chỉ trang này.
+    Người đã nghỉ việc / ra trường / đổi vai trò KHÔNG được cộng vào -- xem orphanedAmountVnd.
     """
     distributedAmountVnd: Float!
     """
-    The part held under the names of people who are NO LONGER eligible. It does not count toward the ceiling and does not appear on
-    any page of the table, so it must be said out loud: otherwise the total on the screen and the total of the rows differ
-    with no one able to explain why. Usually 0.
+    Phần đang đứng tên những người KHÔNG còn đủ điều kiện. Không tính vào trần và không hiện ở bất kỳ
+    trang nào của bảng, nên phải nói thành lời: nếu không, tổng trên màn hình và tổng các dòng lệch
+    nhau mà không ai giải thích được. Thường là 0.
     """
     orphanedAmountVnd: Float!
     """
-    The school's distribution ceiling for this quota type, 0..1. Default 1.0 = the whole wallet can be distributed.
-    It belongs to the SCHOOL, so it lives across every renewal -- see school_quota_policies (V5).
+    Trần phân phối của trường cho loại hạn mức này, 0..1. Mặc định 1.0 = chia được toàn bộ ví.
+    Thuộc về TRƯỜNG nên sống xuyên qua mọi lần gia hạn -- xem school_quota_policies (V5).
     """
     distributableRatio: Float!
     """
-    The part of the wallet allowed to be distributed = pool x distributableRatio. Computed on the server because this is the number
-    used to reject a distribution that exceeds the ceiling; letting the client multiply again opens the way for the two sides to disagree.
+    Phần ví được phép chia ra = pool x distributableRatio. Tính sẵn ở máy chủ vì đây chính là con số
+    dùng để từ chối một lần chia vượt trần; client tự nhân lần nữa là mở đường cho hai bên lệch nhau.
     """
     distributableAmountVnd: Float!
     """
-    The amount of money the school can REALLY still pay for this quota type = the remaining plan quota + the self-top-up wallet
-    balance (clamped at 0).
+    Số tiền trường THẬT SỰ còn trả được cho loại hạn mức này = hạn mức kèm gói còn lại + số dư ví tự
+    nạp (kẹp 0).
 
-    COMPLETELY DIFFERENT from distributableAmountVnd: that ceiling is computed on total_allocated and does NOT shrink when the wallet is
-    spent, so a school that has spent its wallet dry can still keep distributing up to the ceiling. Use it to WARN, not to
-    block -- the personal spending ceiling must stay stable throughout the period, while the blocking already sits in the right place
-    just before money is spent (ClassTestTokenQuotaGuardService / findPracticeSpendableFundsVnd).
+    KHÁC HẲN distributableAmountVnd: trần đó tính trên total_allocated và KHÔNG hề nhỏ đi khi ví bị
+    tiêu, nên một trường đã tiêu cạn ví vẫn chia tiếp được tới hết trần. Dùng để CẢNH BÁO, không phải
+    để chặn -- trần chi cá nhân phải ổn định suốt kỳ, còn việc chặn thì đã nằm đúng chỗ ngay trước lúc
+    tốn tiền (ClassTestTokenQuotaGuardService / findPracticeSpendableFundsVnd).
     """
     spendableFundsVnd: Float!
     """
-    The part of the school's SELF-TOPPED-UP wallet (school_balances) that CAN be eaten into beyond distributableAmountVnd when loosening the
-    personal ceiling of ONE person -- not a reserved pocket of money, and SHARED by both ASSESSMENT and
-    PRACTICE. Clamped to 0, negative is the school's debt (not an additional distributable part).
+    Phần ví TỰ NẠP của trường (school_balances) CÓ THỂ ăn thêm ngoài distributableAmountVnd khi nới
+    trần cá nhân của MỘT người -- không phải một túi tiền dành riêng, và dùng CHUNG cho cả EXAM lẫn
+    PRACTICE. Đã kẹp về 0, âm là nợ của trường (không phải phần chia được thêm).
     """
     walletBalanceVnd: Float!
     content: [SchoolQuotaUserAllocation!]!
@@ -339,20 +336,20 @@ type SchoolQuotaUserAllocationPage {
 
 extend type Query {
     """
-    The assessment quota distributed to each TEACHER, with paging.
+    Hạn mức thi đã chia cho từng GIÁO VIÊN, có phân trang.
 
-    Replaces GET /v1/schools/{schoolId}/teachers/assessment-quota: that REST path returned every teacher
-    in one go and did not carry the user's name, so the "Full name" column on the client was always empty.
+    Thay cho GET /v1/schools/{schoolId}/teachers/exam-quota: đường REST đó trả về mọi giáo viên
+    trong một lượt và không mang tên người dùng, nên cột "Họ tên" ở client luôn rỗng.
     """
-    schoolAssessmentQuotaUserAllocations(
+    schoolExamQuotaUserAllocations(
         schoolId: ID!,
-        "Filter by NAME. Leave empty to not filter."
+        "Lọc theo TÊN. Bỏ trống thì không lọc."
         search: String,
         page: Int! = 1,
         size: Int! = 20
     ): SchoolQuotaUserAllocationPage!
 
-    "The speaking-practice quota distributed to each STUDENT, with paging."
+    "Hạn mức luyện nói đã chia cho từng HỌC SINH, có phân trang."
     schoolPracticeQuotaUserAllocations(
         schoolId: ID!,
         search: String,

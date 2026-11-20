@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.query.ViewSchoolBalanceSummaryQuery;
 import com.sep.vox.application.port.input.service.SchoolScopedReadGuard;
 import com.sep.vox.application.port.input.usecase.balance.ViewSchoolBalanceSummaryUseCase;
-import com.sep.vox.application.response.input.balance.SchoolBalanceSummaryResponse;
 import com.sep.vox.domain.model.school.SchoolBalanceEntryType;
 import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
 
@@ -54,7 +53,7 @@ class ViewSchoolBalanceSummaryUseCaseTests {
     void every_entry_type_is_summed_so_the_tiles_account_for_the_whole_balance_change() {
         useCase.execute(new ViewSchoolBalanceSummaryQuery(schoolId, from, to));
 
-        for (SchoolBalanceEntryType entryType : SchoolBalanceEntryType.values()) {
+        for (var entryType : SchoolBalanceEntryType.values()) {
             verify(schoolBalanceEntryRepository)
                 .sumAmountBySchoolIdAndEntryTypeInRange(eq(schoolId), eq(entryType), eq(from), eq(to));
         }
@@ -69,11 +68,10 @@ class ViewSchoolBalanceSummaryUseCaseTests {
             any(), eq(SchoolBalanceEntryType.QUOTA_FUNDING), any(), any()))
             .thenReturn(new BigDecimal("-5000000"));
 
-        SchoolBalanceSummaryResponse summary = useCase.execute(new ViewSchoolBalanceSummaryQuery(schoolId, from, to));
+        var summary = useCase.execute(new ViewSchoolBalanceSummaryQuery(schoolId, from, to));
 
-        // Merging these two numbers would tell the principal that the school spent 5.12m on AI,
-        // when in fact it spent only 120k -- the other 5m is still the school's money, merely
-        // sitting in the quota wallet.
+        // Gộp hai con số này là nói với hiệu trưởng rằng trường đã chi 5,12tr cho AI, trong khi thật
+        // ra chỉ chi 120k -- 5tr kia vẫn là tiền của trường, chỉ nằm ở ví hạn mức.
         assertThat(summary.overageChargedVnd()).isEqualTo("-120000");
         assertThat(summary.quotaFundedVnd()).isEqualTo("-5000000");
     }
@@ -87,14 +85,14 @@ class ViewSchoolBalanceSummaryUseCaseTests {
             any(), eq(SchoolBalanceEntryType.REFUND), any(), any()))
             .thenReturn(new BigDecimal("300000"));
 
-        SchoolBalanceSummaryResponse summary = useCase.execute(new ViewSchoolBalanceSummaryQuery(schoolId, from, to));
+        var summary = useCase.execute(new ViewSchoolBalanceSummaryQuery(schoolId, from, to));
 
         assertThat(summary.creditedVnd()).isEqualTo("2300000");
     }
 
     @Test
     void a_school_with_no_entries_reads_zero_everywhere_instead_of_failing() {
-        SchoolBalanceSummaryResponse summary = useCase.execute(new ViewSchoolBalanceSummaryQuery(schoolId, from, to));
+        var summary = useCase.execute(new ViewSchoolBalanceSummaryQuery(schoolId, from, to));
 
         assertThat(summary.creditedVnd()).isEqualTo("0");
         assertThat(summary.overageChargedVnd()).isEqualTo("0");

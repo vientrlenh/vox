@@ -6,9 +6,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -16,7 +14,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.query.dto.GradingRiskInfo;
-import com.sep.vox.domain.model.assessment.GradingSampleSelectionMode;
+import com.sep.vox.domain.model.exam.GradingSampleSelectionMode;
 
 /**
  * Chọn tập bài để giao tự động cho một vòng chấm.
@@ -67,8 +65,8 @@ public class GradingSampleSelector {
      * không phải 0 — hậu kiểm mà trả về rỗng thì admin tưởng hệ thống hỏng.
      */
     private List<UUID> randomPercent(List<UUID> candidates, Integer percent) {
-        int size = sampleSize(candidates.size(), percent);
-        List<UUID> shuffled = new ArrayList<>(candidates);
+        var size = sampleSize(candidates.size(), percent);
+        var shuffled = new ArrayList<>(candidates);
         java.util.Collections.shuffle(shuffled, random);
         return List.copyOf(shuffled.subList(0, size));
     }
@@ -85,17 +83,17 @@ public class GradingSampleSelector {
      * </ul>
      */
     private List<UUID> riskBased(List<UUID> candidates, Integer percent, List<GradingRiskInfo> riskInfos) {
-        Map<UUID, GradingRiskInfo> infoById = riskInfos == null ? java.util.Map.<UUID, GradingRiskInfo>of()
+        var infoById = riskInfos == null ? java.util.Map.<UUID, GradingRiskInfo>of()
             : riskInfos.stream().collect(Collectors.toMap(
                 riskInfo -> riskInfo.candidateResultId(), Function.identity(), (left, right) -> left));
 
-        List<UUID> ranked = new ArrayList<>(candidates);
+        var ranked = new ArrayList<>(candidates);
         ranked.sort(Comparator
             .comparing((UUID id) -> riskScore(infoById.get(id))).reversed()
             // Hoà thì theo id để kết quả ổn định giữa hai lần gọi.
             .thenComparing(Function.identity()));
 
-        int size = percent == null ? ranked.size() : sampleSize(ranked.size(), percent);
+        var size = percent == null ? ranked.size() : sampleSize(ranked.size(), percent);
         return List.copyOf(ranked.subList(0, size));
     }
 
@@ -104,12 +102,12 @@ public class GradingSampleSelector {
         if (info == null) {
             return BigDecimal.ZERO;
         }
-        BigDecimal score = BigDecimal.ZERO;
+        var score = BigDecimal.ZERO;
         if (info.minConfidence() != null) {
             score = score.add(BigDecimal.ONE.subtract(info.minConfidence()));
         }
         if (info.passingScore() != null && info.totalScore() != null) {
-            BigDecimal distance = info.totalScore().subtract(info.passingScore()).abs();
+            var distance = info.totalScore().subtract(info.passingScore()).abs();
             if (distance.compareTo(BORDERLINE_BAND) <= 0) {
                 // Càng sát ngưỡng càng nặng: đúng ngưỡng = 1.0, mép dải = 0.
                 score = score.add(BigDecimal.ONE.subtract(
@@ -123,9 +121,9 @@ public class GradingSampleSelector {
         if (manualIds == null || manualIds.isEmpty()) {
             throw new IllegalArgumentException("Phải chọn ít nhất một bài thi để phân công.");
         }
-        Set<UUID> allowed = new LinkedHashSet<>(candidates);
-        Set<UUID> picked = new LinkedHashSet<UUID>();
-        for (UUID id : manualIds) {
+        var allowed = new LinkedHashSet<>(candidates);
+        var picked = new LinkedHashSet<UUID>();
+        for (var id : manualIds) {
             if (!allowed.contains(id)) {
                 throw new IllegalArgumentException(
                     "Có bài thi không đủ điều kiện cho vòng chấm này hoặc đã được phân công.");

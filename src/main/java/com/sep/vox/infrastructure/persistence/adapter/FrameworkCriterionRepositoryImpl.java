@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.FrameworkCriterionJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -76,14 +75,14 @@ public class FrameworkCriterionRepositoryImpl implements FrameworkCriterionRepos
 
     @Override
     public FrameworkCriterion save(FrameworkCriterion criterion) {
-        FrameworkCriterionJpaEntity entity = FrameworkCriterionMapper.toJpa(criterion);
-        FrameworkCriterionJpaEntity saved = springDataFrameworkCriterionRepository.save(entity);
+        var entity = FrameworkCriterionMapper.toJpa(criterion);
+        var saved = springDataFrameworkCriterionRepository.save(entity);
         return FrameworkCriterionMapper.toDomain(saved);
     }
 
     @Override
     public List<FrameworkCriterion> saveAll(List<FrameworkCriterion> criteria) {
-        List<FrameworkCriterionJpaEntity> entities = criteria.stream().map(FrameworkCriterionMapper::toJpa).toList();
+        var entities = criteria.stream().map(FrameworkCriterionMapper::toJpa).toList();
         return springDataFrameworkCriterionRepository.saveAll(entities)
                 .stream().map(FrameworkCriterionMapper::toDomain).toList();
     }
@@ -99,7 +98,7 @@ public class FrameworkCriterionRepositoryImpl implements FrameworkCriterionRepos
     }
     
     public List<FrameworkCriterion> findByFrameworkId(UUID frameworkId) {
-        List<FrameworkCriterionJpaEntity> entities = springDataFrameworkCriterionRepository.findByFrameworkId(frameworkId);
+        var entities = springDataFrameworkCriterionRepository.findByFrameworkId(frameworkId);
         return entities.stream()
                 .map(FrameworkCriterionMapper::toDomain)
                 .toList();

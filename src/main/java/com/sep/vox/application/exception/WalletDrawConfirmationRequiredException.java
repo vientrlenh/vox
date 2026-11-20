@@ -3,10 +3,10 @@ package com.sep.vox.application.exception;
 import java.math.BigDecimal;
 
 /**
- * A personal quota allocation asked for more than the part of the pool that can still be shared out, so it eats into the school's
- * self-topped-up wallet -- thrown when there is no explicit confirmation ({@code confirmWalletDraw=false}), because that wallet is shared by both ASSESSMENT and
- * PRACTICE (see the {@code SchoolBalance} javadoc). DIFFERENT from {@code IllegalArgumentException}: this is not a wrong
- * request, it only needs the user to confirm again and resend with the flag turned on.
+ * Phân bổ hạn mức cá nhân yêu cầu vượt phần pool còn chia được, ăn vào ví tự nạp của trường -- ném ra
+ * khi chưa có xác nhận rõ ràng ({@code confirmWalletDraw=false}), vì ví đó dùng chung cho cả EXAM lẫn
+ * PRACTICE (xem {@code SchoolBalance} javadoc). KHÁC {@code IllegalArgumentException}: đây không phải
+ * yêu cầu sai, chỉ là cần người dùng xác nhận lại rồi gửi lại với cờ bật.
  */
 public class WalletDrawConfirmationRequiredException extends RuntimeException {
 

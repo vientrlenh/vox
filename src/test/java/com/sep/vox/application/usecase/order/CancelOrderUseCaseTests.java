@@ -58,7 +58,7 @@ class CancelOrderUseCaseTests {
         orderRepository = mock(OrderRepository.class);
         paymentRecordRepository = mock(PaymentRecordRepository.class);
         paymentProcessPort = mock(PaymentProcessPort.class);
-        UserContextPort userContextPort = mock(UserContextPort.class);
+        var userContextPort = mock(UserContextPort.class);
 
         when(paymentProcessPort.provider()).thenReturn(PaymentProvider.PAYOS);
         when(userContextPort.getCurrentSchoolId()).thenReturn(SCHOOL_ID);
@@ -71,14 +71,13 @@ class CancelOrderUseCaseTests {
     }
 
     /**
-     * An orphan row (the gateway has never seen the code) must NOT fall into the "session is still
-     * alive" branch: cancelling a gateway code it does not know makes cancelPaymentLink return
-     * false, and the school gets the message "wait for the order to expire" -- while that very
-     * orphan row is what blocks expireIfOverdue, so the order would never expire.
+     * Dòng mồ côi (cổng chưa từng thấy mã) KHÔNG được rơi xuống nhánh "phiên vẫn sống": gọi hủy một
+     * mã cổng không biết thì cancelPaymentLink trả false, trường nhận câu "đợi đơn hết hạn" -- trong
+     * khi chính dòng mồ côi ấy đang chặn expireIfOverdue, nên đơn sẽ không bao giờ hết hạn.
      */
     @Test
     void should_cancel_when_the_gateway_has_never_heard_of_the_attempt() {
-        PaymentRecord orphan = givenPendingAttempt(
+        var orphan = givenPendingAttempt(
             Instant.now().minus(10, ChronoUnit.MINUTES), PaymentLinkRemoteStatus.NOT_FOUND);
 
         useCase.execute(new CancelOrderCommand(ORDER_ID));
@@ -89,13 +88,13 @@ class CancelOrderUseCaseTests {
     }
 
     /**
-     * The attempt was opened only a few seconds ago: NOT_FOUND right now is very likely just
-     * createPaymentLink still in flight. Refusing the cancellation is CORRECT -- but the school
-     * must be told to simply retry in a few minutes, not "wait for the order to expire".
+     * Lần thử vừa mở vài giây trước: NOT_FOUND lúc này rất có thể chỉ là createPaymentLink còn đang
+     * bay. Từ chối hủy là ĐÚNG -- nhưng phải nói cho trường biết chỉ cần thử lại sau vài phút, chứ
+     * không phải "đợi đơn hết hạn".
      */
     @Test
     void should_refuse_to_cancel_an_attempt_that_was_just_opened() {
-        PaymentRecord justOpened = givenPendingAttempt(
+        var justOpened = givenPendingAttempt(
             Instant.now().minus(3, ChronoUnit.SECONDS), PaymentLinkRemoteStatus.NOT_FOUND);
 
         assertThatThrownBy(() -> useCase.execute(new CancelOrderCommand(ORDER_ID)))
@@ -132,7 +131,7 @@ class CancelOrderUseCaseTests {
     }
 
     private PaymentRecord givenPendingAttempt(Instant createdAt, PaymentLinkRemoteStatus remoteStatus) {
-        PaymentRecord attempt = PaymentRecord.forEBankingCheckout(
+        var attempt = PaymentRecord.forEBankingCheckout(
             ORDER_ID, new BigDecimal("500000"), PaymentProvider.PAYOS, "orphan-ref", createdAt);
         attempt.setId(UUID.randomUUID());
         when(paymentRecordRepository.findPendingByOrderId(ORDER_ID)).thenReturn(Optional.of(attempt));
@@ -143,7 +142,7 @@ class CancelOrderUseCaseTests {
     }
 
     private static Order pendingOrder() {
-        Order order = new Order();
+        var order = new Order();
         order.setId(ORDER_ID);
         order.setSchoolId(SCHOOL_ID);
         order.setType(OrderType.SUBSCRIPTION_REQUEST);

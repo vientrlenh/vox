@@ -19,7 +19,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.usecase.practicesession.GetPracticeTurnUploadUrlUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.ResolveNextPracticeQuestionUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.SubmitPracticeTurnUseCase;
-import com.sep.vox.application.response.input.assessmentturn.TurnUploadUrlResponse;
+import com.sep.vox.application.response.input.examturn.TurnUploadUrlResponse;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.SubmitTurnResult;
 import com.sep.vox.domain.model.personalization.SubmitPracticeTurn;
 import com.sep.vox.domain.model.personalization.TurnCorrectionSubmission;
@@ -95,10 +95,10 @@ public class PracticeSessionInternalController {
     public ApiResponse<SubmitTurnResult> submitTurn(
             @PathVariable UUID sessionId,
             @RequestBody TurnRequest request) {
-        UUID studentId = practiceSessionRepository.findById(sessionId)
+        var studentId = practiceSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."))
             .getStudentId();
-        SubmitPracticeTurn turn = new SubmitPracticeTurn(
+        var turn = new SubmitPracticeTurn(
             sessionId,
             request.questionId(),
             request.turnOrder(),

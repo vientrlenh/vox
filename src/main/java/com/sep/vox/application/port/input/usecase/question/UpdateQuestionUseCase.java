@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import com.sep.vox.domain.model.question.QuestionBank;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -47,19 +46,19 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
     @Override
     @Transactional
     public UpdateQuestionResponse execute(UpdateQuestionCommand input) {
-        UpdateQuestionCommand command = normalize(input);
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var command = normalize(input);
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        Question question = questionRepository.findById(command.id())
+        var question = questionRepository.findById(command.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
-        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
+        var bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        boolean owner = currentUserId.equals(question.getCreatedBy());
-        boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
+        var owner = currentUserId.equals(question.getCreatedBy());
+        var editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
             .isPresent();
-        boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
+        var systemAdminOnSystemBank = userContextPort.isSystemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
 
         if (!systemAdminOnSystemBank && !editorCollaborator && !owner) {
@@ -71,14 +70,14 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
             question.setSharing(QuestionSharing.valueOf(command.sharing()));
         }
 
-        boolean hasContentUpdate = command.instructionText() != null || command.questionText() != null
+        var hasContentUpdate = command.instructionText() != null || command.questionText() != null
                 || command.promptText() != null || command.preparationText() != null
                 || command.questionType() != null || command.preparationTimeSeconds() != null
                 || command.minResponseSeconds() != null || command.maxResponseSeconds() != null;
 
         if (hasContentUpdate) {
-            boolean usedInAssessment = questionRepository.existsUsedInAssessment(question.getId());
-            boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED || question.isLocked() || usedInAssessment;
+            var usedInExam = questionRepository.existsUsedInExam(question.getId());
+            var immutable = question.getStatus() == QuestionStatus.PUBLISHED || question.isLocked() || usedInExam;
             if (immutable) {
                 throw new IllegalStateException(
                     "Câu hỏi đã publish hoặc đã dùng trong bài kiểm tra, không thể sửa trực tiếp — dùng nút Nhân bản để tạo bản có thể sửa");

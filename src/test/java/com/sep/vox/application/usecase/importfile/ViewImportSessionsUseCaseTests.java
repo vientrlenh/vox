@@ -1,6 +1,7 @@
 package com.sep.vox.application.usecase.importfile;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,7 +18,6 @@ import com.sep.vox.application.mapper.importfile.ImportSessionResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportSessionsQuery;
 import com.sep.vox.application.port.input.usecase.importfile.ViewImportSessionsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.importfile.ImportSessionSummaryResponse;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -60,12 +60,12 @@ class ViewImportSessionsUseCaseTests {
 
     @Test
     void execute_should_return_page_for_current_school_with_filters() {
-        UUID userId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        PageResult<ImportSession> page = new PageResult<ImportSession>(List.of(), 1, 20, 0L, 0);
+        var userId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var page = new PageResult<ImportSession>(List.of(), 1, 20, 0L, 0);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        User _user = activeUser(userId, schoolId);
+        var _user = activeUser(userId, schoolId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(importSessionRepository.findBySchoolId(
@@ -76,7 +76,7 @@ class ViewImportSessionsUseCaseTests {
             20
         )).thenReturn(page);
 
-        PageResult<ImportSessionSummaryResponse> response = useCase.execute(new ViewImportSessionsQuery(1, 20, ImportType.SCHOOL_CLASS, ImportSessionStatus.COMPLETED));
+        var response = useCase.execute(new ViewImportSessionsQuery(1, 20, "SCHOOL_CLASS", "COMPLETED"));
 
         assertThat(response.content()).isEmpty();
         verify(importSessionRepository).findBySchoolId(
@@ -88,8 +88,13 @@ class ViewImportSessionsUseCaseTests {
         );
     }
 
+    @Test
+    void execute_should_throw_when_status_invalid() {
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new ViewImportSessionsQuery(1, 20, null, "UNKNOWN")));
+    }
+
     private User activeUser(UUID id, UUID schoolId) {
-        User user = new User();
+        var user = new User();
         user.setId(id);
         user.setStatus(UserStatus.ACTIVE);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
@@ -99,7 +104,7 @@ class ViewImportSessionsUseCaseTests {
     }
 
     private static School activeSchool(UUID id) {
-        School school = new School();
+        var school = new School();
         school.setId(id);
         school.setActive(true);
         return school;

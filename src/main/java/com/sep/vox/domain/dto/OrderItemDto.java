@@ -9,7 +9,7 @@ import com.sep.vox.domain.model.order.OrderItemType;
 public record OrderItemDto(
     UUID id, 
     UUID orderId, 
-    OrderItemType type, 
+    String type, 
     UUID itemId, 
     BigDecimal unitPriceVnd, 
     BigDecimal amountVnd, 
@@ -20,11 +20,15 @@ public record OrderItemDto(
         return new OrderItemDto(
             item.getId(), 
             item.getOrderId(), 
-            item.getType(), 
+            valueOf(item.getType()), 
             item.getItemId(), 
             item.getUnitPriceVnd(), 
             item.getAmountVnd(), 
             item.getQuantity()
         );
+    }
+
+    private static String valueOf(OrderItemType type) {
+        return type == null ? null : type.name();
     }
 }

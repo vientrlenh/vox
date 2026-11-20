@@ -22,7 +22,7 @@ import com.sep.vox.application.port.input.query.ViewSchoolSubscriptionsQuery;
 import com.sep.vox.application.port.input.query.ViewSubscriptionPlansQuery;
 import com.sep.vox.application.port.input.usecase.subscription.UpdateSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.PreviewSchoolSubscriptionRenewalUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.ViewMyAssessmentQuotaAllocationUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ViewMyExamQuotaAllocationUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewMyPracticeQuotaAllocationUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSubscriptionPlanDetailUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSubscriptionPlansUseCase;
@@ -44,12 +44,11 @@ import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSubscriptionPlanInput;
 import com.sep.vox.application.port.input.query.ViewQuotaUserAllocationsQuery;
-import com.sep.vox.application.port.input.usecase.subscription.ViewAssessmentQuotaUserAllocationsUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ViewExamQuotaUserAllocationsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewPracticeQuotaUserAllocationsUseCase;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPageResponse;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSubscriptionPlanCommandMapper;
-import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlSubscriptionController")
 public class SubscriptionController {
@@ -59,12 +58,12 @@ public class SubscriptionController {
     private final UpdateSubscriptionPlanUseCase updateSubscriptionPlanUseCase;
     private final ViewSchoolSubscriptionsUseCase viewSchoolSubscriptionsUseCase;
     private final ViewSchoolSubscriptionQuotaRecordsUseCase viewSchoolSubscriptionQuotaRecordsUseCase;
-    private final ViewMyAssessmentQuotaAllocationUseCase viewMyAssessmentQuotaAllocationUseCase;
+    private final ViewMyExamQuotaAllocationUseCase viewMyExamQuotaAllocationUseCase;
     private final PreviewSchoolSubscriptionRenewalUseCase previewSchoolSubscriptionRenewalUseCase;
     private final ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase;
     private final ViewSchoolSubscriptionUseCase viewSchoolSubscriptionUseCase;
     private final ViewSchoolSubscriptionHistoryUseCase viewSchoolSubscriptionHistoryUseCase;
-    private final ViewAssessmentQuotaUserAllocationsUseCase viewAssessmentQuotaUserAllocationsUseCase;
+    private final ViewExamQuotaUserAllocationsUseCase viewExamQuotaUserAllocationsUseCase;
     private final ViewPracticeQuotaUserAllocationsUseCase viewPracticeQuotaUserAllocationsUseCase;
     private final QuotaPricingPort quotaPricingPort;
 
@@ -74,12 +73,12 @@ public class SubscriptionController {
             UpdateSubscriptionPlanUseCase updateSubscriptionPlanUseCase,
             ViewSchoolSubscriptionsUseCase viewSchoolSubscriptionsUseCase,
             ViewSchoolSubscriptionQuotaRecordsUseCase viewSchoolSubscriptionQuotaRecordsUseCase,
-            ViewMyAssessmentQuotaAllocationUseCase viewMyAssessmentQuotaAllocationUseCase,
+            ViewMyExamQuotaAllocationUseCase viewMyExamQuotaAllocationUseCase,
             PreviewSchoolSubscriptionRenewalUseCase previewSchoolSubscriptionRenewalUseCase,
             ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase,
             ViewSchoolSubscriptionUseCase viewSchoolSubscriptionUseCase,
             ViewSchoolSubscriptionHistoryUseCase viewSchoolSubscriptionHistoryUseCase,
-            ViewAssessmentQuotaUserAllocationsUseCase viewAssessmentQuotaUserAllocationsUseCase,
+            ViewExamQuotaUserAllocationsUseCase viewExamQuotaUserAllocationsUseCase,
             ViewPracticeQuotaUserAllocationsUseCase viewPracticeQuotaUserAllocationsUseCase,
             QuotaPricingPort quotaPricingPort) {
         this.viewSubscriptionPlansUseCase = viewSubscriptionPlansUseCase;
@@ -87,12 +86,12 @@ public class SubscriptionController {
         this.updateSubscriptionPlanUseCase = updateSubscriptionPlanUseCase;
         this.viewSchoolSubscriptionsUseCase = viewSchoolSubscriptionsUseCase;
         this.viewSchoolSubscriptionQuotaRecordsUseCase = viewSchoolSubscriptionQuotaRecordsUseCase;
-        this.viewMyAssessmentQuotaAllocationUseCase = viewMyAssessmentQuotaAllocationUseCase;
+        this.viewMyExamQuotaAllocationUseCase = viewMyExamQuotaAllocationUseCase;
         this.previewSchoolSubscriptionRenewalUseCase = previewSchoolSubscriptionRenewalUseCase;
         this.viewMyPracticeQuotaAllocationUseCase = viewMyPracticeQuotaAllocationUseCase;
         this.viewSchoolSubscriptionUseCase = viewSchoolSubscriptionUseCase;
         this.viewSchoolSubscriptionHistoryUseCase = viewSchoolSubscriptionHistoryUseCase;
-        this.viewAssessmentQuotaUserAllocationsUseCase = viewAssessmentQuotaUserAllocationsUseCase;
+        this.viewExamQuotaUserAllocationsUseCase = viewExamQuotaUserAllocationsUseCase;
         this.viewPracticeQuotaUserAllocationsUseCase = viewPracticeQuotaUserAllocationsUseCase;
         this.quotaPricingPort = quotaPricingPort;
     }
@@ -101,7 +100,7 @@ public class SubscriptionController {
     public PageResult<ViewSubscriptionPlansResponse> subscriptionPlans(
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
+        validatePageSize(page, size);
         return viewSubscriptionPlansUseCase.execute(new ViewSubscriptionPlansQuery(page, size));
     }
 
@@ -117,7 +116,7 @@ public class SubscriptionController {
             @Argument(name = "status") SchoolSubscriptionStatus status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
+        validatePageSize(page, size);
         return viewSchoolSubscriptionsUseCase.execute(new ViewSchoolSubscriptionsQuery(keyword, subscriptionPlanId, status, page, size));
     } 
 
@@ -138,7 +137,7 @@ public class SubscriptionController {
     @QueryMapping(name = "quotaPricing")
     public QuotaPricingResponse quotaPricing() {
         return new QuotaPricingResponse(
-            quotaPricingPort.currentEstimatedCostPerAssessmentSecondUsd(),
+            quotaPricingPort.currentEstimatedCostPerExamSecondUsd(),
             quotaPricingPort.currentEstimatedCostPerPracticeSecondUsd(),
             quotaPricingPort.usdToVndRate()
         );
@@ -156,9 +155,9 @@ public class SubscriptionController {
         return previewSchoolSubscriptionRenewalUseCase.execute(null);
     }
 
-    @QueryMapping(name = "myAssessmentQuotaAllocation")
-    public SchoolSubscriptionQuotaUserAllocationDto myAssessmentQuotaAllocation() {
-        return viewMyAssessmentQuotaAllocationUseCase.execute(null);
+    @QueryMapping(name = "myExamQuotaAllocation")
+    public SchoolSubscriptionQuotaUserAllocationDto myExamQuotaAllocation() {
+        return viewMyExamQuotaAllocationUseCase.execute(null);
     }
 
     @QueryMapping(name = "myPracticeQuotaAllocation")
@@ -200,15 +199,25 @@ public class SubscriptionController {
         return loader.load(dto.schoolId());
     }
 
-    @QueryMapping(name = "schoolAssessmentQuotaUserAllocations")
+    // page ĐẾM TỪ 1 theo quy ước chung của dự án -- các repository adapter trừ 1 trước khi xuống
+    // PageRequest (xem OrderRepositoryImpl/SubscriptionPlanRepositoryImpl). Guard này vốn đã đúng;
+    // thứ sai là schema từng khai mặc định `page: Int = 0`, nên client KHÔNG truyền page -- đường đi
+    // mặc định -- nhận số 0 rồi bị chính guard này từ chối.
+    private void validatePageSize(Integer page, Integer size) {
+        if (page == null || size == null || page <= 0 || size <= 0) {
+            throw new IllegalArgumentException("Trang hoặc kích thước yêu cầu phải lớn hơn 0");
+        }
+    }
+
+    @QueryMapping(name = "schoolExamQuotaUserAllocations")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public QuotaUserAllocationPageResponse schoolAssessmentQuotaUserAllocations(
+    public QuotaUserAllocationPageResponse schoolExamQuotaUserAllocations(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
-        return viewAssessmentQuotaUserAllocationsUseCase.execute(
+        validatePaging(page, size);
+        return viewExamQuotaUserAllocationsUseCase.execute(
             new ViewQuotaUserAllocationsQuery(schoolId, search, page, size));
     }
 
@@ -219,7 +228,7 @@ public class SubscriptionController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
+        validatePaging(page, size);
         return viewPracticeQuotaUserAllocationsUseCase.execute(
             new ViewQuotaUserAllocationsQuery(schoolId, search, page, size));
     }
@@ -236,5 +245,15 @@ public class SubscriptionController {
             QuotaUserAllocationPageResponse.Row row, DataFetchingEnvironment env) {
         DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
         return loader.load(row.userId());
+    }
+
+    // page ĐẾM TỪ 1 theo quy ước chung của dự án -- adapter trừ 1 trước khi xuống PageRequest.
+    private static void validatePaging(Integer page, Integer size) {
+        if (page == null || page < 1) {
+            throw new IllegalArgumentException("Số trang phải lớn hơn hoặc bằng 1");
+        }
+        if (size == null || size <= 0) {
+            throw new IllegalArgumentException("Kích thước trang phải lớn hơn 0");
+        }
     }
 }

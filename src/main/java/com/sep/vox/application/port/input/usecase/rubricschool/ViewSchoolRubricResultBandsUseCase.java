@@ -9,15 +9,9 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RubricResultBandDto;
 import com.sep.vox.domain.mapper.RubricResultBandDtoMapper;
-import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.model.rubric.RubricResultBand;
-import com.sep.vox.domain.model.rubric.RubricVersion;
-import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,30 +47,30 @@ public class ViewSchoolRubricResultBandsUseCase implements IUseCase<ViewSchoolRu
     @Transactional(readOnly = true)
     public PageResult<RubricResultBandDto> execute(ViewSchoolRubricResultBandsQuery query) {
         // 1. Xác thực User
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }
 
         // 2. Chốt chặn an ninh bằng SchoolUser
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản chưa liên kết với trường học."));
         if (!schoolUser.getSchoolId().equals(query.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền truy cập dữ liệu của trường khác.");
         }
 
-        School school = schoolRepository.findById(query.schoolId())
+        var school = schoolRepository.findById(query.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Trường học này đang bị vô hiệu hóa.");
         }
 
         // 3. Lấy Version và kiểm tra tồn tại
-        RubricVersion version = rubricVersionRepository.findById(query.versionId())
+        var version = rubricVersionRepository.findById(query.versionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric Version."));
 
         // 4. Lấy Rubric gốc và kiểm tra quyền SCHOOL
-        Rubric rubric = rubricRepository.findById(version.getRubricId())
+        var rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(query.schoolId())) {
@@ -84,7 +78,7 @@ public class ViewSchoolRubricResultBandsUseCase implements IUseCase<ViewSchoolRu
         }
 
         // 5. Query danh sách phân trang (Tận dụng lại hàm đã viết ở phần System)
-        PageResult<RubricResultBand> resultBandsPage = rubricResultBandRepository.findAllByRubricVersionId(
+        var resultBandsPage = rubricResultBandRepository.findAllByRubricVersionId(
                 query.versionId(),
                 query.page(),
                 query.size()

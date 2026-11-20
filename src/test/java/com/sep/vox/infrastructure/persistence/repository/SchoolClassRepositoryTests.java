@@ -4,16 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.config.ContainerTestConfig;
+
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolClassUser;
@@ -22,14 +24,15 @@ import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolClassRepositoryImpl;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolClassUserRepositoryImpl;
-import com.sep.vox.support.RepositoryTest;
 
-@RepositoryTest
+@DataJpaTest
+@ActiveProfiles("test")
 @Import({
     SchoolClassRepositoryImpl.class,
     SchoolClassUserRepositoryImpl.class
 })
-class SchoolClassRepositoryTests {
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class SchoolClassRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private SchoolClassRepository schoolClassRepository;
@@ -39,9 +42,9 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenSave_thenReturnsPersistedSchoolClass() {
-        SchoolClass schoolClass = newSchoolClass(UUID.randomUUID(), "ENG-01", "English 01");
+        var schoolClass = newSchoolClass(UUID.randomUUID(), "ENG-01", "English 01");
 
-        SchoolClass saved = schoolClassRepository.save(schoolClass);
+        var saved = schoolClassRepository.save(schoolClass);
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getCode().value()).isEqualTo("ENG-01");
@@ -51,12 +54,12 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenFindBySchoolIdAndCode_thenReturnsOnlyMatchingClass() {
-        UUID schoolId = UUID.randomUUID();
-        UUID otherSchoolId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
         schoolClassRepository.save(newSchoolClass(schoolId, "ENG-01", "English 01"));
         schoolClassRepository.save(newSchoolClass(otherSchoolId, "ENG-01", "Other English 01"));
 
-        Optional<SchoolClass> found = schoolClassRepository.findBySchoolIdAndCode(schoolId, "ENG-01");
+        var found = schoolClassRepository.findBySchoolIdAndCode(schoolId, "ENG-01");
 
         assertThat(found).isPresent();
         assertThat(found.get().getSchoolId()).isEqualTo(schoolId);
@@ -66,13 +69,13 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenFindBySchoolIdAndCodeIn_thenReturnsOnlyMatchingClasses() {
-        UUID schoolId = UUID.randomUUID();
-        UUID otherSchoolId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
         schoolClassRepository.save(newSchoolClass(schoolId, "ENG-BATCH-01", "English Batch 01"));
         schoolClassRepository.save(newSchoolClass(schoolId, "MATH-BATCH-01", "Mathematics Batch 01"));
         schoolClassRepository.save(newSchoolClass(otherSchoolId, "SCI-BATCH-01", "Science Batch Other"));
 
-        List<SchoolClass> found = schoolClassRepository.findBySchoolIdAndCodeIn(
+        var found = schoolClassRepository.findBySchoolIdAndCodeIn(
             schoolId,
             Set.of("ENG-BATCH-01", "MATH-BATCH-01", "SCI-BATCH-01", "MISSING")
         );
@@ -85,10 +88,10 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenFindById_thenReturnsSchoolClass() {
-        UUID schoolId = UUID.randomUUID();
-        SchoolClass saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-DETAIL", "English Detail"));
+        var schoolId = UUID.randomUUID();
+        var saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-DETAIL", "English Detail"));
 
-        Optional<SchoolClass> found = schoolClassRepository.findById(saved.getId());
+        var found = schoolClassRepository.findById(saved.getId());
 
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(saved.getId());
@@ -99,7 +102,7 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenDeleteById_thenRemovesSchoolClass() {
-        SchoolClass saved = schoolClassRepository.save(newSchoolClass(UUID.randomUUID(), "ENG-DELETE", "English Delete"));
+        var saved = schoolClassRepository.save(newSchoolClass(UUID.randomUUID(), "ENG-DELETE", "English Delete"));
 
         schoolClassRepository.deleteById(saved.getId());
 
@@ -108,16 +111,16 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenFindBySchoolIdWithFilters_thenReturnsMatchingPagedClasses() {
-        UUID schoolId = UUID.randomUUID();
-        UUID otherSchoolId = UUID.randomUUID();
-        UUID languageId = UUID.randomUUID();
-        UUID gradeId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
+        var languageId = UUID.randomUUID();
+        var gradeId = UUID.randomUUID();
         schoolClassRepository.save(newSchoolClass(schoolId, languageId, gradeId, "ENG-01", "English 01", SchoolClassStatus.ACTIVE));
         schoolClassRepository.save(newSchoolClass(schoolId, languageId, UUID.randomUUID(), "MATH-01", "Mathematics 01", SchoolClassStatus.ACTIVE));
         schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), gradeId, "ENG-ARCHIVE", "Archived English", SchoolClassStatus.ARCHIVED));
         schoolClassRepository.save(newSchoolClass(otherSchoolId, languageId, gradeId, "ENG-01", "Other English 01", SchoolClassStatus.ACTIVE));
 
-        PageResult<SchoolClass> found = schoolClassRepository.findBySchoolId(
+        var found = schoolClassRepository.findBySchoolId(
             schoolId,
             "eng",
             SchoolClassStatus.ACTIVE,
@@ -136,10 +139,10 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenFindBySchoolIdWithSearchByName_thenMatchesCaseInsensitively() {
-        UUID schoolId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
         schoolClassRepository.save(newSchoolClass(schoolId, "ENG-02", "Advanced English"));
 
-        PageResult<SchoolClass> found = schoolClassRepository.findBySchoolId(
+        var found = schoolClassRepository.findBySchoolId(
             schoolId,
             "advanced",
             null,
@@ -155,13 +158,13 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenFindBySchoolIdWithNullSearch_thenReturnsClassesWithoutSearchError() {
-        UUID schoolId = UUID.randomUUID();
-        UUID otherSchoolId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
         schoolClassRepository.save(newSchoolClass(schoolId, "ENG-NULL-01", "English Null 01"));
         schoolClassRepository.save(newSchoolClass(schoolId, "MATH-NULL-01", "Mathematics Null 01"));
         schoolClassRepository.save(newSchoolClass(otherSchoolId, "ENG-OTHER-NULL", "Other English Null"));
 
-        PageResult<SchoolClass> found = schoolClassRepository.findBySchoolId(
+        var found = schoolClassRepository.findBySchoolId(
             schoolId,
             null,
             null,
@@ -180,11 +183,11 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenFindBySchoolIdWithBlankSearch_thenReturnsClassesWithoutSearchError() {
-        UUID schoolId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
         schoolClassRepository.save(newSchoolClass(schoolId, "ENG-BLANK-01", "English Blank 01"));
         schoolClassRepository.save(newSchoolClass(schoolId, "MATH-BLANK-01", "Mathematics Blank 01"));
 
-        PageResult<SchoolClass> found = schoolClassRepository.findBySchoolId(
+        var found = schoolClassRepository.findBySchoolId(
             schoolId,
             "   ",
             null,
@@ -200,12 +203,12 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenUpdateMutableFieldsWithMatchingSchool_thenUpdatesSchoolClass() {
-        UUID schoolId = UUID.randomUUID();
-        UUID updatedBy = UUID.randomUUID();
-        SchoolClass saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-UPD", "English Old"));
-        Instant updatedAt = Instant.now().plus(1, ChronoUnit.DAYS);
+        var schoolId = UUID.randomUUID();
+        var updatedBy = UUID.randomUUID();
+        var saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-UPD", "English Old"));
+        var updatedAt = Instant.now().plus(1, ChronoUnit.DAYS);
 
-        int updatedRows = schoolClassRepository.updateMutableFields(
+        var updatedRows = schoolClassRepository.updateMutableFields(
             saved.getId(),
             schoolId,
             "English Updated",
@@ -218,7 +221,7 @@ class SchoolClassRepositoryTests {
             updatedBy
         );
 
-        Optional<SchoolClass> found = schoolClassRepository.findById(saved.getId());
+        var found = schoolClassRepository.findById(saved.getId());
         assertThat(updatedRows).isEqualTo(1);
         assertThat(found).isPresent();
         assertThat(found.get().getName()).isEqualTo("English Updated");
@@ -232,11 +235,11 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenUpdateMutableFieldsNameOnly_thenPreservesDescriptionAndStatus() {
-        UUID schoolId = UUID.randomUUID();
-        UUID updatedBy = UUID.randomUUID();
-        SchoolClass saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-NAME-UPD", "English Old"));
+        var schoolId = UUID.randomUUID();
+        var updatedBy = UUID.randomUUID();
+        var saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-NAME-UPD", "English Old"));
 
-        int updatedRows = schoolClassRepository.updateMutableFields(
+        var updatedRows = schoolClassRepository.updateMutableFields(
             saved.getId(),
             schoolId,
             "English Name Updated",
@@ -249,7 +252,7 @@ class SchoolClassRepositoryTests {
             updatedBy
         );
 
-        Optional<SchoolClass> found = schoolClassRepository.findById(saved.getId());
+        var found = schoolClassRepository.findById(saved.getId());
         assertThat(updatedRows).isEqualTo(1);
         assertThat(found).isPresent();
         assertThat(found.get().getName()).isEqualTo("English Name Updated");
@@ -260,10 +263,10 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenUpdateMutableFieldsDescriptionNull_thenClearsDescription() {
-        UUID schoolId = UUID.randomUUID();
-        SchoolClass saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-DESC-NULL", "English Description"));
+        var schoolId = UUID.randomUUID();
+        var saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-DESC-NULL", "English Description"));
 
-        int updatedRows = schoolClassRepository.updateMutableFields(
+        var updatedRows = schoolClassRepository.updateMutableFields(
             saved.getId(),
             schoolId,
             null,
@@ -276,7 +279,7 @@ class SchoolClassRepositoryTests {
             UUID.randomUUID()
         );
 
-        Optional<SchoolClass> found = schoolClassRepository.findById(saved.getId());
+        var found = schoolClassRepository.findById(saved.getId());
         assertThat(updatedRows).isEqualTo(1);
         assertThat(found).isPresent();
         assertThat(found.get().getDescription()).isNull();
@@ -286,10 +289,10 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenUpdateMutableFieldsStatusOnly_thenPreservesNameAndDescription() {
-        UUID schoolId = UUID.randomUUID();
-        SchoolClass saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-STATUS-UPD", "English Status"));
+        var schoolId = UUID.randomUUID();
+        var saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-STATUS-UPD", "English Status"));
 
-        int updatedRows = schoolClassRepository.updateMutableFields(
+        var updatedRows = schoolClassRepository.updateMutableFields(
             saved.getId(),
             schoolId,
             null,
@@ -302,7 +305,7 @@ class SchoolClassRepositoryTests {
             UUID.randomUUID()
         );
 
-        Optional<SchoolClass> found = schoolClassRepository.findById(saved.getId());
+        var found = schoolClassRepository.findById(saved.getId());
         assertThat(updatedRows).isEqualTo(1);
         assertThat(found).isPresent();
         assertThat(found.get().getName()).isEqualTo("English Status");
@@ -312,10 +315,10 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenUpdateMutableFieldsWithDifferentSchool_thenDoesNotUpdateSchoolClass() {
-        UUID schoolId = UUID.randomUUID();
-        SchoolClass saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-NO-UPD", "English Old"));
+        var schoolId = UUID.randomUUID();
+        var saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-NO-UPD", "English Old"));
 
-        int updatedRows = schoolClassRepository.updateMutableFields(
+        var updatedRows = schoolClassRepository.updateMutableFields(
             saved.getId(),
             UUID.randomUUID(),
             "English Updated",
@@ -328,7 +331,7 @@ class SchoolClassRepositoryTests {
             UUID.randomUUID()
         );
 
-        Optional<SchoolClass> found = schoolClassRepository.findById(saved.getId());
+        var found = schoolClassRepository.findById(saved.getId());
         assertThat(updatedRows).isZero();
         assertThat(found).isPresent();
         assertThat(found.get().getName()).isEqualTo("English Old");
@@ -338,21 +341,21 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenFindByUserId_thenReturnsClassesUserBelongsToIncludingLeftOnes() {
-        UUID schoolId = UUID.randomUUID();
-        UUID otherSchoolId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
-        SchoolClass activeClass = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-CU-01", "English CU 01"));
-        SchoolClass leftClass = schoolClassRepository.save(newSchoolClass(schoolId, "MATH-CU-01", "Math CU 01"));
-        SchoolClass otherUserClass = schoolClassRepository.save(newSchoolClass(schoolId, "SCI-CU-01", "Science CU 01"));
-        SchoolClass otherSchoolClass = schoolClassRepository.save(newSchoolClass(otherSchoolId, "ENG-CU-02", "Other School CU"));
-        Instant now = Instant.now();
+        var schoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var activeClass = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-CU-01", "English CU 01"));
+        var leftClass = schoolClassRepository.save(newSchoolClass(schoolId, "MATH-CU-01", "Math CU 01"));
+        var otherUserClass = schoolClassRepository.save(newSchoolClass(schoolId, "SCI-CU-01", "Science CU 01"));
+        var otherSchoolClass = schoolClassRepository.save(newSchoolClass(otherSchoolId, "ENG-CU-02", "Other School CU"));
+        var now = Instant.now();
 
         schoolClassUserRepository.save(new SchoolClassUser(userId, activeClass.getId(), true, now, null, UUID.randomUUID()));
         schoolClassUserRepository.save(new SchoolClassUser(userId, leftClass.getId(), false, now, now.plus(1, ChronoUnit.DAYS), UUID.randomUUID()));
         schoolClassUserRepository.save(new SchoolClassUser(UUID.randomUUID(), otherUserClass.getId(), true, now, null, UUID.randomUUID()));
         schoolClassUserRepository.save(new SchoolClassUser(userId, otherSchoolClass.getId(), true, now, null, UUID.randomUUID()));
 
-        PageResult<SchoolClass> found = schoolClassRepository.findByUserId(schoolId, userId, null, 1, 20);
+        var found = schoolClassRepository.findByUserId(schoolId, userId, null, 1, 20);
 
         assertThat(found.content())
             .extracting(schoolClass -> schoolClass.getId())
@@ -362,19 +365,19 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenFindBySchoolIdWithoutStatus_thenHidesArchivedByDefault() {
-        UUID schoolId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
         schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-VIS", "Visible English", SchoolClassStatus.ACTIVE));
         schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-INACT", "Inactive English", SchoolClassStatus.INACTIVE));
         schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-ARCH", "Archived English", SchoolClassStatus.ARCHIVED));
 
-        PageResult<SchoolClass> defaultView = schoolClassRepository.findBySchoolId(schoolId, null, null, null, null, 1, 10);
+        var defaultView = schoolClassRepository.findBySchoolId(schoolId, null, null, null, null, 1, 10);
 
         assertThat(defaultView.content())
             .extracting(schoolClass -> schoolClass.getCode().value())
             .containsExactlyInAnyOrder("ENG-VIS", "ENG-INACT");
         assertThat(defaultView.totalElements()).isEqualTo(2);
 
-        PageResult<SchoolClass> archivedView = schoolClassRepository.findBySchoolId(schoolId, null, SchoolClassStatus.ARCHIVED, null, null, 1, 10);
+        var archivedView = schoolClassRepository.findBySchoolId(schoolId, null, SchoolClassStatus.ARCHIVED, null, null, 1, 10);
 
         assertThat(archivedView.content())
             .extracting(schoolClass -> schoolClass.getCode().value())
@@ -383,21 +386,21 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenFindByUserIdWithoutStatus_thenHidesArchivedByDefault() {
-        UUID schoolId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
-        SchoolClass activeClass = schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-CU-ACT", "Active CU", SchoolClassStatus.ACTIVE));
-        SchoolClass archivedClass = schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-CU-ARCH", "Archived CU", SchoolClassStatus.ARCHIVED));
-        Instant now = Instant.now();
+        var schoolId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var activeClass = schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-CU-ACT", "Active CU", SchoolClassStatus.ACTIVE));
+        var archivedClass = schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-CU-ARCH", "Archived CU", SchoolClassStatus.ARCHIVED));
+        var now = Instant.now();
         schoolClassUserRepository.save(new SchoolClassUser(userId, activeClass.getId(), true, now, null, UUID.randomUUID()));
         schoolClassUserRepository.save(new SchoolClassUser(userId, archivedClass.getId(), true, now, null, UUID.randomUUID()));
 
-        PageResult<SchoolClass> defaultView = schoolClassRepository.findByUserId(schoolId, userId, null, 1, 20);
+        var defaultView = schoolClassRepository.findByUserId(schoolId, userId, null, 1, 20);
 
         assertThat(defaultView.content())
             .extracting(schoolClass -> schoolClass.getId())
             .containsExactly(activeClass.getId());
 
-        PageResult<SchoolClass> archivedView = schoolClassRepository.findByUserId(schoolId, userId, SchoolClassStatus.ARCHIVED, 1, 20);
+        var archivedView = schoolClassRepository.findByUserId(schoolId, userId, SchoolClassStatus.ARCHIVED, 1, 20);
 
         assertThat(archivedView.content())
             .extracting(schoolClass -> schoolClass.getId())
@@ -406,11 +409,11 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenFindBySchoolIdIn_thenHidesArchivedClasses() {
-        UUID schoolId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
         schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-IN-ACT", "Active In", SchoolClassStatus.ACTIVE));
         schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-IN-ARCH", "Archived In", SchoolClassStatus.ARCHIVED));
 
-        List<SchoolClass> found = schoolClassRepository.findBySchoolIdIn(Set.of(schoolId), 1, 10);
+        var found = schoolClassRepository.findBySchoolIdIn(Set.of(schoolId), 1, 10);
 
         assertThat(found)
             .extracting(schoolClass -> schoolClass.getCode().value())
@@ -419,17 +422,17 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenFindByUserIdWithSearch_thenMatchesCodeOrNameAcrossWholeDataset() {
-        UUID schoolId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
-        SchoolClass englishByCode = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-SEARCH-01", "Lop giao tiep"));
-        SchoolClass englishByName = schoolClassRepository.save(newSchoolClass(schoolId, "KH-SEARCH-02", "English nang cao"));
-        SchoolClass unrelated = schoolClassRepository.save(newSchoolClass(schoolId, "MATH-SEARCH-03", "Toan hoc"));
-        Instant now = Instant.now();
+        var schoolId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var englishByCode = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-SEARCH-01", "Lop giao tiep"));
+        var englishByName = schoolClassRepository.save(newSchoolClass(schoolId, "KH-SEARCH-02", "English nang cao"));
+        var unrelated = schoolClassRepository.save(newSchoolClass(schoolId, "MATH-SEARCH-03", "Toan hoc"));
+        var now = Instant.now();
         schoolClassUserRepository.save(new SchoolClassUser(userId, englishByCode.getId(), true, now, null, UUID.randomUUID()));
         schoolClassUserRepository.save(new SchoolClassUser(userId, englishByName.getId(), true, now, null, UUID.randomUUID()));
         schoolClassUserRepository.save(new SchoolClassUser(userId, unrelated.getId(), true, now, null, UUID.randomUUID()));
 
-        PageResult<SchoolClass> found = schoolClassRepository.findByUserId(schoolId, userId, "eng", null, 1, 20);
+        var found = schoolClassRepository.findByUserId(schoolId, userId, "eng", null, 1, 20);
 
         assertThat(found.content())
             .extracting(schoolClass -> schoolClass.getId())
@@ -439,28 +442,28 @@ class SchoolClassRepositoryTests {
 
     @Test
     void whenFindByUserIdWithBlankSearch_thenBehavesLikeNoSearch() {
-        UUID schoolId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
-        SchoolClass schoolClass = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-BLANK-01", "Blank search"));
+        var schoolId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var schoolClass = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-BLANK-01", "Blank search"));
         schoolClassUserRepository.save(
             new SchoolClassUser(userId, schoolClass.getId(), true, Instant.now(), null, UUID.randomUUID())
         );
 
-        PageResult<SchoolClass> found = schoolClassRepository.findByUserId(schoolId, userId, "   ", null, 1, 20);
+        var found = schoolClassRepository.findByUserId(schoolId, userId, "   ", null, 1, 20);
 
         assertThat(found.content())
             .extracting(sc -> sc.getId())
             .containsExactly(schoolClass.getId());
     }
 
-    /** page is 1-based: page 2 must skip exactly the first `size` elements, not 2*size. */
+    /** page là 1-based: trang 2 phải bỏ qua đúng `size` phần tử đầu, không phải 2*size. */
     @Test
     void whenFindByUserIdWithSearch_thenPageNumberIsOneBased() {
-        UUID schoolId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
-        Instant now = Instant.now();
-        for (int index = 1; index <= 3; index++) {
-            SchoolClass schoolClass = schoolClassRepository.save(
+        var schoolId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var now = Instant.now();
+        for (var index = 1; index <= 3; index++) {
+            var schoolClass = schoolClassRepository.save(
                 newSchoolClass(schoolId, "ENG-PAGE-0" + index, "Paged English " + index)
             );
             schoolClassUserRepository.save(
@@ -468,8 +471,8 @@ class SchoolClassRepositoryTests {
             );
         }
 
-        PageResult<SchoolClass> firstPage = schoolClassRepository.findByUserId(schoolId, userId, "eng-page", null, 1, 2);
-        PageResult<SchoolClass> secondPage = schoolClassRepository.findByUserId(schoolId, userId, "eng-page", null, 2, 2);
+        var firstPage = schoolClassRepository.findByUserId(schoolId, userId, "eng-page", null, 1, 2);
+        var secondPage = schoolClassRepository.findByUserId(schoolId, userId, "eng-page", null, 2, 2);
 
         assertThat(firstPage.page()).isEqualTo(1);
         assertThat(firstPage.content()).hasSize(2);
@@ -488,8 +491,8 @@ class SchoolClassRepositoryTests {
 
     private static SchoolClass newSchoolClass(UUID schoolId, UUID languageId, UUID gradeId, String code, String name,
             SchoolClassStatus status) {
-        Instant now = Instant.now();
-        UUID userId = UUID.randomUUID();
+        var now = Instant.now();
+        var userId = UUID.randomUUID();
         return new SchoolClass(
             schoolId,
             languageId,

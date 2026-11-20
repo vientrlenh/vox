@@ -10,11 +10,9 @@ import com.sep.vox.domain.dto.RubricDto;
 import com.sep.vox.domain.mapper.RubricDtoMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,8 +35,8 @@ public class ViewSystemRubricDetailsUseCase implements IUseCase<ViewSystemRubric
     @Transactional(readOnly = true)
     public RubricDto execute(ViewSystemRubricDetailsQuery query) {
         // 1. Xác thực tài khoản
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {

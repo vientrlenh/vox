@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.proctoring;
 
-import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import java.util.List;
 import java.util.UUID;
 
@@ -9,9 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.service.ProctorScheduleAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.dto.AssessmentProctoringAlertDto;
-import com.sep.vox.domain.mapper.AssessmentProctoringAlertDtoMapper;
-import com.sep.vox.domain.repository.AssessmentProctoringAlertRepository;
+import com.sep.vox.domain.dto.ExamProctoringAlertDto;
+import com.sep.vox.domain.mapper.ExamProctoringAlertDtoMapper;
+import com.sep.vox.domain.repository.ExamProctoringAlertRepository;
 
 /**
  * Cảnh báo giám sát của cả một ca thi -- cho màn giám sát trực tiếp.
@@ -25,25 +24,25 @@ import com.sep.vox.domain.repository.AssessmentProctoringAlertRepository;
  * trang không còn xoá sạch mọi thứ.
  */
 @Service
-public class ViewScheduleProctoringAlertsUseCase implements IUseCase<UUID, List<AssessmentProctoringAlertDto>> {
+public class ViewScheduleProctoringAlertsUseCase implements IUseCase<UUID, List<ExamProctoringAlertDto>> {
 
     private final ProctorScheduleAccessService accessService;
-    private final AssessmentProctoringAlertRepository assessmentProctoringAlertRepository;
+    private final ExamProctoringAlertRepository examProctoringAlertRepository;
 
     public ViewScheduleProctoringAlertsUseCase(
             ProctorScheduleAccessService accessService,
-            AssessmentProctoringAlertRepository assessmentProctoringAlertRepository) {
+            ExamProctoringAlertRepository examProctoringAlertRepository) {
         this.accessService = accessService;
-        this.assessmentProctoringAlertRepository = assessmentProctoringAlertRepository;
+        this.examProctoringAlertRepository = examProctoringAlertRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<AssessmentProctoringAlertDto> execute(UUID scheduleId) {
-        AssessmentSchedule schedule = accessService.requireCanMonitorSchedule(scheduleId);
-        return assessmentProctoringAlertRepository.findByScheduleIdOrderByCapturedAt(schedule.getId())
+    public List<ExamProctoringAlertDto> execute(UUID scheduleId) {
+        var schedule = accessService.requireCanMonitorSchedule(scheduleId);
+        return examProctoringAlertRepository.findByScheduleIdOrderByCapturedAt(schedule.getId())
             .stream()
-            .map(AssessmentProctoringAlertDtoMapper::toDto)
+            .map(ExamProctoringAlertDtoMapper::toDto)
             .toList();
     }
 }

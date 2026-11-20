@@ -62,9 +62,9 @@ class AcceptSchoolUserImportUseCaseTests {
 
     @Test
     void should_mark_session_as_queued_successfully() {
-        UUID schoolId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
 
         mockCurrentUserAndSchool(currentUserId, schoolId);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, schoolId)));
@@ -77,9 +77,9 @@ class AcceptSchoolUserImportUseCaseTests {
 
     @Test
     void should_throw_when_session_not_found() {
-        UUID schoolId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
 
         mockCurrentUserAndSchool(currentUserId, schoolId);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.empty());
@@ -90,9 +90,9 @@ class AcceptSchoolUserImportUseCaseTests {
 
     @Test
     void should_throw_when_session_type_is_not_user() {
-        UUID schoolId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
 
         mockCurrentUserAndSchool(currentUserId, schoolId);
         when(importSessionRepository.findById(sessionId))
@@ -104,10 +104,10 @@ class AcceptSchoolUserImportUseCaseTests {
 
     @Test
     void should_throw_when_session_belongs_to_different_school() {
-        UUID schoolId = UUID.randomUUID();
-        UUID otherSchoolId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
 
         mockCurrentUserAndSchool(currentUserId, schoolId);
         when(importSessionRepository.findById(sessionId))
@@ -119,9 +119,9 @@ class AcceptSchoolUserImportUseCaseTests {
 
     @Test
     void should_expire_and_throw_when_session_is_expired() {
-        UUID schoolId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
 
         mockCurrentUserAndSchool(currentUserId, schoolId);
         when(importSessionRepository.findById(sessionId))
@@ -135,9 +135,9 @@ class AcceptSchoolUserImportUseCaseTests {
 
     @Test
     void should_throw_when_session_status_is_not_previewed() {
-        UUID schoolId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
 
         mockCurrentUserAndSchool(currentUserId, schoolId);
         when(importSessionRepository.findById(sessionId))
@@ -149,10 +149,10 @@ class AcceptSchoolUserImportUseCaseTests {
 
     @Test
     void should_throw_when_required_mapping_fields_are_missing() {
-        UUID schoolId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
-        Map<String, String> incompleteMapping = Map.of("Email", "email");
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
+        var incompleteMapping = Map.of("Email", "email");
 
         mockCurrentUserAndSchool(currentUserId, schoolId);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, schoolId)));
@@ -164,17 +164,17 @@ class AcceptSchoolUserImportUseCaseTests {
 
     @Test
     void should_throw_when_school_is_not_active() {
-        UUID schoolId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
 
-        User admin = new User();
+        var admin = new User();
         admin.setId(currentUserId);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(admin));
         when(schoolUserRepository.findByUserId(currentUserId))
             .thenReturn(Optional.of(new SchoolUser(schoolId, currentUserId, Instant.now(), null)));
-        School inactiveSchool = new School();
+        var inactiveSchool = new School();
         inactiveSchool.setId(schoolId);
         inactiveSchool.setActive(false);
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(inactiveSchool));
@@ -185,9 +185,9 @@ class AcceptSchoolUserImportUseCaseTests {
 
     @Test
     void should_throw_when_mark_queued_returns_zero() {
-        UUID schoolId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
 
         mockCurrentUserAndSchool(currentUserId, schoolId);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, schoolId)));
@@ -198,13 +198,13 @@ class AcceptSchoolUserImportUseCaseTests {
     }
 
     private void mockCurrentUserAndSchool(UUID currentUserId, UUID schoolId) {
-        User admin = new User();
+        var admin = new User();
         admin.setId(currentUserId);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(admin));
         when(schoolUserRepository.findByUserId(currentUserId))
             .thenReturn(Optional.of(new SchoolUser(schoolId, currentUserId, Instant.now(), null)));
-        School school = new School();
+        var school = new School();
         school.setId(schoolId);
         school.setActive(true);
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));

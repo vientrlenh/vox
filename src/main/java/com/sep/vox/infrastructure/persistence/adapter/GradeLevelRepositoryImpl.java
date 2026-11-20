@@ -4,12 +4,8 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.repository.GradeLevelRepository;
-import com.sep.vox.infrastructure.persistence.entity.GradeLevelJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.GradeLevelMapper;
-import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataGradeLevelRepository;
-import java.util.Set;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -47,12 +43,12 @@ public class GradeLevelRepositoryImpl implements GradeLevelRepository {
 
     @Override
     public PageResult<GradeLevel> findAll(String search, GradeLevelStatus status, int page, int size) {
-        String searchPattern = (search == null || search.isBlank())
+        var searchPattern = (search == null || search.isBlank())
             ? null
             : "%" + search.strip().toLowerCase() + "%";
-        String statusFilter = status == null ? null : status.name();
-        PageRequest pageable = OneBasedPaging.toPageRequest(page, size);
-        Page<GradeLevelJpaEntity> result = gradeLevelRepository.findAllWithFilters(searchPattern, statusFilter, pageable);
+        var statusFilter = status == null ? null : status.name();
+        var pageable = PageRequest.of(page - 1, size);
+        var result = gradeLevelRepository.findAllWithFilters(searchPattern, statusFilter, pageable);
         return new PageResult<>(
             result.getContent().stream()
                 .map(GradeLevelMapper::toDomain)
@@ -69,7 +65,7 @@ public class GradeLevelRepositoryImpl implements GradeLevelRepository {
         if (codes == null || codes.isEmpty()) {
             return List.of();
         }
-        Set<String> upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
+        var upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
         return gradeLevelRepository.findByCodeIn(upperCodes)
                 .stream()
                 .map(GradeLevelMapper::toDomain)
@@ -100,8 +96,8 @@ public class GradeLevelRepositoryImpl implements GradeLevelRepository {
 
     @Override
     public GradeLevel save(GradeLevel gradeLevel) {
-        GradeLevelJpaEntity entity = GradeLevelMapper.toJpa(gradeLevel);
-        GradeLevelJpaEntity savedEntity = gradeLevelRepository.save(entity);
+        var entity = GradeLevelMapper.toJpa(gradeLevel);
+        var savedEntity = gradeLevelRepository.save(entity);
         return GradeLevelMapper.toDomain(savedEntity);
     }
 

@@ -11,7 +11,7 @@ public final class AiUsageRecordMapper {
     public static AiUsageRecord toDomain(AiUsageRecordJpaEntity jpa) {
         return new AiUsageRecord(
             jpa.getId(),
-            jpa.getAssessmentSessionId(),
+            jpa.getExamSessionId(),
             jpa.getTurnId(),
             jpa.getUsageEventId(),
             fromString(jpa.getUsageType()),
@@ -33,7 +33,7 @@ public final class AiUsageRecordMapper {
     public static AiUsageRecordJpaEntity toJpa(AiUsageRecord domain) {
         return new AiUsageRecordJpaEntity(
             domain.getId(),
-            domain.getAssessmentSessionId(),
+            domain.getExamSessionId(),
             domain.getTurnId(),
             domain.getUsageEventId(),
             valueOf(domain.getUsageType()),

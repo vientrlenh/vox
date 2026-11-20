@@ -1,9 +1,6 @@
 package com.sep.vox.domain.dto;
 
-import java.time.Instant;
 import java.util.UUID;
-
-import com.sep.vox.domain.model.school.SchoolDirectoryOrigin;
 
 public record SchoolDirectoryDto(
     UUID id, 
@@ -14,10 +11,10 @@ public record SchoolDirectoryDto(
     String districtName, 
     String domain, 
     String address, 
-    SchoolDirectoryOrigin origin, 
+    String origin, 
     boolean verified, 
-    Instant createdAt, 
-    Instant updatedAt
+    String createdAt, 
+    String updatedAt
 ) {
     
 }

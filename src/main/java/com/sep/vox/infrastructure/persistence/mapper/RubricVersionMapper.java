@@ -12,7 +12,7 @@ public final class RubricVersionMapper {
     // sourceRubricVersionId đi qua setter ở cả hai chiều: nó cố ý không nằm trong constructor để
     // không bắt mọi nơi dựng RubricVersion phải thêm một tham số hầu hết đều là null.
     public static RubricVersion toDomain(RubricVersionJpaEntity jpa) {
-        RubricVersion domain = newDomain(jpa);
+        var domain = newDomain(jpa);
         domain.setSourceRubricVersionId(jpa.getSourceRubricVersionId());
         return domain;
     }
@@ -39,7 +39,7 @@ public final class RubricVersionMapper {
     }
 
     public static RubricVersionJpaEntity toJpa(RubricVersion version) {
-        RubricVersionJpaEntity jpa = newJpa(version);
+        var jpa = newJpa(version);
         jpa.setSourceRubricVersionId(version.getSourceRubricVersionId());
         return jpa;
     }

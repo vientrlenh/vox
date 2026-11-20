@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
-import com.sep.vox.domain.model.school.SchoolClassUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +29,7 @@ public class ViewMyClassMembersUseCase implements IUseCase<ViewMyClassMembersQue
     public PageResult<SchoolClassUserDto> execute(ViewMyClassMembersQuery input) {
         myClassAccessGuard.requireClassMembership(input.schoolClassId());
 
-        PageResult<SchoolClassUser> membersPage = schoolClassUserRepository.findBySchoolClassId(
+        var membersPage = schoolClassUserRepository.findBySchoolClassId(
             input.schoolClassId(),
             normalizeRoleCode(input.roleCode()),
             StringNormalization.trimAndCollapseSpaces(input.search()),
@@ -42,7 +41,7 @@ public class ViewMyClassMembersUseCase implements IUseCase<ViewMyClassMembersQue
     }
 
     private String normalizeRoleCode(String roleCode) {
-        String normalized = StringNormalization.trimAndCollapseSpaces(roleCode);
+        var normalized = StringNormalization.trimAndCollapseSpaces(roleCode);
         return normalized == null ? null : normalized.toUpperCase();
     }
 }

@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.QuestionAssetJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -24,14 +23,14 @@ public class QuestionAssetRepositoryImpl implements QuestionAssetRepository {
 
     @Override
     public QuestionAsset save(QuestionAsset questionAsset) {
-        QuestionAssetJpaEntity entity = QuestionAssetMapper.toJpa(questionAsset);
-        QuestionAssetJpaEntity saved = springDataQuestionAssetRepository.save(entity);
+        var entity = QuestionAssetMapper.toJpa(questionAsset);
+        var saved = springDataQuestionAssetRepository.save(entity);
         return QuestionAssetMapper.toDomain(saved);
     }
 
     @Override
     public List<QuestionAsset> saveAll(List<QuestionAsset> questionAssets) {
-        List<QuestionAssetJpaEntity> entities = questionAssets.stream()
+        var entities = questionAssets.stream()
             .map(QuestionAssetMapper::toJpa)
             .toList();
         return springDataQuestionAssetRepository.saveAll(entities)

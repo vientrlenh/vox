@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.exception.NotFoundException;
@@ -42,7 +41,7 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID versionId = session.getImportedEntityId();
-        RubricVersion version = rubricVersionRepository.findById(versionId)
+        var version = rubricVersionRepository.findById(versionId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản gốc khi xử lý ngầm."));
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalStateException("Chỉ có thể import Xếp loại (Result Band) khi phiên bản Rubric đang ở trạng thái DRAFT.");
@@ -103,9 +102,9 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
 
                 BigDecimal scoreMin = null; BigDecimal scoreMax = null; int order = 0;
                 if (errors.isEmpty()) {
-                    String safeMinStr = minStr == null ? "" : minStr.trim();
-                    String safeMaxStr = maxStr == null ? "" : maxStr.trim();
-                    String safeOrderStr = orderStr == null ? "" : orderStr.trim();
+                    var safeMinStr = minStr == null ? "" : minStr.trim();
+                    var safeMaxStr = maxStr == null ? "" : maxStr.trim();
+                    var safeOrderStr = orderStr == null ? "" : orderStr.trim();
                     try {
                         scoreMin = new BigDecimal(safeMinStr);
                         scoreMax = new BigDecimal(safeMaxStr);
@@ -136,7 +135,7 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
                 BigDecimal previousScoreMin = existingForCode != null ? existingForCode.getScoreMin() : null;
 
                 // Kiểm tra không chồng lấn (kể cả chạm biên) với các band khác đã có/đã xử lý trong file
-                String safeNameStr = nameStr == null ? "" : nameStr.trim();
+                var safeNameStr = nameStr == null ? "" : nameStr.trim();
                 if (errors.isEmpty()) {
                     if (previousScoreMin != null) {
                         bandsSoFarByMin.remove(previousScoreMin);

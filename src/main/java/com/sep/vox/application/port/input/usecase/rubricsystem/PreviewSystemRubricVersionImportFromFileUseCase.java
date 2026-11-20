@@ -15,15 +15,12 @@ import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
-import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,13 +62,13 @@ public class PreviewSystemRubricVersionImportFromFileUseCase implements IUseCase
     @Transactional
     public PreviewRubricVersionImportResponse execute(PreviewRubricVersionImportFromFileCommand command) { // 👉 ĐỔI KIỂU TRẢ VỀ Ở ĐÂY
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
+        var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
         }
 
-        Rubric rubric = rubricRepository.findById(command.rubricId())
+        var rubric = rubricRepository.findById(command.rubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric hệ thống yêu cầu."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Bộ Rubric này thuộc về trường học. System Admin không thể nạp Version vào đây.");
@@ -111,7 +108,7 @@ public class PreviewSystemRubricVersionImportFromFileUseCase implements IUseCase
         // 3. Tạo các dòng ImportRow
         List<ImportRow> importRows = IntStream.range(0, parsedResult.rows().size())
                 .mapToObj(i -> {
-                    Map<String, String> rowMap = parsedResult.rows().get(i);
+                    var rowMap = parsedResult.rows().get(i);
                     return new ImportRow(
                             null,
                             generatedSessionId,

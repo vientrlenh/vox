@@ -1,11 +1,8 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
-import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.user.Role;
 import java.time.Instant;
 import java.util.List;
 
-import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,19 +68,19 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
     @Override
     @Transactional
     public CreateSchoolUserResponse execute(CreateSchoolUserCommand input) {
-        Instant now = Instant.now();
-        UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
+        var now = Instant.now();
+        var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
-        User caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
+        var caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        SchoolUser callerSchoolUser = schoolUserRepository.findByUserId(caller.getId())
+        var callerSchoolUser = schoolUserRepository.findByUserId(caller.getId())
             .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
         if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
 
-        CreateSchoolUserCommand command = normalize(input);
-        School school = schoolRepository.findById(command.schoolId())
+        var command = normalize(input);
+        var school = schoolRepository.findById(command.schoolId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
@@ -92,7 +89,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         if (!ALLOWED_ROLE_CODES.contains(command.roleCode())) {
             throw new IllegalArgumentException("Vai trò không hợp lệ, chỉ chấp nhận STUDENT hoặc TEACHER");
         }
-        Role role = roleRepository.findByCode(command.roleCode())
+        var role = roleRepository.findByCode(command.roleCode())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò: " + command.roleCode()));
 
         if (userRepository.findByEmail(command.email()).isPresent()) {
@@ -121,11 +118,11 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             if (!command.startDate().isBefore(command.endDate())) {
                 throw new IllegalArgumentException("Ngày bắt đầu phải trước ngày kết thúc");
             }
-            Instant startDate = command.startDate().atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
-            Instant endDate = command.endDate().atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
+            var startDate = command.startDate().atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
+            var endDate = command.endDate().atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
             saveSchoolUser(SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, endDate));
         } else {
-            Instant startDate = command.startDate() != null
+            var startDate = command.startDate() != null
                 ? command.startDate().atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant()
                 : now;
             saveSchoolUser(SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, null));
@@ -134,7 +131,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         // Ghi outbox trong cùng transaction với việc tạo user: user tồn tại thì event
         // chắc chắn tồn tại. Token đặt mật khẩu do consumer sinh ngay trước khi gửi mail,
         // để nó không nằm plaintext trong bảng outboxes lẫn trong topic Kafka.
-        UserCreatedPayloadV1 event = new UserCreatedPayloadV1(
+        var event = new UserCreatedPayloadV1(
             savedUser.getId(),
             command.email(),
             command.fullName(),

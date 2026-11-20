@@ -19,108 +19,101 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
-import com.sep.vox.domain.model.assessment.Assessment;
-import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
-import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
-import com.sep.vox.domain.model.assessment.AssessmentGradingAssignment;
-import com.sep.vox.domain.model.assessment.AssessmentKind;
-import com.sep.vox.domain.model.assessment.AssessmentMember;
-import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
-import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
-import com.sep.vox.domain.model.assessment.GradingRoundType;
-import com.sep.vox.domain.repository.AssessmentCandidateResultRepository;
-import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
-import com.sep.vox.domain.repository.AssessmentMemberRepository;
-import com.sep.vox.domain.repository.AssessmentRepository;
+import com.sep.vox.domain.model.exam.Exam;
+import com.sep.vox.domain.model.exam.ExamCandidateResult;
+import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
+import com.sep.vox.domain.model.exam.ExamGradingAssignment;
+import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.exam.ExamMember;
+import com.sep.vox.domain.model.exam.ExamMemberRole;
+import com.sep.vox.domain.model.exam.GradingAssignmentStatus;
+import com.sep.vox.domain.model.exam.GradingRoundType;
+import com.sep.vox.domain.repository.ExamCandidateResultRepository;
+import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
+import com.sep.vox.domain.repository.ExamMemberRepository;
+import com.sep.vox.domain.repository.ExamRepository;
 
 class ClassTestGradingAssignmentServiceTests {
 
-    private static final UUID ASSESSMENT_ID = UUID.randomUUID();
+    private static final UUID EXAM_ID = UUID.randomUUID();
     private static final UUID CHAIR_ID = UUID.randomUUID();
     private static final UUID RESULT_ID = UUID.randomUUID();
 
-    private AssessmentRepository assessmentRepository;
-    private AssessmentMemberRepository assessmentMemberRepository;
-    private AssessmentCandidateResultRepository assessmentCandidateResultRepository;
-    private AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
+    private ExamRepository examRepository;
+    private ExamMemberRepository examMemberRepository;
+    private ExamCandidateResultRepository examCandidateResultRepository;
+    private ExamGradingAssignmentRepository examGradingAssignmentRepository;
     private ClassTestGradingAssignmentService service;
 
     @BeforeEach
     void setUp() {
-        assessmentRepository = mock(AssessmentRepository.class);
-        assessmentMemberRepository = mock(AssessmentMemberRepository.class);
-        assessmentCandidateResultRepository = mock(AssessmentCandidateResultRepository.class);
-        assessmentGradingAssignmentRepository = mock(AssessmentGradingAssignmentRepository.class);
+        examRepository = mock(ExamRepository.class);
+        examMemberRepository = mock(ExamMemberRepository.class);
+        examCandidateResultRepository = mock(ExamCandidateResultRepository.class);
+        examGradingAssignmentRepository = mock(ExamGradingAssignmentRepository.class);
         service = new ClassTestGradingAssignmentService(
-            assessmentRepository, assessmentMemberRepository, assessmentCandidateResultRepository, assessmentGradingAssignmentRepository);
+            examRepository, examMemberRepository, examCandidateResultRepository, examGradingAssignmentRepository);
 
-        when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(assessment(AssessmentKind.CLASS_TEST)));
-        when(assessmentMemberRepository.findByAssessmentId(ASSESSMENT_ID)).thenReturn(List.of(
-            new AssessmentMember(ASSESSMENT_ID, CHAIR_ID, AssessmentMemberRole.CHAIR, Instant.now(), CHAIR_ID)
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(exam(ExamKind.CLASS_TEST)));
+        when(examMemberRepository.findByExamId(EXAM_ID)).thenReturn(List.of(
+            new ExamMember(EXAM_ID, CHAIR_ID, ExamMemberRole.CHAIR, Instant.now(), CHAIR_ID)
         ));
-        when(assessmentGradingAssignmentRepository.findOpenByCandidateResultId(any())).thenReturn(Optional.empty());
+        when(examGradingAssignmentRepository.findOpenByCandidateResultId(any())).thenReturn(Optional.empty());
     }
 
     @Test
     void should_open_initial_assignment_for_class_test_chair() {
-        service.ensureAssignmentForResult(result(AssessmentCandidateResultStatus.PENDING_REVIEW));
+        service.ensureAssignmentForResult(result(ExamCandidateResultStatus.PENDING_REVIEW));
 
-        ArgumentCaptor<AssessmentGradingAssignment> captor = ArgumentCaptor.forClass(AssessmentGradingAssignment.class);
-        verify(assessmentGradingAssignmentRepository).save(captor.capture());
-        AssessmentGradingAssignment assignment = captor.getValue();
+        var captor = ArgumentCaptor.forClass(ExamGradingAssignment.class);
+        verify(examGradingAssignmentRepository).save(captor.capture());
+        var assignment = captor.getValue();
         assertThat(assignment.getCandidateResultId()).isEqualTo(RESULT_ID);
         assertThat(assignment.getTeacherId()).isEqualTo(CHAIR_ID);
         assertThat(assignment.getAssignedBy()).isEqualTo(CHAIR_ID);
         assertThat(assignment.getRoundType()).isEqualTo(GradingRoundType.INITIAL);
         assertThat(assignment.getStatus()).isEqualTo(GradingAssignmentStatus.ASSIGNED);
-        // activeResultId is what builds the "one open assignment per submission" invariant in the
-        // DB.
+        // activeResultId là thứ dựng bất biến "một phân công mở / bài" ở DB.
         assertThat(assignment.getActiveResultId()).isEqualTo(RESULT_ID);
     }
 
-    /**
-     * The reference point for measuring the AI vs. human deviation: if it is taken later, the
-     * teacher has already edited it.
-     */
+    /** Mốc đo độ lệch AI ↔ người: lấy sau thì đã bị chính giáo viên sửa mất. */
     @Test
     void should_capture_score_before_at_the_moment_of_opening() {
-        AssessmentCandidateResult result = result(AssessmentCandidateResultStatus.PENDING_REVIEW);
+        var result = result(ExamCandidateResultStatus.PENDING_REVIEW);
         result.setTotalScore(new BigDecimal("6.25"));
 
         service.ensureAssignmentForResult(result);
 
-        ArgumentCaptor<AssessmentGradingAssignment> captor = ArgumentCaptor.forClass(AssessmentGradingAssignment.class);
-        verify(assessmentGradingAssignmentRepository).save(captor.capture());
+        var captor = ArgumentCaptor.forClass(ExamGradingAssignment.class);
+        verify(examGradingAssignmentRepository).save(captor.capture());
         assertThat(captor.getValue().getScoreBefore()).isEqualByComparingTo("6.25");
     }
 
-    /**
-     * A class test has no administrative grading deadline -- the deadline reminder job only fires
-     * for rows that HAVE a deadline.
-     */
+    /** Bài trên lớp không có hạn chấm hành chính — job nhắc hạn chỉ bắn cho dòng CÓ hạn. */
     @Test
     void should_open_without_deadline() {
-        service.ensureAssignmentForResult(result(AssessmentCandidateResultStatus.PENDING_REVIEW));
+        service.ensureAssignmentForResult(result(ExamCandidateResultStatus.PENDING_REVIEW));
 
-        ArgumentCaptor<AssessmentGradingAssignment> captor = ArgumentCaptor.forClass(AssessmentGradingAssignment.class);
-        verify(assessmentGradingAssignmentRepository).save(captor.capture());
+        var captor = ArgumentCaptor.forClass(ExamGradingAssignment.class);
+        verify(examGradingAssignmentRepository).save(captor.capture());
         assertThat(captor.getValue().getDeadlineAt()).isNull();
     }
 
     @Test
-    void should_ignore_centralized_assessment() {
-        when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(assessment(AssessmentKind.CENTRALIZED)));
+    void should_ignore_centralized_exam() {
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(exam(ExamKind.CENTRALIZED)));
 
-        service.ensureAssignmentForResult(result(AssessmentCandidateResultStatus.PENDING_REVIEW));
+        service.ensureAssignmentForResult(result(ExamCandidateResultStatus.PENDING_REVIEW));
 
-        verify(assessmentGradingAssignmentRepository, never()).save(any());
+        verify(examGradingAssignmentRepository, never()).save(any());
     }
 
     @Test
     void should_ignore_result_that_is_not_pending_review() {
-        service.ensureAssignmentForResult(result(AssessmentCandidateResultStatus.RELEASED));
+        service.ensureAssignmentForResult(result(ExamCandidateResultStatus.RELEASED));
 
-        verify(assessmentGradingAssignmentRepository, never()).save(any());
+        verify(examGradingAssignmentRepository, never()).save(any());
     }
 
     /**
@@ -129,79 +122,79 @@ class ClassTestGradingAssignmentServiceTests {
      */
     @Test
     void should_not_open_second_assignment_when_one_is_already_open() {
-        when(assessmentGradingAssignmentRepository.findOpenByCandidateResultId(RESULT_ID))
-            .thenReturn(Optional.of(mock(AssessmentGradingAssignment.class)));
+        when(examGradingAssignmentRepository.findOpenByCandidateResultId(RESULT_ID))
+            .thenReturn(Optional.of(mock(ExamGradingAssignment.class)));
 
-        service.ensureAssignmentForResult(result(AssessmentCandidateResultStatus.PENDING_REVIEW));
+        service.ensureAssignmentForResult(result(ExamCandidateResultStatus.PENDING_REVIEW));
 
-        verify(assessmentGradingAssignmentRepository, never()).save(any());
+        verify(examGradingAssignmentRepository, never()).save(any());
     }
 
     @Test
-    void should_ignore_assessment_without_chair() {
-        when(assessmentMemberRepository.findByAssessmentId(ASSESSMENT_ID)).thenReturn(List.of(
-            new AssessmentMember(ASSESSMENT_ID, UUID.randomUUID(), AssessmentMemberRole.AUTHOR, Instant.now(), CHAIR_ID)
+    void should_ignore_exam_without_chair() {
+        when(examMemberRepository.findByExamId(EXAM_ID)).thenReturn(List.of(
+            new ExamMember(EXAM_ID, UUID.randomUUID(), ExamMemberRole.AUTHOR, Instant.now(), CHAIR_ID)
         ));
 
-        service.ensureAssignmentForResult(result(AssessmentCandidateResultStatus.PENDING_REVIEW));
+        service.ensureAssignmentForResult(result(ExamCandidateResultStatus.PENDING_REVIEW));
 
-        verify(assessmentGradingAssignmentRepository, never()).save(any());
+        verify(examGradingAssignmentRepository, never()).save(any());
     }
 
     @Test
-    void should_sweep_only_pending_review_results_of_the_assessment() {
-        AssessmentCandidateResult pending = result(AssessmentCandidateResultStatus.PENDING_REVIEW);
-        AssessmentCandidateResult released = result(AssessmentCandidateResultStatus.RELEASED);
+    void should_sweep_only_pending_review_results_of_the_exam() {
+        var pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
+        var released = result(ExamCandidateResultStatus.RELEASED);
         released.setId(UUID.randomUUID());
-        when(assessmentCandidateResultRepository.findByAssessmentId(ASSESSMENT_ID)).thenReturn(List.of(pending, released));
-        when(assessmentGradingAssignmentRepository.findOpenByCandidateResultIdIn(anyList())).thenReturn(List.of());
-        when(assessmentGradingAssignmentRepository.saveAll(anyList())).thenAnswer(call -> call.getArgument(0));
+        when(examCandidateResultRepository.findByExamId(EXAM_ID)).thenReturn(List.of(pending, released));
+        when(examGradingAssignmentRepository.findOpenByCandidateResultIdIn(anyList())).thenReturn(List.of());
+        when(examGradingAssignmentRepository.saveAll(anyList())).thenAnswer(call -> call.getArgument(0));
 
-        int opened = service.ensureAssignmentsForAssessment(ASSESSMENT_ID);
+        var opened = service.ensureAssignmentsForExam(EXAM_ID);
 
         assertThat(opened).isEqualTo(1);
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<AssessmentGradingAssignment>> captor = ArgumentCaptor.forClass(List.class);
-        verify(assessmentGradingAssignmentRepository).saveAll(captor.capture());
+        ArgumentCaptor<List<ExamGradingAssignment>> captor = ArgumentCaptor.forClass(List.class);
+        verify(examGradingAssignmentRepository).saveAll(captor.capture());
         assertThat(captor.getValue()).singleElement()
             .satisfies(assignment -> assertThat(assignment.getCandidateResultId()).isEqualTo(RESULT_ID));
     }
 
-    /** Two hooks overlapping is normal -- the catch-up sweep must not double up. */
+    /** Hai điểm móc chồng lên nhau là chuyện bình thường — quét bù không được nhân đôi. */
     @Test
     void should_skip_results_that_already_have_an_open_assignment_when_sweeping() {
-        AssessmentCandidateResult pending = result(AssessmentCandidateResultStatus.PENDING_REVIEW);
-        when(assessmentCandidateResultRepository.findByAssessmentId(ASSESSMENT_ID)).thenReturn(List.of(pending));
-        when(assessmentGradingAssignmentRepository.findOpenByCandidateResultIdIn(anyList())).thenReturn(List.of(
-            AssessmentGradingAssignment.open(
+        var pending = result(ExamCandidateResultStatus.PENDING_REVIEW);
+        when(examCandidateResultRepository.findByExamId(EXAM_ID)).thenReturn(List.of(pending));
+        when(examGradingAssignmentRepository.findOpenByCandidateResultIdIn(anyList())).thenReturn(List.of(
+            ExamGradingAssignment.open(
                 RESULT_ID, CHAIR_ID, GradingRoundType.INITIAL, null, null, Instant.now(), CHAIR_ID, null)
         ));
 
-        int opened = service.ensureAssignmentsForAssessment(ASSESSMENT_ID);
+        var opened = service.ensureAssignmentsForExam(EXAM_ID);
 
         assertThat(opened).isZero();
-        verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
+        verify(examGradingAssignmentRepository, never()).saveAll(anyList());
     }
 
     @Test
-    void should_not_sweep_centralized_assessment() {
-        when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(assessment(AssessmentKind.CENTRALIZED)));
+    void should_not_sweep_centralized_exam() {
+        when(examRepository.findById(EXAM_ID)).thenReturn(Optional.of(exam(ExamKind.CENTRALIZED)));
 
-        assertThat(service.ensureAssignmentsForAssessment(ASSESSMENT_ID)).isZero();
-        verify(assessmentCandidateResultRepository, never()).findByAssessmentId(any());
+        assertThat(service.ensureAssignmentsForExam(EXAM_ID)).isZero();
+        verify(examCandidateResultRepository, never()).findByExamId(any());
     }
 
-    private Assessment assessment(AssessmentKind kind) {
-        Assessment assessment = new Assessment();
-        assessment.setId(ASSESSMENT_ID);
-        assessment.setKind(kind);
-        return assessment;
+    private Exam exam(ExamKind kind) {
+        var exam = new Exam();
+        exam.setId(EXAM_ID);
+        exam.setKind(kind);
+        return exam;
     }
 
-    private AssessmentCandidateResult result(AssessmentCandidateResultStatus status) {
-        AssessmentCandidateResult result = new AssessmentCandidateResult();
+    private ExamCandidateResult result(ExamCandidateResultStatus status) {
+        var result = new ExamCandidateResult();
         result.setId(RESULT_ID);
-        result.setAssessmentId(ASSESSMENT_ID);
+        result.setExamId(EXAM_ID);
         result.setStatus(status);
         return result;
     }

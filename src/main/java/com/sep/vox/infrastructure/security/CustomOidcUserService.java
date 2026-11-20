@@ -25,7 +25,7 @@ public class CustomOidcUserService implements OAuth2UserService<OidcUserRequest,
 
     @Override
     public @Nullable OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
-        OidcUser oidcUser = delegate.loadUser(userRequest);
+        var oidcUser = delegate.loadUser(userRequest);
 
         if (oidcUser.getEmailVerified() == null || !oidcUser.getEmailVerified()) {
             throw new OAuth2AuthenticationException(

@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.user;
 
-import com.sep.vox.domain.model.user.User;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -21,7 +20,7 @@ public class ViewUserDetailsUseCase implements IUseCase<ViewUserDetailsQuery, Us
 
     @Override
     public UserDto execute(ViewUserDetailsQuery input) {
-        User user = userRepository.findById(input.id())
+        var user = userRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         return UserDtoMapper.toUserDto(user);
     }

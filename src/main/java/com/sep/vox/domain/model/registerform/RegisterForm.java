@@ -302,7 +302,7 @@ public class RegisterForm {
         int studentCount, 
         Instant now
     ) {
-        RegisterForm form = new RegisterForm();
+        var form = new RegisterForm();
         form.schoolDirectoryId = require(schoolDirectoryId);
         form.verificationMethod = verificationMethod;
         form.contactFullName = new FullName(contactFullName);
@@ -334,7 +334,7 @@ public class RegisterForm {
         int studentCount, 
         Instant now
     ) {
-        RegisterForm form = new RegisterForm();
+        var form = new RegisterForm();
         form.schoolDirectoryId = require(schoolDirectoryId);
         form.verificationMethod = verificationMethod;
         form.contactFullName = new FullName(contactFullName);
@@ -369,7 +369,7 @@ public class RegisterForm {
         int studentCount, 
         Instant now
     ) {
-        RegisterForm form = new RegisterForm();
+        var form = new RegisterForm();
         form.verificationMethod = RegisterFormVerificationMethod.DOCUMENT;
         form.schoolName = require(schoolName);
         form.schoolDomain = new SchoolDomain(schoolDomain);

@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.PaymentRecordJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -31,8 +30,8 @@ public class PaymentRecordRepositoryImpl implements PaymentRecordRepository {
 
     @Override
     public PaymentRecord save(PaymentRecord paymentRecord) {
-        PaymentRecordJpaEntity entity = PaymentRecordMapper.toJpa(paymentRecord);
-        PaymentRecordJpaEntity saved = springDataPaymentRecordRepository.save(entity);
+        var entity = PaymentRecordMapper.toJpa(paymentRecord);
+        var saved = springDataPaymentRecordRepository.save(entity);
         return PaymentRecordMapper.toDomain(saved);
     }
 

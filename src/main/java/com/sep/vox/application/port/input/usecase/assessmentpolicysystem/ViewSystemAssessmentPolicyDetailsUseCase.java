@@ -10,11 +10,9 @@ import com.sep.vox.domain.dto.AssessmentPolicyDto;
 import com.sep.vox.domain.mapper.AssessmentPolicyDtoMapper;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
-import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,8 +35,8 @@ public class ViewSystemAssessmentPolicyDetailsUseCase implements IUseCase<ViewSy
     @Override
     @Transactional(readOnly = true)
     public AssessmentPolicyDto execute(ViewSystemAssessmentPolicyDetailsQuery query) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản bị khóa.");

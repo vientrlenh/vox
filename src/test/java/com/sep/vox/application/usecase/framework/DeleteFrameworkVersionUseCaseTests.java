@@ -61,20 +61,20 @@ public class DeleteFrameworkVersionUseCaseTests {
 
     @Test
     void should_hard_delete_draft_version_with_children() {
-        DeleteFrameworkVersionCommand command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
+        var command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        FrameworkVersion version = new FrameworkVersion();
+        var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setStatus(FrameworkVersionStatus.DRAFT);
 
-        FrameworkCriterion criterion1 = new FrameworkCriterion();
+        var criterion1 = new FrameworkCriterion();
         criterion1.setId(UUID.randomUUID());
-        FrameworkCriterion criterion2 = new FrameworkCriterion();
+        var criterion2 = new FrameworkCriterion();
         criterion2.setId(UUID.randomUUID());
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
@@ -93,13 +93,13 @@ public class DeleteFrameworkVersionUseCaseTests {
 
     @Test
     void should_soft_delete_published_version() {
-        DeleteFrameworkVersionCommand command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
+        var command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        FrameworkVersion version = new FrameworkVersion();
+        var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setStatus(FrameworkVersionStatus.PUBLISHED);
@@ -114,13 +114,13 @@ public class DeleteFrameworkVersionUseCaseTests {
 
     @Test
     void should_soft_delete_archived_version() {
-        DeleteFrameworkVersionCommand command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
+        var command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        FrameworkVersion version = new FrameworkVersion();
+        var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
         version.setStatus(FrameworkVersionStatus.ARCHIVED);
@@ -135,7 +135,7 @@ public class DeleteFrameworkVersionUseCaseTests {
 
     @Test
     void should_throw_not_found_when_framework_missing() {
-        DeleteFrameworkVersionCommand command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
+        var command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
 
@@ -144,9 +144,9 @@ public class DeleteFrameworkVersionUseCaseTests {
 
     @Test
     void should_throw_not_found_when_version_missing() {
-        DeleteFrameworkVersionCommand command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
+        var command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
@@ -159,14 +159,14 @@ public class DeleteFrameworkVersionUseCaseTests {
 
     @Test
     void should_throw_when_version_not_belongs_to_framework() {
-        UUID otherFrameworkId = UUID.randomUUID();
-        DeleteFrameworkVersionCommand command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
+        var otherFrameworkId = UUID.randomUUID();
+        var command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
             true, now, now, null, null
         );
-        FrameworkVersion version = new FrameworkVersion();
+        var version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(otherFrameworkId);
 

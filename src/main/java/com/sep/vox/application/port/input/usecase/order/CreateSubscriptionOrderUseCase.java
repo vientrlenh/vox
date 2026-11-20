@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.order;
 
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.UUID;
@@ -67,7 +66,7 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
     public UUID execute(CreateSubscriptionOrderCommand input) {
         // Quyền đã chặn ở @PreAuthorize("hasRole('SCHOOL_ADMIN')"); ở đây chỉ còn lấy xem là trường
         // NÀO -- và lấy từ token nên không có đường nào đặt đơn hộ trường khác.
-        UUID schoolId = userContextPort.getCurrentSchoolId();
+        var schoolId = userContextPort.getCurrentSchoolId();
 
         // Trường đang bị System Admin cưỡng chế đình chỉ (gian lận...) thì không cho đặt đơn mới cho
         // tới khi được gỡ đình chỉ tường minh: settlement sẽ tạo một subscription ACTIVE mới mà không
@@ -77,13 +76,13 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
         // tài vẫn có điểm dừng: SubscriptionExpiryJob chuyển kỳ SUSPENDED đã qua endDate sang EXPIRED
         // (xem SpringDataSchoolSubscriptionRepository.expireOverdue), nên cửa này khóa tối đa tới hết
         // kỳ đã trả tiền chứ không khóa vĩnh viễn.
-        boolean hasSuspended = schoolSubscriptionRepository.findBySchoolId(schoolId).stream()
+        var hasSuspended = schoolSubscriptionRepository.findBySchoolId(schoolId).stream()
             .anyMatch(subscription -> subscription.getStatus() == SchoolSubscriptionStatus.SUSPENDED);
         if (hasSuspended) {
             throw new IllegalStateException("Gói đăng ký của trường đang bị đình chỉ, không thể đặt đơn mới.");
         }
 
-        SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
+        var plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
         // Luồng cũ chỉ kiểm gói CÓ TỒN TẠI -- gap thật: đơn trỏ vào gói DRAFT (chưa chốt giá, admin
         // còn sửa được) hoặc ARCHIVED (đã ngừng bán) vẫn tạo được, và tới lúc settlement thì trường
@@ -100,7 +99,7 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
                 "Trường đang có một đơn đăng ký chờ thanh toán, hãy hoàn tất hoặc hủy đơn đó trước khi đặt đơn mới.");
         }
 
-        Instant now = Instant.now();
+        var now = Instant.now();
 
         // Tối đa MỘT kỳ được xếp hàng chờ. Không chặn gia hạn sớm -- trường vẫn mua trước được ngay
         // ngày đầu, việc phải làm khi ngân sách phải tiêu trong năm tài chính -- chỉ chặn việc xếp
@@ -114,7 +113,7 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
                 "Trường đã có một kỳ đã thanh toán đang chờ tới ngày chạy, hãy đợi kỳ đó bắt đầu rồi mới mua tiếp.");
         }
 
-        Order savedOrder = orderRepository.save(buildOrder(schoolId, plan, now));
+        var savedOrder = orderRepository.save(buildOrder(schoolId, plan, now));
 
         // Đơn gói luôn có ĐÚNG MỘT dòng: mỗi đơn mua một chu kỳ của một gói. Dòng này là chỗ DUY NHẤT
         // ghi lại gói nào được mua (orders không có cột plan_id) nên settlement đọc nó để biết cấp gì.
@@ -140,8 +139,8 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
      * đáng một kiểu riêng.
      */
     private Order buildOrder(UUID schoolId, SubscriptionPlan plan, Instant now) {
-        UUID createdBy = userContextPort.getCurrentAuthenticatedUserId();
-        SchoolSubscription inForce = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).orElse(null);
+        var createdBy = userContextPort.getCurrentAuthenticatedUserId();
+        var inForce = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).orElse(null);
 
         if (inForce != null && isUpgradeTo(plan, inForce)) {
             return upgradeOrder(schoolId, plan, now, createdBy, inForce);
@@ -183,11 +182,11 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
         // thì khoản bù càng rộng tay so với thực tế lúc đổi gói (tối đa lệch một ngày, theo
         // Order.PENDING_TTL) -- chấp nhận lệch về phía có lợi cho trường, vì tính lại lúc settlement
         // sẽ làm số tiền đã thu không còn khớp đơn, và đó mới là thứ không sửa được.
-        BigDecimal unusedCredit = upgradePolicyService.calculateUnusedCredit(
+        var unusedCredit = upgradePolicyService.calculateUnusedCredit(
             schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now), plan.getPriceVnd(), now);
 
         // Phí dịch vụ cộng thêm (từ phần tiền sau trừ)
-        BigDecimal serviceFeeVnd = plan.getPriceVnd().subtract(unusedCredit)
+        var serviceFeeVnd = plan.getPriceVnd().subtract(unusedCredit)
             .multiply(serviceFeePort.serviceFeeRatio())
             .setScale(0, RoundingMode.HALF_UP);
 
@@ -202,14 +201,14 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
      * một, nên còn dư dòng nào trong danh sách chưa-kết-thúc thì đó chính là kỳ đang xếp hàng.
      */
     private boolean hasQueuedPeriod(UUID schoolId, Instant now) {
-        int unfinished = schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now).size();
-        int inForce = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).isPresent() ? 1 : 0;
+        var unfinished = schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now).size();
+        var inForce = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).isPresent() ? 1 : 0;
         return unfinished - inForce > 0;
     }
 
     /** Đăng ký mới, gia hạn, hoặc chuyển sang gói rẻ hơn -- tất cả đều nối tiếp kỳ đang chạy. */
     private Order chainedOrder(UUID schoolId, SubscriptionPlan plan, Instant now, UUID createdBy) {
-        BigDecimal serviceFeeVnd = plan.getPriceVnd().multiply(serviceFeePort.serviceFeeRatio()).setScale(0, RoundingMode.HALF_UP);
+        var serviceFeeVnd = plan.getPriceVnd().multiply(serviceFeePort.serviceFeeRatio()).setScale(0, RoundingMode.HALF_UP);
         return Order.forSubscription(schoolId, OrderType.SUBSCRIPTION_REQUEST,
             "Đăng ký " + plan.getName(), plan.getPriceVnd(), serviceFeeVnd, now, createdBy);
     }

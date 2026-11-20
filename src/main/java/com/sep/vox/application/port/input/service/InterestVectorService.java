@@ -1,13 +1,11 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.domain.model.personalization.LearnerProfile;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -81,9 +79,9 @@ public class InterestVectorService {
         // Nhánh bỏ dở luôn có spokenSeconds == 0 (ABANDONED <=> gradedSeconds == 0) nên nó tự
         // rơi vào đầu dưới của cùng công thức; không cần rẽ nhánh riêng, và nhờ vậy hai đầu
         // không thể trôi lệch nhau khi sau này chỉnh bảng giá trị.
-        double signal = SessionDiagnosisPolicy.signal(origin, spokenSeconds);
+        var signal = SessionDiagnosisPolicy.signal(origin, spokenSeconds);
         appendInterestEvent(studentId, topicId, sessionId, "SESSION_OUTCOME", signal);
-        Set<UUID> alreadyRecorded = new HashSet<UUID>();
+        var alreadyRecorded = new HashSet<UUID>();
         alreadyRecorded.add(topicId);
         appendSkippedOffers(studentId, sessionId, offeredTopicIds, 0.30, alreadyRecorded);
         appendSkippedOffers(studentId, sessionId, previousOfferedTopicIds, 0.20, alreadyRecorded);
@@ -92,13 +90,13 @@ public class InterestVectorService {
 
     @Transactional
     public void recomputeInterest(UUID studentId) {
-        List<TopicInterestEvent> events = eventRepository.findByStudent(studentId);
-        Map<UUID, Double> scores = new LinkedHashMap<UUID, Double>();
-        Map<UUID, Set<UUID>> sessions = new HashMap<UUID, Set<UUID>>();
+        var events = eventRepository.findByStudent(studentId);
+        var scores = new LinkedHashMap<UUID, Double>();
+        var sessions = new HashMap<UUID, Set<UUID>>();
         // Bằng chứng KHÔNG gắn phiên -- xem chú thích ở nhánh else bên dưới.
-        Map<UUID, Integer> standalone = new HashMap<UUID, Integer>();
-        Map<UUID, Instant> last = new HashMap<UUID, Instant>();
-        for (TopicInterestEvent event : events) {
+        var standalone = new HashMap<UUID, Integer>();
+        var last = new HashMap<UUID, Instant>();
+        for (var event : events) {
             // ĐIỂM thì mọi sự kiện đều tính -- kể cả "được chào mà không chọn", đó chính là
             // thông tin âm ta muốn học.
             scores.compute(
@@ -142,8 +140,8 @@ public class InterestVectorService {
                 last.put(event.getTopicId(), event.getOccurredAt());
             }
         }
-        List<TopicInterestScoreEntry> newScores = new ArrayList<TopicInterestScoreEntry>();
-        for (Map.Entry<UUID, Double> entry : scores.entrySet()) {
+        var newScores = new ArrayList<TopicInterestScoreEntry>();
+        for (var entry : scores.entrySet()) {
             newScores.add(new TopicInterestScoreEntry(
                 entry.getKey(),
                 entry.getValue(),
@@ -162,7 +160,7 @@ public class InterestVectorService {
             List<UUID> topicIds,
             double signal,
             Set<UUID> alreadyRecorded) {
-        for (UUID offeredId : topicIds == null ? List.<UUID>of() : topicIds) {
+        for (var offeredId : topicIds == null ? List.<UUID>of() : topicIds) {
             if (offeredId != null && alreadyRecorded.add(offeredId)) {
                 appendInterestEvent(studentId, offeredId, sessionId, "OFFERED_NOT_CHOSEN", signal);
             }
@@ -172,25 +170,25 @@ public class InterestVectorService {
     private void recomputeDimensionInterest(
             UUID studentId,
             List<TopicInterestEvent> events) {
-        LearnerProfile profile = learnerProfileRepository.findCurrent(studentId).orElse(null);
+        var profile = learnerProfileRepository.findCurrent(studentId).orElse(null);
         if (profile == null) {
             return;
         }
-        UUID profileId = profile.getId();
+        var profileId = profile.getId();
         dimensionScoreRepository.primeBaselineFromScoreWhereMissing(profileId);
         // Chỉ hỏi chiều của những chủ đề THẬT SỰ có trong sự kiện của học sinh này, thay vì nạp
         // cả bảng như bản cũ (findAllTopicDimensions -> findAll(), entity đầy đủ, không lọc gì,
         // chạy sau MỖI buổi luyện). Kết quả y hệt: id nào không có trong bảng vẫn trả null và rơi
         // vào nhánh `continue` ngay dưới, đúng như trước.
-        Map<UUID, String> dimensions = topicRepository.findDimensionsByIds(
+        var dimensions = topicRepository.findDimensionsByIds(
             events.stream()
                 .map(event -> event.getTopicId())
                 .filter(java.util.Objects::nonNull)
                 .collect(java.util.stream.Collectors.toSet())
         );
-        Map<String, Double> scores = new HashMap<>(dimensionScoreRepository.findByLearnerProfile(profileId));
-        for (TopicInterestEvent event : events) {
-            String dimension = dimensions.get(event.getTopicId());
+        var scores = new HashMap<>(dimensionScoreRepository.findByLearnerProfile(profileId));
+        for (var event : events) {
+            var dimension = dimensions.get(event.getTopicId());
             if (dimension == null) {
                 continue;
             }
@@ -199,7 +197,7 @@ public class InterestVectorService {
                 (key, value) -> 0.1 * event.getSignal() + 0.9 * (value == null ? 0.5 : value)
             );
         }
-        for (Map.Entry<String, Double> entry : scores.entrySet()) {
+        for (var entry : scores.entrySet()) {
             dimensionScoreRepository.upsertScore(profileId, entry.getKey(), entry.getValue());
         }
     }

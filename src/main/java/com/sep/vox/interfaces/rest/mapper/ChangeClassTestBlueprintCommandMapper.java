@@ -10,7 +10,7 @@ public final class ChangeClassTestBlueprintCommandMapper {
     private ChangeClassTestBlueprintCommandMapper() {
     }
 
-    public static ChangeClassTestBlueprintCommand fromRequest(UUID assessmentId, ChangeClassTestBlueprintRequest request) {
-        return new ChangeClassTestBlueprintCommand(assessmentId, request.blueprintId(), request.blueprintVersionId());
+    public static ChangeClassTestBlueprintCommand fromRequest(UUID examId, ChangeClassTestBlueprintRequest request) {
+        return new ChangeClassTestBlueprintCommand(examId, request.blueprintId(), request.blueprintVersionId());
     }
 }

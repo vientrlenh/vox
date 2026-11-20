@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -18,7 +17,6 @@ import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ImportSessionMapper;
-import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataImportSessionRepository;
 
 @Repository
@@ -32,8 +30,8 @@ public class ImportSessionRepositoryImpl implements ImportSessionRepository {
 
     @Override
     public ImportSession save(ImportSession session) {
-        ImportSessionJpaEntity entity = ImportSessionMapper.toJpa(session);
-        ImportSessionJpaEntity saved = springDataImportSessionRepository.saveAndFlush(entity);
+        var entity = ImportSessionMapper.toJpa(session);
+        var saved = springDataImportSessionRepository.saveAndFlush(entity);
         return ImportSessionMapper.toDomain(saved);
     }
 
@@ -45,12 +43,12 @@ public class ImportSessionRepositoryImpl implements ImportSessionRepository {
 
     @Override
     public PageResult<ImportSession> findBySchoolId(UUID schoolId, ImportType type, ImportSessionStatus status, int pageNumber, int size) {
-        PageRequest pageable = OneBasedPaging.toPageRequest(
-            pageNumber,
+        var pageable = PageRequest.of(
+            pageNumber - 1,
             size,
             Sort.by(Sort.Direction.DESC, (ImportSessionJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.DESC, (ImportSessionJpaEntity entity) -> entity.getId()))
         );
-        Page<ImportSessionJpaEntity> page = springDataImportSessionRepository.findBySchoolIdWithFilters(
+        var page = springDataImportSessionRepository.findBySchoolIdWithFilters(
             schoolId,
             valueOf(type),
             valueOf(status),

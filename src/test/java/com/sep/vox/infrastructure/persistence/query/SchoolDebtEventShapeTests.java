@@ -10,13 +10,15 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolDebtEvent;
 import com.sep.vox.domain.model.school.SchoolDebtEventType;
 import com.sep.vox.domain.repository.SchoolDebtEventRepository;
-import com.sep.vox.support.IntegrationTest;
 
 /**
  * {@code chk_school_debt_events_shape_matches_event_type} là chốt chặn giữ cho hai nửa của bản sửa
@@ -35,10 +37,11 @@ import com.sep.vox.support.IntegrationTest;
  *
  * <p>Xem SchoolBalanceQuerySmokeTests về lý do dùng {@code @SpringBootTest} thay vì slice.
  */
-@IntegrationTest
+@SpringBootTest
+@ActiveProfiles("test")
 @AutoConfigureTestGrpcTransport
 @Transactional
-class SchoolDebtEventShapeTests {
+class SchoolDebtEventShapeTests extends ContainerTestConfig {
 
     private static final String SHAPE_CONSTRAINT = "chk_school_debt_events_shape_matches_event_type";
 
@@ -51,47 +54,45 @@ class SchoolDebtEventShapeTests {
 
     @Test
     void should_accept_a_cleared_row_with_no_quota_bucket_and_no_trigger() {
-        // Debt clearance is a SCHOOL-level event: the balance is ONE number shared by both quota
-        // wallets, so no wallet has "just cleared its debt". Those three columns must be allowed to
-        // stay empty, otherwise the event emitter is forced to invent a value and pollute the very
-        // ledger used for reconciliation.
-        SchoolDebtEvent saved = schoolDebtEventRepository.save(new SchoolDebtEvent(
+        // Hết nợ là sự kiện cấp TRƯỜNG: số dư là MỘT con số dùng chung cho cả hai ví hạn mức, nên
+        // không ví nào "vừa hết nợ". Ba cột đó phải để trống được, nếu không thì chỗ phát sự kiện
+        // buộc phải bịa ra một giá trị và làm bẩn chính quyển sổ dùng để đối soát.
+        var saved = schoolDebtEventRepository.save(new SchoolDebtEvent(
             schoolId, subscriptionId, SchoolDebtEventType.CLEARED,
             null, null, null, null, null, null, BigDecimal.ZERO, now));
 
         assertThat(saved.getQuotaType()).isNull();
-        assertThat(saved.getTriggerAssessmentSessionId()).isNull();
+        assertThat(saved.getTriggerExamSessionId()).isNull();
         assertThat(saved.getTriggerPracticeSessionId()).isNull();
         assertThat(saved.getOverageVnd()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
     @Test
     void should_accept_a_debt_row_triggered_by_a_practice_session() {
-        // Exactly the shape that could not be written before V4: debt arising from a SPEAKING
-        // PRACTICE session.
-        SchoolDebtEvent saved = schoolDebtEventRepository.save(new SchoolDebtEvent(
+        // Chính là hình dạng mà trước V4 không ghi nổi: nợ sinh từ phiên LUYỆN NÓI.
+        var saved = schoolDebtEventRepository.save(new SchoolDebtEvent(
             schoolId, subscriptionId, SchoolDebtEventType.CAP_EXCEEDED,
             QuotaType.PRACTICE, null, UUID.randomUUID(), new BigDecimal("18402.60"),
             new BigDecimal("2400000"), new BigDecimal("2906310"), new BigDecimal("506310"), now));
 
         assertThat(saved.getTriggerPracticeSessionId()).isNotNull();
-        assertThat(saved.getTriggerAssessmentSessionId()).isNull();
+        assertThat(saved.getTriggerExamSessionId()).isNull();
     }
 
     @Test
     void should_reject_a_cleared_row_that_claims_a_quota_bucket() {
         assertThatThrownBy(() -> schoolDebtEventRepository.save(new SchoolDebtEvent(
             schoolId, subscriptionId, SchoolDebtEventType.CLEARED,
-            QuotaType.ASSESSMENT, null, null, null,
+            QuotaType.EXAM, null, null, null,
             new BigDecimal("8000000"), new BigDecimal("8000000"), BigDecimal.ZERO, now)))
             .hasMessageContaining(SHAPE_CONSTRAINT);
     }
 
     @Test
     void should_reject_a_debt_row_with_no_trigger_session_at_all() {
-        // This is EXACTLY the row that the pre-V4 version could still write: a CAP_EXCEEDED caused by speaking practice, but
-        // trigger_assessment_session_id = NULL because practiceSessionId was not passed down. The ledger knew the
-        // school exceeded the ceiling but not because of which expense.
+        // Đây CHÍNH LÀ dòng mà bản trước V4 vẫn ghi được: CAP_EXCEEDED do luyện nói gây ra, nhưng
+        // trigger_exam_session_id = NULL vì practiceSessionId không được truyền xuống. Sổ biết
+        // trường vượt trần mà không biết vì khoản nào.
         assertThatThrownBy(() -> schoolDebtEventRepository.save(new SchoolDebtEvent(
             schoolId, subscriptionId, SchoolDebtEventType.CAP_EXCEEDED,
             QuotaType.PRACTICE, null, null, new BigDecimal("18402.60"),
@@ -103,7 +104,7 @@ class SchoolDebtEventShapeTests {
     void should_reject_a_debt_row_naming_both_trigger_sessions() {
         assertThatThrownBy(() -> schoolDebtEventRepository.save(new SchoolDebtEvent(
             schoolId, subscriptionId, SchoolDebtEventType.LOCKED,
-            QuotaType.ASSESSMENT, UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("96320.40"),
+            QuotaType.EXAM, UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("96320.40"),
             new BigDecimal("8000000"), new BigDecimal("8045180"), new BigDecimal("45180"), now)))
             .hasMessageContaining(SHAPE_CONSTRAINT);
     }

@@ -30,9 +30,9 @@ public class KafkaEventProducerAdapter implements ExternalEventPublisherPort {
             throw new IllegalArgumentException("Loại event external không được để trống");
         }
 
-        String topic = resolveTopic(event);
-        String eventType = event.getClass().getSimpleName();
-        String key = event instanceof HasPartitionKey keyed ? keyed.partitionKey() : eventType;
+        var topic = resolveTopic(event);
+        var eventType = event.getClass().getSimpleName();
+        var key = event instanceof HasPartitionKey keyed ? keyed.partitionKey() : eventType;
         LOGGER.info("Publishing event {} to kafka", eventType);
         try {
             kafkaTemplate.send(topic, key, event).get();
@@ -48,7 +48,7 @@ public class KafkaEventProducerAdapter implements ExternalEventPublisherPort {
     }
 
     private String resolveTopic(Object event) {
-        ExternalEventTopic annotation = event.getClass().getAnnotation(ExternalEventTopic.class);
+        var annotation = event.getClass().getAnnotation(ExternalEventTopic.class);
         return annotation == null ? toKebabCase(event.getClass().getSimpleName()) : annotation.value();
     }
 

@@ -13,19 +13,18 @@ public record SchoolSubscriptionDto(
     UUID id,
     UUID schoolId,
     UUID subscriptionPlanId,
-    Instant startDate,
-    Instant endDate,
-    SchoolSubscriptionStatus status,
+    String startDate,
+    String endDate,
+    String status,
     BigDecimal pricePaidSnapshot,
-    Instant cancelledAt,
-    Instant createdAt,
-    Instant suspendedAt,
+    String cancelledAt,
+    String createdAt,
+    String suspendedAt,
     String suspendedReason,
     /**
-     * The System Admin who ordered the suspension. It goes with the suspended_* trio so it must be
-     * present here: the GraphQL schema still declares suspendedBy, and a missing component makes
-     * PropertyDataFetcher return null forever -- the admin screen shows "unknown who suspended" for every
-     * period, with no error surfacing.
+     * System Admin đã ra lệnh đình chỉ. Đi cùng bộ ba suspended_* nên phải có mặt ở đây: schema
+     * GraphQL vẫn khai suspendedBy, và thiếu component thì PropertyDataFetcher trả null vĩnh viễn --
+     * màn quản trị hiển thị "không rõ ai đình chỉ" cho mọi kỳ, không có lỗi nào nổi lên.
      */
     UUID suspendedBy
 ) {
@@ -35,13 +34,13 @@ public record SchoolSubscriptionDto(
             domain.getId(),
             domain.getSchoolId(),
             domain.getSubscriptionPlanId(),
-            domain.getStartDate(),
-            domain.getEndDate(),
-            domain.getStatus(),
+            valueOf(domain.getStartDate()),
+            valueOf(domain.getEndDate()),
+            valueOf(domain.getStatus()),
             domain.getPricePaidSnapshot(),
-            domain.getCancelledAt(),
-            domain.getCreatedAt(),
-            domain.getSuspendedAt(),
+            valueOf(domain.getCancelledAt()),
+            valueOf(domain.getCreatedAt()),
+            valueOf(domain.getSuspendedAt()),
             domain.getSuspendedReason(),
             domain.getSuspendedBy()
         );
@@ -61,5 +60,13 @@ public record SchoolSubscriptionDto(
         return domains.stream()
             .map(SchoolSubscriptionDto::toDto)
             .toList();
+    }
+
+    private static String valueOf(Instant value) {
+        return value == null ? null : value.toString();
+    }
+
+    private static String valueOf(SchoolSubscriptionStatus status) {
+        return status == null ? null : status.name();
     }
 }

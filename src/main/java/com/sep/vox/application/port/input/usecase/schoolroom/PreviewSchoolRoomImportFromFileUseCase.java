@@ -1,10 +1,8 @@
 package com.sep.vox.application.port.input.usecase.schoolroom;
 
-import com.sep.vox.domain.model.school.School;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -75,16 +73,16 @@ public class PreviewSchoolRoomImportFromFileUseCase
             throw new IllegalArgumentException("File import không được để trống");
         }
 
-        Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = findCurrentUser(currentUserId);
-        UUID schoolId = getSchoolId(currentUser);
+        var now = Instant.now();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = findCurrentUser(currentUserId);
+        var schoolId = getSchoolId(currentUser);
         validateRequestedSchool(input.schoolId(), schoolId);
         validateSchool(schoolId);
 
-        ParseImportFileResult parsed = fileProcessingPort.parse(input.file(), ImportType.SCHOOL_ROOM);
-        Instant expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
-        ImportSession savedSession = importSessionRepository.save(createSession(input, parsed, schoolId, currentUserId, now, expiresAt));
+        var parsed = fileProcessingPort.parse(input.file(), ImportType.SCHOOL_ROOM);
+        var expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
+        var savedSession = importSessionRepository.save(createSession(input, parsed, schoolId, currentUserId, now, expiresAt));
         saveRows(savedSession.getId(), parsed);
 
         return new PreviewSchoolRoomImportResponse(
@@ -99,7 +97,7 @@ public class PreviewSchoolRoomImportFromFileUseCase
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        User user = userRepository.findById(currentUserId)
+        var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalStateException("Người dùng hiện tại không hoạt động");
@@ -114,7 +112,7 @@ public class PreviewSchoolRoomImportFromFileUseCase
     }
 
     private void validateSchool(UUID schoolId) {
-        School school = schoolRepository.findById(schoolId)
+        var school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
@@ -168,8 +166,8 @@ public class PreviewSchoolRoomImportFromFileUseCase
         if (parsed.rows().isEmpty()) {
             return;
         }
-        List<ImportRow> rows = new ArrayList<ImportRow>();
-        long rowNumber = 1L;
+        var rows = new ArrayList<ImportRow>();
+        var rowNumber = 1L;
         for (Map<String, String> rawRow : parsed.rows()) {
             rows.add(new ImportRow(
                 sessionId,

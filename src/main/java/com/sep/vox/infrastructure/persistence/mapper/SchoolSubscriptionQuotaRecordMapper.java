@@ -9,7 +9,7 @@ public final class SchoolSubscriptionQuotaRecordMapper {
     private SchoolSubscriptionQuotaRecordMapper() {}
 
     public static SchoolSubscriptionQuotaRecord toDomain(SchoolSubscriptionQuotaRecordJpaEntity jpa) {
-        SchoolSubscriptionQuotaRecord domain = new SchoolSubscriptionQuotaRecord(
+        var domain = new SchoolSubscriptionQuotaRecord(
             jpa.getId(),
             jpa.getSchoolSubscriptionId(),
             fromString(jpa.getQuotaType()),

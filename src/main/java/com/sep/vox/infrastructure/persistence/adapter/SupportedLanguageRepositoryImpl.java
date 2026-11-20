@@ -6,11 +6,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -19,7 +17,6 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SupportedLanguageMapper;
-import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSupportedLanguageRepository;
 
 @Repository
@@ -54,7 +51,7 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
         if (codes == null || codes.isEmpty()) {
             return List.of();
         }
-        Set<String> upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
+        var upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
         return springDataSupportedLanguageRepository.findByCodeIn(upperCodes)
             .stream()
             .map(SupportedLanguageMapper::toDomain)
@@ -74,12 +71,12 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
 
     @Override
     public PageResult<SupportedLanguage> findAll(String search, Boolean isActive, int pageNumber, int size) {
-        PageRequest pageable = OneBasedPaging.toPageRequest(
-            pageNumber,
+        var pageable = PageRequest.of(
+            pageNumber - 1,
             size,
             Sort.by(Sort.Direction.DESC, (SupportedLanguageJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.ASC, (SupportedLanguageJpaEntity entity) -> entity.getId()))
         );
-        Page<SupportedLanguageJpaEntity> page = springDataSupportedLanguageRepository.findAllWithSearchAndFilters(
+        var page = springDataSupportedLanguageRepository.findAllWithSearchAndFilters(
             toSearchPattern(search),
             isActive,
             pageable
@@ -97,8 +94,8 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
 
     @Override
     public SupportedLanguage save(SupportedLanguage supportedLanguage) {
-        SupportedLanguageJpaEntity entity = SupportedLanguageMapper.toJpa(supportedLanguage);
-        SupportedLanguageJpaEntity saved = springDataSupportedLanguageRepository.save(entity);
+        var entity = SupportedLanguageMapper.toJpa(supportedLanguage);
+        var saved = springDataSupportedLanguageRepository.save(entity);
         return SupportedLanguageMapper.toDomain(saved);
     }
 

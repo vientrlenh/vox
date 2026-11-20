@@ -68,8 +68,8 @@ class SchoolGradeImportCommitHandlerTests {
 
     @Test
     void should_create_valid_rows_and_mark_invalid_rows() {
-        UUID sessionId = UUID.randomUUID();
-        List<ImportRow> rows = List.of(
+        var sessionId = UUID.randomUUID();
+        var rows = List.of(
             row(sessionId, 1L, data("K10", "2024", "Năm 2024", "2024-09-05", "2025-05-30")),
             row(sessionId, 2L, data("K10", "", "Thiếu mã", "2024-09-05", "2025-05-30"))
         );
@@ -91,8 +91,8 @@ class SchoolGradeImportCommitHandlerTests {
 
     @Test
     void should_create_grade_with_active_status() {
-        UUID sessionId = UUID.randomUUID();
-        List<ImportRow> rows = List.of(row(sessionId, 1L, data("K10", "2024", "Năm 2024", "2024-09-05", "2025-05-30")));
+        var sessionId = UUID.randomUUID();
+        var rows = List.of(row(sessionId, 1L, data("K10", "2024", "Năm 2024", "2024-09-05", "2025-05-30")));
 
         when(gradeLevelRepository.findByCodeIn(Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
         when(schoolGradeRepository.findBySchoolIdAndGradeLevelIdAndCode(eq(schoolId), eq(levelId), any())).thenReturn(Optional.empty());
@@ -100,21 +100,21 @@ class SchoolGradeImportCommitHandlerTests {
 
         handler.commit(session(sessionId), rows);
 
-        ArgumentCaptor<SchoolGrade> captor = ArgumentCaptor.forClass(SchoolGrade.class);
+        var captor = ArgumentCaptor.forClass(SchoolGrade.class);
         verify(schoolGradeRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(SchoolGradeStatus.ACTIVE);
     }
 
     @Test
     void should_update_existing_grade_when_code_exists() {
-        UUID sessionId = UUID.randomUUID();
-        Instant createdAt = Instant.now().minus(5, ChronoUnit.DAYS);
-        SchoolGrade existing = new SchoolGrade(
+        var sessionId = UUID.randomUUID();
+        var createdAt = Instant.now().minus(5, ChronoUnit.DAYS);
+        var existing = new SchoolGrade(
             UUID.randomUUID(), schoolId, levelId, "2024", "Năm cũ", "Mô tả cũ",
             LocalDate.of(2024, 1, 1), LocalDate.of(2024, 6, 1),
             SchoolGradeStatus.ACTIVE, createdAt, createdAt, createdBy, createdBy
         );
-        List<ImportRow> rows = List.of(row(sessionId, 1L, data("K10", "2024", "Năm mới", "2024-09-05", "2025-05-30")));
+        var rows = List.of(row(sessionId, 1L, data("K10", "2024", "Năm mới", "2024-09-05", "2025-05-30")));
 
         when(gradeLevelRepository.findByCodeIn(Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
         when(schoolGradeRepository.findBySchoolIdAndGradeLevelIdAndCode(schoolId, levelId, "2024")).thenReturn(Optional.of(existing));
@@ -135,8 +135,8 @@ class SchoolGradeImportCommitHandlerTests {
 
     @Test
     void should_mark_invalid_when_grade_level_not_found() {
-        UUID sessionId = UUID.randomUUID();
-        List<ImportRow> rows = List.of(row(sessionId, 1L, data("KXX", "2024", "Năm 2024", "2024-09-05", "2025-05-30")));
+        var sessionId = UUID.randomUUID();
+        var rows = List.of(row(sessionId, 1L, data("KXX", "2024", "Năm 2024", "2024-09-05", "2025-05-30")));
 
         when(gradeLevelRepository.findByCodeIn(Set.of("KXX"))).thenReturn(List.of());
 
@@ -151,8 +151,8 @@ class SchoolGradeImportCommitHandlerTests {
 
     @Test
     void should_mark_invalid_when_dates_invalid() {
-        UUID sessionId = UUID.randomUUID();
-        List<ImportRow> rows = List.of(
+        var sessionId = UUID.randomUUID();
+        var rows = List.of(
             row(sessionId, 1L, data("K10", "2024", "Năm 2024", "khong-phai-ngay", "2025-05-30")),
             row(sessionId, 2L, data("K10", "2025", "Năm 2025", "2025-05-30", "2024-09-05"))
         );
@@ -170,8 +170,8 @@ class SchoolGradeImportCommitHandlerTests {
 
     @Test
     void should_keep_duplicate_level_code_pair_invalid() {
-        UUID sessionId = UUID.randomUUID();
-        List<ImportRow> rows = List.of(
+        var sessionId = UUID.randomUUID();
+        var rows = List.of(
             row(sessionId, 1L, data("K10", "2024", "Năm 2024", "2024-09-05", "2025-05-30")),
             row(sessionId, 2L, data("K10", "2024", "Năm 2024 trùng", "2024-09-05", "2025-05-30"))
         );
@@ -190,8 +190,8 @@ class SchoolGradeImportCommitHandlerTests {
 
     @Test
     void should_mark_failed_when_unique_constraint_violated() {
-        UUID sessionId = UUID.randomUUID();
-        List<ImportRow> rows = List.of(row(sessionId, 1L, data("K10", "2024", "Năm 2024", "2024-09-05", "2025-05-30")));
+        var sessionId = UUID.randomUUID();
+        var rows = List.of(row(sessionId, 1L, data("K10", "2024", "Năm 2024", "2024-09-05", "2025-05-30")));
 
         when(gradeLevelRepository.findByCodeIn(Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
         when(schoolGradeRepository.findBySchoolIdAndGradeLevelIdAndCode(eq(schoolId), eq(levelId), any())).thenReturn(Optional.empty());
@@ -207,7 +207,7 @@ class SchoolGradeImportCommitHandlerTests {
     }
 
     private GradeLevel gradeLevel(String code) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         return new GradeLevel(levelId, code, "Khối " + code, null, 1,
             GradeLevelStatus.ACTIVE, now, now, createdBy, createdBy);
     }

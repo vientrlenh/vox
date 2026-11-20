@@ -1,6 +1,5 @@
 package com.sep.vox.domain.dto.personalization;
 
-import java.time.Instant;
 import java.util.UUID;
 
 public record PracticeSessionDto(
@@ -13,8 +12,8 @@ public record PracticeSessionDto(
     String abandonDiagnosis,
     Double overallScore,
     int gradedSeconds,
-    Instant startedAt,
-    Instant endedAt,
+    String startedAt,
+    String endedAt,
     int pendingEvaluations
 ) {
 }

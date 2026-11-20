@@ -4,18 +4,12 @@ enum AssessmentPolicyStrictness {
     STRICT
 }
 
-enum AssessmentPolicyStatus {
-    DRAFT
-    PUBLISHED
-    ARCHIVED
-}
-
 input UpdateAssessmentPolicyInput {
     targetFrameworkBandId: ID!
     passingScore: Float
     strictness: AssessmentPolicyStrictness
-    effectiveFrom: DateTime!
-    effectiveTo: DateTime
+    effectiveFrom: String!
+    effectiveTo: String
 }
 
 extend type Mutation {
@@ -33,11 +27,11 @@ type AssessmentPolicy {
     passingScore: Float
     strictness: AssessmentPolicyStrictness!
     version: Int!
-    status: AssessmentPolicyStatus!
-    effectiveFrom: DateTime!
-    effectiveTo: DateTime
-    createdAt: DateTime
-    updatedAt: DateTime
+    status: String!
+    effectiveFrom: String!
+    effectiveTo: String
+    createdAt: String
+    updatedAt: String
 
     school: School
     gradeLevel: GradeLevel
@@ -58,10 +52,10 @@ type AssessmentPolicyPage {
 }
 
 extend type Query {
-    viewSystemAssessmentPolicies(status: AssessmentPolicyStatus, languageId: ID, rubricVersionId: ID, effectiveFrom: DateTime, effectiveTo: DateTime, page: Int = 1, size: Int = 10): AssessmentPolicyPage!
-    viewSchoolAssessmentPolicies(schoolId: ID!, status: AssessmentPolicyStatus, languageId: ID, rubricVersionId: ID, effectiveFrom: DateTime, effectiveTo: DateTime, page: Int = 1, size: Int = 10): AssessmentPolicyPage!
-    # A teacher can only see PUBLISHED policies of their own school (schoolId is derived from the token)
-    viewTeacherAssessmentPolicies(languageId: ID, rubricVersionId: ID, effectiveFrom: DateTime, effectiveTo: DateTime, page: Int = 1, size: Int = 10): AssessmentPolicyPage!
+    viewSystemAssessmentPolicies(status: String, languageId: ID, rubricVersionId: ID, effectiveFrom: String, effectiveTo: String, page: Int = 1, size: Int = 10): AssessmentPolicyPage!
+    viewSchoolAssessmentPolicies(schoolId: ID!, status: String, languageId: ID, rubricVersionId: ID, effectiveFrom: String, effectiveTo: String, page: Int = 1, size: Int = 10): AssessmentPolicyPage!
+    # Teacher chỉ xem được policy PUBLISHED của trường mình (schoolId tự suy ra từ token)
+    viewTeacherAssessmentPolicies(languageId: ID, rubricVersionId: ID, effectiveFrom: String, effectiveTo: String, page: Int = 1, size: Int = 10): AssessmentPolicyPage!
     viewSystemAssessmentPolicy(policyId: ID!): AssessmentPolicy!
     viewSchoolAssessmentPolicy(schoolId: ID!, policyId: ID!): AssessmentPolicy!
 }

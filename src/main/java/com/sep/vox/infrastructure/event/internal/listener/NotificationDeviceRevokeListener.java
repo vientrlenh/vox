@@ -12,14 +12,14 @@ import com.sep.vox.application.event.DeviceSessionRevokedEvent;
 import com.sep.vox.domain.repository.NotificationDeviceRepository;
 
 /**
- * The FCM / FID token does not change when the user logs out -- it is tied to the app installation and
- * not to the account. On a shared lab machine (AssessmentDeliveryMode.LAB), if it is not removed here then
- * between the moment student A leaves the machine and student B logs in, the device
- * still belongs to A and A's assessment score notification will show up on the screen A has left.
+ * Token FCM / FID không đổi khi người dùng đăng xuất -- nó gắn với bản cài đặt app chứ
+ * không gắn với tài khoản. Trên máy phòng lab dùng chung (ExamDeliveryMode.LAB), nếu
+ * không gỡ ở đây thì giữa lúc học sinh A rời máy và lúc học sinh B đăng nhập, thiết bị
+ * vẫn thuộc về A và thông báo điểm thi của A sẽ hiện lên màn hình A đã rời đi.
  *
- * <p>Runs AFTER_COMMIT: revoking the session is something that must succeed, while cleaning up the device
- * is only a consequence. If it ran synchronously in the same transaction, an error here would roll back
- * the session revocation -- a completely wrong trade-off in terms of security.
+ * <p>Chạy AFTER_COMMIT: thu hồi phiên là việc bắt buộc phải thành công, còn dọn thiết bị
+ * chỉ là hệ quả. Nếu chạy đồng bộ trong cùng transaction, một lỗi ở đây sẽ cuộn ngược
+ * việc thu hồi phiên -- đánh đổi sai hoàn toàn về mặt bảo mật.
  */
 @Component
 public class NotificationDeviceRevokeListener {
@@ -33,28 +33,28 @@ public class NotificationDeviceRevokeListener {
     }
 
     /**
-     * {@code REQUIRES_NEW}, NOT the default {@code REQUIRED} -- and this is the condition for the DELETE statement below
-     * to run at all, not a choice about transaction scope.
+     * {@code REQUIRES_NEW}, KHÔNG phải {@code REQUIRED} mặc định -- và đây là điều kiện để câu
+     * DELETE bên dưới chạy được, không phải một lựa chọn về phạm vi giao dịch.
      *
-     * <p>When the AFTER_COMMIT callback runs, the {@code EntityManagerHolder} of the transaction that JUST COMMITTED is still
-     * bound to the thread -- Spring only removes it in {@code cleanupAfterCompletion}, which is after the
-     * callbacks. So {@code REQUIRED} sees "a transaction already exists" and JOINS it instead of opening a
-     * new one, while that transaction has already committed and there is no live
-     * {@code EntityTransaction}. Hibernate rejects the DELETE statement with
-     * {@code TransactionRequiredException: No active transaction for update or delete query}, and
-     * {@code TransactionSynchronizationUtils} SWALLOWS that exception (it only logs ERROR) -- so /logout still
-     * returns 200 while the device that receives notifications was never removed. A textbook silent failure: on a
-     * lab machine, the grade notification of the person who just left still shows to the person who sits down next.
+     * <p>Lúc callback AFTER_COMMIT chạy, {@code EntityManagerHolder} của giao dịch VỪA COMMIT vẫn
+     * còn gắn vào thread -- Spring chỉ gỡ nó ở {@code cleanupAfterCompletion}, tức là sau các
+     * callback. Nên {@code REQUIRED} nhìn thấy "đã có giao dịch" và THAM GIA vào nó thay vì mở
+     * giao dịch mới, trong khi giao dịch đó đã commit xong và không còn
+     * {@code EntityTransaction} nào sống. Hibernate từ chối câu DELETE với
+     * {@code TransactionRequiredException: No active transaction for update or delete query}, và
+     * {@code TransactionSynchronizationUtils} NUỐT ngoại lệ đó (chỉ log ERROR) -- nên /logout vẫn
+     * trả 200 trong khi thiết bị nhận thông báo không hề bị gỡ. Đúng kiểu hỏng im lặng: trên máy
+     * phòng lab, thông báo điểm của người vừa rời đi vẫn hiện cho người ngồi xuống sau.
      *
-     * <p>The {@code @Transactional} on {@code NotificationDeviceRepositoryImpl#deleteByUserIdAndDeviceId}
-     * does NOT save it: that one is {@code REQUIRED} too. The same annotation works fine on
-     * {@code deleteByLastSeenAtBefore} only because {@code @Scheduled} calls it from a clean thread with nothing
-     * bound to it.
+     * <p>{@code @Transactional} trên {@code NotificationDeviceRepositoryImpl#deleteByUserIdAndDeviceId}
+     * KHÔNG cứu được: nó cũng là {@code REQUIRED}. Cùng annotation đó chạy tốt ở
+     * {@code deleteByLastSeenAtBefore} chỉ vì {@code @Scheduled} gọi từ một thread sạch, không có
+     * gì gắn sẵn.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handle(DeviceSessionRevokedEvent event) {
-        int removed = notificationDeviceRepository.deleteByUserIdAndDeviceId(event.userId(), event.deviceId());
+        var removed = notificationDeviceRepository.deleteByUserIdAndDeviceId(event.userId(), event.deviceId());
         if (removed > 0) {
             LOGGER.info("Đã gỡ {} thiết bị nhận thông báo theo phiên bị thu hồi: sessionId={}, userId={}",
                 removed, event.sessionId(), event.userId());

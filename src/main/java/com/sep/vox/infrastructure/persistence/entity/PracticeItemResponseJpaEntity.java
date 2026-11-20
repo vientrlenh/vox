@@ -40,11 +40,11 @@ public class PracticeItemResponseJpaEntity {
     private boolean questionComplete;
 
     /**
-     * The grading lifecycle -- values follow {@link com.sep.vox.domain.model.personalization.PracticeGradingStatus}.
+     * Vòng đời chấm -- giá trị theo {@link com.sep.vox.domain.model.personalization.PracticeGradingStatus}.
      *
-     * <p>Kept as a String with a {@code @CheckConstraint} rather than {@code @Enumerated}, following exactly the mold of
-     * {@code AssessmentSessionJpaEntity.status}: the constraint lives in the DB so junk data cannot get in even
-     * if someone edits by hand, while the enum takes care of type safety at the application layer.
+     * <p>Để String kèm {@code @CheckConstraint} chứ không {@code @Enumerated}, bám đúng khuôn
+     * {@code ExamSessionJpaEntity.status}: ràng buộc nằm ở DB nên dữ liệu rác không vào được kể
+     * cả khi ai đó sửa tay, còn enum lo phần an toàn kiểu ở tầng ứng dụng.
      */
     @Column(name = "grading_status", nullable = false, length = 16, check = {
         @CheckConstraint(

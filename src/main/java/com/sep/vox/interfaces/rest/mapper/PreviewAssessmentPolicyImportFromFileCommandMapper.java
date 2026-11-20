@@ -12,7 +12,7 @@ public class PreviewAssessmentPolicyImportFromFileCommandMapper {
 
     public static PreviewSystemAssessmentPolicyImportFromFileCommand fromSystemRequest(MultipartFile file) {
         try {
-            UploadedFile uploadedFile = new UploadedFile(
+            var uploadedFile = new UploadedFile(
                     file.getOriginalFilename(),
                     file.getContentType(),
                     file.getSize(),
@@ -26,7 +26,7 @@ public class PreviewAssessmentPolicyImportFromFileCommandMapper {
 
     public static PreviewSchoolAssessmentPolicyImportFromFileCommand fromSchoolRequest(UUID schoolId, MultipartFile file) {
         try {
-            UploadedFile uploadedFile = new UploadedFile(
+            var uploadedFile = new UploadedFile(
                     file.getOriginalFilename(),
                     file.getContentType(),
                     file.getSize(),

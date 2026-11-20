@@ -1,6 +1,5 @@
 package com.sep.vox.application.query.dto;
 
-import java.time.Instant;
 import java.util.UUID;
 
 public record NotificationDto(
@@ -11,8 +10,8 @@ public record NotificationDto(
     String title, 
     String body, 
     String payload, 
-    Instant readAt, 
-    Instant createdAt
+    String readAt, 
+    String createdAt
 ) {
     
 }

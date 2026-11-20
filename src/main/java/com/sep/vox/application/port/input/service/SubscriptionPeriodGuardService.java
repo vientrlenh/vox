@@ -46,12 +46,12 @@ public class SubscriptionPeriodGuardService {
             return;
         }
 
-        SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
+        var subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
             .orElseThrow(() -> new PlanLimitExceededException(
                 "Trường chưa có gói dịch vụ đang hoạt động, không thể đặt thời gian cho bài kiểm tra"));
 
-        Instant startDate = subscription.getStartDate();
-        Instant endDate = subscription.getEndDate();
+        var startDate = subscription.getStartDate();
+        var endDate = subscription.getEndDate();
         // Gói thiếu ngày là dữ liệu hỏng, không phải "không giới hạn" -- nhưng chặn ở đây sẽ làm cả
         // trường đứng hình vì một lỗi dữ liệu người dùng cuối không sửa được.
         if (startDate == null || endDate == null) {

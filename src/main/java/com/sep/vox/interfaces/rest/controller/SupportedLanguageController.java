@@ -1,6 +1,5 @@
 package com.sep.vox.interfaces.rest.controller;
 
-import com.sep.vox.application.port.input.command.CreateSupportedLanguageCommand;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -41,9 +40,9 @@ public class SupportedLanguageController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<CreateSupportedLanguageResponse>> create(
             @Valid @RequestBody CreateSupportedLanguageRequest request) {
-        CreateSupportedLanguageCommand command = CreateSupportedLanguageCommandMapper.fromRequest(request);
-        CreateSupportedLanguageResponse data = createSupportedLanguageUseCase.execute(command);
-        ApiResponse<CreateSupportedLanguageResponse> response = ApiResponse.success("Tạo ngôn ngữ thành công", data);
+        var command = CreateSupportedLanguageCommandMapper.fromRequest(request);
+        var data = createSupportedLanguageUseCase.execute(command);
+        var response = ApiResponse.success("Tạo ngôn ngữ thành công", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -51,7 +50,7 @@ public class SupportedLanguageController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable("id") UUID id) {
         deleteSupportedLanguageUseCase.execute(new DeleteSupportedLanguageCommand(id));
-        ApiResponse<Void> response = ApiResponse.<Void>success("Xóa ngôn ngữ thành công");
+        var response = ApiResponse.<Void>success("Xóa ngôn ngữ thành công");
         return ResponseEntity.ok(response);
     }
 }

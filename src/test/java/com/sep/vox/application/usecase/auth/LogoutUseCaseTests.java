@@ -6,13 +6,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -30,25 +28,34 @@ import com.sep.vox.domain.model.refreshtoken.RefreshToken;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
 import com.sep.vox.domain.repository.RefreshTokenRepository;
 
-@ExtendWith(MockitoExtension.class)
 class LogoutUseCaseTests {
 
-    @Mock
     private RefreshTokenRepository refreshTokenRepository;
-    @Mock
     private DeviceSessionRepository deviceSessionRepository;
-    @Mock
     private SessionTokenManagerPort sessionTokenManagerPort;
-    @Mock
     private SessionManagerPort sessionManagerPort;
-    @Mock
     private UserContextPort userContextPort;
-    @InjectMocks
     private LogoutUseCase logoutUseCase;
+
+    @BeforeEach
+    void setUp() {
+        refreshTokenRepository = mock(RefreshTokenRepository.class);
+        deviceSessionRepository = mock(DeviceSessionRepository.class);
+        sessionTokenManagerPort = mock(SessionTokenManagerPort.class);
+        sessionManagerPort = mock(SessionManagerPort.class);
+        userContextPort = mock(UserContextPort.class);
+        logoutUseCase = new LogoutUseCase(
+            refreshTokenRepository,
+            deviceSessionRepository,
+            sessionTokenManagerPort,
+            sessionManagerPort,
+            userContextPort
+        );
+    }
 
     @Test
     void logout_should_revoke_session_of_presented_refresh_token() {
-        UUID sessionId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
         when(sessionTokenManagerPort.hash("refresh-token")).thenReturn("token-hash");
         when(refreshTokenRepository.findByTokenHash("token-hash"))
             .thenReturn(Optional.of(activeRefreshToken(sessionId, "token-hash")));
@@ -60,13 +67,12 @@ class LogoutUseCaseTests {
     }
 
     /**
-     * Exactly the state of an abandoned session: the access token has expired, so the caller cannot
-     * be identified and only the cookie remains as evidence. If this breaks, the session can never
-     * be revoked.
+     * Đúng trạng thái của một phiên bị bỏ quên: access token đã hết hạn nên không xác định được
+     * người gọi, chỉ còn cookie làm bằng chứng. Hỏng ở đây là phiên không bao giờ thu hồi được.
      */
     @Test
     void logout_should_revoke_by_cookie_when_caller_is_not_authenticated() {
-        UUID sessionId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
         when(sessionTokenManagerPort.hash("refresh-token")).thenReturn("token-hash");
         when(refreshTokenRepository.findByTokenHash("token-hash"))
             .thenReturn(Optional.of(activeRefreshToken(sessionId, "token-hash")));
@@ -79,14 +85,14 @@ class LogoutUseCaseTests {
     }
 
     /**
-     * LoginUseCase creates a new DeviceSession on every login, so the same machine can be carrying
-     * several live sessions. The cookie points at only one of them; the rest must be cleaned up too.
+     * LoginUseCase tạo DeviceSession mới ở mỗi lần đăng nhập, nên cùng một máy có thể đang mang
+     * nhiều phiên sống. Cookie chỉ trỏ tới một cái; phần còn lại phải được dọn theo.
      */
     @Test
     void logout_should_revoke_every_live_session_on_the_same_device() {
-        UUID userId = UUID.randomUUID();
-        UUID cookieSessionId = UUID.randomUUID();
-        UUID strandedSessionId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var cookieSessionId = UUID.randomUUID();
+        var strandedSessionId = UUID.randomUUID();
 
         when(sessionTokenManagerPort.hash("refresh-token")).thenReturn("token-hash");
         when(refreshTokenRepository.findByTokenHash("token-hash"))
@@ -105,8 +111,8 @@ class LogoutUseCaseTests {
 
     @Test
     void logout_should_revoke_session_once_when_both_sources_point_to_it() {
-        UUID userId = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
 
         when(sessionTokenManagerPort.hash("refresh-token")).thenReturn("token-hash");
         when(refreshTokenRepository.findByTokenHash("token-hash"))
@@ -122,8 +128,8 @@ class LogoutUseCaseTests {
 
     @Test
     void logout_should_leave_sessions_of_other_devices_alone() {
-        UUID userId = UUID.randomUUID();
-        UUID otherDeviceSessionId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var otherDeviceSessionId = UUID.randomUUID();
 
         when(userContextPort.findCurrentAuthenticatedUserId()).thenReturn(Optional.of(userId));
         when(deviceSessionRepository.findByUserId(userId))
@@ -136,8 +142,8 @@ class LogoutUseCaseTests {
 
     @Test
     void logout_should_skip_sessions_that_are_already_revoked() {
-        UUID userId = UUID.randomUUID();
-        UUID revokedSessionId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var revokedSessionId = UUID.randomUUID();
 
         when(userContextPort.findCurrentAuthenticatedUserId()).thenReturn(Optional.of(userId));
         when(deviceSessionRepository.findByUserId(userId))
@@ -149,8 +155,8 @@ class LogoutUseCaseTests {
     }
 
     /**
-     * A stale cookie, or a cookie from another environment, resolves to no token. Logout must still
-     * succeed: the client deletes its local tokens regardless of what the server returns.
+     * Cookie cũ hoặc cookie của môi trường khác không tra ra token nào. Đăng xuất vẫn phải thành
+     * công: client xoá token trong máy bất kể server trả gì.
      */
     @Test
     void logout_should_not_fail_when_refresh_token_is_unknown() {
@@ -201,7 +207,7 @@ class LogoutUseCaseTests {
     }
 
     private static RefreshToken activeRefreshToken(UUID sessionId, String tokenHash) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         return new RefreshToken(
             UUID.randomUUID(),
             sessionId,

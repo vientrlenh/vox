@@ -23,7 +23,6 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassUserCommand;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.DeleteSchoolClassUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.schoolclassuser.DeleteSchoolClassUserResponse;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
@@ -68,18 +67,18 @@ class DeleteSchoolClassUserUseCaseTests {
 
     @Test
     void delete_should_soft_delete_active_membership() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        SchoolClassUser membership = membership(targetUserId, classId, true, null, currentUserId);
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var membership = membership(targetUserId, classId, true, null, currentUserId);
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.of(membership));
 
-        DeleteSchoolClassUserResponse response = useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId));
+        var response = useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId));
 
         assertThat(response.schoolClassId()).isEqualTo(classId);
-        ArgumentCaptor<SchoolClassUser> captor = ArgumentCaptor.forClass(SchoolClassUser.class);
+        var captor = ArgumentCaptor.forClass(SchoolClassUser.class);
         verify(schoolClassUserRepository).save(captor.capture());
         assertThat(captor.getValue().isActive()).isFalse();
         assertThat(captor.getValue().getLeftAt()).isNotNull();
@@ -90,16 +89,16 @@ class DeleteSchoolClassUserUseCaseTests {
 
     @Test
     void delete_should_be_idempotent_when_membership_is_inactive() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        Instant leftAt = Instant.now().minus(1, ChronoUnit.DAYS);
-        SchoolClassUser membership = membership(targetUserId, classId, false, leftAt, currentUserId);
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var leftAt = Instant.now().minus(1, ChronoUnit.DAYS);
+        var membership = membership(targetUserId, classId, false, leftAt, currentUserId);
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.of(membership));
 
-        DeleteSchoolClassUserResponse response = useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId));
+        var response = useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId));
 
         assertThat(response.schoolClassId()).isEqualTo(classId);
         assertThat(membership.getLeftAt()).isEqualTo(leftAt);
@@ -108,10 +107,10 @@ class DeleteSchoolClassUserUseCaseTests {
 
     @Test
     void delete_should_throw_when_membership_not_found() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.empty());
 
@@ -120,10 +119,10 @@ class DeleteSchoolClassUserUseCaseTests {
 
     @Test
     void delete_should_throw_when_class_belongs_to_other_school() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
@@ -138,10 +137,10 @@ class DeleteSchoolClassUserUseCaseTests {
 
     @Test
     void delete_should_throw_when_target_user_is_inactive() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
@@ -157,8 +156,8 @@ class DeleteSchoolClassUserUseCaseTests {
 
     @Test
     void delete_should_throw_when_current_user_school_mismatches_request() {
-        UUID currentUserId = UUID.randomUUID();
-        DeleteSchoolClassUserCommand command = new DeleteSchoolClassUserCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        var currentUserId = UUID.randomUUID();
+        var command = new DeleteSchoolClassUserCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, UUID.randomUUID())));
@@ -185,7 +184,7 @@ class DeleteSchoolClassUserUseCaseTests {
     }
 
     private static SchoolClassUser membership(UUID userId, UUID classId, boolean isActive, Instant leftAt, UUID assignedBy) {
-        SchoolClassUser membership = new SchoolClassUser(userId, classId, isActive, Instant.now().minus(2, ChronoUnit.DAYS), leftAt, assignedBy);
+        var membership = new SchoolClassUser(userId, classId, isActive, Instant.now().minus(2, ChronoUnit.DAYS), leftAt, assignedBy);
         membership.setId(UUID.randomUUID());
         return membership;
     }
@@ -195,21 +194,21 @@ class DeleteSchoolClassUserUseCaseTests {
     }
 
     private static User user(UUID id, UUID schoolId, UserStatus status) {
-        User user = new User();
+        var user = new User();
         user.setId(id);
         user.setStatus(status);
         return user;
     }
 
     private static School activeSchool(UUID id) {
-        School school = new School();
+        var school = new School();
         school.setId(id);
         school.setActive(true);
         return school;
     }
 
     private static SchoolClass activeSchoolClass(UUID id, UUID schoolId) {
-        SchoolClass schoolClass = new SchoolClass();
+        var schoolClass = new SchoolClass();
         schoolClass.setId(id);
         schoolClass.setSchoolId(schoolId);
         schoolClass.setCode(new ClassCode("ENG-01"));

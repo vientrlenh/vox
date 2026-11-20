@@ -1,8 +1,5 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
-import com.sep.vox.domain.model.school.SchoolBalance;
-import com.sep.vox.domain.model.subscription.SchoolSubscription;
-import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -88,13 +85,13 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
     public QuotaFundingResponse execute(FundQuotaFromBalanceCommand input) {
         requireSchoolAdminAccess(input.schoolId());
 
-        QuotaType quotaType = parseQuotaType(input.quotaType());
-        BigDecimal amountVnd = requirePositiveAmount(input.amountVnd());
-        UUID actorId = userContextPort.getCurrentAuthenticatedUserId();
+        var quotaType = parseQuotaType(input.quotaType());
+        var amountVnd = requirePositiveAmount(input.amountVnd());
+        var actorId = userContextPort.getCurrentAuthenticatedUserId();
 
-        SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(input.schoolId())
+        var subscription = schoolSubscriptionRepository.findActiveBySchoolId(input.schoolId())
             .orElseThrow(() -> new NotFoundException("Trường chưa có gói subscription đang hoạt động"));
-        SchoolSubscriptionQuotaRecord pool = quotaRecordRepository
+        var pool = quotaRecordRepository
             .findBySchoolSubscriptionIdAndQuotaType(subscription.getId(), quotaType)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
 
@@ -104,9 +101,9 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
         // SchoolSubscriptionDebtGuardService trả lời riêng: báo sai lý do là chỉ sai cách khắc phục.
         schoolSubscriptionDebtGuardService.requireSchoolNotLocked(input.schoolId());
 
-        Instant now = Instant.now();
+        var now = Instant.now();
         // Khóa dòng số dư. Mọi thứ bên dưới đọc/ghi trên bản ghi đang giữ khóa này.
-        SchoolBalance balance = schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(input.schoolId(), now);
+        var balance = schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(input.schoolId(), now);
 
         if (balance.getBalanceVnd().compareTo(amountVnd) < 0) {
             throw new IllegalArgumentException(
@@ -117,7 +114,7 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
         // balanceAfterVnd lấy từ chính apply() chứ không tự trừ lại ở đây: bút toán và số dư tổng hợp
         // buộc phải là một con số, và tính lại là mở đúng cửa cho chúng trôi khỏi nhau (xem
         // SchoolBalance.apply).
-        BigDecimal balanceAfterVnd = balance.apply(amountVnd.negate(), now);
+        var balanceAfterVnd = balance.apply(amountVnd.negate(), now);
         schoolBalanceRepository.save(balance);
         schoolBalanceEntryRepository.save(SchoolBalanceEntry.forQuotaFunding(
             input.schoolId(), subscription.getId(), quotaType, amountVnd, balanceAfterVnd,
@@ -130,7 +127,7 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
         LOGGER.info("Trường {} nạp {}đ từ ví tự nạp vào hạn mức {} (kỳ {}), số dư còn {}đ, người thực hiện {}",
             input.schoolId(), amountVnd, quotaType, subscription.getId(), balanceAfterVnd, actorId);
 
-        SchoolSubscriptionQuotaRecord funded = quotaRecordRepository.findById(pool.getId())
+        var funded = quotaRecordRepository.findById(pool.getId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
         return new QuotaFundingResponse(
             SchoolSubscriptionQuotaRecordDto.toDto(funded), amountVnd, balanceAfterVnd);

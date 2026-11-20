@@ -22,7 +22,6 @@ import com.sep.vox.application.port.input.usecase.schoolclass.MyClassAccessGuard
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -58,12 +57,12 @@ class ViewMyClassesUseCaseTests {
 
     @Test
     void should_return_classes_the_caller_belongs_to() {
-        SchoolClass schoolClass = schoolClass();
+        var schoolClass = schoolClass();
         givenActiveCallerInSchool();
         when(schoolClassRepository.findByUserId(schoolId, callerId, null, null, 1, 10))
             .thenReturn(new PageResult<>(List.of(schoolClass), 1, 10, 1, 1));
 
-        PageResult<SchoolClassDto> result = useCase.execute(new ViewMyClassesQuery(schoolId, null, null, 1, 10));
+        var result = useCase.execute(new ViewMyClassesQuery(schoolId, null, null, 1, 10));
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.content().getFirst().id()).isEqualTo(schoolClass.getId());
@@ -77,7 +76,7 @@ class ViewMyClassesUseCaseTests {
                 eq(schoolId), eq(callerId), any(), any(), eq(2), eq(20)))
             .thenReturn(new PageResult<>(List.of(), 2, 20, 0, 0));
 
-        useCase.execute(new ViewMyClassesQuery(schoolId, "  eng 01 ", SchoolClassStatus.ACTIVE, 2, 20));
+        useCase.execute(new ViewMyClassesQuery(schoolId, "  eng 01 ", "ACTIVE", 2, 20));
 
         verify(schoolClassRepository)
             .findByUserId(schoolId, callerId, "eng 01", SchoolClassStatus.ACTIVE, 2, 20);
@@ -106,6 +105,17 @@ class ViewMyClassesUseCaseTests {
         );
     }
 
+    @Test
+    void should_reject_unknown_status() {
+        givenActiveCallerInSchool();
+
+        var exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> useCase.execute(new ViewMyClassesQuery(schoolId, null, "KHONG_TON_TAI", 1, 10))
+        );
+        assertThat(exception.getMessage()).isEqualTo("Trạng thái lớp học không hợp lệ");
+    }
+
     private void givenActiveCallerInSchool() {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
@@ -113,7 +123,7 @@ class ViewMyClassesUseCaseTests {
     }
 
     private SchoolClass schoolClass() {
-        SchoolClass schoolClass = SchoolClass.create(
+        var schoolClass = SchoolClass.create(
             schoolId,
             UUID.randomUUID(),
             UUID.randomUUID(),

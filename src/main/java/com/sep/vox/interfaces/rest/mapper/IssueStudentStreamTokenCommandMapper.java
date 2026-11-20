@@ -7,7 +7,7 @@ public final class IssueStudentStreamTokenCommandMapper {
     
     public static IssueStudentStreamTokenCommand fromRequest(IssueStudentStreamTokenRequest request) {
         return new IssueStudentStreamTokenCommand(
-            request.assessmentSessionId(),
+            request.examSessionId(),
             request.streamType()
         );
     }

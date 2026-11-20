@@ -53,7 +53,7 @@ class ViewQuestionStatusCountsUseCaseTests {
         when(userContextPort.isSystemAdmin()).thenReturn(false);
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(any())).thenReturn(List.of());
 
-        SchoolUser schoolUser = new SchoolUser();
+        var schoolUser = new SchoolUser();
         schoolUser.setSchoolId(schoolId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.of(schoolUser));
         when(questionQueryRepository.countAccessibleByStatus(
@@ -62,13 +62,12 @@ class ViewQuestionStatusCountsUseCaseTests {
     }
 
     /**
-     * GROUP BY only returns statuses that have questions. A client drawing a chart needs a stable
-     * axis, so the use case must fill in the missing ones -- this is the part of the whole feature
-     * that is easiest to forget.
+     * GROUP BY chỉ trả về status có câu hỏi. Client vẽ biểu đồ cần trục ổn định, nên use
+     * case phải bù đủ -- đây là phần dễ quên nhất của cả tính năng.
      */
     @Test
     void should_return_every_status_even_when_query_returns_nothing() {
-        List<QuestionStatusCountInfo> result = useCase.execute(query());
+        var result = useCase.execute(query());
 
         assertThat(result).hasSize(QuestionStatus.values().length);
         assertThat(result).extracting(info -> info.status())
@@ -84,7 +83,7 @@ class ViewQuestionStatusCountsUseCaseTests {
                 new QuestionStatusCountInfo(QuestionStatus.PUBLISHED, 12L),
                 new QuestionStatusCountInfo(QuestionStatus.DRAFT, 3L)));
 
-        List<QuestionStatusCountInfo> result = useCase.execute(query());
+        var result = useCase.execute(query());
 
         assertThat(result).hasSize(QuestionStatus.values().length);
         assertThat(result).contains(
@@ -93,10 +92,7 @@ class ViewQuestionStatusCountsUseCaseTests {
             new QuestionStatusCountInfo(QuestionStatus.ARCHIVED, 0L));
     }
 
-    /**
-     * The order must follow the enum, not the order the DB returns -- the client displays it
-     * exactly as given.
-     */
+    /** Thứ tự phải bám enum, không bám thứ tự DB trả về -- client hiển thị thẳng theo đó. */
     @Test
     void should_order_by_status_lifecycle_not_by_query_result_order() {
         when(questionQueryRepository.countAccessibleByStatus(
@@ -105,7 +101,7 @@ class ViewQuestionStatusCountsUseCaseTests {
                 new QuestionStatusCountInfo(QuestionStatus.ARCHIVED, 1L),
                 new QuestionStatusCountInfo(QuestionStatus.DRAFT, 2L)));
 
-        List<QuestionStatusCountInfo> result = useCase.execute(query());
+        var result = useCase.execute(query());
 
         assertThat(result).extracting(info -> info.status())
             .containsExactly(QuestionStatus.values());

@@ -3,14 +3,14 @@ package com.sep.vox.application.port.input.command;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.assessment.AssessmentRecordingAssemblyStatus;
-import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
+import com.sep.vox.domain.model.exam.ExamRecordingAssemblyStatus;
+import com.sep.vox.domain.model.exam.ExamRequiredStreamType;
 
 public record RecordRecordingPartChangedCommand(
-    UUID assessmentSessionId,
+    UUID examSessionId,
     UUID candidateId,
-    AssessmentRequiredStreamType streamType,
-    AssessmentRecordingAssemblyStatus status,
+    ExamRequiredStreamType streamType,
+    ExamRecordingAssemblyStatus status,
     String objectKey,
     Long durationSecs,
     Instant occurredAt,

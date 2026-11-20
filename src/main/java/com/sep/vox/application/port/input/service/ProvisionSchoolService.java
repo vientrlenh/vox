@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.domain.model.user.Role;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -57,7 +56,7 @@ public class ProvisionSchoolService {
 
     /** @return id của trường vừa tạo. */
     public UUID provision(ProvisionSchoolCommand command) {
-        Role schoolAdminRole = roleRepository.findByCode("SCHOOL_ADMIN")
+        var schoolAdminRole = roleRepository.findByCode("SCHOOL_ADMIN")
             .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò quản trị nhà trường"));
 
         if (userRepository.existsByEmail(command.contactEmail())) {
@@ -72,24 +71,24 @@ public class ProvisionSchoolService {
             throw new DuplicatedException("Mã trường đã tồn tại");
         }
 
-        School savedSchool = saveSchool(command);
-        User savedSchoolAdmin = saveSchoolAdmin(command,  savedSchool.getId());
+        var savedSchool = saveSchool(command);
+        var savedSchoolAdmin = saveSchoolAdmin(command,  savedSchool.getId());
         saveSchoolAdminUserRole(command, savedSchoolAdmin.getId(), schoolAdminRole.getId());
 
-        SchoolUser schoolUser = SchoolUser.create(savedSchoolAdmin.getId(), savedSchool.getId(), command.now(), null);
+        var schoolUser = SchoolUser.create(savedSchoolAdmin.getId(), savedSchool.getId(), command.now(), null);
         schoolUserRepository.save(schoolUser);
 
         // Token đặt mật khẩu do consumer sinh ngay trước khi gửi mail, để nó không nằm
         // plaintext trong bảng outboxes lẫn trong topic Kafka.
-        UserCreatedPayloadV1 event = new UserCreatedPayloadV1(
+        var event = new UserCreatedPayloadV1(
             savedSchoolAdmin.getId(),
             command.contactEmail(),
             command.contactFullName(),
             command.schoolName(),
             UserTypeConstant.SCHOOL_ADMIN
         );
-        String payload = jsonSerializationPort.toJson(event);
-        Outbox outbox = Outbox.create(
+        var payload = jsonSerializationPort.toJson(event);
+        var outbox = Outbox.create(
             AggregateTypeConstant.USER, savedSchoolAdmin.getId(), EventTypeConstant.USER_CREATED, payload, Instant.now());
         outboxRepository.save(outbox);
 
@@ -97,7 +96,7 @@ public class ProvisionSchoolService {
     }
 
     private School saveSchool(ProvisionSchoolCommand command) {
-        School school = School.create(
+        var school = School.create(
             command.schoolCode(), 
             command.schoolName(), 
             command.description(), 
@@ -113,7 +112,7 @@ public class ProvisionSchoolService {
     }
 
     private User saveSchoolAdmin(ProvisionSchoolCommand command, UUID schoolId) {
-        User schoolAdmin = User.createSchoolAdmin(
+        var schoolAdmin = User.createSchoolAdmin(
             command.contactEmail(),  
             command.contactPhone(), 
             command.contactFullName(), 
@@ -127,7 +126,7 @@ public class ProvisionSchoolService {
     }
 
     private void saveSchoolAdminUserRole(ProvisionSchoolCommand command, UUID schoolAdminId, UUID schoolAdminRoleId) {
-        UserRole userRole = new UserRole(schoolAdminId, schoolAdminRoleId, command.now());
+        var userRole = new UserRole(schoolAdminId, schoolAdminRoleId, command.now());
         userRoleRepository.save(userRole);
     }
 }

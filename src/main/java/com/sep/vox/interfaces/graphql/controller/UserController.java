@@ -1,6 +1,5 @@
 package com.sep.vox.interfaces.graphql.controller;
 
-import com.sep.vox.application.port.input.command.UpdateProfileCommand;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,7 +28,6 @@ import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.SchoolDtoMapper;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
-import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -61,15 +59,17 @@ public class UserController {
     @QueryMapping(name = "user")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UserDto user(@Argument(name = "id") UUID id) {
-        ViewUserDetailsQuery query = new ViewUserDetailsQuery(id);
+        var query = new ViewUserDetailsQuery(id);
         return viewUserDetailsUseCase.execute(query);
     }
 
     @QueryMapping(name = "users")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<UserDto> users(@Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
-        PageArguments.validate(page, size);
-        ViewUsersQuery query = new ViewUsersQuery(page, size);
+        if (page == null || size == null || page <= 0  || size <= 0) {
+            throw new IllegalArgumentException("Số trang hoặc kích cỡ yêu cầu không hợp lệ");
+        }
+        var query = new ViewUsersQuery(page, size);
         return viewUsersUseCase.execute(query);
     }
 
@@ -88,7 +88,7 @@ public class UserController {
     @MutationMapping(name = "updateProfile")
     @PreAuthorize("isAuthenticated()")
     public UserDto updateProfile(@Argument(name = "input") Map<String, Object> input) {
-        UpdateProfileCommand command = UpdateProfileCommandMapper.fromInput(input);
+        var command = UpdateProfileCommandMapper.fromInput(input);
         return updateProfileUseCase.execute(command);
     }
 

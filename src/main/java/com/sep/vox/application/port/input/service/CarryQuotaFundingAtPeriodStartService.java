@@ -1,11 +1,8 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.domain.model.metering.QuotaType;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -58,20 +55,20 @@ public class CarryQuotaFundingAtPeriodStartService {
      */
     @Transactional
     public int carryDueFunding(Instant now) {
-        List<SchoolSubscriptionQuotaRecord> due = quotaRecordRepository.findDueFundingCarries(now);
+        var due = quotaRecordRepository.findDueFundingCarries(now);
         if (due.isEmpty()) {
             return 0;
         }
 
-        int carriedCount = 0;
+        var carriedCount = 0;
         // Gom theo kỳ NGUỒN: mỗi nhóm chỉ cần đọc ví của kỳ đó một lần, và nhóm cũng chính là đơn vị
         // để phát hiện loại ví bị bỏ lại (xem reportStrandedTypes).
-        Map<UUID, List<SchoolSubscriptionQuotaRecord>> bySource = due.stream()
+        var bySource = due.stream()
             .collect(Collectors.groupingBy(record -> record.getCarryFundingFromSubscriptionId()));
 
-        for (Map.Entry<UUID, List<SchoolSubscriptionQuotaRecord>> group : bySource.entrySet()) {
-            List<SchoolSubscriptionQuotaRecord> sourcePools = quotaRecordRepository.findBySchoolSubscriptionId(group.getKey());
-            for (SchoolSubscriptionQuotaRecord target : group.getValue()) {
+        for (var group : bySource.entrySet()) {
+            var sourcePools = quotaRecordRepository.findBySchoolSubscriptionId(group.getKey());
+            for (var target : group.getValue()) {
                 if (carryOne(target, sourcePools, group.getKey())) {
                     carriedCount++;
                 }
@@ -84,7 +81,7 @@ public class CarryQuotaFundingAtPeriodStartService {
 
     private boolean carryOne(SchoolSubscriptionQuotaRecord target,
             List<SchoolSubscriptionQuotaRecord> sourcePools, UUID sourceSubscriptionId) {
-        BigDecimal unspentVnd = sourcePools.stream()
+        var unspentVnd = sourcePools.stream()
             .filter(pool -> pool.getQuotaType() == target.getQuotaType())
             .findFirst()
             .map(record -> record.unspentFundedVnd())
@@ -113,12 +110,12 @@ public class CarryQuotaFundingAtPeriodStartService {
      */
     private void reportStrandedTypes(List<SchoolSubscriptionQuotaRecord> sourcePools,
             List<SchoolSubscriptionQuotaRecord> targets, UUID sourceSubscriptionId) {
-        Set<QuotaType> carriedTypes = targets.stream()
+        var carriedTypes = targets.stream()
             .map(record -> record.getQuotaType())
             .collect(Collectors.toSet());
 
-        for (SchoolSubscriptionQuotaRecord pool : sourcePools) {
-            BigDecimal unspentVnd = pool.unspentFundedVnd();
+        for (var pool : sourcePools) {
+            var unspentVnd = pool.unspentFundedVnd();
             if (unspentVnd.signum() > 0 && !carriedTypes.contains(pool.getQuotaType())) {
                 LOGGER.warn("Kỳ {} còn {}đ tiền tự nạp chưa tiêu ở ví {} nhưng kỳ kế tiếp không có loại"
                     + " hạn mức này -- khoản đó nằm lại và cần xử lý tay.",

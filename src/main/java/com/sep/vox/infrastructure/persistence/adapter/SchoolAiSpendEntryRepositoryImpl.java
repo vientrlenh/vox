@@ -18,17 +18,17 @@ public class SchoolAiSpendEntryRepositoryImpl implements SchoolAiSpendEntryRepos
     }
 
     /**
-     * No separate mapper: the table is append-only and the read path does not go through this repository, so the
-     * entity -> domain direction would have no caller. Building such a function up front would be building dead code.
+     * Không có mapper riêng: bảng chỉ-ghi-thêm và đường đọc không đi qua repository này, nên chiều
+     * entity -> domain sẽ không có ai gọi. Dựng sẵn một hàm như thế là dựng sẵn mã chết.
      */
     @Override
     public SchoolAiSpendEntry save(SchoolAiSpendEntry entry) {
-        SchoolAiSpendEntryJpaEntity saved = springDataSchoolAiSpendEntryRepository.save(new SchoolAiSpendEntryJpaEntity(
+        var saved = springDataSchoolAiSpendEntryRepository.save(new SchoolAiSpendEntryJpaEntity(
             entry.getSchoolId(),
             entry.getSubscriptionId(),
             entry.getQuotaType().name(),
             entry.getUserId(),
-            entry.getAssessmentSessionId(),
+            entry.getExamSessionId(),
             entry.getPracticeSessionId(),
             entry.getAmountVnd(),
             entry.getOccurredAt()

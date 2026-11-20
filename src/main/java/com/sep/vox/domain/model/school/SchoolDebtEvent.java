@@ -7,14 +7,14 @@ import java.util.UUID;
 import com.sep.vox.domain.model.metering.QuotaType;
 
 /**
- * The audit ledger of "the cause of AI quota debt" -- each row is EXACTLY 1 quota wallet (ASSESSMENT/PRACTICE) of 1 school
- * that just changed state (fell into debt / crossed the warning ceiling / came out of debt), with the session and the VND amount that caused
- * that transition. Unlike a notification (which only exists temporarily through the outbox/Kafka), this table is an
- * append-only ledger so the system admin can look up the history at any time -- a mirror of SchoolSubscriptionEvent.
+ * Sổ audit "nguyên nhân nợ hạn mức AI" -- mỗi dòng là ĐÚNG 1 ví quota (EXAM/PRACTICE) của 1 trường
+ * vừa đổi trạng thái (rơi vào nợ / vượt trần cảnh báo / hết nợ), kèm session và số tiền VND đã gây ra
+ * transition đó. Khác với notification (chỉ tồn tại tạm qua outbox/Kafka), bảng này là ledger
+ * append-only để system admin tra lại lịch sử bất kỳ lúc nào -- mirror SchoolSubscriptionEvent.
  *
- * <p>Every money column here is VND, the same unit as school_balances/school_subscription_quota_records --
- * NO MORE USD. The provider's original currency only lives on in ai_usage_records.cost_usd and
- * school_balance_entries.cost_usd, the two places that really need reconciling back against the Azure invoice.
+ * <p>Mọi cột tiền ở đây là VND, cùng đơn vị với school_balances/school_subscription_quota_records --
+ * KHÔNG còn USD. Tệ gốc của nhà cung cấp chỉ còn sống ở ai_usage_records.cost_usd và
+ * school_balance_entries.cost_usd, là hai chỗ thật sự cần đối soát ngược với hóa đơn Azure.
  */
 public class SchoolDebtEvent {
     private UUID id;
@@ -27,7 +27,7 @@ public class SchoolDebtEvent {
     /** null với CLEARED: hết nợ là sự kiện cấp TRƯỜNG, số dư không chia theo ví hạn mức nào. */
     private QuotaType quotaType;
     /** LOCKED/CAP_EXCEEDED: ĐÚNG MỘT trong hai cột session dưới đây được set. CLEARED: cả hai null. */
-    private UUID triggerAssessmentSessionId;
+    private UUID triggerExamSessionId;
     private UUID triggerPracticeSessionId;
     private BigDecimal triggerAmountVnd;
     private BigDecimal totalAllocatedVnd;
@@ -38,7 +38,7 @@ public class SchoolDebtEvent {
     public SchoolDebtEvent() {}
 
     public SchoolDebtEvent(UUID id, UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType,
-            QuotaType quotaType, UUID triggerAssessmentSessionId, UUID triggerPracticeSessionId,
+            QuotaType quotaType, UUID triggerExamSessionId, UUID triggerPracticeSessionId,
             BigDecimal triggerAmountVnd,
             BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant occurredAt) {
         this.id = id;
@@ -46,7 +46,7 @@ public class SchoolDebtEvent {
         this.subscriptionId = subscriptionId;
         this.eventType = eventType;
         this.quotaType = quotaType;
-        this.triggerAssessmentSessionId = triggerAssessmentSessionId;
+        this.triggerExamSessionId = triggerExamSessionId;
         this.triggerPracticeSessionId = triggerPracticeSessionId;
         this.triggerAmountVnd = triggerAmountVnd;
         this.totalAllocatedVnd = totalAllocatedVnd;
@@ -56,14 +56,14 @@ public class SchoolDebtEvent {
     }
 
     public SchoolDebtEvent(UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType,
-            QuotaType quotaType, UUID triggerAssessmentSessionId, UUID triggerPracticeSessionId,
+            QuotaType quotaType, UUID triggerExamSessionId, UUID triggerPracticeSessionId,
             BigDecimal triggerAmountVnd,
             BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant occurredAt) {
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
         this.eventType = eventType;
         this.quotaType = quotaType;
-        this.triggerAssessmentSessionId = triggerAssessmentSessionId;
+        this.triggerExamSessionId = triggerExamSessionId;
         this.triggerPracticeSessionId = triggerPracticeSessionId;
         this.triggerAmountVnd = triggerAmountVnd;
         this.totalAllocatedVnd = totalAllocatedVnd;
@@ -112,12 +112,12 @@ public class SchoolDebtEvent {
         this.quotaType = quotaType;
     }
 
-    public UUID getTriggerAssessmentSessionId() {
-        return triggerAssessmentSessionId;
+    public UUID getTriggerExamSessionId() {
+        return triggerExamSessionId;
     }
 
-    public void setTriggerAssessmentSessionId(UUID triggerAssessmentSessionId) {
-        this.triggerAssessmentSessionId = triggerAssessmentSessionId;
+    public void setTriggerExamSessionId(UUID triggerExamSessionId) {
+        this.triggerExamSessionId = triggerExamSessionId;
     }
 
     public UUID getTriggerPracticeSessionId() {

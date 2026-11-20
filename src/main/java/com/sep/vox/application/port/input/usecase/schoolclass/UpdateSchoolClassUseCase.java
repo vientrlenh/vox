@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
-import com.sep.vox.domain.model.school.School;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -50,17 +49,17 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
     @Override
     @Transactional
     public UpdateSchoolClassResponse execute(UpdateSchoolClassCommand input) {
-        UpdateSchoolClassCommand command = normalize(input);
+        var command = normalize(input);
         validateCommand(command);
-        SchoolClassStatus status = command.status();
+        var status = command.statusProvided() ? parseStatus(command.status()) : null;
 
-        Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = findCurrentUser(currentUserId);
-        UUID schoolId = getSchoolId(currentUser);
+        var now = Instant.now();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = findCurrentUser(currentUserId);
+        var schoolId = getSchoolId(currentUser);
         validateSchool(schoolId);
 
-        int updatedRows = schoolClassRepository.updateMutableFields(
+        var updatedRows = schoolClassRepository.updateMutableFields(
             command.id(),
             schoolId,
             command.name(),
@@ -88,7 +87,7 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
                 ? StringNormalization.trimAndCollapseSpaces(input.description())
                 : null,
             input.descriptionProvided(),
-            input.statusProvided() ? input.status() : null,
+            input.statusProvided() ? StringNormalization.trimAndCollapseSpaces(input.status()) : null,
             input.statusProvided()
         );
     }
@@ -123,14 +122,14 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
         }
     }
 
-    private void validateStatus(SchoolClassStatus status) {
-        if (status == null) {
+    private void validateStatus(String status) {
+        if (status == null || status.isBlank()) {
             throw new IllegalArgumentException("Trạng thái lớp học không hợp lệ");
         }
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        User user = userRepository.findById(currentUserId)
+        var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         validateCurrentUserIsActive(user);
         return user;
@@ -149,10 +148,18 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
     }
 
     private void validateSchool(UUID schoolId) {
-        School school = schoolRepository.findById(schoolId)
+        var school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
+        }
+    }
+
+    private SchoolClassStatus parseStatus(String status) {
+        try {
+            return SchoolClassStatus.valueOf(status);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new IllegalArgumentException("Trạng thái lớp học không hợp lệ");
         }
     }
 }

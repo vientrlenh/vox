@@ -25,7 +25,7 @@ class JacksonJsonSerializationServiceTests {
 
     @Test
     void toJson_should_serialize_map_and_list_values() {
-        String json = service.toJson(Map.of("headers", List.of("code", "name")));
+        var json = service.toJson(Map.of("headers", List.of("code", "name")));
 
         assertThat(json).contains("headers");
         assertThat(json).contains("code");
@@ -34,7 +34,7 @@ class JacksonJsonSerializationServiceTests {
 
     @Test
     void toStringMap_should_parse_values_as_strings_and_preserve_nulls() {
-        Map<String, String> result = service.toStringMap("{\"code\":\"A01\",\"count\":3,\"empty\":null}");
+        var result = service.toStringMap("{\"code\":\"A01\",\"count\":3,\"empty\":null}");
 
         assertThat(result).containsEntry("code", "A01");
         assertThat(result).containsEntry("count", "3");
@@ -43,14 +43,14 @@ class JacksonJsonSerializationServiceTests {
 
     @Test
     void toStringList_should_parse_values_as_strings_and_preserve_nulls() {
-        List<String> result = service.toStringList("[\"code\",3,null]");
+        var result = service.toStringList("[\"code\",3,null]");
 
         assertThat(result).containsExactly("code", "3", null);
     }
 
     @Test
     void toStringMapList_should_parse_map_entries_as_strings() {
-        List<Map<String, String>> result = service.toStringMapList("[{\"field\":\"code\",\"line\":1}]");
+        var result = service.toStringMapList("[{\"field\":\"code\",\"line\":1}]");
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0)).containsEntry("field", "code");

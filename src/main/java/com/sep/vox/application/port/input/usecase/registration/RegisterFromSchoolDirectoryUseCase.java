@@ -69,9 +69,9 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
     @Override
     @Transactional
     public RegisterFromSchoolDirectoryResponse execute(RegisterFromSchoolDirectoryCommand input) {
-        RegisterFromSchoolDirectoryCommand command = normalize(input);
+        var command = normalize(input);
 
-        SchoolDirectory schoolDirectory = schoolDirectoryRepository.findById(command.schoolDirectoryId())
+        var schoolDirectory = schoolDirectoryRepository.findById(command.schoolDirectoryId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
         
         if (schoolRepository.existsByCode(schoolDirectory.getCode())) {
@@ -82,19 +82,19 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
             throw new DuplicatedException("Hiện đang có đơn đăng ký đang chờ phê duyệt cho danh mục trường này");
         }
 
-        boolean formAlreadyPendingByContactInfo = registerFormRepository.existsByContactEmailAndStatus(command.contactEmail(), RegisterFormStatus.PENDING) || registerFormRepository.existsByContactPhoneAndStatus(command.contactPhone(), RegisterFormStatus.PENDING);
+        var formAlreadyPendingByContactInfo = registerFormRepository.existsByContactEmailAndStatus(command.contactEmail(), RegisterFormStatus.PENDING) || registerFormRepository.existsByContactPhoneAndStatus(command.contactPhone(), RegisterFormStatus.PENDING);
 
         if (formAlreadyPendingByContactInfo) {
             throw new DuplicatedException("Thông tin yêu cầu đang tồn tại đơn đăng ký cần được phê duyệt");
         }
 
-        boolean alreadyUser = userRepository.existsByEmail(command.contactEmail()) || userRepository.existsByPhone(command.contactPhone());
+        var alreadyUser = userRepository.existsByEmail(command.contactEmail()) || userRepository.existsByPhone(command.contactPhone());
 
         if (alreadyUser) {
             throw new DuplicatedException("Email hoặc số điện thoại yêu cầu đã được đăng ký");
         }
 
-        RegisterFormVerificationMethod method = getVerificationMethod(schoolDirectory, command);
+        var method = getVerificationMethod(schoolDirectory, command);
         if (method == RegisterFormVerificationMethod.DOMAIN_OTP) {
             saveAndSendRegisterVerificationOtp(schoolDirectory, command);
             return new RegisterFromSchoolDirectoryResponse("Mã OTP xác thực đã được gửi");
@@ -126,12 +126,12 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
     } 
 
     private RegisterFormVerificationMethod getVerificationMethod(SchoolDirectory directory, RegisterFromSchoolDirectoryCommand command) {
-        boolean verifiedDirOrigin = directory.isVerified();
+        var verifiedDirOrigin = directory.isVerified();
 
-        String email = command.contactEmail();
-        String dirDomain = directory.getDomain();
-        String emailDomain = email.substring(email.indexOf("@") + 1);
-        boolean trustedEmailDomain = dirDomain != null && emailDomain.equalsIgnoreCase(dirDomain);
+        var email = command.contactEmail();
+        var dirDomain = directory.getDomain();
+        var emailDomain = email.substring(email.indexOf("@") + 1);
+        var trustedEmailDomain = dirDomain != null && emailDomain.equalsIgnoreCase(dirDomain);
 
          if (verifiedDirOrigin && trustedEmailDomain) {
             return RegisterFormVerificationMethod.DOMAIN_OTP;
@@ -146,9 +146,9 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
      * bản hash vào chính dòng cache này, để credential không đi qua outbox hay Kafka.
      */
     private void saveAndSendRegisterVerificationOtp(SchoolDirectory schoolDir, RegisterFromSchoolDirectoryCommand command) {
-        String registerVerificationKey = CacheKey.registerVerificationKey(command.contactEmail());
+        var registerVerificationKey = CacheKey.registerVerificationKey(command.contactEmail());
 
-        CachePayload.RegisterVerificationPayload payload = new CachePayload.RegisterVerificationPayload(
+        var payload = new CachePayload.RegisterVerificationPayload(
             null,
             command.contactEmail(), 
             command.schoolDirectoryId(), 
@@ -175,8 +175,8 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
     }
 
     private void saveRegisterFormWithDocuments(RegisterFromSchoolDirectoryCommand command, RegisterFormVerificationMethod method) {
-        Instant now = Instant.now();
-        RegisterForm registerForm = RegisterForm.fromDirectoryWithDocuments(
+        var now = Instant.now();
+        var registerForm = RegisterForm.fromDirectoryWithDocuments(
             command.schoolDirectoryId(), 
             method, 
             command.contactFullName(), 
@@ -190,8 +190,8 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
             command.studentCount(), 
             now
         );
-        RegisterForm savedForm = registerFormRepository.save(registerForm);
-        List<RegisterFormDocument> documents = RegisterFormDocument.createMany(savedForm.getId(), command.documentUrls(), now);
+        var savedForm = registerFormRepository.save(registerForm);
+        var documents = RegisterFormDocument.createMany(savedForm.getId(), command.documentUrls(), now);
         registerFormDocumentRepository.saveAll(documents);
     }
 }

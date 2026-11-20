@@ -9,14 +9,14 @@ public class SchoolDomainTests {
 
     @Test
     void should_accept_valid_school_domain() {
-        SchoolDomain schoolDomain = new SchoolDomain("student.hcmus.edu.vn");
+        var schoolDomain = new SchoolDomain("student.hcmus.edu.vn");
 
         assertThat(schoolDomain.value()).isEqualTo("student.hcmus.edu.vn");
     }
 
     @Test
     void should_accept_null_school_domain() {
-        SchoolDomain schoolDomain = new SchoolDomain(null);
+        var schoolDomain = new SchoolDomain(null);
 
         assertThat(schoolDomain.value()).isNull();
     }

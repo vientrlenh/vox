@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkDetailsQuery;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkDetailsUseCase;
-import com.sep.vox.domain.dto.FrameworkDto;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.valueobject.FrameworkCode;
@@ -35,17 +34,17 @@ public class ViewFrameworkDetailsUseCaseTests {
 
     @Test
     void should_return_framework_details() {
-        UUID frameworkId = UUID.randomUUID();
-        ViewFrameworkDetailsQuery query = new ViewFrameworkDetailsQuery(frameworkId);
+        var frameworkId = UUID.randomUUID();
+        var query = new ViewFrameworkDetailsQuery(frameworkId);
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "CEFR Framework", "European Framework",
             true, now, now, null, null
         );
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
 
-        FrameworkDto result = useCase.execute(query);
+        var result = useCase.execute(query);
 
         assertThat(result.id()).isEqualTo(frameworkId);
         assertThat(result.name()).isEqualTo("CEFR Framework");
@@ -55,8 +54,8 @@ public class ViewFrameworkDetailsUseCaseTests {
 
     @Test
     void should_throw_not_found_when_framework_missing() {
-        UUID frameworkId = UUID.randomUUID();
-        ViewFrameworkDetailsQuery query = new ViewFrameworkDetailsQuery(frameworkId);
+        var frameworkId = UUID.randomUUID();
+        var query = new ViewFrameworkDetailsQuery(frameworkId);
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
 
@@ -65,17 +64,17 @@ public class ViewFrameworkDetailsUseCaseTests {
 
     @Test
     void should_return_dto_with_all_fields() {
-        UUID frameworkId = UUID.randomUUID();
-        ViewFrameworkDetailsQuery query = new ViewFrameworkDetailsQuery(frameworkId);
+        var frameworkId = UUID.randomUUID();
+        var query = new ViewFrameworkDetailsQuery(frameworkId);
 
-        Framework framework = new Framework(
+        var framework = new Framework(
             frameworkId, new FrameworkCode("TOEIC"), "TOEIC Framework", "TOEIC Test",
             false, now, now, null, null
         );
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
 
-        FrameworkDto result = useCase.execute(query);
+        var result = useCase.execute(query);
 
         assertThat(result.code()).isEqualTo("TOEIC");
         assertThat(result.description()).isEqualTo("TOEIC Test");

@@ -1,7 +1,5 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
-import com.sep.vox.domain.model.school.SchoolUser;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +34,7 @@ public class ViewSchoolUserDetailsUseCase implements IUseCase<ViewSchoolUserDeta
     @Override
     @Transactional(readOnly = true)
     public SchoolUserDto execute(ViewSchoolUserDetailsQuery input) {
-        UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
+        var callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
@@ -48,7 +46,7 @@ public class ViewSchoolUserDetailsUseCase implements IUseCase<ViewSchoolUserDeta
 
         // Admin có thể xem cả người dùng đã vô hiệu hóa (DISABLED) — FE có bộ lọc "Hiện người dùng
         // đã vô hiệu hóa" và cho xem chi tiết. Quyền đã được giới hạn ở SCHOOL_ADMIN/SYSTEM_ADMIN phía trên.
-        SchoolUser schoolUser = schoolUserRepository.findBySchoolIdAndUserId(input.schoolId(), input.userId())
+        var schoolUser = schoolUserRepository.findBySchoolIdAndUserId(input.schoolId(), input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng nhà trường theo yêu cầu"));
 
         return SchoolUserDtoMapper.toSchoolUserDto(schoolUser);

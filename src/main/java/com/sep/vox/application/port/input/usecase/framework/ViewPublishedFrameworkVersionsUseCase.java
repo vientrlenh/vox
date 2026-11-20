@@ -1,7 +1,5 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import com.sep.vox.domain.model.framework.Framework;
-import com.sep.vox.domain.model.framework.FrameworkVersion;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -29,13 +27,13 @@ public class ViewPublishedFrameworkVersionsUseCase implements IUseCase<ViewFrame
 
     @Override
     public PageResult<FrameworkVersionDto> execute(ViewFrameworkVersionsQuery input) {
-        Framework framework = frameworkRepository.findById(input.frameworkId())
+        var framework = frameworkRepository.findById(input.frameworkId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
         if (!framework.isActive()) {
             throw new NotFoundException("Không tìm thấy framework");
         }
 
-        PageResult<FrameworkVersion> result = frameworkVersionRepository.findByFrameworkIdAndStatus(
+        var result = frameworkVersionRepository.findByFrameworkIdAndStatus(
             input.frameworkId(), FrameworkVersionStatus.PUBLISHED, input.page(), input.size());
         return FrameworkVersionDtoMapper.toDtoPage(result);
     }

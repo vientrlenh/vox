@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.notification;
 
 import java.time.Instant;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,10 +23,10 @@ public class MarkAllNotificationsAsReadUseCase implements IUseCase<Void, Void> {
     @Override
     @Transactional
     public Void execute(Void input) {
-        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
+        var userId = userContextPort.getCurrentAuthenticatedUserId();
 
-        Instant now = Instant.now();
-        notificationRepository.markAllRead(userId, now);
+        var now = Instant.now();
+        var _ = notificationRepository.markAllRead(userId, now);
         return null;
     }
     

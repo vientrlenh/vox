@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.initializer;
 
-import com.sep.vox.domain.model.user.Role;
 import java.time.Instant;
 
 import org.slf4j.Logger;
@@ -66,7 +65,7 @@ public class SystemAdminUserInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
-        Role systemAdminRole = roleRepository.findByCode("SYSTEM_ADMIN").orElse(null);
+        var systemAdminRole = roleRepository.findByCode("SYSTEM_ADMIN").orElse(null);
         if (systemAdminRole == null) {
             LOGGER.info("System admin role is not in database. Skip initialize system admin user");
             return;
@@ -75,10 +74,10 @@ public class SystemAdminUserInitializer implements ApplicationRunner {
             LOGGER.info("System admin user is already in database. Skip initialize admin user");
             return;
         }
-        User systemAdminUser = systemAdminUser();
-        User savedUser = userRepository.save(systemAdminUser);
+        var systemAdminUser = systemAdminUser();
+        var savedUser = userRepository.save(systemAdminUser);
 
-        UserRole userRole = new UserRole(
+        var userRole = new UserRole(
             savedUser.getId(), 
             systemAdminRole.getId(), 
             Instant.now()
@@ -88,7 +87,7 @@ public class SystemAdminUserInitializer implements ApplicationRunner {
     }
 
     private User systemAdminUser() {
-        Instant now = Instant.now();
+        var now = Instant.now();
         return new User(
             new Email(email),
             passwordEncoderPort.hash(password),

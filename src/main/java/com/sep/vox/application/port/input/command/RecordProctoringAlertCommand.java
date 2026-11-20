@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public record RecordProctoringAlertCommand(
     String eventId,
-    UUID assessmentSessionId,
+    UUID examSessionId,
     UUID candidateId,
     String streamId,
     String streamType,

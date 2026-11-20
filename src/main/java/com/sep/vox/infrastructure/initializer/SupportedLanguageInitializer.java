@@ -33,8 +33,8 @@ public class SupportedLanguageInitializer implements ApplicationRunner {
             LOGGER.info("Supported language already exist in database. Skip initialize");
             return;
         }
-        Instant now = Instant.now();
-        SupportedLanguage english = new SupportedLanguage(
+        var now = Instant.now();
+        var english = new SupportedLanguage(
             new LanguageCode(ENGLISH_CODE), 
             "Tiếng Anh", 
             "Tiếng Anh hỗ trợ cho việc luyện thi", 

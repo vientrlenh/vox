@@ -1,20 +1,17 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolRoomJpaEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.PageResult;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolRoomMapper;
-import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolRoomRepository;
 
 @Repository
@@ -44,8 +41,8 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
 
     @Override
     public SchoolRoom save(SchoolRoom room) {
-        SchoolRoomJpaEntity entity = SchoolRoomMapper.toJpa(room);
-        SchoolRoomJpaEntity saved = springDataSchoolRoomRepository.save(entity);
+        var entity = SchoolRoomMapper.toJpa(room);
+        var saved = springDataSchoolRoomRepository.save(entity);
         return SchoolRoomMapper.toDomain(saved);
     }
 
@@ -67,9 +64,9 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
 
     @Override
     public PageResult<SchoolRoom> findBySchoolId(UUID schoolId, int pageNumber, int size) {
-        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
+        var pageable = PageRequest.of(pageNumber - 1, size);
 
-        Page<SchoolRoomJpaEntity> page = springDataSchoolRoomRepository.findBySchoolId(schoolId, pageable);
+        var page = springDataSchoolRoomRepository.findBySchoolId(schoolId, pageable);
 
         List<SchoolRoom> domainContent = page.getContent().stream()
                 .map(SchoolRoomMapper::toDomain)

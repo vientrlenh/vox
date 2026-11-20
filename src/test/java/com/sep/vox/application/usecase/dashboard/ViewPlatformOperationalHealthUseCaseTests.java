@@ -20,7 +20,6 @@ import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformOperatio
 import com.sep.vox.application.query.dto.GradingOutcomeBucketDto;
 import com.sep.vox.application.query.dto.LiveSessionCountsDto;
 import com.sep.vox.application.query.repository.PlatformOperationalHealthQueryRepository;
-import com.sep.vox.application.response.input.dashboard.PlatformOperationalHealthResponse;
 import com.sep.vox.domain.common.ZoneConstant;
 
 /**
@@ -52,13 +51,13 @@ class ViewPlatformOperationalHealthUseCaseTests {
     void fillsMissingDaysWithZeroAndKeepsThemInOrder() {
         when(queryRepository.findGradingOutcomeByDay(any(), any(), any())).thenReturn(List.of(
             new GradingOutcomeBucketDto(LocalDate.of(2026, 8, 1), 120L, 1L),
-            // 02/08 and 03/08 have no rows -- this is exactly the case where 0 must be inserted.
+            // 02/08 và 03/08 không có dòng nào -- đây chính là trường hợp phải chèn 0.
             new GradingOutcomeBucketDto(LocalDate.of(2026, 8, 4), 80L, 19L)));
 
-        PlatformOperationalHealthResponse result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
+        var result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
 
         assertThat(result.daily()).extracting(bucket -> bucket.day())
-            .containsExactly(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 2), LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 4));
+            .containsExactly("2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04");
         assertThat(result.daily()).extracting(bucket -> bucket.graded())
             .containsExactly(120L, 0L, 0L, 80L);
         assertThat(result.daily()).extracting(bucket -> bucket.failed())
@@ -71,24 +70,24 @@ class ViewPlatformOperationalHealthUseCaseTests {
             new GradingOutcomeBucketDto(LocalDate.of(2026, 8, 1), 120L, 1L),
             new GradingOutcomeBucketDto(LocalDate.of(2026, 8, 4), 80L, 19L)));
 
-        PlatformOperationalHealthResponse result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
+        var result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
 
         assertThat(result.graded()).isEqualTo(200L);
         assertThat(result.gradingFailed()).isEqualTo(20L);
-        // 200 / 220 = 90.909... -> rounded to 1 decimal place.
+        // 200 / 220 = 90,909... -> làm tròn 1 chữ số thập phân.
         assertThat(result.successRatePercent()).isEqualTo(90.9);
     }
 
     /**
-     * When no session has finished grading or failed grading, the rate must be null, NOT 0: a
-     * system that has run no session is not a system with a 0% success rate, and the red band on
-     * the dashboard distinguishes exactly those two situations.
+     * Chưa có phiên nào chấm xong lẫn chấm lỗi thì tỷ lệ phải là null, KHÔNG phải 0: một hệ thống
+     * chưa chạy phiên nào không phải là hệ thống có tỷ lệ thành công 0%, và dải đỏ trên dashboard
+     * phân biệt đúng hai chuyện đó.
      */
     @Test
     void successRateIsNullWhenNothingWasGradedInTheWindow() {
         when(queryRepository.findGradingOutcomeByDay(any(), any(), any())).thenReturn(List.of());
 
-        PlatformOperationalHealthResponse result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
+        var result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
 
         assertThat(result.successRatePercent()).isNull();
         assertThat(result.daily()).hasSize(4);
@@ -98,60 +97,55 @@ class ViewPlatformOperationalHealthUseCaseTests {
         });
     }
 
-    /**
-     * The current snapshot does not depend on the window, so it must go straight from the
-     * repository to the response.
-     */
+    /** Ảnh chụp hiện tại không phụ thuộc cửa sổ, nên phải đi thẳng từ repository ra response. */
     @Test
     void liveCountsPassThroughUnchanged() {
         when(queryRepository.findGradingOutcomeByDay(any(), any(), any())).thenReturn(List.of());
 
-        PlatformOperationalHealthResponse result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
+        var result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
 
         assertThat(result.sessionsInProgress()).isEqualTo(6L);
-        assertThat(result.assessmentsInProgress()).isEqualTo(2L);
+        assertThat(result.examsInProgress()).isEqualTo(2L);
         assertThat(result.gradingQueueDepth()).isEqualTo(41L);
     }
 
     /**
-     * A reversed range (from > to) is a client-side error. The current snapshot is still returned
-     * because it is correct whatever the window is, while the day series is empty -- a truly empty
-     * range has no days.
+     * Khoảng ngược (từ > đến) là lỗi phía client. Vẫn trả ảnh chụp hiện tại vì nó đúng bất kể cửa
+     * sổ, còn chuỗi ngày thì rỗng -- một khoảng rỗng thật sự không có ngày nào.
      */
     @Test
     void invertedRangeKeepsLiveCountsAndReturnsNoDays() {
-        PlatformOperationalHealthResponse result = useCase.execute(new ViewPlatformOperationalHealthQuery(TO, FROM));
+        var result = useCase.execute(new ViewPlatformOperationalHealthQuery(TO, FROM));
 
         assertThat(result.daily()).isEmpty();
         assertThat(result.successRatePercent()).isNull();
         assertThat(result.sessionsInProgress()).isEqualTo(6L);
     }
 
-    /** Leaving both points empty = the last 14 days up to now. */
+    /** Bỏ trống cả hai mốc = 14 ngày gần nhất tính tới bây giờ. */
     @Test
     void defaultsToFourteenDaysEndingNow() {
         when(queryRepository.findGradingOutcomeByDay(any(), any(), any())).thenReturn(List.of());
 
-        PlatformOperationalHealthResponse result = useCase.execute(new ViewPlatformOperationalHealthQuery(null, null));
+        var result = useCase.execute(new ViewPlatformOperationalHealthQuery(null, null));
 
         assertThat(result.daily()).hasSize(14);
         assertThat(result.daily().get(13).day())
-            .isEqualTo(LocalDate.now(ZoneConstant.BUSINESS_ZONE));
+            .isEqualTo(LocalDate.now(ZoneConstant.BUSINESS_ZONE).toString());
     }
 
     /**
-     * Days must be cut by Vietnam time, not UTC: a range that starts at 00:00 Vietnam time is 17:00
-     * UTC the day before, so cutting by UTC would produce an extra empty day at the start of the
-     * series.
+     * Cắt ngày phải theo giờ VN chứ không UTC: một khoảng bắt đầu 00:00 giờ VN là 17:00 UTC hôm
+     * trước, nên cắt theo UTC sẽ đẻ thêm một ngày rỗng ở đầu chuỗi.
      */
     @Test
     void bucketsByBusinessZoneNotUtc() {
         when(queryRepository.findGradingOutcomeByDay(any(), any(), any())).thenReturn(List.of());
 
-        PlatformOperationalHealthResponse result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
+        var result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
 
-        assertThat(result.daily().get(0).day()).isEqualTo(LocalDate.of(2026, 8, 1));
-        ArgumentCaptor<ZoneId> zoneCaptor = ArgumentCaptor.forClass(ZoneId.class);
+        assertThat(result.daily().get(0).day()).isEqualTo("2026-08-01");
+        var zoneCaptor = ArgumentCaptor.forClass(ZoneId.class);
         org.mockito.Mockito.verify(queryRepository)
             .findGradingOutcomeByDay(eq(FROM), eq(TO), zoneCaptor.capture());
         assertThat(zoneCaptor.getValue()).isEqualTo(ZoneConstant.BUSINESS_ZONE);

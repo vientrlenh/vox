@@ -5,15 +5,15 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * The school's SELF-TOPPED-UP money wallet. It ONLY holds money the school paid in, not the plan quota --
- * the plan quota lives in school_subscription_quota_records, split by QuotaType and with its own
- * used counter.
+ * Ví tiền TỰ NẠP của trường. CHỈ chứa tiền trường bỏ ra mua, không chứa hạn mức kèm gói --
+ * hạn mức kèm gói nằm ở school_subscription_quota_records, tách theo từng QuotaType và có bộ đếm
+ * used riêng.
  *
- * <p>The two are deliberately NOT merged into one number: a plan grants quota by KIND (ASSESSMENT /
- * PRACTICE), so a single school-level balance cannot express "300,000 left but
- * not usable for grading attempts". Merging them silently erases the limit by kind.
+ * <p>Cố tình KHÔNG gộp hai thứ đó vào một con số: gói cấp hạn mức theo TỪNG loại (EXAM /
+ * PRACTICE), nên một số dư cấp trường duy nhất không diễn đạt được "còn 300.000 nhưng
+ * không được dùng để chấm bài". Gộp lại là âm thầm xóa mất giới hạn theo loại.
  *
- * <p>This wallet may only be touched WHEN the quota of the corresponding kind is exhausted -- see ConsumeQuotaService.
+ * <p>Ví này chỉ được đụng tới KHI hạn mức của loại tương ứng đã cạn -- xem ConsumeQuotaService.
  */
 public class SchoolBalance {
     private UUID id;

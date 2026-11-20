@@ -9,16 +9,12 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.AssessmentPolicyDto;
 import com.sep.vox.domain.mapper.AssessmentPolicyDtoMapper;
-import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
-import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.school.SchoolUser;
-import com.sep.vox.domain.model.user.User;
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,32 +43,39 @@ public class ViewSchoolAssessmentPoliciesUseCase implements IUseCase<ViewSchoolA
     @Override
     @Transactional(readOnly = true)
     public PageResult<AssessmentPolicyDto> execute(ViewSchoolAssessmentPoliciesQuery query) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản bị khóa.");
         }
 
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
         if (!schoolUser.getSchoolId().equals(query.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền truy cập dữ liệu của trường khác.");
         }
 
-        School school = schoolRepository.findById(query.schoolId())
+        var school = schoolRepository.findById(query.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
         }
 
-        String safeStatus = query.status() == null ? null : query.status().name();
+        String safeStatus = null;
+        if (query.status() != null && !query.status().isBlank()) {
+            try {
+                safeStatus = AssessmentPolicyStatus.valueOf(query.status().trim().toUpperCase()).name();
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Trạng thái (status) không hợp lệ. Chỉ chấp nhận DRAFT, PUBLISHED, ARCHIVED.");
+            }
+        }
 
         if (query.effectiveFrom() != null && query.effectiveTo() != null && query.effectiveFrom().isAfter(query.effectiveTo())) {
             throw new IllegalArgumentException("Khoảng thời gian effectiveFrom/effectiveTo không hợp lệ.");
         }
 
-        PageResult<AssessmentPolicy> policyPage = assessmentPolicyRepository.findAllBySchoolId(query.schoolId(), safeStatus, query.languageId(), query.rubricVersionId(),
+        var policyPage = assessmentPolicyRepository.findAllBySchoolId(query.schoolId(), safeStatus, query.languageId(), query.rubricVersionId(),
                 query.effectiveFrom(), query.effectiveTo(), query.page(), query.size());
         return AssessmentPolicyDtoMapper.toDtoPage(policyPage);
     }

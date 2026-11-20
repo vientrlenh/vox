@@ -58,9 +58,9 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
 
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
-        UUID schoolId = session.getSchoolId();
-        UUID currentUserId = session.getCreatedBy();
-        Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
+        var schoolId = session.getSchoolId();
+        var currentUserId = session.getCreatedBy();
+        var mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         validateMappingKeys(rows, mapping);
         return processRows(rows, mapping, schoolId, currentUserId);
     }
@@ -69,14 +69,14 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
         if (rows.isEmpty()) {
             return;
         }
-        Set<String> validHeaders = jsonSerializationPort.toStringMap(rows.get(0).getRawDataJson()).keySet();
-        List<String> invalidKeys = confirmedMapping.keySet().stream()
+        var validHeaders = jsonSerializationPort.toStringMap(rows.get(0).getRawDataJson()).keySet();
+        var invalidKeys = confirmedMapping.keySet().stream()
             .filter(key -> !validHeaders.contains(key))
             .toList();
         if (!invalidKeys.isEmpty()) {
             throw new IllegalArgumentException("Mapping chứa cột không tồn tại trong file: " + String.join(", ", invalidKeys));
         }
-        List<String> invalidValues = confirmedMapping.values().stream()
+        var invalidValues = confirmedMapping.values().stream()
             .map(value -> value == null ? null : value.strip())
             .filter(value -> value != null && !value.isEmpty() && !SUPPORTED_FIELDS.contains(value))
             .toList();
@@ -86,28 +86,28 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
     }
 
     private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId) {
-        long createdRows = 0L;
-        long updatedRows = 0L;
-        long invalidRows = 0L;
-        Set<String> seenKeys = new HashSet<String>();
-        List<RowContext> rowContexts = new ArrayList<RowContext>();
-        Set<String> levelCodes = new HashSet<String>();
+        var createdRows = 0L;
+        var updatedRows = 0L;
+        var invalidRows = 0L;
+        var seenKeys = new HashSet<String>();
+        var rowContexts = new ArrayList<RowContext>();
+        var levelCodes = new HashSet<String>();
 
-        for (ImportRow row : rows) {
-            Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-            Map<String, String> mappedData = mapRawData(rawData, confirmedMapping);
-            Map<String, String> normalized = normalize(mappedData);
+        for (var row : rows) {
+            var rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
+            var mappedData = mapRawData(rawData, confirmedMapping);
+            var normalized = normalize(mappedData);
             row.setMappedDataJson(jsonSerializationPort.toJson(normalized));
             rowContexts.add(new RowContext(row, normalized));
             addIfPresent(levelCodes, normalized.get("schoolGradeLevelCode"));
         }
 
-        Map<String, GradeLevel> levelsByCode = findGradeLevelsByCode(levelCodes);
+        var levelsByCode = findGradeLevelsByCode(levelCodes);
 
-        for (RowContext rowContext : rowContexts) {
-            ImportRow row = rowContext.row();
-            Map<String, String> normalized = rowContext.normalized();
-            List<Map<String, String>> errors = validateRow(normalized, seenKeys, levelsByCode);
+        for (var rowContext : rowContexts) {
+            var row = rowContext.row();
+            var normalized = rowContext.normalized();
+            var errors = validateRow(normalized, seenKeys, levelsByCode);
 
             if (!errors.isEmpty()) {
                 row.setErrorsJson(jsonSerializationPort.toJson(errors));
@@ -116,10 +116,10 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
                 continue;
             }
 
-            GradeLevel gradeLevel = levelsByCode.get(normalized.get("schoolGradeLevelCode"));
-            LocalDate startDate = DateMapper.toLocalDate(normalized.get("startDate"));
-            LocalDate endDate = DateMapper.toLocalDate(normalized.get("endDate"));
-            SchoolGrade existing = schoolGradeRepository
+            var gradeLevel = levelsByCode.get(normalized.get("schoolGradeLevelCode"));
+            var startDate = DateMapper.toLocalDate(normalized.get("startDate"));
+            var endDate = DateMapper.toLocalDate(normalized.get("endDate"));
+            var existing = schoolGradeRepository
                     .findBySchoolIdAndGradeLevelIdAndCode(schoolId, gradeLevel.getId(), normalized.get("code"))
                     .orElse(null);
 
@@ -148,7 +148,7 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
     }
 
     private void createGrade(Map<String, String> data, UUID schoolId, UUID gradeLevelId, LocalDate startDate, LocalDate endDate, UUID currentUserId) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         schoolGradeRepository.save(new SchoolGrade(
                 schoolId,
                 gradeLevelId,
@@ -168,7 +168,7 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
     }
 
     private void updateGrade(SchoolGrade existing, Map<String, String> data, LocalDate startDate, LocalDate endDate, UUID currentUserId) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         existing.setName(data.get("name"));
         existing.setDescription(data.get("description"));
         existing.setStartDate(startDate);
@@ -180,16 +180,16 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
 
     // Catalog khối lớp dùng chung nên tra theo code là đủ, không còn lọc theo trường.
     private Map<String, GradeLevel> findGradeLevelsByCode(Set<String> codes) {
-        Map<String, GradeLevel> levelsByCode = new LinkedHashMap<String, GradeLevel>();
+        var levelsByCode = new LinkedHashMap<String, GradeLevel>();
         gradeLevelRepository.findByCodeIn(codes)
             .forEach(level -> levelsByCode.putIfAbsent(level.getCode(), level));
         return levelsByCode;
     }
 
     private Map<String, String> mapRawData(Map<String, String> rawData, Map<String, String> confirmedMapping) {
-        Map<String, String> mappedData = new LinkedHashMap<String, String>();
+        var mappedData = new LinkedHashMap<String, String>();
         rawData.forEach((originalHeader, value) -> {
-            String systemField = confirmedMapping.get(originalHeader);
+            var systemField = confirmedMapping.get(originalHeader);
             if (systemField != null) {
                 systemField = systemField.strip();
             }
@@ -201,7 +201,7 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
     }
 
     private Map<String, String> normalize(Map<String, String> mappedData) {
-        Map<String, String> normalized = new LinkedHashMap<String, String>();
+        var normalized = new LinkedHashMap<String, String>();
         normalized.put("schoolGradeLevelCode", StringNormalization.normalizeCode(mappedData.get("schoolGradeLevelCode")));
         normalized.put("code", StringNormalization.normalizeCode(mappedData.get("code")));
         normalized.put("name", StringNormalization.trimAndCollapseSpaces(mappedData.get("name")));
@@ -213,7 +213,7 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
 
     private List<Map<String, String>> validateRow(Map<String, String> data, Set<String> seenKeys,
             Map<String, GradeLevel> levelsByCode) {
-        List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
+        var errors = new ArrayList<Map<String, String>>();
 
         addMissingError(errors, data, "schoolGradeLevelCode", "Mã khối không được để trống");
         addMissingError(errors, data, "code", "Mã năm học không được để trống");
@@ -221,21 +221,21 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
         addMissingError(errors, data, "startDate", "Ngày bắt đầu không được để trống");
         addMissingError(errors, data, "endDate", "Ngày kết thúc không được để trống");
 
-        String levelCode = data.get("schoolGradeLevelCode");
+        var levelCode = data.get("schoolGradeLevelCode");
         if (isPresent(levelCode) && !levelsByCode.containsKey(levelCode)) {
             errors.add(error("schoolGradeLevelCode", "Không tìm thấy khối lớp"));
         }
 
-        String code = data.get("code");
+        var code = data.get("code");
         if (isPresent(levelCode) && isPresent(code) && !seenKeys.add(levelCode + "::" + code)) {
             errors.add(error("code", "Mã năm học bị trùng trong file import"));
         }
 
-        LocalDate startDate = parseDateOrNull(data.get("startDate"));
+        var startDate = parseDateOrNull(data.get("startDate"));
         if (isPresent(data.get("startDate")) && startDate == null) {
             errors.add(error("startDate", "Ngày bắt đầu không hợp lệ"));
         }
-        LocalDate endDate = parseDateOrNull(data.get("endDate"));
+        var endDate = parseDateOrNull(data.get("endDate"));
         if (isPresent(data.get("endDate")) && endDate == null) {
             errors.add(error("endDate", "Ngày kết thúc không hợp lệ"));
         }
@@ -277,7 +277,7 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
         if (value == null) {
             return null;
         }
-        String stripped = value.strip();
+        var stripped = value.strip();
         return stripped.isEmpty() ? null : stripped;
     }
 

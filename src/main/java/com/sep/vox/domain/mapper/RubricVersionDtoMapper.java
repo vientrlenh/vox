@@ -19,12 +19,12 @@ public class RubricVersionDtoMapper {
                 version.getCode(),
                 version.getName(),
                 version.getDescription(),
-                version.getStatus(),
+                version.getStatus() != null ? version.getStatus().name() : null,
                 version.getEffectiveFrom(),
                 version.getEffectiveTo(),
                 version.getScoringScaleMin(),
                 version.getScoringScaleMax(),
-                version.getTotalScoreMethod(),
+                version.getTotalScoreMethod() != null ? version.getTotalScoreMethod().name() : null,
                 version.getCreatedAt(),
                 version.getSourceRubricVersionId()
         );

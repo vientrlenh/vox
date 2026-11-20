@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.schooldirectory;
 
 import java.time.Instant;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,16 +28,16 @@ public class CreateSchoolDirectoryUseCase implements IUseCase<CreateSchoolDirect
     @Override
     @Transactional
     public CreateSchoolDirectoryResponse execute(CreateSchoolDirectoryCommand input) {
-        CreateSchoolDirectoryCommand command = normalize(input);
+        var command = normalize(input);
 
         if (schoolDirectoryRepository.existsByCode(command.code())) {
             throw new DuplicatedException("Mã trường này đã tồn tại trong danh mục hệ thống");
         }
 
-        Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var now = Instant.now();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        SchoolDirectory directory = SchoolDirectory.createByAdmin(
+        var directory = SchoolDirectory.createByAdmin(
             command.code(), 
             command.name(), 
             command.provinceCode(), 
@@ -49,7 +48,7 @@ public class CreateSchoolDirectoryUseCase implements IUseCase<CreateSchoolDirect
             now, 
             currentUserId
         );
-        SchoolDirectory saved = schoolDirectoryRepository.save(directory);
+        var saved = schoolDirectoryRepository.save(directory);
         return new CreateSchoolDirectoryResponse(saved.getId());
     }
     

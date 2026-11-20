@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * @param assignmentIds empty = reclaim every overdue assignment within the scope of
- *        {@code assessmentId} (both empty = the whole school)
- * @param reassignToTeacherIds empty = reclaim only, the attempts go back to the unassigned queue
+ * @param assignmentIds bỏ trống = thu hồi mọi phân công quá hạn trong phạm vi
+ *        {@code examId} (bỏ trống cả hai = toàn trường)
+ * @param reassignToTeacherIds bỏ trống = chỉ thu hồi, bài về hàng chưa giao
  */
 public record ReclaimOverdueAssignmentsRequest(
-    UUID assessmentId,
+    UUID examId,
     List<UUID> assignmentIds,
     List<UUID> reassignToTeacherIds,
     Instant newDeadlineAt

@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import com.sep.vox.application.port.output.TopicGenerationPort;
@@ -44,7 +43,7 @@ public class TopicGenerationClient implements TopicGenerationPort {
             .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(2))
             .build();
-        String base = agentsBaseUrl.replaceAll("/+$", "");
+        var base = agentsBaseUrl.replaceAll("/+$", "");
         this.proposeUri = URI.create(
             base + "/internal/practice-generation/topics"
         );
@@ -66,7 +65,7 @@ public class TopicGenerationClient implements TopicGenerationPort {
             boolean searchKeyword,
             int maxProposals,
             List<String> dimensions) {
-        Map<String, Object> body = new LinkedHashMap<String, Object>();
+        var body = new LinkedHashMap<String, Object>();
         body.put("student_id", studentId.toString());
         body.put("dimensions", dimensions);
         body.put(
@@ -79,16 +78,16 @@ public class TopicGenerationClient implements TopicGenerationPort {
                 .toList()
         );
         body.put("interest_scores", interestScores);
-        // REMOVED 2026-08-11: existing_topics. It used to send ALL the names of active topics, and since the bank
-        // is shared by every student it only kept growing -- input tokens grew with it (number of students x number of
-        // topics each one generates). Python now uses a propose-again loop with feedback: round 1 proposes
-        // freely, later rounds receive exactly the NAME of the topic that just collided. See MAX_PROPOSAL_ROUNDS there.
+        // GỠ 2026-08-11: existing_topics. Trước đây gửi TOÀN BỘ tên chủ đề đang hoạt động, mà kho
+        // là của chung mọi học sinh nên nó lớn dần mãi -- token vào tăng theo (số học sinh × số
+        // chủ đề mỗi người sinh). Python nay dùng vòng đề xuất lại có phản hồi: vòng 1 đề xuất tự
+        // do, vòng sau nhận đúng TÊN chủ đề vừa va chạm. Xem MAX_PROPOSAL_ROUNDS bên đó.
         body.put("rejected_topics", rejectedTopics);
         body.put("exhausted_topics", exhaustedTopics);
         body.put("search_keyword", searchKeyword);
         body.put("max_proposals", maxProposals);
         try {
-            HttpResponse<String> response = send(proposeUri, body);
+            var response = send(proposeUri, body);
             if (response.statusCode() / 100 != 2) {
                 LOGGER.warn(
                     "Topic proposal endpoint returned status {}: {}",
@@ -97,17 +96,17 @@ public class TopicGenerationClient implements TopicGenerationPort {
                 );
                 return List.of();
             }
-            JsonNode root = jsonMapper.readTree(response.body());
-            List<TopicGenerationPort.TopicProposal> proposals = new ArrayList<TopicProposal>();
-            for (JsonNode node : root.path("proposals")) {
+            var root = jsonMapper.readTree(response.body());
+            var proposals = new ArrayList<TopicProposal>();
+            for (var node : root.path("proposals")) {
                 proposals.add(new TopicProposal(
                     node.path("name").asString(),
-                    // SINGULAR. Python returns `interest_dimension` (schemas/topic_generation.py:45).
-                    // If the name is read wrong Jackson returns a MissingNode and asString() gives an EMPTY STRING --
-                    // no error thrown, no log. That empty string is written straight into
-                    // practice_topics.interest_dimensions and stays there permanently, then blows up late at the
-                    // question generation step: Python rejects with 422 `string_too_short` because the topic has no interest
-                    // dimension. The error surfaces two service layers away from where it was caused.
+                    // SỐ ÍT. Python trả `interest_dimension` (schemas/topic_generation.py:45).
+                    // Đọc sai tên thì Jackson trả MissingNode và asString() cho ra CHUỖI RỖNG --
+                    // không ném lỗi, không log. Chuỗi rỗng đó được ghi thẳng vào
+                    // practice_topics.interest_dimensions và nằm lại vĩnh viễn, rồi nổ muộn ở tận
+                    // bước sinh câu: Python từ chối 422 `string_too_short` vì chủ đề không có chiều
+                    // sở thích. Lỗi lộ ra cách nơi gây ra nó hai tầng service.
                     node.path("interest_dimension").asString(),
                     node.path("curriculum_group").asString(),
                     node.path("temporal_affordance").asString(TensePolicy.AFFORDANCE_MIXED),
@@ -146,7 +145,7 @@ public class TopicGenerationClient implements TopicGenerationPort {
             boolean active,
             UUID studentId,
             String status) {
-        Map<String, Object> body = new LinkedHashMap<String, Object>();
+        var body = new LinkedHashMap<String, Object>();
         body.put("topic_id", topicId);
         body.put("name", name);
         body.put("description", description == null ? "" : description);
@@ -157,7 +156,7 @@ public class TopicGenerationClient implements TopicGenerationPort {
         );
         body.put("status", status);
         try {
-            HttpResponse<String> response = send(indexUri, body);
+            var response = send(indexUri, body);
             if (response.statusCode() / 100 != 2) {
                 LOGGER.warn(
                     "Topic index endpoint returned status {} for {}: {}",
@@ -178,7 +177,7 @@ public class TopicGenerationClient implements TopicGenerationPort {
     private HttpResponse<String> send(
             URI uri,
             Map<String, Object> body) throws Exception {
-        HttpRequest request = HttpRequest.newBuilder(uri)
+        var request = HttpRequest.newBuilder(uri)
             .timeout(Duration.ofSeconds(45))
             .header("Content-Type", "application/json")
             .POST(
@@ -194,22 +193,22 @@ public class TopicGenerationClient implements TopicGenerationPort {
     }
 
     /**
-     * Find topics close in meaning to the keyword. Returns the id with the similarity, NOT the name.
+     * Tìm chủ đề gần nghĩa với từ khoá. Trả về id kèm độ tương đồng, KHÔNG trả tên.
      *
-     * <p>On error or timeout it returns empty, it does not throw. This is a SUPPLEMENTARY source to string search:
-     * if agents die the user still gets results from Postgres and sees no error -- graceful degradation
-     * instead of breaking the whole search box.
+     * <p>Lỗi hoặc quá hạn thì trả rỗng, không ném. Đây là nguồn BỔ SUNG cho tìm theo chuỗi:
+     * agents chết thì người dùng vẫn có kết quả từ Postgres và không thấy lỗi gì -- suy giảm êm
+     * thay vì hỏng cả ô tìm kiếm.
      */
     @Override
     public List<TopicSearchHit> searchByVector(String keyword, int limit) {
         if (keyword == null || keyword.isBlank()) {
             return List.of();
         }
-        Map<String, Object> body = new LinkedHashMap<String, Object>();
+        var body = new LinkedHashMap<String, Object>();
         body.put("keyword", keyword.strip());
         body.put("limit", limit);
         try {
-            HttpResponse<String> response = send(searchUri, body);
+            var response = send(searchUri, body);
             if (response.statusCode() / 100 != 2) {
                 LOGGER.warn(
                     "Topic search endpoint returned status {}: {}",
@@ -218,8 +217,8 @@ public class TopicGenerationClient implements TopicGenerationPort {
                 );
                 return List.of();
             }
-            List<TopicGenerationPort.TopicSearchHit> hits = new ArrayList<TopicSearchHit>();
-            for (JsonNode node : jsonMapper.readTree(response.body()).path("hits")) {
+            var hits = new ArrayList<TopicSearchHit>();
+            for (var node : jsonMapper.readTree(response.body()).path("hits")) {
                 hits.add(new TopicSearchHit(
                     UUID.fromString(node.path("topic_id").asString()),
                     node.path("similarity").asDouble()

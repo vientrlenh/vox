@@ -72,15 +72,15 @@ class CloneSystemRubricToSchoolUseCaseTests {
 
     @BeforeEach
     void setUp() {
-        RubricRepository rubricRepository = mock(RubricRepository.class);
-        RubricVersionRepository rubricVersionRepository = mock(RubricVersionRepository.class);
-        RubricCriterionRepository rubricCriterionRepository = mock(RubricCriterionRepository.class);
-        RubricCloneService rubricCloneService = mock(RubricCloneService.class);
+        var rubricRepository = mock(RubricRepository.class);
+        var rubricVersionRepository = mock(RubricVersionRepository.class);
+        var rubricCriterionRepository = mock(RubricCriterionRepository.class);
+        var rubricCloneService = mock(RubricCloneService.class);
         assessmentPolicyRepository = mock(AssessmentPolicyRepository.class);
         createSchoolAssessmentPolicyUseCase = mock(CreateSchoolAssessmentPolicyUseCase.class);
-        SchoolUserRepository schoolUserRepository = mock(SchoolUserRepository.class);
-        UserRepository userRepository = mock(UserRepository.class);
-        UserContextPort userContextPort = mock(UserContextPort.class);
+        var schoolUserRepository = mock(SchoolUserRepository.class);
+        var userRepository = mock(UserRepository.class);
+        var userContextPort = mock(UserContextPort.class);
 
         useCase = new CloneSystemRubricToSchoolUseCase(
                 rubricRepository, rubricVersionRepository, rubricCriterionRepository, rubricCloneService,
@@ -162,16 +162,16 @@ class CloneSystemRubricToSchoolUseCaseTests {
 
         useCase.execute(command(List.of(choice(null, null, classId))));
 
-        List<CreateAssessmentPolicyCommand> commands = capturePolicyCommands();
+        var commands = capturePolicyCommands();
         assertThat(commands).hasSize(1);
-        CreateAssessmentPolicyCommand created = commands.get(0);
-        // The scoring parameters go along with the template...
+        var created = commands.get(0);
+        // Thông số chấm đi theo bản mẫu...
         assertThat(created.frameworkVersionId()).isEqualTo(FRAMEWORK_VERSION_ID);
         assertThat(created.languageId()).isEqualTo(LANGUAGE_ID);
         assertThat(created.targetFrameworkBandId()).isEqualTo(TARGET_BAND_ID);
         assertThat(created.passingScore()).isEqualByComparingTo("5.00");
         assertThat(created.strictness()).isEqualTo(AssessmentPolicyStrictness.STANDARD);
-        // ...but point to the COPY, not to the system version.
+        // ...nhưng trỏ vào BẢN SAO, không phải phiên bản của hệ thống.
         assertThat(created.rubricVersionId()).isEqualTo(CLONED_VERSION_ID);
         assertThat(created.schoolId()).isEqualTo(SCHOOL_ID);
         assertThat(created.schoolClassId()).isEqualTo(classId);
@@ -199,7 +199,7 @@ class CloneSystemRubricToSchoolUseCaseTests {
                 new PolicyToClone(otherTemplateId, null, null, specialisedClassId,
                         Instant.parse("2026-09-01T00:00:00Z"), null))));
 
-        List<CreateAssessmentPolicyCommand> commands = capturePolicyCommands();
+        var commands = capturePolicyCommands();
         assertThat(commands).hasSize(2);
         assertThat(commands.get(0).schoolGradeId()).isEqualTo(gradeId);
         assertThat(commands.get(0).schoolClassId()).isNull();

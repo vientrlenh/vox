@@ -7,7 +7,6 @@ import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportType;
-import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.model.rubric.RubricVersion;
@@ -44,7 +43,7 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID rubricId = session.getImportedEntityId();
-        Rubric rubric = rubricRepository.findById(rubricId)
+        var rubric = rubricRepository.findById(rubricId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc khi xử lý ngầm."));
 
         // Lấy bộ từ điển map cột
@@ -100,7 +99,7 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
 
                 int versionNum = 0;
                 if (errors.isEmpty()) {
-                    String safeVersionStr = versionStr == null ? "" : versionStr.trim();
+                    var safeVersionStr = versionStr == null ? "" : versionStr.trim();
                     try {
                         versionNum = Integer.parseInt(safeVersionStr);
                         if (versionNum <= 0) errors.add(error("version", "Version phải lớn hơn 0."));
@@ -121,8 +120,8 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
                 BigDecimal minScore = null;
                 BigDecimal maxScore = null;
                 if (errors.isEmpty()) {
-                    String safeMinStr = minStr == null ? "" : minStr.trim();
-                    String safeMaxStr = maxStr == null ? "" : maxStr.trim();
+                    var safeMinStr = minStr == null ? "" : minStr.trim();
+                    var safeMaxStr = maxStr == null ? "" : maxStr.trim();
                     try {
                         minScore = new BigDecimal(safeMinStr);
                         maxScore = new BigDecimal(safeMaxStr);
@@ -134,7 +133,7 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
 
                 RubricTotalScoreMethod method = null;
                 if (errors.isEmpty()) {
-                    String safeMethodStr = methodStr == null ? "" : methodStr.trim();
+                    var safeMethodStr = methodStr == null ? "" : methodStr.trim();
                     try {
                         method = RubricTotalScoreMethod.valueOf(safeMethodStr.toUpperCase(Locale.ROOT));
                     } catch (Exception e) {

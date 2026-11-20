@@ -1,15 +1,12 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.FrameworkVersionJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -18,7 +15,6 @@ import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.FrameworkVersionMapper;
-import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkVersionRepository;
 
 @Repository
@@ -61,7 +57,7 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
         if (codes == null || codes.isEmpty()) {
             return List.of();
         }
-        Set<String> upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
+        var upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
         return springDataFrameworkVersionRepository.findByCodeIn(upperCodes)
                 .stream().map(FrameworkVersionMapper::toDomain).toList();
     }
@@ -82,9 +78,15 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
 
     @Override
     public PageResult<FrameworkVersion> findByFrameworkId(UUID frameworkId, int pageNumber, int size) {
-        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
-        Page<FrameworkVersionJpaEntity> page = springDataFrameworkVersionRepository.findByFrameworkId(frameworkId, pageable);
-        return OneBasedPaging.toPageResult(page, page.getContent().stream().map(FrameworkVersionMapper::toDomain).toList());
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataFrameworkVersionRepository.findByFrameworkId(frameworkId, pageable);
+        return new PageResult<>(
+            page.getContent().stream().map(FrameworkVersionMapper::toDomain).toList(),
+            page.getNumber() + 1,
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
     }
 
     @Override
@@ -96,9 +98,15 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
 
     @Override
     public PageResult<FrameworkVersion> findByFrameworkIdAndStatus(UUID frameworkId, FrameworkVersionStatus status, int pageNumber, int size) {
-        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
-        Page<FrameworkVersionJpaEntity> page = springDataFrameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, status.name(), pageable);
-        return OneBasedPaging.toPageResult(page, page.getContent().stream().map(FrameworkVersionMapper::toDomain).toList());
+        var pageable = PageRequest.of(pageNumber - 1, size);
+        var page = springDataFrameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, status.name(), pageable);
+        return new PageResult<>(
+            page.getContent().stream().map(FrameworkVersionMapper::toDomain).toList(),
+            page.getNumber() + 1,
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
     }
 
     @Override
@@ -110,8 +118,8 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
 
     @Override
     public FrameworkVersion save(FrameworkVersion version) {
-        FrameworkVersionJpaEntity entity = FrameworkVersionMapper.toJpa(version);
-        FrameworkVersionJpaEntity saved = springDataFrameworkVersionRepository.save(entity);
+        var entity = FrameworkVersionMapper.toJpa(version);
+        var saved = springDataFrameworkVersionRepository.save(entity);
         return FrameworkVersionMapper.toDomain(saved);
     }
 

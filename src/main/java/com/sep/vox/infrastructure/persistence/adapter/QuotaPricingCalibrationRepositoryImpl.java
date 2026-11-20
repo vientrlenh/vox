@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.QuotaPricingCalibrationJpaEntity;
 import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
@@ -23,7 +22,7 @@ public class QuotaPricingCalibrationRepositoryImpl implements QuotaPricingCalibr
 
     @Override
     public QuotaPricingCalibration save(QuotaPricingCalibration calibration) {
-        QuotaPricingCalibrationJpaEntity saved = springDataQuotaPricingCalibrationRepository.save(QuotaPricingCalibrationMapper.toJpa(calibration));
+        var saved = springDataQuotaPricingCalibrationRepository.save(QuotaPricingCalibrationMapper.toJpa(calibration));
         return QuotaPricingCalibrationMapper.toDomain(saved);
     }
 

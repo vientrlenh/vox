@@ -1,8 +1,5 @@
 package com.sep.vox.infrastructure.initializer;
 
-import com.sep.vox.domain.model.framework.Framework;
-import com.sep.vox.domain.model.framework.FrameworkResultBand;
-import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -92,30 +89,30 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
     }
 
     /**
-     * Idempotent PER ROW, unlike {@link GradeLevelInitializer} which only seeds when the table is empty.
-     * The unique key of the table is {@code (grade_level_id, framework_version_id)}, so adding a missing row is an additive operation and does not overwrite
-     * a configuration someone has edited. This is needed because every newly published framework version needs its own set of ceilings,
-     * and the old set must stay untouched.
+     * Idempotent theo TỪNG DÒNG, khác {@link GradeLevelInitializer} vốn chỉ seed khi bảng trống.
+     * Khoá duy nhất của bảng là {@code (grade_level_id, framework_version_id)}, nên thêm dòng còn
+     * thiếu là thao tác cộng thêm chứ không đè lên cấu hình ai đó đã sửa. Cần vậy vì mỗi phiên bản
+     * khung mới ban hành lại cần một bộ trần riêng, và bộ cũ vẫn phải giữ nguyên.
      */
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
-        Framework framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
+        var framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
         if (framework == null || !framework.isActive()) {
             LOGGER.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo trần bậc theo khối", FRAMEWORK_CODE);
             return;
         }
 
-        FrameworkVersion frameworkVersion = latestPublishedVersion(framework.getId());
+        var frameworkVersion = latestPublishedVersion(framework.getId());
         if (frameworkVersion == null) {
             LOGGER.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo trần bậc theo khối",
                 FRAMEWORK_CODE);
             return;
         }
 
-        FrameworkResultBand defaultTargetBand = frameworkResultBandRepository
+        var defaultTargetBand = frameworkResultBandRepository
             .findByVersionIdAndCode(frameworkVersion.getId(), BAND_CODE_DEFAULT_TARGET).orElse(null);
-        FrameworkResultBand hardMaxBand = frameworkResultBandRepository
+        var hardMaxBand = frameworkResultBandRepository
             .findByVersionIdAndCode(frameworkVersion.getId(), BAND_CODE_HARD_MAX).orElse(null);
         if (defaultTargetBand == null || hardMaxBand == null) {
             LOGGER.warn("Phiên bản khung {} thiếu bậc {} hoặc {}. Bỏ qua khởi tạo trần bậc theo khối",
@@ -123,19 +120,19 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
             return;
         }
 
-        // An invariant the DB cannot express (it needs a join to framework_result_bands) and that
-        // GradeLevelBandScopeGuardService guards at runtime. Also checked here so that a wrong constant above
-        // breaks at startup, instead of producing an upside-down configuration that only shows up when a
-        // school creates a policy.
+        // Bất biến mà DB không diễn đạt được (cần join sang framework_result_bands) và
+        // GradeLevelBandScopeGuardService canh lúc chạy. Kiểm luôn ở đây để sai hằng số phía trên
+        // làm hỏng lúc khởi động, thay vì sinh ra cấu hình trần ngược đời rồi mới lộ ra khi
+        // trường tạo chính sách.
         if (defaultTargetBand.getOrder() > hardMaxBand.getOrder()) {
             throw new IllegalStateException("Bậc mặc định " + BAND_CODE_DEFAULT_TARGET
                 + " đang cao hơn bậc trần " + BAND_CODE_HARD_MAX + " trong khung " + FRAMEWORK_CODE + ".");
         }
 
-        Instant now = Instant.now();
-        int created = 0;
-        for (String gradeLevelCode : GRADE_LEVEL_CODES) {
-            GradeLevel gradeLevel = gradeLevelRepository.findByCode(gradeLevelCode).orElse(null);
+        var now = Instant.now();
+        var created = 0;
+        for (var gradeLevelCode : GRADE_LEVEL_CODES) {
+            var gradeLevel = gradeLevelRepository.findByCode(gradeLevelCode).orElse(null);
             if (gradeLevel == null) {
                 LOGGER.warn("Không tìm thấy khối {}. Bỏ qua trần bậc cho khối này", gradeLevelCode);
                 continue;

@@ -43,19 +43,19 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
     @Override
     @Transactional
     public Void execute(ApproveRegisterFormCommand input) {
-        ApproveRegisterFormCommand command = normalize(input);
-        Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var command = normalize(input);
+        var now = Instant.now();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        RegisterForm registerForm = registerFormRepository.findById(command.registerFormId())
+        var registerForm = registerFormRepository.findById(command.registerFormId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn đăng ký theo yêu cầu"));
         
-        int updatedRows = registerFormRepository.updateApprovedRegisterForm(command.registerFormId(), currentUserId, now);
+        var updatedRows = registerFormRepository.updateApprovedRegisterForm(command.registerFormId(), currentUserId, now);
         if (updatedRows == 0) {
             throw new IllegalStateException("Đơn đăng ký không ở trạng thái chờ hoặc không tồn tại");
         }
 
-        SchoolDirectory schoolDirectory = resolveSchoolDirectory(registerForm, command, currentUserId, now);
+        var schoolDirectory = resolveSchoolDirectory(registerForm, command, currentUserId, now);
 
         provisionSchoolService.provision(new ProvisionSchoolCommand(
             schoolDirectory.getCode(),
@@ -80,7 +80,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
     private SchoolDirectory resolveSchoolDirectory(RegisterForm registerForm, ApproveRegisterFormCommand command, UUID currentUserId, Instant now) {
         // Đơn từ danh mục: trường đã có entry sẵn -> dùng lại, xác minh nếu chưa
         if (registerForm.getSchoolDirectoryId() != null) {
-            SchoolDirectory directory = schoolDirectoryRepository.findById(registerForm.getSchoolDirectoryId())
+            var directory = schoolDirectoryRepository.findById(registerForm.getSchoolDirectoryId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
             if (!directory.isVerified()) {
                 directory.verify(currentUserId, now);
@@ -93,7 +93,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
         if (schoolDirectoryRepository.existsByCode(command.schoolCode())) {
             throw new DuplicatedException("Danh mục trường với mã yêu cầu đã tồn tại");
         }
-        SchoolDirectory directory = SchoolDirectory.createByUserSubmitted(
+        var directory = SchoolDirectory.createByUserSubmitted(
             command.schoolCode(),
             registerForm.getSchoolName(),
             command.schoolProvinceCode(),

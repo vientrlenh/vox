@@ -170,7 +170,7 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         // Trần bậc không nằm trong LookupContext vì nó tra theo Khối ĐÃ SUY RA từ phạm vi của
         // từng dòng, chưa biết trước lúc prefetch. Batch nhớ lại theo từng giá trị khác nhau nên
         // vẫn không thành N+1 với file nhiều dòng.
-        GradeLevelBandScopeGuardService.Batch bandScopeBatch = gradeLevelBandScopeGuardService.newBatch();
+        var bandScopeBatch = gradeLevelBandScopeGuardService.newBatch();
 
         for (int i = 0; i < pendingRows.size(); i++) {
             ImportRow row = pendingRows.get(i);

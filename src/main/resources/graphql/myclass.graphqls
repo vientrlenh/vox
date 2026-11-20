@@ -1,10 +1,10 @@
 # ==================================================================
-# Classes of a teacher (read-only)
+# Lớp học của giáo viên (chỉ đọc)
 #
-# The types below are only produced by the three TEACHER-gated root queries at the end of
-# this file, and no other type points to them. That way they do not inherit the field
-# resolvers of `SchoolClass` / `SchoolClassUser` (which are gated at SCHOOL_ADMIN and
-# reachable from many other branches of the graph).
+# Các type dưới đây chỉ được sinh ra từ ba root query TEACHER-gated ở cuối file,
+# không type nào khác trỏ tới chúng. Nhờ vậy chúng không thừa hưởng các field
+# resolver của `SchoolClass` / `SchoolClassUser` (vốn gated ở SCHOOL_ADMIN và
+# chạm tới được từ nhiều nhánh khác trong graph).
 # ==================================================================
 
 type MyClass {
@@ -15,9 +15,9 @@ type MyClass {
     code: String!
     name: String!
     description: String
-    status: SchoolClassStatus!
-    createdAt: DateTime
-    updatedAt: DateTime
+    status: String!
+    createdAt: String
+    updatedAt: String
     schoolGrade: SchoolGrade
     language: SupportedLanguage
     activeMemberCount: Int!
@@ -36,13 +36,13 @@ type MyClassMember {
     userId: ID!
     schoolClassId: ID!
     isActive: Boolean!
-    joinedAt: DateTime
-    leftAt: DateTime
+    joinedAt: String
+    leftAt: String
     user: MyClassMemberUser
 }
 
-# roleCodes is deliberately exposed as scalars instead of nesting the `Role` type: this keeps
-# MyClassMember a leaf branch and opens no additional edge in the graph for the TEACHER role.
+# Cố tình phơi roleCodes dạng scalar thay vì lồng type `Role`: giữ MyClassMember
+# là nhánh lá, không mở thêm cạnh nào trong graph cho role TEACHER.
 type MyClassMemberUser {
     id: ID!
     fullName: String
@@ -60,7 +60,7 @@ type MyClassMemberPage {
 }
 
 extend type Query {
-    myClasses(schoolId: ID!, search: String, status: SchoolClassStatus, page: Int! = 1, size: Int! = 10): MyClassPage!
+    myClasses(schoolId: ID!, search: String, status: String, page: Int! = 1, size: Int! = 10): MyClassPage!
     myClass(id: ID!): MyClass
     myClassMembers(schoolClassId: ID!, roleCode: String, search: String, page: Int! = 1, size: Int! = 20): MyClassMemberPage!
 }

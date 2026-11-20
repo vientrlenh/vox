@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.application.query.dto.SessionCostDto;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -26,23 +25,23 @@ import com.sep.vox.application.port.output.QuotaPricingCalibrationConfigPort;
 import com.sep.vox.application.port.output.QuotaPricingConfigPort;
 
 /**
- * Recomputes estimatedCostPer{Assessment,Practice}SecondUsd (see QuotaPricingProperties) from the REAL AI cost
- * already recorded (ai_usage_record) and the REAL answer seconds in the most recent trailing window -- replacing
- * having to guess/edit .env by hand every time we want to recalibrate (see AI_COST_CALIBRATION_LOG.md --
- * this is exactly the SQL in that file, rewritten as code and run periodically through QuotaPricingCalibrationJob).
+ * Tự tính lại estimatedCostPer{Exam,Practice}SecondUsd (xem QuotaPricingProperties) từ chi phí AI
+ * THẬT đã ghi nhận (ai_usage_record) và giây trả lời THẬT trong cửa sổ trailing gần nhất -- thay
+ * cho việc phải tự tay đoán/sửa .env mỗi lần muốn calibrate lại (xem AI_COST_CALIBRATION_LOG.md --
+ * đây chính là câu SQL trong file đó, viết lại bằng code, chạy định kỳ qua QuotaPricingCalibrationJob).
  *
- * <p>ASSESSMENT and PRACTICE keep 2 separate rates (see QuotaPricingSource) because their AI pipelines are very different
- * (evalGraph grading an assessment is much heavier than PRACTICE's realtimeCorrectionGraph) -- merging them would skew
- * the rate of both sides depending on which side has more data. The 2 sources SHARE 1 set of tuning thresholds
- * (windowDays/minSampleSessions/maxChangeRatio/min-maxRateBound) -- they differ only in the joined table used to get the real
- * answer seconds (assessment_item_responses vs practice_response_turns) and in the default fallback rate.
+ * <p>EXAM và PRACTICE tách 2 rate riêng (xem QuotaPricingSource) vì pipeline AI khác hẳn nhau
+ * (evalGraph chấm exam nặng hơn hẳn realtimeCorrectionGraph của PRACTICE) -- gộp chung sẽ làm lệch
+ * rate của cả 2 bên tùy khối lượng dữ liệu bên nào nhiều hơn. 2 nguồn dùng CHUNG 1 bộ ngưỡng tuning
+ * (windowDays/minSampleSessions/maxChangeRatio/min-maxRateBound) -- chỉ khác bảng JOIN để lấy giây
+ * trả lời thật (exam_item_responses vs practice_response_turns) và rate mặc định fallback.
  *
- * <p>Uses the REAL ANSWER seconds as the denominator (not the configured assessmentTimeDurationSecond) -- a business
- * decision that is already settled: it gives a larger safety margin because students always use less than the time
- * they were given, matching the way it was calibrated by hand the 2 previous times.
+ * <p>Dùng giây TRẢ LỜI THẬT làm mẫu số (không phải examTimeDurationSecond cấu hình) -- quyết
+ * định nghiệp vụ đã chốt: cho margin an toàn lớn hơn vì học sinh luôn dùng ít hơn thời gian được
+ * cấp, khớp cách đã calibrate tay 2 lần trước đó.
  *
- * <p>Does not insert a row if the sample is too small (below minSampleSessions) -- the read side (QuotaPricingService)
- * only ever needs to take the latest row per source, without having to filter on "is it reliable enough".
+ * <p>Không insert row nếu mẫu quá nhỏ (dưới minSampleSessions) -- phía đọc (QuotaPricingService)
+ * luôn chỉ cần lấy row mới nhất theo nguồn, không phải lọc "có đủ tin cậy không".
  */
 @Service
 public class QuotaPricingCalibrationService {
@@ -50,7 +49,7 @@ public class QuotaPricingCalibrationService {
     private static final Logger LOGGER = LoggerFactory.getLogger(QuotaPricingCalibrationService.class);
 
     private final SessionCostQueryRepository sessionCostQueryRepository;
-    private final AssessmentItemResponseRepository assessmentItemResponseRepository;
+    private final ExamItemResponseRepository examItemResponseRepository;
     private final PracticeResponseTurnRepository practiceResponseTurnRepository;
     private final QuotaPricingCalibrationRepository quotaPricingCalibrationRepository;
     private final QuotaPricingCalibrationConfigPort calibrationConfig;
@@ -58,26 +57,26 @@ public class QuotaPricingCalibrationService {
 
     public QuotaPricingCalibrationService(
             SessionCostQueryRepository sessionCostQueryRepository,
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
+            ExamItemResponseRepository examItemResponseRepository,
             PracticeResponseTurnRepository practiceResponseTurnRepository,
             QuotaPricingCalibrationRepository quotaPricingCalibrationRepository,
             QuotaPricingCalibrationConfigPort calibrationConfig,
             QuotaPricingConfigPort quotaPricingConfig) {
         this.sessionCostQueryRepository = sessionCostQueryRepository;
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
+        this.examItemResponseRepository = examItemResponseRepository;
         this.practiceResponseTurnRepository = practiceResponseTurnRepository;
         this.quotaPricingCalibrationRepository = quotaPricingCalibrationRepository;
         this.calibrationConfig = calibrationConfig;
         this.quotaPricingConfig = quotaPricingConfig;
     }
 
-    /** Calibrates estimatedCostPerAssessmentSecondUsd -- the real answer seconds come from assessment_item_responses. */
+    /** Calibrate estimatedCostPerExamSecondUsd -- giây trả lời thật lấy từ exam_item_responses. */
     @Transactional
-    public void recalibrateAssessment() {
+    public void recalibrateExam() {
         recalibrate(
-            QuotaPricingSource.ASSESSMENT,
-            assessmentItemResponseRepository::sumDurationSecondsGroupedBySessionIds,
-            quotaPricingConfig::estimatedCostPerAssessmentSecondUsd
+            QuotaPricingSource.EXAM,
+            examItemResponseRepository::sumDurationSecondsGroupedBySessionIds,
+            quotaPricingConfig::estimatedCostPerExamSecondUsd
         );
     }
 
@@ -95,11 +94,11 @@ public class QuotaPricingCalibrationService {
             QuotaPricingSource source,
             Function<Collection<UUID>, List<SessionDurationAggregate>> durationLookup,
             Supplier<BigDecimal> defaultRate) {
-        Integer windowDays = calibrationConfig.windowDays();
-        Integer minSampleSessions = calibrationConfig.minSampleSessions();
-        Instant since = Instant.now().minus(windowDays, ChronoUnit.DAYS);
+        var windowDays = calibrationConfig.windowDays();
+        var minSampleSessions = calibrationConfig.minSampleSessions();
+        var since = Instant.now().minus(windowDays, ChronoUnit.DAYS);
 
-        List<SessionCostDto> costs = sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(since);
+        var costs = sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(since);
         if (costs.size() < minSampleSessions) {
             LOGGER.info(
                 "[quota-pricing-calibration] {} bỏ qua: chỉ có {} session phát sinh usage trong {} ngày gần nhất, "
@@ -109,19 +108,19 @@ public class QuotaPricingCalibrationService {
             return;
         }
 
-        List<UUID> sessionIds = costs.stream().map(a -> a.sessionId()).toList();
+        var sessionIds = costs.stream().map(a -> a.sessionId()).toList();
         Map<UUID, Long> durationsBySession = durationLookup.apply(sessionIds).stream()
             .collect(Collectors.toMap(a -> a.sessionId(), a -> a.totalDurationSeconds()));
 
-        BigDecimal totalCost = BigDecimal.ZERO;
-        long totalSeconds = 0L;
-        int matchedCount = 0;
-        for (SessionCostDto cost : costs) {
-            Long duration = durationsBySession.get(cost.sessionId());
+        var totalCost = BigDecimal.ZERO;
+        var totalSeconds = 0L;
+        var matchedCount = 0;
+        for (var cost : costs) {
+            var duration = durationsBySession.get(cost.sessionId());
             if (duration == null || duration <= 0) {
-                // A session that has AI usage but whose real answer seconds cannot be matched in this source (e.g. the
-                // session belongs to the other source -- an assessment session has no practice_response_turns row and
-                // vice versa, or a transcribe error) -- excluded from the sample, the rate cannot be computed for this session.
+                // Session có usage AI nhưng không khớp được giây trả lời thật ở nguồn này (vd
+                // session thuộc nguồn kia -- exam session không có row practice_response_turns và
+                // ngược lại, hoặc lỗi transcribe) -- loại khỏi mẫu, không thể tính rate cho session này.
                 continue;
             }
             totalCost = totalCost.add(cost.totalCostUsd());
@@ -138,25 +137,25 @@ public class QuotaPricingCalibrationService {
             return;
         }
 
-        BigDecimal rawRate = totalCost.divide(BigDecimal.valueOf(totalSeconds), 6, RoundingMode.HALF_UP);
+        var rawRate = totalCost.divide(BigDecimal.valueOf(totalSeconds), 6, RoundingMode.HALF_UP);
 
-        BigDecimal previousApplied = quotaPricingCalibrationRepository.findLatest(source)
+        var previousApplied = quotaPricingCalibrationRepository.findLatest(source)
             .map(c -> c.getAppliedRateUsdPerSecond())
             .orElseGet(defaultRate);
 
-        BigDecimal maxChangeRatio = calibrationConfig.maxChangeRatio();
-        BigDecimal lowerSmoothBound = previousApplied.multiply(BigDecimal.ONE.subtract(maxChangeRatio));
-        BigDecimal upperSmoothBound = previousApplied.multiply(BigDecimal.ONE.add(maxChangeRatio));
-        BigDecimal smoothed = clamp(rawRate, lowerSmoothBound, upperSmoothBound);
+        var maxChangeRatio = calibrationConfig.maxChangeRatio();
+        var lowerSmoothBound = previousApplied.multiply(BigDecimal.ONE.subtract(maxChangeRatio));
+        var upperSmoothBound = previousApplied.multiply(BigDecimal.ONE.add(maxChangeRatio));
+        var smoothed = clamp(rawRate, lowerSmoothBound, upperSmoothBound);
 
-        BigDecimal applied = clamp(smoothed, calibrationConfig.minRateBound(), calibrationConfig.maxRateBound());
+        var applied = clamp(smoothed, calibrationConfig.minRateBound(), calibrationConfig.maxRateBound());
 
         String note = applied.compareTo(rawRate) == 0
             ? null
             : "raw=%s bị điều chỉnh còn applied=%s (làm mượt tối đa %s%% so với lần trước %s, hoặc chặn biên an toàn)"
                 .formatted(rawRate, applied, maxChangeRatio.multiply(BigDecimal.valueOf(100)), previousApplied);
 
-        QuotaPricingCalibration calibration = new QuotaPricingCalibration(
+        var calibration = new QuotaPricingCalibration(
             Instant.now(),
             windowDays,
             matchedCount,

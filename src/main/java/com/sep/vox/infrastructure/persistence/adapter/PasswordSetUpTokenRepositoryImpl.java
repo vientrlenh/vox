@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.PasswordSetUpTokenJpaEntity;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,8 +34,8 @@ public class PasswordSetUpTokenRepositoryImpl implements PasswordSetUpTokenRepos
 
     @Override
     public PasswordSetUpToken save(PasswordSetUpToken passwordSetUpToken) {
-        PasswordSetUpTokenJpaEntity entity = PasswordSetUpTokenMapper.toJpa(passwordSetUpToken);
-        PasswordSetUpTokenJpaEntity saved = springDataPasswordSetUpTokenRepository.save(entity);
+        var entity = PasswordSetUpTokenMapper.toJpa(passwordSetUpToken);
+        var saved = springDataPasswordSetUpTokenRepository.save(entity);
         return PasswordSetUpTokenMapper.toDomain(saved);
     }
 

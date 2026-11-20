@@ -18,17 +18,17 @@ public final class ReportAiUsageCommandMapper {
 
     private ReportAiUsageCommandMapper() {}
 
-    public static ReportAiUsageCommand toCommand(UUID assessmentSessionId, ReportAiUsageRequest request) {
+    public static ReportAiUsageCommand toCommand(UUID examSessionId, ReportAiUsageRequest request) {
         List<RecordAiUsageCommand> usageEvents = request.usageEvents().stream()
-            .map(item -> toRecordCommand(assessmentSessionId, request.turnId(), item))
+            .map(item -> toRecordCommand(examSessionId, request.turnId(), item))
             .toList();
-        return new ReportAiUsageCommand(assessmentSessionId, usageEvents);
+        return new ReportAiUsageCommand(examSessionId, usageEvents);
     }
 
     private static RecordAiUsageCommand toRecordCommand(
-            UUID assessmentSessionId, UUID turnId, ReportAiUsageRequest.AiUsageEventItemRequest item) {
+            UUID examSessionId, UUID turnId, ReportAiUsageRequest.AiUsageEventItemRequest item) {
         return new RecordAiUsageCommand(
-            assessmentSessionId,
+            examSessionId,
             turnId,
             item.usageEventId(),
             parseUsageType(item.type()),

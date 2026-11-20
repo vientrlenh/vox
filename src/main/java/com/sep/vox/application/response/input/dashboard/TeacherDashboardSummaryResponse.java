@@ -3,11 +3,11 @@ package com.sep.vox.application.response.input.dashboard;
 import java.util.List;
 
 /**
- * Shares {@link AssessmentStatusCountResponse} with the School Admin dashboard -- the same counter, differing
- * only in the scope of assessments counted.
+ * Dùng chung {@link ExamStatusCountResponse} với dashboard của School Admin -- cùng một bộ đếm, chỉ
+ * khác phạm vi kỳ thi được đếm.
  */
 public record TeacherDashboardSummaryResponse(
-    AssessmentStatusCountResponse assessmentStatusCounts,
+    ExamStatusCountResponse examStatusCounts,
     GradingStatsResponse gradingStats,
     ScoreStatsResponse scoreStats,
     List<SchoolClassScoreStatsResponse> classScoreStats

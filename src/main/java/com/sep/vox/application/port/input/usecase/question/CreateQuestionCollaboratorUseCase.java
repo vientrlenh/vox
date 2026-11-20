@@ -1,10 +1,7 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import com.sep.vox.domain.model.question.Question;
-import com.sep.vox.domain.model.question.QuestionBank;
 import java.time.Instant;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,12 +51,12 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
     @Override
     @Transactional
     public QuestionCollaboratorDto execute(CreateQuestionCollaboratorCommand input) {
-        CreateQuestionCollaboratorCommand command = normalize(input);
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var command = normalize(input);
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        Question question = questionRepository.findById(command.questionId())
+        var question = questionRepository.findById(command.questionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
-        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
+        var bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         validateOwner(question.getCreatedBy(), currentUserId);
@@ -74,12 +71,12 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
             throw new IllegalStateException("Không thể thêm chính mình làm collaborator");
         }
 
-        UUID schoolId = bank.getSchoolId();
+        var schoolId = bank.getSchoolId();
         if (schoolId == null || !schoolUserRepository.existsBySchoolIdAndUserId(schoolId, command.userId())) {
             throw new ForbiddenException("Người cộng tác phải thuộc cùng trường");
         }
 
-        boolean isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(command.userId()).stream()
+        var isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(command.userId()).stream()
             .anyMatch(role -> "TEACHER".equals(role.roleCode()));
         if (!isTeacher) {
             throw new IllegalStateException("Chỉ có thể chia sẻ câu hỏi cho giáo viên");
@@ -89,13 +86,13 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
             throw new IllegalStateException("Người dùng này đã là collaborator của câu hỏi");
         }
 
-        QuestionCollaborator collaborator = new QuestionCollaborator();
+        var collaborator = new QuestionCollaborator();
         collaborator.setQuestionId(question.getId());
         collaborator.setUserId(command.userId());
         collaborator.setPermission(QuestionCollaboratorPermission.valueOf(command.permission()));
         collaborator.setAssignedAt(Instant.now());
 
-        QuestionCollaborator saved = questionCollaboratorRepository.save(collaborator);
+        var saved = questionCollaboratorRepository.save(collaborator);
         return QuestionCollaboratorDtoMapper.toDto(saved);
     }
 

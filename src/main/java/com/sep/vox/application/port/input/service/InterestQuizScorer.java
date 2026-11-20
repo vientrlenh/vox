@@ -29,7 +29,7 @@ public class InterestQuizScorer {
         this.dimensionRepository = dimensionRepository;
     }
 
-    /** The dimensions that are put to the student in the quiz -- excluding system dimensions such as ACADEMIC_ASSESSMENT. */
+    /** Các chiều được đem ra hỏi trong quiz -- không gồm chiều hệ thống như ACADEMIC_EXAM. */
     public List<String> quizDimensionCodes() {
         return dimensionRepository.findQuizEligible().stream()
             .map(dimension -> dimension.getCode())
@@ -37,21 +37,21 @@ public class InterestQuizScorer {
     }
 
     public Map<String, Double> normalize(Map<String, Integer> rawScores) {
-        List<String> dimensions = quizDimensionCodes();
+        var dimensions = quizDimensionCodes();
         if (dimensions.isEmpty()) {
             return Map.of();
         }
-        int min = dimensions.stream()
+        var min = dimensions.stream()
             .mapToInt(dimension -> rawScores.getOrDefault(dimension, 0))
             .min()
             .orElse(0);
-        int max = dimensions.stream()
+        var max = dimensions.stream()
             .mapToInt(dimension -> rawScores.getOrDefault(dimension, 0))
             .max()
             .orElse(0);
-        Map<String, Double> result = new LinkedHashMap<String, Double>();
-        for (String dimension : dimensions) {
-            Integer raw = rawScores.getOrDefault(dimension, 0);
+        var result = new LinkedHashMap<String, Double>();
+        for (var dimension : dimensions) {
+            var raw = rawScores.getOrDefault(dimension, 0);
             result.put(dimension, min == max ? 0.5 : (double) (raw - min) / (max - min));
         }
         return result;

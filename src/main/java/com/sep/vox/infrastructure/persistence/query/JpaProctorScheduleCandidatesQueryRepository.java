@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.query.dto.ProctorCandidateSummary;
 import com.sep.vox.application.query.repository.ProctorScheduleCandidatesQueryRepository;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.ExamSessionJpaEntity;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -23,9 +23,9 @@ public class JpaProctorScheduleCandidatesQueryRepository implements ProctorSched
 
     @Override
     public List<ProctorCandidateSummary> findByScheduleId(UUID scheduleId) {
-        List<Object[]> rows = em.createQuery("""
+        var rows = em.createQuery("""
             SELECT candidate.id, user.id, user.fullName, user.email, candidate.status, candidate.blockedAt
-            FROM AssessmentCandidateJpaEntity candidate
+            FROM ExamCandidateJpaEntity candidate
             JOIN UserJpaEntity user ON user.id = candidate.studentId
             WHERE candidate.scheduleId = :scheduleId
             ORDER BY user.fullName ASC
@@ -37,28 +37,28 @@ public class JpaProctorScheduleCandidatesQueryRepository implements ProctorSched
             return List.of();
         }
 
-        List<UUID> candidateIds = rows.stream().map(row -> (UUID) row[0]).toList();
+        var candidateIds = rows.stream().map(row -> (UUID) row[0]).toList();
 
         // Sessions of every candidate in this schedule, most recent first --
         // used below to keep only the LATEST session per candidateId so proctors
-        // see live assessment-session status (not just attendance status).
-        List<AssessmentSessionJpaEntity> sessions = em.createQuery("""
-            SELECT s FROM AssessmentSessionJpaEntity s
+        // see live exam-session status (not just attendance status).
+        var sessions = em.createQuery("""
+            SELECT s FROM ExamSessionJpaEntity s
             WHERE s.candidateId IN :candidateIds
             ORDER BY s.startedAt DESC
-        """, AssessmentSessionJpaEntity.class)
+        """, ExamSessionJpaEntity.class)
             .setParameter("candidateIds", candidateIds)
             .getResultList();
 
-        Map<UUID, AssessmentSessionJpaEntity> latestSessionByCandidateId = new LinkedHashMap<>();
-        for (AssessmentSessionJpaEntity session : sessions) {
+        Map<UUID, ExamSessionJpaEntity> latestSessionByCandidateId = new LinkedHashMap<>();
+        for (var session : sessions) {
             latestSessionByCandidateId.putIfAbsent(session.getCandidateId(), session);
         }
 
         return rows.stream()
             .map(row -> {
-                UUID candidateId = (UUID) row[0];
-                AssessmentSessionJpaEntity latestSession = latestSessionByCandidateId.get(candidateId);
+                var candidateId = (UUID) row[0];
+                var latestSession = latestSessionByCandidateId.get(candidateId);
                 return new ProctorCandidateSummary(
                     candidateId,
                     (UUID) row[1],

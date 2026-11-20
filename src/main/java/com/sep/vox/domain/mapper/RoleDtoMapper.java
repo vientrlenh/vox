@@ -13,8 +13,8 @@ public final class RoleDtoMapper {
             role.getId(), 
             role.getCode().value(), 
             role.getName(), 
-            role.getCreatedAt(), 
-            role.getUpdatedAt()
+            role.getCreatedAt().toString(), 
+            role.getUpdatedAt().toString()
         );
     }
 

@@ -1,7 +1,5 @@
 package com.sep.vox.interfaces.rest.controller;
 
-import com.sep.vox.application.port.input.command.IssueMonitorTokenCommand;
-import com.sep.vox.application.port.input.command.IssueStudentStreamTokenCommand;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,8 +33,8 @@ public class StreamController {
     @PostMapping("/student/token")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ApiResponse<IssueStudentStreamTokenResponse>> getStreamToken(@Valid @RequestBody IssueStudentStreamTokenRequest request) {
-        IssueStudentStreamTokenCommand command = IssueStudentStreamTokenCommandMapper.fromRequest(request);
-        IssueStudentStreamTokenResponse data = issueStudentStreamTokenUseCase.execute(command);
+        var command = IssueStudentStreamTokenCommandMapper.fromRequest(request);
+        var data = issueStudentStreamTokenUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Token stream được lấy thành công", data));
     }
 
@@ -44,8 +42,8 @@ public class StreamController {
     @PostMapping("/monitor/token")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<String>> getMonitorToken(@Valid @RequestBody IssueMonitorTokenRequest request) {
-        IssueMonitorTokenCommand command = IssueMonitorTokenCommandMapper.fromRequest(request);
-        String token = issueMonitorTokenUseCase.execute(command);
+        var command = IssueMonitorTokenCommandMapper.fromRequest(request);
+        var token = issueMonitorTokenUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Token giám sát được lấy thành công", token));
     }
 }

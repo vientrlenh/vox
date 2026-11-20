@@ -1,7 +1,5 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import com.sep.vox.domain.model.question.Question;
-import com.sep.vox.domain.model.question.QuestionBank;
 import java.time.Duration;
 import java.util.Locale;
 import java.util.UUID;
@@ -47,28 +45,28 @@ public class GetQuestionAssetUploadUrlUseCase implements IUseCase<GetQuestionAss
 
     @Override
     public QuestionAssetUploadUrlResponse execute(GetQuestionAssetUploadUrlQuery input) {
-        Question question = questionRepository.findById(input.questionId())
+        var question = questionRepository.findById(input.questionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
-        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
+        var bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        boolean owner = currentUserId.equals(question.getCreatedBy());
-        boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var owner = currentUserId.equals(question.getCreatedBy());
+        var editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
             .isPresent();
-        boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
+        var systemAdminOnSystemBank = userContextPort.isSystemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
         if (!systemAdminOnSystemBank && !owner && !editorCollaborator) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        String normalizedContentType = normalizeContentType(input.contentType());
+        var normalizedContentType = normalizeContentType(input.contentType());
         validateContentType(normalizedContentType);
 
-        String extension = inferExtension(normalizedContentType);
-        String key = "question-assets/%s/%s.%s".formatted(question.getId(), UUID.randomUUID(), extension);
-        StoragePort.PresignedUpload presigned = storagePort.presignUpload(key, normalizedContentType, TTL);
+        var extension = inferExtension(normalizedContentType);
+        var key = "question-assets/%s/%s.%s".formatted(question.getId(), UUID.randomUUID(), extension);
+        var presigned = storagePort.presignUpload(key, normalizedContentType, TTL);
         return new QuestionAssetUploadUrlResponse(presigned.uploadUrl(), presigned.publicUrl());
     }
 
@@ -77,8 +75,8 @@ public class GetQuestionAssetUploadUrlUseCase implements IUseCase<GetQuestionAss
             throw new IllegalArgumentException("Content type không được để trống");
         }
 
-        String normalized = contentType.trim().toLowerCase(Locale.ROOT);
-        int separatorIndex = normalized.indexOf(';');
+        var normalized = contentType.trim().toLowerCase(Locale.ROOT);
+        var separatorIndex = normalized.indexOf(';');
         return separatorIndex >= 0
             ? normalized.substring(0, separatorIndex).trim()
             : normalized;
@@ -93,9 +91,9 @@ public class GetQuestionAssetUploadUrlUseCase implements IUseCase<GetQuestionAss
     }
 
     private static String inferExtension(String contentType) {
-        int slashIndex = contentType.indexOf('/');
-        String subtype = slashIndex >= 0 ? contentType.substring(slashIndex + 1) : "bin";
-        String sanitized = subtype.replaceAll("[^a-z0-9]+", "-");
+        var slashIndex = contentType.indexOf('/');
+        var subtype = slashIndex >= 0 ? contentType.substring(slashIndex + 1) : "bin";
+        var sanitized = subtype.replaceAll("[^a-z0-9]+", "-");
         return sanitized.isBlank() ? "bin" : sanitized;
     }
 }

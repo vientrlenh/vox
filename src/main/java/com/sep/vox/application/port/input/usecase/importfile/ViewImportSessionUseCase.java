@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.importfile;
 
-import com.sep.vox.domain.model.school.School;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -59,17 +58,17 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
             throw new IllegalArgumentException("Phiên import không được để trống");
         }
 
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = findCurrentUser(currentUserId);
-        ImportSession session = findSession(input.importSessionId());
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = findCurrentUser(currentUserId);
+        var session = findSession(input.importSessionId());
 
         // SCHOOL_ADMIN giữ nguyên hành vi cũ: xem được mọi phiên import trong trường mình (không chỉ phiên
         // tự tạo) để giám sát import hàng loạt. Caller khác (TEACHER/SYSTEM_ADMIN, vd import Question) chỉ
         // xem được đúng phiên do chính mình tạo - không cần thuộc trường nào (System Admin không có trường).
-        boolean isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        var isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (isSchoolAdmin) {
-            UUID schoolId = getSchoolId(currentUser);
+            var schoolId = getSchoolId(currentUser);
             validateSchool(schoolId);
             validateSessionBelongsToSchool(session, schoolId);
         } else if (!Objects.equals(session.getCreatedBy(), currentUserId)) {
@@ -80,7 +79,7 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        User user = userRepository.findById(currentUserId)
+        var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalStateException("Người dùng hiện tại không hoạt động");
@@ -95,7 +94,7 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
     }
 
     private void validateSchool(UUID schoolId) {
-        School school = schoolRepository.findById(schoolId)
+        var school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");

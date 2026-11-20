@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
 import java.time.Instant;
 
-import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,16 +37,16 @@ public class CreateSupportedLanguageUseCase implements IUseCase<CreateSupportedL
     @Override
     @Transactional
     public CreateSupportedLanguageResponse execute(CreateSupportedLanguageCommand input) {
-        CreateSupportedLanguageCommand command = normalize(input);
+        var command = normalize(input);
         validateCommand(command);
 
         if (supportedLanguageRepository.findByCode(command.code()).isPresent()) {
             throw new DuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
         }
 
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        Instant now = Instant.now();
-        SupportedLanguage language = new SupportedLanguage(
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var now = Instant.now();
+        var language = new SupportedLanguage(
             new LanguageCode(command.code()),
             command.name(),
             command.description(),
@@ -59,7 +58,7 @@ public class CreateSupportedLanguageUseCase implements IUseCase<CreateSupportedL
         );
 
         try {
-            SupportedLanguage saved = supportedLanguageRepository.save(language);
+            var saved = supportedLanguageRepository.save(language);
             return CreateSupportedLanguageResponseMapper.toResponse(saved.getId());
         } catch (DataIntegrityViolationException e) {
             throw new DuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());

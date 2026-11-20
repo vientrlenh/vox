@@ -23,16 +23,16 @@ class ExchangeRateRefreshServiceTests {
 
     @Test
     void refreshSavesSnapshotWhenClientReturnsRate() {
-        ExchangeRateApiClient client = mock(ExchangeRateApiClient.class);
-        ExchangeRateSnapshotRepository repository = mock(ExchangeRateSnapshotRepository.class);
-        ExchangeRateApiProperties properties = new ExchangeRateApiProperties(null, null, null);
+        var client = mock(ExchangeRateApiClient.class);
+        var repository = mock(ExchangeRateSnapshotRepository.class);
+        var properties = new ExchangeRateApiProperties(null, null, null);
         when(client.fetchUsdToVndRate()).thenReturn(Optional.of(new BigDecimal("26777")));
         when(repository.save(any())).thenAnswer(call -> call.getArgument(0));
 
-        ExchangeRateRefreshService service = new ExchangeRateRefreshService(client, repository, properties);
+        var service = new ExchangeRateRefreshService(client, repository, properties);
         service.refresh();
 
-        ArgumentCaptor<ExchangeRateSnapshot> captor = ArgumentCaptor.forClass(ExchangeRateSnapshot.class);
+        var captor = ArgumentCaptor.forClass(ExchangeRateSnapshot.class);
         verify(repository).save(captor.capture());
         assertThat(captor.getValue().getExchangeRateToVnd()).isEqualByComparingTo(new BigDecimal("26777"));
         assertThat(captor.getValue().getSourceUrl()).isEqualTo(properties.baseUrl());
@@ -40,12 +40,12 @@ class ExchangeRateRefreshServiceTests {
 
     @Test
     void refreshSkipsSaveWhenClientReturnsEmpty() {
-        ExchangeRateApiClient client = mock(ExchangeRateApiClient.class);
-        ExchangeRateSnapshotRepository repository = mock(ExchangeRateSnapshotRepository.class);
-        ExchangeRateApiProperties properties = new ExchangeRateApiProperties(null, null, null);
+        var client = mock(ExchangeRateApiClient.class);
+        var repository = mock(ExchangeRateSnapshotRepository.class);
+        var properties = new ExchangeRateApiProperties(null, null, null);
         when(client.fetchUsdToVndRate()).thenReturn(Optional.empty());
 
-        ExchangeRateRefreshService service = new ExchangeRateRefreshService(client, repository, properties);
+        var service = new ExchangeRateRefreshService(client, repository, properties);
         service.refresh();
 
         verify(repository, never()).save(any());

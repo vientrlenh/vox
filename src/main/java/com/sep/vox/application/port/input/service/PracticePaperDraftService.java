@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -77,16 +76,16 @@ public class PracticePaperDraftService {
     }
 
     public PracticePaperDraft start(UUID studentId, Supplier<PracticePaper> buildPaper) {
-        UUID draftId = UUID.randomUUID();
+        var draftId = UUID.randomUUID();
         store(draftId, studentId, PracticePaperDraft.preparing(draftId));
 
         // Chạy trên executor riêng, KHÔNG trên thread request: đó là điều cho phép OSIV nhả
         // connection DB thay vì giữ suốt lúc chờ LLM (executor đã bọc SecurityContext nên
         // use case bên trong vẫn đọc được người dùng hiện tại).
-        CompletableFuture<PracticePlanningResponses.PracticePaper> future = CompletableFuture.supplyAsync(buildPaper, executor);
+        var future = CompletableFuture.supplyAsync(buildPaper, executor);
 
         try {
-            PracticePlanningResponses.PracticePaper paper = future.get(FAST_PATH_WAIT.toMillis(), TimeUnit.MILLISECONDS);
+            var paper = future.get(FAST_PATH_WAIT.toMillis(), TimeUnit.MILLISECONDS);
             return store(draftId, studentId, PracticePaperDraft.ready(draftId, paper));
         } catch (TimeoutException timeout) {
             // Đang phải sinh câu mới -- để chạy tiếp nền, client hỏi lại sau.
@@ -111,7 +110,7 @@ public class PracticePaperDraftService {
     }
 
     public PracticePaperDraft get(UUID studentId, UUID draftId) {
-        Entry entry = cacheManagerPort.get(DRAFT_KEY_PREFIX + draftId, Entry.class);
+        var entry = cacheManagerPort.get(DRAFT_KEY_PREFIX + draftId, Entry.class);
         if (entry == null) {
             throw new NotFoundException("Không tìm thấy phiên dựng đề, vui lòng chọn lại chủ đề.");
         }
@@ -130,7 +129,7 @@ public class PracticePaperDraftService {
 
     private static PracticePaperDraft failure(UUID draftId, Throwable error) {
         LOGGER.warn("Dựng đề thất bại cho draft {}", draftId, error);
-        FailureReason reason = readableReason(error);
+        var reason = readableReason(error);
         return PracticePaperDraft.failed(draftId, reason.message(), reason.errorCode());
     }
 
@@ -143,7 +142,7 @@ public class PracticePaperDraftService {
      * errorCode chỉ gắn cho QuotaExceededException -- đây là lỗi KHÔNG đáng cho học sinh thử lại
      * (hạn mức không tự đầy lại), khác các lỗi nghiệp vụ khác vẫn có thể hết khi bấm lại. */
     private static FailureReason readableReason(Throwable error) {
-        Throwable cause = error instanceof ExecutionException && error.getCause() != null
+        var cause = error instanceof ExecutionException && error.getCause() != null
             ? error.getCause()
             : error;
         if (cause instanceof QuotaExceededException) {

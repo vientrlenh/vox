@@ -39,14 +39,14 @@ public class SetQuotaDistributionPolicyUseCase implements IUseCase<SetQuotaDistr
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        BigDecimal ratio = input.distributableRatio();
+        var ratio = input.distributableRatio();
         // DB có CHECK giữ khoảng này, nhưng chặn ở đây để lỗi ra thành câu tiếng Việt đọc được thay
         // vì một DataIntegrityViolationException.
         if (ratio == null || ratio.compareTo(BigDecimal.ZERO) < 0 || ratio.compareTo(BigDecimal.ONE) > 0) {
             throw new IllegalArgumentException("Trần phân phối phải nằm trong khoảng 0% tới 100%");
         }
 
-        QuotaType quotaType = parseQuotaType(input.quotaType());
+        var quotaType = parseQuotaType(input.quotaType());
         return schoolQuotaPolicyRepository
             .upsertRatio(input.schoolId(), quotaType, ratio)
             .getDistributableRatio();

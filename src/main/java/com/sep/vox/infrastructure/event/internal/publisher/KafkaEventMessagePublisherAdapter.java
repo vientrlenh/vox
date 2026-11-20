@@ -32,7 +32,7 @@ public class KafkaEventMessagePublisherAdapter implements EventMessagePublisherP
 
     @Override
     public CompletableFuture<Void> publish(Outbox event) {
-        String topic = topicsByEventType.get(event.getEventType());
+        var topic = topicsByEventType.get(event.getEventType());
         if (topic == null) {
             LOGGER.error("Topic not configured: eventId={}, eventType={}", event.getId(), event.getEventType());
             return CompletableFuture.failedFuture(
@@ -40,7 +40,7 @@ public class KafkaEventMessagePublisherAdapter implements EventMessagePublisherP
             );
         }
 
-        ProducerRecord<String, String> record = new ProducerRecord<>(topic, event.getAggregateId().toString(), event.getPayload());
+        var record = new ProducerRecord<>(topic, event.getAggregateId().toString(), event.getPayload());
         record.headers().add("eventId", event.getId().toString().getBytes(StandardCharsets.UTF_8));
         record.headers().add("eventType", event.getEventType().getBytes(StandardCharsets.UTF_8));
 

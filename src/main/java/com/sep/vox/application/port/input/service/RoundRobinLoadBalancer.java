@@ -32,14 +32,14 @@ public class RoundRobinLoadBalancer {
             return List.of();
         }
 
-        long[] loads = new long[assigneeIds.size()];
-        for (int index = 0; index < assigneeIds.size(); index++) {
+        var loads = new long[assigneeIds.size()];
+        for (var index = 0; index < assigneeIds.size(); index++) {
             loads[index] = currentLoads == null ? 0L : currentLoads.getOrDefault(assigneeIds.get(index), 0L);
         }
 
-        List<UUID> picked = new ArrayList<UUID>(workItems.size());
-        for (int item = 0; item < workItems.size(); item++) {
-            int target = leastLoadedIndex(loads);
+        var picked = new ArrayList<UUID>(workItems.size());
+        for (var item = 0; item < workItems.size(); item++) {
+            var target = leastLoadedIndex(loads);
             loads[target]++;
             picked.add(assigneeIds.get(target));
         }
@@ -48,8 +48,8 @@ public class RoundRobinLoadBalancer {
 
     /** Hoà thì người đứng trước thắng — số việc dư rải tuần tự theo thứ tự đã chọn. */
     private int leastLoadedIndex(long[] loads) {
-        int best = 0;
-        for (int index = 1; index < loads.length; index++) {
+        var best = 0;
+        for (var index = 1; index < loads.length; index++) {
             if (loads[index] < loads[best]) {
                 best = index;
             }

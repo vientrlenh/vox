@@ -1,6 +1,5 @@
 package com.sep.vox.interfaces.graphql.controller;
 
-import com.sep.vox.application.port.input.command.UpdateSupportedLanguageCommand;
 import java.util.UUID;
 import java.util.Map;
 
@@ -19,7 +18,6 @@ import com.sep.vox.application.response.input.supportedlanguage.UpdateSupportedL
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSupportedLanguageCommandMapper;
-import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlSupportedLanguageController")
 public class SupportedLanguageController {
@@ -44,7 +42,7 @@ public class SupportedLanguageController {
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
             @Argument(name = "isActive") Boolean isActive) {
-        PageArguments.validate(page, size);
+        validatePageSize(page, size);
         return viewSupportedLanguagesUseCase.execute(new ViewSupportedLanguagesQuery(page, size, search, isActive));
     }
 
@@ -59,7 +57,16 @@ public class SupportedLanguageController {
     public UpdateSupportedLanguageResponse updateSupportedLanguage(
             @Argument(name = "id") UUID id,
             @Argument(name = "input") Map<String, Object> input) {
-        UpdateSupportedLanguageCommand command = UpdateSupportedLanguageCommandMapper.fromInput(id, input);
+        var command = UpdateSupportedLanguageCommandMapper.fromInput(id, input);
         return updateSupportedLanguageUseCase.execute(command);
+    }
+
+    private void validatePageSize(Integer page, Integer size) {
+        if (page == null || page <= 0) {
+            throw new IllegalArgumentException("Số trang yêu cầu không hợp lệ");
+        }
+        if (size == null || size <= 0) {
+            throw new IllegalArgumentException("Kích cỡ trang yêu cầu không hợp lệ");
+        }
     }
 }

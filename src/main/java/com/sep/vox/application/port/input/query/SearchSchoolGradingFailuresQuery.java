@@ -13,7 +13,7 @@ import java.util.UUID;
  *                  và khác hẳn "chỉ lấy bài hết lượt".
  */
 public record SearchSchoolGradingFailuresQuery(
-    UUID assessmentId,
+    UUID examId,
     Boolean retryLeft,
     int page,
     int size

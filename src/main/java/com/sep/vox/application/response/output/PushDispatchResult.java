@@ -41,10 +41,10 @@ public record PushDispatchResult(
             return this;
         }
 
-        List<String> stale = new ArrayList<>(this.staleInstallationIds);
+        var stale = new ArrayList<>(this.staleInstallationIds);
         stale.addAll(other.staleInstallationIds);
 
-        List<String> retryable = new ArrayList<>(this.retryableInstallationIds);
+        var retryable = new ArrayList<>(this.retryableInstallationIds);
         retryable.addAll(other.retryableInstallationIds);
 
         return new PushDispatchResult(this.successCount + other.successCount, stale, retryable);

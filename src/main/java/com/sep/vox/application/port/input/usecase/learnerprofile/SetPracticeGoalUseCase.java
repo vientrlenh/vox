@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.learnerprofile;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +30,7 @@ public class SetPracticeGoalUseCase implements IUseCase<SetPracticeGoalCommand, 
     @Override
     @Transactional
     public LearnerProfile execute(SetPracticeGoalCommand input) {
-        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
+        var studentId = userContextPort.getCurrentAuthenticatedUserId();
         commandService.setGoal(studentId, input.goalType());
         return LearnerProfileResponseMapper.toResponse(
             queryRepository.findCurrent(studentId)

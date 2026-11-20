@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.balance;
 
-import com.sep.vox.domain.model.school.SchoolDebtEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +37,7 @@ public class ViewSchoolDebtEventsUseCase
 
         // page đi vào repository theo lối 1-BASED; adapter là chỗ DUY NHẤT trừ 1 trước khi giao cho
         // Spring Data -- xem PagingConventionTests.
-        PageResult<SchoolDebtEvent> page = schoolDebtEventRepository.findBySchoolId(input.schoolId(), input.page(), input.size());
+        var page = schoolDebtEventRepository.findBySchoolId(input.schoolId(), input.page(), input.size());
 
         return new PageResult<>(
             page.content().stream().map(SchoolDebtEventDto::toDto).toList(),

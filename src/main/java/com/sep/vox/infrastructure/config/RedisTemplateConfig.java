@@ -15,7 +15,7 @@ public class RedisTemplateConfig {
     
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory, JsonMapper jsonMapper) {
-        RedisTemplate<String, Object> template = new RedisTemplate<String, Object>();
+        var template = new RedisTemplate<String, Object>();
         template.setConnectionFactory(redisConnectionFactory);
 
         template.setKeySerializer(new StringRedisSerializer());

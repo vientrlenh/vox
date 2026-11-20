@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.notification;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,13 +25,13 @@ public class DeleteNotificationDeviceUseCase implements IUseCase<String, Void> {
     @Override
     @Transactional
     public Void execute(String input) {
-        String installationId = StringNormalization.trimAndCollapseSpaces(input);
+        var installationId = StringNormalization.trimAndCollapseSpaces(input);
         if (installationId == null || installationId.isEmpty()) {
             throw new IllegalArgumentException("FID không được để trống");
         }
 
-        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
-        int removed = notificationDeviceRepository.deleteByUserIdAndInstallationId(userId, installationId);
+        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        var removed = notificationDeviceRepository.deleteByUserIdAndInstallationId(userId, installationId);
         if (removed == 0) {
             throw new NotFoundException("Không tìm thấy thiết bị nhận thông báo");
         }

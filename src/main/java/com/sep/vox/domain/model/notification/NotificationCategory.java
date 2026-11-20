@@ -6,11 +6,11 @@ import java.util.Set;
 import com.sep.vox.domain.common.EventTypeConstant;
 
 public enum NotificationCategory {
-    ASSESSMENT_RESULT,
-    ASSESSMENT_APPEAL,
+    EXAM_RESULT,
+    EXAM_APPEAL,
     GRADING,
-    ASSESSMENT_SCHEDULE,
-    ASSESSMENT_BLUEPRINT,
+    EXAM_SCHEDULE,
+    EXAM_BLUEPRINT,
     BILLING,
     SYSTEM;
 
@@ -24,22 +24,22 @@ public enum NotificationCategory {
      * application.yaml, nơi các topic đó cũng không được đăng ký.
      */
     private static final Map<String, NotificationCategory> BY_EVENT_TYPE = Map.ofEntries(
-        Map.entry(EventTypeConstant.ASSESSMENT_APPEAL_PUBLISHED, ASSESSMENT_APPEAL),
-        Map.entry(EventTypeConstant.ASSESSMENT_APPEAL_REJECTED, ASSESSMENT_APPEAL),
-        Map.entry(EventTypeConstant.ASSESSMENT_APPEAL_APPROVED, ASSESSMENT_APPEAL),
+        Map.entry(EventTypeConstant.EXAM_APPEAL_PUBLISHED, EXAM_APPEAL),
+        Map.entry(EventTypeConstant.EXAM_APPEAL_REJECTED, EXAM_APPEAL),
+        Map.entry(EventTypeConstant.EXAM_APPEAL_APPROVED, EXAM_APPEAL),
 
-        Map.entry(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, ASSESSMENT_RESULT),
-        Map.entry(EventTypeConstant.ASSESSMENT_RESULT_REGRADED, ASSESSMENT_RESULT),
-        Map.entry(EventTypeConstant.ASSESSMENT_RESULT_INVALIDATED, ASSESSMENT_RESULT),
-        Map.entry(EventTypeConstant.ASSESSMENT_RESULT_INVALID_CLEARED, ASSESSMENT_RESULT),
-        Map.entry(EventTypeConstant.ASSESSMENT_RESULT_OUTCOME_DECIDED, ASSESSMENT_RESULT),
+        Map.entry(EventTypeConstant.EXAM_RESULT_RELEASED, EXAM_RESULT),
+        Map.entry(EventTypeConstant.EXAM_RESULT_REGRADED, EXAM_RESULT),
+        Map.entry(EventTypeConstant.EXAM_RESULT_INVALIDATED, EXAM_RESULT),
+        Map.entry(EventTypeConstant.EXAM_RESULT_INVALID_CLEARED, EXAM_RESULT),
+        Map.entry(EventTypeConstant.EXAM_RESULT_OUTCOME_DECIDED, EXAM_RESULT),
 
         Map.entry(EventTypeConstant.GRADING_DEADLINE_REMINDER, GRADING),
         Map.entry(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, GRADING),
-        Map.entry(EventTypeConstant.ASSESSMENT_HUMAN_GRADING_REQUIRED, GRADING),
+        Map.entry(EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED, GRADING),
         Map.entry(EventTypeConstant.GRADING_ASSIGNMENT_OPENED, GRADING),
 
-        Map.entry(EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED, ASSESSMENT_BLUEPRINT),
+        Map.entry(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED, EXAM_BLUEPRINT),
 
         Map.entry(EventTypeConstant.INVOICE_PAID, BILLING),
 
@@ -59,7 +59,7 @@ public enum NotificationCategory {
      *         nhóm đó vẫn bị làm phiền, còn lập trình viên thì không hề hay biết.
      */
     public static NotificationCategory of(String eventType) {
-        NotificationCategory category = BY_EVENT_TYPE.get(eventType);
+        var category = BY_EVENT_TYPE.get(eventType);
         if (category == null) {
             throw new IllegalArgumentException("Chưa ánh xạ NotificationCategory cho eventType=" + eventType);
         }

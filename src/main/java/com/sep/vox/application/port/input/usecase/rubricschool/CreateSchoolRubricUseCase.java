@@ -11,8 +11,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
@@ -61,13 +59,13 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
         }
 
         // 2. Kiểm tra mối liên kết trường học chặt chẽ nhằm chống leak/cross-tenant data
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không được quyền tạo Rubric cho một trường học khác.");
         }
 
-        School school = schoolRepository.findById(command.schoolId())
+        var school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy thông tin trường học."));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học đang bị khóa, không thể thực hiện thao tác này.");

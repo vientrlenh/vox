@@ -25,7 +25,6 @@ import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -61,9 +60,9 @@ public class ViewSchoolUsersUseCaseTests {
 
     @Test
     void list_should_return_page_of_school_users() {
-        UUID userId = UUID.randomUUID();
-        SchoolUser schoolUser = schoolUser(UUID.randomUUID(), schoolId, userId);
-        PageResult<SchoolUser> page = new PageResult<>(List.of(schoolUser), 1, 20, 1, 1);
+        var userId = UUID.randomUUID();
+        var schoolUser = schoolUser(UUID.randomUUID(), schoolId, userId);
+        var page = new PageResult<>(List.of(schoolUser), 1, 20, 1, 1);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userContextPort.getCurrentSchoolId()).thenReturn(schoolId);
@@ -71,7 +70,7 @@ public class ViewSchoolUsersUseCaseTests {
         when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)).thenReturn(true);
         when(schoolUserRepository.findBySchoolId(schoolId, null, null, null, null, true, 1, 20)).thenReturn(page);
 
-        PageResult<SchoolUserDto> result = viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, null, null, null));
+        var result = viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, null, null, null));
 
         assertThat(result).isNotNull();
         assertThat(result.content()).hasSize(1);
@@ -80,7 +79,7 @@ public class ViewSchoolUsersUseCaseTests {
 
     @Test
     void list_should_exclude_admin_roles_when_no_role_filter_is_given() {
-        PageResult<SchoolUser> page = new PageResult<SchoolUser>(List.of(), 1, 20, 0, 0);
+        var page = new PageResult<SchoolUser>(List.of(), 1, 20, 0, 0);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userContextPort.getCurrentSchoolId()).thenReturn(schoolId);
@@ -96,8 +95,8 @@ public class ViewSchoolUsersUseCaseTests {
 
     @Test
     void list_should_keep_admin_roles_when_caller_filters_by_school_admin_role() {
-        UUID roleId = UUID.randomUUID();
-        PageResult<SchoolUser> page = new PageResult<SchoolUser>(List.of(), 1, 20, 0, 0);
+        var roleId = UUID.randomUUID();
+        var page = new PageResult<SchoolUser>(List.of(), 1, 20, 0, 0);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userContextPort.getCurrentSchoolId()).thenReturn(schoolId);
@@ -114,10 +113,10 @@ public class ViewSchoolUsersUseCaseTests {
 
     @Test
     void list_should_filter_by_role_id() {
-        UUID roleId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
-        SchoolUser schoolUser = schoolUser(UUID.randomUUID(), schoolId, userId);
-        PageResult<SchoolUser> page = new PageResult<>(List.of(schoolUser), 1, 20, 1, 1);
+        var roleId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+        var schoolUser = schoolUser(UUID.randomUUID(), schoolId, userId);
+        var page = new PageResult<>(List.of(schoolUser), 1, 20, 1, 1);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userContextPort.getCurrentSchoolId()).thenReturn(schoolId);
@@ -126,7 +125,7 @@ public class ViewSchoolUsersUseCaseTests {
         when(roleRepository.findById(roleId)).thenReturn(Optional.of(role(roleId, RoleConstant.STUDENT_ROLE)));
         when(schoolUserRepository.findBySchoolId(schoolId, null, roleId, null, null, true, 1, 20)).thenReturn(page);
 
-        PageResult<SchoolUserDto> result = viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, null, roleId, null));
+        var result = viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, null, roleId, null));
 
         assertThat(result).isNotNull();
         assertThat(result.content()).hasSize(1);
@@ -158,14 +157,14 @@ public class ViewSchoolUsersUseCaseTests {
     }
 
     private Role role(UUID id, String code) {
-        Role role = new Role();
+        var role = new Role();
         role.setId(id);
         role.setCode(new RoleCode(code));
         return role;
     }
 
     private SchoolUser schoolUser(UUID id, UUID userSchoolId, UUID userId) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         return new SchoolUser(id, userSchoolId, userId, now, now.plus(365, ChronoUnit.DAYS));
     }
 }

@@ -1,9 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.domain.model.metering.QuotaType;
-import com.sep.vox.domain.model.subscription.SubscriptionPlanQuota;
-import java.math.BigDecimal;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -95,12 +91,12 @@ public class SubscriptionPlanReplacementValidator {
      * đó sẽ mất sạch hạn mức ở kỳ sau.
      */
     private void requireNotLessQuota(SubscriptionPlan replacement, SubscriptionPlan replaced) {
-        Map<QuotaType, BigDecimal> replacementQuotas = subscriptionPlanQuotaRepository
+        var replacementQuotas = subscriptionPlanQuotaRepository
             .findBySubscriptionPlanId(replacement.getId()).stream()
             .collect(Collectors.toMap(q -> q.getQuotaType(), q -> q.getIncludedAmountVnd()));
 
-        for (SubscriptionPlanQuota replacedQuota : subscriptionPlanQuotaRepository.findBySubscriptionPlanId(replaced.getId())) {
-            BigDecimal replacementAmount = replacementQuotas.get(replacedQuota.getQuotaType());
+        for (var replacedQuota : subscriptionPlanQuotaRepository.findBySubscriptionPlanId(replaced.getId())) {
+            var replacementAmount = replacementQuotas.get(replacedQuota.getQuotaType());
             if (replacementAmount == null) {
                 throw new IllegalArgumentException(
                     "Gói thay thế thiếu hạn mức " + replacedQuota.getQuotaType() + " mà gói cũ đang có");

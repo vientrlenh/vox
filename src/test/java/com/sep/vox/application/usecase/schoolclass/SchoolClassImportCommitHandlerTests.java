@@ -66,12 +66,12 @@ class SchoolClassImportCommitHandlerTests {
 
     @Test
     void should_import_valid_rows_and_mark_invalid_rows() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID languageId = UUID.randomUUID();
-        UUID gradeId = UUID.randomUUID();
-        List<ImportRow> rows = List.of(
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var languageId = UUID.randomUUID();
+        var gradeId = UUID.randomUUID();
+        var rows = List.of(
             row(sessionId, 1L, classData("ENG-01", "English 01", "EN", "G10")),
             row(sessionId, 2L, classData("", "Missing code", "EN", "G10"))
         );
@@ -94,21 +94,21 @@ class SchoolClassImportCommitHandlerTests {
 
     @Test
     void should_update_existing_class_when_code_exists_in_school() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID existingClassId = UUID.randomUUID();
-        UUID oldLanguageId = UUID.randomUUID();
-        UUID newLanguageId = UUID.randomUUID();
-        UUID oldGradeId = UUID.randomUUID();
-        UUID newGradeId = UUID.randomUUID();
-        Instant createdAt = Instant.now().minus(10, ChronoUnit.DAYS);
-        SchoolClass existingClass = new SchoolClass(
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var existingClassId = UUID.randomUUID();
+        var oldLanguageId = UUID.randomUUID();
+        var newLanguageId = UUID.randomUUID();
+        var oldGradeId = UUID.randomUUID();
+        var newGradeId = UUID.randomUUID();
+        var createdAt = Instant.now().minus(10, ChronoUnit.DAYS);
+        var existingClass = new SchoolClass(
             existingClassId, schoolId, oldLanguageId, oldGradeId,
             new ClassCode("ENG-01"), "English Old", "Old description",
             SchoolClassStatus.ACTIVE, createdAt, createdAt, createdBy, createdBy
         );
-        List<ImportRow> rows = List.of(row(sessionId, 1L, classDataWithDescription("ENG-01", "English Updated", "VI", "G11", "Updated description")));
+        var rows = List.of(row(sessionId, 1L, classDataWithDescription("ENG-01", "English Updated", "VI", "G11", "Updated description")));
 
         when(supportedLanguageRepository.findByCodeIn(Set.of("VI"))).thenReturn(List.of(activeLanguage(newLanguageId, "VI")));
         when(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G11"))).thenReturn(List.of(activeGrade(newGradeId, "G11")));
@@ -132,12 +132,12 @@ class SchoolClassImportCommitHandlerTests {
 
     @Test
     void should_keep_duplicate_code_in_same_file_invalid() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID languageId = UUID.randomUUID();
-        UUID gradeId = UUID.randomUUID();
-        List<ImportRow> rows = List.of(
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var languageId = UUID.randomUUID();
+        var gradeId = UUID.randomUUID();
+        var rows = List.of(
             row(sessionId, 1L, classData("ENG-01", "English 01", "EN", "G10")),
             row(sessionId, 2L, classData("ENG-01", "English Duplicate", "EN", "G10"))
         );
@@ -159,11 +159,11 @@ class SchoolClassImportCommitHandlerTests {
 
     @Test
     void should_mark_invalid_when_language_not_found() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID gradeId = UUID.randomUUID();
-        List<ImportRow> rows = List.of(row(sessionId, 1L, classData("ENG-01", "English 01", "XX", "G10")));
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var gradeId = UUID.randomUUID();
+        var rows = List.of(row(sessionId, 1L, classData("ENG-01", "English 01", "XX", "G10")));
 
         when(supportedLanguageRepository.findByCodeIn(Set.of("XX"))).thenReturn(List.of());
         when(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G10"))).thenReturn(List.of(activeGrade(gradeId, "G10")));
@@ -180,16 +180,16 @@ class SchoolClassImportCommitHandlerTests {
 
     @Test
     void should_mark_invalid_when_grade_inactive() {
-        UUID schoolId = UUID.randomUUID();
-        UUID createdBy = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
-        UUID languageId = UUID.randomUUID();
-        UUID gradeId = UUID.randomUUID();
-        SchoolGrade inactiveGrade = new SchoolGrade();
+        var schoolId = UUID.randomUUID();
+        var createdBy = UUID.randomUUID();
+        var sessionId = UUID.randomUUID();
+        var languageId = UUID.randomUUID();
+        var gradeId = UUID.randomUUID();
+        var inactiveGrade = new SchoolGrade();
         inactiveGrade.setId(gradeId);
         inactiveGrade.setCode("G10");
         inactiveGrade.setStatus(SchoolGradeStatus.INACTIVE);
-        List<ImportRow> rows = List.of(row(sessionId, 1L, classData("ENG-01", "English 01", "EN", "G10")));
+        var rows = List.of(row(sessionId, 1L, classData("ENG-01", "English 01", "EN", "G10")));
 
         when(supportedLanguageRepository.findByCodeIn(Set.of("EN"))).thenReturn(List.of(activeLanguage(languageId, "EN")));
         when(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G10"))).thenReturn(List.of(inactiveGrade));
@@ -249,7 +249,7 @@ class SchoolClassImportCommitHandlerTests {
     }
 
     private static SupportedLanguage activeLanguage(UUID id, String code) {
-        SupportedLanguage language = new SupportedLanguage();
+        var language = new SupportedLanguage();
         language.setId(id);
         language.setCode(new LanguageCode(code));
         language.setActive(true);
@@ -257,7 +257,7 @@ class SchoolClassImportCommitHandlerTests {
     }
 
     private static SchoolGrade activeGrade(UUID id, String code) {
-        SchoolGrade grade = new SchoolGrade();
+        var grade = new SchoolGrade();
         grade.setId(id);
         grade.setCode(code);
         grade.setStatus(SchoolGradeStatus.ACTIVE);

@@ -1,13 +1,13 @@
 extend type Query {
     myLearnerProfile: LearnerProfile
     interestQuizItems: [InterestQuizItem!]!
-    "Assessment frameworks currently in effect, each one being its latest published version -- the framework selector comes BEFORE the band selector."
+    "Các khung đánh giá còn hiệu lực, mỗi khung là bản đã ban hành mới nhất -- ô chọn khung đứng TRƯỚC ô chọn bậc."
     myPracticeFrameworkOptions: [PracticeFrameworkOption!]!
     """
-    The band scale for choosing the difficulty before each session.
+    Thang bậc để chọn độ khó trước mỗi phiên.
 
-    frameworkVersionId: the framework just chosen in the selector above. When omitted, the
-    system-wide framework in effect is used, which keeps the behavior for older clients.
+    frameworkVersionId: khung vừa chọn ở ô phía trên. Bỏ trống thì lấy khung đang hiệu lực
+    toàn hệ, giữ nguyên hành vi cho client cũ.
     """
     myPracticeBandOptions(frameworkVersionId: ID): [PracticeBandOption!]!
 }
@@ -16,17 +16,16 @@ extend type Mutation {
     submitInterestQuiz(input: SubmitInterestQuizInput!): LearnerProfile!
     setPracticeGoal(goalType: PracticeGoalType!): LearnerProfile!
     """
-    Redo the interest quiz.
+    Làm lại quiz sở thích.
 
-    While the old set is not yet submitted, that same set is returned to continue -- NO new one
-    is generated, so the part the student already did is not thrown away. The old set is
-    deactivated and a new one generated only after the old one has been submitted.
+    Bộ cũ chưa nộp xong thì trả lại đúng bộ đó để làm tiếp -- KHÔNG sinh mới, tránh vứt phần
+    em ấy đã làm. Nộp xong rồi mới tắt bộ cũ và sinh bộ mới.
     """
     regenerateInterestQuiz: [InterestQuizItem!]!
 }
 
 enum PracticeGoalType {
-    ASSESSMENT_PREP
+    EXAM_PREP
     ABILITY_IMPROVEMENT
 }
 
@@ -48,23 +47,21 @@ type InterestQuizItem {
 type LearnerProfile {
     goalType: PracticeGoalType!
     """
-    The target band of the grading policy -- used as the preselected band on the difficulty
-    selection screen.
+    Bậc mục tiêu của chính sách chấm -- dùng làm bậc chọn sẵn ở màn hình chọn độ khó.
 
-    NULL when the school has no policy covering the student's class yet. This case used to throw,
-    which broke even the WRITE operations that return this type (submitting the quiz, setting the
-    goal) -- see the note on JpaLearnerProfileQueryRepository.findCurrent. The client picks a
-    default band itself when it is missing.
+    NULL khi trường chưa có chính sách nào phủ tới lớp của học sinh. Trước đây trường hợp này
+    ném lỗi, làm hỏng cả những thao tác GHI trả về kiểu này (nộp quiz, đặt mục tiêu) -- xem chú
+    thích ở JpaLearnerProfileQueryRepository.findCurrent. Client tự chọn bậc mặc định khi thiếu.
     """
     targetFrameworkBandCode: String
     targetFrameworkBandLabel: String
-    quizCompletedAt: DateTime
+    quizCompletedAt: String
 }
 
 """
-One band on the scale of the framework in effect, so the student can choose the difficulty
-before entering a session. No band is marked as "the student's band" -- the system does not
-rank ability levels, it only records the difficulty the student chose for each session.
+Một bậc trên thang của khung đang áp, để học sinh chọn độ khó trước khi vào phiên.
+Không có bậc nào được đánh dấu là "bậc của em" -- hệ thống không xếp bậc năng lực,
+chỉ ghi lại độ khó em chọn cho từng phiên.
 """
 type PracticeBandOption {
     id: ID!
@@ -75,8 +72,8 @@ type PracticeBandOption {
 }
 
 """
-An assessment framework the student can choose. versionId is the latest published version of
-the framework, picked by the server -- the student does not need to know the concept of versions.
+Một khung đánh giá học sinh có thể chọn. versionId là bản đã ban hành mới nhất của khung, do
+server tự chọn -- học sinh không phải biết tới khái niệm phiên bản.
 """
 type PracticeFrameworkOption {
     versionId: ID!

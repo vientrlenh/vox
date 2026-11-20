@@ -30,18 +30,18 @@ public class TopicInterestScoreRepositoryImpl
             UUID studentId,
             List<TopicInterestScoreEntry> scores) {
         repository.deleteByStudentId(studentId);
-        // PUSH THE DELETE STATEMENT DOWN TO THE DB BEFORE INSERTING.
+        // ĐẨY LỆNH XOÁ XUỐNG DB TRƯỚC KHI CHÈN.
         //
-        // Without this line Hibernate batches both into a single flush at the end of the transaction, and
-        // its ActionQueue always runs INSERT BEFORE DELETE. So the new rows collide with the very old
-        // rows that should already have been deleted -> duplicate key on
+        // Không có dòng này thì Hibernate gom cả hai vào một lần flush ở cuối transaction, và
+        // ActionQueue của nó luôn chạy INSERT TRƯỚC DELETE. Nên các dòng mới đâm vào chính
+        // những dòng cũ lẽ ra đã bị xoá -> duplicate key trên
         // uq_topic_interest_score_student_topic (student_id, practice_topic_id).
         //
-        // It only shows up from the SECOND run onwards: the first time the table is still empty, so there
-        // is nothing to collide with. That is exactly why it stayed hidden for so long -- recordSessionOutcome
-        // used to run only when the student pressed "Complete", which happened exactly once.
+        // Chỉ lộ ra từ lần thứ HAI trở đi: lần đầu bảng còn rỗng nên không có gì để đâm vào.
+        // Đúng vì thế mà nó ẩn lâu -- recordSessionOutcome trước đây chỉ chạy khi học sinh bấm
+        // "Hoàn tất", mà điều đó mới xảy ra đúng một lần.
         repository.flush();
-        Instant now = Instant.now();
+        var now = Instant.now();
         repository.saveAll(scores.stream()
             .map(entry -> new TopicInterestScoreJpaEntity(
                 UUID.randomUUID(),

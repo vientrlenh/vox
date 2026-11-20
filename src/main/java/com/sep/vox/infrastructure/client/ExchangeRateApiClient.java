@@ -41,7 +41,7 @@ public class ExchangeRateApiClient {
     }
 
     private static ClientHttpRequestFactory requestFactory() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        var factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(CONNECT_TIMEOUT);
         factory.setReadTimeout(READ_TIMEOUT);
         return factory;
@@ -57,7 +57,7 @@ public class ExchangeRateApiClient {
             return Optional.empty();
         }
 
-        BigDecimal rate = extractRate(response);
+        var rate = extractRate(response);
         if (rate == null) {
             LOGGER.warn("[exchange-rate] Response API tỷ giá thiếu rates.VND hợp lệ: {}", response);
             return Optional.empty();
@@ -70,7 +70,7 @@ public class ExchangeRateApiClient {
         return Optional.of(rate);
     }
 
-    /** Split out so the pure parsing logic can be tested without making a real network call. */
+    /** Tách riêng để test được logic parse thuần, không cần gọi mạng thật. */
     static BigDecimal extractRate(Map<?, ?> response) {
         if (response == null) {
             return null;
@@ -78,7 +78,7 @@ public class ExchangeRateApiClient {
         if (!(response.get("rates") instanceof Map<?, ?> rates)) {
             return null;
         }
-        Object vnd = rates.get("VND");
+        var vnd = rates.get("VND");
         if (vnd == null) {
             return null;
         }

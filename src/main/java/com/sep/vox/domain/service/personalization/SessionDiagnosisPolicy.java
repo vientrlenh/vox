@@ -98,15 +98,15 @@ public final class SessionDiagnosisPolicy {
      *                      Bằng 0 ở phiên bỏ dở, và khi đó hàm trả đúng mức cũ.
      */
     public static double signal(String origin, int spokenSeconds) {
-        double abandoned = abandonedSignal(origin);
-        double full = fullSignal(origin);
+        var abandoned = abandonedSignal(origin);
+        var full = fullSignal(origin);
         if (spokenSeconds <= 0) {
             return abandoned;
         }
         if (spokenSeconds >= FULL_SIGNAL_SECONDS) {
             return full;
         }
-        double progress = (double) spokenSeconds / FULL_SIGNAL_SECONDS;
+        var progress = (double) spokenSeconds / FULL_SIGNAL_SECONDS;
         return abandoned + progress * (full - abandoned);
     }
 

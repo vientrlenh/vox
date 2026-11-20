@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.domain.model.personalization.PracticePaper;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -60,7 +59,7 @@ public class PracticePaperPersistenceService {
             List<UUID> previousOfferedTopicIds,
             PracticeQuestion question,
             PracticeQuestionSelectionService.NextQuestionSelection selection) {
-        PracticePaper paper = createPaper(
+        var paper = createPaper(
             studentId, topicId, targetFrameworkBandId, origin,
             offeredTopicIds, previousOfferedTopicIds, question
         );
@@ -82,8 +81,8 @@ public class PracticePaperPersistenceService {
             List<UUID> offeredTopicIds,
             List<UUID> previousOfferedTopicIds,
             PracticeQuestion question) {
-        String resolvedOrigin = origin == null ? "SELECTED" : origin;
-        Instant now = Instant.now();
+        var resolvedOrigin = origin == null ? "SELECTED" : origin;
+        var now = Instant.now();
         return paperRepository.save(new com.sep.vox.domain.model.personalization.PracticePaper(
             UUID.randomUUID(),
             studentId,

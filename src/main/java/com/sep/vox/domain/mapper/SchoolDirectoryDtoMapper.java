@@ -18,10 +18,10 @@ public final class SchoolDirectoryDtoMapper {
             dir.getDistrictName(), 
             dir.getDomain(), 
             dir.getAddress(), 
-            dir.getOrigin(), 
+            dir.getOrigin().name(), 
             dir.isVerified(), 
-            dir.getCreatedAt(), 
-            dir.getUpdatedAt()
+            dir.getCreatedAt().toString(), 
+            dir.getUpdatedAt().toString()
         );
     }
 

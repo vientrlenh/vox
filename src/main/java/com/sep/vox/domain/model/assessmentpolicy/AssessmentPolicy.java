@@ -235,9 +235,9 @@ public class AssessmentPolicy {
         return status == AssessmentPolicyStatus.PUBLISHED;
     }
 
-    // Whether it can be used for an assessment
-    public boolean isSelectableAt(Instant assessmentOpenAt) {
-        return isPublished() && !effectiveFrom.isAfter(assessmentOpenAt) && (effectiveTo == null || !effectiveTo.isBefore(assessmentOpenAt));
+    // có dùng được cho exam không
+    public boolean isSelectableAt(Instant examOpenAt) {
+        return isPublished() && !effectiveFrom.isAfter(examOpenAt) && (effectiveTo == null || !effectiveTo.isBefore(examOpenAt));
     }
 
     // scope theo thứ tự ưu tiên (class -> grade -> grade level)

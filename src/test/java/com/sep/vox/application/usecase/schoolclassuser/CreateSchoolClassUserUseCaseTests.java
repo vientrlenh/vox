@@ -24,7 +24,6 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateSchoolClassUserCommand;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.CreateSchoolClassUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.schoolclassuser.CreateSchoolClassUserResponse;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
@@ -69,25 +68,25 @@ class CreateSchoolClassUserUseCaseTests {
 
     @Test
     void create_should_save_active_membership_for_current_users_school() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        UUID savedId = UUID.randomUUID();
-        CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var savedId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
 
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.empty());
         when(schoolClassUserRepository.save(any(SchoolClassUser.class))).thenAnswer(invocation -> {
-            SchoolClassUser schoolClassUser = invocation.getArgument(0, SchoolClassUser.class);
+            var schoolClassUser = invocation.getArgument(0, SchoolClassUser.class);
             schoolClassUser.setId(savedId);
             return schoolClassUser;
         });
 
-        CreateSchoolClassUserResponse response = useCase.execute(command);
+        var response = useCase.execute(command);
 
         assertThat(response.schoolClassUserId()).isEqualTo(savedId);
-        ArgumentCaptor<SchoolClassUser> captor = ArgumentCaptor.forClass(SchoolClassUser.class);
+        var captor = ArgumentCaptor.forClass(SchoolClassUser.class);
         verify(schoolClassUserRepository).save(captor.capture());
         assertThat(captor.getValue().getUserId()).isEqualTo(targetUserId);
         assertThat(captor.getValue().getSchoolClassId()).isEqualTo(classId);
@@ -99,11 +98,11 @@ class CreateSchoolClassUserUseCaseTests {
 
     @Test
     void create_should_throw_when_membership_already_exists() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
 
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId))
@@ -116,25 +115,25 @@ class CreateSchoolClassUserUseCaseTests {
 
     @Test
     void create_should_reactivate_when_membership_inactive() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        UUID membershipId = UUID.randomUUID();
-        CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var membershipId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
 
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
-        SchoolClassUser leftMembership = new SchoolClassUser(
+        var leftMembership = new SchoolClassUser(
             membershipId, targetUserId, classId, false, Instant.now().minus(5, ChronoUnit.DAYS),
             Instant.now().minus(1, ChronoUnit.DAYS), UUID.randomUUID());
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId))
             .thenReturn(Optional.of(leftMembership));
         when(schoolClassUserRepository.save(any(SchoolClassUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CreateSchoolClassUserResponse response = useCase.execute(command);
+        var response = useCase.execute(command);
 
         assertThat(response.schoolClassUserId()).isEqualTo(membershipId);
-        ArgumentCaptor<SchoolClassUser> captor = ArgumentCaptor.forClass(SchoolClassUser.class);
+        var captor = ArgumentCaptor.forClass(SchoolClassUser.class);
         verify(schoolClassUserRepository).save(captor.capture());
         assertThat(captor.getValue().getId()).isEqualTo(membershipId);
         assertThat(captor.getValue().isActive()).isTrue();
@@ -144,11 +143,11 @@ class CreateSchoolClassUserUseCaseTests {
 
     @Test
     void create_should_throw_duplicated_when_save_hits_unique_violation() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
 
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.empty());
@@ -160,11 +159,11 @@ class CreateSchoolClassUserUseCaseTests {
 
     @Test
     void create_should_throw_when_class_not_found() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
@@ -179,11 +178,11 @@ class CreateSchoolClassUserUseCaseTests {
 
     @Test
     void create_should_throw_when_class_belongs_to_other_school() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
@@ -198,11 +197,11 @@ class CreateSchoolClassUserUseCaseTests {
 
     @Test
     void create_should_throw_when_target_user_not_found() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
@@ -218,11 +217,11 @@ class CreateSchoolClassUserUseCaseTests {
 
     @Test
     void create_should_add_target_user_who_has_not_set_password_yet() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
@@ -234,7 +233,7 @@ class CreateSchoolClassUserUseCaseTests {
         mockUserSchool(targetUserId, schoolId);
         when(schoolClassUserRepository.save(any(SchoolClassUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CreateSchoolClassUserResponse response = useCase.execute(command);
+        var response = useCase.execute(command);
 
         assertThat(response).isNotNull();
         verify(schoolClassUserRepository).save(any(SchoolClassUser.class));
@@ -242,11 +241,11 @@ class CreateSchoolClassUserUseCaseTests {
 
     @Test
     void create_should_throw_when_target_user_is_locked() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
@@ -261,11 +260,11 @@ class CreateSchoolClassUserUseCaseTests {
 
     @Test
     void create_should_throw_when_target_user_is_disabled() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
@@ -280,11 +279,11 @@ class CreateSchoolClassUserUseCaseTests {
 
     @Test
     void create_should_throw_when_target_user_belongs_to_other_school() {
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-        UUID classId = UUID.randomUUID();
-        CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
+        var currentUserId = UUID.randomUUID();
+        var targetUserId = UUID.randomUUID();
+        var schoolId = UUID.randomUUID();
+        var classId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, schoolId)));
@@ -300,8 +299,8 @@ class CreateSchoolClassUserUseCaseTests {
 
     @Test
     void create_should_throw_when_current_user_is_inactive() {
-        UUID currentUserId = UUID.randomUUID();
-        CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        var currentUserId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(user(currentUserId, UUID.randomUUID(), UserStatus.INACTIVE)));
@@ -313,8 +312,8 @@ class CreateSchoolClassUserUseCaseTests {
 
     @Test
     void create_should_throw_when_current_user_has_no_school() {
-        UUID currentUserId = UUID.randomUUID();
-        CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        var currentUserId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, null)));
@@ -326,8 +325,8 @@ class CreateSchoolClassUserUseCaseTests {
 
     @Test
     void create_should_throw_when_requested_school_differs_from_current_user_school() {
-        UUID currentUserId = UUID.randomUUID();
-        CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        var currentUserId = UUID.randomUUID();
+        var command = new CreateSchoolClassUserCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, UUID.randomUUID())));
@@ -358,21 +357,21 @@ class CreateSchoolClassUserUseCaseTests {
     }
 
     private static User user(UUID id, UUID schoolId, UserStatus status) {
-        User user = new User();
+        var user = new User();
         user.setId(id);
         user.setStatus(status);
         return user;
     }
 
     private static School activeSchool(UUID id) {
-        School school = new School();
+        var school = new School();
         school.setId(id);
         school.setActive(true);
         return school;
     }
 
     private static SchoolClass activeSchoolClass(UUID id, UUID schoolId) {
-        SchoolClass schoolClass = new SchoolClass();
+        var schoolClass = new SchoolClass();
         schoolClass.setId(id);
         schoolClass.setSchoolId(schoolId);
         schoolClass.setCode(new ClassCode("ENG-01"));

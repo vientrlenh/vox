@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SubscriptionPlanQuotaJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -29,8 +28,8 @@ public class SubscriptionPlanQuotaRepositoryImpl implements SubscriptionPlanQuot
 
     @Override
     public SubscriptionPlanQuota save(SubscriptionPlanQuota quota) {
-        SubscriptionPlanQuotaJpaEntity entity = SubscriptionPlanQuotaMapper.toJpa(quota);
-        SubscriptionPlanQuotaJpaEntity saved = springDataSubscriptionPlanQuotaRepository.save(entity);
+        var entity = SubscriptionPlanQuotaMapper.toJpa(quota);
+        var saved = springDataSubscriptionPlanQuotaRepository.save(entity);
         return SubscriptionPlanQuotaMapper.toDomain(saved);
     }
 
@@ -55,8 +54,8 @@ public class SubscriptionPlanQuotaRepositoryImpl implements SubscriptionPlanQuot
 
     @Override
     public List<SubscriptionPlanQuota> saveAll(Collection<SubscriptionPlanQuota> quotas) {
-        List<SubscriptionPlanQuotaJpaEntity> entities = quotas.stream().map(SubscriptionPlanQuotaMapper::toJpa).toList();
-        List<SubscriptionPlanQuotaJpaEntity> saved = springDataSubscriptionPlanQuotaRepository.saveAll(entities);
+        var entities = quotas.stream().map(SubscriptionPlanQuotaMapper::toJpa).toList();
+        var saved = springDataSubscriptionPlanQuotaRepository.saveAll(entities);
         return saved.stream().map(SubscriptionPlanQuotaMapper::toDomain).toList();
     }
 }

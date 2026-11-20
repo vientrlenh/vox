@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Python grades practice answers with the same graph as assessment grading, so the published payload has the same
- * shape as {@link AssessmentAttemptEvaluationCompletedPayloadDto}. Only the fields that are really used
- * somewhere are declared here -- Jackson ignores the rest.
+ * Python chấm bài luyện bằng cùng đồ thị chấm bài thi, nên payload phát ra là cùng một
+ * hình dạng với {@link ExamAttemptEvaluationCompletedPayloadDto}. Ở đây chỉ khai những
+ * trường thật sự có nơi dùng -- Jackson bỏ qua phần còn lại.
  */
 public record PracticeAttemptEvaluationCompletedPayloadDto(
     ValidityResultDto validity,

@@ -4,28 +4,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
 import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
+import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolGradeRepositoryImpl;
 import com.sep.vox.infrastructure.persistence.entity.GradeLevelJpaEntity;
-import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
 
-@RepositoryTest
+@DataJpaTest
+@ActiveProfiles("test")
 @Import({
     SchoolGradeRepositoryImpl.class
 })
-class SchoolGradeRepositoryTests {
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class SchoolGradeRepositoryTests extends ContainerTestConfig {
 
     @Autowired
     private SchoolGradeRepository schoolGradeRepository;
@@ -35,16 +39,15 @@ class SchoolGradeRepositoryTests {
 
     @Test
     void whenFindBySchoolIdAndCodeIn_thenReturnsOnlyGradesOfThatSchool() {
-        UUID schoolId = UUID.randomUUID();
-        UUID otherSchoolId = UUID.randomUUID();
-        // Grade levels are now shared: two schools point at the same grade level, distinguished by
-        // schoolId.
-        GradeLevelJpaEntity level = persistGradeLevel("LEVEL-BATCH-01", 1);
+        var schoolId = UUID.randomUUID();
+        var otherSchoolId = UUID.randomUUID();
+        // Khối lớp giờ dùng chung: hai trường cùng trỏ vào một grade level, phân biệt bằng schoolId.
+        var level = persistGradeLevel("LEVEL-BATCH-01", 1);
         schoolGradeRepository.save(newSchoolGrade(schoolId, level.getId(), "G10", "Grade 10"));
         schoolGradeRepository.save(newSchoolGrade(schoolId, level.getId(), "G11", "Grade 11"));
         schoolGradeRepository.save(newSchoolGrade(otherSchoolId, level.getId(), "G12", "Other Grade 12"));
 
-        List<SchoolGrade> found = schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G10", "G11", "G12", "MISSING"));
+        var found = schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G10", "G11", "G12", "MISSING"));
 
         assertThat(found)
             .hasSize(2)
@@ -53,8 +56,8 @@ class SchoolGradeRepositoryTests {
     }
 
     private GradeLevelJpaEntity persistGradeLevel(String code, int order) {
-        Instant now = Instant.now();
-        GradeLevelJpaEntity level = new GradeLevelJpaEntity(
+        var now = Instant.now();
+        var level = new GradeLevelJpaEntity(
             null,
             code,
             code,
@@ -73,7 +76,7 @@ class SchoolGradeRepositoryTests {
     }
 
     private static SchoolGrade newSchoolGrade(UUID schoolId, UUID gradeLevelId, String code, String name) {
-        Instant now = Instant.now();
+        var now = Instant.now();
         return new SchoolGrade(
             schoolId,
             gradeLevelId,

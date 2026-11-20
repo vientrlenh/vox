@@ -1,16 +1,5 @@
 package com.sep.vox.interfaces.rest.controller;
 
-import com.sep.vox.application.port.input.command.AcceptQuestionImportCommand;
-import com.sep.vox.application.port.input.command.BulkUpdateQuestionStatusCommand;
-import com.sep.vox.application.port.input.command.CreateQuestionAssetMutationCommand;
-import com.sep.vox.application.port.input.command.CreateQuestionCollaboratorCommand;
-import com.sep.vox.application.port.input.command.CreateSystemQuestionBankQuestionCommand;
-import com.sep.vox.application.port.input.command.UpdateQuestionAssetCommand;
-import com.sep.vox.application.port.input.command.UpdateQuestionCollaboratorCommand;
-import com.sep.vox.application.port.input.command.UpdateQuestionCommand;
-import com.sep.vox.application.port.input.command.UpdateQuestionStatusCommand;
-import com.sep.vox.application.port.input.command.UpsertQuestionEvaluationGuideCommand;
-import com.sep.vox.application.response.input.question.QuestionAssetUploadUrlResponse;
 import java.io.IOException;
 import java.util.UUID;
 
@@ -158,9 +147,9 @@ public class QuestionController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<CreateQuestionResponse>> create(
             @Valid @RequestBody CreateQuestionRequest request) {
-        CreateSystemQuestionBankQuestionCommand command = CreateQuestionCommandMapper.fromRequest(request);
-        CreateQuestionResponse data = createQuestionUseCase.execute(command);
-        ApiResponse<CreateQuestionResponse> response = ApiResponse.success("Tao cau hoi thanh cong", data);
+        var command = CreateQuestionCommandMapper.fromRequest(request);
+        var data = createQuestionUseCase.execute(command);
+        var response = ApiResponse.success("Tao cau hoi thanh cong", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -168,17 +157,17 @@ public class QuestionController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<PreviewQuestionImportResponse>> previewImport(
             @RequestParam("file") MultipartFile file,
-            // Leaving BOTH empty = bulk import: each row in the file declares its own bank code + topic code.
-            // The school scope is still fixed by the server from the signed-in user.
+            // Bỏ trống CẢ HAI = import hàng loạt: mỗi dòng trong tệp tự khai mã ngân hàng + mã
+            // chủ đề. Phạm vi trường vẫn do server chốt theo người đăng nhập.
             @RequestParam(name = "questionBankId", required = false) UUID questionBankId,
             @RequestParam(name = "questionTopicId", required = false) UUID questionTopicId) throws IOException {
-        UploadedFile uploadedFile = UploadedFile.upload(
+        var uploadedFile = UploadedFile.upload(
             file.getOriginalFilename(),
             file.getContentType(),
             file.getSize(),
             file.getBytes()
         );
-        PreviewQuestionImportResponse data = previewQuestionImportFromFileUseCase.execute(
+        var data = previewQuestionImportFromFileUseCase.execute(
             new PreviewQuestionImportFromFileCommand(questionBankId, questionTopicId, uploadedFile)
         );
         return ResponseEntity.ok(ApiResponse.success("Preview import cau hoi thanh cong", data));
@@ -189,7 +178,7 @@ public class QuestionController {
     public ResponseEntity<ApiResponse<Object>> acceptImport(
             @PathVariable(name = "sessionId") UUID sessionId,
             @Valid @RequestBody AcceptQuestionImportRequest request) {
-        AcceptQuestionImportCommand command = AcceptQuestionImportCommandMapper.fromRequest(sessionId, request);
+        var command = AcceptQuestionImportCommandMapper.fromRequest(sessionId, request);
         acceptQuestionImportUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Yeu cau import cau hoi da duoc tiep nhan, dang xu ly"));
     }
@@ -205,7 +194,7 @@ public class QuestionController {
             @RequestParam(name = "sharing", required = false) QuestionSharing sharing,
             @RequestParam(name = "scope", required = false) String scope,
             @RequestParam(name = "keyword", required = false) String keyword) {
-        byte[] file = questionSpreadsheetService.exportQuestions(
+        var file = questionSpreadsheetService.exportQuestions(
             questionBankId,
             questionTopicId,
             topicName,
@@ -225,7 +214,7 @@ public class QuestionController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<byte[]> downloadTemplate(
             @RequestParam(name = "type", required = false) String type) {
-        byte[] file = questionSpreadsheetService.downloadTemplate(type);
+        var file = questionSpreadsheetService.downloadTemplate(type);
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + questionSpreadsheetService.templateFileName() + "\"")
             .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
@@ -237,17 +226,17 @@ public class QuestionController {
     public ResponseEntity<ApiResponse<UpdateQuestionResponse>> update(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionRequest request) {
-        UpdateQuestionCommand command = UpdateQuestionCommandMapper.fromRequest(id, request);
-        UpdateQuestionResponse data = updateQuestionUseCase.execute(command);
-        ApiResponse<UpdateQuestionResponse> response = ApiResponse.success("Cap nhat cau hoi thanh cong", data);
+        var command = UpdateQuestionCommandMapper.fromRequest(id, request);
+        var data = updateQuestionUseCase.execute(command);
+        var response = ApiResponse.success("Cap nhat cau hoi thanh cong", data);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{id}/clone")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<QuestionDto>> clone(@PathVariable(name = "id") UUID id) {
-        QuestionDto data = cloneQuestionUseCase.execute(new CloneQuestionCommand(id));
-        ApiResponse<QuestionDto> response = ApiResponse.success("Nhan ban cau hoi thanh cong", data);
+        var data = cloneQuestionUseCase.execute(new CloneQuestionCommand(id));
+        var response = ApiResponse.success("Nhan ban cau hoi thanh cong", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -256,9 +245,9 @@ public class QuestionController {
     public ResponseEntity<ApiResponse<QuestionDto>> updateStatus(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody UpdateQuestionStatusRequest request) {
-        UpdateQuestionStatusCommand command = UpdateQuestionStatusCommandMapper.fromRequest(id, request);
-        QuestionDto data = updateQuestionStatusUseCase.execute(command);
-        ApiResponse<QuestionDto> response = ApiResponse.success("Cap nhat trang thai cau hoi thanh cong", data);
+        var command = UpdateQuestionStatusCommandMapper.fromRequest(id, request);
+        var data = updateQuestionStatusUseCase.execute(command);
+        var response = ApiResponse.success("Cap nhat trang thai cau hoi thanh cong", data);
         return ResponseEntity.ok(response);
     }
 
@@ -266,17 +255,17 @@ public class QuestionController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<BulkUpdateQuestionStatusResponse>> bulkUpdateStatus(
             @Valid @RequestBody BulkUpdateQuestionStatusRequest request) {
-        BulkUpdateQuestionStatusCommand command = BulkUpdateQuestionStatusCommandMapper.fromRequest(request);
-        BulkUpdateQuestionStatusResponse data = bulkUpdateQuestionStatusUseCase.execute(command);
-        ApiResponse<BulkUpdateQuestionStatusResponse> response = ApiResponse.success("Cap nhat trang thai hang loat thanh cong", data);
+        var command = BulkUpdateQuestionStatusCommandMapper.fromRequest(request);
+        var data = bulkUpdateQuestionStatusUseCase.execute(command);
+        var response = ApiResponse.success("Cap nhat trang thai hang loat thanh cong", data);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<DeleteQuestionResponse>> delete(@PathVariable(name = "id") UUID id) {
-        DeleteQuestionResponse data = deleteQuestionUseCase.execute(new DeleteQuestionCommand(id));
-        ApiResponse<DeleteQuestionResponse> response = ApiResponse.success("Xoa cau hoi thanh cong", data);
+        var data = deleteQuestionUseCase.execute(new DeleteQuestionCommand(id));
+        var response = ApiResponse.success("Xoa cau hoi thanh cong", data);
         return ResponseEntity.ok(response);
     }
 
@@ -285,9 +274,9 @@ public class QuestionController {
     public ResponseEntity<ApiResponse<QuestionCollaboratorDto>> createCollaborator(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody CreateQuestionCollaboratorRequest request) {
-        CreateQuestionCollaboratorCommand command = CreateQuestionCollaboratorCommandMapper.fromRequest(id, request);
-        QuestionCollaboratorDto data = createQuestionCollaboratorUseCase.execute(command);
-        ApiResponse<QuestionCollaboratorDto> response = ApiResponse.success("Them collaborator thanh cong", data);
+        var command = CreateQuestionCollaboratorCommandMapper.fromRequest(id, request);
+        var data = createQuestionCollaboratorUseCase.execute(command);
+        var response = ApiResponse.success("Them collaborator thanh cong", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -297,9 +286,9 @@ public class QuestionController {
             @PathVariable(name = "id") UUID id,
             @PathVariable(name = "collaboratorId") UUID collaboratorId,
             @Valid @RequestBody UpdateQuestionCollaboratorRequest request) {
-        UpdateQuestionCollaboratorCommand command = UpdateQuestionCollaboratorCommandMapper.fromRequest(id, collaboratorId, request);
-        QuestionCollaboratorDto data = updateQuestionCollaboratorUseCase.execute(command);
-        ApiResponse<QuestionCollaboratorDto> response = ApiResponse.success("Cap nhat quyen collaborator thanh cong", data);
+        var command = UpdateQuestionCollaboratorCommandMapper.fromRequest(id, collaboratorId, request);
+        var data = updateQuestionCollaboratorUseCase.execute(command);
+        var response = ApiResponse.success("Cap nhat quyen collaborator thanh cong", data);
         return ResponseEntity.ok(response);
     }
 
@@ -318,9 +307,9 @@ public class QuestionController {
     public ResponseEntity<ApiResponse<QuestionAssetDto>> createAsset(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody CreateQuestionAssetRequest request) {
-        CreateQuestionAssetMutationCommand command = CreateQuestionAssetCommandMapper.fromRequest(id, request);
-        QuestionAssetDto data = createQuestionAssetUseCase.execute(command);
-        ApiResponse<QuestionAssetDto> response = ApiResponse.success("Them tai nguyen cau hoi thanh cong", data);
+        var command = CreateQuestionAssetCommandMapper.fromRequest(id, request);
+        var data = createQuestionAssetUseCase.execute(command);
+        var response = ApiResponse.success("Them tai nguyen cau hoi thanh cong", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -329,7 +318,7 @@ public class QuestionController {
     public ResponseEntity<ApiResponse<?>> getAssetUploadUrl(
             @PathVariable(name = "id") UUID id,
             @RequestParam(name = "contentType") String contentType) {
-        QuestionAssetUploadUrlResponse data = getQuestionAssetUploadUrlUseCase.execute(new GetQuestionAssetUploadUrlQuery(id, contentType));
+        var data = getQuestionAssetUploadUrlUseCase.execute(new GetQuestionAssetUploadUrlQuery(id, contentType));
         return ResponseEntity.ok(ApiResponse.success("Lấy upload URL tài nguyên câu hỏi thành công", data));
     }
 
@@ -339,9 +328,9 @@ public class QuestionController {
             @PathVariable(name = "id") UUID id,
             @PathVariable(name = "assetId") UUID assetId,
             @Valid @RequestBody UpdateQuestionAssetRequest request) {
-        UpdateQuestionAssetCommand command = UpdateQuestionAssetCommandMapper.fromRequest(id, assetId, request);
-        QuestionAssetDto data = updateQuestionAssetUseCase.execute(command);
-        ApiResponse<QuestionAssetDto> response = ApiResponse.success("Cap nhat tai nguyen cau hoi thanh cong", data);
+        var command = UpdateQuestionAssetCommandMapper.fromRequest(id, assetId, request);
+        var data = updateQuestionAssetUseCase.execute(command);
+        var response = ApiResponse.success("Cap nhat tai nguyen cau hoi thanh cong", data);
         return ResponseEntity.ok(response);
     }
 
@@ -360,7 +349,7 @@ public class QuestionController {
     public ResponseEntity<ApiResponse<QuestionAssetDto>> regenerateAssetAnalysis(
             @PathVariable(name = "id") UUID id,
             @PathVariable(name = "assetId") UUID assetId) {
-        QuestionAssetDto data = regenerateQuestionAssetAnalysisUseCase.execute(
+        var data = regenerateQuestionAssetAnalysisUseCase.execute(
             new RegenerateQuestionAssetAnalysisUseCase.Command(id, assetId)
         );
         return ResponseEntity.ok(ApiResponse.success("Yeu cau tao lai phan tich asset da duoc tiep nhan", data));
@@ -371,9 +360,9 @@ public class QuestionController {
     public ResponseEntity<ApiResponse<QuestionEvaluationGuideDto>> upsertEvaluationGuide(
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody QuestionEvaluationGuideRequest request) {
-        UpsertQuestionEvaluationGuideCommand command = UpsertQuestionEvaluationGuideCommandMapper.fromRequest(id, request);
-        QuestionEvaluationGuideDto data = upsertQuestionEvaluationGuideUseCase.execute(command);
-        ApiResponse<QuestionEvaluationGuideDto> response = ApiResponse.success("Cap nhat huong dan cham thanh cong", data);
+        var command = UpsertQuestionEvaluationGuideCommandMapper.fromRequest(id, request);
+        var data = upsertQuestionEvaluationGuideUseCase.execute(command);
+        var response = ApiResponse.success("Cap nhat huong dan cham thanh cong", data);
         return ResponseEntity.ok(response);
     }
 }

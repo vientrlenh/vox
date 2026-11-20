@@ -1,8 +1,5 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
-import com.sep.vox.domain.model.school.School;
-import com.sep.vox.domain.model.school.SchoolGrade;
-import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -61,11 +58,11 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
     @Override
     @Transactional
     public CreateSchoolClassResponse execute(CreateSchoolClassCommand input) {
-        CreateSchoolClassCommand command = normalize(input);
-        Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = findCurrentUser(currentUserId);
-        UUID schoolId = getSchoolId(currentUser);
+        var command = normalize(input);
+        var now = Instant.now();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = findCurrentUser(currentUserId);
+        var schoolId = getSchoolId(currentUser);
 
         validateRequestedSchool(command.schoolId(), schoolId);
         validateSchool(schoolId);
@@ -74,7 +71,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
 
         validateClassCodeIsUnique(schoolId, command.code());
 
-        SchoolClass schoolClass = SchoolClass.create(
+        var schoolClass = SchoolClass.create(
             schoolId,
             command.languageId(),
             command.schoolGradeId(),
@@ -84,7 +81,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
             currentUserId,
             now
         );
-        SchoolClass saved = schoolClassRepository.save(schoolClass);
+        var saved = schoolClassRepository.save(schoolClass);
         return CreateSchoolClassResponseMapper.toResponse(saved.getId());
     }
 
@@ -100,7 +97,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        User user = userRepository.findById(currentUserId)
+        var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         validateCurrentUserIsActive(user);
         return user;
@@ -119,7 +116,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
     }
 
     private void validateSchool(UUID schoolId) {
-        School school = schoolRepository.findById(schoolId)
+        var school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
@@ -127,7 +124,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
     }
 
     private void validateLanguage(UUID languageId) {
-        SupportedLanguage language = supportedLanguageRepository.findById(languageId)
+        var language = supportedLanguageRepository.findById(languageId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngôn ngữ"));
         if (!language.isActive()) {
             throw new IllegalStateException("Ngôn ngữ không hoạt động");
@@ -144,7 +141,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
     }
 
     private void validateSchoolGrade(UUID schoolGradeId, UUID schoolId) {
-        SchoolGrade grade = schoolGradeRepository.findById(schoolGradeId)
+        var grade = schoolGradeRepository.findById(schoolGradeId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy khối học"));
         // Năm học đã lưu schoolId trực tiếp -- không còn phải bắc cầu qua Khối để xác định trường sở hữu.
         if (!Objects.equals(grade.getSchoolId(), schoolId)) {

@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.schoolclassuser;
 
-import com.sep.vox.domain.model.school.School;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -56,10 +55,10 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
     @Transactional
     public CreateSchoolClassUserResponse execute(CreateSchoolClassUserCommand input) {
         validateCommand(input);
-        Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = findCurrentUser(currentUserId);
-        UUID schoolId = getSchoolId(currentUser);
+        var now = Instant.now();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUser = findCurrentUser(currentUserId);
+        var schoolId = getSchoolId(currentUser);
 
         validateRequestedSchool(input.schoolId(), schoolId);
         validateSchool(schoolId);
@@ -68,7 +67,7 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
 
         // Thêm thành viên = join hoặc re-join. Bản ghi (userId, classId) là duy nhất nên
         // học sinh đã rời lớp (isActive=false) phải được kích hoạt lại thay vì bị chặn.
-        SchoolClassUser existing = schoolClassUserRepository.findByUserIdAndSchoolClassId(input.userId(), input.classId())
+        var existing = schoolClassUserRepository.findByUserIdAndSchoolClassId(input.userId(), input.classId())
             .orElse(null);
         if (existing != null) {
             if (existing.isActive()) {
@@ -76,11 +75,11 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
             }
             existing.activate();
             existing.setAssignedBy(currentUserId);
-            SchoolClassUser saved = schoolClassUserRepository.save(existing);
+            var saved = schoolClassUserRepository.save(existing);
             return new CreateSchoolClassUserResponse(saved.getId());
         }
 
-        SchoolClassUser schoolClassUser = new SchoolClassUser(
+        var schoolClassUser = new SchoolClassUser(
             input.userId(),
             input.classId(),
             true,
@@ -89,7 +88,7 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
             currentUserId
         );
         try {
-            SchoolClassUser saved = schoolClassUserRepository.save(schoolClassUser);
+            var saved = schoolClassUserRepository.save(schoolClassUser);
             return new CreateSchoolClassUserResponse(saved.getId());
         } catch (DataIntegrityViolationException e) {
             // Chống race-condition: hai request cùng thêm một thành viên vượt qua check rồi đụng unique index.
@@ -110,7 +109,7 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
     }
 
     private User findCurrentUser(UUID currentUserId) {
-        User user = userRepository.findById(currentUserId)
+        var user = userRepository.findById(currentUserId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
         validateCurrentUserIsActive(user);
         return user;
@@ -135,7 +134,7 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
     }
 
     private void validateSchool(UUID schoolId) {
-        School school = schoolRepository.findById(schoolId)
+        var school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
@@ -143,7 +142,7 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
     }
 
     private SchoolClass validateSchoolClass(UUID classId, UUID schoolId) {
-        SchoolClass schoolClass = schoolClassRepository.findById(classId)
+        var schoolClass = schoolClassRepository.findById(classId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
             throw new NotFoundException("Không tìm thấy lớp học");
@@ -155,7 +154,7 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
     }
 
     private void validateTargetUser(UUID userId, UUID schoolId) {
-        User targetUser = userRepository.findById(userId)
+        var targetUser = userRepository.findById(userId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         if (!targetUser.canBeAssignedToSchoolClass()) {
             throw new IllegalStateException("Người dùng đã bị khoá hoặc vô hiệu hoá");

@@ -2,8 +2,8 @@ package com.sep.vox.application.port.input.query;
 
 import java.util.UUID;
 
-/** AI quality report; an empty {@code assessmentId} = the whole school. */
+/** Báo cáo chất lượng AI; {@code examId} rỗng = toàn trường. */
 public record ViewAiQualityReportQuery(
-    UUID assessmentId
+    UUID examId
 ) {
 }

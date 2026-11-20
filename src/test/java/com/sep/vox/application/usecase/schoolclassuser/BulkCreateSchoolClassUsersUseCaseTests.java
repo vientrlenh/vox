@@ -28,7 +28,6 @@ import com.sep.vox.application.port.input.command.BulkCreateSchoolClassUsersComm
 import com.sep.vox.application.port.input.usecase.schoolclassuser.BulkCreateSchoolClassUsersUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schoolclassuser.BulkCreateSchoolClassUserFailure;
-import com.sep.vox.application.response.input.schoolclassuser.BulkCreateSchoolClassUsersResponse;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
@@ -81,19 +80,19 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
     @Test
     void bulk_create_should_add_every_valid_user_in_a_single_save() {
-        UUID firstUserId = UUID.randomUUID();
-        UUID secondUserId = UUID.randomUUID();
+        var firstUserId = UUID.randomUUID();
+        var secondUserId = UUID.randomUUID();
         mockValidContext(firstUserId, secondUserId);
         mockNoExistingMemberships();
         mockSaveAllEchoesInput();
 
-        BulkCreateSchoolClassUsersResponse response = useCase.execute(
+        var response = useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(firstUserId, secondUserId)));
 
         assertThat(response.addedUserIds()).containsExactly(firstUserId, secondUserId);
         assertThat(response.failed()).isEmpty();
 
-        ArgumentCaptor<Collection<SchoolClassUser>> captor = memberships();
+        var captor = memberships();
         verify(schoolClassUserRepository).saveAll(captor.capture());
         assertThat(captor.getValue()).hasSize(2);
         assertThat(captor.getValue())
@@ -108,13 +107,13 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
     @Test
     void bulk_create_should_report_failure_when_user_not_found() {
-        UUID validUserId = UUID.randomUUID();
-        UUID missingUserId = UUID.randomUUID();
+        var validUserId = UUID.randomUUID();
+        var missingUserId = UUID.randomUUID();
         mockValidContext(validUserId);
         mockNoExistingMemberships();
         mockSaveAllEchoesInput();
 
-        BulkCreateSchoolClassUsersResponse response = useCase.execute(
+        var response = useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(validUserId, missingUserId)));
 
         assertThat(response.addedUserIds()).containsExactly(validUserId);
@@ -124,14 +123,14 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
     @Test
     void bulk_create_should_add_user_who_has_not_set_password_yet() {
-        UUID pendingUserId = UUID.randomUUID();
+        var pendingUserId = UUID.randomUUID();
         mockContext();
         mockTargetUsers(user(pendingUserId, UserStatus.INACTIVE));
         mockUsersBelongToSchool(pendingUserId);
         mockNoExistingMemberships();
         mockSaveAllEchoesInput();
 
-        BulkCreateSchoolClassUsersResponse response = useCase.execute(
+        var response = useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(pendingUserId)));
 
         assertThat(response.addedUserIds()).containsExactly(pendingUserId);
@@ -140,12 +139,12 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
     @Test
     void bulk_create_should_report_failure_when_user_is_locked() {
-        UUID lockedUserId = UUID.randomUUID();
+        var lockedUserId = UUID.randomUUID();
         mockContext();
         mockTargetUsers(user(lockedUserId, UserStatus.LOCKED));
         mockNoExistingMemberships();
 
-        BulkCreateSchoolClassUsersResponse response = useCase.execute(
+        var response = useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(lockedUserId)));
 
         assertThat(response.addedUserIds()).isEmpty();
@@ -156,12 +155,12 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
     @Test
     void bulk_create_should_report_failure_when_user_is_disabled() {
-        UUID disabledUserId = UUID.randomUUID();
+        var disabledUserId = UUID.randomUUID();
         mockContext();
         mockTargetUsers(user(disabledUserId, UserStatus.DISABLED));
         mockNoExistingMemberships();
 
-        BulkCreateSchoolClassUsersResponse response = useCase.execute(
+        var response = useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(disabledUserId)));
 
         assertThat(response.addedUserIds()).isEmpty();
@@ -172,12 +171,12 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
     @Test
     void bulk_create_should_report_failure_when_user_belongs_to_other_school() {
-        UUID otherSchoolUserId = UUID.randomUUID();
+        var otherSchoolUserId = UUID.randomUUID();
         mockContext();
         mockTargetUsers(activeUser(otherSchoolUserId));
         mockNoExistingMemberships();
 
-        BulkCreateSchoolClassUsersResponse response = useCase.execute(
+        var response = useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(otherSchoolUserId)));
 
         assertThat(response.addedUserIds()).isEmpty();
@@ -187,12 +186,12 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
     @Test
     void bulk_create_should_report_failure_when_user_already_in_class() {
-        UUID existingUserId = UUID.randomUUID();
+        var existingUserId = UUID.randomUUID();
         mockValidContext(existingUserId);
         when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(anyCollection(), anyCollection()))
             .thenReturn(List.of(new SchoolClassUser(existingUserId, classId, true, Instant.now(), null, currentUserId)));
 
-        BulkCreateSchoolClassUsersResponse response = useCase.execute(
+        var response = useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(existingUserId)));
 
         assertThat(response.addedUserIds()).isEmpty();
@@ -203,23 +202,23 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
     @Test
     void bulk_create_should_reactivate_membership_of_user_who_left_the_class() {
-        UUID returningUserId = UUID.randomUUID();
-        UUID membershipId = UUID.randomUUID();
+        var returningUserId = UUID.randomUUID();
+        var membershipId = UUID.randomUUID();
         mockValidContext(returningUserId);
-        SchoolClassUser leftMembership = new SchoolClassUser(
+        var leftMembership = new SchoolClassUser(
             membershipId, returningUserId, classId, false, Instant.now().minus(5, ChronoUnit.DAYS),
             Instant.now().minus(1, ChronoUnit.DAYS), UUID.randomUUID());
         when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(anyCollection(), anyCollection()))
             .thenReturn(List.of(leftMembership));
         mockSaveAllEchoesInput();
 
-        BulkCreateSchoolClassUsersResponse response = useCase.execute(
+        var response = useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(returningUserId)));
 
         assertThat(response.addedUserIds()).containsExactly(returningUserId);
         assertThat(response.failed()).isEmpty();
 
-        ArgumentCaptor<Collection<SchoolClassUser>> captor = memberships();
+        var captor = memberships();
         verify(schoolClassUserRepository).saveAll(captor.capture());
         assertThat(captor.getValue()).singleElement().satisfies(membership -> {
             assertThat(membership.getId()).isEqualTo(membershipId);
@@ -230,23 +229,23 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
     @Test
     void bulk_create_should_deduplicate_repeated_user_ids() {
-        UUID userId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
         mockValidContext(userId);
         mockNoExistingMemberships();
         mockSaveAllEchoesInput();
 
-        BulkCreateSchoolClassUsersResponse response = useCase.execute(
+        var response = useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(userId, userId, userId)));
 
         assertThat(response.addedUserIds()).containsExactly(userId);
-        ArgumentCaptor<Collection<SchoolClassUser>> captor = memberships();
+        var captor = memberships();
         verify(schoolClassUserRepository).saveAll(captor.capture());
         assertThat(captor.getValue()).hasSize(1);
     }
 
     @Test
     void bulk_create_should_throw_duplicated_when_save_hits_unique_violation() {
-        UUID userId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
         mockValidContext(userId);
         mockNoExistingMemberships();
         when(schoolClassUserRepository.saveAll(anyCollection()))
@@ -266,9 +265,9 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
     @Test
     void bulk_create_should_throw_when_class_is_not_active() {
-        UUID userId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
         mockContext();
-        SchoolClass archivedClass = activeSchoolClass(classId, schoolId);
+        var archivedClass = activeSchoolClass(classId, schoolId);
         archivedClass.setStatus(SchoolClassStatus.ARCHIVED);
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(archivedClass));
 
@@ -280,7 +279,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
     @Test
     void bulk_create_should_throw_when_class_belongs_to_other_school() {
-        UUID userId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
         mockContext();
         when(schoolClassRepository.findById(classId))
             .thenReturn(Optional.of(activeSchoolClass(classId, UUID.randomUUID())));
@@ -325,7 +324,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
     }
 
     private void mockUsersBelongToSchool(UUID... userIds) {
-        List<SchoolUser> schoolUsers = Arrays.stream(userIds)
+        var schoolUsers = Arrays.stream(userIds)
             .map(userId -> activeSchoolUser(userId, schoolId))
             .toList();
         when(schoolUserRepository.findByUserIdIn(anyCollection())).thenReturn(schoolUsers);
@@ -351,21 +350,21 @@ class BulkCreateSchoolClassUsersUseCaseTests {
     }
 
     private  User user(UUID id, UserStatus status) {
-        User user = new User();
+        var user = new User();
         user.setId(id);
         user.setStatus(status);
         return user;
     }
 
     private School activeSchool(UUID id) {
-        School school = new School();
+        var school = new School();
         school.setId(id);
         school.setActive(true);
         return school;
     }
 
     private SchoolClass activeSchoolClass(UUID id, UUID schoolId) {
-        SchoolClass schoolClass = new SchoolClass();
+        var schoolClass = new SchoolClass();
         schoolClass.setId(id);
         schoolClass.setSchoolId(schoolId);
         schoolClass.setCode(new ClassCode("ENG-01"));

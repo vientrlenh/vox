@@ -9,14 +9,14 @@ public class EmailTests {
 
     @Test
     void should_accept_valid_email() {
-        Email email = new Email("admin@example.com");
+        var email = new Email("admin@example.com");
 
         assertThat(email.value()).isEqualTo("admin@example.com");
     }
 
     @Test
     void should_accept_null_email() {
-        Email email = new Email(null);
+        var email = new Email(null);
 
         assertThat(email.value()).isNull();
     }

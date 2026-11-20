@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -73,16 +72,16 @@ public class LogoutUseCase implements IUseCase<LogoutCommand, Void> {
     @Override
     @Transactional
     public Void execute(LogoutCommand input) {
-        LogoutCommand command = normalize(input);
-        Instant now = Instant.now();
+        var command = normalize(input);
+        var now = Instant.now();
 
         // LinkedHashSet: hai nguồn bên dưới thường trỏ về cùng một phiên, và gọi revoke hai lần
         // cho cùng sessionId là mở thừa một transaction REQUIRES_NEW không làm gì.
-        Set<UUID> sessionIds = new LinkedHashSet<UUID>();
+        var sessionIds = new LinkedHashSet<UUID>();
         findSessionByRefreshToken(command.refreshToken()).ifPresent(sessionIds::add);
         sessionIds.addAll(findLiveSessionsOnDevice(command.deviceId()));
 
-        for (UUID sessionId : sessionIds) {
+        for (var sessionId : sessionIds) {
             sessionManagerPort.revoke(sessionId, now);
         }
 
@@ -110,7 +109,7 @@ public class LogoutUseCase implements IUseCase<LogoutCommand, Void> {
             return Optional.empty();
         }
 
-        String tokenHash = sessionTokenManagerPort.hash(refreshToken);
+        var tokenHash = sessionTokenManagerPort.hash(refreshToken);
         return refreshTokenRepository.findByTokenHash(tokenHash)
             .map(rt -> rt.getSessionId());
     }

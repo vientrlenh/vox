@@ -14,7 +14,6 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,7 +53,7 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
         }
 
         // VÒNG BẢO MẬT: KIỂM TRA BẰNG SCHOOL USER
-        Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
+        var schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
 
         // Nếu user có liên kết với một trường học (tức là School Admin)
         if (schoolUserOpt.isPresent()) {

@@ -3,50 +3,50 @@ package com.sep.vox.domain.model.metering;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 
 /**
- * Two school-level quota WALLETS, both in VND. Each value here is a SEPARATE pocket of money: spending one
- * does not touch the other, and every activity is deducted from EXACTLY ONE pocket.
+ * Hai VÍ hạn mức cấp trường, đều tính bằng VND. Mỗi giá trị ở đây là một túi tiền RIÊNG: tiêu hết
+ * túi này không đụng tới túi kia, và mỗi hoạt động chỉ trừ vào ĐÚNG MỘT túi.
  *
- * <p>Separating ASSESSMENT/PRACTICE is a BUSINESS decision and not an accounting one: if they shared one wallet,
- * one week of unusually heavy speaking practice by students would eat the whole budget meant for the end-of-term assessment. This
- * boundary coincides exactly with {@link QuotaPricingSource} -- the two AI pipelines are very different (evalGraph
- * grading an assessment is heavier than the realtimeCorrectionGraph of speaking practice) so two separate rates are also calibrated.
+ * <p>Tách EXAM/PRACTICE là một quyết định NGHIỆP VỤ chứ không phải kế toán: nếu gộp chung một ví,
+ * một tuần học sinh luyện nói nhiều bất thường sẽ ăn hết ngân sách dành cho kỳ thi cuối kỳ. Ranh
+ * giới này trùng khít với {@link QuotaPricingSource} -- hai pipeline AI khác hẳn nhau (evalGraph
+ * chấm thi nặng hơn realtimeCorrectionGraph của luyện nói) nên cũng calibrate hai rate riêng.
  *
- * <p>There is NO CLASS_TEST. It used to sit alongside here but is in essence a SPENDING CEILING INSIDE the ASSESSMENT
- * wallet, not a third wallet: a class test was charged the same
- * {@code totalCostUsd} twice -- once under GRADING, once under CLASS_TEST -- making
- * {@code SUM(used_amount_vnd)} always higher than the real money, and the constraint
- * {@code chk_school_balance_entries_no_class_test_charge} had to be built to stop that duplicate deduction from touching money.
- * The ceiling per TEACHER is still intact and is still a real feature -- it lives in
- * {@link com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation} with
- * quotaType = ASSESSMENT, and is only checked when the assessment has {@code kind = CLASS_TEST} (see
- * ClassTestTokenQuotaGuardService). That ceiling is a LIMIT, never a balance: it does not
- * hold money, does not record debt, and does not appear in school_balance_entries.
+ * <p>KHÔNG có CLASS_TEST. Trước đây nó đứng ngang hàng ở đây nhưng bản chất là TRẦN CHI nằm BÊN
+ * TRONG ví EXAM, không phải ví thứ ba: một bài kiểm tra trên lớp bị trừ cùng một khoản
+ * {@code totalCostUsd} hai lần -- một lần dưới GRADING, một lần dưới CLASS_TEST -- khiến
+ * {@code SUM(used_amount_vnd)} luôn cao hơn tiền thật, và phải dựng riêng ràng buộc
+ * {@code chk_school_balance_entries_no_class_test_charge} để chặn khoản trừ trùng đó chạm vào tiền.
+ * Trần chi theo GIÁO VIÊN vẫn còn nguyên và vẫn là tính năng thật -- nó sống ở
+ * {@link com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation} với
+ * quotaType = EXAM, và chỉ được soi khi bài có {@code kind = CLASS_TEST} (xem
+ * ClassTestTokenQuotaGuardService). Trần đó là một GIỚI HẠN, không bao giờ là một số dư: nó không
+ * giữ tiền, không ghi nợ, không xuất hiện trong school_balance_entries.
  *
- * <p>There is NO SPEAKING. The Azure voice live cost is a cost COMPONENT, not an activity --
- * it is already recorded in {@code ai_usage_record.usage_type = 'DURATION'}, per turn and
- * with the provider. Both assessments and speaking practice incur it, so building it into a third wallet would repeat exactly the
- * mistake of CLASS_TEST in another direction: an assessment would have to be deducted from two wallets, and worse than CLASS_TEST in that
- * the SPEAKING wallet would straddle BOTH activities so speaking practice could drain the assessment's share -- reopening exactly the
- * door that separating ASSESSMENT/PRACTICE was created to close. To know "how much did speaking cost this month",
- * GROUP BY ai_usage_record.usage_type, with no need for another wallet.
+ * <p>KHÔNG có SPEAKING. Chi phí Azure voice live là một THÀNH PHẦN chi phí, không phải một hoạt
+ * động -- nó đã được ghi sẵn ở {@code ai_usage_record.usage_type = 'DURATION'}, theo từng lượt và
+ * kèm provider. Cả thi lẫn luyện nói đều phát sinh nó, nên dựng nó thành ví thứ ba sẽ lặp lại đúng
+ * lỗi của CLASS_TEST theo chiều khác: một kỳ thi phải trừ vào hai ví, và tệ hơn CLASS_TEST ở chỗ
+ * ví SPEAKING nằm vắt qua CẢ HAI hoạt động nên luyện nói lại rút cạn được phần thi -- mở lại đúng
+ * cái cửa mà việc tách EXAM/PRACTICE sinh ra để đóng. Muốn biết "tháng này nói tốn bao nhiêu" thì
+ * GROUP BY trên ai_usage_record.usage_type, không cần thêm ví.
  */
 public enum QuotaType {
-    /** Assessment grading -- every AssessmentKind (both CENTRALIZED and CLASS_TEST) is deducted from here. */
-    ASSESSMENT,
+    /** Chấm thi -- mọi ExamKind (CENTRALIZED lẫn CLASS_TEST) đều trừ vào đây. */
+    EXAM,
     /** Học sinh tự luyện nói. */
     PRACTICE;
 
     /**
-     * The role that receives the personal spending ceiling of this wallet: ASSESSMENT is distributed to TEACHERS, PRACTICE to STUDENTS.
+     * Vai trò nhận trần chi cá nhân của ví này: EXAM chia cho GIÁO VIÊN, PRACTICE chia cho HỌC SINH.
      *
-     * <p>Placed here because three places need exactly one answer -- the two quota allocation use cases
-     * (AllocateAssessmentQuotaToTeachers / AllocatePracticeQuotaToStudents) and the "still eligible" filter
-     * when carrying the ceilings to a new period (OrderSettlementService.carryForwardUserAllocations). This mapping decides
-     * whether a person keeps their ceiling across a renewal, so if the two sides diverge a real person loses their ceiling.
+     * <p>Đặt ở đây vì đã có ba chỗ cần đúng một câu trả lời -- hai use case chia hạn mức
+     * (AllocateExamQuotaToTeachers / AllocatePracticeQuotaToStudents) và phép lọc "còn đủ điều kiện"
+     * lúc mang trần sang kỳ mới (OrderSettlementService.carryForwardUserAllocations). Ánh xạ này quyết
+     * định AI giữ được trần qua một lần gia hạn, nên hai bên lệch nhau là mất trần của người thật.
      */
     public String allocationRoleCode() {
         return switch (this) {
-            case ASSESSMENT -> SchoolRoleCodes.TEACHER;
+            case EXAM -> SchoolRoleCodes.TEACHER;
             case PRACTICE -> SchoolRoleCodes.STUDENT;
         };
     }

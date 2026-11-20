@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
 
-import com.sep.vox.domain.model.school.SchoolUser;
 import java.util.Set;
 import java.util.UUID;
 
@@ -49,8 +48,8 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolUserDto> execute(ViewSchoolUsersBySchoolQuery input) {
-        UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID schoolId = userContextPort.getCurrentSchoolId();
+        var callerId = userContextPort.getCurrentAuthenticatedUserId();
+        var schoolId = userContextPort.getCurrentSchoolId();
 
         if (schoolId == null || !input.schoolId().equals(schoolId)) {
             throw new ForbiddenException("Bạn không có quyền xem danh sách người dùng của trường này");
@@ -63,10 +62,10 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
             throw new ForbiddenException("Quyền truy cập không hợp lệ");
         }
 
-        String status = input.status() == null ? null : input.status().name();
-        UUID roleId = resolveRoleId(input.roleId(), input.roleCode());
+        var status = validateStatus(input.status());
+        var roleId = resolveRoleId(input.roleId(), input.roleCode());
 
-        PageResult<SchoolUser> schoolUsersPage = schoolUserRepository.findBySchoolId(
+        var schoolUsersPage = schoolUserRepository.findBySchoolId(
             input.schoolId(),
             StringNormalization.trimAndCollapseSpaces(input.search()),
             roleId,
@@ -81,9 +80,9 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
     }
 
     /**
-     * The school user list always hides admin accounts (the screens that use it -- class assignment,
-     * picking teachers/students -- do not act on administrators). They are returned only when the
-     * client filters by an admin role.
+     * Danh sách người dùng của trường luôn ẩn tài khoản quản trị (các màn hình dùng nó — xếp lớp,
+     * chọn giáo viên/học sinh — không thao tác trên quản trị viên). Chỉ khi client lọc đúng vai trò
+     * quản trị thì mới trả về họ.
      */
     private boolean isAdminRoleFilter(UUID roleId) {
         if (roleId == null) {
@@ -95,15 +94,15 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
     }
 
     /**
-     * Allows filtering by role code (STUDENT/TEACHER) because the school client cannot query the
-     * role list to obtain the UUID. A {@code roleId} passed directly still takes priority when present.
+     * Cho phép lọc theo mã vai trò (STUDENT/TEACHER) vì client của trường không truy vấn được
+     * danh sách vai trò để lấy UUID. {@code roleId} truyền thẳng vẫn được ưu tiên nếu có.
      */
     private UUID resolveRoleId(UUID roleId, String roleCode) {
         if (roleId != null) {
             return roleId;
         }
 
-        String normalized = StringNormalization.trimAndCollapseSpaces(roleCode);
+        var normalized = StringNormalization.trimAndCollapseSpaces(roleCode);
         if (normalized == null) {
             return null;
         }
@@ -111,5 +110,17 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
         return roleRepository.findByCode(normalized.toUpperCase())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò"))
             .getId();
+    }
+
+    private String validateStatus(String status) {
+        var normalized = StringNormalization.trimAndCollapseSpaces(status);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return UserStatus.valueOf(normalized.toUpperCase()).name();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái người dùng không hợp lệ");
+        }
     }
 }

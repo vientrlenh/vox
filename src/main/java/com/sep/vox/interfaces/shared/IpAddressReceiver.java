@@ -6,12 +6,12 @@ import jakarta.servlet.http.HttpServletRequest;
 public final class IpAddressReceiver {
 
     public static String getClientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
+        var forwardedFor = request.getHeader("X-Forwarded-For");
         if (hasValue(forwardedFor)) {
             return forwardedFor.split(",")[0].trim();
         }
         
-        String realIp = request.getHeader("X-Real-IP");
+        var realIp = request.getHeader("X-Real-IP");
         if (hasValue(realIp)) {
             return realIp.trim();
         }

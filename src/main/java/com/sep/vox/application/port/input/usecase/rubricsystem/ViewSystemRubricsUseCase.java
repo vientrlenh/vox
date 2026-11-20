@@ -7,12 +7,10 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RubricDto;
 import com.sep.vox.domain.mapper.RubricDtoMapper;
-import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +35,7 @@ public class ViewSystemRubricsUseCase implements IUseCase<ViewSystemRubricsQuery
     @Transactional(readOnly = true)
     public PageResult<RubricDto> execute(ViewSystemRubricsQuery query) {
         // 1. Xác thực tài khoản (Đang Active)
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
 
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
@@ -45,7 +43,7 @@ public class ViewSystemRubricsUseCase implements IUseCase<ViewSystemRubricsQuery
         }
 
         // 2. Lấy dữ liệu phân trang từ Database (Chỉ lấy SYSTEM)
-        PageResult<Rubric> rubricPage = rubricRepository.findAllByOwnerType(
+        var rubricPage = rubricRepository.findAllByOwnerType(
                 RubricOwnerType.SYSTEM,
                 query.page(),
                 query.size()

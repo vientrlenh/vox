@@ -1,6 +1,5 @@
 package com.sep.vox.application.response.input.practicesession;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,8 +18,8 @@ public final class PracticeSessionResponses {
             String abandonDiagnosis,
             Double overallScore,
             int gradedSeconds,
-            Instant startedAt,
-            Instant endedAt,
+            String startedAt,
+            String endedAt,
             int pendingEvaluations) {
     }
 
@@ -75,7 +74,7 @@ public final class PracticeSessionResponses {
     public record TeacherPracticeSessionDetail(
             UUID sessionId,
             String topicName,
-            Instant startedAt,
+            String startedAt,
             int durationSeconds,
             int itemCount,
             Double overallScore,
@@ -85,7 +84,7 @@ public final class PracticeSessionResponses {
             int gradingGaveUpCount,
             Double difficultyRank,
             List<TeacherPracticeTurnView> turns,
-            /** The scoring scale of THIS session itself -- 0-100 from V13, the rubric scale for older sessions. */
+            /** Thang chấm của CHÍNH phiên này -- 0-100 từ V13, thang rubric với phiên cũ. */
             double scoreScaleMin,
             double scoreScaleMax) {
     }

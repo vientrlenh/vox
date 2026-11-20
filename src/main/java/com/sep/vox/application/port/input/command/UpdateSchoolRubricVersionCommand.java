@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.command;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
-import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 
 public record UpdateSchoolRubricVersionCommand(
         UUID schoolId,
@@ -14,5 +13,5 @@ public record UpdateSchoolRubricVersionCommand(
         Instant effectiveTo,
         BigDecimal scoringScaleMin,
         BigDecimal scoringScaleMax,
-        RubricTotalScoreMethod totalScoreMethod
+        String totalScoreMethod
 ) {}

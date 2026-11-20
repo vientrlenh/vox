@@ -1,7 +1,5 @@
 package com.sep.vox.application.port.input.usecase.registration;
 
-import com.sep.vox.domain.model.registerform.RegisterForm;
-import com.sep.vox.domain.model.school.SchoolDirectory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,13 +25,13 @@ public class ViewRegisterFormDetailsUseCase implements IUseCase<ViewRegisterForm
     @Override
     @Transactional(readOnly = true)
     public RegisterFormDto execute(ViewRegisterFormDetailsQuery input) {
-        RegisterForm registerForm = registerFormRepository.findById(input.id())
+        var registerForm = registerFormRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn đăng ký"));
         String schoolDomain = null;
         String schoolName = null;
         String schoolAddress = null;
         if (registerForm.getSchoolDirectoryId() != null) {
-            SchoolDirectory schoolDirectory = schoolDirectoryRepository.findById(registerForm.getSchoolDirectoryId())
+            var schoolDirectory = schoolDirectoryRepository.findById(registerForm.getSchoolDirectoryId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường"));
             schoolDomain = schoolDirectory.getDomain();
             schoolName = schoolDirectory.getName();

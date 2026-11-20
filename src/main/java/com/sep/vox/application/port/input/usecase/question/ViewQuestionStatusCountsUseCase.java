@@ -2,8 +2,6 @@ package com.sep.vox.application.port.input.usecase.question;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -50,19 +48,19 @@ public class ViewQuestionStatusCountsUseCase
     @Override
     @Transactional(readOnly = true)
     public List<QuestionStatusCountInfo> execute(ViewQuestionStatusCountsQuery input) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        boolean systemAdmin = userContextPort.isSystemAdmin();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        var systemAdmin = userContextPort.isSystemAdmin();
+        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        boolean schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         if (!systemAdmin && currentSchoolId == null) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        List<QuestionStatusCountInfo> counted = questionQueryRepository.countAccessibleByStatus(
+        var counted = questionQueryRepository.countAccessibleByStatus(
             currentUserId,
             currentSchoolId,
             systemAdmin,
@@ -90,7 +88,7 @@ public class ViewQuestionStatusCountsUseCase
      * vòng đời của câu hỏi, nên client hiển thị thẳng theo thứ tự nhận được là hợp lý.
      */
     private List<QuestionStatusCountInfo> fillMissingStatuses(List<QuestionStatusCountInfo> counted) {
-        Map<QuestionStatus, Long> countByStatus = counted.stream()
+        var countByStatus = counted.stream()
             .collect(Collectors.toMap(info -> info.status(), info -> info.count()));
 
         return Arrays.stream(QuestionStatus.values())

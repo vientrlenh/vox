@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import java.util.Set;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.StringNormalization;
@@ -59,39 +57,39 @@ public class QuestionTopicImportCommitHandler implements ImportCommitHandler {
 
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
-        UUID questionBankId = session.getImportedEntityId();
+        var questionBankId = session.getImportedEntityId();
         if (questionBankId == null) {
             throw new NotFoundException("Phiên import không ghim ngân hàng câu hỏi đích");
         }
         questionBankRepository.findById(questionBankId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi khi xử lý ngầm"));
 
-        Map<String, String> mapping = resolveMapping(session);
+        var mapping = resolveMapping(session);
 
-        Map<String, QuestionTopic> existingByCode = new HashMap<String, QuestionTopic>();
-        for (QuestionTopic topic : questionTopicRepository.findByQuestionBankId(questionBankId)) {
+        var existingByCode = new HashMap<String, QuestionTopic>();
+        for (var topic : questionTopicRepository.findByQuestionBankId(questionBankId)) {
             existingByCode.putIfAbsent(normalizeCode(topic.getCode()), topic);
         }
 
-        List<QuestionTopic> toSave = new ArrayList<QuestionTopic>();
+        var toSave = new ArrayList<QuestionTopic>();
         // Chặn trùng code ngay TRONG file: hai dòng cùng code mà cùng lượt lưu thì dòng sau ghi đè
         // dòng trước một cách âm thầm, người dùng không biết mình mất dữ liệu.
-        Set<String> codesInThisFile = new HashSet<String>();
+        var codesInThisFile = new HashSet<String>();
         long importedCount = 0;
         long invalidCount = 0;
-        Instant now = Instant.now();
+        var now = Instant.now();
 
-        for (ImportRow row : rows) {
+        for (var row : rows) {
             if (row.getStatus() != ImportRowStatus.PENDING) {
                 continue;
             }
 
-            List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
+            var errors = new ArrayList<Map<String, String>>();
             try {
-                Map<String, String> mappedData = mapRow(row, mapping);
-                String code = StringNormalization.normalizeCode(mappedData.get("code"));
-                String name = StringNormalization.trimAndCollapseSpaces(mappedData.get("name"));
-                String description = StringNormalization.trimAndCollapseSpaces(mappedData.get("description"));
+                var mappedData = mapRow(row, mapping);
+                var code = StringNormalization.normalizeCode(mappedData.get("code"));
+                var name = StringNormalization.trimAndCollapseSpaces(mappedData.get("name"));
+                var description = StringNormalization.trimAndCollapseSpaces(mappedData.get("description"));
 
                 if (isBlank(code)) {
                     errors.add(error("code", "Thiếu mã chủ đề."));
@@ -110,7 +108,7 @@ public class QuestionTopicImportCommitHandler implements ImportCommitHandler {
                     continue;
                 }
 
-                QuestionTopic existing = existingByCode.get(normalizeCode(code));
+                var existing = existingByCode.get(normalizeCode(code));
                 if (existing != null) {
                     existing.setName(name);
                     if (!isBlank(description)) {
@@ -144,7 +142,7 @@ public class QuestionTopicImportCommitHandler implements ImportCommitHandler {
             }
         }
 
-        for (QuestionTopic topic : toSave) {
+        for (var topic : toSave) {
             questionTopicRepository.save(topic);
         }
         return new ImportCommitResult(importedCount, 0, 0, invalidCount);
@@ -161,10 +159,10 @@ public class QuestionTopicImportCommitHandler implements ImportCommitHandler {
     }
 
     private Map<String, String> mapRow(ImportRow row, Map<String, String> mapping) {
-        Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-        Map<String, String> mappedData = new HashMap<String, String>();
-        for (Map.Entry<String, String> entry : rawData.entrySet()) {
-            String systemField = mapping.get(entry.getKey());
+        var rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
+        var mappedData = new HashMap<String, String>();
+        for (var entry : rawData.entrySet()) {
+            var systemField = mapping.get(entry.getKey());
             if (systemField != null) {
                 mappedData.put(systemField, entry.getValue());
             }

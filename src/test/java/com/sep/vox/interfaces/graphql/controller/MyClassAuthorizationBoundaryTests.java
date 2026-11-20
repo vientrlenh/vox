@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -28,7 +27,7 @@ class MyClassAuthorizationBoundaryTests {
 
     @Test
     void every_my_class_resolver_should_require_teacher_role() {
-        List<Method> resolvers = Arrays.stream(MyClassController.class.getDeclaredMethods())
+        var resolvers = Arrays.stream(MyClassController.class.getDeclaredMethods())
             .filter(method -> method.isAnnotationPresent(QueryMapping.class)
                 || method.isAnnotationPresent(SchemaMapping.class))
             .toList();
@@ -45,7 +44,7 @@ class MyClassAuthorizationBoundaryTests {
 
     @Test
     void admin_class_surface_should_stay_school_admin_only() throws NoSuchMethodException {
-        Method[] adminOnly = new Method[] {
+        var adminOnly = new Method[] {
             SchoolController.class.getDeclaredMethod("schoolClass", UUID.class),
             SchoolController.class.getDeclaredMethod("schoolClassUsers", UUID.class, Integer.class, Integer.class),
             SchoolController.class.getDeclaredMethod("user", SchoolClassUserDto.class, DataFetchingEnvironment.class),
@@ -61,7 +60,7 @@ class MyClassAuthorizationBoundaryTests {
     }
 
     private static String preAuthorizeValue(Method method) {
-        PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
+        var annotation = method.getAnnotation(PreAuthorize.class);
         return annotation == null ? null : annotation.value();
     }
 }

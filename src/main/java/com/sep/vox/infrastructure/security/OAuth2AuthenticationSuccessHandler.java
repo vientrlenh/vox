@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.security;
 
-import com.sep.vox.application.response.input.auth.LoginResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
@@ -9,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -47,24 +45,24 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException, ServletException {
         try {
-            OAuth2AuthenticationToken oauth2Token = (OAuth2AuthenticationToken) authentication;
-            String provider = oauth2Token.getAuthorizedClientRegistrationId();
-            OAuth2User user = oauth2Token.getPrincipal();
+            var oauth2Token = (OAuth2AuthenticationToken) authentication;
+            var provider = oauth2Token.getAuthorizedClientRegistrationId();
+            var user = oauth2Token.getPrincipal();
 
-            HttpSession session = request.getSession(false);
+            var session = request.getSession(false);
             if (session == null) {
                 throw new UnauthorizedException("Đăng nhập thất bại");
             }
-            String deviceId = (String) session.getAttribute("oauth2_device_id");
-            String deviceName = (String) session.getAttribute("oauth2_device_name");
-            String platform = (String) session.getAttribute("oauth2_platform");
-            ClientDeviceCommand device = new ClientDeviceCommand(
+            var deviceId = (String) session.getAttribute("oauth2_device_id");
+            var deviceName = (String) session.getAttribute("oauth2_device_name");
+            var platform = (String) session.getAttribute("oauth2_platform");
+            var device = new ClientDeviceCommand(
                 deviceId, 
                 deviceName, 
                 platform
             );
 
-            OAuth2LoginCommand command = new OAuth2LoginCommand(
+            var command = new OAuth2LoginCommand(
                 provider, 
                 user.getAttribute("sub"), 
                 user.getAttribute("email"), 
@@ -76,7 +74,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 device
             );
 
-            LoginResponse data = oAuth2LoginUseCase.execute(command);
+            var data = oAuth2LoginUseCase.execute(command);
             cookieManagerPort.setCookie(response, REFRESH_TOKEN_KEY_NAME, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
             clearSession(session);
             redirect(response, returnUrl, "token", data.accessToken());
@@ -90,12 +88,12 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     }
 
     private String ipAddress(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
+        var forwardedFor = request.getHeader("X-Forwarded-For");
         if (forwardedFor != null && !forwardedFor.isBlank() && !"unknown".equalsIgnoreCase(forwardedFor)) {
             return forwardedFor.split(",")[0].trim();
         }
 
-        String realIp = request.getHeader("X-Real-IP");
+        var realIp = request.getHeader("X-Real-IP");
         if (realIp != null && !realIp.isBlank() && !"unknown".equalsIgnoreCase(realIp)) {
             return realIp.trim();
         }
@@ -111,7 +109,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     }
 
     private void redirect(HttpServletResponse response, String baseUrl, String param, String value) throws IOException {
-        String url = UriComponentsBuilder.fromUriString(baseUrl)
+        var url = UriComponentsBuilder.fromUriString(baseUrl)
             .queryParam(param, value)
             .encode(StandardCharsets.UTF_8)
             .build()

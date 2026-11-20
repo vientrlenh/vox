@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.UserRoleJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -10,7 +9,6 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.UserRoleRepository;
-import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.mapper.UserRoleMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataUserRoleRepository;
 
@@ -41,8 +39,8 @@ public class UserRoleRepositoryImpl implements UserRoleRepository {
 
     @Override
     public UserRole save(UserRole userRole) {
-        UserRoleJpaEntity entity = UserRoleMapper.toJpa(userRole);
-        UserRoleJpaEntity saved = springDataUserRoleRepository.save(entity);
+        var entity = UserRoleMapper.toJpa(userRole);
+        var saved = springDataUserRoleRepository.save(entity);
         return UserRoleMapper.toDomain(saved);
     }
 
@@ -67,8 +65,8 @@ public class UserRoleRepositoryImpl implements UserRoleRepository {
 
     @Override
     public List<UserRole> findByRoleIdIn(Collection<UUID> roleIds, int page, int size) {
-        int fromRow = OneBasedPaging.toFirstRow(page, size);
-        int toRow = OneBasedPaging.toLastRow(page, size);
+        var fromRow = (page - 1) * size + 1;
+        var toRow = page * size;
         return springDataUserRoleRepository.findByRoleIdIn(roleIds, fromRow, toRow)
             .stream()
             .map(UserRoleMapper::toDomain)

@@ -1,12 +1,5 @@
 package com.sep.vox.interfaces.rest.controller;
 
-import com.sep.vox.application.port.input.command.CreateFrameworkCommand;
-import com.sep.vox.application.port.input.command.CreateFrameworkCriteriaCommand;
-import com.sep.vox.application.port.input.command.CreateFrameworkCriterionBandsCommand;
-import com.sep.vox.application.port.input.command.CreateFrameworkResultBandsCommand;
-import com.sep.vox.application.port.input.command.CreateFrameworkVersionCommand;
-import com.sep.vox.application.port.input.command.UpdateFrameworkCommand;
-import com.sep.vox.application.port.input.command.UpdateFrameworkVersionStatusCommand;
 import java.util.List;
 import java.util.UUID;
 
@@ -109,8 +102,8 @@ public class FrameworkController {
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createFramework(@Valid @RequestBody CreateFrameworkRequest request) {
-        CreateFrameworkCommand command = CreateFrameworkCommandMapper.fromRequest(request);
-        UUID id = createFrameworkUseCase.execute(command);
+        var command = CreateFrameworkCommandMapper.fromRequest(request);
+        var id = createFrameworkUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo framework thành công", id));
     }
@@ -120,22 +113,22 @@ public class FrameworkController {
     public ResponseEntity<ApiResponse<UUID>> updateFramework(
             @PathVariable(name = "frameworkId") UUID frameworkId,
             @Valid @RequestBody UpdateFrameworkRequest request) {
-        UpdateFrameworkCommand command = UpdateFrameworkCommandMapper.fromRequest(frameworkId, request);
-        UUID id = updateFrameworkUseCase.execute(command);
+        var command = UpdateFrameworkCommandMapper.fromRequest(frameworkId, request);
+        var id = updateFrameworkUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Cập nhật framework thành công", id));
     }
 
     @PatchMapping("/{frameworkId}/activate")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> activateFramework(@PathVariable(name = "frameworkId") UUID frameworkId) {
-        UUID id = updateFrameworkStatusUseCase.execute(new UpdateFrameworkActiveStatusCommand(frameworkId, true));
+        var id = updateFrameworkStatusUseCase.execute(new UpdateFrameworkActiveStatusCommand(frameworkId, true));
         return ResponseEntity.ok(ApiResponse.success("Kích hoạt framework thành công", id));
     }
 
     @PatchMapping("/{frameworkId}/deactivate")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> deactivateFramework(@PathVariable(name = "frameworkId") UUID frameworkId) {
-        UUID id = updateFrameworkStatusUseCase.execute(new UpdateFrameworkActiveStatusCommand(frameworkId, false));
+        var id = updateFrameworkStatusUseCase.execute(new UpdateFrameworkActiveStatusCommand(frameworkId, false));
         return ResponseEntity.ok(ApiResponse.success("Vô hiệu hóa framework thành công", id));
     }
 
@@ -151,8 +144,8 @@ public class FrameworkController {
     public ResponseEntity<ApiResponse<CreateFrameworkVersionResponse>> createVersion(
             @PathVariable(name = "frameworkId") UUID frameworkId,
             @Valid @RequestBody CreateFrameworkVersionRequest request) {
-        CreateFrameworkVersionCommand command = CreateFrameworkVersionCommandMapper.fromRequest(frameworkId, request);
-        CreateFrameworkVersionResponse data = createFrameworkVersionUseCase.execute(command);
+        var command = CreateFrameworkVersionCommandMapper.fromRequest(frameworkId, request);
+        var data = createFrameworkVersionUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Tạo phiên bản framework thành công", data));
     }
@@ -163,8 +156,8 @@ public class FrameworkController {
             @PathVariable(name = "frameworkId") UUID frameworkId,
             @PathVariable(name = "versionId") UUID versionId,
             @Valid @RequestBody UpdateFrameworkVersionStatusRequest request) {
-        UpdateFrameworkVersionStatusCommand command = UpdateFrameworkVersionStatusCommandMapper.fromRequest(frameworkId, versionId, request);
-        UUID updatedVersionId = updateFrameworkVersionStatusUseCase.execute(command);
+        var command = UpdateFrameworkVersionStatusCommandMapper.fromRequest(frameworkId, versionId, request);
+        var updatedVersionId = updateFrameworkVersionStatusUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái phiên bản framework thành công", updatedVersionId));
     }
 
@@ -183,8 +176,8 @@ public class FrameworkController {
             @PathVariable(name = "frameworkId") UUID frameworkId,
             @PathVariable(name = "versionId") UUID versionId,
             @Valid @RequestBody CreateFrameworkCriteriaRequest request) {
-        CreateFrameworkCriteriaCommand command = CreateFrameworkCriteriaCommandMapper.fromRequest(frameworkId, versionId, request);
-        List<UUID> ids = createFrameworkCriteriaUseCase.execute(command);
+        var command = CreateFrameworkCriteriaCommandMapper.fromRequest(frameworkId, versionId, request);
+        var ids = createFrameworkCriteriaUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Thêm tiêu chí thành công", ids));
     }
@@ -205,8 +198,8 @@ public class FrameworkController {
             @PathVariable(name = "versionId") UUID versionId,
             @PathVariable(name = "criterionId") UUID criterionId,
             @Valid @RequestBody CreateFrameworkCriterionBandsRequest request) {
-        CreateFrameworkCriterionBandsCommand command = CreateFrameworkCriterionBandsCommandMapper.fromRequest(frameworkId, versionId, criterionId, request);
-        List<UUID> ids = createFrameworkCriterionBandsUseCase.execute(command);
+        var command = CreateFrameworkCriterionBandsCommandMapper.fromRequest(frameworkId, versionId, criterionId, request);
+        var ids = createFrameworkCriterionBandsUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Thêm mức đánh giá cho tiêu chí thành công", ids));
     }
@@ -217,8 +210,8 @@ public class FrameworkController {
             @PathVariable(name = "frameworkId") UUID frameworkId,
             @PathVariable(name = "versionId") UUID versionId,
             @Valid @RequestBody CreateFrameworkResultBandsRequest request) {
-        CreateFrameworkResultBandsCommand command = CreateFrameworkResultBandsCommandMapper.fromRequest(frameworkId, versionId, request);
-        List<UUID> ids = createFrameworkResultBandsUseCase.execute(command);
+        var command = CreateFrameworkResultBandsCommandMapper.fromRequest(frameworkId, versionId, request);
+        var ids = createFrameworkResultBandsUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Thêm mức kết quả thành công", ids));
     }
